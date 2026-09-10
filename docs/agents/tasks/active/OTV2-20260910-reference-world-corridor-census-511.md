@@ -11,7 +11,7 @@ base_branch: main
 branch: agent/reference-world-corridor-census-511
 pr: 525
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
-head_sha: null
+head_sha: 05c9c94dbc44d7045f840814be8f24894139d62a
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_WORLD_CORRIDOR_CENSUS_511
@@ -225,7 +225,7 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 ## Self-review
 
-- exact head: pending final commit/readback
+- implementation head: `05c9c94dbc44d7045f840814be8f24894139d62a`; task-record follow-up commit pending
 - material findings: 0 after changed-file and whole-diff review
 - verdict: PASS
 
@@ -249,7 +249,7 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 last_progress: Phase-A consumer, focused tests, exact real-corpus double run, deterministic summary and evidence complete
 status: active
 branch: agent/reference-world-corridor-census-511
-head_sha: pending implementation commit
+head_sha: 05c9c94dbc44d7045f840814be8f24894139d62a
 pr: 525
 final_head_sha: pending exact-head CI
 final_head_frozen_at: null
