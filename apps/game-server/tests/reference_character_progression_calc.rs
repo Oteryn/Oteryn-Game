@@ -203,6 +203,24 @@ fn every_exact_context_revision_mismatch_fails_closed() {
 }
 
 #[test]
+fn policy_internal_declaration_revision_mismatch_fails_closed() {
+    let current = snapshot(4, 120);
+    let operation = award(1);
+    let mut mismatched_policy = policy();
+    mismatched_policy.declared_difference_revision = "split-declaration-r2";
+    assert_eq!(
+        calculate_progression(
+            &current,
+            &context(),
+            &"synthetic-policy-r4",
+            &operation,
+            &mismatched_policy,
+        ),
+        Err(ProgressionCalculationError::RevisionMismatch)
+    );
+}
+
+#[test]
 fn missing_oracle_and_invalid_snapshot_fail_closed() {
     assert_eq!(
         calculate(&snapshot(6, 1_999), &award(1)),
