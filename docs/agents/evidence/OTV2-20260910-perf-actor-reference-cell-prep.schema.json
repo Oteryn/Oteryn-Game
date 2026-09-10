@@ -29,6 +29,10 @@
       "if": {"properties": {"state": {"const": "PLACEHOLDER_UNBOUND"}}, "required": ["state"]},
       "then": {"properties": {"candidate_M": {"type": "null"}}},
       "else": {"required": ["identities", "comparison_baseline_identities", "cell_fingerprint", "enforcement", "objectives", "workload", "populations", "soak", "lower_coupled_limits", "boundary"]}
+    },
+    {
+      "if": {"properties": {"state": {"enum": ["CELL_BOUND_NOT_MEASURED", "MEASUREMENT_INCOMPLETE", "MEASUREMENT_INVALID"]}}, "required": ["state"]},
+      "then": {"properties": {"candidate_M": {"type": "null"}}}
     }
   ],
   "$defs": {

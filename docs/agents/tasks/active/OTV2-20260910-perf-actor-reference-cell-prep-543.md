@@ -79,7 +79,7 @@ is included.
 ### Focused
 
 - command/run: `python3 -m unittest discover -s tools/perf-actor-reference-cell -p 'test_*.py'`
-- result: PASS (15 tests)
+- result: PASS (24 tests, including coordinator pre-review fail-closed repairs)
 
 ### Component/integration
 
@@ -104,7 +104,7 @@ is included.
 
 - exact head: pending
 - method/reviewer: implementing agent, whole effective diff
-- material findings: strengthened explicit workload/enforcement inputs and scalar observation validation during review; no unresolved material finding
+- material findings: repaired executable validation of protected constants/types, physical evidence identity, CPU/RLIMIT cross-checks, progressive plans and pre-shortcut top-level state; no unresolved material finding
 - verdict: PREP_HARNESS_READY_FOR_REVIEW
 
 ## Independent review

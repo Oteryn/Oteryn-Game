@@ -61,6 +61,7 @@ def complete_document():
     }
     return {
         "schema_version": 1, "contract": rc.CONTRACT, "state": "MEASUREMENT_INCOMPLETE",
+        "candidate_M": None, "perf_01_status": "OPEN",
         "identities": identities, "comparison_baseline_identities": copy.deepcopy(identities),
         "cell_fingerprint": {"expected": fingerprint, "observed": copy.deepcopy(fingerprint)},
         "enforcement": {
@@ -89,6 +90,13 @@ def complete_document():
     }
 
 
+def placeholder():
+    return {
+        "schema_version": 1, "contract": rc.CONTRACT, "state": "PLACEHOLDER_UNBOUND",
+        "candidate_M": None, "perf_01_status": "OPEN",
+    }
+
+
 class ReferenceCellTests(unittest.TestCase):
     def assert_code(self, document, code):
         with self.assertRaises(rc.EvidenceError) as caught:
@@ -103,12 +111,88 @@ class ReferenceCellTests(unittest.TestCase):
         self.assertIsNone(result["production_capacity"])
 
     def test_placeholder_cannot_emit_capacity(self):
-        placeholder = {"state": "PLACEHOLDER_UNBOUND", "candidate_M": 1}
-        self.assert_code(placeholder, "PLACEHOLDER_CAPACITY_FORBIDDEN")
+        document = placeholder(); document["candidate_M"] = 1
+        self.assert_code(document, "PLACEHOLDER_CAPACITY_FORBIDDEN")
 
     def test_placeholder_without_capacity_is_unbound(self):
-        result = rc.process({"state": "PLACEHOLDER_UNBOUND", "candidate_M": None})
+        result = rc.process(placeholder())
         self.assertIsNone(result["candidate_M"])
+
+    def test_protected_runner_identity_is_executable_contract(self):
+        for field, wrong in (("runner_group", "other"), ("runner_label", "other"), ("runner_name", "other"), ("os_family", "Windows")):
+            document = complete_document()
+            document["cell_fingerprint"]["expected"][field] = wrong
+            document["cell_fingerprint"]["observed"][field] = wrong
+            self.assert_code(document, "CONTRACT_MISMATCH")
+
+    def test_identity_evidence_source_is_required_and_physical(self):
+        for section in ("identities", "comparison_baseline_identities"):
+            document = complete_document(); del document[section]["capacity_evidence_source"]
+            self.assert_code(document, "REQUIRED_INPUT_MISSING")
+            document = complete_document(); document[section]["capacity_evidence_source"] = "OTHER_PHYSICAL_CELL"
+            self.assert_code(document, "CONTRACT_MISMATCH")
+
+    def test_selected_cpu_must_be_online_allowed_and_lowest(self):
+        for field, cpus in (("online_logical_cpus", [1]), ("allowed_affinity", [1])):
+            document = complete_document()
+            document["cell_fingerprint"]["expected"][field] = cpus
+            document["cell_fingerprint"]["observed"][field] = cpus
+            self.assert_code(document, "REFERENCE_CELL_ENFORCEMENT_UNAVAILABLE")
+        document = complete_document()
+        for side in ("expected", "observed"):
+            document["cell_fingerprint"][side]["selected_cpu"] = 1
+        document["enforcement"]["affinity_readback"] = [1]
+        self.assert_code(document, "REFERENCE_CELL_ENFORCEMENT_UNAVAILABLE")
+
+    def test_cpu_sets_are_nonempty_unique_nonnegative_integer_sets(self):
+        for invalid in ([], [0, 0], [-1], [False]):
+            document = complete_document()
+            document["cell_fingerprint"]["expected"]["allowed_affinity"] = invalid
+            document["cell_fingerprint"]["observed"]["allowed_affinity"] = copy.deepcopy(invalid)
+            self.assert_code(document, "CELL_FINGERPRINT_INCOMPLETE")
+
+    def test_fingerprint_and_enforcement_rlimit_must_match(self):
+        document = complete_document()
+        document["enforcement"]["rlimit_as_soft_bytes"] = 1_000_000_000
+        document["enforcement"]["rlimit_as_hard_bytes"] = 1_000_000_000
+        self.assert_code(document, "REFERENCE_CELL_ENFORCEMENT_UNAVAILABLE")
+
+    def test_population_plan_must_be_strictly_increasing(self):
+        for plan in ([20, 10], [10, 10]):
+            document = complete_document(); document["workload"]["population_plan"] = plan
+            self.assert_code(document, "PROGRESSIVE_EVIDENCE_INCOMPLETE")
+
+    def test_top_level_contract_fields_are_validated_before_placeholder(self):
+        for field, value in (("schema_version", 2), ("contract", "wrong"), ("perf_01_status", "CLOSED")):
+            document = placeholder(); document[field] = value
+            self.assert_code(document, "CONTRACT_MISMATCH")
+        document = placeholder(); del document["contract"]
+        self.assert_code(document, "REQUIRED_INPUT_MISSING")
+        document = placeholder(); document["unexpected"] = True
+        self.assert_code(document, "MALFORMED_PLACEHOLDER")
+
+    def test_non_placeholder_state_and_capacity_claim_are_forbidden(self):
+        for state in ("CELL_BOUND_NOT_MEASURED", "MEASUREMENT_INVALID", "MEASUREMENT_COMPLETE_NOT_ACCEPTED", "ACCEPTED", "PRODUCTION"):
+            document = complete_document(); document["state"] = state
+            self.assert_code(document, "INPUT_STATE_FORBIDDEN")
+        document = complete_document(); document["candidate_M"] = 10
+        self.assert_code(document, "PREPOPULATED_CAPACITY_FORBIDDEN")
+
+    def test_processing_types_fail_closed(self):
+        mutations = (
+            (("state",), [], "INPUT_STATE_FORBIDDEN"),
+            (("workload", "minimum_repetitions"), True, "CONTRACT_MISMATCH"),
+            (("enforcement", "exclusive_job_proven"), 1, "REFERENCE_CELL_ENFORCEMENT_UNAVAILABLE"),
+            (("populations",), ["not-an-object"], "MEASUREMENT_INCOMPLETE"),
+            (("soak", "duration_seconds"), "1800", "SOAK_INCOMPLETE"),
+        )
+        for path, value, code in mutations:
+            document = complete_document()
+            target = document
+            for component in path[:-1]:
+                target = target[component]
+            target[path[-1]] = value
+            self.assert_code(document, code)
 
     def test_all_contract_inputs_are_required(self):
         for section, field in (("objectives", "latency_p50_us_max"), ("workload", "window_us"), ("identities", "source_revision")):
@@ -127,8 +211,8 @@ class ReferenceCellTests(unittest.TestCase):
         self.assert_code(document, "CELL_FINGERPRINT_INCOMPLETE")
 
     def test_identity_revision_drift_rejected(self):
-        for field in rc.IDENTITY_FIELDS:
-            document = complete_document(); document["identities"][field] += "drift"
+        for field in (field for field in rc.IDENTITY_FIELDS if field != "capacity_evidence_source"):
+            document = complete_document(); document["comparison_baseline_identities"][field] += "drift"
             self.assert_code(document, "EVIDENCE_IDENTITY_MISMATCH")
 
     def test_enforcement_is_fail_closed(self):
@@ -178,7 +262,7 @@ class ReferenceCellTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = pathlib.Path(directory) / "input.json"
             output = pathlib.Path(directory) / "output.json"
-            path.write_text(json.dumps({"state": "PLACEHOLDER_UNBOUND", "candidate_M": None}))
+            path.write_text(json.dumps(placeholder()))
             self.assertEqual(rc.main([str(path), "--output", str(output)]), 0)
             self.assertEqual(rc.main([str(path), "--output", str(output), "--check"]), 0)
             output.write_text("{}\n")
