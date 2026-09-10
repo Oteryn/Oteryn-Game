@@ -412,7 +412,7 @@ pub(super) fn root_store_with_resource_budget(
     RootCertStore,
     crate::net::resource_budget::ResourceReservation,
 ), Error> {
-    use crate::net::resource_budget::{BudgetError, ResourceReservation};
+    use crate::net::resource_budget::ResourceReservation;
     let custom = custom_pem.unwrap_or_default();
     let custom_count = count_marker(custom, b"-----BEGIN CERTIFICATE-----");
     let total_count = webpki_roots::TLS_SERVER_ROOTS
@@ -428,9 +428,15 @@ pub(super) fn root_store_with_resource_budget(
     let custom_bound = if custom.is_empty() {
         0
     } else {
-        pem_scratch_capacity_bound(custom.len())?
-            .checked_add(custom.len().checked_mul(5).ok_or(BudgetError::Overflow)?)
-            .ok_or(BudgetError::Overflow)?
+        let scratch = pem_scratch_capacity_bound(custom.len())
+            .map_err(|_| Error::tls("custom root PEM accounting overflow"))?;
+        let owned = custom
+            .len()
+            .checked_mul(5)
+            .ok_or_else(|| Error::tls("custom root PEM accounting overflow"))?;
+        scratch
+            .checked_add(owned)
+            .ok_or_else(|| Error::tls("custom root PEM accounting overflow"))?
     };
     let bytes = outer
         .checked_add(custom_bound)
