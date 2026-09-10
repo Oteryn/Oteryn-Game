@@ -1160,6 +1160,8 @@ exact_head: <live PR head at audit time>
 
 A review of an older head does not qualify a later materially changed candidate. The auditor must not implement UI-P1 or later runtime slices in the same audit pass; P0 is review/correction only.
 
+After this document is handed off for P0, the planning author should not make further material changes until the independent audit returns, unless a repository/governance blocker requires a minimal metadata-only correction. Any material content change invalidates the prior audit target and requires a fresh exact-head audit.
+
 ## 19. Execution sequencing constraints
 
 - P1 must not start until P0 architecture audit is resolved sufficiently for implementation.
