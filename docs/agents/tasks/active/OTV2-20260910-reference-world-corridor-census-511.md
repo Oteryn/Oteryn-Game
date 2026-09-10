@@ -11,7 +11,7 @@ base_branch: main
 branch: agent/reference-world-corridor-census-511
 pr: 525
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
-head_sha: pending post-resume commit
+head_sha: 6ee784479cbb7871982957113467138a2edb8647
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_WORLD_CORRIDOR_CENSUS_511
@@ -235,7 +235,7 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 ## Self-review
 
-- implementation head: `05c9c94dbc44d7045f840814be8f24894139d62a`; task-record follow-up commit pending
+- post-repair implementation/merge head: `6ee784479cbb7871982957113467138a2edb8647`; task-record follow-up commit pending
 - material findings: 0 after changed-file and whole-diff review
 - verdict: PASS
 
@@ -261,7 +261,7 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 last_progress: post-repair resume reconciliation, parser provenance validation, canonical stream evidence, focused tests, and exact real-corpus double run complete
 status: active
 branch: agent/reference-world-corridor-census-511
-head_sha: pending post-resume commit
+head_sha: 6ee784479cbb7871982957113467138a2edb8647
 pr: 525
 final_head_sha: pending exact-head CI
 final_head_frozen_at: null
@@ -276,5 +276,5 @@ blocker: null
 phase_a_result: PASS
 phase_b_target_parity: NOT_PERFORMED
 production_authority: NONE
-next_action: commit and push the same branch, update Draft PR #525, and obtain exact-head repository checks/review; do not begin Phase B
+next_action: push this task-record follow-up on the same branch, keep Draft PR #525, and obtain exact-head repository checks/review; do not begin Phase B
 ```
