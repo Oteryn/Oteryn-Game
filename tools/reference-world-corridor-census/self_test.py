@@ -269,6 +269,26 @@ def test_loaded_module_origin_outside_pinned_tree_fails_closed():
         else:
             raise AssertionError("outside parser module accepted")
 
+        sys.modules["tools.otbm_atlas.semantic"].__file__ = str(inside / "semantic.py")
+
+        def blob_mismatch_git(_repo, *args):
+            if args[0] == "ls-files":
+                return args[-1]
+            if args[0] == "hash-object":
+                return "a" * 40
+            if args[0] == "rev-parse":
+                return "b" * 40
+            raise AssertionError(args)
+
+        census._git = blob_mismatch_git
+        try:
+            census.verify_loaded_legacy_modules(root)
+        except census.CensusError as exc:
+            assert "LEGACY_PARSER_REVISION_MISMATCH" in str(exc)
+            assert "blob mismatch" in str(exc)
+        else:
+            raise AssertionError("loaded parser blob mismatch accepted")
+
     census._git = original_git
     for name, previous in saved.items():
         if previous is None:

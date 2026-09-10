@@ -276,5 +276,5 @@ blocker: null
 phase_a_result: PASS
 phase_b_target_parity: NOT_PERFORMED
 production_authority: NONE
-next_action: push this task-record follow-up on the same branch, keep Draft PR #525, and obtain exact-head repository checks/review; do not begin Phase B
+next_action: keep Draft PR #525 and obtain exact-head repository checks/independent review; do not begin Phase B
 ```
