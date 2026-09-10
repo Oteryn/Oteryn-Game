@@ -3,20 +3,167 @@ use alloc::vec::Vec;
 use core::mem;
 
 use crate::crypto::hash;
+#[cfg(feature = "std")]
+use crate::error::InvalidMessage;
 use crate::msgs::codec::Codec;
+#[cfg(feature = "std")]
+use crate::msgs::codec::exact_vec_copy;
 use crate::msgs::enums::HashAlgorithm;
 use crate::msgs::handshake::HandshakeMessagePayload;
 use crate::msgs::message::{Message, MessagePayload};
+#[cfg(feature = "std")]
+use crate::sync::Arc;
+#[cfg(feature = "std")]
+use crate::DeframerBufferOwner;
+
+#[cfg(feature = "std")]
+#[derive(Debug)]
+struct TranscriptCustody {
+    owner: Arc<dyn DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl TranscriptCustody {
+    fn reserve(
+        owner: Arc<dyn DeframerBufferOwner>,
+        bytes: usize,
+    ) -> Result<Self, InvalidMessage> {
+        if bytes != 0 {
+            owner
+                .try_reserve(bytes)
+                .map_err(|_| InvalidMessage::MessageTooLarge)?;
+        }
+        Ok(Self { owner, bytes })
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for TranscriptCustody {
+    fn drop(&mut self) {
+        if self.bytes != 0 {
+            self.owner.release(self.bytes);
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+fn geometric_capacity(current: usize, needed: usize) -> Result<usize, InvalidMessage> {
+    if needed <= current {
+        return Ok(current);
+    }
+    let mut target = current.max(8);
+    while target < needed {
+        target = target
+            .checked_mul(2)
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+    }
+    Ok(target)
+}
+
+#[cfg(feature = "std")]
+fn exact_grown_bytes(old: &[u8], extra: &[u8], capacity: usize) -> Vec<u8> {
+    let len = old.len() + extra.len();
+    debug_assert!(len <= capacity);
+
+    let mut backing = Box::<[u8]>::new_uninit_slice(capacity);
+    for slot in backing.iter_mut() {
+        slot.write(0);
+    }
+    // SAFETY: every slot was initialized immediately above.
+    let mut backing = unsafe { backing.assume_init() };
+    backing[..old.len()].copy_from_slice(old);
+    backing[old.len()..len].copy_from_slice(extra);
+    let mut values = backing.into_vec();
+    values.truncate(len);
+    debug_assert_eq!(values.capacity(), capacity);
+    values
+}
+
+#[cfg(feature = "std")]
+fn qualified_hash_context_bytes(
+    provider: &'static dyn hash::Hash,
+) -> Result<usize, InvalidMessage> {
+    #[cfg(all(
+        feature = "aws_lc_rs",
+        not(feature = "fips"),
+        target_os = "linux",
+        target_arch = "x86_64"
+    ))]
+    {
+        let sha256: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA256;
+        let sha384: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA384;
+        if core::ptr::eq(provider, sha256) {
+            // Rust 1.94 Box<ring_like::hash::Context>: 72-byte Rust context
+            // plus AWS-LC OPENSSL_malloc(sizeof(SHA256_CTX)=112) => 120.
+            return Ok(192);
+        }
+        if core::ptr::eq(provider, sha384) {
+            // 72-byte Rust context plus
+            // OPENSSL_malloc(sizeof(SHA512_CTX)=216) => 224.
+            return Ok(296);
+        }
+    }
+
+    let _ = provider;
+    Err(InvalidMessage::MessageTooLarge)
+}
+
+#[cfg(feature = "std")]
+fn qualified_hash_fork_finish_bytes(
+    provider: &'static dyn hash::Hash,
+) -> Result<usize, InvalidMessage> {
+    #[cfg(all(
+        feature = "aws_lc_rs",
+        not(feature = "fips"),
+        target_os = "linux",
+        target_arch = "x86_64"
+    ))]
+    {
+        let sha256: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA256;
+        let sha384: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA384;
+        if core::ptr::eq(provider, sha256) {
+            return Ok(120);
+        }
+        if core::ptr::eq(provider, sha384) {
+            return Ok(224);
+        }
+    }
+
+    let _ = provider;
+    Err(InvalidMessage::MessageTooLarge)
+}
 
 /// Early stage buffering of handshake payloads.
 ///
 /// Before we know the hash algorithm to use to verify the handshake, we just buffer the messages.
 /// During the handshake, we may restart the transcript due to a HelloRetryRequest, reverting
 /// from the `HandshakeHash` to a `HandshakeHashBuffer` again.
-#[derive(Clone)]
 pub(crate) struct HandshakeHashBuffer {
     buffer: Vec<u8>,
     client_auth_enabled: bool,
+    #[cfg(feature = "std")]
+    resource_owner: Option<Arc<dyn DeframerBufferOwner>>,
+    #[cfg(feature = "std")]
+    buffer_custody: Option<TranscriptCustody>,
+}
+
+impl Clone for HandshakeHashBuffer {
+    fn clone(&self) -> Self {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none() && self.buffer_custody.is_none(),
+            "charged transcript buffer requires a fallible owner-aware clone"
+        );
+        Self {
+            buffer: self.buffer.clone(),
+            client_auth_enabled: self.client_auth_enabled,
+            #[cfg(feature = "std")]
+            resource_owner: None,
+            #[cfg(feature = "std")]
+            buffer_custody: None,
+        }
+    }
 }
 
 impl HandshakeHashBuffer {
@@ -24,7 +171,30 @@ impl HandshakeHashBuffer {
         Self {
             buffer: Vec::new(),
             client_auth_enabled: false,
+            #[cfg(feature = "std")]
+            resource_owner: None,
+            #[cfg(feature = "std")]
+            buffer_custody: None,
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn install_resource_owner(
+        &mut self,
+        owner: Arc<dyn DeframerBufferOwner>,
+    ) -> Result<(), InvalidMessage> {
+        if let Some(existing) = &self.resource_owner {
+            return if Arc::ptr_eq(existing, &owner) {
+                Ok(())
+            } else {
+                Err(InvalidMessage::MessageTooLarge)
+            };
+        }
+        if self.buffer.capacity() != 0 || self.buffer_custody.is_some() {
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+        self.resource_owner = Some(owner);
+        Ok(())
     }
 
     /// We might be doing client auth, so need to keep a full
@@ -35,6 +205,11 @@ impl HandshakeHashBuffer {
 
     /// Hash/buffer a handshake message.
     pub(crate) fn add_message(&mut self, m: &Message<'_>) {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_add_message"
+        );
         match &m.payload {
             MessagePayload::Handshake { encoded, .. } => self.add_raw(encoded.bytes()),
             MessagePayload::HandshakeFlight(payload) => self.add_raw(payload.bytes()),
@@ -42,9 +217,49 @@ impl HandshakeHashBuffer {
         };
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn try_add_message(&mut self, m: &Message<'_>) -> Result<(), InvalidMessage> {
+        match &m.payload {
+            MessagePayload::Handshake { encoded, .. } => self.try_add_raw(encoded.bytes()),
+            MessagePayload::HandshakeFlight(payload) => self.try_add_raw(payload.bytes()),
+            _ => Ok(()),
+        }
+    }
+
     /// Hash or buffer a byte slice.
     fn add_raw(&mut self, buf: &[u8]) {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_add_raw"
+        );
         self.buffer.extend_from_slice(buf);
+    }
+
+    #[cfg(feature = "std")]
+    fn try_add_raw(&mut self, buf: &[u8]) -> Result<(), InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            self.buffer.extend_from_slice(buf);
+            return Ok(());
+        };
+        let needed = self
+            .buffer
+            .len()
+            .checked_add(buf.len())
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        if needed <= self.buffer.capacity() {
+            self.buffer.extend_from_slice(buf);
+            return Ok(());
+        }
+
+        let target = geometric_capacity(self.buffer.capacity(), needed)?;
+        let prospective = TranscriptCustody::reserve(owner, target)?;
+        let replacement = exact_grown_bytes(&self.buffer, buf, target);
+        let old_buffer = mem::replace(&mut self.buffer, replacement);
+        let old_custody = self.buffer_custody.replace(prospective);
+        drop(old_buffer);
+        drop(old_custody);
+        Ok(())
     }
 
     /// Get the hash value if we were to hash `extra` too.
@@ -53,14 +268,42 @@ impl HandshakeHashBuffer {
         provider: &'static dyn hash::Hash,
         extra: &[u8],
     ) -> hash::Output {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_hash_given"
+        );
         let mut ctx = provider.start();
         ctx.update(&self.buffer);
         ctx.update(extra);
         ctx.finish()
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn try_hash_given(
+        &self,
+        provider: &'static dyn hash::Hash,
+        extra: &[u8],
+    ) -> Result<hash::Output, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            return Ok(self.hash_given(provider, extra));
+        };
+        let custody = TranscriptCustody::reserve(owner, qualified_hash_context_bytes(provider)?)?;
+        let mut ctx = provider.start();
+        ctx.update(&self.buffer);
+        ctx.update(extra);
+        let output = ctx.finish();
+        drop(custody);
+        Ok(output)
+    }
+
     /// We now know what hash function the verify_data will use.
     pub(crate) fn start_hash(self, provider: &'static dyn hash::Hash) -> HandshakeHash {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_start_hash"
+        );
         let mut ctx = provider.start();
         ctx.update(&self.buffer);
         HandshakeHash {
@@ -70,7 +313,52 @@ impl HandshakeHashBuffer {
                 true => Some(self.buffer),
                 false => None,
             },
+            #[cfg(feature = "std")]
+            resource_owner: None,
+            #[cfg(feature = "std")]
+            ctx_custody: None,
+            #[cfg(feature = "std")]
+            client_auth_custody: None,
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn try_start_hash(
+        self,
+        provider: &'static dyn hash::Hash,
+    ) -> Result<HandshakeHash, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            return Ok(self.start_hash(provider));
+        };
+        let ctx_custody = TranscriptCustody::reserve(
+            owner.clone(),
+            qualified_hash_context_bytes(provider)?,
+        )?;
+        let mut ctx = provider.start();
+        ctx.update(&self.buffer);
+
+        let HandshakeHashBuffer {
+            buffer,
+            client_auth_enabled,
+            resource_owner: _,
+            buffer_custody,
+        } = self;
+        let (client_auth, client_auth_custody) = if client_auth_enabled {
+            (Some(buffer), buffer_custody)
+        } else {
+            drop(buffer);
+            drop(buffer_custody);
+            (None, None)
+        };
+
+        Ok(HandshakeHash {
+            provider,
+            ctx,
+            client_auth,
+            resource_owner: Some(owner),
+            ctx_custody: Some(ctx_custody),
+            client_auth_custody,
+        })
     }
 }
 
@@ -87,6 +375,12 @@ pub(crate) struct HandshakeHash {
 
     /// buffer for client-auth.
     client_auth: Option<Vec<u8>>,
+    #[cfg(feature = "std")]
+    resource_owner: Option<Arc<dyn DeframerBufferOwner>>,
+    #[cfg(feature = "std")]
+    ctx_custody: Option<TranscriptCustody>,
+    #[cfg(feature = "std")]
+    client_auth_custody: Option<TranscriptCustody>,
 }
 
 impl HandshakeHash {
@@ -94,15 +388,34 @@ impl HandshakeHash {
     /// the transcript.
     pub(crate) fn abandon_client_auth(&mut self) {
         self.client_auth = None;
+        #[cfg(feature = "std")]
+        {
+            self.client_auth_custody = None;
+        }
     }
 
     /// Hash/buffer a handshake message.
     pub(crate) fn add_message(&mut self, m: &Message<'_>) -> &mut Self {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_add_message"
+        );
         match &m.payload {
             MessagePayload::Handshake { encoded, .. } => self.add_raw(encoded.bytes()),
             MessagePayload::HandshakeFlight(payload) => self.add_raw(payload.bytes()),
             _ => self,
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn try_add_message(&mut self, m: &Message<'_>) -> Result<&mut Self, InvalidMessage> {
+        match &m.payload {
+            MessagePayload::Handshake { encoded, .. } => self.try_add_raw(encoded.bytes())?,
+            MessagePayload::HandshakeFlight(payload) => self.try_add_raw(payload.bytes())?,
+            _ => {}
+        }
+        Ok(self)
     }
 
     /// Hash/buffer an encoded handshake message.
@@ -112,6 +425,11 @@ impl HandshakeHash {
 
     /// Hash or buffer a byte slice.
     fn add_raw(&mut self, buf: &[u8]) -> &mut Self {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_add_raw"
+        );
         self.ctx.update(buf);
 
         if let Some(buffer) = &mut self.client_auth {
@@ -121,15 +439,74 @@ impl HandshakeHash {
         self
     }
 
+    #[cfg(feature = "std")]
+    fn try_add_raw(&mut self, buf: &[u8]) -> Result<&mut Self, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            self.add_raw(buf);
+            return Ok(self);
+        };
+
+        if let Some(buffer) = &self.client_auth {
+            let needed = buffer
+                .len()
+                .checked_add(buf.len())
+                .ok_or(InvalidMessage::MessageTooLarge)?;
+            if needed > buffer.capacity() {
+                let target = geometric_capacity(buffer.capacity(), needed)?;
+                let prospective = TranscriptCustody::reserve(owner, target)?;
+                let replacement = exact_grown_bytes(buffer, buf, target);
+                let buffer = self.client_auth.as_mut().unwrap();
+                let old_buffer = mem::replace(buffer, replacement);
+                let old_custody = self.client_auth_custody.replace(prospective);
+                drop(old_buffer);
+                drop(old_custody);
+                self.ctx.update(buf);
+                return Ok(self);
+            }
+        }
+
+        if let Some(buffer) = &mut self.client_auth {
+            buffer.extend_from_slice(buf);
+        }
+        self.ctx.update(buf);
+        Ok(self)
+    }
+
     /// Get the hash value if we were to hash `extra` too,
     /// using hash function `hash`.
     pub(crate) fn hash_given(&self, extra: &[u8]) -> hash::Output {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_hash_given"
+        );
         let mut ctx = self.ctx.fork();
         ctx.update(extra);
         ctx.finish()
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn try_hash_given(&self, extra: &[u8]) -> Result<hash::Output, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            return Ok(self.hash_given(extra));
+        };
+        let custody = TranscriptCustody::reserve(
+            owner,
+            qualified_hash_context_bytes(self.provider)?,
+        )?;
+        let mut ctx = self.ctx.fork();
+        ctx.update(extra);
+        let output = ctx.finish();
+        drop(custody);
+        Ok(output)
+    }
+
     pub(crate) fn into_hrr_buffer(self) -> HandshakeHashBuffer {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_into_hrr_buffer"
+        );
         let old_hash = self.ctx.finish();
         let old_handshake_hash_msg =
             HandshakeMessagePayload::build_handshake_hash(old_hash.as_ref());
@@ -137,7 +514,54 @@ impl HandshakeHash {
         HandshakeHashBuffer {
             client_auth_enabled: self.client_auth.is_some(),
             buffer: old_handshake_hash_msg.get_encoding(),
+            #[cfg(feature = "std")]
+            resource_owner: None,
+            #[cfg(feature = "std")]
+            buffer_custody: None,
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn try_into_hrr_buffer(self) -> Result<HandshakeHashBuffer, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            return Ok(self.into_hrr_buffer());
+        };
+        let HandshakeHash {
+            provider: _,
+            ctx,
+            client_auth,
+            resource_owner: _,
+            ctx_custody,
+            client_auth_custody,
+        } = self;
+        let client_auth_enabled = client_auth.is_some();
+        let old_hash = ctx.finish();
+        drop(ctx_custody);
+        drop(client_auth);
+        drop(client_auth_custody);
+
+        let old_handshake_hash_msg =
+            HandshakeMessagePayload::build_handshake_hash(old_hash.as_ref());
+        let bytes = old_hash
+            .as_ref()
+            .len()
+            .checked_add(4)
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        let custody = TranscriptCustody::reserve(owner.clone(), bytes)?;
+        let mut buffer = Vec::with_capacity(bytes);
+        old_handshake_hash_msg.encode(&mut buffer);
+        if buffer.len() != bytes || buffer.capacity() != bytes {
+            drop(buffer);
+            drop(custody);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+
+        Ok(HandshakeHashBuffer {
+            buffer,
+            client_auth_enabled,
+            resource_owner: Some(owner),
+            buffer_custody: Some(custody),
+        })
     }
 
     /// Take the current hash value, and encapsulate it in a
@@ -156,7 +580,26 @@ impl HandshakeHash {
 
     /// Get the current hash value.
     pub(crate) fn current_hash(&self) -> hash::Output {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "owner-aware transcript must use try_current_hash"
+        );
         self.ctx.fork_finish()
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn try_current_hash(&self) -> Result<hash::Output, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            return Ok(self.current_hash());
+        };
+        let custody = TranscriptCustody::reserve(
+            owner,
+            qualified_hash_fork_finish_bytes(self.provider)?,
+        )?;
+        let output = self.ctx.fork_finish();
+        drop(custody);
+        Ok(output)
     }
 
     /// Takes this object's buffer containing all handshake messages
@@ -171,14 +614,62 @@ impl HandshakeHash {
     pub(crate) fn algorithm(&self) -> HashAlgorithm {
         self.provider.algorithm()
     }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn try_clone_with_resource_owner(&self) -> Result<Self, InvalidMessage> {
+        let Some(owner) = self.resource_owner.clone() else {
+            return Ok(self.clone());
+        };
+
+        let ctx_custody = TranscriptCustody::reserve(
+            owner.clone(),
+            qualified_hash_context_bytes(self.provider)?,
+        )?;
+        let ctx = self.ctx.fork();
+
+        let (client_auth, client_auth_custody) = match &self.client_auth {
+            Some(source) if !source.is_empty() => {
+                let custody = TranscriptCustody::reserve(owner.clone(), source.len())?;
+                let values = exact_vec_copy(source);
+                if values.capacity() != source.len() {
+                    drop(values);
+                    drop(custody);
+                    return Err(InvalidMessage::MessageTooLarge);
+                }
+                (Some(values), Some(custody))
+            }
+            Some(_) => (Some(Vec::new()), None),
+            None => (None, None),
+        };
+
+        Ok(Self {
+            provider: self.provider,
+            ctx,
+            client_auth,
+            resource_owner: Some(owner),
+            ctx_custody: Some(ctx_custody),
+            client_auth_custody,
+        })
+    }
 }
 
 impl Clone for HandshakeHash {
     fn clone(&self) -> Self {
+        #[cfg(feature = "std")]
+        assert!(
+            self.resource_owner.is_none(),
+            "charged transcript requires try_clone_with_resource_owner"
+        );
         Self {
             provider: self.provider,
             ctx: self.ctx.fork(),
             client_auth: self.client_auth.clone(),
+            #[cfg(feature = "std")]
+            resource_owner: None,
+            #[cfg(feature = "std")]
+            ctx_custody: None,
+            #[cfg(feature = "std")]
+            client_auth_custody: None,
         }
     }
 }
@@ -292,14 +783,7 @@ mod tests {
         let mut hhb = HandshakeHashBuffer::new();
         hhb.set_client_auth_enabled();
         hhb.add_raw(b"hello");
-        assert_eq!(hhb.buffer.len(), 5);
         let mut hh = hhb.start_hash(&SHA256);
-        assert_eq!(
-            hh.client_auth
-                .as_ref()
-                .map(|buf| buf.len()),
-            Some(5)
-        );
         hh.abandon_client_auth();
         assert_eq!(hh.client_auth, None);
         hh.add_raw(b"world");
@@ -317,14 +801,11 @@ mod tests {
         let mut hhb = HandshakeHashBuffer::new();
         hhb.set_client_auth_enabled();
         hhb.add_raw(b"hello");
-        assert_eq!(hhb.buffer.len(), 5);
 
-        // Cloning the HHB should result in the same buffer and client auth state.
         let mut hhb_prime = hhb.clone();
         assert_eq!(hhb_prime.buffer, hhb.buffer);
         assert!(hhb_prime.client_auth_enabled);
 
-        // Updating the HHB clone shouldn't affect the original.
         hhb_prime.add_raw(b"world");
         assert_eq!(hhb_prime.buffer.len(), 10);
         assert_ne!(hhb.buffer, hhb_prime.buffer);
@@ -333,13 +814,11 @@ mod tests {
         let hh_hash = hh.current_hash();
         let hh_hash = hh_hash.as_ref();
 
-        // Cloning the HH should result in the same current hash.
         let mut hh_prime = hh.clone();
         let hh_prime_hash = hh_prime.current_hash();
         let hh_prime_hash = hh_prime_hash.as_ref();
         assert_eq!(hh_hash, hh_prime_hash);
 
-        // Updating the HH clone shouldn't affect the original.
         hh_prime.add_raw(b"goodbye");
         assert_eq!(hh.current_hash().as_ref(), hh_hash);
         assert_ne!(hh_prime.current_hash().as_ref(), hh_hash);
