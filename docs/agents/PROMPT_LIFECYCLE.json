@@ -534,6 +534,17 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Preparation-only profile; alias reuse never grants write authority. A later exact merged allocation/prompt lifecycle is required before implementation."
+    },
+    {
+      "prompt_id": "OTV2_REFERENCE_INVESTIGATOR",
+      "path": "docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "reference-first-read-only-investigation",
+      "scope": "Parameterized read-only Global Reference investigation across world, combat, character, NPC, movement, durability, evidence and QA lanes; may use public primary/structured/community/OTS sources according to the #486 source registry but grants no tracked-file, control-plane, implementation, merge, production or cross-repository write authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive #486 research accelerator; it supersedes no implementation, lane-lead, coordinator or auditor prompt. Alias reuse never grants write authority."
     }
   ]
 }
