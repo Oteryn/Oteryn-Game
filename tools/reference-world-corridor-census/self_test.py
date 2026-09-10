@@ -115,6 +115,19 @@ def test_boundaries_floor_order_losslessness_and_stream_framing():
     assert not any(isinstance(value, bytes) for value in summary.values())
 
 
+def test_empty_window_has_canonical_empty_stream():
+    window = census.Window("empty", 10, 20, -7, "s", "r")
+    summary = census.measure_window(Producer(), object(), window, [])
+
+    assert summary["tile_records"] == 0
+    assert summary["ordered_presentations"] == 0
+    assert summary["aggregate_encoded_byte_count"] == 0
+    assert summary["max_record_encoded_bytes"] == 0
+    assert summary["ordered_stream_sha256"] == hashlib.sha256(b"").hexdigest()
+    assert summary["window_expansion_required"] == []
+    assert summary["window_result"] == "PASS"
+
+
 def test_transition_structure_and_determinism():
     dest = SimpleNamespace(x=8, y=9, z=6)
     nested = item(4, house_door_id=2)
@@ -299,6 +312,7 @@ def test_loaded_module_origin_outside_pinned_tree_fails_closed():
 
 def main():
     test_boundaries_floor_order_losslessness_and_stream_framing()
+    test_empty_window_has_canonical_empty_stream()
     test_transition_structure_and_determinism()
     test_checked_overflow_and_digest_failure()
     test_edge_occupancy_is_not_automatic_expansion()
