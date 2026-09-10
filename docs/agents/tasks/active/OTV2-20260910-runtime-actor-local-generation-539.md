@@ -105,7 +105,9 @@ Both findings are accepted. The first independent review is no longer sufficient
 
 ### Exact-head CI
 
-- final head: pending final metadata commit/readback
+- architecture repair head: `5f7d6fa60c838f35fa5874f4a1b6afedb8e6f386`
+- repair task-record head: `2cc1a07ab701e860a868be8daf738eb8de9084ad`
+- final head: pending this self-review checkpoint commit/readback
 - trigger source: pull_request #541
 - workflow/run/job: pending new exact-head generation after repair
 - runner assignment: pending
@@ -114,10 +116,12 @@ Both findings are accepted. The first independent review is no longer sufficient
 
 ## Self-review
 
-- exact head: pending final metadata commit/readback
+- architecture repair head: `5f7d6fa60c838f35fa5874f4a1b6afedb8e6f386`
+- repair task-record head: `2cc1a07ab701e860a868be8daf738eb8de9084ad`
+- final metadata head: pending this checkpoint commit/readback
 - method/reviewer: authoring supervising architect, complete two-file diff
-- material findings: pre-repair self-review was superseded by independent P1/P2 findings; both are now repaired and require fresh final-head self-review
-- verdict: pending
+- material findings: the architecture text addresses P1 with immutable one-to-one logical ID/slot binding and P2 with an exhaustion-only terminal slot-state mutation; no remaining P0/P1/P2 author-side finding
+- verdict: `PASS_FOR_FRESH_INDEPENDENT_EXACT_HEAD_REVIEW`; this author-role result does not satisfy independent review
 
 ## Independent review
 
@@ -162,5 +166,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: fresh exact-head CI and genuinely independent review after material P1/P2 repair
-next_action: Freeze/read back the repaired PR head, perform complete self-review, resolve only the repaired old threads, then request one fresh exact-head independent review.
+next_action: Freeze/read back the new PR #541 head, resolve only the two content-addressed old threads, complete exact-head CI, then obtain a fresh genuinely independent review.
 ```
