@@ -549,12 +549,17 @@ impl State<ClientConnectionData> for ExpectEncryptedExtensions {
     where
         Self: 'm,
     {
+        #[cfg(feature = "std")]
+        let resource_owner = m.decoded_owner().map(|owner| owner.owner());
         let exts = require_handshake_msg!(
             m,
             HandshakeType::EncryptedExtensions,
             HandshakePayload::EncryptedExtensions
         )?;
         debug!("TLS1.3 encrypted extensions: {exts:?}");
+        #[cfg(feature = "std")]
+        self.transcript.try_add_message(&m)?;
+        #[cfg(not(feature = "std"))]
         self.transcript.add_message(&m);
 
         validate_encrypted_extensions(cx.common, &self.hello, exts)?;
@@ -630,11 +635,57 @@ impl State<ClientConnectionData> for ExpectEncryptedExtensions {
                         .set_handshake_encrypter(cx.common);
                 }
 
-                cx.common.peer_certificates = Some(
-                    resuming_session
-                        .server_cert_chain()
-                        .clone(),
-                );
+                #[cfg(feature = "std")]
+                {
+                    if let Some(owner) = resource_owner {
+                        let source = resuming_session.server_cert_chain();
+                        let outer = source
+                            .0
+                            .len()
+                            .checked_mul(core::mem::size_of::<pki_types::CertificateDer<'static>>())
+                            .ok_or(InvalidMessage::MessageTooLarge)?;
+                        let bytes = source.0.iter().try_fold(outer, |total, certificate| {
+                            total
+                                .checked_add(certificate.as_ref().len())
+                                .ok_or(InvalidMessage::MessageTooLarge)
+                        })?;
+                        let custody =
+                            crate::msgs::codec::DirectDecodedCustody::reserve(owner, bytes)?;
+                        let mut certificates = Vec::with_capacity(source.0.len());
+                        if certificates.capacity() != source.0.len() {
+                            drop(certificates);
+                            drop(custody);
+                            return Err(InvalidMessage::MessageTooLarge.into());
+                        }
+                        for certificate in &source.0 {
+                            let expected = certificate.as_ref().len();
+                            let copied = crate::msgs::codec::exact_vec_copy(certificate.as_ref());
+                            if copied.capacity() != expected {
+                                drop(copied);
+                                drop(certificates);
+                                drop(custody);
+                                return Err(InvalidMessage::MessageTooLarge.into());
+                            }
+                            certificates.push(pki_types::CertificateDer::from(copied));
+                        }
+                        cx.common.peer_certificates = Some(CertificateChain(certificates));
+                        cx.common.peer_certificate_custody = Some(custody.into());
+                    } else {
+                        cx.common.peer_certificates = Some(
+                            resuming_session
+                                .server_cert_chain()
+                                .clone(),
+                        );
+                    }
+                }
+                #[cfg(not(feature = "std"))]
+                {
+                    cx.common.peer_certificates = Some(
+                        resuming_session
+                            .server_cert_chain()
+                            .clone(),
+                    );
+                }
                 cx.common.handshake_kind = Some(HandshakeKind::Resumed);
 
                 // We *don't* reverify the certificate chain here: resumption is a
