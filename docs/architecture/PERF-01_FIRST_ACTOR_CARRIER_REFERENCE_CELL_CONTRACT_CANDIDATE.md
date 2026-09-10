@@ -150,14 +150,15 @@ After finding the first reproducible saturation, run a continuous 30-minute soak
 
 ## 8. Deriving and validating candidate admission `M`
 
-Let `S` be the measured saturation population accepted by the rules above. The first RL-01 candidate is:
+Let `S` be the measured saturation population accepted by the rules above, and let `P` be the highest lower tested population that passed every objective in all repetitions and in the required 30-minute soak. The first RL-01 candidate is:
 
 ```text
 M <= floor(0.70 × S)
+M <= P
 M <= every other accepted coupled resource limit
 ```
 
-Use checked integer arithmetic. The evidence packet identifies the selected lower bound and its owner. `M` is total authoritative active actor slots across all three kinds, not players, creatures or AI actors alone. This document selects no numeric `S` or `M` and does not mutate `RESOURCE_LIMITS_REGISTRY.json`.
+Use checked integer arithmetic. The qualified passing-population cap prevents a coarse progressive step from placing `M` above directly passing and soaked evidence. The evidence packet identifies the selected lower bound and its owner. `M` is total authoritative active actor slots across all three kinds, not players, creatures or AI actors alone. This document selects no numeric `S`, `P` or `M` and does not mutate `RESOURCE_LIMITS_REGISTRY.json`.
 
 Before `M` can be proposed for registry acceptance, an exact configured-maximum run must prove:
 
