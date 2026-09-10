@@ -8,19 +8,34 @@ allocator, ECS, wire identity, capacity maximum, or runtime module layout.
 
 from __future__ import annotations
 
+import struct
 from dataclasses import dataclass, replace
 from enum import IntEnum
 from typing import Iterator, Optional
 
 U64_MAX = (1 << 64) - 1
 
-# Explicit fixed-width logical layouts used only for deterministic structural
-# accounting. These are not Python object-size or process-RSS measurements.
-ACTOR_REF_LOGICAL_BYTES = 40  # WorldId, ChannelId, scope gen, local id, actor gen.
-FUSED_BUCKET_LOGICAL_BYTES = 64
-SPLIT_RECORD_LOGICAL_BYTES = 56
-SPLIT_INDEX_ENTRY_LOGICAL_BYTES = 24
-SPLIT_GENERATION_ENTRY_LOGICAL_BYTES = 16
+# Explicit network-order fixed-width logical layouts used only for deterministic
+# structural accounting. They are synthetic evidence formats, not Python object
+# size, process RSS, Rust ABI, wire protocol, or a production storage decision.
+#
+# ActorRef: WorldId, ChannelId, scope generation, local id, actor generation.
+ACTOR_REF_STRUCT = struct.Struct(">QQQQQ")
+# Fused bucket: five u64 identity/generation fields; x/y/z i32; kind/actionable
+# u8; ten reserved padding bytes so every candidate bucket is exactly 64 bytes.
+FUSED_BUCKET_STRUCT = struct.Struct(">QQQQQiiiBB10x")
+# Split record carries the same fields with two reserved bytes to 56 bytes.
+SPLIT_RECORD_STRUCT = struct.Struct(">QQQQQiiiBB2x")
+# Split index entry: local id, actor generation, fixed slot locator.
+SPLIT_INDEX_ENTRY_STRUCT = struct.Struct(">QQQ")
+# Separate generation-history candidate: local id + retired generation.
+SPLIT_GENERATION_ENTRY_STRUCT = struct.Struct(">QQ")
+
+ACTOR_REF_LOGICAL_BYTES = ACTOR_REF_STRUCT.size
+FUSED_BUCKET_LOGICAL_BYTES = FUSED_BUCKET_STRUCT.size
+SPLIT_RECORD_LOGICAL_BYTES = SPLIT_RECORD_STRUCT.size
+SPLIT_INDEX_ENTRY_LOGICAL_BYTES = SPLIT_INDEX_ENTRY_STRUCT.size
+SPLIT_GENERATION_ENTRY_LOGICAL_BYTES = SPLIT_GENERATION_ENTRY_STRUCT.size
 
 EMPTY = 0
 ACTIVE = 1
