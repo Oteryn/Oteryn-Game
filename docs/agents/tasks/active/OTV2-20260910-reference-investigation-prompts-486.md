@@ -4,8 +4,9 @@
 task_id: OTV2-20260910-reference-investigation-prompts-486
 title: Register reusable Reference investigation prompt and operator runbook
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
+issue: 486
 base_branch: main
 branch: docs/reference-investigator-486
 pr: null
@@ -57,17 +58,17 @@ Register one reusable read-only Reference investigator prompt with eight short l
 
 ## Acceptance criteria
 
-- [ ] One reusable prompt `OTV2_REFERENCE_INVESTIGATOR` exists with aliases `Oteryn: ref world|combat|char|npc|move|durability|evidence|qa`.
-- [ ] Alias is explicitly read-only and cannot become a second #162 control plane or implementation writer.
-- [ ] Source registry separates Oteryn project truth from external Reference evidence strength.
-- [ ] CipSoft official remains primary external evidence for exact rules/chronology/conflicts.
-- [ ] Tibia Wiki is first-class `STRUCTURED_REFERENCE_DATA` for bulk content extraction and field-level cross-check.
-- [ ] Canary/Crystal/legacy OTS remain `OTS_HYPOTHESIS_ONLY` regardless of cross-OTS consensus.
-- [ ] Target cut remains the accepted post-2026-07-28 Global boundary; post-target data requires continuity analysis.
-- [ ] Operator runbook gives exact recommended aliases, wave ordering and effort levels.
-- [ ] Existing #511/#525, #507, WP3/#356, WP4/#335 and other implementation lineages are not mutated or replaced.
+- [x] One reusable prompt `OTV2_REFERENCE_INVESTIGATOR` exists with aliases `Oteryn: ref world|combat|char|npc|move|durability|evidence|qa`.
+- [x] Alias is explicitly read-only and cannot become a second #162 control plane or implementation writer.
+- [x] Source registry separates Oteryn project truth from external Reference evidence strength.
+- [x] CipSoft official remains primary external evidence for exact rules/chronology/conflicts.
+- [x] Tibia Wiki is first-class `STRUCTURED_REFERENCE_DATA` for bulk content extraction and field-level cross-check.
+- [x] Canary/Crystal/legacy OTS remain `OTS_HYPOTHESIS_ONLY` regardless of cross-OTS consensus.
+- [x] Target cut remains the accepted post-2026-07-28 Global boundary; post-target data requires continuity analysis.
+- [x] Operator runbook gives exact recommended aliases, wave ordering and effort levels.
+- [x] Existing #511/#525, #507, WP3/#356, WP4/#335 and other implementation lineages are not mutated or replaced.
 - [ ] `PROMPT_LIFECYCLE.json` remains valid JSON and registers the new prompt exactly once.
-- [ ] Prompt README exposes the new reusable alias family.
+- [x] Prompt README exposes the new reusable alias family.
 - [ ] Repository Agent Governance / Architecture Semantic Audit / Merge Gate are green on the final exact head.
 - [ ] Whole-diff self-review has no open material P0/P1/P2 finding.
 
@@ -101,7 +102,7 @@ Structured/wiki data is decomposed to atomic fields. Wiki/OTS consensus may effi
 
 ### Focused
 
-- command/run: pending after lifecycle/README registration
+- command/run: pending PR/governance validation
 - result: pending
 
 ### Component/integration
@@ -150,10 +151,10 @@ Structured/wiki data is decomposed to atomic fields. Wiki/OTS consensus may effi
 ## Context checkpoint
 
 ```yaml
-last_progress: new parameterized prompt, source registry and operator runbook authored on the dedicated docs branch
-status: implementing
+last_progress: prompt/source registry/operator runbook/lifecycle/README authored on the dedicated docs branch; task bound to issue 486
+status: validating
 branch: docs/reference-investigator-486
-head_sha: pending final registration edits
+head_sha: pending final exact candidate
 pr: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -172,5 +173,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: register the reusable prompt in lifecycle/README, validate and open the docs-only PR
+next_action: open the docs-only PR and consume exact-head governance/semantic/merge-gate results
 ```
