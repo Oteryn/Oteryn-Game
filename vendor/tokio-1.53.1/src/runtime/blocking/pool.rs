@@ -143,6 +143,30 @@ impl OwnedQueue {
             self.next.as_deref_mut()?.find_mut(owner)
         }
     }
+
+    fn remove_if_idle(
+        head: &mut Option<Box<OwnedQueue>>,
+        owner: &Arc<dyn BlockingOwner>,
+    ) -> bool {
+        let remove_head = match head.as_ref() {
+            Some(queue) => {
+                queue.queue_charge.same_owner(owner)
+                    && !queue.worker_running
+                    && queue.queue.is_empty()
+            }
+            None => return false,
+        };
+
+        if remove_head {
+            let mut removed = head.take().expect("owned queue head checked above");
+            *head = removed.next.take();
+            true
+        } else if let Some(queue) = head.as_deref_mut() {
+            Self::remove_if_idle(&mut queue.next, owner)
+        } else {
+            false
+        }
+    }
 }
 
 pub(crate) struct Task {
@@ -347,6 +371,12 @@ impl Spawner {
             .and_then(|queue| queue.find_mut(&owner))
             .is_none()
         {
+            if self.inner.metrics.num_threads() >= self.inner.thread_cap {
+                return Err(OwnedSpawnError::ThreadSpawn(io::Error::new(
+                    io::ErrorKind::WouldBlock,
+                    "owned blocking worker would exceed runtime thread cap",
+                )));
+            }
             let bytes = config
                 .queue_capacity
                 .checked_mul(std::mem::size_of::<Task>())
@@ -373,12 +403,20 @@ impl Spawner {
             .and_then(|queue| queue.find_mut(&owner))
             .expect("owned queue initialized");
         if queue.limit != config.queue_capacity {
+            OwnedQueue::remove_if_idle(&mut shared.owned_queues, &owner);
             return Err(OwnedSpawnError::InvalidConfiguration);
         }
         // This check intentionally precedes construction of the task future and
         // the generic task Cell reservation/allocation.
         if queue.queue.len() == queue.limit {
             return Err(OwnedSpawnError::QueueFull);
+        }
+        if !queue.worker_running && self.inner.metrics.num_threads() >= self.inner.thread_cap {
+            OwnedQueue::remove_if_idle(&mut shared.owned_queues, &owner);
+            return Err(OwnedSpawnError::ThreadSpawn(io::Error::new(
+                io::ErrorKind::WouldBlock,
+                "owned blocking worker would exceed runtime thread cap",
+            )));
         }
 
         let id = task::Id::next();
@@ -388,20 +426,29 @@ impl Spawner {
             SpawnMeta::new_unnamed(fn_size),
             id.as_u64(),
         );
-        let (task, handle) = task::unowned_oteryn(
+        let (task, handle) = match task::unowned_oteryn(
             fut,
             BlockingSchedule::new(rt),
             id,
             task::SpawnLocation::capture(),
             owner.clone(),
-        )?;
-        self.spawn_owned_task_locked(
+        ) {
+            Ok(pair) => pair,
+            Err(error) => {
+                OwnedQueue::remove_if_idle(&mut shared.owned_queues, &owner);
+                return Err(error);
+            }
+        };
+        if let Err(error) = self.spawn_owned_task_locked(
             &mut shared,
             Task::new(task, Mandatory::NonMandatory),
             rt,
-            owner,
+            owner.clone(),
             config,
-        )?;
+        ) {
+            OwnedQueue::remove_if_idle(&mut shared.owned_queues, &owner);
+            return Err(error);
+        }
         Ok(handle)
     }
 
@@ -420,6 +467,13 @@ impl Spawner {
             .expect("owned queue initialized")
             .worker_running;
         if !worker_running {
+            if self.inner.metrics.num_threads() >= self.inner.thread_cap {
+                task.task.shutdown();
+                return Err(OwnedSpawnError::ThreadSpawn(io::Error::new(
+                    io::ErrorKind::WouldBlock,
+                    "owned blocking worker would exceed runtime thread cap",
+                )));
+            }
             let Some(bookkeeping) = std::mem::size_of::<thread::JoinHandle<()>>()
                 .checked_add(std::mem::size_of::<usize>())
                 .and_then(|value| value.checked_add(config.worker_stack_size))
@@ -471,6 +525,7 @@ impl Spawner {
                     // handle avoids uncharged HashMap growth; shutdown is tracked by
                     // the existing sender held by the worker.
                     drop(handle);
+                    self.inner.metrics.inc_num_threads();
                     shared.worker_thread_index += 1;
                     shared
                         .owned_queues
@@ -534,33 +589,13 @@ impl Spawner {
             all(loom, not(test)), // the function is covered by loom tests
             test
         ), allow(dead_code))]
-        pub(crate) fn spawn_mandatory_blocking<F, R>(&self, rt: &Handle, func: F) -> Option<JoinHandle<R>>
+        pub(crate) fn spawn_mandatory_blocking<F, R>(func: F) -> Option<JoinHandle<R>>
         where
             F: FnOnce() -> R + Send + 'static,
             R: Send + 'static,
         {
-            let fn_size = std::mem::size_of::<F>();
-            let (join_handle, spawn_result) = if fn_size > BOX_FUTURE_THRESHOLD {
-                self.spawn_blocking_inner(
-                    Box::new(func),
-                    Mandatory::Mandatory,
-                    SpawnMeta::new_unnamed(fn_size),
-                    rt,
-                )
-            } else {
-                self.spawn_blocking_inner(
-                    func,
-                    Mandatory::Mandatory,
-                    SpawnMeta::new_unnamed(fn_size),
-                    rt,
-                )
-            };
-
-            if spawn_result.is_ok() {
-                Some(join_handle)
-            } else {
-                None
-            }
+            let rt = Handle::current();
+            rt.inner.blocking_spawner().spawn_mandatory_blocking(&rt, func)
         }
     }
 
@@ -610,8 +645,11 @@ impl Spawner {
         if self.inner.metrics.num_idle_threads() == 0 {
             // No threads are able to process the task.
 
-            if self.inner.metrics.num_threads() == self.inner.thread_cap {
-                // At max number of threads
+            if self.inner.metrics.num_threads() >= self.inner.thread_cap {
+                // An owned worker may be the thread holding the final shared
+                // runtime slot. Wake one so it can hand the same physical thread
+                // to the ordinary queue without transiently exceeding the cap.
+                self.inner.owned_condvar.notify_one();
             } else {
                 assert!(shared.shutdown_tx.is_some());
                 let shutdown_tx = shared.shutdown_tx.clone();
@@ -701,7 +739,7 @@ fn is_temporary_os_thread_error(error: &io::Error) -> bool {
 }
 
 impl Inner {
-    fn run_owned(&self, _worker_thread_id: usize, owner: Arc<dyn BlockingOwner>) {
+    fn run_owned(&self, worker_thread_id: usize, owner: Arc<dyn BlockingOwner>) {
         if let Some(f) = &self.after_start {
             f();
         }
@@ -719,18 +757,7 @@ impl Inner {
                 shared = self.shared.lock();
             }
 
-            if shared.shutdown {
-                loop {
-                    let task = shared
-                        .owned_queues
-                        .as_deref_mut()
-                        .and_then(|queue| queue.find_mut(&owner))
-                        .and_then(|queue| queue.queue.pop_front());
-                    let Some(task) = task else { break };
-                    drop(shared);
-                    task.shutdown_or_run_if_mandatory();
-                    shared = self.shared.lock();
-                }
+            if shared.shutdown || !shared.queue.is_empty() {
                 break;
             }
 
@@ -749,12 +776,42 @@ impl Inner {
                 break;
             }
         }
+
+        if shared.shutdown {
+            loop {
+                let task = shared
+                    .owned_queues
+                    .as_deref_mut()
+                    .and_then(|queue| queue.find_mut(&owner))
+                    .and_then(|queue| queue.queue.pop_front());
+                let Some(task) = task else { break };
+                drop(shared);
+                task.shutdown_or_run_if_mandatory();
+                shared = self.shared.lock();
+            }
+        }
+
         if let Some(queue) = shared
             .owned_queues
             .as_deref_mut()
             .and_then(|queue| queue.find_mut(&owner))
         {
             queue.worker_running = false;
+        }
+        OwnedQueue::remove_if_idle(&mut shared.owned_queues, &owner);
+
+        if !shared.queue.is_empty() {
+            // Keep the already-counted physical thread instead of decrementing
+            // and spawning a replacement. This prevents both ordinary-work
+            // starvation and a transient thread_cap oversubscription.
+            drop(shared);
+            self.run_after_start(worker_thread_id);
+            return;
+        }
+
+        self.metrics.dec_num_threads();
+        if shared.shutdown && self.metrics.num_threads() == 0 {
+            self.condvar.notify_one();
         }
         if shared.shutdown {
             self.owned_condvar.notify_one();
@@ -771,6 +828,10 @@ impl Inner {
             f();
         }
 
+        self.run_after_start(worker_thread_id);
+    }
+
+    fn run_after_start(&self, worker_thread_id: usize) {
         let mut shared = self.shared.lock();
         let mut join_on_thread = None;
         // is this thread currently counted in `num_idle_threads`?
