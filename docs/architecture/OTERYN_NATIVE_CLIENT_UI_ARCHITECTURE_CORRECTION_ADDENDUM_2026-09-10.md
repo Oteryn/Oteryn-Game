@@ -795,7 +795,13 @@ Any material content change invalidates the previous correction review and requi
 
 ## 25. Terminal state
 
-Until a fresh independent exact-head review returns `KEEP`, the correction is lawfully integrated through Merge Queue and protected readback is complete:
+Until **all** of the following are true:
+
+1. a fresh independent exact-head review returns `KEEP` with zero unresolved material findings;
+2. the correction is integrated through the normal Merge Queue with the required `merge_group` aggregate gate successful;
+3. protected-main readback confirms the integrated correction bytes;
+
+the state remains:
 
 ```text
 UI_ARCHITECTURE_CORRECTION = IN_REVIEW
@@ -805,4 +811,4 @@ FIXED_FOV_POLICY = UNDECIDED
 ADDON_PLATFORM = DEFERRED_FUTURE_CONCEPT
 ```
 
-After clean review + protected integration/readback, the architecture blocker is removed. P1 still requires fresh shared-workspace ownership allocation before mutation.
+After those three correction conditions are satisfied, the architecture blocker is removed. P1 still requires a fresh shared-workspace ownership census and explicit allocation before mutation.
