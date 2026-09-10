@@ -177,7 +177,13 @@ where
 
 fn validate_policy<R, const N: usize>(
     policy: &FiniteProgressionPolicy<R, N>,
-) -> Result<(), ProgressionCalculationError> {
+) -> Result<(), ProgressionCalculationError>
+where
+    R: PartialEq,
+{
+    if &policy.context.declaration != &policy.declared_difference_revision {
+        return Err(ProgressionCalculationError::RevisionMismatch);
+    }
     if N < 2 || policy.death_loss_numerator < 0 || policy.death_loss_denominator <= 0 {
         return Err(ProgressionCalculationError::InvalidPolicy);
     }
