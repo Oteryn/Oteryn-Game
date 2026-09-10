@@ -53,6 +53,8 @@ pub enum InputError {
     },
     /// A chord contains the same input more than once.
     DuplicateChordInput,
+    /// Modifier keys belong in the modifier snapshot, not the chord atoms.
+    ModifierChordInput,
     /// A wheel impulse must be the sole non-modifier input in its chord.
     InvalidWheelChord,
     /// Context identifiers must be unique.
@@ -111,6 +113,9 @@ impl Display for InputError {
             }
             Self::DuplicateChordInput => {
                 formatter.write_str("input chord contains a duplicate input")
+            }
+            Self::ModifierChordInput => {
+                formatter.write_str("modifier keys must use the chord modifier snapshot")
             }
             Self::InvalidWheelChord => {
                 formatter.write_str("wheel direction must be the sole input in a chord")

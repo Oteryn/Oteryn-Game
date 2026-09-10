@@ -94,3 +94,26 @@ Only normal authorized Merge Queue, merge_group proof and protected-main readbac
 establish integration. Runtime repair reversals are bounded to these existing client
 seams; no data/schema migration or server rollback is introduced. UI-P1 still requires
 its separate architecture acceptance and shared-workspace allocation.
+
+## Observed first negative population and input correction
+
+At exact candidate `8ceb0fc57a43c30e5bbf84fb989a03d393022ac9`, Merge gate run
+`34534642921`, Linux job `103063412799`, build and strict Clippy succeeded.
+The three new adapter/router regression tests all failed with zero actions where one
+start was required; the 11 existing adapter tests passed. This is observed Rust
+execution, not source-only inference. Cargo stopped at this failing package, so the
+renderer negative tests were not executed in this population.
+
+The next delta corrects the input contract: modifier usages remain normalized events
+but are excluded from non-modifier chord atoms; invalid modifier-atom bindings return
+`ModifierChordInput`; changed modifier snapshots cancel incompatible active actions
+before new routing. Existing consumers are qualified by workspace compilation/tests;
+no serialized binding format or product keymap exists or is changed by this repair.
+Additional tests cover every supported modifier side, malformed binding shapes,
+exact release counts and the four-non-modifier chord limit.
+
+The initial population also exposed an incorrect PR heading (`Owned scope` instead of
+the required `Scope`) and one Rustfmt import-line difference. These are authoring
+mistakes, not intended runtime failures; both are corrected without policy changes.
+Renderer generation repair remains pending its negative test population. This
+intermediate candidate is still not ready for integration.

@@ -1,6 +1,4 @@
-use crate::{
-    RendererError, SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState,
-};
+use crate::{RendererError, SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState};
 use oteryn_foundation::ProcessGeneration;
 
 pub struct WindowsRenderer<T>
