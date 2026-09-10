@@ -62,22 +62,32 @@ fn geometric_capacity(current: usize, needed: usize) -> Result<usize, InvalidMes
 }
 
 #[cfg(feature = "std")]
-fn exact_grown_bytes(old: &[u8], extra: &[u8], capacity: usize) -> Vec<u8> {
-    let len = old.len() + extra.len();
-    debug_assert!(len <= capacity);
-
-    let mut backing = Box::<[u8]>::new_uninit_slice(capacity);
-    for slot in backing.iter_mut() {
-        slot.write(0);
+fn exact_grown_bytes(
+    old: &[u8],
+    extra: &[u8],
+    capacity: usize,
+) -> Result<Vec<u8>, InvalidMessage> {
+    let len = old
+        .len()
+        .checked_add(extra.len())
+        .ok_or(InvalidMessage::MessageTooLarge)?;
+    if len > capacity {
+        return Err(InvalidMessage::MessageTooLarge);
     }
-    // SAFETY: every slot was initialized immediately above.
-    let mut backing = unsafe { backing.assume_init() };
-    backing[..old.len()].copy_from_slice(old);
-    backing[old.len()..len].copy_from_slice(extra);
-    let mut values = backing.into_vec();
-    values.truncate(len);
-    debug_assert_eq!(values.capacity(), capacity);
-    values
+
+    // The reservation is acquired by the caller before this allocation. On
+    // pinned Rust 1.94 `Vec::with_capacity` requests the exact u8 capacity;
+    // fail closed if the allocator-facing capacity ever drifts.
+    let mut values = Vec::with_capacity(capacity);
+    if values.capacity() != capacity {
+        return Err(InvalidMessage::MessageTooLarge);
+    }
+    values.extend_from_slice(old);
+    values.extend_from_slice(extra);
+    if values.capacity() != capacity {
+        return Err(InvalidMessage::MessageTooLarge);
+    }
+    Ok(values)
 }
 
 #[cfg(feature = "std")]
@@ -254,7 +264,7 @@ impl HandshakeHashBuffer {
 
         let target = geometric_capacity(self.buffer.capacity(), needed)?;
         let prospective = TranscriptCustody::reserve(owner, target)?;
-        let replacement = exact_grown_bytes(&self.buffer, buf, target);
+        let replacement = exact_grown_bytes(&self.buffer, buf, target)?;
         let old_buffer = mem::replace(&mut self.buffer, replacement);
         let old_custody = self.buffer_custody.replace(prospective);
         drop(old_buffer);
@@ -411,8 +421,12 @@ impl HandshakeHash {
     #[cfg(feature = "std")]
     pub(crate) fn try_add_message(&mut self, m: &Message<'_>) -> Result<&mut Self, InvalidMessage> {
         match &m.payload {
-            MessagePayload::Handshake { encoded, .. } => self.try_add_raw(encoded.bytes())?,
-            MessagePayload::HandshakeFlight(payload) => self.try_add_raw(payload.bytes())?,
+            MessagePayload::Handshake { encoded, .. } => {
+                self.try_add_raw(encoded.bytes())?;
+            }
+            MessagePayload::HandshakeFlight(payload) => {
+                self.try_add_raw(payload.bytes())?;
+            }
             _ => {}
         }
         Ok(self)
@@ -454,7 +468,7 @@ impl HandshakeHash {
             if needed > buffer.capacity() {
                 let target = geometric_capacity(buffer.capacity(), needed)?;
                 let prospective = TranscriptCustody::reserve(owner, target)?;
-                let replacement = exact_grown_bytes(buffer, buf, target);
+                let replacement = exact_grown_bytes(buffer, buf, target)?;
                 let buffer = self.client_auth.as_mut().unwrap();
                 let old_buffer = mem::replace(buffer, replacement);
                 let old_custody = self.client_auth_custody.replace(prospective);
@@ -549,6 +563,9 @@ impl HandshakeHash {
             .ok_or(InvalidMessage::MessageTooLarge)?;
         let custody = TranscriptCustody::reserve(owner.clone(), bytes)?;
         let mut buffer = Vec::with_capacity(bytes);
+        if buffer.capacity() != bytes {
+            return Err(InvalidMessage::MessageTooLarge);
+        }
         old_handshake_hash_msg.encode(&mut buffer);
         if buffer.len() != bytes || buffer.capacity() != bytes {
             drop(buffer);
