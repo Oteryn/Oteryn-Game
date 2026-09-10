@@ -18,7 +18,7 @@ use crate::webpki::{VerifierBuilderError, parse_crls, verify_server_name};
 use crate::{ConfigBuilder, ServerConfig, crypto};
 use crate::{Error, RootCertStore, SignatureScheme};
 
-/// A builder for configuring a `webpki` server certificate verifier.
+/// A builder for configuring the `webpki` server certificate verifier.
 ///
 /// For more information, see the [`WebPkiServerVerifier`] documentation.
 #[derive(Debug, Clone)]
@@ -64,7 +64,7 @@ impl ServerCertVerifierBuilder {
     /// status for each certificate in the verified chain built to a trust anchor
     /// (excluding the trust anchor itself).
     ///
-    /// If no CRLs are provided then this setting has no effect. Neither the end entity certificate
+    /// If CRLs are provided then this setting has no effect. Neither the end entity certificate
     /// or any intermediates will have revocation status checked.
     pub fn only_check_end_entity_revocation(mut self) -> Self {
         self.revocation_check_depth = RevocationCheckDepth::EndEntity;
@@ -298,6 +298,34 @@ impl ServerCertVerifier for WebPkiServerVerifier {
     fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
         self.supported.supported_schemes()
     }
+
+    #[cfg(feature = "std")]
+    fn supported_verify_schemes_with_resource_owner(
+        &self,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<(Vec<SignatureScheme>, usize), crate::error::InvalidMessage> {
+        use crate::error::InvalidMessage;
+
+        let len = self.supported.mapping.len();
+        let bytes = len
+            .checked_mul(core::mem::size_of::<SignatureScheme>())
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        if bytes == 0 {
+            return Ok((Vec::new(), 0));
+        }
+
+        owner
+            .try_reserve(bytes)
+            .map_err(|_| InvalidMessage::MessageTooLarge)?;
+        let mut schemes = Vec::with_capacity(len);
+        schemes.extend(self.supported.mapping.iter().map(|item| item.0));
+        if schemes.capacity() != len {
+            drop(schemes);
+            owner.release(bytes);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+        Ok((schemes, bytes))
+    }
 }
 
 #[cfg(test)]
@@ -312,6 +340,40 @@ mod tests {
     use super::{VerifierBuilderError, WebPkiServerVerifier, provider};
     use crate::RootCertStore;
     use crate::sync::Arc;
+    use crate::verify::ServerCertVerifier;
+    use crate::{DeframerBufferError, DeframerBufferOwner, SignatureScheme};
+    use core::sync::atomic::{AtomicUsize, Ordering};
+
+    #[derive(Debug)]
+    struct SchemeOwner {
+        limit: usize,
+        reserved: AtomicUsize,
+        released: AtomicUsize,
+    }
+
+    impl SchemeOwner {
+        fn new(limit: usize) -> Self {
+            Self {
+                limit,
+                reserved: AtomicUsize::new(0),
+                released: AtomicUsize::new(0),
+            }
+        }
+    }
+
+    impl DeframerBufferOwner for SchemeOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), DeframerBufferError> {
+            if bytes > self.limit {
+                return Err(DeframerBufferError);
+            }
+            self.reserved.fetch_add(bytes, Ordering::Relaxed);
+            Ok(())
+        }
+
+        fn release(&self, bytes: usize) {
+            self.released.fetch_add(bytes, Ordering::Relaxed);
+        }
+    }
 
     fn load_crls(crls_der: &[&[u8]]) -> Vec<CertificateRevocationListDer<'static>> {
         crls_der
@@ -342,6 +404,39 @@ mod tests {
             include_bytes!("../../../test-ca/ecdsa-p256/ca.der").as_slice(),
             include_bytes!("../../../test-ca/rsa-2048/ca.der").as_slice(),
         ])
+    }
+
+    #[test]
+    fn owner_aware_supported_schemes_preserve_order_and_precharge_exact_capacity() {
+        let verifier = WebPkiServerVerifier::builder_with_provider(
+            test_roots(),
+            provider::default_provider().into(),
+        )
+        .build()
+        .unwrap();
+        let expected = verifier.supported_verify_schemes();
+        let bytes = expected.len() * core::mem::size_of::<SignatureScheme>();
+        assert!(bytes > 0);
+
+        let funded = Arc::new(SchemeOwner::new(bytes));
+        let (actual, reserved) = verifier
+            .supported_verify_schemes_with_resource_owner(funded.clone())
+            .unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(reserved, bytes);
+        assert_eq!(actual.capacity() * core::mem::size_of::<SignatureScheme>(), bytes);
+        assert_eq!(funded.reserved.load(Ordering::Relaxed), bytes);
+        assert_eq!(funded.released.load(Ordering::Relaxed), 0);
+        drop(actual);
+        funded.release(reserved);
+        assert_eq!(funded.released.load(Ordering::Relaxed), bytes);
+
+        let denied = Arc::new(SchemeOwner::new(bytes - 1));
+        assert!(verifier
+            .supported_verify_schemes_with_resource_owner(denied.clone())
+            .is_err());
+        assert_eq!(denied.reserved.load(Ordering::Relaxed), 0);
+        assert_eq!(denied.released.load(Ordering::Relaxed), 0);
     }
 
     #[test]
