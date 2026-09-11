@@ -41,9 +41,9 @@ The PostgreSQL test target is present on protected main after terminal-replaceme
 
 - when `apps/game-server/tests/durability_postgres.rs` exists on the exact candidate, run it against PostgreSQL 17.6;
 - when the exact PR removes or renames that target, fail the required Linux job;
-- when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
+- when exact base/head target observations prove the target is absent on both revisions, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
 
-Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch make scope explicitly incomplete and select FULL. The downstream PG target classifier still rejects an incomplete comparison, so uncertain target evidence cannot yield a green gate. PR identity movement remains a hard failure.
+Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Upstream scope uses the immutable base/head comparison; larger-than-300-file comparisons, missing arrays or count mismatches select FULL. The downstream PostgreSQL target classifier instead inspects the exact commit trees at base and head, requires complete valid tree evidence, and verifies the checkout's target blob. It does not use the capped comparison as target-presence authority. Both boundaries retain before/after PR identity checks, and uncertain/mismatched target evidence fails closed.
 
 The required governance job executes the focused PG/SIM regressions, including both real classifiers against controlled GitHub responses and job/step failure-tolerance/skip families. The complete Linux and Windows evidence jobs are pinned by SHA256 using the existing canonical-job validation pattern. Future intentional job changes must update their reviewed pins; preserving command strings while inserting an early successful exit cannot pass policy.
 
@@ -66,15 +66,24 @@ Issue #309 re-audits the document-consumer snapshot after five server test addit
 
 Missing classifier, malformed metadata or enumeration select explicit FULL outputs. The aggregate requires successful classification, strict boolean outputs and success for every selected predicate; missing/cancelled/failed/selected-skipped results fail closed. Scope, classifier job, aggregate and evidence-job execution are pinned and mutation-tested.
 
-After #285 protected-main integration proved canonical ownership, rust.yml loses only its redundant PR trigger. Existing main/manual triggers and full Merge Queue qualification remain intact. Actual hosted skip/run and runner/wall-time benchmark evidence belongs on Issue #283/PR #297; staged implementation integration alone does not complete benchmark acceptance.
+After #285 protected-main integration proved canonical ownership, rust.yml lost its redundant PR trigger while retaining main/manual triggers. The rollout evidence on Issue #283/PR #297 is historical; current Merge Queue selection is described separately below. Staged implementation integration alone does not complete benchmark acceptance.
 
 The protected `main` ruleset requires only the stable `game-gate` context. Individual sub-gates are intentionally composed behind it so applicable path-proportional jobs may be skipped without creating missing required-status deadlocks.
 
 ## Current Merge Queue gate
 
-`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group head and requires candidate/governance validation, dependency review, CodeQL, Linux workspace, real PostgreSQL17.6, Windows production client plus deterministic simulation and supply-chain checks before emitting `game-gate`.
+The inspected `.github/workflows/merge-group-gate.yml` at `main@663bd35a5196a925fc6eb0318381ad0b97f4cc2c` is pinned to blob `c59b30fde7538e738346eec03a602081dc4ac2d6`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
 
-Issue #285 activates exactly the workflow blob preapproved by integrated #284. PostgreSQL runs in an unconditional job with a pinned17.6 service, verifies the synthetic head, requires the durability test target and executes it. Windows verifies that same head before its production client and simulation tests. The aggregate requires success from PostgreSQL and Windows; skipped, missing, cancelled or failed results reject integration. The complete queue workflow is pinned by executable policy; intentional changes require a separately reviewed protected-base pin rotation. Current exact-head execution and protected-main integration evidence are recorded on Issue #285/PR #296; source presence alone is not execution evidence. The queue regression suite runs through the existing canonical governance regression driver.
+| Exact queue classification | Selected additional jobs |
+|---|---|
+| Complete, valid diff only of Markdown paths under `docs/architecture/`, with eligible object modes for non-deleted changed paths (`architecture-docs`) | Rust Linux, PostgreSQL, Windows and supply-chain jobs may be skipped |
+| Other, mixed, special-mode, malformed or incomplete classification (`full`) | Linux workspace, real PostgreSQL 17.6, Windows client/SIM and supply chain |
+
+The inline queue classifier reads exact base/head Git evidence, including both sides of renames through `--no-renames`; it is not the PR/post-merge consumer-snapshot classifier. Its `architecture-docs` path predicate does not establish that no runtime consumer reads those documents. Do not describe it as a consumer-closure proof or extend the exception through this documentation. A relevant document-input dependency requires owning control-plane review of the admission assumption; this matrix does not repair or authorize routing changes.
+
+The aggregate accepts only coherent `true/true` or `false/false` selections. Selected jobs must succeed; only unselected jobs may report `skipped`. Missing/failed/cancelled mandatory or selected evidence cannot qualify the candidate. For FULL, PostgreSQL verifies the synthetic head and requires the durability test target; Windows verifies that same head before its build/smoke/SIM commands.
+
+Issue #285/PR #296 records the earlier full-queue rollout, not a claim that the current pinned workflow has unconditional runtime jobs. Workflow or pin changes require their own reviewed control-plane change. Source presence and a docs-only queue PASS are not runtime execution evidence.
 
 ## Current focused validation
 
@@ -106,9 +115,17 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
 - `cargo-deny check --all-features` through the pinned cargo-deny action.
 
+### Client and architecture evidence boundaries
+
+At the inspected revision, `tools/architecture-check/src/lib.rs` validates workspace-local edges and release-role closure. Additional external registry/git and transitive closure evidence is needed when a foundation promises framework/platform/GPU neutrality. The host-default production `cargo tree` checks do not by themselves cover every target/feature combination. Bind such claims to exact package identities, manifests, lockfile, target and feature selection.
+
+The Windows jobs run client build/Clippy, shell smoke, synthetic harness and simulation-determinism tests. They do not execute all client, input-platform or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The shell smoke uses `cargo run` without `--release`, separately from the release build, so it is not a test of the exact release artifact. The inspected shell also exits smoke before renderer construction.
+
+The dedicated architecture semantic workflow selects explicit profiles, not arbitrary architecture Markdown. Record its semantic verdict and selected checks separately from workflow conclusion. On #560 head `db502e473bda60f7cdea2498f5138705c2cf0bea`, run `34562444300` / job `103147774477` passed its dispatcher tests but reported `SEMANTIC_AUDIT_NOT_APPLICABLE` with no UI profile/checks. This was workflow success, not semantic UI PASS or independent KEEP. New or changed coverage requires an allocated implementation change, not reinterpretation of an old green status.
+
 ### Protected-main post-merge lanes (#304)
 
-Standalone `.github/workflows/rust.yml` runs on every push to main, without path filters, and on manual dispatch. Policy and supply chain always run. Issue #311 extends the existing protected-main adapter to omit Linux workspace, PostgreSQL 17.6 and Windows/SIM only for proven neutral documentation. Manual dispatch remains FULL. Merge Queue remains FULL and its workflow and PR `game-gate` are unchanged.
+Standalone `.github/workflows/rust.yml` runs on every push to main, without path filters, and on manual dispatch. Policy and supply chain always run. Issue #311 extended the protected-main adapter to omit all runtime lanes for proven neutral documentation, alongside the existing server-only Windows omission. Manual dispatch remains FULL. This post-merge classifier does not determine Merge Queue selection; the current queue exception is described above.
 
 Only a normal push to protected `refs/heads/main` can omit runtime lanes. The lane job verifies the exact already-protected event SHA, obtains full Git history, checks before/after ancestry, and enumerates the complete tree diff locally (including both rename sides, without the API's 300-file cap). It runs the existing #283 classifier and Cargo metadata from that protected revision, including the reviewed all-consumer snapshot for documentation. It does not trust PR labels/body or the push event's capped commits array. This is post-integration protected code, unlike the PR classifier's untrusted candidate.
 
@@ -145,6 +162,8 @@ Do not create speculative tests for nonexistent runtime layers. Add these when t
 | Tier 3 — production-binary smoke E2E | Exact release-candidate client/server artifacts without the in-process test adapter | release candidate and named packaging/platform gates | broad fault, concurrency or exhaustive gameplay coverage |
 
 A feature or programme selects the smallest sufficient set of tiers, but a supported user journey that includes native-client behavior cannot be marked `PROVEN` from Tier 1 alone. `VSL-01` completion requires the named `QA-E2E-01` evidence in ADR-0007.
+
+A native window rendering and interacting with labelled synthetic UI/world fixtures is useful component qualification, not automatically Tier 2. Tier 2 retains the real journey and production-contract requirements of ADR-0007; Tier 3 retains exact release-artifact identity. Early UI foundation/native-fixture work need not wait for full server E2E, but it must not borrow an E2E tier label or erase required phases with ad hoc `NOT_APPLICABLE` claims.
 
 ## Mandatory E2E evidence
 
