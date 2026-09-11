@@ -69,11 +69,12 @@ Final PR source head:
 
 `3f9eea232e7bd40d2f6a3185b06e7e1d84985328`
 
-Verified exact-head repository runs include:
+Verified exact-head repository evidence includes:
 
 - Merge Gate run `34605243881`: `SUCCESS`;
 - Agent Governance run `34605243742`: `SUCCESS`;
-- Architecture Semantic Audit runs `34605243972` / `34606148951`: `SUCCESS`.
+- Architecture Semantic Audit runs `34605243972` / `34606148951`: `SUCCESS`;
+- independent Codex review on exact head `3f9eea232e...`, comment `5635298280`: no major issues.
 
 The candidate integrated through the native Merge Queue. Real `merge_group` run `34606613550`
 completed `SUCCESS` and produced protected merge commit:
