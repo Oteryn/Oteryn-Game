@@ -1565,12 +1565,27 @@ fn emit_certverify_tls13(
     Ok(())
 }
 
-fn emit_finished_tls13(flight: &mut HandshakeFlightTls13<'_>, verify_data: &crypto::hmac::Tag) {
-    let verify_data_payload = Payload::new(verify_data.as_ref());
-
-    flight.add(HandshakeMessagePayload(HandshakePayload::Finished(
-        verify_data_payload,
+fn emit_finished_tls13(
+    flight: &mut HandshakeFlightTls13<'_>,
+    verify_data: &crypto::hmac::Tag,
+) -> Result<(), Error> {
+    let finished = HandshakeMessagePayload(HandshakePayload::Finished(Payload::Borrowed(
+        verify_data.as_ref(),
     )));
+
+    #[cfg(feature = "std")]
+    {
+        let encoded_len = verify_data
+            .as_ref()
+            .len()
+            .checked_add(4)
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        flight.try_add_exact(finished, encoded_len)?;
+    }
+    #[cfg(not(feature = "std"))]
+    flight.add(finished);
+
+    Ok(())
 }
 
 fn emit_end_of_early_data_tls13(transcript: &mut HandshakeHash, common: &mut CommonState) {
@@ -1639,6 +1654,17 @@ impl State<ClientConnectionData> for ExpectFinished {
         let hash_after_handshake = st.transcript.try_current_hash()?;
         #[cfg(not(feature = "std"))]
         let hash_after_handshake = st.transcript.current_hash();
+
+        #[cfg(feature = "std")]
+        if st.transcript.resource_owner().is_some()
+            && (cx.common.early_traffic || st.client_auth.is_some() || cx.common.is_quic())
+        {
+            return Err(InvalidMessage::UnexpectedMessage(
+                "owner-aware TLS1.3 final flight custody",
+            )
+            .into());
+        }
+
         /* The EndOfEarlyData message to server is still encrypted with early data keys,
          * but appears in the transcript after the server Finished. */
         if cx.common.early_traffic {
@@ -1703,7 +1729,10 @@ impl State<ClientConnectionData> for ExpectFinished {
                 &st.randoms.client,
             );
 
-        emit_finished_tls13(&mut flight, &verify_data);
+        emit_finished_tls13(&mut flight, &verify_data)?;
+        #[cfg(feature = "std")]
+        flight.try_finish_with_custody(cx.common)?;
+        #[cfg(not(feature = "std"))]
         flight.finish(cx.common);
 
         /* We're now sure this server supports TLS1.3.  But if we run out of TLS1.3 tickets

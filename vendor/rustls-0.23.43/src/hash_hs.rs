@@ -404,6 +404,11 @@ impl HandshakeHash {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn resource_owner(&self) -> Option<Arc<dyn DeframerBufferOwner>> {
+        self.resource_owner.clone()
+    }
+
     /// Hash/buffer a handshake message.
     pub(crate) fn add_message(&mut self, m: &Message<'_>) -> &mut Self {
         #[cfg(feature = "std")]

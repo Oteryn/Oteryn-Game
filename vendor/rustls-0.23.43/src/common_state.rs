@@ -12,9 +12,13 @@ use crate::log::{debug, error, warn};
 use crate::msgs::alert::AlertMessagePayload;
 use crate::msgs::base::Payload;
 use crate::msgs::codec::Codec;
+#[cfg(feature = "std")]
+use crate::msgs::codec::DirectDecodedCustody;
 use crate::msgs::enums::{AlertLevel, KeyUpdateRequest};
 use crate::msgs::fragmenter::MessageFragmenter;
-use crate::msgs::handshake::{CertificateChain, HandshakeMessagePayload, ProtocolName};
+use crate::msgs::handshake::{
+    CertificateChain, HandshakeMessagePayload, HandshakePayload, ProtocolName,
+};
 use crate::msgs::message::{
     Message, MessagePayload, OutboundChunks, OutboundOpaqueMessage, OutboundPlainMessage,
     PlainMessage,
@@ -1117,6 +1121,8 @@ impl KxState {
 pub(crate) struct HandshakeFlight<'a, const TLS13: bool> {
     pub(crate) transcript: &'a mut HandshakeHash,
     body: Vec<u8>,
+    #[cfg(feature = "std")]
+    body_custody: Option<OutboundTlsCustody>,
 }
 
 impl<'a, const TLS13: bool> HandshakeFlight<'a, TLS13> {
@@ -1124,6 +1130,8 @@ impl<'a, const TLS13: bool> HandshakeFlight<'a, TLS13> {
         Self {
             transcript,
             body: Vec::new(),
+            #[cfg(feature = "std")]
+            body_custody: None,
         }
     }
 
@@ -1136,12 +1144,194 @@ impl<'a, const TLS13: bool> HandshakeFlight<'a, TLS13> {
 
     pub(crate) fn finish(self, common: &mut CommonState) {
         common.send_msg(
-            Message::new(match TLS13 {
+            Message::new(
+                match TLS13 {
                     true => ProtocolVersion::TLSv1_3,
                     false => ProtocolVersion::TLSv1_2,
-                }, MessagePayload::HandshakeFlight(Payload::new(self.body))),
+                },
+                MessagePayload::HandshakeFlight(Payload::new(self.body)),
+            ),
             TLS13,
         );
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> HandshakeFlight<'a, true> {
+    pub(crate) fn try_add_exact(
+        &mut self,
+        hs: HandshakeMessagePayload<'_>,
+        encoded_len: usize,
+    ) -> Result<(), Error> {
+        let Some(owner) = self.transcript.resource_owner() else {
+            self.add(hs);
+            return Ok(());
+        };
+
+        // #561 is intentionally limited to the ordinary TLS1.3 final Finished
+        // flight.  Any prior flight body is early-data or client-auth material
+        // and remains outside this allocation.
+        if !self.body.is_empty() || self.body_custody.is_some() {
+            return Err(InvalidMessage::UnexpectedMessage(
+                "owner-aware TLS1.3 final flight custody",
+            )
+            .into());
+        }
+        let exact_len = match &hs.0 {
+            HandshakePayload::Finished(payload) => payload
+                .bytes()
+                .len()
+                .checked_add(4)
+                .ok_or(InvalidMessage::MessageTooLarge)?,
+            _ => {
+                return Err(InvalidMessage::UnexpectedMessage(
+                    "owner-aware TLS1.3 final flight custody",
+                )
+                .into());
+            }
+        };
+        if encoded_len != exact_len || exact_len == 0 {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+
+        // Reserve the exact prospective flight backing before allocating it.
+        let custody = OutboundTlsCustody::from_reserved(DirectDecodedCustody::reserve(
+            owner,
+            exact_len,
+        )?);
+        let mut replacement = Vec::with_capacity(exact_len);
+        if replacement.capacity() != exact_len {
+            drop(replacement);
+            drop(custody);
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        hs.encode(&mut replacement);
+        if replacement.len() != exact_len || replacement.capacity() != exact_len {
+            drop(replacement);
+            drop(custody);
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+
+        // Transcript growth is also fallible/owner-aware.  It completes before
+        // the flight body is committed, so denial leaves the old flight intact.
+        let transcript_message = Message::new(
+            ProtocolVersion::TLSv1_3,
+            MessagePayload::HandshakeFlight(Payload::Borrowed(&replacement)),
+        );
+        self.transcript.try_add_message(&transcript_message)?;
+
+        let old_body = core::mem::replace(&mut self.body, replacement);
+        let old_custody = self.body_custody.replace(custody);
+        drop(old_body);
+        drop(old_custody);
+        Ok(())
+    }
+
+    pub(crate) fn try_finish_with_custody(self, common: &mut CommonState) -> Result<(), Error> {
+        if self.transcript.resource_owner().is_none() {
+            self.finish(common);
+            return Ok(());
+        }
+        if !matches!(common.protocol, Protocol::Tcp)
+            || common.early_traffic
+            || common.queued_key_update_message.is_some()
+            || !common.record_layer.is_encrypting()
+        {
+            return Err(InvalidMessage::UnexpectedMessage(
+                "owner-aware TLS1.3 final flight custody",
+            )
+            .into());
+        }
+
+        let HandshakeFlight {
+            transcript: _,
+            body,
+            body_custody,
+        } = self;
+        let Some(body_custody) = body_custody else {
+            return Err(InvalidMessage::UnexpectedMessage(
+                "owner-aware TLS1.3 final flight custody",
+            )
+            .into());
+        };
+        if body.is_empty() || body.capacity() != body_custody.bytes() {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        let owner = body_custody.owner();
+
+        let fragments = common.message_fragmenter.fragment_payload(
+            ContentType::Handshake,
+            ProtocolVersion::TLSv1_3,
+            body.as_slice().into(),
+        );
+        let fragment_count = fragments.len();
+        if fragment_count == 0 {
+            return Err(InvalidMessage::UnexpectedMessage(
+                "owner-aware TLS1.3 final flight custody",
+            )
+            .into());
+        }
+
+        // Refuse key-refresh/refusal boundaries before any queue or record
+        // allocation and before incrementing the record sequence number.
+        for index in 0..fragment_count {
+            let add = u64::try_from(index).map_err(|_| InvalidMessage::MessageTooLarge)?;
+            if common.record_layer.pre_encrypt_action(add) != PreEncryptAction::Nothing {
+                return Err(InvalidMessage::UnexpectedMessage(
+                    "owner-aware TLS1.3 final flight custody",
+                )
+                .into());
+            }
+        }
+
+        let record_bytes = common
+            .message_fragmenter
+            .fragment_payload(
+                ContentType::Handshake,
+                ProtocolVersion::TLSv1_3,
+                body.as_slice().into(),
+            )
+            .try_fold(0usize, |total, fragment| {
+                let record = crate::msgs::message::HEADER_SIZE
+                    .checked_add(common.record_layer.encrypted_len(fragment.payload.len()))
+                    .ok_or(InvalidMessage::MessageTooLarge)?;
+                total
+                    .checked_add(record)
+                    .ok_or(InvalidMessage::MessageTooLarge)
+            })?;
+        let mut record_custody = OutboundTlsCustody::from_reserved(
+            DirectDecodedCustody::reserve(owner.clone(), record_bytes)?,
+        );
+
+        // Reserve queue/control backing after record custody succeeds and before
+        // any record allocation. If queue admission is denied, record custody
+        // is dropped and no encrypted fragment has been constructed.
+        common
+            .sendable_tls
+            .prepare_owned_append(owner, fragment_count)?;
+
+        let fragments = common.message_fragmenter.fragment_payload(
+            ContentType::Handshake,
+            ProtocolVersion::TLSv1_3,
+            body.as_slice().into(),
+        );
+        for fragment in fragments {
+            let record_len = crate::msgs::message::HEADER_SIZE
+                .checked_add(common.record_layer.encrypted_len(fragment.payload.len()))
+                .ok_or(InvalidMessage::MessageTooLarge)?;
+            let chunk_custody = record_custody.split(record_len)?;
+            let opaque = common.record_layer.encrypt_outgoing(fragment);
+            common.queue_tls_message_with_custody(opaque, chunk_custody)?;
+        }
+        if record_custody.bytes() != 0 {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+
+        // Destroy the plaintext flight backing before returning its custody.
+        drop(body);
+        drop(body_custody);
+        drop(record_custody);
+        Ok(())
     }
 }
 
