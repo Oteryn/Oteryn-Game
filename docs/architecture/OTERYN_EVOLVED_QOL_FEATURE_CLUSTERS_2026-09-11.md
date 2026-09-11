@@ -1,5 +1,10 @@
 # Oteryn Evolved QoL Feature Clusters
 
+> **Consolidation notice — 2026-09-11**  
+> This document is retained as the focused QoL-source inventory created from the forum/player-request review.  
+> The broader canonical proposed consolidation is now `OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md`, which maps this QoL inventory together with the historical 128-system Canary roadmap/classification and later forum requests into 19 coherent Oteryn Evolved programmes.  
+> Neither document grants implementation or production authority.
+
 - Date: 2026-09-11
 - Status: **OWNER-REQUESTED PRODUCT DESIGN INVENTORY / PROPOSED / NOT IMPLEMENTATION AUTHORITY**
 - Repository snapshot used for grouping: `Oteryn/Oteryn-Game@90a3f92434e32354ff1aaeac96d038bbc49eba9c`
@@ -9,7 +14,7 @@
 
 ## 1. Purpose
 
-This document consolidates three owner-provided Tibia/Oteryn QoL wishlists into a smaller set of coherent product initiatives. Several source ideas overlap and should be implemented as one reusable system rather than as isolated features.
+This document consolidates three owner-provided QoL wishlists into a smaller set of coherent product initiatives. Several source ideas overlap and should be implemented as one reusable system rather than as isolated features.
 
 The grouping is deliberately product-oriented:
 
