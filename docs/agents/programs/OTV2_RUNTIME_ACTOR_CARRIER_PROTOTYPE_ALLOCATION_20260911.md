@@ -42,9 +42,11 @@ At the current reconciled candidate:
 - protected #537 already completed the synthetic resource-evidence pass; it must not be duplicated;
 - protected #541 accepted `RUNTIME-ACTOR-LOCAL-GENERATION-V1`, including immutable `ActorLocalId` -> logical slot/generation-cell binding within one `ScopeOwnershipGeneration`, checked generation advance before reuse, fail-closed exhaustion, and fail-closed same-generation carrier reconstruction unless the exact generation/binding state is restored from an already-authorized source;
 - protected #541 requires distinct `ActorLocalId` values never to alias one logical slot/generation cell within the same scope generation;
+- protected #541 requires any failed reuse/admission with a representable generation successor to preserve the prior slot lifecycle/generation, indexes, externally resolvable references and all existing actors; the terminal `EXHAUSTED` transition is the sole deliberate failed-allocation state mutation when no successor exists;
 - protected #541 requires local-generation exhaustion to atomically make the exhausted slot terminal for that outer generation, publish no replacement actor/index/current reference, leave all existing actors unchanged, and never select that exhausted slot again;
 - protected #541 requires repeated same-slot churn plus churn/retirement across the configured namespace to prove there is no independently growing retirement/tombstone history and that retained generation-state cardinality remains exactly the configured slot cardinality `M`;
 - protected #541 permits a fresh actor-local namespace only after a legitimately newer outer `ScopeOwnershipGeneration` fences every prior reference; a carrier restart/loss must never reset the namespace while the same outer generation remains authoritative;
+- #530 independently requires checked count/size arithmetic before allocation, max/max+1 rejection before partial actor/index mutation, deterministic direct-lookup work evidence at tested occupancies, and honest physical accounting for slot/record plus lookup/index backing rather than hiding independently growing backing behind an actor-count label;
 - #162 cleanup after protected #548 explicitly retired the premature PERF detour and set `NEXT_PATH: SHARED_CHANNEL_ACTOR_CARRIER_PROTOTYPE_EVIDENCE`;
 - that cleanup explicitly permits a non-production carrier evidence/prototype to establish physical shape, current-owner lookup, and bounded correctness without selecting a production total-actor maximum;
 - #508 Phase A still requires a direct current-owner exact actor lookup and forbids a second Ability-owned actor registry or geometry/spatial scans;
@@ -66,10 +68,14 @@ The prototype must answer only these questions:
 2. Can direct exact lookup accept only the current scope/generation and current actor generation, while deterministically rejecting missing, stale, recycled and cross-scope references?
 3. Can the #541 finite local-slot/generation rule be represented with checked reuse and fail-closed exhaustion without independently growing tombstone/history state?
 4. Can distinct actor-local IDs remain immutably one-to-one with distinct logical slot/generation cells so one ID can never resolve through another ID's cell?
-5. Can same-generation carrier loss/reconstruction either restore the exact actor-local generation/binding state or fail closed, while allowing namespace reset only after a genuinely newer outer `ScopeOwnershipGeneration` fences all prior references?
-6. Can repeated churn across the entire configured namespace keep retained generation/history cardinality exactly bounded by `M`, with no per-retirement growth?
-7. Can a minimal direct lookup expose only the current existence/actionable fact and current authoritative position needed by the first exact-target/local-step proofs, without geometry, scanning or dynamic retargeting?
-8. What is the concrete Rust candidate shape/size and deterministic operation behavior for the tested prototype points, explicitly without converting those points into a production capacity claim?
+5. Can a failed reuse/admission after selecting a reusable slot and deriving a valid generation successor roll back completely when any later admission step fails, without advancing the slot or exposing partial index/reference state?
+6. Can same-generation carrier loss/reconstruction either restore the exact actor-local generation/binding state or fail closed, while allowing namespace reset only after a genuinely newer outer `ScopeOwnershipGeneration` fences all prior references?
+7. Can repeated churn across the entire configured namespace keep retained generation/history cardinality exactly bounded by `M`, with no per-retirement growth?
+8. Can all count/capacity/byte-size composition use checked arithmetic and reject overflow before allocation or authoritative state mutation?
+9. What exact physical slot/record and lookup/index backing exists for the candidate, can either backing grow independently, and how is every exercised retained resource bounded for each tested `M`?
+10. What deterministic direct-lookup work is performed at representative occupancy and every tested candidate `M`, with no scan/enumeration or occupancy-dependent candidate materialization?
+11. Can a minimal direct lookup expose only the current existence/actionable fact and current authoritative position needed by the first exact-target/local-step proofs, without geometry, scanning or dynamic retargeting?
+12. What is the concrete Rust candidate shape/size and deterministic operation behavior for the tested prototype points, explicitly without converting those points into a production capacity claim?
 
 ## Exact owned paths after activation
 
@@ -148,6 +154,8 @@ The actor reference itself is expected binding evidence; it is not allowed to se
 
 A mismatched/stale current `ScopeOwnershipGeneration` must reject even if actor-local identity/generation otherwise matches. A different `WorldId` with the same `ChannelId` must reject. A different `ChannelId` in the same world must reject. A distinct actor-local ID must never be accepted merely because it reaches a slot carrying a matching local generation.
 
+Direct exact lookup must not enumerate actors, materialize a variable candidate collection, depend on hash/thread iteration order, or hide occupancy-dependent scan work. The worker must record deterministic lookup work units for representative occupancy and every tested candidate `M`.
+
 ## Actor-local slot/generation rule
 
 Preserve protected `RUNTIME-ACTOR-LOCAL-GENERATION-V1`:
@@ -157,7 +165,8 @@ Preserve protected `RUNTIME-ACTOR-LOCAL-GENERATION-V1`:
 - two distinct `ActorLocalId` values cannot alias the same logical slot/generation cell within that scope generation;
 - removal retains the slot generation;
 - reuse requires checked generation successor before publication;
-- stale references never resolve after reuse;
+- after selecting a reusable slot and deriving a representable successor, **any later admission failure** must restore the exact prior slot lifecycle/generation and leave lookup/index/current-reference state plus every existing actor unchanged; no prospective generation/index/reference may become visible;
+- stale references never resolve after successful reuse;
 - when the generation has no successor, atomically transition `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publish no replacement actor/index/current reference, leave every existing actor unchanged, and never select that exhausted slot again for the remainder of the same `ScopeOwnershipGeneration`;
 - actor-local generation state and immutable ID-to-slot/generation-cell bindings survive for the full lifetime of the same authoritative `ScopeOwnershipGeneration`;
 - if carrier state is lost or reconstructed while that same outer generation remains authoritative, the prototype must either restore the exact required generation/binding state from an already-authorized source or fail closed; it must not initialize a fresh local namespace under the same generation;
@@ -170,6 +179,27 @@ Preserve protected `RUNTIME-ACTOR-LOCAL-GENERATION-V1`:
 A slot/index implementation detail is never sufficient authority by itself: successful resolution still requires the complete scope/generation/local-generation reference and the immutable ID-to-slot binding.
 
 This allocation does not authorize a persistence schema merely to survive carrier loss. If exact same-generation reconstruction cannot be proven from already-authorized state within the owned prototype paths, the safe prototype behavior is **fail closed until a legitimate newer outer scope generation exists**.
+
+## Physical resource and arithmetic evidence
+
+The prototype must report the actual candidate physical representation rather than only semantic cardinalities.
+
+For every tested candidate `M`, record at minimum:
+
+```text
+configured_actor_slots = M
+slot_or_record_size_bytes
+retained_slot_or_record_bytes
+lookup_or_index_entries
+lookup_or_index_entry_size_bytes (if physically distinct)
+lookup_or_index_retained_bytes (if physically distinct)
+retained_generation_cells = M
+independent_retirement_history_entries = 0
+```
+
+If actor storage and lookup/index are physically the same one-to-one bounded resource, prove that identity explicitly. If a map/table/vector/index backing can grow independently of active slots, record its exact capacity/backing growth and a finite tested bound; do not classify it silently as the same resource merely because logical entry count is one per actor.
+
+Every multiplication/addition used to derive slot count, backing count, retained bytes, index bytes or combined candidate bytes must use checked arithmetic. Deliberately exercise count/byte overflow and prove rejection occurs before allocation, slot selection, generation change, index mutation or any authoritative actor-state mutation.
 
 ## Minimal carried facts
 
@@ -219,17 +249,20 @@ The executable prototype and evidence must prove at least:
 7. same channel + wrong world rejects;
 8. stale/mismatched independently supplied current `ScopeOwnershipGeneration` rejects and leaves carrier state unchanged;
 9. removal leaves the old reference stale and cannot expose a partial replacement;
-10. checked local-generation exhaustion atomically records `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement actor/index/current reference, leaves every unrelated/existing actor unchanged, and proves that exhausted slot is never selected again under the same outer generation;
-11. destroying/reconstructing carrier state while the same `ScopeOwnershipGeneration` remains authoritative cannot reset actor-local generations or ID-to-slot bindings: exact authorized state is restored or actor lookup/admission fails closed;
-12. a fresh local namespace is accepted only after a genuinely newer independently supplied `ScopeOwnershipGeneration`, and every pre-transition reference rejects on the outer generation before local actor state can resolve;
-13. repeated same-slot remove/reuse churn plus use/retirement/reuse across **every configured logical slot** leaves retained generation/history cardinality exactly `M`, creates no independently growing tombstone/history structure, and preserves immutable ID-to-slot bindings;
-14. tested M+1 admission rejects before partial slot/index mutation and preserves existing actors;
-15. mixed player/creature/NPC-system actor occupancy follows the same carrier path;
-16. direct lookup performs no world/hash enumeration and does not depend on enumeration order;
-17. no geometry, range, LoS, nearest-N, visibility, pathfinding or dynamic retargeting path exists;
-18. no `ai::ActorId`, Ability fixture `TargetId(String)`, client handle, pointer or string cast can substitute for the shared prototype reference;
-19. prototype size/shape evidence is regenerated deterministically from the exact Rust candidate and records the retained generation-cell cardinality for each tested `M`;
-20. after the complete negative/churn matrix, the evidence explicitly reports `retained_generation_cells == configured_actor_slots == M` and `independent_retirement_history_entries == 0` for the selected prototype shape.
+10. after a reusable slot has been selected and a valid local-generation successor derived, inject a later admission failure and prove **complete rollback**: slot lifecycle/generation, free-slot state, lookup/index state, externally resolvable references and every existing actor are byte/semantically unchanged from the pre-attempt state;
+11. checked local-generation exhaustion atomically records `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement actor/index/current reference, leaves every unrelated/existing actor unchanged, and proves that exhausted slot is never selected again under the same outer generation;
+12. destroying/reconstructing carrier state while the same `ScopeOwnershipGeneration` remains authoritative cannot reset actor-local generations or ID-to-slot bindings: exact authorized state is restored or actor lookup/admission fails closed;
+13. a fresh local namespace is accepted only after a genuinely newer independently supplied `ScopeOwnershipGeneration`, and every pre-transition reference rejects on the outer generation before local actor state can resolve;
+14. repeated same-slot remove/reuse churn plus use/retirement/reuse across **every configured logical slot** leaves retained generation/history cardinality exactly `M`, creates no independently growing tombstone/history structure, and preserves immutable ID-to-slot bindings;
+15. tested M+1 admission rejects before partial mutation and preserves the complete pre-existing actor/slot/index/generation/free-slot/current-reference state unchanged;
+16. checked count/slot/index/byte arithmetic overflow rejects before allocation or any carrier/actor/index/generation mutation;
+17. mixed player/creature/NPC-system actor occupancy follows the same carrier path;
+18. fixed-size retained bytes per actual slot/record and, where physically distinct, per lookup/index entry are measured from the exact Rust candidate at every tested `M`; independently growable backing is measured and bounded rather than hidden behind `M`;
+19. direct lookup work is recorded deterministically at representative occupancy and every tested candidate `M`, performs no actor/world scan or variable candidate materialization, and does not depend on hash/thread/enumeration order;
+20. no geometry, range, LoS, nearest-N, visibility, pathfinding or dynamic retargeting path exists;
+21. no `ai::ActorId`, Ability fixture `TargetId(String)`, client handle, pointer or string cast can substitute for the shared prototype reference;
+22. prototype size/shape evidence is regenerated deterministically from the exact Rust candidate and records the retained generation-cell cardinality plus physical slot/index backing for each tested `M`;
+23. after the complete negative/churn matrix, the evidence explicitly reports `retained_generation_cells == configured_actor_slots == M` and `independent_retirement_history_entries == 0` for the selected prototype shape.
 
 ## Relationship to #508 and #139
 
@@ -287,7 +320,11 @@ uses_protected_foundation_scope_types: true
 current_owner_lookup: <PASS|BLOCKED>
 immutable_actor_id_slot_binding: <PASS|BLOCKED>
 local_generation_reuse_reconstruction_exhaustion: <PASS|BLOCKED>
+post_selection_failure_rollback: <PASS|BLOCKED>
 rl03_churn_cardinality: <PASS|BLOCKED; retained_generation_cells=M; independent_history=0>
+lookup_index_shape: <same-resource proof OR exact distinct backing/cardinality/capacity>
+direct_lookup_work: <deterministic work at representative occupancy and every tested M>
+overflow_preallocation: <PASS|BLOCKED>
 negative_matrix: <results>
 shape_evidence: <exact regenerated evidence refs>
 accepted_production_maximum_selected: false
