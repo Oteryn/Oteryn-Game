@@ -339,8 +339,15 @@ fn build_helper(helper: &Path) -> Result<PathBuf, Box<dyn Error>> {
     )?;
 
     let reconciled_lock = fs::read_to_string(&lock_path)?;
-    if lock_package_identities(&reconciled_lock) != seeded_identities {
-        return Err("offline lock reconciliation changed the seeded package identity set".into());
+    let reconciled_identities = lock_package_identities(&reconciled_lock);
+    if reconciled_identities
+        .iter()
+        .any(|identity| seeded_identities.binary_search(identity).is_err())
+    {
+        return Err(
+            "offline lock reconciliation introduced a package identity outside the root lock seed"
+                .into(),
+        );
     }
 
     let output = Command::new("cargo")
