@@ -1,3 +1,7 @@
+// The carrier model is exercised by this example target's focused test suite;
+// the non-test binary emits only its reproducible physical evidence matrix.
+#![cfg_attr(not(test), allow(dead_code))]
+
 use oteryn_game_server::foundation::{
     ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
@@ -9,9 +13,9 @@ use std::mem::size_of;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 enum ActorKind {
-    PlayerLike = 1,
-    CreatureLike = 2,
-    NpcSystemLike = 3,
+    Player = 1,
+    Creature = 2,
+    NpcSystem = 3,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,7 +43,7 @@ impl ActorSlot {
         Self {
             generation: 0,
             lifecycle: SlotLifecycle::VacantReusable,
-            kind: ActorKind::PlayerLike,
+            kind: ActorKind::Player,
             actionable: 0,
             x: 0,
             y: 0,
@@ -408,7 +412,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
             ));
         }
         self.slots[index].lifecycle = SlotLifecycle::VacantReusable;
-        self.slots[index].kind = ActorKind::PlayerLike;
+        self.slots[index].kind = ActorKind::Player;
         self.slots[index].actionable = 0;
         self.slots[index].x = 0;
         self.slots[index].y = 0;
@@ -482,10 +486,8 @@ impl NamespaceContinuityGuard {
                 0,
             ));
         }
-        let carrier = ChannelActorCarrier::materialize_after_namespace_claim(
-            self.scope,
-            self.generation,
-        )?;
+        let carrier =
+            ChannelActorCarrier::materialize_after_namespace_claim(self.scope, self.generation)?;
         self.namespace_initialized = true;
         Ok(carrier)
     }
@@ -607,10 +609,7 @@ mod tests {
         for index in 0..M {
             let index_i32 = i32::try_from(index).expect("tested M fits i32");
             let admitted = carrier
-                .admit(
-                    seed(ActorKind::PlayerLike, index_i32),
-                    AdmissionFault::None,
-                )
+                .admit(seed(ActorKind::Player, index_i32), AdmissionFault::None)
                 .expect("exact M admission");
             refs.push(admitted.target);
             insertion_work.push(admitted.insertion_work_units);
@@ -621,7 +620,7 @@ mod tests {
 
         let before = carrier.clone();
         let failure = carrier
-            .admit(seed(ActorKind::CreatureLike, 99), AdmissionFault::None)
+            .admit(seed(ActorKind::Creature, 99), AdmissionFault::None)
             .expect_err("M+1 must reject");
         assert_eq!(failure.code, FailureCode::ActorCapacityExceeded);
         assert_eq!(failure.category, FailureCategory::CapacityExceeded);
@@ -648,7 +647,7 @@ mod tests {
             1
         );
         let replacement = carrier
-            .admit(seed(ActorKind::NpcSystemLike, 101), AdmissionFault::None)
+            .admit(seed(ActorKind::NpcSystem, 101), AdmissionFault::None)
             .expect("reinsert fragmented boundary slot");
         assert_eq!(replacement.insertion_work_units, M);
         assert_eq!(
@@ -673,7 +672,7 @@ mod tests {
         let mut owner = authority(200);
         let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let admitted = carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("admit");
         assert_eq!(
             carrier
@@ -737,7 +736,7 @@ mod tests {
         let mut owner = authority(350);
         let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
         let admitted = carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("admit");
 
         let missing = ActorTargetRefPrototype {
@@ -769,7 +768,7 @@ mod tests {
         let mut owner = authority(400);
         let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
         let first = carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("first");
         assert_eq!(
             carrier
@@ -786,7 +785,7 @@ mod tests {
             FailureCode::StaleActorReference
         );
         let second = carrier
-            .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
+            .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
             .expect("reuse");
         assert!(second.target.actor_local_generation > first.target.actor_local_generation);
         assert_eq!(
@@ -802,7 +801,7 @@ mod tests {
                 .expect("new ref")
                 .actor
                 .kind,
-            ActorKind::CreatureLike
+            ActorKind::Creature
         );
     }
 
@@ -811,14 +810,14 @@ mod tests {
         let mut owner = authority(500);
         let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let a = carrier
-            .admit(seed(ActorKind::PlayerLike, 10), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 10), AdmissionFault::None)
             .expect("a");
         let b = carrier
-            .admit(seed(ActorKind::CreatureLike, 20), AdmissionFault::None)
+            .admit(seed(ActorKind::Creature, 20), AdmissionFault::None)
             .expect("b");
         carrier.remove(&owner, b.target).expect("remove b");
         let b2 = carrier
-            .admit(seed(ActorKind::NpcSystemLike, 30), AdmissionFault::None)
+            .admit(seed(ActorKind::NpcSystem, 30), AdmissionFault::None)
             .expect("reuse b");
 
         let forged_a_to_b_generation = ActorTargetRefPrototype {
@@ -838,7 +837,7 @@ mod tests {
                 .expect("a still resolves")
                 .actor
                 .kind,
-            ActorKind::PlayerLike
+            ActorKind::Player
         );
         assert_eq!(
             carrier
@@ -846,7 +845,7 @@ mod tests {
                 .expect("b2 resolves")
                 .actor
                 .kind,
-            ActorKind::NpcSystemLike
+            ActorKind::NpcSystem
         );
     }
 
@@ -855,16 +854,16 @@ mod tests {
         let mut owner = authority(600);
         let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let first = carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("first");
         let _second = carrier
-            .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
+            .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
             .expect("second");
         carrier.remove(&owner, first.target).expect("remove first");
         let before = carrier.clone();
         let failure = carrier
             .admit(
-                seed(ActorKind::NpcSystemLike, 3),
+                seed(ActorKind::NpcSystem, 3),
                 AdmissionFault::AfterGenerationSelection,
             )
             .expect_err("injected failure");
@@ -877,23 +876,18 @@ mod tests {
         let mut owner = authority(700);
         let mut carrier = owner.bootstrap::<3>().expect("bootstrap");
         let mut slot_zero_ref = carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("slot0")
             .target;
         let slot_one_ref = carrier
-            .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
+            .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
             .expect("slot1")
             .target;
 
         for n in 1..u8::MAX {
-            carrier
-                .remove(&owner, slot_zero_ref)
-                .expect("retire slot0");
+            carrier.remove(&owner, slot_zero_ref).expect("retire slot0");
             slot_zero_ref = carrier
-                .admit(
-                    seed(ActorKind::PlayerLike, i32::from(n)),
-                    AdmissionFault::None,
-                )
+                .admit(seed(ActorKind::Player, i32::from(n)), AdmissionFault::None)
                 .expect("reuse slot0")
                 .target;
         }
@@ -904,7 +898,7 @@ mod tests {
         let before = carrier.clone();
 
         let failure = carrier
-            .admit(seed(ActorKind::NpcSystemLike, 9), AdmissionFault::None)
+            .admit(seed(ActorKind::NpcSystem, 9), AdmissionFault::None)
             .expect_err("successor must exhaust");
         assert_eq!(failure.code, FailureCode::ActorLocalGenerationExhausted);
         assert_eq!(failure.code.as_str(), "ACTOR_LOCAL_GENERATION_EXHAUSTED");
@@ -921,7 +915,7 @@ mod tests {
                 .expect("unrelated actor preserved")
                 .actor
                 .kind,
-            ActorKind::CreatureLike
+            ActorKind::Creature
         );
         assert_eq!(carrier.retained_generation_cells(), 3);
         assert_eq!(carrier.independent_retirement_history_entries(), 0);
@@ -933,15 +927,15 @@ mod tests {
         let mut carrier = owner.bootstrap::<3>().expect("bootstrap");
         let mut refs = [
             carrier
-                .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+                .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
                 .expect("0")
                 .target,
             carrier
-                .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
+                .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
                 .expect("1")
                 .target,
             carrier
-                .admit(seed(ActorKind::NpcSystemLike, 3), AdmissionFault::None)
+                .admit(seed(ActorKind::NpcSystem, 3), AdmissionFault::None)
                 .expect("2")
                 .target,
         ];
@@ -950,7 +944,7 @@ mod tests {
             let index_i32 = i32::try_from(index).expect("tested index fits i32");
             refs[index] = carrier
                 .admit(
-                    seed(ActorKind::PlayerLike, 10 + index_i32),
+                    seed(ActorKind::Player, 10 + index_i32),
                     AdmissionFault::None,
                 )
                 .expect("reuse exact sole vacant slot")
@@ -969,25 +963,25 @@ mod tests {
         let mut owner = authority(900);
         let mut carrier = owner.bootstrap::<4>().expect("bootstrap");
         let first = carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("sparse first");
         assert_eq!(first.insertion_work_units, 1);
         let second = carrier
-            .admit(seed(ActorKind::PlayerLike, 2), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 2), AdmissionFault::None)
             .expect("2");
         let third = carrier
-            .admit(seed(ActorKind::PlayerLike, 3), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 3), AdmissionFault::None)
             .expect("3");
         let fourth = carrier
-            .admit(seed(ActorKind::PlayerLike, 4), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 4), AdmissionFault::None)
             .expect("4");
         let full = carrier
-            .admit(seed(ActorKind::CreatureLike, 5), AdmissionFault::None)
+            .admit(seed(ActorKind::Creature, 5), AdmissionFault::None)
             .expect_err("full");
         assert_eq!(full.work_units, 4);
         carrier.remove(&owner, fourth.target).expect("remove last");
         let fragmented = carrier
-            .admit(seed(ActorKind::NpcSystemLike, 6), AdmissionFault::None)
+            .admit(seed(ActorKind::NpcSystem, 6), AdmissionFault::None)
             .expect("last slot only");
         assert_eq!(fragmented.insertion_work_units, 4);
         assert_eq!(
@@ -1011,7 +1005,7 @@ mod tests {
         let mut owner = authority(1_000);
         let mut old_carrier = owner.bootstrap::<1>().expect("first namespace");
         let old_ref = old_carrier
-            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("old actor")
             .target;
         assert!(old_carrier.lookup(&owner, old_ref).is_ok());
