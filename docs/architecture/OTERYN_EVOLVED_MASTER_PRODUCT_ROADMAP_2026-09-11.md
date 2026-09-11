@@ -20,6 +20,8 @@ It combines and de-duplicates:
 4. the Oteryn QoL clustering work in `OTERYN_EVOLVED_QOL_FEATURE_CLUSTERS_2026-09-11.md`;
 5. owner clarifications made during review of those requests.
 
+**Source-authority rule:** the Canary files are retained as historical product-design/provenance inputs, not as Oteryn runtime or architecture authority. The forum material is player-problem evidence, not proof that the suggested implementation is correct. Live Oteryn protected architecture/governance remains authoritative for implementation.
+
 The point is **not** to create hundreds of isolated backlog tickets. The point is to preserve every useful idea while mapping it into a smaller number of coherent systems with clear product boundaries.
 
 ## 2. Product philosophy
