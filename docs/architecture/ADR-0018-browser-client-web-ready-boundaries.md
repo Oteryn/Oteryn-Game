@@ -1,19 +1,19 @@
-# ADR-0017: Browser client web-ready boundaries
+# ADR-0018: Browser client web-ready boundaries
 
 - Status: **Proposed architecture; not yet accepted**
 - Date: 2026-09-09
 - Tracking: Issue #519
 - Applies to: native client composition, future browser client, `protocol-oteryn` transport adapters, renderer/platform boundaries, asset delivery and client validation
-- Depends on: ADR-0001, ADR-0003, ADR-0011, ADR-0014, FND-02 and FND-04
+- Depends on and is subordinate to: ADR-0001, ADR-0003, ADR-0011, ADR-0014, ADR-0016, FND-02 and FND-04
 - Does not authorize: browser runtime implementation, production browser distribution, Platform changes, new transport-profile registration, WebSocket/WebTransport admission, QUIC activation, production listeners, deployment, credentials, live data, or direct changes to protected `main`
 
 ## 1. Context
 
-Oteryn already owns one canonical Rust gameplay repository containing the authoritative server and native Rust client. The client has separate runtime, domain, simulation, input and renderer components, but the current production composition is intentionally native/Windows oriented: the root workspace enables the DX12 `wgpu` backend, the application depends on Windows `winit`, and the current runtime uses native Tokio networking facilities.
+Oteryn already owns one canonical Rust gameplay repository containing the authoritative server and native Rust client. The client has separate runtime, domain, simulation, input and renderer components, but the current composition is intentionally native/Windows oriented: the root workspace enables the DX12 `wgpu` backend, the application depends on Windows `winit`, and the workspace/client runtime use a native multithread Tokio runtime whose workspace feature set includes `net`. As ADR-0016 and transport-policy revision 4 record, those dependency facts do **not** mean that gameplay networking exists: the gameplay transport adapter, gameplay listener and native-client gameplay entry are not implemented or runtime-available.
 
 The product may later benefit from a browser client with zero-install entry, while preserving the native desktop client as a first-class surface. The expensive failure mode would be to continue implementation until protocol, renderer, input, asset and client-runtime abstractions silently assume Windows, raw TCP sockets, OS filesystem paths or blocking native lifecycle semantics. Retrofitting those assumptions after the first complete gameplay path would require a second client architecture or invasive rewrites.
 
-This ADR decides only the boundaries that must remain web-ready now. It does not start browser implementation.
+This candidate proposes only the minimal boundaries that would remain web-ready if separately accepted. It does not govern current work or start browser implementation merely by being present or merged with proposed status.
 
 ## 2. Decision summary
 
@@ -65,8 +65,9 @@ This ADR does not supersede existing authority:
 
 - ADR-0001: Rust server/client and one `protocol-oteryn` family remain the target.
 - ADR-0011: incomplete gameplay paths fail closed before credential consumption or misleading success.
-- FND-02: protocol major, framing, message semantics, sequencing, `CommandId`, `server_sequence`, snapshot/reconciliation, input limits and current TCP transport profile remain authoritative.
-- ADR-0014: gameplay/session code must remain transport-neutral; TCP profile `1` remains the current/default transport and QUIC remains a separately gated future transport target.
+- FND-02: protocol major, framing, message semantics, sequencing, `CommandId`, `server_sequence`, snapshot/reconciliation, input limits and registered TCP transport-profile semantics remain authoritative.
+- ADR-0014: gameplay/session code remains transport-neutral; TCP profile `1` is the registered initial/default architecture and admission profile, while QUIC remains a separately gated future transport target.
+- ADR-0016 and `PROTOCOL_OTERYN_TRANSPORT_POLICY.json` revision 4: no gameplay transport adapter/listener or native-client gameplay entry is currently implemented or runtime-available. The registered TCP profile is not a claim of usable gameplay networking.
 - FND-04: Platform/Game admission, reconnect, recovery and generation fencing remain authoritative.
 
 A browser client can be introduced only by consuming those contracts or by separately accepted amendments. It cannot silently reinterpret them.
@@ -547,9 +548,9 @@ At minimum:
 - unsupported browser capability;
 - service-worker rollback/update race if a service worker is used.
 
-## 20. Current anti-coupling requirements
+## 20. Candidate anti-coupling requirements
 
-These requirements apply to design and review of current native work because violating them would make future browser support materially harder.
+Until a separately accepted owning architecture decision or protected adoption makes these requirements binding, they are non-authoritative design evidence only. Current Native UI, Server Seam, WP3, renderer-cache and actor-carrier work follows existing protected authority and cannot be blocked, rejected, seized or superseded by this candidate. If this boundary is accepted, the following requirements apply prospectively to work within its accepted scope because violating them would make future browser support materially harder.
 
 ### MUST preserve
 
@@ -609,7 +610,7 @@ Implementation should prefer the smallest refactor that achieves dependency isol
 
 Server Seam remains allowed to proceed independently.
 
-The only requirement from this ADR candidate is architectural hygiene:
+If this candidate is separately accepted, its prospective architectural hygiene is:
 
 ```text
 protocol semantics
@@ -617,7 +618,7 @@ protocol semantics
 != client platform
 ```
 
-Server Seam should expose/consume the authoritative protocol/session boundary without depending on desktop-client details. No WebSocket, WebTransport, WASM, browser route or browser asset work is required to complete Server Seam.
+Before acceptance, Server Seam follows its existing protected contracts; this candidate supplies non-authoritative evidence only. If accepted, Server Seam should expose/consume the authoritative protocol/session boundary without depending on desktop-client details. No WebSocket, WebTransport, WASM, browser route or browser asset work is required to complete Server Seam.
 
 A later browser implementation must adapt to the protected Server Seam contract rather than forcing browser-specific semantics into gameplay domain code.
 
@@ -638,7 +639,15 @@ Browser work should be introduced through separately allocated stages:
 
 Each stage must have its own live issue/allocation and exact authority.
 
-## 24. Deferred decisions
+## 24. Decision timing
+
+- **Must decide now? YES — but only before these minimal anti-coupling rules become binding.** A separately accepted owning decision is needed before reviewers may enforce one application protocol, transport-neutral gameplay/session semantics, platform-neutral shared semantics, normalized input actions, logical/revision asset identity, renderer-surface separation, and explicit transport-profile identity. The concrete work otherwise blocked is authoritative review and allocation of shared APIs whose public shape would commit Native UI, Server Seam, renderer or client-runtime consumers to a platform or transport boundary. This proposed ADR does not itself block that current work: before acceptance, existing protected authority governs and teams may use this analysis only as evidence.
+- **Later burden if those minimal rules are deferred:** public shared APIs may acquire Win32, DX12, native-socket, absolute-filesystem-path or blocking-loop assumptions. Removing those assumptions after multiple consumers exist would require coordinated API and dependency-graph migrations, could split protocol/client semantics, and would increase compatibility and regression risk across native and future browser compositions.
+- **Must decide now? NO — speculative browser implementation choices.** WebTransport versus WebSocket, direct GameNode versus relay topology, exact crate split, bundler, service-worker use, WebGL2 fallback, WASM threads, browser matrix, numeric budgets, CDN, texture format, and DOM/GPU UI balance do not block the current native vertical slice, Server Seam, Native UI, WP3, renderer-cache or actor-carrier work. They remain horizon items and require bounded implementation/product evidence rather than being frozen here.
+- **Evidence that would justify selection or supersession:** exact-revision dependency/`wasm32` compile audits; measured native and browser frame, memory, download and latency data; browser capability and support-matrix results; transport bake-off and adverse-network evidence; security/origin/admission review; asset cache/update/rollback proof; real gameplay E2E; or a changed accepted product, Platform, protocol or deployment requirement. Supersession requires an explicit newer accepted ADR or owning contract identifying which rules change and which remain binding.
+- **Deliberately not decided:** all choices listed in the next section, any physical split, any runtime/profile activation, and any implementation or production allocation.
+
+## 25. Deferred decisions
 
 This ADR intentionally does not freeze:
 
@@ -661,7 +670,7 @@ This ADR intentionally does not freeze:
 
 Those are measured implementation/product decisions, not prerequisites for keeping the architecture open today.
 
-## 25. Consequences
+## 26. Consequences
 
 ### Positive
 
@@ -674,12 +683,12 @@ Those are measured implementation/product decisions, not prerequisites for keepi
 
 ### Costs
 
-- current reviews must reject accidental desktop/transport coupling in shared code;
+- after protected acceptance, reviews within the adopted scope must reject accidental desktop/transport coupling in shared code; before acceptance this candidate cannot supply that rejection authority;
 - the client architecture must keep platform dependencies at the edge;
 - browser support will eventually add another build, renderer, transport, E2E and operational matrix;
 - production browser support requires additional resource/security budgets and a separately accepted transport/admission profile.
 
-## 26. Acceptance criteria for this ADR
+## 27. Acceptance criteria for this ADR
 
 This ADR can become accepted architecture only after review confirms that it:
 
@@ -692,7 +701,7 @@ This ADR can become accepted architecture only after review confirms that it:
 - leaves numeric/resource choices evidence-gated;
 - creates no production or deployment authority.
 
-Until accepted, it is a design candidate attached to Issue #519.
+Until accepted or otherwise adopted through protected owning architecture, it is a non-authoritative design candidate attached to Issue #519. Its presence cannot block, reject, seize or supersede Native UI, Server Seam, WP3, renderer-cache or actor-carrier work.
 
 `IMPLEMENTATION_AUTHORITY: NONE`
 `PRODUCTION_AUTHORITY: NONE`

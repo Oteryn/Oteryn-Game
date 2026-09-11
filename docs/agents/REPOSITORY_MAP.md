@@ -48,9 +48,9 @@ Create paths only when an accepted implementation task owns them. Candidate crat
 
 ### Future browser-client boundary
 
-Issue #519 and proposed `docs/architecture/ADR-0017-browser-client-web-ready-boundaries.md` reserve a future browser client as a second composition of the same Rust client semantics. This is **not** current implementation authority.
+Issue #519 and proposed `docs/architecture/ADR-0018-browser-client-web-ready-boundaries.md` describe a future browser client as a second composition of the same Rust client semantics. This is **not** current implementation or review authority.
 
-Current/native work should preserve only the necessary anti-coupling properties:
+Only after a separately accepted owning architecture decision or protected adoption may reviewers enforce the following ADR-0018 anti-coupling properties. Before then, current Native UI, Server Seam, WP3, renderer-cache and actor-carrier work follows existing protected authority and may use them only as non-authoritative design evidence; this proposal cannot block, reject, seize or supersede that work:
 
 - shared gameplay/client semantics do not expose Win32, DX12, native socket or DOM types without necessity;
 - input semantics use normalized actions rather than only physical platform key codes;
@@ -85,7 +85,7 @@ External editor code, UI and assets require pinned revisions, license/provenance
 - Platform/Game Gateway boundary: `docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md`.
 - PostgreSQL and data ownership: `docs/architecture/ADR-0004-postgresql-and-data-ownership.md`.
 - Native world format, Oteryn Studio and legacy conversion: `docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md`.
-- Proposed browser/WASM/WebGPU client boundary: `docs/architecture/ADR-0017-browser-client-web-ready-boundaries.md` (Issue #519; no implementation authority until accepted/allocated).
+- Proposed browser/WASM/WebGPU client boundary: `docs/architecture/ADR-0018-browser-client-web-ready-boundaries.md` (Issue #519; no implementation or review authority until separately accepted or adopted by protected owning architecture).
 - Proposed browser-client staged implementation sequence: `docs/architecture/WEB_CLIENT_IMPLEMENTATION_PLAN.md`.
 - Current decision order: `docs/architecture/FOUNDATION_DECISION_BACKLOG.md`.
 - Scope/consistency matrix: `docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md`.

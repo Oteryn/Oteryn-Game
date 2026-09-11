@@ -56,7 +56,7 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 
 These files are design inputs only until their own review/acceptance lifecycle completes. Their presence does not grant implementation or production authority.
 
-- [ADR-0017: Browser client web-ready boundaries](ADR-0017-browser-client-web-ready-boundaries.md) — proposed shared-Rust/WASM/WebGPU/client-platform boundaries that preserve one `protocol-oteryn` and keep current Server Seam/native work from accidental desktop-only lock-in. Tracking: Issue #519.
+- [ADR-0018: Browser client web-ready boundaries](ADR-0018-browser-client-web-ready-boundaries.md) — proposed shared-Rust/WASM/WebGPU/client-platform boundaries that preserve one `protocol-oteryn`; non-authoritative until separately accepted or adopted by protected owning architecture. Tracking: Issue #519.
 - [Oteryn Web Client staged implementation plan](WEB_CLIENT_IMPLEMENTATION_PLAN.md) — proposed W0–W10 delivery sequence, transport/profile gates, browser E2E, asset/cache, security, resource and rollout requirements. `IMPLEMENTATION_AUTHORITY: NONE` until separately allocated.
 
 ## Accepted foundation / durability / gameplay contracts

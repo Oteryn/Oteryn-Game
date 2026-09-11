@@ -2,9 +2,9 @@
 
 Status: **Planning candidate; no implementation authority**  
 Tracking: Issue #519  
-Architecture candidate: `ADR-0017-browser-client-web-ready-boundaries.md`
+Architecture candidate: `ADR-0018-browser-client-web-ready-boundaries.md`
 
-This plan translates the proposed browser-client architecture into independently gated stages. It exists so current native-client and Server Seam work can preserve the right boundaries without starting speculative browser runtime code.
+This plan translates the proposed browser-client architecture into independently gated stages. Until a protected owning decision accepts or adopts it, current native-client and Server Seam work may use it only as non-authoritative evidence and must follow existing protected authority.
 
 ## 1. Objective
 
@@ -34,7 +34,7 @@ At plan creation the canonical workspace already contains:
 - Platform client/contracts and Identity support;
 - one canonical Rust workspace shared with the authoritative Game server.
 
-The current dependency shape is intentionally desktop-oriented in several places. In particular, the workspace-level `wgpu` dependency selects DX12 and the current application uses Windows `winit`; `client-runtime` uses Tokio features that include native networking. These are implementation facts to audit, not reasons to create parallel browser semantics.
+The current dependency shape is intentionally desktop-oriented in several places. In particular, the workspace-level `wgpu` dependency selects DX12, the current application uses Windows `winit`, and the workspace/client runtime use native multithread Tokio while the workspace Tokio feature set includes `net`. These are dependency facts to audit, not proof of gameplay networking and not reasons to create parallel browser semantics. Under ADR-0016 and transport-policy revision 4, the gameplay transport adapter/listener and native-client gameplay entry are not implemented or runtime-available; TCP profile `1` is only the registered initial/default architecture and admission profile, and QUIC remains separately gated.
 
 ## 3. Programme rules
 
@@ -59,7 +59,7 @@ Protect the architecture boundary before implementation pressure makes native-on
 
 ### Deliverables
 
-- accepted/superseded disposition for ADR-0017;
+- accepted/superseded disposition for ADR-0018;
 - exact dependency graph of current client crates;
 - classification of every current client dependency as:
   - `SHARED_WASM_CANDIDATE`;
@@ -550,7 +550,7 @@ Anything less must use a narrower state such as `EXPERIMENTAL`, `NON_PRODUCTION`
 
 No browser implementation should be started merely from this plan.
 
-Current native-client and Server Seam reviewers should instead enforce the anti-coupling checklist from ADR-0017:
+Only after a separately accepted owning architecture decision or protected adoption may reviewers enforce the ADR-0018 anti-coupling checklist. Before then, current Native UI, Server Seam, WP3, renderer-cache and actor-carrier work follows existing protected authority and may use this checklist only as non-authoritative design evidence; this plan cannot block, reject, seize or supersede that work:
 
 - transport-neutral gameplay/session logic;
 - platform-neutral shared client semantics;
