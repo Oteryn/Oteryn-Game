@@ -4,7 +4,7 @@
   "issue": 530,
   "activation_main_sha": "32a055ac9b2c4e69773f1d6cb9746ea412164866",
   "branch": "agent/runtime-actor-carrier-prototype-530",
-  "candidate_source_commit": "b099ee5eac2029c5087e638aa5c326759053ff5b",
+  "candidate_source_commit": "9122825270a22c2b27013834156047c8e3751297",
   "exact_head_binding": "GITHUB_PR_HEAD_AT_QUALIFICATION",
   "qualification_state": "PENDING_HOSTED_QUALIFICATION",
   "candidate": "CHANNEL_RUNTIME_ACTOR_CARRIER_V1_PROTOTYPE",
@@ -12,6 +12,8 @@
   "foundation_generation_type": "ScopeOwnershipGeneration",
   "namespace_continuity": {
     "authority_shape": "NamespaceContinuityGuard outside carrier backing",
+    "lookup_and_remove_consume_live_guard_reference": true,
+    "replayable_current_owner_snapshot_api": false,
     "survives_carrier_loss": true,
     "cloneable": false,
     "copyable": false,
@@ -84,14 +86,19 @@
   "per_tested_m_work_matrix_executable": true,
   "cargo_run_regenerated_points": [1, 2, 3, 4],
   "required_negative_matrix": {
-    "cross_scope_or_outer_generation": "COVERED_BY_EXAMPLE_TEST",
+    "cross_world_same_channel": "COVERED_BY_EXAMPLE_TEST",
+    "cross_channel_same_world": "COVERED_BY_EXAMPLE_TEST",
+    "live_outer_generation_transition": "COVERED_BY_EXAMPLE_TEST",
+    "missing_actor_id": "COVERED_BY_EXAMPLE_TEST",
+    "vacant_actor_slot": "COVERED_BY_EXAMPLE_TEST",
     "stale_actor_generation_after_reuse": "COVERED_BY_EXAMPLE_TEST",
     "cross_id_alias": "COVERED_BY_EXAMPLE_TEST",
     "post_selection_failure_rollback": "COVERED_BY_EXAMPLE_TEST",
     "local_generation_exhaustion": "COVERED_BY_EXAMPLE_TEST",
     "carrier_loss_same_generation_reconstruction": "COVERED_BY_EXAMPLE_TEST",
     "namespace_wide_churn": "COVERED_BY_EXAMPLE_TEST",
-    "count_or_byte_overflow": "COVERED_BY_EXAMPLE_TEST"
+    "actor_id_count_or_index_overflow": "COVERED_BY_EXAMPLE_TEST",
+    "retained_byte_overflow": "COVERED_BY_EXAMPLE_TEST"
   },
   "exhaustion_semantic_result": "ACTOR_LOCAL_GENERATION_EXHAUSTED",
   "exhaustion_foundation_category": "CAPACITY_EXCEEDED",
@@ -104,7 +111,7 @@
   "movement_139_activated": false,
   "notes": [
     "Expected numeric shape/work values are asserted by the Rust example tests but are not marked qualified until repository-native exact-head CI observes them.",
-    "NamespaceContinuityGuard is non-Clone/non-Copy prototype evidence for authority that survives carrier loss; production ownership/persistence of that guard is not selected here.",
+    "NamespaceContinuityGuard is non-Clone/non-Copy prototype evidence for live authority that survives carrier loss; production ownership/persistence of that guard is not selected here.",
     "No production actor ceiling is selected by any tested M."
   ]
 }
