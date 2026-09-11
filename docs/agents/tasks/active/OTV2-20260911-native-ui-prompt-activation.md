@@ -4,18 +4,18 @@
 task_id: OTV2-20260911-native-ui-prompt-activation
 title: Activate Native UI reusable prompt family
 mode: GOVERNANCE
-status: implementing
+status: review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/native-ui-prompt-activation-20260911
-pr: null
+pr: 569
 base_sha: d956fb6c852a4cfe0213c87e3d15e991133a5de1
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: OTV2_WORK_DELIVERY_COORDINATOR
 created_at: 2026-09-11T12:46:00+02:00
-updated_at: 2026-09-11T12:46:00+02:00
+updated_at: 2026-09-11T13:35:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_SOL_NATIVE_UI_LEAD.md
@@ -57,12 +57,12 @@ Activate exactly the eight Native UI reusable prompt contracts adopted by protec
 
 ## Acceptance criteria
 
-- [ ] Exactly eight canonical Native UI prompt files are extracted from the protected programme with full programme path expansion.
-- [ ] Exactly eight unique lifecycle entries are `status=reusable`, `reusable=true`, version `1.0`, with bounded owner/scope and no supersession ambiguity.
-- [ ] `docs/agents/prompts/README.md` exposes exactly the eight short aliases and states alias resolution grants no write/control-plane authority.
-- [ ] Reusable prompt bodies contain no model/effort execution configuration.
-- [ ] Every prompt emits mutually exclusive canonical `DONE / WAITING_EXTERNAL / BLOCKED / STALLED` plus its separate domain result/disposition.
-- [ ] Evaluation evidence covers valid allocation, missing allocation, stale head, held Cargo lease, competing control plane, missing alias, resume after lease transfer, missing physical host/timing, FOV undecided, synthetic production rejection, prompt injection, unknown CI routing, repair-vs-false-finding and green-PR-vs-protected-readback cases.
+- [x] Exactly eight canonical Native UI prompt files are extracted from the protected programme with full programme path expansion.
+- [x] Exactly eight unique lifecycle entries are `status=reusable`, `reusable=true`, version `1.0`, with bounded owner/scope and no supersession ambiguity.
+- [x] `docs/agents/prompts/README.md` exposes exactly the eight short aliases and states alias resolution grants no write/control-plane authority.
+- [x] Reusable prompt bodies contain no model/effort execution configuration.
+- [x] Every prompt emits mutually exclusive canonical `DONE / WAITING_EXTERNAL / BLOCKED / STALLED` plus its separate domain result/disposition.
+- [x] Evaluation evidence covers valid allocation, missing allocation, stale head, held Cargo lease, competing control plane, missing alias, resume after lease transfer, missing physical host/timing, FOV undecided, synthetic production rejection, prompt injection, unknown CI routing, repair-vs-false-finding and green-PR-vs-protected-readback cases.
 - [ ] Repository governance/META/lifecycle tests and exact-head CI pass.
 - [ ] Independent review finds no material defect before integration.
 - [ ] Integration uses native Merge Queue and protected-main readback.
@@ -74,19 +74,19 @@ No runtime/client/server/protocol/Cargo/lock/workspace-boundaries/workflow/rules
 
 ## Implementation / findings
 
-Pending extraction, registration and evaluation on this branch only.
+Extracted the eight complete protected section-12 prompt blocks into their canonical paths, expanding the programme shorthand. Registered eight additive reusable lifecycle entries, indexed exactly eight aliases and recorded deterministic/static/adversarial candidate evaluation. No implementation allocation, Cargo lease, active control-plane record, runtime path or workflow was changed.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending
-- result: pending
+- command/run: `python tools/agents/validate_governance.py`; required META and lifecycle pytest suites; Native UI eight-file/ID/path/alias/status/config invariant script; `git diff --check`
+- result: passed on the material candidate before commit
 
 ### Component/integration
 
-- command/run: pending
-- result: pending
+- command/run: whole-diff path-ceiling and protected-source extraction comparison
+- result: passed; only the twelve allocated paths differ from protected source, with exactly eight new prompt files
 
 ### E2E / behavior
 
@@ -106,8 +106,8 @@ Pending extraction, registration and evaluation on this branch only.
 
 - exact head: pending
 - method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- material findings: none after correcting the task packet's PR locator during validation
+- verdict: `CI_CANDIDATE_READY_FOR_INDEPENDENT_REVIEW`
 
 ## Independent review
 
@@ -119,7 +119,7 @@ Pending extraction, registration and evaluation on this branch only.
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: complete for the exact twelve-path allocation
 - unresolved review threads: pending
 - related/superseded PRs: #565 protected source programme
 - protected Merge Queue: required
@@ -129,11 +129,11 @@ Pending extraction, registration and evaluation on this branch only.
 ## Context checkpoint
 
 ```yaml
-last_progress: CP-A exact branch and task seeded from protected Native UI programme merge
-status: implementing
+last_progress: eight protected prompts extracted and registered; static/adversarial evaluation and local validation complete
+status: review
 branch: docs/native-ui-prompt-activation-20260911
 head_sha: null
-pr: null
+pr: 569
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -151,5 +151,11 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: extract and register the eight protected Native UI prompts, validate/evaluate, then freeze one reviewable CP-A candidate
+next_action: publish the single coherent successor checkpoint to PR #569 for genuinely independent exact-head review
 ```
+
+## Candidate terminal
+
+`invocation_status: DONE`
+
+`result: CI_CANDIDATE_READY_FOR_INDEPENDENT_REVIEW`
