@@ -90,12 +90,6 @@ struct ActorTargetRefPrototype {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CurrentOwnerFacts {
-    scope: RuntimeScopeRefV1,
-    generation: ScopeOwnershipGeneration,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct LocalPosition {
     x: i32,
     y: i32,
@@ -345,7 +339,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
 
     fn verify_owner(
         &self,
-        current: CurrentOwnerFacts,
+        current: &NamespaceContinuityGuard,
         target: ActorTargetRefPrototype,
     ) -> Result<usize, CarrierFailure> {
         if current.scope != self.scope
@@ -369,7 +363,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
 
     fn lookup(
         &self,
-        current: CurrentOwnerFacts,
+        current: &NamespaceContinuityGuard,
         target: ActorTargetRefPrototype,
     ) -> Result<LookupSuccess, CarrierFailure> {
         let index = self.verify_owner(current, target)?;
@@ -399,7 +393,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
 
     fn remove(
         &mut self,
-        current: CurrentOwnerFacts,
+        current: &NamespaceContinuityGuard,
         target: ActorTargetRefPrototype,
     ) -> Result<RemovalSuccess, CarrierFailure> {
         let index = self.verify_owner(current, target)?;
@@ -444,7 +438,8 @@ impl<const M: usize> ChannelActorCarrier<M> {
 // loss/reconstruction. A fresh instance models an independently authorized
 // external owner grant in evidence code; carrier code cannot mint one. It is
 // deliberately neither Clone nor Copy so a pre-bootstrap authority snapshot
-// cannot be duplicated and replayed after carrier loss.
+// cannot be duplicated and replayed after carrier loss. Lookup/removal consume
+// this live authority object rather than a copied generation snapshot.
 #[derive(Debug, PartialEq, Eq)]
 struct NamespaceContinuityGuard {
     scope: RuntimeScopeRefV1,
@@ -471,11 +466,12 @@ impl NamespaceContinuityGuard {
         })
     }
 
-    const fn current_facts(&self) -> CurrentOwnerFacts {
-        CurrentOwnerFacts {
-            scope: self.scope,
-            generation: self.generation,
-        }
+    const fn scope(&self) -> RuntimeScopeRefV1 {
+        self.scope
+    }
+
+    const fn generation(&self) -> ScopeOwnershipGeneration {
+        self.generation
     }
 
     fn bootstrap<const M: usize>(&mut self) -> Result<ChannelActorCarrier<M>, CarrierFailure> {
@@ -605,7 +601,6 @@ mod tests {
 
     fn prove_m_boundary<const M: usize>() {
         let mut owner = authority(100 + u64::try_from(M).expect("small M") * 10);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<M>().expect("carrier bootstrap");
         let mut refs = Vec::new();
         let mut insertion_work = Vec::new();
@@ -637,7 +632,7 @@ mod tests {
         for target in refs.iter().copied() {
             assert_eq!(
                 carrier
-                    .lookup(current, target)
+                    .lookup(&owner, target)
                     .expect("existing actor")
                     .direct_lookup_work_units,
                 1
@@ -647,7 +642,7 @@ mod tests {
         let last = *refs.last().expect("M is non-zero");
         assert_eq!(
             carrier
-                .remove(current, last)
+                .remove(&owner, last)
                 .expect("remove boundary slot")
                 .removal_work_units,
             1
@@ -658,7 +653,7 @@ mod tests {
         assert_eq!(replacement.insertion_work_units, M);
         assert_eq!(
             carrier
-                .lookup(current, last)
+                .lookup(&owner, last)
                 .expect_err("retired boundary ref stays stale")
                 .code,
             FailureCode::StaleActorReference
@@ -674,60 +669,121 @@ mod tests {
     }
 
     #[test]
-    fn direct_lookup_requires_current_outer_scope_and_generation() {
+    fn direct_lookup_requires_live_world_channel_and_generation_authority() {
         let mut owner = authority(200);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let admitted = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("admit");
         assert_eq!(
             carrier
-                .lookup(current, admitted.target)
+                .lookup(&owner, admitted.target)
                 .expect("lookup")
                 .direct_lookup_work_units,
             1
         );
 
-        let other_scope = channel_scope(300).expect("other scope");
-        let wrong_scope = CurrentOwnerFacts {
-            scope: other_scope,
-            generation: current.generation,
+        let (world_id, channel_id) = match owner.scope() {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => (world_id, channel_id),
+            RuntimeScopeRefV1::Instance { .. } => unreachable!("test authority is Channel"),
         };
+        let other_world = WorldId::decode(&uuid_v7(300)).expect("other world");
+        let other_channel = ChannelId::decode(&uuid_v7(301)).expect("other channel");
+
+        let wrong_world_owner = NamespaceContinuityGuard::from_independently_fresh_evidence_grant(
+            RuntimeScopeRefV1::channel(other_world, channel_id),
+            owner.generation(),
+        )
+        .expect("wrong-world authority shape is valid");
         assert_eq!(
             carrier
-                .lookup(wrong_scope, admitted.target)
-                .expect_err("cross-scope reject")
+                .lookup(&wrong_world_owner, admitted.target)
+                .expect_err("cross-world reject")
                 .code,
             FailureCode::StaleScopeOrGeneration
         );
-        let wrong_generation = CurrentOwnerFacts {
-            scope: current.scope,
-            generation: generation(2),
-        };
+
+        let wrong_channel_owner =
+            NamespaceContinuityGuard::from_independently_fresh_evidence_grant(
+                RuntimeScopeRefV1::channel(world_id, other_channel),
+                owner.generation(),
+            )
+            .expect("wrong-channel authority shape is valid");
         assert_eq!(
             carrier
-                .lookup(wrong_generation, admitted.target)
-                .expect_err("stale generation reject")
+                .lookup(&wrong_channel_owner, admitted.target)
+                .expect_err("cross-channel reject")
+                .code,
+            FailureCode::StaleScopeOrGeneration
+        );
+
+        owner
+            .apply_independently_authorized_newer_generation(generation(2))
+            .expect("new live owner generation");
+        assert_eq!(
+            carrier
+                .lookup(&owner, admitted.target)
+                .expect_err("old carrier rejected after live owner transition")
                 .category,
             FailureCategory::StaleGeneration
         );
     }
 
     #[test]
+    fn missing_and_vacant_actor_lookups_fail_closed() {
+        let mut owner = authority(350);
+        let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
+        let admitted = carrier
+            .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+            .expect("admit");
+
+        let missing = ActorTargetRefPrototype {
+            actor_local_id: ActorLocalId(2),
+            ..admitted.target
+        };
+        assert_eq!(
+            carrier
+                .lookup(&owner, missing)
+                .expect_err("out-of-range actor id must reject")
+                .category,
+            FailureCategory::InvalidReference
+        );
+
+        carrier
+            .remove(&owner, admitted.target)
+            .expect("vacate admitted slot");
+        assert_eq!(
+            carrier
+                .lookup(&owner, admitted.target)
+                .expect_err("vacant slot must not resolve")
+                .category,
+            FailureCategory::InvalidReference
+        );
+    }
+
+    #[test]
     fn stale_reference_never_revives_after_reuse() {
         let mut owner = authority(400);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
         let first = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("first");
         assert_eq!(
             carrier
-                .remove(current, first.target)
+                .remove(&owner, first.target)
                 .expect("remove")
                 .removal_work_units,
             1
+        );
+        assert_eq!(
+            carrier
+                .lookup(&owner, first.target)
+                .expect_err("vacant old ref rejects")
+                .code,
+            FailureCode::StaleActorReference
         );
         let second = carrier
             .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
@@ -735,14 +791,14 @@ mod tests {
         assert!(second.target.actor_local_generation > first.target.actor_local_generation);
         assert_eq!(
             carrier
-                .lookup(current, first.target)
+                .lookup(&owner, first.target)
                 .expect_err("old ref stale")
                 .code,
             FailureCode::StaleActorReference
         );
         assert_eq!(
             carrier
-                .lookup(current, second.target)
+                .lookup(&owner, second.target)
                 .expect("new ref")
                 .actor
                 .kind,
@@ -753,7 +809,6 @@ mod tests {
     #[test]
     fn distinct_actor_ids_cannot_alias_one_generation_cell() {
         let mut owner = authority(500);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let a = carrier
             .admit(seed(ActorKind::PlayerLike, 10), AdmissionFault::None)
@@ -761,7 +816,7 @@ mod tests {
         let b = carrier
             .admit(seed(ActorKind::CreatureLike, 20), AdmissionFault::None)
             .expect("b");
-        carrier.remove(current, b.target).expect("remove b");
+        carrier.remove(&owner, b.target).expect("remove b");
         let b2 = carrier
             .admit(seed(ActorKind::NpcSystemLike, 30), AdmissionFault::None)
             .expect("reuse b");
@@ -772,14 +827,14 @@ mod tests {
         };
         assert_eq!(
             carrier
-                .lookup(current, forged_a_to_b_generation)
+                .lookup(&owner, forged_a_to_b_generation)
                 .expect_err("id A cannot resolve B cell")
                 .code,
             FailureCode::StaleActorReference
         );
         assert_eq!(
             carrier
-                .lookup(current, a.target)
+                .lookup(&owner, a.target)
                 .expect("a still resolves")
                 .actor
                 .kind,
@@ -787,7 +842,7 @@ mod tests {
         );
         assert_eq!(
             carrier
-                .lookup(current, b2.target)
+                .lookup(&owner, b2.target)
                 .expect("b2 resolves")
                 .actor
                 .kind,
@@ -798,7 +853,6 @@ mod tests {
     #[test]
     fn post_selection_failure_rolls_back_complete_carrier_state() {
         let mut owner = authority(600);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let first = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
@@ -806,7 +860,7 @@ mod tests {
         let _second = carrier
             .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
             .expect("second");
-        carrier.remove(current, first.target).expect("remove first");
+        carrier.remove(&owner, first.target).expect("remove first");
         let before = carrier.clone();
         let failure = carrier
             .admit(
@@ -821,7 +875,6 @@ mod tests {
     #[test]
     fn generation_exhaustion_is_terminal_atomic_and_classified_as_capacity() {
         let mut owner = authority(700);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<3>().expect("bootstrap");
         let mut slot_zero_ref = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
@@ -834,7 +887,7 @@ mod tests {
 
         for n in 1..u8::MAX {
             carrier
-                .remove(current, slot_zero_ref)
+                .remove(&owner, slot_zero_ref)
                 .expect("retire slot0");
             slot_zero_ref = carrier
                 .admit(
@@ -846,7 +899,7 @@ mod tests {
         }
         assert_eq!(slot_zero_ref.actor_local_generation.0, u8::MAX);
         carrier
-            .remove(current, slot_zero_ref)
+            .remove(&owner, slot_zero_ref)
             .expect("vacate max generation");
         let before = carrier.clone();
 
@@ -864,7 +917,7 @@ mod tests {
         assert_eq!(carrier.slots[2], before.slots[2]);
         assert_eq!(
             carrier
-                .lookup(current, slot_one_ref)
+                .lookup(&owner, slot_one_ref)
                 .expect("unrelated actor preserved")
                 .actor
                 .kind,
@@ -877,7 +930,6 @@ mod tests {
     #[test]
     fn churn_across_every_slot_keeps_generation_state_exactly_m() {
         let mut owner = authority(800);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<3>().expect("bootstrap");
         let mut refs = [
             carrier
@@ -894,7 +946,7 @@ mod tests {
                 .target,
         ];
         for index in 0..3 {
-            carrier.remove(current, refs[index]).expect("retire");
+            carrier.remove(&owner, refs[index]).expect("retire");
             let index_i32 = i32::try_from(index).expect("tested index fits i32");
             refs[index] = carrier
                 .admit(
@@ -915,7 +967,6 @@ mod tests {
     #[test]
     fn insertion_work_is_measured_at_sparse_full_and_fragmented_boundaries() {
         let mut owner = authority(900);
-        let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<4>().expect("bootstrap");
         let first = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
@@ -934,21 +985,21 @@ mod tests {
             .admit(seed(ActorKind::CreatureLike, 5), AdmissionFault::None)
             .expect_err("full");
         assert_eq!(full.work_units, 4);
-        carrier.remove(current, fourth.target).expect("remove last");
+        carrier.remove(&owner, fourth.target).expect("remove last");
         let fragmented = carrier
             .admit(seed(ActorKind::NpcSystemLike, 6), AdmissionFault::None)
             .expect("last slot only");
         assert_eq!(fragmented.insertion_work_units, 4);
         assert_eq!(
             carrier
-                .lookup(current, second.target)
+                .lookup(&owner, second.target)
                 .expect("lookup")
                 .direct_lookup_work_units,
             1
         );
         assert_eq!(
             carrier
-                .remove(current, third.target)
+                .remove(&owner, third.target)
                 .expect("remove")
                 .removal_work_units,
             1
@@ -958,13 +1009,12 @@ mod tests {
     #[test]
     fn carrier_loss_preserves_guard_and_blocks_same_generation_reconstruction() {
         let mut owner = authority(1_000);
-        let old_current = owner.current_facts();
         let mut old_carrier = owner.bootstrap::<1>().expect("first namespace");
         let old_ref = old_carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("old actor")
             .target;
-        assert!(old_carrier.lookup(old_current, old_ref).is_ok());
+        assert!(old_carrier.lookup(&owner, old_ref).is_ok());
 
         // Carrier backing is lost, but the continuity authority survives.
         drop(old_carrier);
@@ -979,11 +1029,10 @@ mod tests {
         owner
             .apply_independently_authorized_newer_generation(generation(2))
             .expect("new owner generation");
-        let new_current = owner.current_facts();
         let new_carrier = owner.bootstrap::<1>().expect("new namespace allowed");
         assert_eq!(
             new_carrier
-                .lookup(new_current, old_ref)
+                .lookup(&owner, old_ref)
                 .expect_err("new outer generation fences old ref")
                 .category,
             FailureCategory::StaleGeneration
@@ -991,7 +1040,7 @@ mod tests {
     }
 
     #[test]
-    fn physical_shape_and_checked_byte_arithmetic_are_bounded() {
+    fn actor_id_count_and_retained_byte_overflow_are_checked() {
         assert_eq!(size_of::<ActorSlot>(), 16);
         assert_eq!(size_of::<ActorLocalId>(), 4);
         assert_eq!(size_of::<ActorLocalGeneration>(), 1);
@@ -999,6 +1048,14 @@ mod tests {
         assert_eq!(checked_retained_slot_bytes(2).expect("M2"), 32);
         assert_eq!(checked_retained_slot_bytes(3).expect("M3"), 48);
         assert_eq!(checked_retained_slot_bytes(4).expect("M4"), 64);
+
+        let max_u32_index = usize::try_from(u32::MAX).expect("CI usize represents u32::MAX");
+        assert_eq!(
+            ActorLocalId::from_slot_index(max_u32_index)
+                .expect_err("one-based actor id count/index overflow must reject")
+                .code,
+            FailureCode::ArithmeticOverflow
+        );
         assert_eq!(
             checked_retained_slot_bytes(usize::MAX)
                 .expect_err("byte overflow must reject")
