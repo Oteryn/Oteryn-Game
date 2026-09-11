@@ -1,3 +1,5 @@
+#[path = "../../../vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs"]
+mod oteryn_resource_budget;
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;
 #[path = "support/authority_recovery.rs"]
@@ -944,8 +946,7 @@ fn new_epoch_rejects_zero_fast_reconnect_generation_in_committed_winner()
                     .record()
                     .identity()
                     .reconnect_attempt_ref()
-                    .to_be_bytes()
-                    .to_vec();
+                    .to_be_bytes();
                 sqlx::query(
                     "UPDATE game_durability_reconnect_attempts \
                      SET record_json = jsonb_set(record_json::jsonb, '{proof}', \
