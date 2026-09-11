@@ -4,7 +4,7 @@
   "issue": 530,
   "activation_main_sha": "32a055ac9b2c4e69773f1d6cb9746ea412164866",
   "branch": "agent/runtime-actor-carrier-prototype-530",
-  "candidate_source_commit": "1f6f1c271544d34e304785aaf6b3f13f2dd2433b",
+  "candidate_source_commit": "b099ee5eac2029c5087e638aa5c326759053ff5b",
   "exact_head_binding": "GITHUB_PR_HEAD_AT_QUALIFICATION",
   "qualification_state": "PENDING_HOSTED_QUALIFICATION",
   "candidate": "CHANNEL_RUNTIME_ACTOR_CARRIER_V1_PROTOTYPE",
@@ -13,6 +13,8 @@
   "namespace_continuity": {
     "authority_shape": "NamespaceContinuityGuard outside carrier backing",
     "survives_carrier_loss": true,
+    "cloneable": false,
+    "copyable": false,
     "carrier_can_mint_fresh_namespace_authority": false,
     "same_generation_rebootstrap": "FAIL_CLOSED",
     "fresh_namespace_requires": "INDEPENDENTLY_AUTHORIZED_STRICTLY_NEWER_SCOPE_OWNERSHIP_GENERATION",
@@ -79,6 +81,7 @@
       "full_or_fragmented_worst_case_insertion_work_units": 4
     }
   ],
+  "per_tested_m_work_matrix_executable": true,
   "cargo_run_regenerated_points": [1, 2, 3, 4],
   "required_negative_matrix": {
     "cross_scope_or_outer_generation": "COVERED_BY_EXAMPLE_TEST",
@@ -101,7 +104,7 @@
   "movement_139_activated": false,
   "notes": [
     "Expected numeric shape/work values are asserted by the Rust example tests but are not marked qualified until repository-native exact-head CI observes them.",
-    "NamespaceContinuityGuard is prototype evidence for authority that survives carrier loss; production ownership/persistence of that guard is not selected here.",
+    "NamespaceContinuityGuard is non-Clone/non-Copy prototype evidence for authority that survives carrier loss; production ownership/persistence of that guard is not selected here.",
     "No production actor ceiling is selected by any tested M."
   ]
 }
