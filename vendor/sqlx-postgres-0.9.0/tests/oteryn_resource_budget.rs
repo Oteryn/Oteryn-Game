@@ -333,7 +333,10 @@ fn build_helper(helper: &Path) -> Result<PathBuf, Box<dyn Error>> {
         .arg(helper.join("Cargo.toml"))
         .env("CARGO_TERM_COLOR", "never")
         .output()?;
-    ensure_success(&reconcile, "isolated SQLx AWS-LC offline lock reconciliation")?;
+    ensure_success(
+        &reconcile,
+        "isolated SQLx AWS-LC offline lock reconciliation",
+    )?;
 
     let reconciled_lock = fs::read_to_string(&lock_path)?;
     if lock_package_identities(&reconciled_lock) != seeded_identities {
