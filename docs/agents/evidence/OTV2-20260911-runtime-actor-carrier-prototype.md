@@ -23,7 +23,7 @@ Prototype-local actor identity is fixed-shape only. A one-based `ActorLocalId(u3
 
 The current candidate source was materially repaired after independent review to prevent same-generation namespace resurrection.
 
-`NamespaceContinuityGuard` is separate from the carrier backing and is the prototype evidence object that must survive carrier loss/reconstruction. Carrier materialization is private to a successful guard claim; the carrier cannot mint fresh namespace authority from raw scope/generation facts.
+`NamespaceContinuityGuard` is separate from the carrier backing and is the prototype evidence object that must survive carrier loss/reconstruction. It is deliberately neither `Clone` nor `Copy`, so a pre-bootstrap authority snapshot cannot be duplicated and replayed after carrier loss. Carrier materialization is private to a successful guard claim; the carrier cannot mint fresh namespace authority from raw scope/generation facts.
 
 Once a guard has initialized one actor-local namespace for a `ScopeOwnershipGeneration`, losing/dropping the `ChannelActorCarrier` does **not** reset the guard. A second bootstrap through that surviving guard fails closed with `SAME_GENERATION_RECONSTRUCTION_BLOCKED`. A fresh namespace becomes available only after the guard consumes an independently authorized, strictly newer `ScopeOwnershipGeneration`. The new carrier then rejects every old exact actor reference on the outer-generation fence before local-slot acceptance.
 
@@ -40,6 +40,8 @@ The example tests independently exercise `M = 1, 2, 3, 4`. None is a production 
 | 3 | 48 | 1 | 1 | 1 | 3 | reject before mutation |
 | 4 | 64 | 1 | 1 | 1 | 4 | reject before mutation |
 
+The common `prove_m_boundary<M>()` executable matrix now asserts, for **every** tested M, sparse insertion work=1, exact-M fill, full M+1 denial work=M with complete state preservation, direct lookup work=1, removal work=1, and fragmented-last-slot reinsertion work=M. The separate M=4 boundary test remains an additional concrete check, not the sole evidence for occupancy-dependent work.
+
 The lookup/index entry is physically the same bounded slot resource. Distinct-index bytes are therefore zero rather than silently counted as actor bytes.
 
 ## Correctness / authority matrix encoded by tests
@@ -54,8 +56,8 @@ The exact example contains focused tests for:
 6. injected failure after reusable-slot selection and valid successor derivation leaving the complete carrier state byte/field-equivalent at the semantic struct level;
 7. checked local-generation exhaustion producing exactly `ACTOR_LOCAL_GENERATION_EXHAUSTED` in category `CAPACITY_EXCEEDED`, transitioning only the selected vacant max-generation slot to terminal `EXHAUSTED`, and preserving unrelated slots/actors;
 8. churn across every configured slot keeping retained generation cells exactly `M` and independent retirement history exactly zero;
-9. insertion work measured at sparse, full and fragmented boundaries; direct lookup/removal remain one-slot work;
-10. carrier loss with a surviving `NamespaceContinuityGuard` blocking same-generation reconstruction, followed by a strictly newer outer generation permitting a fresh namespace and rejecting the old reference;
+9. lookup/insertion/removal work measured for every tested M, including sparse, full and fragmented occupancy boundaries;
+10. carrier loss with a surviving non-duplicable `NamespaceContinuityGuard` blocking same-generation reconstruction, followed by a strictly newer outer generation permitting a fresh namespace and rejecting the old reference;
 11. count/byte overflow rejecting through checked arithmetic.
 
 ## Minimal carried facts
@@ -72,7 +74,7 @@ No inventory, combat values, AI memory, dialogue, loot, persistence, protocol ha
 
 ## Qualification truth
 
-The current material candidate source repair is commit `1f6f1c271544d34e304785aaf6b3f13f2dd2433b`. The final PR head is intentionally bound by GitHub check/review evidence rather than self-referentially embedded as a PASS claim in this file.
+The current material candidate source commit is `b099ee5eac2029c5087e638aa5c326759053ff5b`. The final PR head is intentionally bound by GitHub check/review evidence rather than self-referentially embedded as a PASS claim in this file.
 
 The numeric values above are **candidate expectations encoded as executable assertions**, not yet PASS claims. They become qualified only when exact-head repository CI compiles/runs the applicable example tests and all selected repository gates succeed.
 
