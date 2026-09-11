@@ -45,22 +45,24 @@ Implement and qualify the smallest executable `CHANNEL_RUNTIME_ACTOR_CARRIER_V1`
 
 The candidate uses a fixed const-generic slot array. `ActorLocalId` maps directly and immutably to one logical slot/generation cell, so there is no separately growing lookup index or tombstone/history store. Admission performs deterministic slot probing; lookup and removal are direct single-slot operations.
 
-Independent review on predecessor head found that carrier-local initialization state could be recreated from the same raw outer facts. Current source repairs that boundary with a separate `NamespaceContinuityGuard` that survives carrier loss: carrier materialization is private to a successful guard claim, same-generation rebootstrap fails closed, and a fresh namespace requires an independently authorized strictly newer `ScopeOwnershipGeneration`. The prototype does not implement or claim same-generation durable restore or production ownership/persistence of that guard.
+`NamespaceContinuityGuard` is the live prototype authority supplied to lookup/removal and kept outside carrier backing. It survives carrier loss, is neither `Clone` nor `Copy`, and prevents replay of stale current-owner snapshots. Same-generation rebootstrap fails closed; only an independently authorized strictly newer `ScopeOwnershipGeneration` may initialize a fresh namespace. The prototype does not implement or claim same-generation durable restore or production ownership/persistence of that guard.
 
 ## Required acceptance matrix
 
 - [ ] Exact `WorldId + ChannelId + ScopeOwnershipGeneration + ActorLocalId + ActorLocalGeneration` reference shape is exercised.
-- [ ] Current-owner mismatch, cross-World/cross-Channel and stale outer generation reject before actor acceptance.
+- [ ] Same-Channel cross-World, same-World cross-Channel and stale live outer-generation cases reject independently before actor acceptance.
+- [ ] Lookup/removal consume the live continuity guard rather than a replayable copied owner-generation snapshot.
+- [ ] Missing/out-of-range actor IDs and valid-but-vacant slots reject fail-closed.
 - [ ] Distinct local IDs cannot alias one generation cell.
 - [ ] Removal preserves generation; successful reuse advances generation and stale prior refs reject.
 - [ ] Injected post-selection failure preserves complete carrier state.
 - [ ] Local-generation exhaustion returns `ACTOR_LOCAL_GENERATION_EXHAUSTED / CAPACITY_EXCEEDED`, marks only the selected slot terminal and preserves unrelated state.
 - [ ] Carrier loss leaves `NamespaceContinuityGuard` initialized; same-generation reconstruction fails closed; a genuinely newer independently authorized outer generation may initialize a fresh namespace and fences old refs.
 - [ ] Churn across every configured slot retains exactly `M` generation cells and zero independent retirement-history entries.
-- [ ] Checked count/byte arithmetic rejects overflow before mutation/allocation evidence.
+- [ ] Actor-ID one-based count/index overflow and retained-byte arithmetic overflow reject before mutation/allocation evidence.
 - [ ] M and M+1 are independently exercised for every tested M.
 - [ ] `cargo run --example runtime_actor_carrier_prototype` regenerates physical/work rows for every tested M=1,2,3,4.
-- [ ] Direct lookup/removal work is constant and insertion work is measured at sparse/full/fragmented boundaries.
+- [ ] Lookup/removal work and sparse/full/fragmented insertion work are exercised independently for every tested M.
 - [ ] Physical slot/index backing is reported honestly; no separate index backing is hidden.
 - [ ] No production capacity, registry, #508 Phase A, #139 Movement, Cargo/workspace or runtime-source claim is made.
 - [ ] Focused example tests pass on exact head.
