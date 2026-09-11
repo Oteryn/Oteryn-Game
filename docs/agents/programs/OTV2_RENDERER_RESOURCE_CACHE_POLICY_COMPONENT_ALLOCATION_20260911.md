@@ -61,13 +61,13 @@ The worker must answer only:
 
 1. Can capacity and deterministic accounted bytes be checked and reserved **before** resource-shaped construction/allocation/publication?
 2. Can exact-max admission succeed and max+1 deterministically evict a legal reclaimable entry, reject, or defer without unbounded growth or partial publication?
-3. Can per-cycle admission count, admission/upload bytes, in-flight uploads and eviction/replacement work be bounded with checked arithmetic?
+3. Can committed admissions, admission/upload bytes, in-flight uploads, eviction/replacement work **and failed/retried admission attempts/work** be bounded per cycle with checked arithmetic so failure cannot restore the caller's work budget and enable unlimited retries?
 4. Can stale/replaced generation fail closed, and can component-owned old-generation entries/reservations/in-flight state be released or fenced without unbounded retained backing?
 5. Can deterministic priority prevent decorative work from silently displacing pinned/critical gameplay-readability resources?
 6. Can decorative miss/defer/failure produce an explicit bounded fallback/degradation result without gameplay mutation?
 7. Can eviction/fallback order remain deterministic and independent of hash/thread enumeration order?
 8. Can semantic resource identity remain independent of atlas-versus-array physical layout?
-9. Can every counter/byte composition reject overflow before mutation/allocation?
+9. Can every counter/byte/work-unit composition reject overflow before mutation/allocation?
 10. Can exact evidence be regenerated without promoting injected values to production `RENDER-RL-*` maxima?
 
 ## Exact owned paths after activation
@@ -122,7 +122,13 @@ max_admissions_per_cycle
 max_admission_bytes_per_cycle
 max_in_flight_uploads
 max_evictions_or_replacements_per_cycle
+max_admission_attempts_per_cycle
+max_admission_attempt_work_units_per_cycle
 ```
+
+`max_admissions_per_cycle` may count committed admissions, but it is **not** allowed to be the only retry bound. Every attempt that passes preflight far enough to perform reclaim-plan evaluation, reservation, resource-shaped construction or installation must consume the separate finite attempt/work budget even if the operation later fails and retained state rolls back.
+
+The work-unit definition must be deterministic for the exact candidate and must reserve/charge a candidate-specific bounded upper amount before the corresponding reclaim/construction/install work is performed. An attempt/work charge is monotonic within the normalized cycle and is not refunded after later construction/install failure. The explicit cycle boundary may reset it.
 
 Additional fixed counters are allowed only if the candidate physically exercises them and they are required to keep the component bounded.
 
@@ -136,15 +142,19 @@ Required ordering:
 
 ```text
 current generation check
--> checked count/byte arithmetic
+-> checked count/byte/work arithmetic
 -> capacity/per-cycle/in-flight policy check
--> deterministic reclaim decision if allowed
--> reserve bounded admission state
+-> checked finite admission-attempt/work charge or reservation
+-> deterministic reclaim-plan decision within the charged work allowance
+-> reserve bounded retained/in-flight admission state
 -> only then construct/install resource-shaped backing
--> commit exactly once OR rollback exactly
+-> commit retained state exactly once OR rollback retained state exactly
+-> preserve the consumed per-cycle attempt/work charge even on later failure
 ```
 
-Any failed post-reservation step must roll back all reservations/counters/index/priority state exactly. No partial entry, byte reservation, in-flight token or priority mutation may remain.
+A failed post-reservation step must roll back retained entry/index state, retained accounted bytes, in-flight reservations and priority/publication state exactly. It must **not** refund the already consumed admission-attempt/work charge. If a committed-admission or committed-byte counter is defined to count only successful publication, that counter may roll back; retry safety is supplied independently by the non-refundable finite attempt/work budget.
+
+No partial entry, leaked retained-byte reservation, leaked in-flight token or priority mutation may remain. Conversely, repeated failed construction/install attempts must eventually hit the finite attempt/work boundary and reject/defer **before** another resource-shaped construction or reclaim evaluation can run.
 
 ## Deterministic priority / fallback
 
@@ -194,24 +204,28 @@ The exact candidate and evidence must prove at least:
 2. stale generation rejects before resource construction/publication and leaves all state unchanged;
 3. resident-entry exact max succeeds; max+1 deterministically evicts one legal reclaimable entry or rejects/defers before unbounded growth;
 4. resident-accounted-byte exact max succeeds; max+1 rejects/evicts/defers before construction with no overflow/leak;
-5. per-cycle admission-count max/max+1 is bounded and resets only at the explicit normalized cycle boundary;
-6. per-cycle admission/upload-byte max/max+1 is bounded with checked arithmetic;
+5. committed per-cycle admission-count max/max+1 is bounded and resets only at the explicit normalized cycle boundary;
+6. committed per-cycle admission/upload-byte max/max+1 is bounded with checked arithmetic;
 7. in-flight exact max succeeds and max+1 rejects/defers before extra backing; completion/abort releases exactly once;
 8. eviction/replacement exact max succeeds and max+1 rejects/defers without exceeding work budget;
-9. combined limits cannot be bypassed by a sequence that satisfies dimensions individually while exceeding another;
-10. checked arithmetic overflow rejects before mutation/construction;
-11. post-reservation construction/install failure rolls back entry/index, bytes, cycle counters, in-flight reservations and priority state exactly;
-12. decorative admission never evicts pinned/critical content when forbidden;
-13. deterministic tie cases choose the same legal victim/result independent of insertion/hash/thread enumeration order;
-14. decorative miss/defer/failure returns explicit bounded fallback/degradation and never mutates gameplay authority;
-15. legitimate generation transition fences old references/permits, prevents old-generation install/resurrection and leaves no independently growing old-generation retention;
-16. repeated generation/recovery cycles keep retained state bounded by injected finite limits;
-17. semantic cache identity is unchanged when equivalent content uses different prototype physical-layout metadata;
-18. no whole-world preload, visibility scan, gameplay mutation, production-config lookup or registry lookup is reachable;
-19. evidence reports exact retained entries, deterministic accounted bytes, per-cycle admission count/bytes, in-flight count, eviction/replacement work and generation-release work for every exercised boundary;
-20. all injected values report `test_evidence_only = true` and `production_maximum_selected = false`.
+9. admission-attempt count exact max succeeds and max+1 rejects/defer **before** another resource-shaped construction/reclaim evaluation; failed attempts consume this budget and do not refund it;
+10. admission-attempt work-unit exact max succeeds and max+1 rejects/defer before work; candidate-specific worst-case reclaim/construction/install allowance is checked/charged before work and remains consumed after later failure;
+11. combined limits cannot be bypassed by a sequence that satisfies individual retained/success counters while repeatedly failing construction or exhausting another work dimension;
+12. checked arithmetic overflow for count/byte/work counters rejects before mutation/construction;
+13. post-reservation construction/install failure rolls back retained entry/index, retained bytes, in-flight reservations and priority/publication state exactly **while preserving the consumed attempt/work charge**;
+14. repeated injected construction/install failures in one normalized cycle eventually hit the finite attempt/work limit, and the first over-limit retry performs zero additional resource construction/reclaim work;
+15. explicit cycle reset clears the per-cycle attempt/work charge exactly once and no other path silently refreshes it;
+16. decorative admission never evicts pinned/critical content when forbidden;
+17. deterministic tie cases choose the same legal victim/result independent of insertion/hash/thread enumeration order;
+18. decorative miss/defer/failure returns explicit bounded fallback/degradation and never mutates gameplay authority;
+19. legitimate generation transition fences old references/permits, prevents old-generation install/resurrection and leaves no independently growing old-generation retention;
+20. repeated generation/recovery cycles keep retained state bounded by injected finite limits;
+21. semantic cache identity is unchanged when equivalent content uses different prototype physical-layout metadata;
+22. no whole-world preload, visibility scan, gameplay mutation, production-config lookup or registry lookup is reachable;
+23. evidence reports exact retained entries, deterministic accounted bytes, committed per-cycle admission count/bytes, admission attempts/work units, failed-attempt count, in-flight count, eviction/replacement work and generation-release work for every exercised boundary;
+24. all injected values report `test_evidence_only = true` and `production_maximum_selected = false`.
 
-If any operation cost depends on occupancy, queue shape or reclaimable-set shape, evidence must measure the relevant candidate-specific boundary/worst-case path rather than only one representative point.
+If any operation cost depends on occupancy, queue shape or reclaimable-set shape, evidence must measure the relevant candidate-specific boundary/worst-case path rather than only one representative point. Failed attempts must be included in those work measurements; they cannot disappear because retained state rolled back.
 
 ## Evidence contract
 
@@ -225,13 +239,17 @@ resource_identity_shape
 injected_limits
 resident_entries
 resident_accounted_bytes
-admissions_this_cycle
-admission_bytes_this_cycle
+committed_admissions_this_cycle
+committed_admission_bytes_this_cycle
+admission_attempts_this_cycle
+admission_attempt_work_units_this_cycle
+failed_construction_or_install_attempts_this_cycle
 in_flight_uploads
 evictions_or_replacements_this_cycle
 generation_release_work
 occupancy_or_queue_dependent_work_boundaries
 max_max_plus_1_matrix
+failed_attempt_budget_matrix
 rollback_matrix
 priority_fallback_matrix
 generation_recovery_matrix
@@ -306,6 +324,9 @@ resident_entry_boundary: <PASS|BLOCKED>
 resident_byte_boundary: <PASS|BLOCKED>
 per_cycle_admission_boundary: <PASS|BLOCKED>
 per_cycle_byte_boundary: <PASS|BLOCKED>
+admission_attempt_boundary: <PASS|BLOCKED>
+admission_attempt_work_boundary: <PASS|BLOCKED>
+failed_attempt_budget_non_refund: <PASS|BLOCKED>
 in_flight_boundary: <PASS|BLOCKED>
 eviction_replacement_boundary: <PASS|BLOCKED>
 post_reservation_rollback: <PASS|BLOCKED>
