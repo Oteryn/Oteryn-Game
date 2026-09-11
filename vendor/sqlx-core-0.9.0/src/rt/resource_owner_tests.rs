@@ -24,21 +24,13 @@ impl ResourceBudget for Ledger {
 }
 
 #[test]
-fn owned_adapter_denies_before_tokio_task_allocation() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
+fn owned_adapter_denies_before_blocking_owner_arc_allocation() {
     let budget = Arc::new(Ledger {
         limit: 0,
         used: AtomicUsize::new(0),
     });
-    let owner = super::resource_owner::blocking_job_owner(budget.clone());
-    let result =
-        runtime.block_on(async { super::resource_owner::spawn_blocking_owned(&owner, || ()) });
-    assert!(matches!(
-        result,
-        Err(tokio::task::OwnedSpawnError::InsufficientOwnerBalance)
-    ));
+    let result = super::resource_owner::blocking_job_owner(budget.clone());
+    assert!(matches!(result, Err(BudgetError::Unavailable)));
     assert_eq!(budget.used.load(Ordering::SeqCst), 0);
 }
 
@@ -51,7 +43,9 @@ fn owned_adapter_runs_when_funded_and_releases_on_shutdown() {
         limit: 4 * 1024 * 1024,
         used: AtomicUsize::new(0),
     });
-    let owner = super::resource_owner::blocking_job_owner(budget.clone());
+    let owner = super::resource_owner::blocking_job_owner(budget.clone()).unwrap();
+    let owner_control_charge = budget.used.load(Ordering::SeqCst);
+    assert!(owner_control_charge > 0);
     let handle = runtime
         .block_on(async { super::resource_owner::spawn_blocking_owned(&owner, || 42) })
         .unwrap();
@@ -60,7 +54,13 @@ fn owned_adapter_runs_when_funded_and_releases_on_shutdown() {
         .block_on(async { super::resource_owner::spawn_blocking_owned(&owner, || 43) })
         .unwrap();
     assert_eq!(runtime.block_on(second).unwrap(), 43);
-    assert!(budget.used.load(Ordering::SeqCst) > 0);
+    assert!(budget.used.load(Ordering::SeqCst) > owner_control_charge);
     drop(runtime);
+    assert_eq!(
+        budget.used.load(Ordering::SeqCst),
+        owner_control_charge,
+        "runtime backing must release before the still-live owner Arc control"
+    );
+    drop(owner);
     assert_eq!(budget.used.load(Ordering::SeqCst), 0);
 }
