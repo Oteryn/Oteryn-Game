@@ -35,6 +35,35 @@ Skutek: zakres został domknięty do pełnego rejestru wszystkich **192 wpisów 
 
 Skutek: pełny audyt i pełny rejestr decyzji zostały zapisane jako izolowane evidence artifacts na osobnej gałęzi dokumentacyjnej; istniejące pliki PR #571, runtime i accepted contracts nie zostały nadpisane.
 
+### 4. Wymóg rozdzielenia lekkiego QoL od zmian gameplayu
+
+> napewno trzeba ustalic rzeczy ktore sa relatywnie prostymi i drobnymi zmianami ktore nie maja ogromnego wplywu na tibia reference a sa bardziej Quality of life na te ktore juz bardzo wchodza w mechanike gamplay itp
+
+Skutek: zaproponowano drugą, niezależną oś klasyfikacji `Semantic Impact`:
+
+- `Q0` — presentation QoL;
+- `Q1` — interaction QoL;
+- `G1` — gameplay-adjacent semantic change;
+- `G2` — core gameplay/progression/economy change.
+
+Oś ta nie zastępuje `S/A/B/C/R`; ma zapobiegać sytuacji, w której wysoki priorytet produktu jest mylony z niskim ryzykiem semantycznym.
+
+### 5. Wymóg przeprojektowania pomysłów tak, aby gra była lepsza dla graczy
+
+> dodatkowo potrzebuje audyt teyuch rzeczy co mozna relanie lepiej zrobic nizeli byly one opisane aby nasza gra byla dobra dla graczy
+
+Skutek: wykonano dodatkowy audyt `Better-for-Players`, którego wyniki są zapisane w:
+
+`OTERYN_PR571_QOL_VS_GAMEPLAY_AND_PLAYER_BETTER_DESIGN_AUDIT_2026-09-11.md`
+
+Audyt nie tylko klasyfikuje wpływ funkcji, ale proponuje lepsze projektowo rozwiązania dla wszystkich 19 programów, w szczególności Activity Plan, Social Assist Group Finder, Prepare/Finish Hunt, Activity Loadouts, Quest/Access Navigator, Death Report, transparentne boss progression/pity, Activity Contracts oraz ograniczenie liczby obowiązkowych pionowych warstw progresji.
+
+### 6. Polecenie zapisania dalszej rozmowy
+
+> zapisz toi wszystko o czym piszemy tutaj do repo
+
+Skutek: dodatkowa warstwa `QoL vs Gameplay Impact + Better-for-Players Design Audit` została zapisana na tej samej izolowanej gałęzi archiwalnej.
+
 ## Zachowane wyniki rozmowy
 
 Pełna treść merytoryczna obu rozbudowanych odpowiedzi audytowych została skonsolidowana w `OTERYN_PR571_PRODUCT_AUDIT_2026-09-11.*`. Dokument obejmuje:
@@ -60,6 +89,36 @@ Pełna treść merytoryczna obu rozbudowanych odpowiedzi audytowych została sko
 
 Pełny rejestr maszynowy został zachowany bez zmian jako gzip podzielony na pięć części. Po złączeniu i rozpakowaniu odtwarza `oteryn_pr571_rejestr_decyzji.json`, zawierający komplet 192 wpisów wraz z `source_group`, `programmes`, `disposition` i `recommendation`.
 
+Dalsza warstwa audytu po właścicielskim doprecyzowaniu QoL/gameplay i potrzeby lepszego designu została zapisana jako:
+
+- `OTERYN_PR571_QOL_VS_GAMEPLAY_AND_PLAYER_BETTER_DESIGN_AUDIT_2026-09-11.md`.
+
+Ten dokument dodaje:
+
+- klasy `Q0/Q1/G1/G2`;
+- trzy pytania do klasyfikacji semantic impact;
+- shortlistę Safe QoL Wave;
+- listę funkcji, które wyglądają jak QoL, ale zmieniają timing/economy/gameplay;
+- ulepszony design wszystkich 19 programów;
+- Activity Plan jako UX spine;
+- lepszy Group Finder;
+- zasadę, że core social QoL nie powinien być sztucznym premium wall;
+- Activity Loadouts z rozdzieleniem `Plan` i `Active`;
+- zakaz redukowania buildów do jednego Gear Score;
+- `Prepare Hunt / Finish Hunt` flows;
+- explainable Huntfinder z confidence/freshness;
+- Quest Navigator z poziomami spoilerów;
+- Account-World progression zachowującą tożsamość postaci;
+- Practice/Normal/Challenge encounter model;
+- Death Report;
+- Activity Contracts zamiast czystego weekly FOMO;
+- Residence jako lifestyle/social identity hub;
+- source/sink accounting;
+- progression-layer budget;
+- zasadę alt-friendly, not alt-mandatory;
+- balance przez asymetrię klas bez wykluczania klas z całych kategorii contentu;
+- nowe wymagane pola roadmapy: `PLAYER_PROBLEM`, `SEMANTIC_IMPACT`, `BETTER_DESIGN`, `DO_NOT_CROSS`, `SUCCESS_METRIC`, `REFERENCE_BASELINE_OR_DECLARED_DIFFERENCE`, `OWNING_SYSTEM/CONTRACT`.
+
 ## Najważniejsze wnioski z rozmowy
 
 1. **PR #571 ma sens jako katalog produktu, ale nie jako zbiorcze uprawnienie do wdrożenia 19 programów.**
@@ -76,6 +135,10 @@ Pełny rejestr maszynowy został zachowany bez zmian jako gzip podzielony na pi�
 12. **AI w anti-bot/economy jest pomocnicze.** Deterministyczna authority, evidence i bounded policy pozostają po stronie systemu.
 13. **Pierwszy Reference target jest już wybrany:** Global Tibia production-observable behavior po granicy 2026-07-28. Późniejsze aktualizacje Global nie przesuwają automatycznie tej wersji.
 14. **Najlepszy wyróżnik integrujący roadmapę:** `Plan aktywności` — wybór celu → wymagania → loadout/zapasy → grupa → gra → settlement/restock — bez tworzenia dwudziestego systemu progresji.
+15. **Roadmapa musi mieć dwie osie:** `Priority` i `Semantic Impact`. `S` nie oznacza automatycznie „bezpieczne do Reference”.
+16. **Safe QoL Wave powinna wyprzedzać ciężkie G2 redesigny**, jeśli live dependencies/authority na to pozwalają.
+17. **Nie każdy pomysł literalnie opisany przez graczy jest najlepszym rozwiązaniem problemu gracza.** Należy zachować problem, ale przeprojektować rozwiązanie, gdy można uzyskać lepszy UX, mniejszą złożoność i mniej niechcianych skutków ubocznych.
+18. **Mniej obowiązkowych warstw pionowej mocy, więcej jakościowych wyborów i explainable systems.**
 
 ## Wynik klasyfikacji 192 wpisów źródłowych
 
