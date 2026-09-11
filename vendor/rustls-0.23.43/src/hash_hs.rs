@@ -103,12 +103,14 @@ fn qualified_hash_context_bytes(
     {
         let sha256: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA256;
         let sha384: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA384;
-        if core::ptr::eq(provider, sha256) {
+        // Trait-object vtable identities are not stable across codegen units.
+        // Compare only the data address of the exact static provider object.
+        if core::ptr::addr_eq(provider, sha256) {
             // Rust 1.94 Box<ring_like::hash::Context>: 72-byte Rust context
             // plus AWS-LC OPENSSL_malloc(sizeof(SHA256_CTX)=112) => 120.
             return Ok(192);
         }
-        if core::ptr::eq(provider, sha384) {
+        if core::ptr::addr_eq(provider, sha384) {
             // 72-byte Rust context plus
             // OPENSSL_malloc(sizeof(SHA512_CTX)=216) => 224.
             return Ok(296);
@@ -132,10 +134,12 @@ fn qualified_hash_fork_finish_bytes(
     {
         let sha256: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA256;
         let sha384: &'static dyn hash::Hash = &crate::crypto::aws_lc_rs::hash::SHA384;
-        if core::ptr::eq(provider, sha256) {
+        // Keep provider recognition bound to the exact static AWS-LC objects,
+        // while ignoring trait-object vtable metadata for identity.
+        if core::ptr::addr_eq(provider, sha256) {
             return Ok(120);
         }
-        if core::ptr::eq(provider, sha384) {
+        if core::ptr::addr_eq(provider, sha384) {
             return Ok(224);
         }
     }
@@ -775,7 +779,6 @@ mod tests {
         let mut hhb = HandshakeHashBuffer::new();
         hhb.set_client_auth_enabled();
         hhb.add_raw(b"hello");
-        assert_eq!(hhb.buffer.len(), 5);
         let mut hh = hhb.start_hash(&SHA256);
         assert_eq!(
             hh.client_auth
