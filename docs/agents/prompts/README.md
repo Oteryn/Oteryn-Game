@@ -76,6 +76,21 @@ The Terra profile is additive and does **not** silently supersede `Oteryn: work 
 Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
 
+### Native UI programme
+
+The protected Native UI programme exposes exactly these reusable prompt aliases:
+
+- `OTV2_SOL_NATIVE_UI_LEAD.md` — **`Oteryn: sol native ui lead`.**
+- `OTV2_SOL_NATIVE_UI_P1.md` — **`Oteryn: sol native ui p1`.**
+- `OTV2_SOL_NATIVE_UI_INPUT.md` — **`Oteryn: sol native ui input`.**
+- `OTV2_SOL_NATIVE_UI_RENDERER.md` — **`Oteryn: sol native ui renderer`.**
+- `OTV2_SOL_NATIVE_UI_HUD.md` — **`Oteryn: sol native ui hud`.**
+- `OTV2_SOL_NATIVE_UI_QUALIFY.md` — **`Oteryn: sol native ui qualify`.**
+- `OTV2_SOL_NATIVE_UI_CI.md` — **`Oteryn: sol native ui ci`.**
+- `OTV2_SOL_NATIVE_UI_REVIEW.md` — **`Oteryn: sol native ui review`.**
+
+Alias resolution is discovery only. It grants no allocation, implementation lease, tracked-file write, merge authority or second control plane. Every mutating role must independently prove its current exact protected allocation and leases from the unique active control plane; absent that proof it remains read-only.
+
 ### Global Reference investigation
 
 - `OTV2_REFERENCE_INVESTIGATOR.md` — parameterized, strictly read-only #486 investigation role for parallel evidence/data discovery. **Canonical short form: `Oteryn: ref <lane>`.** Supported lanes: `world`, `combat`, `char`, `npc`, `move`, `durability`, `evidence`, `qa`.

@@ -52,6 +52,13 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 - ADR-0015 — GameNode internal implementation shape not frozen.
 - ADR-0016 — gameplay transport mode vocabulary does not imply runtime readiness.
 
+## Proposed / future architecture candidates
+
+These files are design inputs only until their own review/acceptance lifecycle completes. Their presence does not grant implementation or production authority.
+
+- [ADR-0018: Browser client web-ready boundaries](ADR-0018-browser-client-web-ready-boundaries.md) — proposed shared-Rust/WASM/WebGPU/client-platform boundaries that preserve one `protocol-oteryn`; non-authoritative until separately accepted or adopted by protected owning architecture. Tracking: Issue #519.
+- [Oteryn Web Client staged implementation plan](WEB_CLIENT_IMPLEMENTATION_PLAN.md) — proposed W0–W10 delivery sequence, transport/profile gates, browser E2E, asset/cache, security, resource and rollout requirements. `IMPLEMENTATION_AUTHORITY: NONE` until separately allocated.
+
 ## Accepted foundation / durability / gameplay contracts
 
 Current accepted architecture includes:
