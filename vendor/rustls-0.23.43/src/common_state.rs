@@ -1265,6 +1265,7 @@ impl<'a> HandshakeFlight<'a, true> {
             body.as_slice().into(),
         );
         let fragment_count = fragments.len();
+        drop(fragments);
         if fragment_count == 0 {
             return Err(InvalidMessage::UnexpectedMessage(
                 "owner-aware TLS1.3 final flight custody",
