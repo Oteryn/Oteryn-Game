@@ -15,6 +15,9 @@ struct Snapshot {
     peak_ordinary: usize,
     peak_root: usize,
     provider_shared: usize,
+    denied_bytes: usize,
+    denied_ordinary: usize,
+    denied_root: usize,
 }
 
 #[derive(Default)]
@@ -24,6 +27,9 @@ struct State {
     peak_ordinary: usize,
     peak_root: usize,
     provider_shared: usize,
+    denied_bytes: usize,
+    denied_ordinary: usize,
+    denied_root: usize,
 }
 
 struct Ledger {
@@ -49,6 +55,9 @@ impl Ledger {
             peak_ordinary: state.peak_ordinary,
             peak_root: state.peak_root,
             provider_shared: state.provider_shared,
+            denied_bytes: state.denied_bytes,
+            denied_ordinary: state.denied_ordinary,
+            denied_root: state.denied_root,
         }
     }
 }
@@ -64,6 +73,9 @@ impl ResourceBudget for Ledger {
             .ok_or(BudgetError::Overflow)?;
         let root = state.root.checked_add(bytes).ok_or(BudgetError::Overflow)?;
         if ordinary > self.ordinary_limit || root > self.root_limit {
+            state.denied_bytes = bytes;
+            state.denied_ordinary = state.ordinary;
+            state.denied_root = state.root;
             return Err(BudgetError::Unavailable);
         }
         state.ordinary = ordinary;
@@ -93,6 +105,9 @@ impl ResourceBudget for Ledger {
         };
         let root = state.root.checked_add(bytes).ok_or(BudgetError::Overflow)?;
         if root > self.root_limit {
+            state.denied_bytes = bytes;
+            state.denied_ordinary = state.ordinary;
+            state.denied_root = state.root;
             return Err(BudgetError::Unavailable);
         }
         state.root = root;
@@ -168,9 +183,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         "positive" => {
             let ledger = Arc::new(Ledger::new(SLOT_LIMIT, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let mut connection = runtime.block_on(PgConnection::establish_with_resource_budget(
-                &options, owner,
-            ))?;
+            let mut connection = match runtime.block_on(
+                PgConnection::establish_with_resource_budget(&options, owner),
+            ) {
+                Ok(connection) => connection,
+                Err(error) => {
+                    let snapshot = ledger.snapshot();
+                    return Err(format!(
+                        "funded owner-aware TLS failed: {error}; denied_bytes={}, denied_at_ordinary={}, denied_at_root={}, peak_ordinary={}, peak_root={}, provider_shared={}",
+                        snapshot.denied_bytes,
+                        snapshot.denied_ordinary,
+                        snapshot.denied_root,
+                        snapshot.peak_ordinary,
+                        snapshot.peak_root,
+                        snapshot.provider_shared
+                    )
+                    .into());
+                }
+            };
             let (server_version_num, ssl_enabled, ssl_version) = runtime.block_on(async {
                 let server_version_num: String = sqlx::query_scalar("SHOW server_version_num")
                     .fetch_one(&mut connection)
