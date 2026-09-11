@@ -162,6 +162,10 @@ Required behavior:
 - backing does not grow beyond the admitted per-instance bound;
 - exact M succeeds only when resources are available; M+1 rejects without mutating retained state;
 - any test/sample M is labeled fixture/evidence-only and cannot be copied into a production limit;
+- the development bound cannot be read, exported, serialized or reported as an accepted production
+  capacity, deployment default or production readiness fact;
+- any path or request labeled production must fail closed / remain unsupported because this allocation
+  has no accepted production-capacity source or production constructor;
 - no constructor or helper may silently substitute `AI01-ACTIVE-ACTORS=256`, prototype M=1..4, or
   any other existing numeric limit as the Channel production maximum.
 
@@ -170,7 +174,8 @@ that bound for production.
 
 ### 4. Direct exact lookup only
 
-The first actor reference/lookup must be exact and current-owner scoped:
+The first actor reference/lookup must be exact and scoped to the supplied Channel namespace and
+ownership generation. The reference itself is not proof that its generation is currently authoritative:
 
 ```text
 WorldId
@@ -187,7 +192,7 @@ Reject independently and without mutation:
 
 - wrong World;
 - wrong Channel;
-- stale scope ownership generation;
+- stale scope ownership generation under the supplied pre-production continuity boundary;
 - missing/out-of-range actor-local identity;
 - valid but vacant slot;
 - stale actor-local generation after reuse;
@@ -220,6 +225,8 @@ The future task must prove on one unchanged exact head:
 - checked arithmetic and allocation-failure paths execute before partial authority/state publication;
 - M/M+1 behavior is exercised across multiple injected fixture bounds without promoting any fixture
   value to product policy;
+- attempts to read/export the development bound as production capacity or invoke a production-labeled
+  construction path fail closed / remain structurally unavailable;
 - same-scope/current-generation exact lookup succeeds under the supplied pre-production continuity
   boundary and every stale/cross-scope case above rejects;
 - carrier loss cannot reconstruct a same-generation namespace from raw scope/generation facts;
