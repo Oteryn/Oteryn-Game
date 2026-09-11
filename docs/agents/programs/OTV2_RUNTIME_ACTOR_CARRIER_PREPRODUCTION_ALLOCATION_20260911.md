@@ -48,16 +48,21 @@ already known.
 - The prior non-production prototype PR #568 is merged as
   `90a3f92434e32354ff1aaeac96d038bbc49eba9c`; its final source head is
   `3f9eea232e7bd40d2f6a3185b06e7e1d84985328` and its native Merge Queue run `34606613550`
-  completed successfully. Its old four-path prototype custody is terminal and is released by the
-  companion archive change in this coordinator PR.
-- Current Foundation already contains `RuntimeScopeRefV1`, `ScopeOwnershipGeneration` and the
-  non-Clone/non-Copy `ScopeRuntimeFence`; its raw external-grant constructor is private. The future
-  carrier must consume already-authorized current-owner/fence authority and must not mint or
-  reconstruct a scope grant from raw generation facts.
+  completed successfully. Its old four-path prototype custody is terminal. This coordinator change
+  records the canonical archive/release; protected integration and readback make that closeout
+  canonical on `main`.
+- Current Foundation contains `RuntimeScopeRefV1`, `ScopeOwnershipGeneration` and
+  `ScopeRuntimeFence`, but the protected WP5 scope-assignment allocation explicitly classifies
+  `ScopeRuntimeFence` as a **consumer of a supplied grant, not producer authority**. This allocation
+  therefore must not treat a fence object or copied generation as proof that a Channel ownership
+  grant was authoritatively issued.
+- The durable Channel scope-assignment producer and its later Foundation consumer integration remain
+  separate dependencies. This allocation neither implements nor activates them.
 - FND-03 requires at most one current logical authoritative owner per `WorldId + ChannelId`, stale
   ownership generations to fail closed, and runtime-local slot reuse to carry a local generation.
-- The protected prototype proved the accepted direct slot/generation shape without a separately
-  growing lookup index or retirement-history store. It is evidence, not runtime authority.
+- The protected #568 prototype proved the accepted direct slot/generation shape and fail-closed
+  same-generation reconstruction behavior without a separately growing lookup index or
+  retirement-history store. It is evidence, not production/runtime ownership authority.
 
 ## Fresh ownership / overlap census
 
@@ -109,22 +114,39 @@ No other path is implicitly writable.
 Implement exactly one Foundation-owned carrier shape for one semantic Channel scope. Do not create a
 parallel Ability, AI, Movement, transport, session or persistence registry.
 
-The carrier must be bound to an exact `RuntimeScopeRefV1::Channel` and current ownership generation.
+The carrier must be bound to an exact `RuntimeScopeRefV1::Channel` and supplied ownership generation.
 It must preserve the accepted local actor identity generation semantics from the #539/#541 chain and
 from the protected #568 prototype.
 
-### 2. Current-owner authority is consumed, never minted
+### 2. Ownership authority is not minted or inferred here
 
-The runtime carrier must consume an already-authorized `ScopeRuntimeFence` (or a strictly narrower
-view derived from that exact live object) rather than constructing current authority from a copied
-`ScopeOwnershipGeneration`.
+This allocation does not select or implement the durable scope-assignment producer. A
+`ScopeRuntimeFence`, a `ScopeOwnershipGeneration`, or an actor reference is not by itself proof that
+the caller is the current Channel owner.
 
-The worker is specifically forbidden to call or widen access to the private raw-grant constructor in
-order to create a second current owner. Do not make `ScopeRuntimeFence` Clone/Copy and do not add a
-public grant constructor.
+The carrier must preserve fail-closed namespace continuity without manufacturing a second ownership
+authority:
 
-If a correct carrier cannot be implemented without changing scope-assignment/grant ownership, stop
-this lane as `ARCHITECTURE_ESCALATION_REQUIRED`; do not invent a new authority producer.
+- no public/runtime constructor may establish current Channel ownership from raw
+  `WorldId + ChannelId + ScopeOwnershipGeneration` facts alone;
+- the private `ScopeRuntimeFence::from_external_grant` visibility must not be widened or used by the
+  carrier as a substitute producer; do not make `ScopeRuntimeFence` Clone/Copy;
+- before the separately accepted durable producer/consumer integration exists, any bootstrap capable
+  of creating a carrier namespace from supplied scope/generation facts must be test-only or an
+  explicitly non-production crate-private development fixture path;
+- that pre-production bootstrap must consume a move-only/non-replayable continuity grant supplied
+  from outside the carrier and must not expose an issuer or reconstruct that grant from raw facts;
+- carrier loss must not permit same-generation namespace reconstruction that can revive a stale actor
+  reference; same-generation rebootstrap fails closed;
+- a fresh namespace may be established only after the caller supplies an independently authorized
+  strictly newer ownership generation through the applicable pre-production fixture boundary;
+- none of those fixture/continuity mechanics becomes production grant, assignment or readiness
+  authority.
+
+If progress requires the actual durable current-owner producer/consumer rather than the bounded
+pre-production fixture boundary, classify the lane `WAITING_DEPENDENCY` on that protected work. If it
+requires new or conflicting ownership semantics, use `ARCHITECTURE_ESCALATION_REQUIRED`. Do not invent
+a producer inside this carrier allocation.
 
 ### 3. Explicit finite non-production bound, no numeric product decision
 
@@ -198,10 +220,13 @@ The future task must prove on one unchanged exact head:
 - checked arithmetic and allocation-failure paths execute before partial authority/state publication;
 - M/M+1 behavior is exercised across multiple injected fixture bounds without promoting any fixture
   value to product policy;
-- same-scope/current-generation exact lookup succeeds and every stale/cross-scope case above rejects;
+- same-scope/current-generation exact lookup succeeds under the supplied pre-production continuity
+  boundary and every stale/cross-scope case above rejects;
+- carrier loss cannot reconstruct a same-generation namespace from raw scope/generation facts;
+- the pre-production continuity grant is move-only/non-replayable and exposes no issuer/reissuer path;
 - removal/reuse and actor-local generation exhaustion are deterministic and preserve unrelated state;
-- the carrier/fence ownership shape cannot be duplicated through Clone/Copy or a newly exposed raw
-  grant constructor;
+- `ScopeRuntimeFence` is not made Clone/Copy, its private raw-grant constructor is not widened, and the
+  carrier does not promote it to durable assignment-producer authority;
 - `apps/game-server/src/foundation/mod.rs` changes only minimal module wiring for this allocation;
 - no Cargo/workspace/registry/workflow/protocol-ID/public-wire/production configuration changes;
 - `cargo +1.94.0 fmt --all --check` succeeds;
@@ -245,6 +270,7 @@ Also excluded:
 - production configuration/deployment/ports/secrets/hardware provisioning;
 - VPS provider/SKU/CPU/RAM/storage/network/topology selection;
 - production Channel actor maximum or admission capacity;
+- durable scope-assignment producer/consumer composition;
 - #508 activation or Ability mutation;
 - #139 activation or Movement mutation;
 - gameplay-domain state/value/formulas;
@@ -263,7 +289,9 @@ After protected-main readback, #162 must fresh-read:
 3. current ownership of `foundation/mod.rs` and all future owned paths;
 4. current mutating-writer count under the Terra/Sol scheduler;
 5. Issue #530/#540 state and any newer accepted architecture;
-6. whether any prerequisite became `UNKNOWN` or `CONFLICT`.
+6. the current status of the durable scope-assignment producer/consumer and whether the planned
+   pre-production-only bootstrap can remain isolated from that authority;
+7. whether any prerequisite became `UNKNOWN` or `CONFLICT`.
 
 Only then may #162 explicitly activate the exact future branch/task. If activating it would become a
 third concurrent mutating lead, the scheduler's explicit third-writer conditions must be proven and a
