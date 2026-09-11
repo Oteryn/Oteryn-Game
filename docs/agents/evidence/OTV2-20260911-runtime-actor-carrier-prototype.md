@@ -19,9 +19,19 @@ Prototype-local actor identity is fixed-shape only. A one-based `ActorLocalId(u3
 
 `ActorSlot` is `#[repr(C)]` with four one-byte fields followed by three `i32` position fields. The exact candidate asserts `size_of::<ActorSlot>() == 16`. Therefore retained slot backing is expected to be `16 * M` bytes for the tested candidate points. All multiplication is checked before the evidence helper accepts the derived byte count.
 
+## Namespace continuity across carrier loss
+
+The current candidate source was materially repaired after independent review to prevent same-generation namespace resurrection.
+
+`NamespaceContinuityGuard` is separate from the carrier backing and is the prototype evidence object that must survive carrier loss/reconstruction. Carrier materialization is private to a successful guard claim; the carrier cannot mint fresh namespace authority from raw scope/generation facts.
+
+Once a guard has initialized one actor-local namespace for a `ScopeOwnershipGeneration`, losing/dropping the `ChannelActorCarrier` does **not** reset the guard. A second bootstrap through that surviving guard fails closed with `SAME_GENERATION_RECONSTRUCTION_BLOCKED`. A fresh namespace becomes available only after the guard consumes an independently authorized, strictly newer `ScopeOwnershipGeneration`. The new carrier then rejects every old exact actor reference on the outer-generation fence before local-slot acceptance.
+
+This prototype does not implement an exact same-generation durable restore source; its selected safe behavior is fail closed. Production ownership/persistence of the continuity guard remains outside this allocation.
+
 ## Tested candidate points
 
-The example tests independently exercise `M = 1, 2, 3, 4`. None is a production maximum.
+The example tests independently exercise `M = 1, 2, 3, 4`. None is a production maximum. `cargo run --example runtime_actor_carrier_prototype` regenerates physical/work rows for all four points.
 
 | M | expected retained slot bytes | lookup work | removal work | sparse insert work | full/fragmented insertion worst case | M+1 |
 |---:|---:|---:|---:|---:|---:|---|
@@ -45,7 +55,7 @@ The exact example contains focused tests for:
 7. checked local-generation exhaustion producing exactly `ACTOR_LOCAL_GENERATION_EXHAUSTED` in category `CAPACITY_EXCEEDED`, transitioning only the selected vacant max-generation slot to terminal `EXHAUSTED`, and preserving unrelated slots/actors;
 8. churn across every configured slot keeping retained generation cells exactly `M` and independent retirement history exactly zero;
 9. insertion work measured at sparse, full and fragmented boundaries; direct lookup/removal remain one-slot work;
-10. same-generation namespace reconstruction without an authorized exact snapshot failing closed, with a fresh namespace allowed only after a genuinely newer `ScopeOwnershipGeneration`;
+10. carrier loss with a surviving `NamespaceContinuityGuard` blocking same-generation reconstruction, followed by a strictly newer outer generation permitting a fresh namespace and rejecting the old reference;
 11. count/byte overflow rejecting through checked arithmetic.
 
 ## Minimal carried facts
@@ -62,9 +72,9 @@ No inventory, combat values, AI memory, dialogue, loot, persistence, protocol ha
 
 ## Qualification truth
 
-The implementation commit that introduced the candidate source is `f851bcd3d6ae56fe62b6b005f723a5b79d40ca38`. Subsequent task/evidence commits do not change production source authority.
+The current material candidate source repair is commit `1f6f1c271544d34e304785aaf6b3f13f2dd2433b`. The final PR head is intentionally bound by GitHub check/review evidence rather than self-referentially embedded as a PASS claim in this file.
 
-The numeric values above are **candidate expectations encoded as executable assertions**, not yet PASS claims. They become qualified only when exact-head repository CI compiles/runs the applicable example tests and all selected repository gates succeed. The final PR head is bound by GitHub check/review evidence rather than self-referentially embedded into this file.
+The numeric values above are **candidate expectations encoded as executable assertions**, not yet PASS claims. They become qualified only when exact-head repository CI compiles/runs the applicable example tests and all selected repository gates succeed.
 
 ## Explicit non-claims
 
@@ -75,6 +85,7 @@ production_capacity_claim = false
 ability_508_phase_a_activated = false
 movement_139_activated = false
 production_runtime_implemented = false
+same_generation_durable_restore_implemented = false
 ```
 
 No result here authorizes a production `ChannelRuntime`, registry serialization, #508 Phase A, #139 Movement, Cargo/workspace mutation, runtime-source mutation or external-repository write.
