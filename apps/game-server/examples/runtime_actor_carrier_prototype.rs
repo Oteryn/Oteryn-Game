@@ -246,7 +246,9 @@ struct ChannelActorCarrier<const M: usize> {
 }
 
 impl<const M: usize> ChannelActorCarrier<M> {
-    fn new(
+    // Raw carrier materialization is deliberately private to the surviving
+    // namespace-continuity authority below. Carrier loss alone cannot call it.
+    fn materialize_after_namespace_claim(
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
     ) -> Result<Self, CarrierFailure> {
@@ -438,15 +440,18 @@ impl<const M: usize> ChannelActorCarrier<M> {
     }
 }
 
+// This state is outside the carrier backing and is required to survive carrier
+// loss/reconstruction. A fresh instance models an independently authorized
+// external owner grant in evidence code; carrier code cannot mint one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct NamespaceAuthority {
+struct NamespaceContinuityGuard {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     namespace_initialized: bool,
 }
 
-impl NamespaceAuthority {
-    fn new(
+impl NamespaceContinuityGuard {
+    fn from_independently_fresh_evidence_grant(
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
     ) -> Result<Self, CarrierFailure> {
@@ -464,7 +469,7 @@ impl NamespaceAuthority {
         })
     }
 
-    const fn current_facts(self) -> CurrentOwnerFacts {
+    const fn current_facts(&self) -> CurrentOwnerFacts {
         CurrentOwnerFacts {
             scope: self.scope,
             generation: self.generation,
@@ -479,12 +484,15 @@ impl NamespaceAuthority {
                 0,
             ));
         }
-        let carrier = ChannelActorCarrier::new(self.scope, self.generation)?;
+        let carrier = ChannelActorCarrier::materialize_after_namespace_claim(
+            self.scope,
+            self.generation,
+        )?;
         self.namespace_initialized = true;
         Ok(carrier)
     }
 
-    fn advance_outer_generation(
+    fn apply_independently_authorized_newer_generation(
         &mut self,
         successor: ScopeOwnershipGeneration,
     ) -> Result<(), CarrierFailure> {
@@ -551,7 +559,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         "actor_local_id_width_bytes": size_of::<ActorLocalId>(),
         "actor_local_generation_width_bytes": size_of::<ActorLocalGeneration>(),
         "actor_slot_width_bytes": size_of::<ActorSlot>(),
-        "tested_points": [physical_point::<1>()?, physical_point::<2>()?, physical_point::<3>()?],
+        "tested_points": [
+            physical_point::<1>()?,
+            physical_point::<2>()?,
+            physical_point::<3>()?,
+            physical_point::<4>()?
+        ],
         "accepted_production_maximum_selected": false,
         "resource_registry_mutated": false,
         "production_capacity_claim": false
@@ -580,8 +593,8 @@ mod tests {
         }
     }
 
-    fn authority(seed_value: u64) -> NamespaceAuthority {
-        NamespaceAuthority::new(
+    fn authority(seed_value: u64) -> NamespaceContinuityGuard {
+        NamespaceContinuityGuard::from_independently_fresh_evidence_grant(
             channel_scope(seed_value).expect("valid test scope"),
             generation(1),
         )
@@ -916,7 +929,7 @@ mod tests {
     }
 
     #[test]
-    fn same_generation_reconstruction_fails_closed_until_new_outer_generation() {
+    fn carrier_loss_preserves_guard_and_blocks_same_generation_reconstruction() {
         let mut owner = authority(1_000);
         let old_current = owner.current_facts();
         let mut old_carrier = owner.bootstrap::<1>().expect("first namespace");
@@ -924,6 +937,10 @@ mod tests {
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("old actor")
             .target;
+        assert!(old_carrier.lookup(old_current, old_ref).is_ok());
+
+        // Carrier backing is lost, but the continuity authority survives.
+        drop(old_carrier);
         assert_eq!(
             owner
                 .bootstrap::<1>()
@@ -931,19 +948,19 @@ mod tests {
                 .code,
             FailureCode::SameGenerationReconstructionBlocked
         );
+
         owner
-            .advance_outer_generation(generation(2))
+            .apply_independently_authorized_newer_generation(generation(2))
             .expect("new owner generation");
         let new_current = owner.current_facts();
-        let _new_carrier = owner.bootstrap::<1>().expect("new namespace allowed");
+        let new_carrier = owner.bootstrap::<1>().expect("new namespace allowed");
         assert_eq!(
-            old_carrier
+            new_carrier
                 .lookup(new_current, old_ref)
                 .expect_err("new outer generation fences old ref")
                 .category,
             FailureCategory::StaleGeneration
         );
-        assert!(old_carrier.lookup(old_current, old_ref).is_ok());
     }
 
     #[test]
