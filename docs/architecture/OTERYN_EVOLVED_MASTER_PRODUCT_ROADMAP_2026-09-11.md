@@ -58,16 +58,16 @@ Oteryn Evolved should:
 
 ---
 
-# 4. Canonical programme map
+## 4. Canonical programme map
 
-## 1. **Client UX, Input, Workspace & Active Information**
+### 4.1. **Client UX, Input, Workspace & Active Information**
 
 **Priority: S**  
 **Profile: SHARED-UX by default; semantic gameplay differences remain profile-gated.**
 
 Goal: make the native client feel modern on 1080p, 1440p, 4K and ultrawide displays while reducing external-tool dependence and repetitive UI setup.
 
-### 1.1 **Adaptive / scalable UI**
+#### 4.1.1 **Adaptive / scalable UI**
 
 - independent UI scaling;
 - independent font scaling where useful;
@@ -75,27 +75,27 @@ Goal: make the native client feel modern on 1080p, 1440p, 4K and ultrawide displ
 - resizable game viewport, minimap, action bars and panels;
 - no coupling between UI scale and world-camera zoom.
 
-### 1.2 **Persistent workspace and layout presets**
+#### 4.1.2 **Persistent workspace and layout presets**
 
 - dockable/resizable panels;
 - Hunting / Boss / PvP / Trading presets;
 - persistent panel sizes, tabs, filters, search, selected categories and scroll position;
 - safe recovery when resolution or layout data changes.
 
-### 1.3 **Persistent Market / Stash / Depot workflow state**
+#### 4.1.3 **Persistent Market / Stash / Depot workflow state**
 
 - Market and Stash do not unnecessarily close each other;
 - closing Market does not destroy Stash context;
 - search/filter/category state persists;
 - `stash all items of this type` must not close unrelated mailbox/depot UI.
 
-### 1.4 **Modern input binding**
+#### 4.1.4 **Modern input binding**
 
 - native `Wheel Up` / `Wheel Down` gameplay bindings;
 - UI scroll gets first chance to consume wheel input;
 - high-resolution/free-spin wheels normalize into bounded semantic steps.
 
-### 1.5 **Native simultaneous-WASD diagonal movement**
+#### 4.1.5 **Native simultaneous-WASD diagonal movement**
 
 - `W+A -> northwest`;
 - `W+D -> northeast`;
@@ -105,7 +105,7 @@ Goal: make the native client feel modern on 1080p, 1440p, 4K and ultrawide displ
 - opposite cardinal inputs cancel on that axis;
 - server movement cadence, collision and legality remain unchanged.
 
-### 1.6 **Persistent / pinnable chat views**
+#### 4.1.6 **Persistent / pinnable chat views**
 
 - pin tabs;
 - auto-open on login;
@@ -114,7 +114,7 @@ Goal: make the native client feel modern on 1080p, 1440p, 4K and ultrawide displ
 - unread/mute behavior;
 - typed message categories instead of one-off Event Chat plumbing.
 
-### 1.7 **Active Effects UI**
+#### 4.1.7 **Active Effects UI**
 
 Unify food timers, potion/buff icons and effect-duration requests into one system:
 
@@ -126,7 +126,7 @@ Unify food timers, potion/buff icons and effect-duration requests into one syste
 - configurable compact HUD plus full Effects panel;
 - no artificial small icon ceiling.
 
-### 1.8 **Custom timers and reminders**
+#### 4.1.8 **Custom timers and reminders**
 
 Client-local timers for Prey, XP boosts, Exercise Weapons, House Food and arbitrary activities:
 
@@ -139,7 +139,7 @@ Client-local timers for Prey, XP boosts, Exercise Weapons, House Food and arbitr
 
 When the server already knows an authoritative expiry, prefer a game-aware reminder over manual duplicate timer entry.
 
-### 1.9 **Appearance customization**
+#### 4.1.9 **Appearance customization**
 
 - larger outfit palette/bounded picker;
 - favorite/recent colors;
@@ -148,18 +148,18 @@ When the server already knows an authoritative expiry, prefer a game-aware remin
 
 ---
 
-## 2. **World Map, Discovery, Huntfinding & Hunting Capacity**
+### 4.2. **World Map, Discovery, Huntfinding & Hunting Capacity**
 
 **Priority: A/S**  
 **Profile: Evolved with shareable client primitives.**
 
 Goal: turn map and hunt discovery into a first-class navigation/information system rather than scattered external wiki/tool workflows.
 
-### 2.1 **Huntfinder 2.0**
+#### 4.2.1 **Huntfinder 2.0**
 
 Search/recommend hunts using level, vocation/role, XP/profit goals, equipment, imbuement, charm and access context.
 
-### 2.2 **Hunting Spot Availability**
+#### 4.2.2 **Hunting Spot Availability**
 
 Status model:
 
@@ -170,11 +170,11 @@ Status model:
 
 Use real activity signals rather than only player presence. Do not expose player identity by default.
 
-### 2.3 **Notify when free**
+#### 4.2.3 **Notify when free**
 
 A selected hunting area can trigger a user opt-in notification when availability evidence changes to free/probably free.
 
-### 2.4 **World Map & Discovery 2.0**
+#### 4.2.4 **World Map & Discovery 2.0**
 
 - searchable/filterable POIs;
 - discovered/undiscovered layers;
@@ -182,31 +182,31 @@ A selected hunting area can trigger a user opt-in notification when availability
 - boss/hunt/service/depot/quest categories;
 - scalable minimap and full map reuse one underlying map model.
 
-### 2.5 **Permissioned live social map**
+#### 4.2.5 **Permissioned live social map**
 
 - party/guild/contact markers;
 - exact placement only when policy allows;
 - same/different channel and instance semantics;
 - privacy/PvP aware.
 
-### 2.6 **Shared discovery markers**
+#### 4.2.6 **Shared discovery markers**
 
 Share Echo Raid, Fiendish, rare boss, event or rally-point observations to selected scopes without converting the map into public surveillance.
 
-### 2.7 **Dynamic Spawn & Hunting Capacity**
+#### 4.2.7 **Dynamic Spawn & Hunting Capacity**
 
 Use player pressure, effective power, spawn budgets and area capacity to improve hunt availability while preserving bounded farming throughput.
 
 ---
 
-## 3. **Party, Social, Group Finder & Hunt Coordination**
+### 4.3. **Party, Social, Group Finder & Hunt Coordination**
 
 **Priority: S**  
 **Profile: Evolved; social presentation may be shared where parity-safe.**
 
 Goal: make finding, forming, preparing and operating a party substantially easier without removing consent or social choice.
 
-### 3.1 **Party Finder 2.0 / Group Lobbies**
+#### 4.3.1 **Party Finder 2.0 / Group Lobbies**
 
 One canonical system, not parallel finders.
 
@@ -217,15 +217,15 @@ Modes:
 - Soul Core / Soulpit;
 - Quest/Event where useful.
 
-### 3.2 **Scheduled lobbies**
+#### 4.3.2 **Scheduled lobbies**
 
 Hosts may create immediate or future sessions with server-time scheduling and reminders.
 
-### 3.3 **Role/vocation slots**
+#### 4.3.3 **Role/vocation slots**
 
 Visual EK/ED/MS/RP/Monk or flexible-role slots using the shared role taxonomy.
 
-### 3.4 **Eligibility checks**
+#### 4.3.4 **Eligibility checks**
 
 Server checks only what is necessary:
 
@@ -236,19 +236,19 @@ Server checks only what is necessary:
 
 Do not expose a player's entire private quest state to lobby hosts.
 
-### 3.5 **Whitelist, blacklist and contact integration**
+#### 4.3.5 **Whitelist, blacklist and contact integration**
 
 Use the consent-based contact/block model rather than creating a separate Party Finder social database.
 
-### 3.6 **Shareable lobby links**
+#### 4.3.6 **Shareable lobby links**
 
 Chat-safe lobby references open the lobby details/application view.
 
-### 3.7 **Ready check and Form Party**
+#### 4.3.7 **Ready check and Form Party**
 
 `Form Party` sends normal invitations to accepted members; it does not silently force players into party membership.
 
-### 3.8 **Tactical hunt map**
+#### 4.3.8 **Tactical hunt map**
 
 Host may mark:
 
@@ -259,18 +259,18 @@ Host may mark:
 
 This is collaborative planning, not gameplay automation.
 
-### 3.9 **Party System 2.0**
+#### 4.3.9 **Party System 2.0**
 
 Rework active-party UX, shared objectives, roles and shared-EXP/bonus presentation without duplicating Party Finder.
 
-### 3.10 **Party combat visibility**
+#### 4.3.10 **Party combat visibility**
 
 - outlines/role/leader markers;
 - low-HP/status emphasis;
 - priority members;
 - off-screen direction indicators.
 
-### 3.11 **Shared Hunt Accounting & Settlement**
+#### 4.3.11 **Shared Hunt Accounting & Settlement**
 
 Unify Party Loot Ledger, food/supply accounting and forum loot-split requests:
 
@@ -283,7 +283,7 @@ Unify Party Loot Ledger, food/supply accounting and forum loot-split requests:
 
 No leader may debit another player's bank without that player's authorization.
 
-### 3.12 **Modern Contacts / VIP**
+#### 4.3.12 **Modern Contacts / VIP**
 
 - mutual consent where exact presence is shared;
 - private tags instead of tiny fixed group caps;
@@ -292,14 +292,14 @@ No leader may debit another player's bank without that player's authorization.
 
 ---
 
-## 4. **Inventory, Loot, Depot, Stash & Item Logistics**
+### 4.4. **Inventory, Loot, Depot, Stash & Item Logistics**
 
 **Priority: S**  
 **Profile: mostly Evolved; many presentation improvements are shareable.**
 
 Goal: reduce repetitive container micromanagement while preserving physical inventory gameplay where it adds meaning.
 
-### 4.1 **Loot System Rework**
+#### 4.4.1 **Loot System Rework**
 
 - Loot Nearby / Loot All;
 - bounded multi-corpse queue;
@@ -310,11 +310,11 @@ Goal: reduce repetitive container micromanagement while preserving physical inve
 - clear feedback;
 - manual loot remains available.
 
-### 4.2 **Summon Loot Assistant**
+#### 4.4.2 **Summon Loot Assistant**
 
 Optional controlled summon mode with limited radius/speed and normal loot rights. It must not become global instant auto-loot.
 
-### 4.3 **Inventory / Depot / Stash 2.0**
+#### 4.4.3 **Inventory / Depot / Stash 2.0**
 
 - global search;
 - smart containers;
@@ -322,7 +322,7 @@ Optional controlled summon mode with limited radius/speed and normal loot rights
 - post-hunt deposit flows;
 - cleaner storage navigation.
 
-### 4.4 **Smart Item Reservation & Task Protection**
+#### 4.4.4 **Smart Item Reservation & Task Protection**
 
 Canonical solution for forum `Protect Item` requests:
 
@@ -332,22 +332,22 @@ Canonical solution for forum `Protect Item` requests:
 - clear lock/reserve indicator;
 - expose safe-to-sell surplus.
 
-### 4.5 **Task-aware Stash / Objective Relevance**
+#### 4.4.5 **Task-aware Stash / Objective Relevance**
 
 Show owned/required/missing quantities for known active objectives without leaking unrevealed quest spoilers.
 
-### 4.6 **Larger supply stacks**
+#### 4.4.6 **Larger supply stacks**
 
 Use item-definition-specific maximums. Evolved may use substantially larger values for high-volume potions/runes without imposing one universal max on every item.
 
-### 4.7 **Reward collection exclusions**
+#### 4.4.7 **Reward collection exclusions**
 
 - collect selected;
 - collect all eligible;
 - `keep in chest`/retention markers;
 - visible expiry.
 
-### 4.8 **Empty-container management**
+#### 4.4.8 **Empty-container management**
 
 Prefer configurable:
 
@@ -357,32 +357,32 @@ Prefer configurable:
 
 Do not make ground-spam auto-drop the canonical behavior.
 
-### 4.9 **Direct Stash-to-NPC sale**
+#### 4.4.9 **Direct Stash-to-NPC sale**
 
 Atomic authoritative value transaction, with locks/reserved quantities and optional keep-minimum policies.
 
-### 4.10 **NPC sell filtering**
+#### 4.4.10 **NPC sell filtering**
 
 `Show only carried/sellable items` and equivalent useful filters.
 
-### 4.11 **Altered equipment storage / normalization**
+#### 4.4.11 **Altered equipment storage / normalization**
 
 For partly used or enchanted rings/amulets, evaluate a generic Normalize/Discharge operation or Equipment Vault rather than isolated special-case NPC logic.
 
 ---
 
-## 5. **Bank, Trade, Market, Postal & Financial UX**
+### 4.5. **Bank, Trade, Market, Postal & Financial UX**
 
 **Priority: S/A**  
 **Profile: Evolved.**
 
 Goal: make money/item transactions explicit, safe, auditable and fast without weakening anti-duplication/value-conservation rules.
 
-### 5.1 **Bank UI 2.0**
+#### 4.5.1 **Bank UI 2.0**
 
 Dedicated transfer UI with recipient, amount, balances before/after, confirmation and duplicate-submit protection.
 
-### 5.2 **Exact amount expressions**
+#### 4.5.2 **Exact amount expressions**
 
 Reusable exact-integer parser supporting forms such as:
 
@@ -393,15 +393,15 @@ Reusable exact-integer parser supporting forms such as:
 
 Market must also provide a direct exact quantity input instead of forcing massive-range sliders.
 
-### 5.3 **Transaction history**
+#### 4.5.3 **Transaction history**
 
 Durable audit for transfers, deposits, withdrawals, fees/system transactions and resulting balances.
 
-### 5.4 **Trade System 2.0**
+#### 4.5.4 **Trade System 2.0**
 
 Allow item ↔ item, item ↔ bank gold and mixed item+bank-gold negotiation. Any transaction mutation resets acceptance.
 
-### 5.5 **Market UX 2.0**
+#### 4.5.5 **Market UX 2.0**
 
 - persistent filters/categories;
 - highlight own offers;
@@ -410,19 +410,19 @@ Allow item ↔ item, item ↔ bank gold and mixed item+bank-gold negotiation. An
 - exact amount entry;
 - task-aware deep links and filters.
 
-### 5.6 **Anti-spam market controls**
+#### 4.5.6 **Anti-spam market controls**
 
 Do not freeze a blanket five-minute cooldown. Prefer rolling-window rate limits, expiry and evidence-driven anti-abuse controls that ordinary users rarely encounter.
 
-### 5.7 **Sale-only commission**
+#### 4.5.7 **Sale-only commission**
 
 Evaluate commission on successful sale rather than punishing unsold offers with listing fees; spam controls remain separate.
 
-### 5.8 **Multi-currency Market & Trade**
+#### 4.5.8 **Multi-currency Market & Trade**
 
 Explicit currency identity and filtering; no hidden exchange-rate conversion.
 
-### 5.9 **Postal Network 2.0**
+#### 4.5.9 **Postal Network 2.0**
 
 - item delivery;
 - own-character transfers;
@@ -431,28 +431,28 @@ Explicit currency identity and filtering; no hidden exchange-rate conversion.
 - service tiers;
 - guild/house/depot endpoints.
 
-### 5.10 **Global Market + Local Logistics**
+#### 4.5.10 **Global Market + Local Logistics**
 
 One liquid searchable market may retain stock origin, pickup/delivery choices and local logistics.
 
-### 5.11 **Consolidated market delivery**
+#### 4.5.11 **Consolidated market delivery**
 
 Combine compatible purchases into one bounded delivery to a selected endpoint.
 
-### 5.12 **Parcel convenience**
+#### 4.5.12 **Parcel convenience**
 
 The forum's automatic-label request should be solved by a modern addressing/delivery flow, not necessarily by preserving manual label-item friction forever.
 
 ---
 
-## 6. **Build, Equipment Loadouts, Itemization, Forge & Equipment Proficiency**
+### 4.6. **Build, Equipment Loadouts, Itemization, Forge & Equipment Proficiency**
 
 **Priority: S**  
 **Profile: Evolved except explicit parity-integration surfaces.**
 
 Goal: provide deep build choice while making build switching/comparison understandable and safe.
 
-### 6.1 **Equipment Loadouts**
+#### 4.6.1 **Equipment Loadouts**
 
 Canonical destination for:
 
@@ -464,145 +464,145 @@ Canonical destination for:
 
 Use one semantic server operation such as `ActivateEquipmentLoadout(loadout_id)`, with deterministic validation and default all-or-nothing behavior.
 
-### 6.2 **Quick A/B slot toggles**
+#### 4.6.2 **Quick A/B slot toggles**
 
 A two-ring forum request becomes a thin UI convenience over Equipment Loadouts, not a separate ring system.
 
-### 6.3 **Itemization & Build System 2.0**
+#### 4.6.3 **Itemization & Build System 2.0**
 
 Connect equipment, item classification, Forge, Imbuements, Skill Wheel, classic skills, Weapon Proficiency and presets into a coherent build-selection layer.
 
-### 6.4 **Build Impact & Comparison**
+#### 4.6.4 **Build Impact & Comparison**
 
 Show authoritative before/after damage, healing, mitigation and sustain effects where formulas support trustworthy projections.
 
-### 6.5 **Training Arena / Combat Simulation**
+#### 4.6.5 **Training Arena / Combat Simulation**
 
 Non-rewarding standardized targets for build testing with zero normal XP/loot/progression.
 
-### 6.6 **Equipment Durability — optional / caution**
+#### 4.6.6 **Equipment Durability — optional / caution**
 
 If retained, use soft maintenance and strong convenience; do not reintroduce constant irritating maintenance merely to manufacture a sink.
 
-### 6.7 **Repair All / Auto Repair**
+#### 4.6.7 **Repair All / Auto Repair**
 
 Only relevant if durability survives product review.
 
-### 6.8 **Forge Slot Mastery**
+#### 4.6.8 **Forge Slot Mastery**
 
 Evaluate moving long-term Forge-style investment to equipment slot identity rather than losing it every time one physical item is replaced.
 
-### 6.9 **Item Enhancement +N**
+#### 4.6.9 **Item Enhancement +N**
 
 Bounded item-instance progression, deliberately separate from other progression layers.
 
-### 6.10 **Equipment Proficiency**
+#### 4.6.10 **Equipment Proficiency**
 
 Equipment-category specialization beyond weapons while official Weapon Proficiency remains a separate system.
 
-### 6.11 **Item classification as progression ceiling**
+#### 4.6.11 **Item classification as progression ceiling**
 
 Reuse existing item classes rather than inventing another rarity ladder merely to cap enhancement.
 
-### 6.12 **Proficiency branches / qualitative capstones**
+#### 4.6.12 **Proficiency branches / qualitative capstones**
 
 Opportunity-cost paths such as Fortification, Retaliation or Sustain rather than granting all bonuses simultaneously.
 
-### 6.13 **Controlled enhancement RNG and pity**
+#### 4.6.13 **Controlled enhancement RNG and pity**
 
 Higher-end randomness may exist only with bounded bad luck and no routine catastrophic destruction.
 
-### 6.14 **Controlled duplicate-item sink**
+#### 4.6.14 **Controlled duplicate-item sink**
 
 Duplicates may support selected high-end progression without requiring mass destruction of ultra-rare BIS items.
 
-### 6.15 **Enhancement salvage / replacement protection**
+#### 4.6.15 **Enhancement salvage / replacement protection**
 
 Recover a bounded portion of item-specific investment when upgrading to replacement gear.
 
-### 6.16 **Existing-tier migration contract**
+#### 4.6.16 **Existing-tier migration contract**
 
 Any redesign must preserve legitimate existing investment without duplicating permanent power.
 
-### 6.17 **Gem Atelier / Fragment Workshop parity review**
+#### 4.6.17 **Gem Atelier / Fragment Workshop parity review**
 
 Treat official systems as parity evidence first; custom redesign comes only after current behavior/support is reverified.
 
 ---
 
-## 7. **Imbuement & Elemental Attunement System 2.0**
+### 4.7. **Imbuement & Elemental Attunement System 2.0**
 
 **Priority: A**  
 **Profile: Evolved, built from verified Tibia baseline.**
 
 Goal: reduce timer/item duplication friction while retaining meaningful preparation and recurring sinks.
 
-### 7.1 **Imbuement System 2.0**
+#### 4.7.1 **Imbuement System 2.0**
 
 Modernize the existing foundation rather than creating a duplicate unrelated enchant system.
 
-### 7.2 **Slot-Based Imbuement Library & Active Channels**
+#### 4.7.2 **Slot-Based Imbuement Library & Active Channels**
 
 Store charged/unlocked choices at slot/profile level while equipped gear controls legal categories and active-channel capacity.
 
-### 7.3 **Elemental Attunement Layer**
+#### 4.7.3 **Elemental Attunement Layer**
 
 Separate bounded elemental protection flexibility from Crit/Leech/Skill competition where product balance supports it.
 
-### 7.4 **Slot / Attunement progression**
+#### 4.7.4 **Slot / Attunement progression**
 
 Long-term convenience/flexibility progression, with exact levels/effects left for later balance work.
 
-### 7.5 **Progression & maintenance sink**
+#### 4.7.5 **Progression & maintenance sink**
 
 Combine one-time unlock costs and recurring recharge/renewal so convenience continues to remove gold/resources.
 
-### 7.6 **Effective-use lifecycle**
+#### 4.7.6 **Effective-use lifecycle**
 
 Evaluate consuming specialized duration only during relevant active use so expensive preparation is not wasted on unrelated content.
 
 ---
 
-## 8. **Skill, Training, Weapon Proficiency & Skill Wheel**
+### 4.8. **Skill, Training, Weapon Proficiency & Skill Wheel**
 
 **Priority: S**  
 **Profile: mixed Reference parity + Evolved progression.**
 
 Goal: make active play a strong progression path while keeping offline/exercise training useful and economically healthy.
 
-### 8.1 **Skill Progression 2.0**
+#### 4.8.1 **Skill Progression 2.0**
 
 Classic skills remain understandable and separate from Weapon Proficiency.
 
-### 8.2 **Real Combat Training**
+#### 4.8.2 **Real Combat Training**
 
 Genuine combat should contribute meaningfully to classic skill progression instead of rewarding only raw repetitive hit counts.
 
-### 8.3 **Threat coefficient**
+#### 4.8.3 **Threat coefficient**
 
 Relative target threat may influence eligible classic skill gain; exact formula requires telemetry/simulation.
 
-### 8.4 **Diminishing returns on one persistent training target**
+#### 4.8.4 **Diminishing returns on one persistent training target**
 
 Reduce abuse of immortal/AFK targets without forcing unnatural active gameplay.
 
-### 8.5 **Combat Activity Score**
+#### 4.8.5 **Combat Activity Score**
 
 Use only as a bounded signal to distinguish genuine activity from repetitive training loops.
 
-### 8.6 **Shielding in real combat**
+#### 4.8.6 **Shielding in real combat**
 
 Reward relevant incoming pressure instead of trivial AFK tanking.
 
-### 8.7 **Offline training**
+#### 4.8.7 **Offline training**
 
 Keep as a slower convenience path.
 
-### 8.8 **Exercise weapons**
+#### 4.8.8 **Exercise weapons**
 
 Keep as a faster resource/gold-sink training path.
 
-### 8.9 **Offline Exercise Sessions — owner clarification**
+#### 4.8.9 **Offline Exercise Sessions — owner clarification**
 
 Oteryn Evolved should allow deterministic exercise progression while the character is offline:
 
@@ -615,28 +615,28 @@ Oteryn Evolved should allow deterministic exercise progression while the charact
 
 This concurrency is intentional. It improves QoL, removes pointless always-online clients and may strengthen the exercise-weapon gold sink.
 
-### 8.10 **Remembered/favorite offline training choice**
+#### 4.8.10 **Remembered/favorite offline training choice**
 
 Persist the player's last/default training selection where character-specific.
 
-### 8.11 **Classic skills vs Weapon Proficiency**
+#### 4.8.11 **Classic skills vs Weapon Proficiency**
 
 Do not invent a duplicate generic Weapon Mastery system. Natural hunts may advance classic skills and official-style Weapon Proficiency independently under their own rules.
 
-### 8.12 **Skill Wheel safe-zone editing**
+#### 4.8.12 **Skill Wheel safe-zone editing**
 
 Reference can retain target Tibia semantics. Evolved may use an explicit safe-zone policy rather than hard-coding one permanent Temple rule.
 
 ---
 
-## 9. **Quest, Adventure, Account-World Unlocks & Legacy Accessibility**
+### 4.9. **Quest, Adventure, Account-World Unlocks & Legacy Accessibility**
 
 **Priority: A**  
 **Profile: Evolved.**
 
 Goal: preserve meaningful questing while removing obsolete repeated barriers and making long quest chains understandable.
 
-### 9.1 **Quest Journal 2.0**
+#### 4.9.1 **Quest Journal 2.0**
 
 Searchable hierarchy:
 
@@ -644,15 +644,15 @@ Searchable hierarchy:
 
 with dependency graph.
 
-### 9.2 **Current Objective / blocker explanation**
+#### 4.9.2 **Current Objective / blocker explanation**
 
 Explain missing prerequisites, access, items, NPC interactions or party-stage incompatibility.
 
-### 9.3 **Party Quest Sync**
+#### 4.9.3 **Party Quest Sync**
 
 Show party stage compatibility without granting skipped progress.
 
-### 9.4 **Account-World Unlocks**
+#### 4.9.4 **Account-World Unlocks**
 
 Refine the historical broad `account-wide quest progression` proposal:
 
@@ -660,11 +660,11 @@ Refine the historical broad `account-wide quest progression` proposal:
 - do **not** blindly copy every character quest flag;
 - keep character-specific choices/progression where meaningful.
 
-### 9.5 **One-time reward semantics**
+#### 4.9.5 **One-time reward semantics**
 
 A shared access/completion unlock may still grant iconic/valuable quest rewards only once per account/world when that is the intended economy rule.
 
-### 9.6 **Legacy Quest Accessibility**
+#### 4.9.6 **Legacy Quest Accessibility**
 
 For selected outdated mandatory-team gates on low-population content:
 
@@ -675,44 +675,44 @@ For selected outdated mandatory-team gates on low-population content:
 
 Do not automatically add solo mode to current endgame group content.
 
-### 9.7 **Puzzle substitute actors / Mercenary Illusions**
+#### 4.9.7 **Puzzle substitute actors / Mercenary Illusions**
 
 For old mechanics requiring four vocation tiles, temporary non-combat puzzle actors may stand in for missing roles. Avoid turning this into permanent combat companion AI.
 
-### 9.8 **Quest Renown / Adventure Points**
+#### 4.9.8 **Quest Renown / Adventure Points**
 
 Long-term completion/exploration progression focused on identity, convenience, titles, cosmetics and services.
 
-### 9.9 **Region Mastery**
+#### 4.9.9 **Region Mastery**
 
 Connect related regional quest lines to durable exploration/progression rewards.
 
-### 9.10 **Legacy reward modernization**
+#### 4.9.10 **Legacy reward modernization**
 
 Preserve iconic physical rewards while adding carefully bounded modern value where old fixed rewards no longer match effort.
 
-### 9.11 **Postman modernization pilot**
+#### 4.9.11 **Postman modernization pilot**
 
 Use a legacy chain to unlock meaningful postal rank/service privileges rather than requiring repeated low-value completion on every alt forever.
 
-### 9.12 **Linked Tasks**
+#### 4.9.12 **Linked Tasks**
 
 Retain chained/repeatable task progression as part of quest/task architecture, not as a disconnected parallel journal.
 
-### 9.13 **Rejected: character vampirism / deleting extra alts**
+#### 4.9.13 **Rejected: character vampirism / deleting extra alts**
 
 The forum proposal where a main character absorbs XP from characters beyond a five-character limit and those characters cease to exist is **REJECTED**. It does not solve the underlying repeated-quest problem safely and creates destructive/exploitable progression semantics.
 
 ---
 
-## 10. **Bestiary, Charms, Collections, Echo & Prey**
+### 4.10. **Bestiary, Charms, Collections, Echo & Prey**
 
 **Priority: A/S**  
 **Profile: Evolved built from verified official systems.**
 
 Goal: unify collection/progress UX and provide bounded mastery without unlimited linear power stacking.
 
-### 10.1 **Collection Framework**
+#### 4.10.1 **Collection Framework**
 
 Shared browser primitives for:
 
@@ -724,325 +724,325 @@ Shared browser primitives for:
 
 Capabilities: search, sort, filters, grid/list/dense, incomplete-only, nearest-completion, favorites and tracker presets.
 
-### 10.2 **Incomplete Bestiary indicators**
+#### 4.10.2 **Incomplete Bestiary indicators**
 
 Use the same collection state; do not maintain duplicate progression models.
 
-### 10.3 **Tracker capacity redesign**
+#### 4.10.3 **Tracker capacity redesign**
 
 Separate large/unlimited saved interests from the much smaller active HUD display set.
 
-### 10.4 **Echo Warden progress**
+#### 4.10.4 **Echo Warden progress**
 
 Per-creature completion plus global summary and incomplete/completed filters.
 
-### 10.5 **Item Deck / Item Codex**
+#### 4.10.5 **Item Deck / Item Codex**
 
 Account/character scope must be an explicit product choice. Keep discovered/obtained separate from stronger provenance such as earned/looted/crafted if needed.
 
-### 10.6 **Staged Charm Point rewards**
+#### 4.10.6 **Staged Charm Point rewards**
 
 Distribute the unchanged total across meaningful Bestiary milestones while keeping full completion important.
 
-### 10.7 **Knowledge-gated effective Charm levels**
+#### 4.10.7 **Knowledge-gated effective Charm levels**
 
 Charm effectiveness against a creature may depend on verified Bestiary knowledge of that creature.
 
-### 10.8 **Charm Mastery / Grandmaster**
+#### 4.10.8 **Charm Mastery / Grandmaster**
 
 Prefer bounded qualitative mastery and specialization over unlimited percentage growth.
 
-### 10.9 **Creature Family Mastery**
+#### 4.10.9 **Creature Family Mastery**
 
 Full family knowledge can unlock stable family-level mastery/eligibility.
 
-### 10.10 **Persistent Charm assignments/loadouts**
+#### 4.10.10 **Persistent Charm assignments/loadouts**
 
 Remember hunting-ground configurations while preserving simultaneous-assignment limits.
 
-### 10.11 **Drome Charm integration**
+#### 4.10.11 **Drome Charm integration**
 
 Existing Drome rewards may amplify/master systems but must not bypass Bestiary gates.
 
-### 10.12 **Prey active-use timer**
+#### 4.10.12 **Prey active-use timer**
 
 Evaluate consuming Prey time only through meaningful server-authoritative selected-race activity.
 
-### 10.13 **Dormant target reservation**
+#### 4.10.13 **Dormant target reservation**
 
 Expired active time can leave the creature reserved without providing a bonus.
 
-### 10.14 **Separate target, bonus and renewal states**
+#### 4.10.14 **Separate target, bonus and renewal states**
 
 Do not overload one lock mechanism with several unrelated economic responsibilities.
 
-### 10.15 **Bankable free Prey Charges**
+#### 4.10.15 **Bankable free Prey Charges**
 
 Bounded stored free charges may replace expiring reroll opportunity.
 
-### 10.16 **Sustainable Prey maintenance**
+#### 4.10.16 **Sustainable Prey maintenance**
 
 Use transparent free/gold/gameplay-earned/optional premium paths rather than one mandatory recurring Store-linked path.
 
-### 10.17 **Mixed-spawn / party-safe consumption**
+#### 4.10.17 **Mixed-spawn / party-safe consumption**
 
 Consume only from legitimate selected-race activity; party member slots stay independent; valid summon participation attributes to owner.
 
-### 10.18 **Prey loadouts and spend controls**
+#### 4.10.18 **Prey loadouts and spend controls**
 
 Remember preferences and caps without giving client authority over availability/state.
 
-### 10.19 **Prey migration/switching safeguards**
+#### 4.10.19 **Prey migration/switching safeguards**
 
 Preserve existing value with atomic spend, combat-safe switching and reconnect-safe state.
 
 ---
 
-## 11. **Boss, Encounter & Group PvE System 2.0**
+### 4.11. **Boss, Encounter & Group PvE System 2.0**
 
 **Priority: A**  
 **Profile: Evolved.**
 
 Goal: make bossing repeatable, discoverable and fair without flattening challenge.
 
-### 11.1 **Boss System 2.0**
+#### 4.11.1 **Boss System 2.0**
 
 One owning encounter framework for difficulty, access, loot and party semantics.
 
-### 11.2 **Adventure Guild Boss Hub**
+#### 4.11.2 **Adventure Guild Boss Hub**
 
 Earned convenience hub for discovered/unlocked content rather than an immediate universal teleport menu.
 
-### 11.3 **Flexible boss party size**
+#### 4.11.3 **Flexible boss party size**
 
 Controlled encounter scaling where appropriate; do not imply every boss must support every group size.
 
-### 11.4 **Boss difficulty tiers**
+#### 4.11.4 **Boss difficulty tiers**
 
 Practice/normal/scalable modes only where encounter design supports clear reward separation.
 
-### 11.5 **Personal loot**
+#### 4.11.5 **Personal loot**
 
 Per-player resolution may reduce party friction while preserving encounter economy budgets.
 
-### 11.6 **Bad-luck protection / pity**
+#### 4.11.6 **Bad-luck protection / pity**
 
 Bound extreme bad luck after current official mechanics are reverified.
 
-### 11.7 **Boss Essence / guaranteed progression**
+#### 4.11.7 **Boss Essence / guaranteed progression**
 
 No-drop sessions may produce bounded fragments/currency toward long-term goals.
 
-### 11.8 **Crash-aware cooldown compensation**
+#### 4.11.8 **Crash-aware cooldown compensation**
 
 Only proven infrastructure failure should restore/compensate boss access automatically; avoid user-triggerable crash exploits.
 
 ---
 
-## 12. **Death, Recovery & Connection Resilience**
+### 4.12. **Death, Recovery & Connection Resilience**
 
 **Priority: A**  
 **Profile: Evolved.**
 
 Goal: keep death frightening without making high-level progression unsustainably punitive.
 
-### 12.1 **Death System 2.0**
+#### 4.12.1 **Death System 2.0**
 
 Move away from blindly scaling loss as a percentage of enormous lifetime XP.
 
-### 12.2 **Level/progression-relative permanent loss**
+#### 4.12.2 **Level/progression-relative permanent loss**
 
 Exact values remain balance work.
 
-### 12.3 **Blessings remain meaningful**
+#### 4.12.3 **Blessings remain meaningful**
 
 May reduce XP/skill/item-loss risk and possibly temporary fatigue.
 
-### 12.4 **Recovery Pool**
+#### 4.12.4 **Recovery Pool**
 
 A bounded portion of loss may be recovered through continued active play.
 
-### 12.5 **Consecutive-death protection**
+#### 4.12.5 **Consecutive-death protection**
 
 Prevent catastrophic spirals without creating intentional death exploits.
 
-### 12.6 **Death Fatigue / temporary weakness**
+#### 4.12.6 **Death Fatigue / temporary weakness**
 
 Shift part of the cost from permanent progression loss to bounded temporary damage/healing/defense penalties.
 
-### 12.7 **Context-separated death rules**
+#### 4.12.7 **Context-separated death rules**
 
 PvE, boss/instance, PvP and proven server failure may require different loss/compensation policies.
 
-### 12.8 **Connection Loss Protection**
+#### 4.12.8 **Connection Loss Protection**
 
 Do not pretend a server can perfectly classify one disconnect as genuine/intentional. Use explicit logout vs abrupt loss, combat state, telemetry, reconnect and historical patterns.
 
-### 12.9 **Fast reconnect**
+#### 4.12.9 **Fast reconnect**
 
 Restore control safely without duplicating character ownership/state.
 
-### 12.10 **Server-failure compensation**
+#### 4.12.10 **Server-failure compensation**
 
 Proven infrastructure failures may justify strong compensation; client-reported failures alone are not proof.
 
 ---
 
-## 13. **PvP, Arenas, Wars & High-Risk Zones**
+### 4.13. **PvP, Arenas, Wars & High-Risk Zones**
 
 **Priority: B/A**  
 **Profile: Evolved.**
 
 Goal: increase skill expression and structured competition while reducing grief-driven frustration and abuseable reward loops.
 
-### 13.1 **PvP System 2.0**
+#### 4.13.1 **PvP System 2.0**
 
 Separate rules for open world, arena, guild war and events where needed.
 
-### 13.2 **Rating / prestige / seasons**
+#### 4.13.2 **Rating / prestige / seasons**
 
 Competitive progression should emphasize rank, cosmetics, titles, achievements and controlled currencies rather than victim-value extraction.
 
-### 13.3 **Objective-based PvP rewards**
+#### 4.13.3 **Objective-based PvP rewards**
 
 Reward ranked wins, war objectives, Castle objectives and tournament outcomes more than raw repeated kills.
 
-### 13.4 **Anti-farming diminishing returns**
+#### 4.13.4 **Anti-farming diminishing returns**
 
 Repeated kills of the same victim should lose reward value.
 
-### 13.5 **High-Risk PvP zones**
+#### 4.13.5 **High-Risk PvP zones**
 
 Stronger loss/loot rules belong in explicit opt-in spaces rather than everywhere.
 
-### 13.6 **Castle / Battleground**
+#### 4.13.6 **Castle / Battleground**
 
 Structured objective PvP/event system.
 
-### 13.7 **Prestige Arena**
+#### 4.13.7 **Prestige Arena**
 
 Ranked custom arena direction.
 
-### 13.8 **PvP death/recovery integration**
+#### 4.13.8 **PvP death/recovery integration**
 
 Use Death System 2.0 rather than maintaining contradictory loss models.
 
 ---
 
-## 14. **Tasks, Bounty, Weekly Systems & Dynamic Spawn**
+### 4.14. **Tasks, Bounty, Weekly Systems & Dynamic Spawn**
 
 **Priority: A**  
 **Profile: Evolved built from verified Tibia task foundations.**
 
 Goal: make task generation/progression appropriate to player power and server capacity while preventing market shocks.
 
-### 14.1 **Bounty & Weekly Tasks Rework**
+#### 4.14.1 **Bounty & Weekly Tasks Rework**
 
 Preserve official-system identity but improve suitability, objectives and long-term integration.
 
-### 14.2 **Task Suitability**
+#### 4.14.2 **Task Suitability**
 
 Use progression, expected effort, spawn reality and access rather than only broad difficulty buckets.
 
-### 14.3 **Dynamic kill-count/reward scaling**
+#### 4.14.3 **Dynamic kill-count/reward scaling**
 
 Exact formulas remain telemetry/simulation dependent.
 
-### 14.4 **Dedicated Bounty equipment slot**
+#### 4.14.4 **Dedicated Bounty equipment slot**
 
 Keep Bounty-specific equipment semantics scoped instead of creating a second universal ring slot.
 
-### 14.5 **Bounty Talisman redesign**
+#### 4.14.5 **Bounty Talisman redesign**
 
 Evaluate bounded Combat/Sustain/Spoils/Knowledge dimensions while reusing verified official foundations.
 
-### 14.6 **Bounty Spawn Allowance**
+#### 4.14.6 **Bounty Spawn Allowance**
 
 Legitimate overleveled task completion may temporarily relax custom dynamic-capacity eligibility without granting permanent farming throughput.
 
-### 14.7 **Weekly-task-aware Stash/Market**
+#### 4.14.7 **Weekly-task-aware Stash/Market**
 
 Active known objectives can expose required/owned/missing quantities and deep-link to relevant market views.
 
 ---
 
-## 15. **Vocation Identity, Combat Rules & Balance Framework**
+### 4.15. **Vocation Identity, Combat Rules & Balance Framework**
 
 **Priority: A**  
 **Profile: Evolved.**
 
 Goal: make classes distinct and viable without one scalar power score dominating all contexts.
 
-### 15.1 **Independent auto attack and spell casting**
+#### 4.15.1 **Independent auto attack and spell casting**
 
 Spell use should not silently cancel/reset/skip the normal weapon auto-attack schedule unless a deliberate combat rule says so.
 
-### 15.2 **Vocation/Class Identity Framework**
+#### 4.15.2 **Vocation/Class Identity Framework**
 
 Explicit strengths, weaknesses, solo expectations, party value and build boundaries.
 
-### 15.3 **Shared role taxonomy**
+#### 4.15.3 **Shared role taxonomy**
 
 Reusable role tags for Party Finder, Party System, markers and contribution analysis without forcing a rigid trinity.
 
-### 15.4 **Balance target bands & telemetry**
+#### 4.15.4 **Balance target bands & telemetry**
 
 Measure damage, healing, defense, sustain, utility and mobility by role/context.
 
-### 15.5 **Solo + party viability principle**
+#### 4.15.5 **Solo + party viability principle**
 
 Every supported class should retain meaningful solo viability while preserving differentiated party value.
 
-### 15.6 **Context-separated PvE / Boss / PvP tuning**
+#### 4.15.6 **Context-separated PvE / Boss / PvP tuning**
 
 Do not let one context automatically dictate damaging changes to the others.
 
-### 15.7 **Threat-based monster collision**
+#### 4.15.7 **Threat-based monster collision**
 
 Potentially reduce obsolete body-block frustration based on threat/relative power while preserving meaningful danger.
 
-### 15.8 **Break Free / Emergency Breakthrough**
+#### 4.15.8 **Break Free / Emergency Breakthrough**
 
 Limited active escape for genuine dangerous surrounds; requires careful PvP/PvE abuse review.
 
-### 15.9 **Transition Safety / Guaranteed Escape Path**
+#### 4.15.9 **Transition Safety / Guaranteed Escape Path**
 
 Improve holes/ladders/stairs/teleports and forced landing states without making transitions danger-free.
 
-### 15.10 **Controlled Retaliation / reflect safety**
+#### 4.15.10 **Controlled Retaliation / reflect safety**
 
 Prefer proc/internal-cooldown/output-cap behavior over unrestricted percentage reflection that scales dangerously with attacker count.
 
 ---
 
-## 16. **Housing, Lifestyle, Fishing, Cooking & Personal Spaces**
+### 4.16. **Housing, Lifestyle, Fishing, Cooking & Personal Spaces**
 
 **Priority: B/A**  
 **Profile: Evolved.**
 
 Goal: create meaningful non-combat identity and optional sinks without turning lifestyle systems into mandatory combat power.
 
-### 16.1 **Fishing System 2.0**
+#### 4.16.1 **Fishing System 2.0**
 
 Mastery, biomes, hotspots, bait and active interaction.
 
-### 16.2 **Fishing Codex / records / tournaments**
+#### 4.16.2 **Fishing Codex / records / tournaments**
 
 Collection/social competition layer.
 
-### 16.3 **Cooking 2.0**
+#### 4.16.3 **Cooking 2.0**
 
 Preparation/build-support crafting without making every combat session require excessive buff maintenance.
 
-### 16.4 **House Chef**
+#### 4.16.4 **House Chef**
 
 Ingredient/service/recipe loop using verified housing/hireling foundations where applicable.
 
-### 16.5 **House upgrades, services and luxury sinks**
+#### 4.16.5 **House upgrades, services and luxury sinks**
 
 Optional convenience/prestige sinks rather than punitive basic costs.
 
-### 16.6 **Personal Hideouts / instanced basic housing**
+#### 4.16.6 **Personal Hideouts / instanced basic housing**
 
 Forum-derived addition:
 
@@ -1052,65 +1052,65 @@ Forum-derived addition:
 - city houses remain scarce/prestigious/showcase locations;
 - hideouts should not automatically inherit every strategic/commercial advantage of prime physical houses.
 
-### 16.7 **Mount utility — caution**
+#### 4.16.7 **Mount utility — caution**
 
 If mounts gain mechanics, prefer bounded utility/travel archetypes before direct combat BIS stats. Avoid store-exclusive power.
 
 ---
 
-## 17. **Economy Health, Gold Sinks & Server-Wide Economic Control**
+### 4.17. **Economy Health, Gold Sinks & Server-Wide Economic Control**
 
 **Priority: S architecture / A feature delivery**  
 **Profile: Evolved.**
 
 Goal: control inflation with desirable sinks and deterministic safety rather than arbitrary player friction.
 
-### 17.1 **Economy Sink Framework**
+#### 4.17.1 **Economy Sink Framework**
 
 Coordinate sinks across exercise training, housing, imbuements, progression, services and luxury features.
 
-### 17.2 **Exercise training as a gold sink**
+#### 4.17.2 **Exercise training as a gold sink**
 
 Offline Exercise multi-character concurrency is acceptable when every character legitimately consumes its own resources.
 
-### 17.3 **Weekly Delivery Economy Controller**
+#### 4.17.3 **Weekly Delivery Economy Controller**
 
 Use server supply/liquidity and bounded per-item demand budgets so generated tasks do not create uncontrolled scarcity shocks.
 
-### 17.4 **Weekly Delivery Price Shock Guard**
+#### 4.17.4 **Weekly Delivery Price Shock Guard**
 
 Reduce/stop new generated demand when item supply/prices destabilize.
 
-### 17.5 **AI-assisted economy forecasting, deterministic authority**
+#### 4.17.5 **AI-assisted economy forecasting, deterministic authority**
 
 AI may forecast supply/liquidity/price impact; hard caps remain deterministic and authoritative.
 
-### 17.6 **Imbuement maintenance sinks**
+#### 4.17.6 **Imbuement maintenance sinks**
 
 Recurring recharge/renewal can remove resources while improving flexibility.
 
-### 17.7 **Controlled duplicate-item sinks**
+#### 4.17.7 **Controlled duplicate-item sinks**
 
 Use carefully so valuable item identity is not destroyed by mandatory mass consumption.
 
-### 17.8 **Prey maintenance sinks**
+#### 4.17.8 **Prey maintenance sinks**
 
 Transparent free/gold/gameplay-earned/premium choices rather than one opaque mandatory payment loop.
 
 ---
 
-## 18. **Security, Anti-Bot, Anti-Abuse & Behavioral Telemetry**
+### 4.18. **Security, Anti-Bot, Anti-Abuse & Behavioral Telemetry**
 
 **Priority: S strategic**  
 **Profile: platform-wide.**
 
 Goal: defend the economy and gameplay against modern external automation without treating AI output as automatic guilt.
 
-### 18.1 **Disconnect Abuse Detection**
+#### 4.18.1 **Disconnect Abuse Detection**
 
 Long-term pattern analysis rather than pretending one disconnect can be classified perfectly.
 
-### 18.2 **AI Anti-Bot / Anti-Cheat Platform**
+#### 4.18.2 **AI Anti-Bot / Anti-Cheat Platform**
 
 Layer:
 
@@ -1119,11 +1119,11 @@ Layer:
 - statistical/AI behavior analysis;
 - cross-account graph analysis.
 
-### 18.3 **Modern bot threat model**
+#### 4.18.3 **Modern bot threat model**
 
 Include classic macros, cavebots, pixel/computer-vision automation and external-device visual agents.
 
-### 18.4 **Risk-score enforcement principle**
+#### 4.18.4 **Risk-score enforcement principle**
 
 Do **not** use `AI says bot -> automatic ban` as the primary model.
 
@@ -1131,7 +1131,7 @@ Prefer:
 
 `signals + evidence + correlation + risk score + challenge/review/escalation`.
 
-### 18.5 **Cross-system abuse detection**
+#### 4.18.5 **Cross-system abuse detection**
 
 The same platform may surface:
 
@@ -1144,14 +1144,14 @@ The same platform may surface:
 
 ---
 
-## 19. **Account Tenure, Premium & Commercial-Progression Policy**
+### 4.19. **Account Tenure, Premium & Commercial-Progression Policy**
 
 **Priority: C/B policy**  
 **Profile: Evolved/Platform decision; no monetization implementation authority.**
 
 Goal: prevent convenience monetization from accidentally becoming immediate purchasable progression power.
 
-### 19.1 **Separate prepaid entitlement from elapsed tenure**
+#### 4.19.1 **Separate prepaid entitlement from elapsed tenure**
 
 ```text
 prepaid premium balance
@@ -1161,17 +1161,17 @@ elapsed account/premium tenure
 progression power
 ```
 
-### 19.2 **Rejected: immediate Loyalty for future prepaid Premium**
+#### 4.19.2 **Rejected: immediate Loyalty for future prepaid Premium**
 
 Do not instantly grant years of progression-relevant Loyalty for future time that has merely been purchased. It converts tenure into immediate buyable power and creates refund/chargeback/revocation debt.
 
-### 19.3 **Safer tenure rewards**
+#### 4.19.3 **Safer tenure rewards**
 
 Prefer cosmetics, prestige, account convenience and identity before combat/progression power.
 
 ---
 
-# 5. Canonical programme priority summary
+## 5. Canonical programme priority summary
 
 | # | Programme | Priority | Product stance |
 |---:|---|:---:|---|
@@ -1197,7 +1197,7 @@ Prefer cosmetics, prestige, account convenience and identity before combat/progr
 
 ---
 
-# 6. Source de-duplication — 128 historical classified proposals
+## 6. Source de-duplication — 128 historical classified proposals
 
 Every numbered proposal from the historical classification remains represented below. The canonical programme is the owning destination, not an assertion that implementation is authorized.
 
@@ -1334,11 +1334,11 @@ Every numbered proposal from the historical classification remains represented b
 
 ---
 
-# 7. Forum / conversation source requests — canonical destinations
+## 7. Forum / conversation source requests — canonical destinations
 
 The forum posts are treated as **player-problem evidence**, not automatically correct specifications. Several independently validate directions already present in the historical roadmap.
 
-## A-series — earlier QoL forum requests
+### A-series — earlier QoL forum requests
 
 | ID | Request | Destination |
 |---|---|---|
@@ -1361,7 +1361,7 @@ The forum posts are treated as **player-problem evidence**, not automatically co
 | A17 | Level in VIP/contact list | **3** |
 | A18 | Guild in chat/VIP/contact surfaces | **3** |
 
-## B-series — later QoL forum requests
+### B-series — later QoL forum requests
 
 | ID | Request | Destination |
 |---|---|---|
@@ -1385,14 +1385,14 @@ The forum posts are treated as **player-problem evidence**, not automatically co
 | B18 | Better Bestiary UI/sort/filter/layout | **10** |
 | B19 | Immediate Loyalty from prepaid Premium | **19 — REJECT** |
 
-## C-series — Equipment / input forum request
+### C-series — Equipment / input forum request
 
 | ID | Request | Destination |
 |---|---|---|
 | C01 | Equipment Presets | **6** — same Equipment Loadouts system |
 | C02 | Diagonal movement from simultaneous WASD | **1** |
 
-## D-series — latest forum batch
+### D-series — latest forum batch
 
 | ID | Request | Destination |
 |---|---|---|
@@ -1417,7 +1417,7 @@ The forum posts are treated as **player-problem evidence**, not automatically co
 
 ---
 
-# 8. Research-only candidates retained from the historical classification
+## 8. Research-only candidates retained from the historical classification
 
 These remain **R — research only** unless separately promoted.
 
@@ -1431,7 +1431,7 @@ These remain **R — research only** unless separately promoted.
 
 ---
 
-# 9. Critical owner decisions preserved by this consolidation
+## 9. Critical owner decisions preserved by this consolidation
 
 1. **Oteryn Evolved is the target for mechanical redesign.** Tibia Reference stays parity-first unless a shared-UX feature is explicitly proven not to alter semantics.
 2. **Offline Exercise may run on multiple characters of one account simultaneously.** Each character must legitimately consume its own resources; this is accepted as convenience and a potentially strong gold sink.
@@ -1449,9 +1449,9 @@ These remain **R — research only** unless separately promoted.
 
 ---
 
-# 10. Architecture timing guidance
+## 10. Architecture timing guidance
 
-## Decide/shape early
+### Decide/shape early
 
 These have high migration cost if ignored until late:
 
@@ -1464,7 +1464,7 @@ These have high migration cost if ignored until late:
 - **account-vs-character-vs-world scope vocabulary**;
 - **telemetry/audit foundations** for economy/security/balance.
 
-## Can remain product candidates until owning systems exist
+### Can remain product candidates until owning systems exist
 
 - Fishing/Cooking depth;
 - Castle/Prestige Arena;
@@ -1476,7 +1476,7 @@ These have high migration cost if ignored until late:
 
 ---
 
-# 11. Implementation authority boundary
+## 11. Implementation authority boundary
 
 This document is a **product roadmap and de-duplication authority only**. It does not itself authorize runtime/schema/protocol/economy/production changes.
 
