@@ -188,7 +188,7 @@ WorldId
 Lookup/removal must be direct to the actor slot/generation cell; there must be no independently growing
 secondary index or unbounded retirement/tombstone history.
 
-Reject independently and without mutation:
+Reject independently without publishing actor/index/current-reference state:
 
 - wrong World;
 - wrong Channel;
@@ -196,7 +196,10 @@ Reject independently and without mutation:
 - missing/out-of-range actor-local identity;
 - valid but vacant slot;
 - stale actor-local generation after reuse;
-- actor-local generation exhaustion/wrap risk.
+- actor-local generation exhaustion/wrap risk, with the sole protected #541 lifecycle-bookkeeping
+  exception that a selected `VACANT_REUSABLE(g_max)` slot atomically transitions to
+  `EXHAUSTED(g_max)` and is removed from future reuse eligibility while no replacement actor/index/
+  current reference is published and unrelated state remains unchanged.
 
 ### 5. No geometry or gameplay semantics
 
@@ -213,7 +216,12 @@ Admission/removal/reuse must preserve:
 - generation retention across vacancy;
 - generation advance on successful reuse;
 - no local-generation wrap/reuse;
-- complete state rollback for any failure after a candidate slot is selected;
+- complete state rollback for any failure after a candidate slot is selected when a representable
+  generation successor exists;
+- for checked no-successor at `g_max`, the only permitted failure mutation is the protected #541
+  terminal bookkeeping transition `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` for the selected slot;
+  it must not publish a replacement actor/index/current reference, must not alter unrelated state,
+  and that exhausted slot must never be selected again within the same `ScopeOwnershipGeneration`;
 - bounded deterministic insertion/lookup/removal work with no hidden unbounded scan/history growth.
 
 ## Acceptance evidence for the implementation worker
@@ -232,6 +240,9 @@ The future task must prove on one unchanged exact head:
 - carrier loss cannot reconstruct a same-generation namespace from raw scope/generation facts;
 - the pre-production continuity grant is move-only/non-replayable and exposes no issuer/reissuer path;
 - removal/reuse and actor-local generation exhaustion are deterministic and preserve unrelated state;
+- checked no-successor reuse proves exactly `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, no replacement
+  actor/index/current-reference publication, unchanged unrelated state, and no later selection of that
+  exhausted slot within the same `ScopeOwnershipGeneration`;
 - `ScopeRuntimeFence` is not made Clone/Copy, its private raw-grant constructor is not widened, and the
   carrier does not promote it to durable assignment-producer authority;
 - `apps/game-server/src/foundation/mod.rs` changes only minimal module wiring for this allocation;
