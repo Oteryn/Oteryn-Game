@@ -205,4 +205,3 @@ explicit finite fail-closed development bounds.
 Production readiness, production configuration, `RESOURCE_LIMITS_REGISTRY`
 serialization, VPS selection and production admission remain blocked until the
 later representative capacity evidence and separate acceptance described above.
-
