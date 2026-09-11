@@ -53,7 +53,9 @@ struct ActorLocalId(u32);
 
 impl ActorLocalId {
     fn from_slot_index(index: usize) -> Result<Self, CarrierFailure> {
-        let one_based = index.checked_add(1).ok_or_else(CarrierFailure::arithmetic)?;
+        let one_based = index
+            .checked_add(1)
+            .ok_or_else(CarrierFailure::arithmetic)?;
         let raw = u32::try_from(one_based).map_err(|_| CarrierFailure::arithmetic())?;
         Ok(Self(raw))
     }
@@ -158,9 +160,7 @@ impl FailureCode {
             Self::StaleScopeOrGeneration => "STALE_SCOPE_OR_GENERATION",
             Self::StaleActorReference => "STALE_ACTOR_REFERENCE",
             Self::InjectedPostSelectionFailure => "INJECTED_POST_SELECTION_FAILURE",
-            Self::SameGenerationReconstructionBlocked => {
-                "SAME_GENERATION_RECONSTRUCTION_BLOCKED"
-            }
+            Self::SameGenerationReconstructionBlocked => "SAME_GENERATION_RECONSTRUCTION_BLOCKED",
             Self::OuterGenerationNotNewer => "OUTER_GENERATION_NOT_NEWER",
             Self::ArithmeticOverflow => "ARITHMETIC_OVERFLOW",
             Self::NonChannelScope => "NON_CHANNEL_SCOPE",
@@ -517,7 +517,10 @@ fn uuid_v7(raw: u64) -> [u8; 16] {
 
 fn channel_scope(seed: u64) -> Result<RuntimeScopeRefV1, Box<dyn Error>> {
     let world = WorldId::decode(&uuid_v7(seed))?;
-    let channel = ChannelId::decode(&uuid_v7(seed.checked_add(1).ok_or("seed overflow")?))?;
+    let channel_seed = seed
+        .checked_add(1)
+        .ok_or_else(|| std::io::Error::other("seed overflow"))?;
+    let channel = ChannelId::decode(&uuid_v7(channel_seed))?;
     Ok(RuntimeScopeRefV1::channel(world, channel))
 }
 
@@ -593,7 +596,10 @@ mod tests {
         for index in 0..M {
             refs.push(
                 carrier
-                    .admit(seed(ActorKind::PlayerLike, index as i32), AdmissionFault::None)
+                    .admit(
+                        seed(ActorKind::PlayerLike, index as i32),
+                        AdmissionFault::None,
+                    )
                     .expect("exact M admission")
                     .target,
             );
@@ -611,7 +617,10 @@ mod tests {
         assert_eq!(carrier.independent_retirement_history_entries(), 0);
         for target in refs {
             assert_eq!(
-                carrier.lookup(current, target).expect("existing actor").direct_lookup_work_units,
+                carrier
+                    .lookup(current, target)
+                    .expect("existing actor")
+                    .direct_lookup_work_units,
                 1
             );
         }
@@ -633,7 +642,13 @@ mod tests {
         let admitted = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("admit");
-        assert_eq!(carrier.lookup(current, admitted.target).expect("lookup").direct_lookup_work_units, 1);
+        assert_eq!(
+            carrier
+                .lookup(current, admitted.target)
+                .expect("lookup")
+                .direct_lookup_work_units,
+            1
+        );
 
         let other_scope = channel_scope(300).expect("other scope");
         let wrong_scope = CurrentOwnerFacts {
@@ -641,7 +656,10 @@ mod tests {
             generation: current.generation,
         };
         assert_eq!(
-            carrier.lookup(wrong_scope, admitted.target).expect_err("cross-scope reject").code,
+            carrier
+                .lookup(wrong_scope, admitted.target)
+                .expect_err("cross-scope reject")
+                .code,
             FailureCode::StaleScopeOrGeneration
         );
         let wrong_generation = CurrentOwnerFacts {
@@ -665,17 +683,30 @@ mod tests {
         let first = carrier
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("first");
-        assert_eq!(carrier.remove(current, first.target).expect("remove").removal_work_units, 1);
+        assert_eq!(
+            carrier
+                .remove(current, first.target)
+                .expect("remove")
+                .removal_work_units,
+            1
+        );
         let second = carrier
             .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
             .expect("reuse");
         assert!(second.target.actor_local_generation > first.target.actor_local_generation);
         assert_eq!(
-            carrier.lookup(current, first.target).expect_err("old ref stale").code,
+            carrier
+                .lookup(current, first.target)
+                .expect_err("old ref stale")
+                .code,
             FailureCode::StaleActorReference
         );
         assert_eq!(
-            carrier.lookup(current, second.target).expect("new ref").actor.kind,
+            carrier
+                .lookup(current, second.target)
+                .expect("new ref")
+                .actor
+                .kind,
             ActorKind::CreatureLike
         );
     }
@@ -708,11 +739,19 @@ mod tests {
             FailureCode::StaleActorReference
         );
         assert_eq!(
-            carrier.lookup(current, a.target).expect("a still resolves").actor.kind,
+            carrier
+                .lookup(current, a.target)
+                .expect("a still resolves")
+                .actor
+                .kind,
             ActorKind::PlayerLike
         );
         assert_eq!(
-            carrier.lookup(current, b2.target).expect("b2 resolves").actor.kind,
+            carrier
+                .lookup(current, b2.target)
+                .expect("b2 resolves")
+                .actor
+                .kind,
             ActorKind::NpcSystemLike
         );
     }
@@ -755,14 +794,21 @@ mod tests {
             .target;
 
         for n in 1..u8::MAX {
-            carrier.remove(current, slot_zero_ref).expect("retire slot0");
+            carrier
+                .remove(current, slot_zero_ref)
+                .expect("retire slot0");
             slot_zero_ref = carrier
-                .admit(seed(ActorKind::PlayerLike, i32::from(n)), AdmissionFault::None)
+                .admit(
+                    seed(ActorKind::PlayerLike, i32::from(n)),
+                    AdmissionFault::None,
+                )
                 .expect("reuse slot0")
                 .target;
         }
         assert_eq!(slot_zero_ref.actor_local_generation.0, u8::MAX);
-        carrier.remove(current, slot_zero_ref).expect("vacate max generation");
+        carrier
+            .remove(current, slot_zero_ref)
+            .expect("vacate max generation");
         let before = carrier.clone();
 
         let failure = carrier
@@ -778,7 +824,11 @@ mod tests {
         assert_eq!(carrier.slots[1], before.slots[1]);
         assert_eq!(carrier.slots[2], before.slots[2]);
         assert_eq!(
-            carrier.lookup(current, slot_one_ref).expect("unrelated actor preserved").actor.kind,
+            carrier
+                .lookup(current, slot_one_ref)
+                .expect("unrelated actor preserved")
+                .actor
+                .kind,
             ActorKind::CreatureLike
         );
         assert_eq!(carrier.retained_generation_cells(), 3);
@@ -791,20 +841,35 @@ mod tests {
         let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<3>().expect("bootstrap");
         let mut refs = [
-            carrier.admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None).expect("0").target,
-            carrier.admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None).expect("1").target,
-            carrier.admit(seed(ActorKind::NpcSystemLike, 3), AdmissionFault::None).expect("2").target,
+            carrier
+                .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
+                .expect("0")
+                .target,
+            carrier
+                .admit(seed(ActorKind::CreatureLike, 2), AdmissionFault::None)
+                .expect("1")
+                .target,
+            carrier
+                .admit(seed(ActorKind::NpcSystemLike, 3), AdmissionFault::None)
+                .expect("2")
+                .target,
         ];
         for index in 0..3 {
             carrier.remove(current, refs[index]).expect("retire");
             refs[index] = carrier
-                .admit(seed(ActorKind::PlayerLike, 10 + index as i32), AdmissionFault::None)
+                .admit(
+                    seed(ActorKind::PlayerLike, 10 + index as i32),
+                    AdmissionFault::None,
+                )
                 .expect("reuse exact sole vacant slot")
                 .target;
         }
         assert_eq!(carrier.retained_generation_cells(), 3);
         assert_eq!(carrier.independent_retirement_history_entries(), 0);
-        assert!(refs.iter().all(|target| target.actor_local_generation.0 == 2));
+        assert!(
+            refs.iter()
+                .all(|target| target.actor_local_generation.0 == 2)
+        );
     }
 
     #[test]
@@ -816,9 +881,15 @@ mod tests {
             .admit(seed(ActorKind::PlayerLike, 1), AdmissionFault::None)
             .expect("sparse first");
         assert_eq!(first.insertion_work_units, 1);
-        let second = carrier.admit(seed(ActorKind::PlayerLike, 2), AdmissionFault::None).expect("2");
-        let third = carrier.admit(seed(ActorKind::PlayerLike, 3), AdmissionFault::None).expect("3");
-        let fourth = carrier.admit(seed(ActorKind::PlayerLike, 4), AdmissionFault::None).expect("4");
+        let second = carrier
+            .admit(seed(ActorKind::PlayerLike, 2), AdmissionFault::None)
+            .expect("2");
+        let third = carrier
+            .admit(seed(ActorKind::PlayerLike, 3), AdmissionFault::None)
+            .expect("3");
+        let fourth = carrier
+            .admit(seed(ActorKind::PlayerLike, 4), AdmissionFault::None)
+            .expect("4");
         let full = carrier
             .admit(seed(ActorKind::CreatureLike, 5), AdmissionFault::None)
             .expect_err("full");
@@ -828,8 +899,20 @@ mod tests {
             .admit(seed(ActorKind::NpcSystemLike, 6), AdmissionFault::None)
             .expect("last slot only");
         assert_eq!(fragmented.insertion_work_units, 4);
-        assert_eq!(carrier.lookup(current, second.target).expect("lookup").direct_lookup_work_units, 1);
-        assert_eq!(carrier.remove(current, third.target).expect("remove").removal_work_units, 1);
+        assert_eq!(
+            carrier
+                .lookup(current, second.target)
+                .expect("lookup")
+                .direct_lookup_work_units,
+            1
+        );
+        assert_eq!(
+            carrier
+                .remove(current, third.target)
+                .expect("remove")
+                .removal_work_units,
+            1
+        );
     }
 
     #[test]
@@ -842,10 +925,15 @@ mod tests {
             .expect("old actor")
             .target;
         assert_eq!(
-            owner.bootstrap::<1>().expect_err("same-generation rebuild blocked").code,
+            owner
+                .bootstrap::<1>()
+                .expect_err("same-generation rebuild blocked")
+                .code,
             FailureCode::SameGenerationReconstructionBlocked
         );
-        owner.advance_outer_generation(generation(2)).expect("new owner generation");
+        owner
+            .advance_outer_generation(generation(2))
+            .expect("new owner generation");
         let new_current = owner.current_facts();
         let _new_carrier = owner.bootstrap::<1>().expect("new namespace allowed");
         assert_eq!(
