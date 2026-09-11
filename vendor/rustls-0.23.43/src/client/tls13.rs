@@ -982,6 +982,9 @@ impl State<ClientConnectionData> for ExpectCertificateRequest {
             HandshakeType::CertificateRequest,
             HandshakePayload::CertificateRequestTls13
         )?;
+        #[cfg(feature = "std")]
+        self.transcript.try_add_message(&m)?;
+        #[cfg(not(feature = "std"))]
         self.transcript.add_message(&m);
         debug!("Got CertificateRequest {certreq:?}");
 
@@ -1609,6 +1612,9 @@ impl State<ClientConnectionData> for ExpectFinished {
         let finished =
             require_handshake_msg!(m, HandshakeType::Finished, HandshakePayload::Finished)?;
 
+        #[cfg(feature = "std")]
+        let handshake_hash = st.transcript.try_current_hash()?;
+        #[cfg(not(feature = "std"))]
         let handshake_hash = st.transcript.current_hash();
         let expect_verify_data = st
             .key_schedule
@@ -1624,8 +1630,14 @@ impl State<ClientConnectionData> for ExpectFinished {
             }
         };
 
+        #[cfg(feature = "std")]
+        st.transcript.try_add_message(&m)?;
+        #[cfg(not(feature = "std"))]
         st.transcript.add_message(&m);
 
+        #[cfg(feature = "std")]
+        let hash_after_handshake = st.transcript.try_current_hash()?;
+        #[cfg(not(feature = "std"))]
         let hash_after_handshake = st.transcript.current_hash();
         /* The EndOfEarlyData message to server is still encrypted with early data keys,
          * but appears in the transcript after the server Finished. */
@@ -1678,11 +1690,15 @@ impl State<ClientConnectionData> for ExpectFinished {
             }
         }
 
+        #[cfg(feature = "std")]
+        let client_finished_hash = flight.transcript.try_current_hash()?;
+        #[cfg(not(feature = "std"))]
+        let client_finished_hash = flight.transcript.current_hash();
         let (key_schedule_pre_finished, verify_data) = st
             .key_schedule
             .into_pre_finished_client_traffic(
                 hash_after_handshake,
-                flight.transcript.current_hash(),
+                client_finished_hash,
                 &*st.config.key_log,
                 &st.randoms.client,
             );
@@ -1699,8 +1715,12 @@ impl State<ClientConnectionData> for ExpectFinished {
 
         /* Now move to our application traffic keys. */
         cx.common.check_aligned_handshake()?;
+        #[cfg(feature = "std")]
+        let traffic_hash = st.transcript.try_current_hash()?;
+        #[cfg(not(feature = "std"))]
+        let traffic_hash = st.transcript.current_hash();
         let (key_schedule, resumption) =
-            key_schedule_pre_finished.into_traffic(cx.common, st.transcript.current_hash());
+            key_schedule_pre_finished.into_traffic(cx.common, traffic_hash);
         cx.common
             .start_traffic(&mut cx.sendable_plaintext);
 
