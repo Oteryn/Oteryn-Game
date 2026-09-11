@@ -47,6 +47,7 @@ At protected `main@4122dc7302dfbb2e05f30ddba95017f464773b8c`:
 - #162 comment `5622366437` explicitly requests evaluation of one exact bounded non-production implementation allocation for `RENDER_VISIBLE_RESOURCE_CACHE_POLICY_COMPONENT_V1`;
 - fresh open-PR/code searches find no active task, implementation PR, or competing allocation for that component, `crates/renderer/src/resources.rs`, or the minimum `crates/renderer/src/lib.rs` policy/error seam;
 - current `ResourceCache` has no external repository consumers, so a minimal renderer-local policy evolution can be qualified without Cargo/workspace or Windows-composition changes;
+- fresh protected search finds no existing authoritative renderer cycle identity/owner. Therefore this worker may prove only a test/evidence cycle-transition capability seam; it must not invent or claim the production owner of renderer/frame-cycle authority;
 - official Tibia hardware figures remain external compatibility anchors only. They are not Oteryn limits and cannot be serialized by this worker.
 
 Changing any material fact requires fresh reconciliation before activation.
@@ -62,13 +63,14 @@ The worker must answer only:
 1. Can capacity and deterministic accounted bytes be checked and reserved **before** resource-shaped construction/allocation/publication?
 2. Can exact-max admission succeed and max+1 deterministically evict a legal reclaimable entry, reject, or defer without unbounded growth or partial publication?
 3. Can committed admissions, admission/upload bytes, in-flight uploads, eviction/replacement work **and failed/retried admission attempts/work** be bounded per cycle with checked arithmetic so failure cannot restore the caller's work budget and enable unlimited retries?
-4. Can stale/replaced generation fail closed, and can component-owned old-generation entries/reservations/in-flight state be released or fenced without unbounded retained backing?
-5. Can deterministic priority prevent decorative work from silently displacing pinned/critical gameplay-readability resources?
-6. Can decorative miss/defer/failure produce an explicit bounded fallback/degradation result without gameplay mutation?
-7. Can eviction/fallback order remain deterministic and independent of hash/thread enumeration order?
-8. Can semantic resource identity remain independent of atlas-versus-array physical layout?
-9. Can every counter/byte/work-unit composition reject overflow before mutation/allocation?
-10. Can exact evidence be regenerated without promoting injected values to production `RENDER-RL-*` maxima?
+4. Can per-cycle budgets reset only when a separate test/evidence cycle-authority capability supplies the exact checked successor transition, while duplicate/stale/skipped/overflow transitions preserve the current budget and admission paths cannot mint their own reset authority?
+5. Can stale/replaced generation fail closed, and can component-owned old-generation entries/reservations/in-flight state be released or fenced without unbounded retained backing?
+6. Can deterministic priority prevent decorative work from silently displacing pinned/critical gameplay-readability resources?
+7. Can decorative miss/defer/failure produce an explicit bounded fallback/degradation result without gameplay mutation?
+8. Can eviction/fallback order remain deterministic and independent of hash/thread enumeration order?
+9. Can semantic resource identity remain independent of atlas-versus-array physical layout?
+10. Can every counter/byte/work-unit/cycle-ordinal composition reject overflow before mutation/allocation?
+11. Can exact evidence be regenerated without promoting injected values to production `RENDER-RL-*` maxima or claiming a production cycle owner?
 
 ## Exact owned paths after activation
 
@@ -128,11 +130,39 @@ max_admission_attempt_work_units_per_cycle
 
 `max_admissions_per_cycle` may count committed admissions, but it is **not** allowed to be the only retry bound. Every attempt that passes preflight far enough to perform reclaim-plan evaluation, reservation, resource-shaped construction or installation must consume the separate finite attempt/work budget even if the operation later fails and retained state rolls back.
 
-The work-unit definition must be deterministic for the exact candidate and must reserve/charge a candidate-specific bounded upper amount before the corresponding reclaim/construction/install work is performed. An attempt/work charge is monotonic within the normalized cycle and is not refunded after later construction/install failure. The explicit cycle boundary may reset it.
+The work-unit definition must be deterministic for the exact candidate and must reserve/charge a candidate-specific bounded upper amount before the corresponding reclaim/construction/install work is performed. An attempt/work charge is monotonic within the accepted normalized cycle and is not refunded after later construction/install failure.
 
 Additional fixed counters are allowed only if the candidate physically exercises them and they are required to keep the component bounded.
 
 Every injected value is test/evidence capability, not production policy. Tiny values are expected for boundary tests. No injected value may be copied into `RENDER-RL-*`, deployment configuration, user settings or public hardware requirements.
+
+## Test/evidence cycle-transition authority
+
+The repository currently has no accepted production renderer cycle identity/owner. This allocation therefore permits only the minimum **test/evidence** capability needed to prove that per-cycle budgets cannot be refreshed by the admission path itself.
+
+Exact type names are not frozen, but the candidate must separate:
+
+```text
+admission / cache mutation surface
+!=
+test-evidence cycle transition authority
+```
+
+The admission/cache surface must not expose an unconditional no-argument `reset_cycle()` and must not be able to mint its own cycle-transition capability.
+
+A budget reset requires a token/ordinal/capability produced by a separate test/evidence owner seam and accepted by the component only when it represents the **exact checked successor** of the currently accepted cycle ordinal. The component retains the last accepted ordinal/capability identity.
+
+Required behavior:
+
+- exact successor transition resets per-cycle counters exactly once;
+- duplicate replay of the same accepted token/ordinal is rejected or idempotent-no-op and does **not** reset any counter;
+- stale/backward transition does not reset;
+- skipped/non-successor transition does not reset;
+- ordinal successor overflow fails closed and does not reset;
+- an admission attempt, failure path, resource constructor/factory, eviction path or fallback path cannot mint/advance cycle authority;
+- evidence must prove a failed admission cannot regain budget by replaying or self-issuing a cycle reset.
+
+A test-only issuer may exist solely inside the owned component/tests to exercise the semantics, but it is **not** production cycle authority and must be identified as such in evidence. Production acceptance later requires binding this seam to the actual accepted renderer/frame-cycle owner under separate authority. This worker must return `production_cycle_owner_selected = false`.
 
 ## Pre-allocation discipline
 
@@ -204,26 +234,29 @@ The exact candidate and evidence must prove at least:
 2. stale generation rejects before resource construction/publication and leaves all state unchanged;
 3. resident-entry exact max succeeds; max+1 deterministically evicts one legal reclaimable entry or rejects/defers before unbounded growth;
 4. resident-accounted-byte exact max succeeds; max+1 rejects/evicts/defers before construction with no overflow/leak;
-5. committed per-cycle admission-count max/max+1 is bounded and resets only at the explicit normalized cycle boundary;
+5. committed per-cycle admission-count max/max+1 is bounded and resets only at an accepted exact-successor cycle transition;
 6. committed per-cycle admission/upload-byte max/max+1 is bounded with checked arithmetic;
 7. in-flight exact max succeeds and max+1 rejects/defers before extra backing; completion/abort releases exactly once;
 8. eviction/replacement exact max succeeds and max+1 rejects/defers without exceeding work budget;
 9. admission-attempt count exact max succeeds and max+1 rejects/defer **before** another resource-shaped construction/reclaim evaluation; failed attempts consume this budget and do not refund it;
 10. admission-attempt work-unit exact max succeeds and max+1 rejects/defer before work; candidate-specific worst-case reclaim/construction/install allowance is checked/charged before work and remains consumed after later failure;
 11. combined limits cannot be bypassed by a sequence that satisfies individual retained/success counters while repeatedly failing construction or exhausting another work dimension;
-12. checked arithmetic overflow for count/byte/work counters rejects before mutation/construction;
+12. checked arithmetic overflow for count/byte/work/cycle-ordinal counters rejects before mutation/construction/reset;
 13. post-reservation construction/install failure rolls back retained entry/index, retained bytes, in-flight reservations and priority/publication state exactly **while preserving the consumed attempt/work charge**;
-14. repeated injected construction/install failures in one normalized cycle eventually hit the finite attempt/work limit, and the first over-limit retry performs zero additional resource construction/reclaim work;
-15. explicit cycle reset clears the per-cycle attempt/work charge exactly once and no other path silently refreshes it;
-16. decorative admission never evicts pinned/critical content when forbidden;
-17. deterministic tie cases choose the same legal victim/result independent of insertion/hash/thread enumeration order;
-18. decorative miss/defer/failure returns explicit bounded fallback/degradation and never mutates gameplay authority;
-19. legitimate generation transition fences old references/permits, prevents old-generation install/resurrection and leaves no independently growing old-generation retention;
-20. repeated generation/recovery cycles keep retained state bounded by injected finite limits;
-21. semantic cache identity is unchanged when equivalent content uses different prototype physical-layout metadata;
-22. no whole-world preload, visibility scan, gameplay mutation, production-config lookup or registry lookup is reachable;
-23. evidence reports exact retained entries, deterministic accounted bytes, committed per-cycle admission count/bytes, admission attempts/work units, failed-attempt count, in-flight count, eviction/replacement work and generation-release work for every exercised boundary;
-24. all injected values report `test_evidence_only = true` and `production_maximum_selected = false`.
+14. repeated injected construction/install failures in one accepted cycle eventually hit the finite attempt/work limit, and the first over-limit retry performs zero additional resource construction/reclaim work;
+15. one separately issued exact-successor cycle transition resets the per-cycle counters exactly once;
+16. duplicate replay of that same cycle token/ordinal after a failed admission does not reset or refund any budget and therefore cannot enable another over-limit resource-shaped attempt;
+17. stale/backward/skipped cycle transitions and successor-overflow attempts do not reset any budget;
+18. admission/failure/reclaim/construction/fallback paths cannot mint or advance the test/evidence cycle transition authority;
+19. decorative admission never evicts pinned/critical content when forbidden;
+20. deterministic tie cases choose the same legal victim/result independent of insertion/hash/thread enumeration order;
+21. decorative miss/defer/failure returns explicit bounded fallback/degradation and never mutates gameplay authority;
+22. legitimate generation transition fences old references/permits, prevents old-generation install/resurrection and leaves no independently growing old-generation retention;
+23. repeated generation/recovery cycles keep retained state bounded by injected finite limits;
+24. semantic cache identity is unchanged when equivalent content uses different prototype physical-layout metadata;
+25. no whole-world preload, visibility scan, gameplay mutation, production-config lookup or registry lookup is reachable;
+26. evidence reports exact retained entries, deterministic accounted bytes, committed per-cycle admission count/bytes, admission attempts/work units, failed-attempt count, accepted cycle ordinal, duplicate/stale/skipped cycle-reset outcomes, in-flight count, eviction/replacement work and generation-release work for every exercised boundary;
+27. all injected values report `test_evidence_only = true`, `production_maximum_selected = false`, and `production_cycle_owner_selected = false`.
 
 If any operation cost depends on occupancy, queue shape or reclaimable-set shape, evidence must measure the relevant candidate-specific boundary/worst-case path rather than only one representative point. Failed attempts must be included in those work measurements; they cannot disappear because retained state rolled back.
 
@@ -244,6 +277,10 @@ committed_admission_bytes_this_cycle
 admission_attempts_this_cycle
 admission_attempt_work_units_this_cycle
 failed_construction_or_install_attempts_this_cycle
+accepted_test_evidence_cycle_ordinal
+cycle_transition_successor_matrix
+cycle_transition_duplicate_stale_skipped_overflow_matrix
+admission_cannot_mint_cycle_authority
 in_flight_uploads
 evictions_or_replacements_this_cycle
 generation_release_work
@@ -257,6 +294,7 @@ checked_overflow_matrix
 layout_neutrality_matrix
 test_evidence_only = true
 hardware_floor_selected = false
+production_cycle_owner_selected = false
 production_maximum_selected = false
 resource_registry_mutated = false
 production_configuration_mutated = false
@@ -268,6 +306,7 @@ Do not report guessed VRAM as measured bytes. Deterministic decoded/uploadable-b
 
 Successful completion proves only the structural policy component. Production `RENDER_VISIBLE_RESOURCE_CACHE_V1` still requires later owner/resource work including:
 
+- accepted production renderer/frame-cycle ownership binding for the per-cycle reset seam;
 - accepted first supported native-client Windows/wgpu hardware/graphics floor;
 - representative lower-floor physical qualification plus high-end evidence;
 - production-shaped per-cycle peaks and physical composition evidence where required;
@@ -275,7 +314,7 @@ Successful completion proves only the structural policy component. Production `R
 - separately controlled registry serialization;
 - fresh #162 production implementation allocation.
 
-No production numeric value is selected here.
+No production numeric value or production cycle owner is selected here.
 
 ## Validation
 
@@ -327,6 +366,10 @@ per_cycle_byte_boundary: <PASS|BLOCKED>
 admission_attempt_boundary: <PASS|BLOCKED>
 admission_attempt_work_boundary: <PASS|BLOCKED>
 failed_attempt_budget_non_refund: <PASS|BLOCKED>
+cycle_transition_exact_successor: <PASS|BLOCKED>
+duplicate_stale_skipped_cycle_transition: <PASS|BLOCKED>
+admission_cannot_mint_cycle_authority: <PASS|BLOCKED>
+production_cycle_owner_selected: false
 in_flight_boundary: <PASS|BLOCKED>
 eviction_replacement_boundary: <PASS|BLOCKED>
 post_reservation_rollback: <PASS|BLOCKED>
@@ -353,6 +396,7 @@ The allocation itself is complete only after protected integration/readback. The
 `IMPLEMENTATION_AUTHORITY: NONE_UNTIL_PROTECTED_INTEGRATION_AND_EXPLICIT_162_ACTIVATION`
 `PRODUCTION_AUTHORITY: NONE`
 `PRODUCTION_NUMERIC_MAXIMA_AUTHORITY: NONE`
+`PRODUCTION_CYCLE_OWNER_AUTHORITY: NONE`
 `RESOURCE_REGISTRY_MUTATION_AUTHORITY: NONE`
 `WINDOWS_RENDERER_COMPOSITION_AUTHORITY: NONE`
 `HARDWARE_FLOOR_DECISION_AUTHORITY: NONE`
