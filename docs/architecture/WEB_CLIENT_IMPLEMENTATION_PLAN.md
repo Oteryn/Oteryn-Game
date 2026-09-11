@@ -1,7 +1,7 @@
 # Oteryn Web Client — staged implementation plan
 
-Status: **Planning candidate; no implementation authority**  
-Tracking: Issue #519  
+Status: **Planning candidate; no implementation authority**
+Tracking: Issue #519
 Architecture candidate: `ADR-0018-browser-client-web-ready-boundaries.md`
 
 This plan translates the proposed browser-client architecture into independently gated stages. Until a protected owning decision accepts or adopts it, current native-client and Server Seam work may use it only as non-authoritative evidence and must follow existing protected authority.
