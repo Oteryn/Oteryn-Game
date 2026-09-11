@@ -126,7 +126,11 @@ fn each_modifier_side_preserves_normal_release_and_non_modifier_held_set()
         assert_eq!(started.len(), 1);
         assert_eq!(started[0].phase(), ActionPhase::Started);
         assert_eq!(router.held_inputs().len(), 1);
-        assert!(router.held_inputs().contains(&InputAtom::Key(KeyCode::KEY_A)));
+        assert!(
+            router
+                .held_inputs()
+                .contains(&InputAtom::Key(KeyCode::KEY_A))
+        );
         let ended = key(&mut adapter, &mut router, 4, Released, false)?;
         assert_eq!(ended.len(), 1);
         assert_eq!(ended[0].phase(), ActionPhase::Ended);
@@ -141,7 +145,10 @@ fn each_modifier_side_preserves_normal_release_and_non_modifier_held_set()
 fn binding_atoms_reject_all_modifier_positions() -> Result<(), InputError> {
     for code in 224..=231 {
         let modifier = InputAtom::Key(KeyCode::new(code)?);
-        for atoms in [vec![modifier], vec![InputAtom::Key(KeyCode::KEY_A), modifier]] {
+        for atoms in [
+            vec![modifier],
+            vec![InputAtom::Key(KeyCode::KEY_A), modifier],
+        ] {
             assert_eq!(
                 InputChord::new(Modifiers::NONE, atoms),
                 Err(InputError::ModifierChordInput)

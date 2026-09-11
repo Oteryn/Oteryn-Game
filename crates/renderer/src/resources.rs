@@ -52,9 +52,15 @@ where
 #[cfg(any(windows, test))]
 pub(crate) fn acquire_frame<R>(
     state: &crate::SurfaceState,
-    _generation: ProcessGeneration,
+    generation: ProcessGeneration,
     acquire: impl FnOnce() -> R,
 ) -> Result<R, RendererError> {
+    if generation != state.process_generation() {
+        return Err(RendererError::StaleGeneration {
+            expected: state.process_generation(),
+            received: generation,
+        });
+    }
     state.require_presentable(crate::SurfaceEventKind::Presented)?;
     Ok(acquire())
 }

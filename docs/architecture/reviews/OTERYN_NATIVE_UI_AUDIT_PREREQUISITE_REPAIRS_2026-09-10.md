@@ -117,3 +117,27 @@ the required `Scope`) and one Rustfmt import-line difference. These are authorin
 mistakes, not intended runtime failures; both are corrected without policy changes.
 Renderer generation repair remains pending its negative test population. This
 intermediate candidate is still not ready for integration.
+
+## Successor repair after protected-main reconciliation
+
+Protected `main@663bd35a5196a925fc6eb0318381ad0b97f4cc2c` was merged into the
+same published branch without rewriting its history. The observed negative renderer
+population at `b2b6e5be610ae03642eeeec7cdd0ccd777d0d20d` failed both stale-generation
+acquisition tests: stale configured state entered the callback, and stale unconfigured
+state reported phase denial before generation denial. The shared physical acquisition
+boundary now compares the supplied generation with `SurfaceState` before checking the
+phase or invoking the backend callback. `WindowsRenderer::render` continues to use that
+boundary immediately before `get_current_texture`, so the oracle covers the production
+call ordering rather than only a parallel `SurfaceState` transition.
+
+Local Rust 1.94.0 qualification after the repair passes the three focused package
+commands, exact workspace formatting, strict workspace Clippy, workspace tests,
+architecture boundaries, governance and repository policy. The PowerShell-native
+repository-policy canary remains hosted-only in this Linux workspace because `pwsh` is
+not installed; exact-head hosted Windows, supply-chain and aggregate `game-gate`
+results remain required and are not predeclared by this record.
+
+The bounded input modifier/lifecycle prerequisite and renderer generation ordering
+prerequisite are implemented within the owned paths. This does not implement or accept
+IME, smooth/fractional scrolling, UI-P1/P2/P3, HUD, FOV, GPU-device recovery or
+production activation.
