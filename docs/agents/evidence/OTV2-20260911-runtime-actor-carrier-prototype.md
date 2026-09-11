@@ -31,7 +31,7 @@ This prototype does not implement an exact same-generation durable restore sourc
 
 ## Tested candidate points
 
-The example tests independently exercise `M = 1, 2, 3, 4`. None is a production maximum. `cargo run --example runtime_actor_carrier_prototype` executes exact-M admission, M+1 denial, complete state-preservation comparison, lookup, removal, and fragmented reinsertion for every point, then emits the observed outcomes and work.
+The example tests independently exercise `M = 1, 2, 3, 4`. None is a production maximum. Authority-bearing carrier, guard, grant, and authority-dependent operations exist only in the focused test build. `cargo run --example runtime_actor_carrier_prototype` emits only authority-free physical representation/readback for every point: checked retained bytes, type sizes, and direct-index metadata. It explicitly does not execute or qualify namespace, admission, lookup, removal, or other authority-dependent behavior.
 
 | M | expected retained slot bytes | lookup work | removal work | sparse insert work | full/fragmented insertion worst case | M+1 |
 |---:|---:|---:|---:|---:|---:|---|
@@ -82,7 +82,7 @@ No inventory, combat values, AI memory, dialogue, loot, persistence, protocol ha
 
 The current material candidate source commit is bound to the exact GitHub PR head at qualification. The final PR head is intentionally bound by GitHub check/review evidence rather than self-referentially embedded as a PASS claim in this file.
 
-The numeric values above are **candidate expectations encoded as executable assertions**, not yet PASS claims. They become qualified only when exact-head repository CI compiles/runs the applicable example tests and all selected repository gates succeed.
+The numeric and authority-dependent operation values above are **candidate expectations encoded as focused-test executable assertions**, not `cargo run` claims and not yet PASS claims. They become qualified only when exact-head repository CI compiles/runs the applicable example tests and all selected repository gates succeed.
 
 ## Explicit non-claims
 

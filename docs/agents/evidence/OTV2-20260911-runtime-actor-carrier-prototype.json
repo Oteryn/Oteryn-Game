@@ -87,8 +87,13 @@
     }
   ],
   "per_tested_m_work_matrix_executable": true,
-  "cargo_run_regenerated_points": [1, 2, 3, 4],
-  "cargo_run_executes_m_and_m_plus_1_operations": true,
+  "cargo_run_regenerated_points": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "cargo_run_executes_m_and_m_plus_1_operations": false,
   "authority_bearing_carrier_cloneable": false,
   "rollback_comparison_shape": "non-authoritative CarrierStateSnapshot",
   "required_negative_matrix": {
@@ -120,7 +125,9 @@
     "Expected numeric shape/work values are asserted by the Rust example tests but are not marked qualified until repository-native exact-head CI observes them.",
     "The non-Clone/non-Copy NamespaceContinuityGuard is the one externally supplied surviving continuity authority. ScopeOwnershipGeneration itself is the namespace incarnation fence; the prototype exposes no issuer, same-generation grant, or raw-fact guard constructor. A move-only AuthorizedNewerScopeGenerationGrant is accepted only when its generation is strictly newer. Carrier loss under the same generation therefore fails closed. Production issuance, ownership, persistence, and exact restore are not selected here.",
     "ChannelActorCarrier is non-Clone; rollback comparisons use a separate non-authoritative fixed-value snapshot.",
-    "cargo run executes exact-M admission, M+1 denial, full-state preservation, lookup, removal, and fragmented reinsertion for every M=1..4 and emits the observed outcomes.",
+    "cargo run emits only authority-free physical representation/readback for M=1..4 (checked retained bytes, type sizes, and direct-index metadata) and explicitly does not execute or qualify namespace, admission, lookup, removal, or other authority-dependent behavior; focused example tests execute and prove that matrix.",
     "No production actor ceiling is selected by any tested M."
-  ]
+  ],
+  "cargo_run_output_authority_free": true,
+  "authority_dependent_operations_test_only": true
 }

@@ -2,11 +2,13 @@
 // the non-test binary emits only its reproducible physical evidence matrix.
 #![cfg_attr(not(test), allow(dead_code))]
 
+#[cfg(test)]
 use oteryn_game_server::foundation::{
     ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use serde_json::json;
 use std::error::Error;
+#[cfg(test)]
 use std::fmt::{self, Display, Formatter};
 use std::mem::size_of;
 
@@ -55,6 +57,7 @@ impl ActorSlot {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct ActorLocalId(u32);
 
+#[cfg(test)]
 impl ActorLocalId {
     fn from_slot_index(index: usize) -> Result<Self, CarrierFailure> {
         let one_based = index
@@ -76,6 +79,7 @@ impl ActorLocalId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct ActorLocalGeneration(u8);
 
+#[cfg(test)]
 impl ActorLocalGeneration {
     fn new(raw: u8) -> Result<Self, CarrierFailure> {
         if raw == 0 {
@@ -85,6 +89,7 @@ impl ActorLocalGeneration {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorTargetRefPrototype {
     scope: RuntimeScopeRefV1,
@@ -93,6 +98,7 @@ struct ActorTargetRefPrototype {
     actor_local_generation: ActorLocalGeneration,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct LocalPosition {
     x: i32,
@@ -100,6 +106,7 @@ struct LocalPosition {
     z: i32,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorSeed {
     kind: ActorKind,
@@ -107,6 +114,7 @@ struct ActorSeed {
     position: LocalPosition,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorReadView {
     kind: ActorKind,
@@ -114,6 +122,7 @@ struct ActorReadView {
     position: LocalPosition,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FailureCategory {
     CapacityExceeded,
@@ -124,6 +133,7 @@ enum FailureCategory {
     ArithmeticOverflow,
 }
 
+#[cfg(test)]
 impl FailureCategory {
     const fn as_str(self) -> &'static str {
         match self {
@@ -137,6 +147,7 @@ impl FailureCategory {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FailureCode {
     ActorCapacityExceeded,
@@ -150,6 +161,7 @@ enum FailureCode {
     NonChannelScope,
 }
 
+#[cfg(test)]
 impl FailureCode {
     const fn as_str(self) -> &'static str {
         match self {
@@ -166,6 +178,7 @@ impl FailureCode {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CarrierFailure {
     code: FailureCode,
@@ -173,6 +186,7 @@ struct CarrierFailure {
     work_units: usize,
 }
 
+#[cfg(test)]
 impl CarrierFailure {
     const fn new(code: FailureCode, category: FailureCategory, work_units: usize) -> Self {
         Self {
@@ -199,6 +213,7 @@ impl CarrierFailure {
     }
 }
 
+#[cfg(test)]
 impl Display for CarrierFailure {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         write!(
@@ -211,31 +226,37 @@ impl Display for CarrierFailure {
     }
 }
 
+#[cfg(test)]
 impl Error for CarrierFailure {}
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum AdmissionFault {
     None,
     AfterGenerationSelection,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct AdmissionSuccess {
     target: ActorTargetRefPrototype,
     insertion_work_units: usize,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct LookupSuccess {
     actor: ActorReadView,
     direct_lookup_work_units: usize,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RemovalSuccess {
     removal_work_units: usize,
 }
 
+#[cfg(test)]
 #[derive(Debug, PartialEq, Eq)]
 struct ChannelActorCarrier<const M: usize> {
     scope: RuntimeScopeRefV1,
@@ -244,6 +265,7 @@ struct ChannelActorCarrier<const M: usize> {
 }
 
 // A rollback comparison is data, not a second authority-bearing carrier.
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CarrierStateSnapshot<const M: usize> {
     scope: RuntimeScopeRefV1,
@@ -251,6 +273,7 @@ struct CarrierStateSnapshot<const M: usize> {
     slots: [ActorSlot; M],
 }
 
+#[cfg(test)]
 impl<const M: usize> ChannelActorCarrier<M> {
     // Raw carrier materialization is deliberately private to the surviving
     // namespace-continuity authority below. Carrier loss alone cannot call it.
@@ -448,6 +471,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
     }
 }
 
+#[cfg(test)]
 const fn stale_actor_reference(work_units: usize) -> CarrierFailure {
     CarrierFailure::new(
         FailureCode::StaleActorReference,
@@ -456,6 +480,7 @@ const fn stale_actor_reference(work_units: usize) -> CarrierFailure {
     )
 }
 
+#[cfg(test)]
 fn slot_reference_failure(slot: ActorSlot, work_units: usize) -> CarrierFailure {
     if slot.lifecycle == SlotLifecycle::VacantReusable && slot.generation == 0 {
         CarrierFailure::new(
@@ -470,6 +495,7 @@ fn slot_reference_failure(slot: ActorSlot, work_units: usize) -> CarrierFailure 
 
 // This move-only value represents an already-authorized *newer* scope-owner
 // transition. It intentionally has no constructor or issuer API.
+#[cfg(test)]
 #[derive(Debug)]
 struct AuthorizedNewerScopeGenerationGrant {
     scope: RuntimeScopeRefV1,
@@ -477,6 +503,7 @@ struct AuthorizedNewerScopeGenerationGrant {
 }
 
 // This state is outside carrier backing and deliberately neither Clone nor Copy.
+#[cfg(test)]
 #[derive(Debug, PartialEq, Eq)]
 struct NamespaceContinuityGuard {
     scope: RuntimeScopeRefV1,
@@ -484,6 +511,7 @@ struct NamespaceContinuityGuard {
     namespace_initialized: bool,
 }
 
+#[cfg(test)]
 impl NamespaceContinuityGuard {
     const fn scope(&self) -> RuntimeScopeRefV1 {
         self.scope
@@ -524,12 +552,14 @@ impl NamespaceContinuityGuard {
     }
 }
 
+#[cfg(test)]
 fn checked_retained_slot_bytes(configured_slots: usize) -> Result<usize, CarrierFailure> {
     configured_slots
         .checked_mul(size_of::<ActorSlot>())
         .ok_or_else(CarrierFailure::arithmetic)
 }
 
+#[cfg(test)]
 fn uuid_v7(raw: u64) -> [u8; 16] {
     let mut out = [0_u8; 16];
     out[8..].copy_from_slice(&raw.to_be_bytes());
@@ -538,6 +568,7 @@ fn uuid_v7(raw: u64) -> [u8; 16] {
     out
 }
 
+#[cfg(test)]
 fn channel_scope(seed: u64) -> Result<RuntimeScopeRefV1, Box<dyn Error>> {
     let world = WorldId::decode(&uuid_v7(seed))?;
     let channel_seed = seed
@@ -547,90 +578,22 @@ fn channel_scope(seed: u64) -> Result<RuntimeScopeRefV1, Box<dyn Error>> {
     Ok(RuntimeScopeRefV1::channel(world, channel))
 }
 
-fn physical_point<const M: usize>(scope_seed: u64) -> Result<serde_json::Value, Box<dyn Error>> {
-    let scope = channel_scope(scope_seed)?;
-    // Harness injection represents the externally supplied initial continuity
-    // authority; the prototype provides no runtime issuer or constructor.
-    let mut owner = NamespaceContinuityGuard {
-        scope,
-        generation: ScopeOwnershipGeneration::new(1)?,
-        namespace_initialized: false,
-    };
-    let mut carrier = owner.bootstrap::<M>()?;
-    let mut targets = Vec::with_capacity(M);
-    let mut insertion_work = Vec::with_capacity(M);
-    for index in 0..M {
-        let admitted = carrier.admit(
-            ActorSeed {
-                kind: ActorKind::Player,
-                actionable: true,
-                position: LocalPosition {
-                    x: i32::try_from(index)?,
-                    y: 0,
-                    z: 0,
-                },
-            },
-            AdmissionFault::None,
-        )?;
-        targets.push(admitted.target);
-        insertion_work.push(admitted.insertion_work_units);
-    }
-    let before_denial = carrier.snapshot();
-    let denial = match carrier.admit(
-        ActorSeed {
-            kind: ActorKind::Creature,
-            actionable: true,
-            position: LocalPosition { x: 99, y: 0, z: 0 },
-        },
-        AdmissionFault::None,
-    ) {
-        Err(failure) => failure,
-        Ok(_) => {
-            return Err(std::io::Error::other("exact-M carrier admitted actor M+1").into());
-        }
-    };
-    let state_preserved = carrier.snapshot() == before_denial;
-    let first_target = targets
-        .first()
-        .copied()
-        .ok_or_else(CarrierFailure::arithmetic)?;
-    let last_target = targets
-        .last()
-        .copied()
-        .ok_or_else(CarrierFailure::arithmetic)?;
-    let lookup_work = carrier
-        .lookup(&owner, first_target)?
-        .direct_lookup_work_units;
-    let removal_work = carrier.remove(&owner, last_target)?.removal_work_units;
-    let fragmented_insertion_work = carrier
-        .admit(
-            ActorSeed {
-                kind: ActorKind::NpcSystem,
-                actionable: true,
-                position: LocalPosition { x: 100, y: 0, z: 0 },
-            },
-            AdmissionFault::None,
-        )?
-        .insertion_work_units;
+fn physical_point<const M: usize>() -> Result<serde_json::Value, Box<dyn Error>> {
+    let retained_bytes = M
+        .checked_mul(size_of::<ActorSlot>())
+        .ok_or_else(|| std::io::Error::other("retained slot byte overflow"))?;
 
     Ok(json!({
         "configured_actor_slots": M,
         "slot_or_record_size_bytes": size_of::<ActorSlot>(),
-        "retained_slot_or_record_bytes": checked_retained_slot_bytes(M)?,
+        "retained_slot_or_record_bytes": retained_bytes,
         "lookup_or_index_entries": M,
         "lookup_or_index_physically_same_as_slot_backing": true,
         "lookup_or_index_entry_size_bytes_if_distinct": 0,
         "lookup_or_index_retained_bytes_if_distinct": 0,
         "retained_generation_cells": M,
         "independent_retirement_history_entries": 0,
-        "M_admission_result": "SUCCESS",
-        "M_plus_1_admission_result": format!("{}/{}", denial.code.as_str(), denial.category.as_str()),
-        "M_plus_1_full_state_preserved": state_preserved,
-        "direct_lookup_work_units": lookup_work,
-        "removal_work_units": removal_work,
-        "sparse_insertion_work_units": insertion_work.first().copied().ok_or_else(CarrierFailure::arithmetic)?,
-        "full_boundary_insertion_work_units": insertion_work.last().copied().ok_or_else(CarrierFailure::arithmetic)?,
-        "fragmented_boundary_insertion_work_units": fragmented_insertion_work,
+        "authority_dependent_operations_executed": false,
         "production_capacity_claim": false
     }))
 }
@@ -644,10 +607,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         "actor_local_generation_width_bytes": size_of::<ActorLocalGeneration>(),
         "actor_slot_width_bytes": size_of::<ActorSlot>(),
         "tested_points": [
-            physical_point::<1>(1001)?,
-            physical_point::<2>(1002)?,
-            physical_point::<3>(1003)?,
-            physical_point::<4>(1004)?
+            physical_point::<1>()?,
+            physical_point::<2>()?,
+            physical_point::<3>()?,
+            physical_point::<4>()?
         ],
         "accepted_production_maximum_selected": false,
         "resource_registry_mutated": false,
