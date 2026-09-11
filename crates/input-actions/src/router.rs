@@ -133,8 +133,35 @@ impl InputRouter {
     }
 
     /// Process one normalized event and return deterministic semantic outputs.
+    /// Modifier changes cancel incompatible held actions before routing the event;
+    /// modifier key positions never count as non-modifier chord atoms.
     pub fn process(&mut self, event: &NormalizedInputEvent) -> Vec<ActionEvent> {
+        let mut events = match event {
+            NormalizedInputEvent::Key { modifiers, .. }
+            | NormalizedInputEvent::MouseButton { modifiers, .. }
+            | NormalizedInputEvent::Wheel { modifiers, .. } => self.reconcile_modifiers(*modifiers),
+            _ => Vec::new(),
+        };
+        events.extend(self.process_current(event));
+        events
+    }
+
+    fn reconcile_modifiers(&mut self, modifiers: Modifiers) -> Vec<ActionEvent> {
+        self.modifiers = modifiers;
+        let keys = self
+            .active_actions
+            .keys()
+            .filter(|chord| chord.modifiers() != modifiers)
+            .cloned()
+            .collect();
+        self.remove_actions(keys, ActionPhase::Cancelled)
+    }
+
+    fn process_current(&mut self, event: &NormalizedInputEvent) -> Vec<ActionEvent> {
         match event {
+            NormalizedInputEvent::Key { code, .. } if InputAtom::Key(*code).is_modifier() => {
+                Vec::new()
+            }
             NormalizedInputEvent::Key {
                 code,
                 state,
@@ -330,7 +357,7 @@ impl InputRouter {
         &self.active_contexts
     }
 
-    /// Borrow held physical inputs in deterministic order.
+    /// Borrow held non-modifier physical inputs in deterministic order.
     #[must_use]
     pub const fn held_inputs(&self) -> &BTreeSet<InputAtom> {
         &self.held
