@@ -223,7 +223,7 @@ where
         resource_budget.clone(),
         owner_arc_layout.pad_to_align().size(),
     )
-    .map_err(|_| Error::tls("resource-owner allocation denied"))?;
+    .map_err(Error::tls)?;
     let owner: Arc<dyn rustls::DeframerBufferOwner> =
         Arc::new(DeframerBudgetOwner(resource_budget.clone()));
     #[cfg(feature = "_tls-rustls-aws-lc-rs")]
