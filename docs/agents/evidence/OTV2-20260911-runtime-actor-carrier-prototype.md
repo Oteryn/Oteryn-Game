@@ -21,17 +21,17 @@ Prototype-local actor identity is fixed-shape only. A one-based `ActorLocalId(u3
 
 ## Live authority and namespace continuity
 
-`NamespaceContinuityGuard` is separate from carrier backing and is the prototype evidence object that survives carrier loss/reconstruction. It is deliberately neither `Clone` nor `Copy`; a pre-bootstrap authority snapshot cannot be duplicated and replayed after carrier loss.
+`UniqueEvidenceNamespaceGrant` is a uniquely issued, move-only prototype evidence capability. It is consumed exactly once to construct or advance the `NamespaceContinuityGuard`, which is separate from carrier backing and survives carrier loss/reconstruction. Every independently issued grant carries a distinct namespace incarnation, so replaying copyable scope/generation facts cannot recreate authority that resolves an escaped reference. Both the grant and guard are deliberately neither `Clone` nor `Copy`. Production grant issuance, ownership, and persistence remain explicitly unselected.
 
 `lookup` and `remove` consume a live `&NamespaceContinuityGuard`, not a copied `CurrentOwnerFacts` value. A legitimate outer-generation transition therefore immediately fences the old carrier even if a caller retains the old actor reference or the old carrier object. The executable matrix separately changes only `WorldId`, only `ChannelId`, and only the live outer generation to prove all three fences independently.
 
-Carrier materialization is private to a successful guard claim. Once the guard has initialized one actor-local namespace for a `ScopeOwnershipGeneration`, dropping the `ChannelActorCarrier` does not reset the guard. Same-generation rebootstrap fails closed with `SAME_GENERATION_RECONSTRUCTION_BLOCKED`. A fresh namespace becomes available only after the guard consumes an independently authorized, strictly newer `ScopeOwnershipGeneration`.
+Carrier materialization is private to a successful guard claim. Once the guard has initialized one actor-local namespace for a `ScopeOwnershipGeneration`, dropping the `ChannelActorCarrier` does not reset the guard. Same-generation rebootstrap fails closed with `SAME_GENERATION_RECONSTRUCTION_BLOCKED`. Advancing an existing guard requires it to consume a uniquely issued grant bound to the same scope and a strictly newer `ScopeOwnershipGeneration`.
 
 This prototype does not implement an exact same-generation durable restore source; its selected safe behavior is fail closed. Production ownership/persistence of the continuity guard remains outside this allocation.
 
 ## Tested candidate points
 
-The example tests independently exercise `M = 1, 2, 3, 4`. None is a production maximum. `cargo run --example runtime_actor_carrier_prototype` regenerates physical/work rows for all four points.
+The example tests independently exercise `M = 1, 2, 3, 4`. None is a production maximum. `cargo run --example runtime_actor_carrier_prototype` executes exact-M admission, M+1 denial, complete state-preservation comparison, lookup, removal, and fragmented reinsertion for every point, then emits the observed outcomes and work.
 
 | M | expected retained slot bytes | lookup work | removal work | sparse insert work | full/fragmented insertion worst case | M+1 |
 |---:|---:|---:|---:|---:|---:|---|
@@ -39,6 +39,8 @@ The example tests independently exercise `M = 1, 2, 3, 4`. None is a production 
 | 2 | 32 | 1 | 1 | 1 | 2 | reject before mutation |
 | 3 | 48 | 1 | 1 | 1 | 3 | reject before mutation |
 | 4 | 64 | 1 | 1 | 1 | 4 | reject before mutation |
+
+The authority-bearing `ChannelActorCarrier` is not cloneable. Rollback checks compare a separate, fixed-size, non-authoritative `CarrierStateSnapshot`.
 
 The common `prove_m_boundary<M>()` executable matrix asserts, for every tested M, sparse insertion work=1, exact-M fill, full M+1 denial work=M with complete state preservation, direct lookup work=1, removal work=1, and fragmented-last-slot reinsertion work=M. The separate M=4 boundary test remains an additional concrete check, not the sole evidence for occupancy-dependent work.
 
@@ -61,7 +63,7 @@ The exact example contains focused tests for:
 11. checked local-generation exhaustion producing exactly `ACTOR_LOCAL_GENERATION_EXHAUSTED` in category `CAPACITY_EXCEEDED`, transitioning only the selected vacant max-generation slot to terminal `EXHAUSTED`, and preserving unrelated slots/actors;
 12. churn across every configured slot keeping retained generation cells exactly `M` and independent retirement history exactly zero;
 13. lookup/insertion/removal work measured for every tested M, including sparse, full and fragmented occupancy boundaries;
-14. carrier loss with a surviving non-duplicable guard blocking same-generation reconstruction, followed by a strictly newer outer generation permitting a fresh namespace and rejecting the old reference;
+14. carrier loss with a surviving non-duplicable guard blocking same-generation reconstruction, independently reissued same-generation evidence receiving a distinct namespace incarnation that rejects the escaped reference, and a uniquely granted strictly newer outer generation permitting a fresh namespace;
 15. actor-ID one-based count/index overflow rejection plus retained-byte multiplication overflow rejection.
 
 ## Minimal carried facts
@@ -78,7 +80,7 @@ No inventory, combat values, AI memory, dialogue, loot, persistence, protocol ha
 
 ## Qualification truth
 
-The current material candidate source commit is `9122825270a22c2b27013834156047c8e3751297`. The final PR head is intentionally bound by GitHub check/review evidence rather than self-referentially embedded as a PASS claim in this file.
+The current material candidate source commit is bound to the exact GitHub PR head at qualification. The final PR head is intentionally bound by GitHub check/review evidence rather than self-referentially embedded as a PASS claim in this file.
 
 The numeric values above are **candidate expectations encoded as executable assertions**, not yet PASS claims. They become qualified only when exact-head repository CI compiles/runs the applicable example tests and all selected repository gates succeed.
 

@@ -45,7 +45,7 @@ Implement and qualify the smallest executable `CHANNEL_RUNTIME_ACTOR_CARRIER_V1`
 
 The candidate uses a fixed const-generic slot array. `ActorLocalId` maps directly and immutably to one logical slot/generation cell, so there is no separately growing lookup index or tombstone/history store. Admission performs deterministic slot probing; lookup and removal are direct single-slot operations.
 
-`NamespaceContinuityGuard` is the live prototype authority supplied to lookup/removal and kept outside carrier backing. It survives carrier loss, is neither `Clone` nor `Copy`, and prevents replay of stale current-owner snapshots. Same-generation rebootstrap fails closed; only an independently authorized strictly newer `ScopeOwnershipGeneration` may initialize a fresh namespace. The prototype does not implement or claim same-generation durable restore or production ownership/persistence of that guard.
+`UniqueEvidenceNamespaceGrant` is a uniquely issued, move-only prototype capability consumed exactly once to construct or advance the live `NamespaceContinuityGuard` supplied to lookup/removal and kept outside carrier backing. A distinct namespace incarnation prevents independently reissued copyable scope/generation facts from resolving escaped references. The guard survives carrier loss and is neither `Clone` nor `Copy`. Same-generation rebootstrap fails closed; advancing the guard requires a uniquely granted strictly newer `ScopeOwnershipGeneration`. The authority-bearing carrier is also non-Clone; rollback checks use a separate non-authoritative fixed-value snapshot. The prototype does not implement or claim same-generation durable restore or production ownership/persistence of that guard.
 
 ## Required acceptance matrix
 
@@ -57,11 +57,11 @@ The candidate uses a fixed const-generic slot array. `ActorLocalId` maps directl
 - [ ] Removal preserves generation; successful reuse advances generation and stale prior refs reject.
 - [ ] Injected post-selection failure preserves complete carrier state.
 - [ ] Local-generation exhaustion returns `ACTOR_LOCAL_GENERATION_EXHAUSTED / CAPACITY_EXCEEDED`, marks only the selected slot terminal and preserves unrelated state.
-- [ ] Carrier loss leaves `NamespaceContinuityGuard` initialized; same-generation reconstruction fails closed; a genuinely newer independently authorized outer generation may initialize a fresh namespace and fences old refs.
+- [ ] A uniquely issued, move-only evidence grant is consumed exactly once; carrier loss leaves `NamespaceContinuityGuard` initialized; independently reissued same-generation facts receive a distinct incarnation and cannot resolve escaped refs; same-generation reconstruction fails closed; a genuinely newer independently authorized outer generation may initialize a fresh namespace and fences old refs.
 - [ ] Churn across every configured slot retains exactly `M` generation cells and zero independent retirement-history entries.
 - [ ] Actor-ID one-based count/index overflow and retained-byte arithmetic overflow reject before mutation/allocation evidence.
 - [ ] M and M+1 are independently exercised for every tested M.
-- [ ] `cargo run --example runtime_actor_carrier_prototype` regenerates physical/work rows for every tested M=1,2,3,4.
+- [ ] `cargo run --example runtime_actor_carrier_prototype` executes and emits exact-M admission, M+1 denial, full-state preservation, lookup, removal, and fragmented reinsertion outcomes for every M=1,2,3,4.
 - [ ] Lookup/removal work and sparse/full/fragmented insertion work are exercised independently for every tested M.
 - [ ] Physical slot/index backing is reported honestly; no separate index backing is hidden.
 - [ ] No production capacity, registry, #508 Phase A, #139 Movement, Cargo/workspace or runtime-source claim is made.

@@ -4,14 +4,16 @@
   "issue": 530,
   "activation_main_sha": "32a055ac9b2c4e69773f1d6cb9746ea412164866",
   "branch": "agent/runtime-actor-carrier-prototype-530",
-  "candidate_source_commit": "9122825270a22c2b27013834156047c8e3751297",
+  "candidate_source_commit": "GITHUB_PR_HEAD_AT_QUALIFICATION",
   "exact_head_binding": "GITHUB_PR_HEAD_AT_QUALIFICATION",
   "qualification_state": "PENDING_HOSTED_QUALIFICATION",
   "candidate": "CHANNEL_RUNTIME_ACTOR_CARRIER_V1_PROTOTYPE",
   "foundation_scope_type": "RuntimeScopeRefV1::Channel",
   "foundation_generation_type": "ScopeOwnershipGeneration",
   "namespace_continuity": {
-    "authority_shape": "NamespaceContinuityGuard outside carrier backing",
+    "authority_shape": "move-only UniqueEvidenceNamespaceGrant consumed into NamespaceContinuityGuard outside carrier backing",
+    "grant_uniquely_issued_and_consumed_once": true,
+    "namespace_incarnation_fences_independently_reissued_same_generation_grants": true,
     "lookup_and_remove_consume_live_guard_reference": true,
     "replayable_current_owner_snapshot_api": false,
     "survives_carrier_loss": true,
@@ -85,6 +87,9 @@
   ],
   "per_tested_m_work_matrix_executable": true,
   "cargo_run_regenerated_points": [1, 2, 3, 4],
+  "cargo_run_executes_m_and_m_plus_1_operations": true,
+  "authority_bearing_carrier_cloneable": false,
+  "rollback_comparison_shape": "non-authoritative CarrierStateSnapshot",
   "required_negative_matrix": {
     "cross_world_same_channel": "COVERED_BY_EXAMPLE_TEST",
     "cross_channel_same_world": "COVERED_BY_EXAMPLE_TEST",
@@ -111,7 +116,9 @@
   "movement_139_activated": false,
   "notes": [
     "Expected numeric shape/work values are asserted by the Rust example tests but are not marked qualified until repository-native exact-head CI observes them.",
-    "NamespaceContinuityGuard is non-Clone/non-Copy prototype evidence for live authority that survives carrier loss; production ownership/persistence of that guard is not selected here.",
+    "A uniquely issued move-only evidence grant is consumed exactly once into the non-Clone/non-Copy NamespaceContinuityGuard; an independently reissued grant for identical raw outer facts has a distinct namespace incarnation and cannot resolve escaped references. Production issuance, ownership, and persistence are not selected here.",
+    "ChannelActorCarrier is non-Clone; rollback comparisons use a separate non-authoritative fixed-value snapshot.",
+    "cargo run executes exact-M admission, M+1 denial, full-state preservation, lookup, removal, and fragmented reinsertion for every M=1..4 and emits the observed outcomes.",
     "No production actor ceiling is selected by any tested M."
   ]
 }

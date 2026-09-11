@@ -9,6 +9,7 @@ use serde_json::json;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::mem::size_of;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -89,6 +90,7 @@ impl ActorLocalGeneration {
 struct ActorTargetRefPrototype {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
+    namespace_incarnation: u64,
     actor_local_id: ActorLocalId,
     actor_local_generation: ActorLocalGeneration,
 }
@@ -236,10 +238,20 @@ struct RemovalSuccess {
     removal_work_units: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 struct ChannelActorCarrier<const M: usize> {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
+    namespace_incarnation: u64,
+    slots: [ActorSlot; M],
+}
+
+// A rollback comparison is data, not a second authority-bearing carrier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CarrierStateSnapshot<const M: usize> {
+    scope: RuntimeScopeRefV1,
+    scope_generation: ScopeOwnershipGeneration,
+    namespace_incarnation: u64,
     slots: [ActorSlot; M],
 }
 
@@ -249,6 +261,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
     fn materialize_after_namespace_claim(
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
+        namespace_incarnation: u64,
     ) -> Result<Self, CarrierFailure> {
         if !matches!(scope, RuntimeScopeRefV1::Channel { .. }) || M == 0 {
             return Err(CarrierFailure::new(
@@ -262,6 +275,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
         Ok(Self {
             scope,
             scope_generation,
+            namespace_incarnation,
             slots: [ActorSlot::vacant(); M],
         })
     }
@@ -274,6 +288,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
         Ok(ActorTargetRefPrototype {
             scope: self.scope,
             scope_generation: self.scope_generation,
+            namespace_incarnation: self.namespace_incarnation,
             actor_local_id: ActorLocalId::from_slot_index(index)?,
             actor_local_generation: ActorLocalGeneration::new(generation)?,
         })
@@ -350,6 +365,8 @@ impl<const M: usize> ChannelActorCarrier<M> {
             || current.generation != self.scope_generation
             || target.scope != self.scope
             || target.scope_generation != self.scope_generation
+            || current.namespace_incarnation != self.namespace_incarnation
+            || target.namespace_incarnation != self.namespace_incarnation
         {
             return Err(CarrierFailure::new(
                 FailureCode::StaleScopeOrGeneration,
@@ -436,23 +453,32 @@ impl<const M: usize> ChannelActorCarrier<M> {
             .filter(|slot| slot.lifecycle == SlotLifecycle::Exhausted)
             .count()
     }
+
+    const fn snapshot(&self) -> CarrierStateSnapshot<M> {
+        CarrierStateSnapshot {
+            scope: self.scope,
+            scope_generation: self.scope_generation,
+            namespace_incarnation: self.namespace_incarnation,
+            slots: self.slots,
+        }
+    }
 }
 
-// This state is outside the carrier backing and is required to survive carrier
-// loss/reconstruction. A fresh instance models an independently authorized
-// external owner grant in evidence code; carrier code cannot mint one. It is
-// deliberately neither Clone nor Copy so a pre-bootstrap authority snapshot
-// cannot be duplicated and replayed after carrier loss. Lookup/removal consume
-// this live authority object rather than a copied generation snapshot.
-#[derive(Debug, PartialEq, Eq)]
-struct NamespaceContinuityGuard {
+static NEXT_EVIDENCE_GRANT: AtomicU64 = AtomicU64::new(1);
+
+// This is a prototype-only stand-in for an external authority issuer. Each grant
+// is a unique, move-only capability. Consuming it binds a namespace incarnation,
+// so another grant for the same copyable scope/generation facts cannot recreate
+// authority capable of resolving references from the lost carrier.
+#[derive(Debug)]
+struct UniqueEvidenceNamespaceGrant {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
-    namespace_initialized: bool,
+    namespace_incarnation: u64,
 }
 
-impl NamespaceContinuityGuard {
-    fn from_independently_fresh_evidence_grant(
+impl UniqueEvidenceNamespaceGrant {
+    fn independently_issue(
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
     ) -> Result<Self, CarrierFailure> {
@@ -463,11 +489,36 @@ impl NamespaceContinuityGuard {
                 0,
             ));
         }
+        let namespace_incarnation = NEXT_EVIDENCE_GRANT
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.checked_add(1)
+            })
+            .map_err(|_| CarrierFailure::arithmetic())?;
         Ok(Self {
             scope,
             generation,
-            namespace_initialized: false,
+            namespace_incarnation,
         })
+    }
+}
+
+// This state is outside carrier backing and deliberately neither Clone nor Copy.
+#[derive(Debug, PartialEq, Eq)]
+struct NamespaceContinuityGuard {
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    namespace_incarnation: u64,
+    namespace_initialized: bool,
+}
+
+impl NamespaceContinuityGuard {
+    fn from_unique_evidence_grant(grant: UniqueEvidenceNamespaceGrant) -> Self {
+        Self {
+            scope: grant.scope,
+            generation: grant.generation,
+            namespace_incarnation: grant.namespace_incarnation,
+            namespace_initialized: false,
+        }
     }
 
     const fn scope(&self) -> RuntimeScopeRefV1 {
@@ -486,24 +537,28 @@ impl NamespaceContinuityGuard {
                 0,
             ));
         }
-        let carrier =
-            ChannelActorCarrier::materialize_after_namespace_claim(self.scope, self.generation)?;
+        let carrier = ChannelActorCarrier::materialize_after_namespace_claim(
+            self.scope,
+            self.generation,
+            self.namespace_incarnation,
+        )?;
         self.namespace_initialized = true;
         Ok(carrier)
     }
 
     fn apply_independently_authorized_newer_generation(
         &mut self,
-        successor: ScopeOwnershipGeneration,
+        grant: UniqueEvidenceNamespaceGrant,
     ) -> Result<(), CarrierFailure> {
-        if successor <= self.generation {
+        if grant.scope != self.scope || grant.generation <= self.generation {
             return Err(CarrierFailure::new(
                 FailureCode::OuterGenerationNotNewer,
                 FailureCategory::StaleGeneration,
                 0,
             ));
         }
-        self.generation = successor;
+        self.generation = grant.generation;
+        self.namespace_incarnation = grant.namespace_incarnation;
         self.namespace_initialized = false;
         Ok(())
     }
@@ -532,7 +587,70 @@ fn channel_scope(seed: u64) -> Result<RuntimeScopeRefV1, Box<dyn Error>> {
     Ok(RuntimeScopeRefV1::channel(world, channel))
 }
 
-fn physical_point<const M: usize>() -> Result<serde_json::Value, CarrierFailure> {
+fn physical_point<const M: usize>(scope_seed: u64) -> Result<serde_json::Value, Box<dyn Error>> {
+    let scope = channel_scope(scope_seed)?;
+    let grant = UniqueEvidenceNamespaceGrant::independently_issue(
+        scope,
+        ScopeOwnershipGeneration::new(1)?,
+    )?;
+    let mut owner = NamespaceContinuityGuard::from_unique_evidence_grant(grant);
+    let mut carrier = owner.bootstrap::<M>()?;
+    let mut targets = Vec::with_capacity(M);
+    let mut insertion_work = Vec::with_capacity(M);
+    for index in 0..M {
+        let admitted = carrier.admit(
+            ActorSeed {
+                kind: ActorKind::Player,
+                actionable: true,
+                position: LocalPosition {
+                    x: i32::try_from(index)?,
+                    y: 0,
+                    z: 0,
+                },
+            },
+            AdmissionFault::None,
+        )?;
+        targets.push(admitted.target);
+        insertion_work.push(admitted.insertion_work_units);
+    }
+    let before_denial = carrier.snapshot();
+    let denial = match carrier.admit(
+        ActorSeed {
+            kind: ActorKind::Creature,
+            actionable: true,
+            position: LocalPosition { x: 99, y: 0, z: 0 },
+        },
+        AdmissionFault::None,
+    ) {
+        Err(failure) => failure,
+        Ok(_) => {
+            return Err(std::io::Error::other("exact-M carrier admitted actor M+1").into());
+        }
+    };
+    let state_preserved = carrier.snapshot() == before_denial;
+    let first_target = targets
+        .first()
+        .copied()
+        .ok_or_else(CarrierFailure::arithmetic)?;
+    let last_target = targets
+        .last()
+        .copied()
+        .ok_or_else(CarrierFailure::arithmetic)?;
+    let lookup_work = carrier
+        .lookup(&owner, first_target)?
+        .direct_lookup_work_units;
+    let removal_work = carrier.remove(&owner, last_target)?.removal_work_units;
+    let fragmented_insertion_work = carrier
+        .admit(
+            ActorSeed {
+                kind: ActorKind::NpcSystem,
+                actionable: true,
+                position: LocalPosition { x: 100, y: 0, z: 0 },
+            },
+            AdmissionFault::None,
+        )?
+        .insertion_work_units;
+
     Ok(json!({
         "configured_actor_slots": M,
         "slot_or_record_size_bytes": size_of::<ActorSlot>(),
@@ -543,10 +661,14 @@ fn physical_point<const M: usize>() -> Result<serde_json::Value, CarrierFailure>
         "lookup_or_index_retained_bytes_if_distinct": 0,
         "retained_generation_cells": M,
         "independent_retirement_history_entries": 0,
-        "direct_lookup_work_units": 1,
-        "removal_work_units": 1,
-        "sparse_insertion_work_units": 1,
-        "fragmented_or_full_boundary_insertion_work_units": M,
+        "M_admission_result": "SUCCESS",
+        "M_plus_1_admission_result": format!("{}/{}", denial.code.as_str(), denial.category.as_str()),
+        "M_plus_1_full_state_preserved": state_preserved,
+        "direct_lookup_work_units": lookup_work,
+        "removal_work_units": removal_work,
+        "sparse_insertion_work_units": insertion_work.first().copied().ok_or_else(CarrierFailure::arithmetic)?,
+        "full_boundary_insertion_work_units": insertion_work.last().copied().ok_or_else(CarrierFailure::arithmetic)?,
+        "fragmented_boundary_insertion_work_units": fragmented_insertion_work,
         "production_capacity_claim": false
     }))
 }
@@ -560,10 +682,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         "actor_local_generation_width_bytes": size_of::<ActorLocalGeneration>(),
         "actor_slot_width_bytes": size_of::<ActorSlot>(),
         "tested_points": [
-            physical_point::<1>()?,
-            physical_point::<2>()?,
-            physical_point::<3>()?,
-            physical_point::<4>()?
+            physical_point::<1>(1001)?,
+            physical_point::<2>(1002)?,
+            physical_point::<3>(1003)?,
+            physical_point::<4>(1004)?
         ],
         "accepted_production_maximum_selected": false,
         "resource_registry_mutated": false,
@@ -594,11 +716,25 @@ mod tests {
     }
 
     fn authority(seed_value: u64) -> NamespaceContinuityGuard {
-        NamespaceContinuityGuard::from_independently_fresh_evidence_grant(
+        authority_for(
             channel_scope(seed_value).expect("valid test scope"),
             generation(1),
         )
-        .expect("channel scope is valid")
+    }
+
+    fn grant_for(
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> UniqueEvidenceNamespaceGrant {
+        UniqueEvidenceNamespaceGrant::independently_issue(scope, generation)
+            .expect("channel scope is valid")
+    }
+
+    fn authority_for(
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> NamespaceContinuityGuard {
+        NamespaceContinuityGuard::from_unique_evidence_grant(grant_for(scope, generation))
     }
 
     fn prove_m_boundary<const M: usize>() {
@@ -618,14 +754,14 @@ mod tests {
         assert_eq!(insertion_work.first().copied(), Some(1));
         assert_eq!(insertion_work.last().copied(), Some(M));
 
-        let before = carrier.clone();
+        let before = carrier.snapshot();
         let failure = carrier
             .admit(seed(ActorKind::Creature, 99), AdmissionFault::None)
             .expect_err("M+1 must reject");
         assert_eq!(failure.code, FailureCode::ActorCapacityExceeded);
         assert_eq!(failure.category, FailureCategory::CapacityExceeded);
         assert_eq!(failure.work_units, M);
-        assert_eq!(carrier, before);
+        assert_eq!(carrier.snapshot(), before);
         assert_eq!(carrier.retained_generation_cells(), M);
         assert_eq!(carrier.independent_retirement_history_entries(), 0);
         for target in refs.iter().copied() {
@@ -692,11 +828,10 @@ mod tests {
         let other_world = WorldId::decode(&uuid_v7(300)).expect("other world");
         let other_channel = ChannelId::decode(&uuid_v7(301)).expect("other channel");
 
-        let wrong_world_owner = NamespaceContinuityGuard::from_independently_fresh_evidence_grant(
+        let wrong_world_owner = authority_for(
             RuntimeScopeRefV1::channel(other_world, channel_id),
             owner.generation(),
-        )
-        .expect("wrong-world authority shape is valid");
+        );
         assert_eq!(
             carrier
                 .lookup(&wrong_world_owner, admitted.target)
@@ -705,12 +840,10 @@ mod tests {
             FailureCode::StaleScopeOrGeneration
         );
 
-        let wrong_channel_owner =
-            NamespaceContinuityGuard::from_independently_fresh_evidence_grant(
-                RuntimeScopeRefV1::channel(world_id, other_channel),
-                owner.generation(),
-            )
-            .expect("wrong-channel authority shape is valid");
+        let wrong_channel_owner = authority_for(
+            RuntimeScopeRefV1::channel(world_id, other_channel),
+            owner.generation(),
+        );
         assert_eq!(
             carrier
                 .lookup(&wrong_channel_owner, admitted.target)
@@ -720,7 +853,10 @@ mod tests {
         );
 
         owner
-            .apply_independently_authorized_newer_generation(generation(2))
+            .apply_independently_authorized_newer_generation(grant_for(
+                owner.scope(),
+                generation(2),
+            ))
             .expect("new live owner generation");
         assert_eq!(
             carrier
@@ -860,7 +996,7 @@ mod tests {
             .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
             .expect("second");
         carrier.remove(&owner, first.target).expect("remove first");
-        let before = carrier.clone();
+        let before = carrier.snapshot();
         let failure = carrier
             .admit(
                 seed(ActorKind::NpcSystem, 3),
@@ -868,7 +1004,7 @@ mod tests {
             )
             .expect_err("injected failure");
         assert_eq!(failure.code, FailureCode::InjectedPostSelectionFailure);
-        assert_eq!(carrier, before);
+        assert_eq!(carrier.snapshot(), before);
     }
 
     #[test]
@@ -895,7 +1031,7 @@ mod tests {
         carrier
             .remove(&owner, slot_zero_ref)
             .expect("vacate max generation");
-        let before = carrier.clone();
+        let before = carrier.snapshot();
 
         let failure = carrier
             .admit(seed(ActorKind::NpcSystem, 9), AdmissionFault::None)
@@ -1020,8 +1156,29 @@ mod tests {
             FailureCode::SameGenerationReconstructionBlocked
         );
 
+        // Even an independently issued second grant with identical raw outer
+        // facts creates a distinct incarnation and cannot resolve the escaped
+        // reference. The move-only original grant was consumed exactly once.
+        let mut independently_reissued = authority_for(owner.scope(), owner.generation());
+        let mut reissued_carrier = independently_reissued
+            .bootstrap::<1>()
+            .expect("independent grant creates a distinct evidence namespace");
+        reissued_carrier
+            .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
+            .expect("same local coordinates may exist only in the new incarnation");
+        assert_eq!(
+            reissued_carrier
+                .lookup(&independently_reissued, old_ref)
+                .expect_err("raw facts cannot reconstruct old namespace authority")
+                .category,
+            FailureCategory::StaleGeneration
+        );
+
         owner
-            .apply_independently_authorized_newer_generation(generation(2))
+            .apply_independently_authorized_newer_generation(grant_for(
+                owner.scope(),
+                generation(2),
+            ))
             .expect("new owner generation");
         let new_carrier = owner.bootstrap::<1>().expect("new namespace allowed");
         assert_eq!(
