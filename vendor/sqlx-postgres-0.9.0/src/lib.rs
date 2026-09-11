@@ -65,7 +65,7 @@ pub use type_info::{PgTypeInfo, PgTypeKind};
 pub use types::PgHasArrayType;
 pub use value::{PgValue, PgValueFormat, PgValueRef};
 #[doc(hidden)]
-pub use sqlx_core::net::resource_budget::ResourceBudget;
+pub use sqlx_core::net::resource_budget::{BudgetError, ResourceBudget};
 
 /// An alias for [`Pool`][crate::pool::Pool], specialized for Postgres.
 pub type PgPool = crate::pool::Pool<Postgres>;
