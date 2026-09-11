@@ -606,18 +606,22 @@ mod tests {
         let current = owner.current_facts();
         let mut carrier = owner.bootstrap::<M>().expect("carrier bootstrap");
         let mut refs = Vec::new();
+        let mut insertion_work = Vec::new();
         for index in 0..M {
-            refs.push(
-                carrier
-                    .admit(
-                        seed(ActorKind::PlayerLike, index as i32),
-                        AdmissionFault::None,
-                    )
-                    .expect("exact M admission")
-                    .target,
-            );
+            let index_i32 = i32::try_from(index).expect("tested M fits i32");
+            let admitted = carrier
+                .admit(
+                    seed(ActorKind::PlayerLike, index_i32),
+                    AdmissionFault::None,
+                )
+                .expect("exact M admission");
+            refs.push(admitted.target);
+            insertion_work.push(admitted.insertion_work_units);
         }
         assert_eq!(refs.len(), M);
+        assert_eq!(insertion_work.first().copied(), Some(1));
+        assert_eq!(insertion_work.last().copied(), Some(M));
+
         let before = carrier.clone();
         let failure = carrier
             .admit(seed(ActorKind::CreatureLike, 99), AdmissionFault::None)
@@ -628,7 +632,7 @@ mod tests {
         assert_eq!(carrier, before);
         assert_eq!(carrier.retained_generation_cells(), M);
         assert_eq!(carrier.independent_retirement_history_entries(), 0);
-        for target in refs {
+        for target in refs.iter().copied() {
             assert_eq!(
                 carrier
                     .lookup(current, target)
@@ -637,6 +641,26 @@ mod tests {
                 1
             );
         }
+
+        let last = *refs.last().expect("M is non-zero");
+        assert_eq!(
+            carrier
+                .remove(current, last)
+                .expect("remove boundary slot")
+                .removal_work_units,
+            1
+        );
+        let replacement = carrier
+            .admit(seed(ActorKind::NpcSystemLike, 101), AdmissionFault::None)
+            .expect("reinsert fragmented boundary slot");
+        assert_eq!(replacement.insertion_work_units, M);
+        assert_eq!(
+            carrier
+                .lookup(current, last)
+                .expect_err("retired boundary ref stays stale")
+                .code,
+            FailureCode::StaleActorReference
+        );
     }
 
     #[test]
@@ -869,9 +893,10 @@ mod tests {
         ];
         for index in 0..3 {
             carrier.remove(current, refs[index]).expect("retire");
+            let index_i32 = i32::try_from(index).expect("tested index fits i32");
             refs[index] = carrier
                 .admit(
-                    seed(ActorKind::PlayerLike, 10 + index as i32),
+                    seed(ActorKind::PlayerLike, 10 + index_i32),
                     AdmissionFault::None,
                 )
                 .expect("reuse exact sole vacant slot")
