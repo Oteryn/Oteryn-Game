@@ -393,6 +393,7 @@ impl<const M: usize> ChannelActorCarrier<M> {
         if index >= M {
             return Err(CarrierFailure::invalid_reference());
         }
+        ActorLocalGeneration::new(target.actor_local_generation.0)?;
         Ok(index)
     }
 
@@ -844,6 +845,36 @@ mod tests {
     }
 
     #[test]
+    fn zero_actor_generation_is_invalid_and_preserves_carrier_state() {
+        let mut owner = authority(375);
+        let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
+        let admitted = carrier
+            .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
+            .expect("admit");
+        let before = carrier.snapshot();
+        let malformed = ActorTargetRefPrototype {
+            actor_local_generation: ActorLocalGeneration(0),
+            ..admitted.target
+        };
+
+        let failure = carrier
+            .lookup(&owner, malformed)
+            .expect_err("zero generation must be invalid");
+        assert_eq!(failure.code, FailureCode::StaleActorReference);
+        assert_eq!(failure.category, FailureCategory::InvalidReference);
+        assert_eq!(failure.category.as_str(), "INVALID_REFERENCE");
+        assert_eq!(carrier.snapshot(), before);
+        assert_eq!(
+            carrier
+                .lookup(&owner, admitted.target)
+                .expect("valid target remains intact")
+                .actor
+                .kind,
+            ActorKind::Player
+        );
+    }
+
+    #[test]
     fn stale_reference_never_revives_after_reuse() {
         let mut owner = authority(400);
         let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
@@ -997,6 +1028,31 @@ mod tests {
                 .actor
                 .kind,
             ActorKind::Creature
+        );
+
+        let remaining_slot = carrier
+            .admit(seed(ActorKind::NpcSystem, 10), AdmissionFault::None)
+            .expect("remaining eligible slot admits");
+        assert_eq!(remaining_slot.target.actor_local_id, ActorLocalId(3));
+        assert_eq!(remaining_slot.target.actor_local_generation.0, 1);
+        assert_eq!(carrier.slots[0].lifecycle, SlotLifecycle::Exhausted);
+        assert_eq!(carrier.slots[0].generation, u8::MAX);
+        assert_eq!(carrier.slots[1], before.slots[1]);
+        assert_eq!(
+            carrier
+                .lookup(&owner, slot_one_ref)
+                .expect("unrelated actor still preserved")
+                .actor
+                .kind,
+            ActorKind::Creature
+        );
+        assert_eq!(
+            carrier
+                .lookup(&owner, remaining_slot.target)
+                .expect("new target resolves")
+                .actor
+                .kind,
+            ActorKind::NpcSystem
         );
         assert_eq!(carrier.retained_generation_cells(), 3);
         assert_eq!(carrier.independent_retirement_history_entries(), 0);

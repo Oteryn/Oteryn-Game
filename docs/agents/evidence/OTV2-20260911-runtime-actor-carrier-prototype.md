@@ -57,10 +57,10 @@ The exact example contains focused tests for:
 5. legitimate live outer-generation transition immediately fencing the old carrier/reference;
 6. out-of-range/missing actor ID rejection;
 7. valid actor ID rejection while its slot is vacant;
-8. removal retaining slot generation, successful reuse advancing it, and well-formed retired/reused references rejecting as `STALE_GENERATION`; malformed, out-of-range, and never-used vacant identities remain `INVALID_REFERENCE`;
+8. removal retaining slot generation, successful reuse advancing it, and well-formed retired/reused references rejecting as `STALE_GENERATION`; malformed zero-generation, out-of-range, and never-used vacant identities remain `INVALID_REFERENCE`, with the zero-generation rejection preserving complete carrier state;
 9. distinct local IDs remaining bound to distinct slot/generation cells;
 10. injected failure after reusable-slot selection and valid successor derivation leaving complete carrier state unchanged;
-11. checked local-generation exhaustion producing exactly `ACTOR_LOCAL_GENERATION_EXHAUSTED` in category `CAPACITY_EXCEEDED`, transitioning only the selected vacant max-generation slot to terminal `EXHAUSTED`, and preserving unrelated slots/actors;
+11. checked local-generation exhaustion producing exactly `ACTOR_LOCAL_GENERATION_EXHAUSTED` in category `CAPACITY_EXCEEDED`, transitioning only the selected vacant max-generation slot to terminal `EXHAUSTED`, preserving unrelated slots/actors, and forcing a later admission to skip that retired slot for another eligible slot;
 12. churn across every configured slot keeping retained generation cells exactly `M` and independent retirement history exactly zero;
 13. lookup/insertion/removal work measured for every tested M, including sparse, full and fragmented occupancy boundaries;
 14. carrier loss with the surviving guard blocking same-generation reconstruction, no runtime API capable of issuing a replacement same-generation authority from raw facts, and an independently authorized strictly newer outer generation permitting a fresh namespace;

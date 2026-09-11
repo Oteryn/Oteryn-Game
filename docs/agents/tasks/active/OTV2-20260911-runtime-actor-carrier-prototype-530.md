@@ -54,9 +54,9 @@ The candidate uses a fixed const-generic slot array. `ActorLocalId` maps directl
 - [ ] Lookup/removal consume the live continuity guard rather than a replayable copied owner-generation snapshot.
 - [ ] Missing/out-of-range actor IDs and valid-but-vacant slots reject fail-closed.
 - [ ] Distinct local IDs cannot alias one generation cell.
-- [ ] Removal preserves generation; successful reuse advances generation; well-formed retired/reused refs reject as `STALE_GENERATION`, while malformed/out-of-range/never-used vacant identity rejects as `INVALID_REFERENCE`.
+- [ ] Removal preserves generation; successful reuse advances generation; well-formed retired/reused refs reject as `STALE_GENERATION`, while malformed zero-generation/out-of-range/never-used vacant identity rejects as `INVALID_REFERENCE` without mutation.
 - [ ] Injected post-selection failure preserves complete carrier state.
-- [ ] Local-generation exhaustion returns `ACTOR_LOCAL_GENERATION_EXHAUSTED / CAPACITY_EXCEEDED`, marks only the selected slot terminal and preserves unrelated state.
+- [ ] Local-generation exhaustion returns `ACTOR_LOCAL_GENERATION_EXHAUSTED / CAPACITY_EXCEEDED`, marks only the selected slot terminal, preserves unrelated state, and makes later admission skip the exhausted slot for another eligible slot.
 - [ ] The externally supplied `NamespaceContinuityGuard` is the one surviving authority; carrier loss leaves it initialized; no issuer or raw-fact constructor can establish another namespace under that same generation; same-generation reconstruction fails closed; a genuinely newer independently authorized outer generation may initialize a fresh namespace and fences old refs.
 - [ ] Churn across every configured slot retains exactly `M` generation cells and zero independent retirement-history entries.
 - [ ] Actor-ID one-based count/index overflow and retained-byte arithmetic overflow reject before mutation/allocation evidence.
