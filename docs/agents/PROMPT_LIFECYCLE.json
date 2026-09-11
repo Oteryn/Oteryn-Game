@@ -437,6 +437,39 @@
       "supersession_rule": "Read-only analyst profile; it never supersedes or becomes the Durability Lead, implementation worker, formal reviewer, control plane or architecture authority."
     },
     {
+      "prompt_id": "OTV2_WP3_WRITER",
+      "path": "docs/agents/prompts/OTV2_WP3_WRITER.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-live-canonical-lineage",
+      "scope": "Single mutating writer profile for the current canonical WP3 SQLx driver accounting lineage; mutation remains limited to exact live protected WP3 allocations and owned paths.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive WP3 execution profile; it never creates a replacement lineage or supersedes the implementation coordinator, active control plane or broader Durability prompts."
+    },
+    {
+      "prompt_id": "OTV2_WP3_TLS_AUDITOR",
+      "path": "docs/agents/prompts/OTV2_WP3_TLS_AUDITOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-read-only-analysis",
+      "scope": "Strict read-only TLS allocation/custody analysis of the exact live WP3 candidate; returns an exact-head advisory packet and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only acceleration profile; it never becomes a WP3 writer, formal independent reviewer, control plane or architecture authority."
+    },
+    {
+      "prompt_id": "OTV2_WP3_QUALIFICATION_AUDITOR",
+      "path": "docs/agents/prompts/OTV2_WP3_QUALIFICATION_AUDITOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-read-only-analysis",
+      "scope": "Strict read-only qualification and integration-prerequisite tracking for the exact live WP3 candidate; returns an exact-head advisory checklist and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only acceleration profile; it never becomes a WP3 writer, formal independent reviewer, control plane or merge authority."
+    },
+    {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
       "version": "1.1",
@@ -545,6 +578,94 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Additive #486 research accelerator; it supersedes no implementation, lane-lead, coordinator or auditor prompt. Alias reuse never grants write authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_LEAD",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-programme-documentation",
+      "scope": "Native UI programme planning and handoff documents named by a live exact allocation; read-only otherwise; no implementation, allocation, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_P1",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_P1.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-p1-foundation",
+      "scope": "Native UI P1 ui-core and explicitly leased manifest/boundary paths named by a live exact protected allocation; read-only otherwise; no P1 admission, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_INPUT",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_INPUT.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-input-integration",
+      "scope": "One admitted Native UI P2 input sub-slice and exact paths named by a live allocation; read-only otherwise; no renderer, protocol, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_RENDERER",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_RENDERER.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-renderer-integration",
+      "scope": "One admitted Native UI P3 renderer/native-host sub-slice and exact paths named by a live allocation; read-only otherwise; no product/FOV, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_HUD",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_HUD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-hud-view-model",
+      "scope": "One admitted Native UI P5 or feature-driven P8 slice and exact paths named by a live allocation; read-only otherwise; no protocol, server, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_QUALIFY",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_QUALIFY.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-physical-qualification",
+      "scope": "Read-only Native UI physical qualification plus only evidence-report paths named by a live exact allocation; no implementation repair, FOV decision, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_CI",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_CI.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-ci-enforcement",
+      "scope": "One explicitly allocated Native UI P1-E, CP-S, CP-D or CP-A tools/governance slice and exact paths; read-only otherwise; no branch-protection, runtime, second-control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NATIVE_UI_REVIEW",
+      "path": "docs/agents/prompts/OTV2_SOL_NATIVE_UI_REVIEW.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "native-ui-independent-review",
+      "scope": "Strictly read-only independent Native UI review of one live exact candidate; no tracked-file repair, allocation, approval, control-plane or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
     }
   ]
 }
