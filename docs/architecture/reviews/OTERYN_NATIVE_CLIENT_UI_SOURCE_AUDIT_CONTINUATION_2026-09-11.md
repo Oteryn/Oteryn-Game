@@ -12,6 +12,9 @@
 - Final FOV: **UNDECIDED / EVIDENCE-GATED**
 - Addons/mods/plugins: **DEFERRED / FUTURE CONCEPT**
 
+- Expanded audit initial target: PR `#560`, `base=main`, pre-amendment head `db502e473bda60f7cdea2498f5138705c2cf0bea`
+- Expanded evidence: Sections 9-12 below; correction bytes require new exact-head qualification
+
 ## 1. Purpose and source boundary
 
 PR #557 is now integrated. This continuation records the remainder of the owner-requested line-by-line review of the bounded native-client UI source surface and turns the additional findings into explicit architecture requirements. It does not rewrite historical PRs and does not claim that every source file in the repository or every transitive dependency was audited.
@@ -162,3 +165,98 @@ FOV = UNDECIDED / EVIDENCE-GATED
 ADDONS = DEFERRED / FUTURE CONCEPT
 MERGE_AUTHORITY = REPOSITORY_CONTROL_PLANE_ONLY
 ```
+
+## 9. Expanded parent-contract and enforcement audit
+
+The next pass reads the following **20 additional complete files** at protected `6db1e95dcd0377d3258c045ea0b95f5d620c53f7`. Together with the previous 31-file source boundary, this is an explicit finite read set, not every recursively referenced server contract or every third-party implementation. Previously read original UI documents and governing AGENTS/META/decision-discipline remain part of the authority basis, not newly counted files.
+
+| Exact additional file | Audited Git blob |
+| --- | --- |
+| `docs/architecture/ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_ANALYSIS.md` | `05e43dcca1da9c5b36b50727d64160f4c14dfc55` |
+| `docs/architecture/ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_CONTRACT_CANDIDATE.md` | `a846cb093d84033e0cd9f37e88c6d00538529a43` |
+| `docs/architecture/OTERYN_GRAPHICS_PRESENTATION_VFX_ARCHITECTURE_BASELINE_2026-09-09.md` | `f9a6086f51d5ae6f6eb689bea4178b8c3f2361e5` |
+| `docs/architecture/OTERYN_VISUAL_WORLD_SLICE_ARCHITECTURE_AND_EVIDENCE_GATE_2026-09-09.md` | `8dc9963bf70c785cf2df45ff6eec139d749498df` |
+| `docs/architecture/ADR-0007-native-end-to-end-test-platform.md` | `764448e57feed94f59fe18e659412c6f483b08bd` |
+| `docs/architecture/CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md` | `b1fd280fe5a23066b350b7cc83f51591e259048c` |
+| `docs/architecture/GRAPHICS_APPEARANCE_ANIMATION_AND_SEASONALITY_HORIZON_NOTE.md` | `e68aa8a5e0dcc3c89d8bfdaa7f034896af24d396` |
+| `docs/architecture/ADR-0016-gameplay-transport-client-mode-runtime-readiness.md` | `efe8b0f78689cfce59562ecedf31b870f80513d5` |
+| `tools/architecture-check/Cargo.toml` | `e381aeb95cba8279300dad9bc5cd633948b8d00e` |
+| `tools/architecture-check/src/main.rs` | `7138c4d4af708fc64228d626f3987d818c05d9f1` |
+| `tools/architecture-check/src/lib.rs` | `3e4284235bee11588b6f00afb582789f13bd6373` |
+| `.github/workflows/architecture-semantic-audit.yml` | `44f79456e85e682a4b710b51394330302a97526f` |
+| `.github/workflows/merge-gate.yml` | `98c56c64c9dac75cd821b478fdc6baf585e70861` |
+| `.github/workflows/merge-group-gate.yml` | `c59b30fde7538e738346eec03a602081dc4ac2d6` |
+| `.github/workflows/rust.yml` | `dc2ea01a08d971735b382082caeae330349183ca` |
+| `tools/architecture/semantic_contract_audit.py` | `09654066975466368f8f3c596c59eaac3457acbe` |
+| `tools/repository/classify_pr_test_lanes.py` | `805496393d949fb1206e30e92c8c01167786b8f1` |
+| `tools/repository/validate_repository_policy.py` | `ee166d0e45bbc1fd68a40d2e392547701691d7af` |
+| `tools/repository/validate_repository_policy_core.py` | `86a55a1b7542305c19d8a35e9f7cc9731f5ef525` |
+| `docs/agents/BUILD_TEST_MATRIX.md` | `b9b4f073537bb00f6dfd7645797d2333ee2d8c8e` |
+
+The full-file set covers direct UI parent analysis/contract, graphics/world-slice boundaries, essential E2E/privacy/readiness parents, workspace enforcement, PR/queue/post-merge workflow wiring, semantic profile selection and repository-policy pins. Other referenced FND-02/FND-04/DUR-04/Platform contracts are inherited through these parents; this pass does not claim a fresh whole-file audit of their complete downstream implementation or recursively of every ADR. The graphics horizon remains a deferred note, not authority to freeze formats, animation engines or quality tiers.
+
+Selected `Cargo.lock` graphics/input entries and pinned public API/source documentation were also inspected. This is dependency/API-boundary verification, not a full source audit of all transitive crates, OS libraries, drivers or supply-chain advisories. No dependency version, feature, budget, policy pin or workflow was changed.
+
+## 10. Expanded findings and disposition
+
+### F11 — successful semantic workflow did not evaluate UI
+
+**FACT:** semantic workflow run `34562444300`, job `103147774477`, at `db502e473bda60f7cdea2498f5138705c2cf0bea` completed successfully. Its domain result was `NOT_APPLICABLE`, `profiles: []`, `checks: []`. Dispatch regressions passed, but `select_profiles()` / `main()` expose only the named ALPHA-client, analytics and Foundation-reconnect profiles; the two #560 UI documents selected none.
+
+**CORRECTION:** continuation Section 11 and the build matrix require conclusion plus selected-profile/verdict/check evidence. Earlier wording that this workflow “passed” is true only about job completion, not semantic UI acceptance. The historical run is preserved, not rewritten. A generic green workflow, author review or an empty domain profile cannot replace required independent review. No cosmetic UI keyword checker is added merely to manufacture a PASS.
+
+### F12 — workspace role checks are not the whole framework-neutrality proof
+
+**FACT:** `tools/architecture-check` validates workspace membership/path mapping, release roles, local dependency edges, cycles and declared production closure. Its local-edge graph is not a resolved transitive registry-dependency proof. The client/server closure snippets in the three Rust workflows use `cargo tree --edges normal,build` on their execution target/default configuration; `cargo-deny` serves advisory/license/ban/source policy, not UI neutrality or runtime correctness.
+
+**INFERENCE, high confidence:** a green current generic boundary check alone does not establish the planned `ui-core` framework/GPU/platform prohibition for every relevant feature/target. **CORRECTION:** continuation Section 8.2 assigns the minimum package-specific declaration/resolution and negative evidence to P1 and consuming slices, through the existing enforcement owner. No speculative package or new registry is introduced now.
+
+### F13 — Windows-only adapter tests are not executed by canonical lanes
+
+**FACT:** `crates/input-platform/src/lib.rs` gates `winit_adapter` with `#[cfg(windows)]`. Its `stable_keyboard_subset_uses_usb_hid_usage_codes` and `named_mouse_buttons_are_stable_and_other_is_unsupported` tests therefore do not run in the Linux workspace population. The inspected Windows lanes build/lint the client and run shell/harness/simulation commands, but do not run the input-platform package's unit tests on MSVC. Compiling a dependency is not executing its tests.
+
+**CORRECTION:** continuation Section 8.3 states the focused Windows command and requires named/countable target execution plus appropriate native interaction proof. This audit did not run that missing population, and the documentation patch does not alter pinned CI jobs.
+
+### F14 — release compilation is followed by development-profile smoke
+
+**FACT:** PR, Merge Queue and post-merge Windows jobs build `oteryn-client --release`, then call `cargo run ... -- --smoke` without `--release`. The already-audited shell smoke returns before constructing `WindowsRenderer`.
+
+**CORRECTION:** continuation Section 8.3 and the build matrix label the evidence accurately. A later release claim must execute the exact artifact/hash and the required journey. Neither the existing smoke nor a future release flag alone proves physical UI or ADR-0007 Tier 3.
+
+### F15 — local synthetic physical proof cannot substitute for Tier 2
+
+**FACT:** ADR-0007 and the ALPHA-client contract distinguish synthetic component fixtures from the real headless/native/production-binary service journeys. The UI addendum's `Tier-2-equivalent` phrase can be read more broadly than that parent contract permits.
+
+**CORRECTION:** continuation Section 8.1 explicitly supersedes only that ambiguity. Local physical HUD evidence remains useful for P3-P6 without blocking pure foundations on the entire server stack, but is not Tier 2, native gameplay readiness or a new E2E tier. Parent service, cleanup and exact-revision obligations remain intact. Section 8.4 also binds layout/settings recovery to the inherited scope/privacy rules rather than inventing local account authority.
+
+### F16 — active build matrix lagged executable protected CI
+
+**FACT:** protected #556 (`1f2781c9c52e4231c9638553bcdd6014291e109a`) activated the reviewed architecture-document-only Merge Queue path classifier. Current queue code may skip heavy lanes for that proven path family; the matrix still said queue qualification was always FULL/unconditional. Separately, the current PR PostgreSQL target oracle reads immutable exact-path base/head trees and compares the checkout blob, whereas the matrix still described the older comparison-file-list oracle and its cap.
+
+**CORRECTION:** update `docs/agents/BUILD_TEST_MATRIX.md` to those exact source contracts. Preserve #556's accepted optimization, the distinct PR/post-merge classifier, fail-closed selected-gate composition and all reviewed pins. No workflow/protection change is made. A queue path classification is not evidence about arbitrary source-level document consumption; future consumer changes require their existing owner review.
+
+### F17 — a presentation request is not a display acknowledgement
+
+**FACT:** the pinned `wgpu 30.0.0` `Queue::present` API schedules presentation and returns unit; the submitted-work callback reports GPU completion, not displayed pixels. `Surface::configure` also has explicit outstanding-texture/configuration preconditions. Source `WindowsRenderer::present` updates its state counter after the request, not after an independent display observation.
+
+**INFERENCE, high confidence:** treating that counter as confirmation of visible pixels or input-to-display latency would overstate evidence. **CORRECTION:** continuation Sections 5.3/6 require truthful present-requested/display-observed distinction, bounded device-lifetime notifications and safe frame/configuration ordering. This is a proof/lifetime contract, not a claim that a hardware failure was reproduced or fixed here.
+
+## 11. Pinned upstream contract references
+
+The selected public references were checked for the workspace's pinned API versions, not substituted with a latest-version example:
+
+- `winit 0.30.13` IME source: <https://docs.rs/winit/0.30.13/src/winit/event.rs.html> — byte-indexed optional cursor ranges, empty-preedit clearing and commit/disable sequence.
+- `winit 0.30.13` Window: <https://docs.rs/winit/0.30.13/winit/window/struct.Window.html> — IME enable and candidate-area geometry; ordinary keyboard events are absent during preedit.
+- `wgpu 30.0.0` Queue: <https://docs.rs/wgpu/30.0.0/wgpu/struct.Queue.html> — submission versus scheduled presentation, callback completion and unsupported timestamp period.
+- `wgpu 30.0.0` Surface: <https://docs.rs/wgpu/30.0.0/wgpu/struct.Surface.html> — acquired-frame lifetime and configuration preconditions.
+- `wgpu 30.0.0` Device: <https://docs.rs/wgpu/30.0.0/wgpu/struct.Device.html> — separate loss/error notification and polling surfaces.
+
+These checks refine requirements, not select a new library or grant raw backend/unsafe access. In particular, the top-level `wgpu 30.0.0` pin does not imply every resolved backend crate is `30.0.0`: the inspected lock entries include `wgpu-core 30.0.1` and `wgpu-hal 30.0.1`. A complete target-resolved dependency/code audit remains a different, explicitly bounded activity.
+
+## 12. Publication, validation and remaining proof
+
+The expanded candidate changes exactly the two existing #560 documents and the active build matrix. During this pass #560 integrated as `663bd35a5196a925fc6eb0318381ad0b97f4cc2c`, so the candidate is prepared as a normal follow-up from that protected base, not a write to its closed branch or a history rewrite. A complete comparison from the audited `6db1e95...` source adds only #559's unrelated WP3 allocation and the two #560 documents. Exact three-file blob readback confirms the prepared patch still applies unchanged; the audited runtime and enforcement sources did not drift. The original 31-path/blob inventory is preserved. Local verification binds exact baseline blobs, the three-file patch, document structure, preserved invariants and patch application/reversal. Those checks are document/provenance checks, not missing Rust/platform/hardware tests. Repository-native qualification must execute against the newly published exact head; prior green `db502e...` results do not qualify new bytes.
+
+The source-derived input/renderer repairs already have a separate Draft #558 at live-read head `b2b6e5be610ae03642eeeec7cdd0ccd777d0d20d`. Do not duplicate its writer, presume its pending generation fix is delivered, or modify it from this documentation task. #502 resource authority and #162 allocation remain unchanged.
+
+The local execution surface has no Rust toolchain or authorized Windows/GPU qualification host. No new physical IME/DPI/capture/device-recovery run, A/B measurement, release journey, complete third-party-code audit, independent review or protected integration is claimed. These limits do not invalidate the completed finite source/contract/enforcement review; they bound what it can prove. FOV remains evidence-gated and addons remain deferred.

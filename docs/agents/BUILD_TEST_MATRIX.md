@@ -41,9 +41,9 @@ The PostgreSQL test target is present on protected main after terminal-replaceme
 
 - when `apps/game-server/tests/durability_postgres.rs` exists on the exact candidate, run it against PostgreSQL 17.6;
 - when the exact PR removes or renames that target, fail the required Linux job;
-- when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
+- when the exact target is absent from both base and candidate, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
 
-Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch make scope explicitly incomplete and select FULL. The downstream PG target classifier still rejects an incomplete comparison, so uncertain target evidence cannot yield a green gate. PR identity movement remains a hard failure.
+Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Upstream PR scope uses an immutable exact-base/head comparison: more than 300 changed files, missing file arrays or count mismatch make enumeration incomplete and select FULL. The downstream PostgreSQL classifier now independently reads the exact target from complete immutable base/head Git trees and verifies the candidate checkout's blob. It does not depend on the comparison file array or its 300-file limit. Missing/malformed tree evidence, target removal and checkout/blob disagreement fail closed. Before/after live PR identity checks remain; revision-bound target evidence cannot be substituted from a transient different head.
 
 The required governance job executes the focused PG/SIM regressions, including both real classifiers against controlled GitHub responses and job/step failure-tolerance/skip families. The complete Linux and Windows evidence jobs are pinned by SHA256 using the existing canonical-job validation pattern. Future intentional job changes must update their reviewed pins; preserving command strings while inserting an early successful exit cannot pass policy.
 
@@ -66,15 +66,22 @@ Issue #309 re-audits the document-consumer snapshot after five server test addit
 
 Missing classifier, malformed metadata or enumeration select explicit FULL outputs. The aggregate requires successful classification, strict boolean outputs and success for every selected predicate; missing/cancelled/failed/selected-skipped results fail closed. Scope, classifier job, aggregate and evidence-job execution are pinned and mutation-tested.
 
-After #285 protected-main integration proved canonical ownership, rust.yml loses only its redundant PR trigger. Existing main/manual triggers and full Merge Queue qualification remain intact. Actual hosted skip/run and runner/wall-time benchmark evidence belongs on Issue #283/PR #297; staged implementation integration alone does not complete benchmark acceptance.
+After #285 protected-main integration proved canonical ownership, rust.yml loses only its redundant PR trigger. Existing main/manual triggers remain intact. Merge Queue routing is separately defined below and was later refined by #556. Actual hosted skip/run and runner/wall-time benchmark evidence belongs on Issue #283/PR #297; staged implementation integration alone does not complete benchmark acceptance.
 
 The protected `main` ruleset requires only the stable `game-gate` context. Individual sub-gates are intentionally composed behind it so applicable path-proportional jobs may be skipped without creating missing required-status deadlocks.
 
 ## Current Merge Queue gate
 
-`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group head and requires candidate/governance validation, dependency review, CodeQL, Linux workspace, real PostgreSQL17.6, Windows production client plus deterministic simulation and supply-chain checks before emitting `game-gate`.
+`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group identity. Since protected PR #556, its protected-base classifier defaults to FULL but may select `architecture-docs` when the complete non-empty A/M/D diff contains only regular Markdown files under `docs/architecture/`. Invalid identity, path, object mode, enumeration or classification retains FULL. Every other path or mixed change is FULL.
 
-Issue #285 activates exactly the workflow blob preapproved by integrated #284. PostgreSQL runs in an unconditional job with a pinned17.6 service, verifies the synthetic head, requires the durability test target and executes it. Windows verifies that same head before its production client and simulation tests. The aggregate requires success from PostgreSQL and Windows; skipped, missing, cancelled or failed results reject integration. The complete queue workflow is pinned by executable policy; intentional changes require a separately reviewed protected-base pin rotation. Current exact-head execution and protected-main integration evidence are recorded on Issue #285/PR #296; source presence alone is not execution evidence. The queue regression suite runs through the existing canonical governance regression driver.
+| Exact queue classification | Required qualification |
+|---|---|
+| `architecture-docs`, `rust=false`, `windows=false` | candidate/governance, dependency review, CodeQL and aggregate `game-gate`; runtime/PG/Windows/supply-chain lanes may be explicitly skipped |
+| FULL, `rust=true`, `windows=true` | the same mandatory layers plus Linux workspace, real PostgreSQL 17.6, Windows client/simulation and supply chain |
+
+This is the separately reviewed #556 path-based queue contract, not the PR/post-merge Cargo and reviewed-consumer-snapshot classifier. Do not claim it proves arbitrary runtime document consumption. A later implementation that introduces such consumption requires the owning CI/input-contract review, not automatic snapshot or pin refresh to preserve savings.
+
+Selected PostgreSQL qualification verifies the synthetic head, requires the test target and executes against the pinned 17.6 service. Selected Windows qualification verifies the same head before its build/smoke/simulation commands. The aggregate accepts only the coherent `true/true` or `false/false` lane pair; missing outputs default to FULL, malformed pairs fail, and failed/cancelled/missing required results reject integration. Only explicitly unselected layers may be skipped. The complete queue workflow remains pinned by executable policy and protected-base approval; intentional changes require reviewed pin rotation. #285/#296 retain the original activation history; #555/#556 own the later bounded routing refinement. Source presence or queue admission alone is not execution or protected integration evidence.
 
 ## Current focused validation
 
@@ -108,7 +115,7 @@ Current exact baseline uses Rust `1.94.0` and includes:
 
 ### Protected-main post-merge lanes (#304)
 
-Standalone `.github/workflows/rust.yml` runs on every push to main, without path filters, and on manual dispatch. Policy and supply chain always run. Issue #311 extends the existing protected-main adapter to omit Linux workspace, PostgreSQL 17.6 and Windows/SIM only for proven neutral documentation. Manual dispatch remains FULL. Merge Queue remains FULL and its workflow and PR `game-gate` are unchanged.
+Standalone `.github/workflows/rust.yml` runs on every push to main, without path filters, and on manual dispatch. Policy and supply chain always run. Issue #311 extends the existing protected-main adapter to omit Linux workspace, PostgreSQL 17.6 and Windows/SIM only for proven neutral documentation. Manual dispatch remains FULL. This post-merge adapter does not select PR or Merge Queue lanes; the later #556 queue-only refinement is described above. The stable `game-gate` context is unchanged.
 
 Only a normal push to protected `refs/heads/main` can omit runtime lanes. The lane job verifies the exact already-protected event SHA, obtains full Git history, checks before/after ancestry, and enumerates the complete tree diff locally (including both rename sides, without the API's 300-file cap). It runs the existing #283 classifier and Cargo metadata from that protected revision, including the reviewed all-consumer snapshot for documentation. It does not trust PR labels/body or the push event's capped commits array. This is post-integration protected code, unlike the PR classifier's untrusted candidate.
 
@@ -123,6 +130,16 @@ Only a normal push to protected `refs/heads/main` can omit runtime lanes. The la
 The #283 reverse dependency closure and reviewed consumer snapshot retain their conservative semantics; stale snapshots select FULL. The classifier writes to a fresh private output file. Only complete canonical `rust/windows` pairs `false/false`, `true/false` or `true/true` are published; failure, partial, duplicate, malformed or contradictory output becomes explicit FULL. Linux/PostgreSQL require successful classification and both exact `false` outputs to omit execution; Windows retains its successful exact-`false` fallback. Policy and supply chain remain independent of classification. A subsequent push does not cancel an earlier post-merge run. The real golden command remains unconditional inside selected Windows. Canonical repository-policy validation executes real-Git adapter and actual shell-output fixtures and checks the reviewed workflow pin. Actual timing and run evidence live in Issues #304 and #311; replay or projected savings do not substitute for observed hosted decisions.
 
 The Linux/PostgreSQL dependency on classification introduces a serial startup cost for FULL/server runs. The measured docs baseline `33973093609` allocated 888 seconds: runtime jobs 818 seconds, classification 12 seconds, policy 21 seconds and supply chain 37 seconds. These are separate observed job durations, not a controlled A/B or achieved savings from #311. A roughly 12-second classification dependency can delay Linux/PostgreSQL eligibility; queue overlap and the workflow critical path determine its actual wall-time effect. Natural post-deployment docs and FULL measurements are required before claiming net savings.
+
+### Interpretation of native-client and architecture evidence
+
+The current Windows lanes build a release client but run the pre-native `--smoke` through `cargo run` without `--release`. This is a development-profile shell smoke, not execution of the release artifact; the current smoke also returns before constructing the physical renderer. Neither it nor the console synthetic harness proves physically displayed UI or an ADR-0007 journey.
+
+Linux workspace tests exclude Windows-only modules. The canonical Windows lane does not currently execute `cargo test -p oteryn-input-platform --target x86_64-pc-windows-msvc`; client Clippy/build does not execute dependency unit tests. Affected UI slices must supply named target-executed package tests and native qualification where needed. Required additions to canonical jobs must use the owning reviewed CI/pin process, not silently reinterpret existing green jobs.
+
+For `.github/workflows/architecture-semantic-audit.yml`, retain its selected profile, verdict and checks as well as the workflow conclusion. `NOT_APPLICABLE` with an empty check list is not semantic acceptance of an unselected document family. Dispatch-regression success does not substitute for the missing domain profile or required independent review.
+
+A native-window synthetic scene may supply physical component evidence, not a new or equivalent ADR-0007 Tier 2. Release-binary proof must identify and execute the actual artifact; physical presentation claims must distinguish a presentation request from observed pixels. These evidence distinctions do not block pure foundation work on unrelated end-to-end dependencies.
 
 ## Required additions as owning layers appear
 
