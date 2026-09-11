@@ -5,7 +5,7 @@
 - Ability successor: #508
 - Movement resource gate: #139
 - Originally prepared against protected `main@663bd35a5196a925fc6eb0318381ad0b97f4cc2c`
-- Reconciled by normal merges through protected `main@fc0ecb064b1d4a23a87dbba8070eb91a5142be03`
+- Reconciled by normal merges through protected `main@4122dc7302dfbb2e05f30ddba95017f464773b8c`
 
 ## Status and authority
 
@@ -37,8 +37,8 @@ Publication, a green PR, Issue #530, or an alias invocation does not activate th
 
 At the current reconciled candidate:
 
-- the allocation was originally prepared against protected `main@663bd35a5196a925fc6eb0318381ad0b97f4cc2c`, consumed protected `main@5ec6ca6369e98a6f66f679cfc7fc1248fb5992fb` by a normal two-parent merge, and after protected #558 advanced main it consumed current protected `main@fc0ecb064b1d4a23a87dbba8070eb91a5142be03` by another normal two-parent merge; no rebase/reset/force-push was used;
-- the protected deltas consumed by those merges remain path-disjoint from the future prototype paths below: #561 is the WP3 TLS1.3 final-flight allocation, #562 is UI/BUILD_TEST_MATRIX documentation, and #558 closes bounded input/renderer UI prerequisites under `crates/input-actions/**`, `crates/input-platform/**`, `crates/renderer/**` and its audit document; none creates an actor-carrier implementation writer or mutates the prospective prototype paths;
+- the allocation was originally prepared against protected `main@663bd35a5196a925fc6eb0318381ad0b97f4cc2c`, consumed protected `main@5ec6ca6369e98a6f66f679cfc7fc1248fb5992fb` and `main@fc0ecb064b1d4a23a87dbba8070eb91a5142be03` by normal two-parent merges, and now consumes protected `main@4122dc7302dfbb2e05f30ddba95017f464773b8c` by the same non-force merge-up discipline; no rebase/reset/force-push is used;
+- the protected deltas consumed by those merges remain path-disjoint from the future prototype paths below: #561 is the WP3 TLS1.3 final-flight allocation, #562 is UI/BUILD_TEST_MATRIX documentation, #558 closes bounded input/renderer UI prerequisites, and #536 adds WP3 prompt/runbook lifecycle material; none creates an actor-carrier implementation writer or mutates the prospective prototype paths;
 - protected #537 already completed the synthetic resource-evidence pass; it must not be duplicated;
 - protected #541 accepted `RUNTIME-ACTOR-LOCAL-GENERATION-V1`, including immutable `ActorLocalId` -> logical slot/generation-cell binding within one `ScopeOwnershipGeneration`, checked generation advance before reuse, fail-closed exhaustion, and fail-closed same-generation carrier reconstruction unless the exact generation/binding state is restored from an already-authorized source;
 - protected #541 requires distinct `ActorLocalId` values never to alias one logical slot/generation cell within the same scope generation;
@@ -46,7 +46,7 @@ At the current reconciled candidate:
 - protected #541 requires local-generation exhaustion to atomically make the selected exhausted slot terminal for that outer generation, publish no replacement actor/index/current reference, leave **all unrelated carrier state** unchanged, and return semantic result `ACTOR_LOCAL_GENERATION_EXHAUSTED` in Foundation category `CAPACITY_EXCEEDED`; this exhaustion result is distinct from stale-reference `STALE_GENERATION`;
 - protected #541 requires repeated same-slot churn plus churn/retirement across the configured namespace to prove there is no independently growing retirement/tombstone history and that retained generation-state cardinality remains exactly the configured slot cardinality `M`;
 - protected #541 permits a fresh actor-local namespace only after a legitimately newer outer `ScopeOwnershipGeneration` fences every prior reference; a carrier restart/loss must never reset the namespace while the same outer generation remains authoritative;
-- #530 independently requires checked count/size arithmetic before allocation, **M and M+1 behavior independently for every tested candidate M**, rejection before partial actor/index mutation, deterministic direct-lookup plus insertion/removal work accounting, and honest physical accounting for slot/record plus lookup/index backing rather than hiding independently growing backing behind an actor-count label;
+- #530 independently requires checked count/size arithmetic before allocation, **M and M+1 behavior independently for every tested candidate M**, rejection before partial actor/index mutation, deterministic direct-lookup plus insertion/removal work accounting including every occupancy/free-slot-layout-dependent boundary or worst-case path exercised by the exact candidate, and honest physical accounting for slot/record plus lookup/index backing rather than hiding independently growing backing behind an actor-count label;
 - #162 cleanup after protected #548 explicitly retired the premature PERF detour and set `NEXT_PATH: SHARED_CHANNEL_ACTOR_CARRIER_PROTOTYPE_EVIDENCE`;
 - that cleanup explicitly permits a non-production carrier evidence/prototype to establish physical shape, current-owner lookup, and bounded correctness without selecting a production total-actor maximum;
 - #508 Phase A still requires a direct current-owner exact actor lookup and forbids a second Ability-owned actor registry or geometry/spatial scans;
@@ -75,7 +75,7 @@ The prototype must answer only these questions:
 9. Can all count/capacity/byte-size composition use checked arithmetic and reject overflow before allocation or authoritative state mutation?
 10. What exact physical slot/record and lookup/index backing exists for the candidate, can either backing grow independently, and how is every exercised retained resource bounded for each tested `M`?
 11. For **each tested M independently**, does exact M admission succeed as qualified and M+1 reject before any partial mutation while preserving complete pre-existing carrier state?
-12. What deterministic direct-lookup, insertion and removal work is performed at representative occupancy and every tested candidate `M`, with no hidden occupancy-dependent scan/enumeration or variable candidate materialization?
+12. What deterministic direct-lookup, insertion and removal work is performed for every tested candidate `M`; if any operation depends on occupancy or free-slot layout, what are the exact dependent work-unit values at the relevant sparse/full/fragmented or other candidate-specific boundary and worst-case paths rather than only one representative point?
 13. Can a minimal direct lookup expose only the current existence/actionable fact and current authoritative position needed by the first exact-target/local-step proofs, without geometry, scanning or dynamic retargeting?
 14. What is the concrete Rust candidate shape/size and deterministic operation behavior for the tested prototype points, explicitly without converting those points into a production capacity claim?
 
@@ -92,7 +92,7 @@ docs/agents/tasks/active/OTV2-20260911-runtime-actor-carrier-prototype-530.md
 
 Everything else is read-only.
 
-In particular, this allocation grants **no write authority** to:
+In particular, after activation this allocation grants **no write authority** to:
 
 ```text
 apps/game-server/src/**
@@ -102,11 +102,13 @@ Cargo.toml
 Cargo.lock
 docs/contracts/RESOURCE_LIMITS_REGISTRY.json
 docs/architecture/**
-docs/agents/programs/** except this already-protected allocation itself
+docs/agents/programs/**
 .github/**
 vendor/**
 Platform / Atlas / META / external repositories
 ```
+
+The allocation document itself is writable only during this pre-integration preparation/review PR. Once protected-integrated, the future worker may read it as authority but may not modify it.
 
 If the prototype cannot be completed without any excluded path, return exactly:
 
@@ -156,7 +158,7 @@ The actor reference itself is expected binding evidence; it is not allowed to se
 
 A mismatched/stale current `ScopeOwnershipGeneration` must reject even if actor-local identity/generation otherwise matches. A different `WorldId` with the same `ChannelId` must reject. A different `ChannelId` in the same world must reject. A distinct actor-local ID must never be accepted merely because it reaches a slot carrying a matching local generation.
 
-Direct exact lookup must not enumerate actors, materialize a variable candidate collection, depend on hash/thread iteration order, or hide occupancy-dependent scan work. The worker must record deterministic lookup work units for representative occupancy and every tested candidate `M`.
+Direct exact lookup must not enumerate actors, materialize a variable candidate collection, depend on hash/thread iteration order, or hide occupancy-dependent scan work. The worker must record deterministic lookup work units for every tested candidate `M`, including every occupancy-dependent boundary/worst-case path exercised by the exact representation.
 
 ## Actor-local slot/generation rule
 
@@ -204,6 +206,7 @@ M_plus_1_full_state_preserved
 direct_lookup_work_units
 insertion_work_units
 removal_work_units
+occupancy_dependent_work_boundaries_and_worst_cases
 ```
 
 If actor storage and lookup/index are physically the same one-to-one bounded resource, prove that identity explicitly. If a map/table/vector/index backing can grow independently of active slots, record its exact capacity/backing growth and a finite tested bound; do not classify it silently as the same resource merely because logical entry count is one per actor.
@@ -269,10 +272,10 @@ The executable prototype and evidence must prove at least:
 16. checked count/slot/index/byte arithmetic overflow rejects before allocation or any carrier/actor/index/generation mutation;
 17. mixed player/creature/NPC-system actor occupancy follows the same carrier path;
 18. fixed-size retained bytes per actual slot/record and, where physically distinct, per lookup/index entry are measured from the exact Rust candidate at every tested `M`; independently growable backing is measured and bounded rather than hidden behind `M`;
-19. direct lookup, insertion and removal work are recorded separately in deterministic operation/work units at representative occupancy and every tested candidate `M`; the evidence identifies whether any operation cost changes with occupancy/free-slot structure, performs no hidden actor/world scan or variable candidate materialization, and does not depend on hash/thread/enumeration order;
+19. direct lookup, insertion and removal work are recorded separately in deterministic operation/work units for every tested candidate `M`; for each operation whose cost depends on occupancy or free-slot structure, the evidence must measure the relevant candidate-specific sparse/full/fragmented or other boundary and worst-case paths, not merely state that cost varies; no hidden actor/world scan or variable candidate materialization is allowed, and results must not depend on hash/thread/enumeration order;
 20. no geometry, range, LoS, nearest-N, visibility, pathfinding or dynamic retargeting path exists;
 21. no `ai::ActorId`, Ability fixture `TargetId(String)`, client handle, pointer or string cast can substitute for the shared prototype reference;
-22. prototype size/shape evidence is regenerated deterministically from the exact Rust candidate and records the retained generation-cell cardinality plus physical slot/index backing, operation work units and M/M+1 outcome for each tested `M`;
+22. prototype size/shape evidence is regenerated deterministically from the exact Rust candidate and records retained generation-cell cardinality, physical slot/index backing, all operation work-unit boundary/worst-case measurements and M/M+1 outcome for each tested `M`;
 23. after the complete negative/churn matrix, the evidence explicitly reports `retained_generation_cells == configured_actor_slots == M` and `independent_retirement_history_entries == 0` for the selected prototype shape.
 
 ## Relationship to #508 and #139
@@ -336,8 +339,8 @@ post_selection_failure_rollback: <PASS|BLOCKED>
 exhaustion_unrelated_state_preserved: <PASS|BLOCKED>
 rl03_churn_cardinality: <PASS|BLOCKED; retained_generation_cells=M; independent_history=0>
 lookup_index_shape: <same-resource proof OR exact distinct backing/cardinality/capacity>
-direct_lookup_work: <deterministic work at representative occupancy and every tested M>
-insertion_removal_work: <deterministic insertion/removal work at representative occupancy and every tested M>
+direct_lookup_work: <deterministic lookup work for every tested M including dependent boundary/worst-case paths>
+insertion_removal_work: <deterministic insertion/removal work for every tested M including dependent boundary/worst-case paths>
 overflow_preallocation: <PASS|BLOCKED>
 per_tested_m_boundaries: <M and M+1 result/state preservation for every tested M>
 negative_matrix: <results>
