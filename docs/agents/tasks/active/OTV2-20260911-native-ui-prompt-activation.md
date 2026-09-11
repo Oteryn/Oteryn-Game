@@ -4,7 +4,7 @@
 task_id: OTV2-20260911-native-ui-prompt-activation
 title: Activate Native UI reusable prompt family
 mode: GOVERNANCE
-status: review
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/native-ui-prompt-activation-20260911
@@ -130,7 +130,7 @@ Extracted the eight complete protected section-12 prompt blocks into their canon
 
 ```yaml
 last_progress: eight protected prompts extracted and registered; static/adversarial evaluation and local validation complete
-status: review
+status: validating
 branch: docs/native-ui-prompt-activation-20260911
 head_sha: null
 pr: 569
