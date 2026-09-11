@@ -8,14 +8,14 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/runtime-actor-carrier-preproduction-530
-pr: null
+pr: 573
 base_sha: 1a9cb71f424a821633fd42f8a1a19920ffeff2c3
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: OTV2_IMPL_FOUNDATION_RUNTIME
 created_at: 2026-09-11T17:08:57Z
-updated_at: 2026-09-11T17:08:57Z
+updated_at: 2026-09-11T18:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
@@ -55,19 +55,19 @@ Implement one Foundation-owned, fixed-bound, PRE_PRODUCTION Channel actor carrie
 
 ## Acceptance criteria
 
-- [ ] Add exactly one bounded Channel carrier and direct exact slot/generation lookup; no second growing index/history.
-- [ ] Every construction requires explicit finite non-production capacity; zero/missing/overflow/allocation failure fails closed before partial publication.
-- [ ] M succeeds when resources allow; M+1 rejects without retained-state mutation across multiple fixture bounds, without promoting a fixture value to product policy.
-- [ ] No API exports/serializes/reports a development bound as production capacity and no production-labeled constructor/default exists.
-- [ ] Exact reference binds WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation.
-- [ ] Wrong world/channel, stale scope generation, vacant/out-of-range identity, stale actor generation and cross-scope cases reject deterministically.
-- [ ] Same-generation carrier reconstruction from raw scope/generation facts is impossible; pre-production continuity authority is move-only/non-replayable and does not mint grants.
-- [ ] Removal/reuse advances retained actor-local generation; wrap is forbidden.
-- [ ] Checked no-successor at `g_max` performs only `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement, preserves unrelated state and never reselects that slot in the same scope generation.
-- [ ] `ScopeRuntimeFence` is not made Clone/Copy and its private raw-grant constructor is not widened.
-- [ ] `foundation/mod.rs` receives only minimum private/crate-visible wiring.
-- [ ] No Cargo/workspace/lib.rs/protocol/admission/Durability/transport/registry/workflow/production/#508/#139 mutation.
-- [ ] Focused RED->GREEN, fmt, focused server tests, strict Clippy and adversarial whole-diff self-review pass on one exact head.
+- [x] Add exactly one bounded Channel carrier and direct exact slot/generation lookup; no second growing index/history.
+- [x] Every construction requires explicit finite non-production capacity; zero/missing/overflow/allocation failure fails closed before partial publication.
+- [x] M succeeds when resources allow; M+1 rejects without retained-state mutation across multiple fixture bounds, without promoting a fixture value to product policy.
+- [x] No API exports/serializes/reports a development bound as production capacity and no production-labeled constructor/default exists.
+- [x] Exact reference binds WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation.
+- [x] Wrong world/channel, stale scope generation, vacant/out-of-range identity, stale actor generation and cross-scope cases reject deterministically.
+- [x] Same-generation carrier reconstruction from raw scope/generation facts is impossible; pre-production continuity authority is move-only/non-replayable and does not mint grants.
+- [x] Removal/reuse advances retained actor-local generation; wrap is forbidden.
+- [x] Checked no-successor at `g_max` performs only `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement, preserves unrelated state and never reselects that slot in the same scope generation.
+- [x] `ScopeRuntimeFence` is not made Clone/Copy and its private raw-grant constructor is not widened.
+- [x] `foundation/mod.rs` receives only minimum private/crate-visible wiring.
+- [x] No Cargo/workspace/lib.rs/protocol/admission/Durability/transport/registry/workflow/production/#508/#139 mutation.
+- [x] Focused RED->GREEN, fmt, focused server tests, strict Clippy and adversarial whole-diff self-review pass on one exact head.
 - [ ] Exact-head repository CI passes.
 - [ ] Genuinely independent exact-head review is clean; unresolved material threads = 0.
 
@@ -77,24 +77,27 @@ No production capacity/default/readiness, `RESOURCE_LIMITS_REGISTRY`, VPS/deploy
 
 ## Implementation / findings
 
-Coordinator bootstrap created this task record after explicit owner execution authorization and fresh protected readback. Implementation has not yet been published. The canonical worker must reuse this branch/task/PR lineage only.
+The bounded carrier implementation and local qualification are complete on the single canonical Draft
+PR #573 lineage. A publish-only recovery reconstructed the immediately preceding four-path result after
+confirming the originally reported local object was absent and the live branch remained at its expected
+bootstrap head. Hosted exact-head CI and independent review remain coordinator-owned next steps.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending
-- result: pending
+- command/run: `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier`
+- result: PASS — 7 passed, 0 failed
 
 ### Component/integration
 
-- command/run: pending
-- result: pending
+- command/run: `cargo +1.94.0 clippy -p oteryn-game-server --all-targets -- -D warnings`
+- result: PASS
 
 ### E2E
 
 - scenario: `NOT_APPLICABLE` for physical production-capacity qualification; this is deliberately a pre-production bounded component.
-- result: pending focused runtime evidence only
+- result: PASS focused runtime evidence only; production qualification remains `NOT_APPLICABLE`
 
 ### Exact-head CI
 
@@ -107,10 +110,10 @@ Coordinator bootstrap created this task record after explicit owner execution au
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: set at publication
+- method/reviewer: implementing agent, adversarial whole-diff allocation sweep
+- material findings: 0 unresolved
+- verdict: PASS locally; hosted checks/review remain pending
 
 ## Independent review
 
@@ -132,11 +135,11 @@ Coordinator bootstrap created this task record after explicit owner execution au
 ## Context checkpoint
 
 ```yaml
-last_progress: coordinator task bootstrap after protected allocation activation
+last_progress: locally qualified four-path implementation checkpoint prepared for canonical publication
 status: implementing
 branch: agent/runtime-actor-carrier-preproduction-530
 head_sha: null
-pr: null
+pr: 573
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -154,5 +157,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: implement focused RED->GREEN carrier module and minimal foundation wiring on this branch
+next_action: publish normally, verify branch and PR exact-head equality, then await coordinator CI/review routing
 ```

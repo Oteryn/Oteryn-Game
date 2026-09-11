@@ -7,6 +7,8 @@ mod admission {
 mod admission_facade;
 pub mod fnd04_verifier;
 mod protocol;
+#[allow(dead_code)]
+mod runtime_actor_carrier;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
