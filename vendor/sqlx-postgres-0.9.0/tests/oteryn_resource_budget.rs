@@ -319,10 +319,32 @@ fn docker_copy_owned(
 }
 
 fn build_helper(helper: &Path) -> Result<PathBuf, Box<dyn Error>> {
+    let lock_path = helper.join("Cargo.lock");
+    let seeded_lock = fs::read_to_string(&lock_path)?;
+    let seeded_identities = lock_package_identities(&seeded_lock);
+
+    let reconcile = Command::new("cargo")
+        .arg("+1.94.0")
+        .arg("metadata")
+        .arg("--offline")
+        .arg("--format-version")
+        .arg("1")
+        .arg("--manifest-path")
+        .arg(helper.join("Cargo.toml"))
+        .env("CARGO_TERM_COLOR", "never")
+        .output()?;
+    ensure_success(&reconcile, "isolated SQLx AWS-LC offline lock reconciliation")?;
+
+    let reconciled_lock = fs::read_to_string(&lock_path)?;
+    if lock_package_identities(&reconciled_lock) != seeded_identities {
+        return Err("offline lock reconciliation changed the seeded package identity set".into());
+    }
+
     let output = Command::new("cargo")
         .arg("+1.94.0")
         .arg("build")
         .arg("--locked")
+        .arg("--offline")
         .arg("--quiet")
         .arg("--manifest-path")
         .arg(helper.join("Cargo.toml"))
@@ -330,9 +352,43 @@ fn build_helper(helper: &Path) -> Result<PathBuf, Box<dyn Error>> {
         .env("CARGO_TARGET_DIR", helper.join("target"))
         .output()?;
     ensure_success(&output, "isolated SQLx AWS-LC profile build")?;
+    if fs::read_to_string(&lock_path)? != reconciled_lock {
+        return Err("locked offline helper build mutated Cargo.lock".into());
+    }
+
     Ok(helper
         .join("target/debug")
         .join("oteryn-wp3-aws-lc-qualification"))
+}
+
+fn lock_package_identities(lock: &str) -> Vec<String> {
+    let mut identities = Vec::new();
+    let mut package = Vec::new();
+    let mut in_package = false;
+
+    for line in lock.lines() {
+        if line == "[[package]]" {
+            if in_package {
+                identities.push(package.join("\n"));
+                package.clear();
+            }
+            in_package = true;
+            continue;
+        }
+        if in_package
+            && (line.starts_with("name = ")
+                || line.starts_with("version = ")
+                || line.starts_with("source = ")
+                || line.starts_with("checksum = "))
+        {
+            package.push(line.to_owned());
+        }
+    }
+    if in_package {
+        identities.push(package.join("\n"));
+    }
+    identities.sort();
+    identities
 }
 
 fn run_helper(
