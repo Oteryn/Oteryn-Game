@@ -11,6 +11,14 @@
 - Runtime/client/server/protocol/content implementation authority: **NONE**
 - Merge authority: **REPOSITORY CONTROL PLANE ONLY**
 
+## Historical snapshot scope
+
+This entire record is evidence of the **2026-09-10 audit snapshot**. Unless a field is an immutable audit binding (for example the audited repository, base SHA, exact PR head, `KEEP` result or recorded finding disposition), every lifecycle, source-state, ownership, allocation, readiness and execution statement below describes the state observed at that snapshot only.
+
+This record must not be used as current UI, Cargo/workspace, allocation or programme execution authority. Current state must be resolved from later protected records and LIVE GitHub before acting.
+
+At the 2026-09-11 reconciliation for this historical record, PR #551 is already protected-integrated as `5025be6cf3f5140cf94708f8e6ddc9ab3f40d99f`, and later protected UI work includes #557, #560, #562 and #558. Those later protected states are not superseded, reopened or reclassified by this record.
+
 ## 1. Purpose
 
 Persist the independent exact-head audit result for PR #551, `docs(ui): apply PR 549 audit corrections`, without changing the audited PR head.
@@ -24,9 +32,9 @@ base: main
 exact_head: 0f26f4bfe03618f7faa8409f3f678d34a6acb886
 ```
 
-Any material change to PR #551 after that head invalidates this audit target and requires a fresh exact-head review.
+Any material change to PR #551 after that head invalidates this audit target and requires a fresh exact-head review of that changed target. That rule describes the audit binding; it does not reopen the already integrated #551 lifecycle.
 
-## 2. LIVE state verified
+## 2. LIVE state verified at the audit snapshot
 
 At audit completion:
 
@@ -35,12 +43,12 @@ At audit completion:
 - exact head was `0f26f4bfe03618f7faa8409f3f678d34a6acb886`;
 - protected `main` was `7144c0b9ec8691e481df058c85d890ac88d32461` and already contained PR #549;
 - PR #551 changed exactly two Markdown files;
-- current exact-head workflow evidence included successful Architecture semantic audit, Agent governance and latest Merge gate runs;
+- exact-head workflow evidence at that snapshot included successful Architecture semantic audit, Agent governance and latest Merge gate runs;
 - no unresolved inline review threads were present.
 
 This audit performed no repository, branch, PR, runtime or merge mutation before the audit result was reached.
 
-## 3. Sources read and cross-checked
+## 3. Sources read and cross-checked at the audit snapshot
 
 The audit read and cross-checked:
 
@@ -62,7 +70,7 @@ The audit read and cross-checked:
 - bound `OTERYN_ORGANIZATION_AGENT_POLICY 3.1.0` at `Oteryn/Oteryn@3b39e0be05aef008f1bd442821daefa898a201dd`;
 - `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`.
 
-### Current implementation boundaries
+### Implementation boundaries observed at that snapshot
 
 - `apps/client` including `ClientBootstrap` and the Windows interactive shell;
 - `crates/client-runtime`;
@@ -73,9 +81,11 @@ The audit read and cross-checked:
 - `crates/renderer`;
 - `tools/synthetic-client-harness`;
 - root workspace boundary policy in `workspace-boundaries.toml`;
-- LIVE shared-workspace ownership around Issue #351 / Draft PR #356.
+- shared-workspace ownership then observed around Issue #351 / Draft PR #356.
 
-## 4. Finding closure verification
+## 4. Finding closure verification at the audit snapshot
+
+Every closure statement in this section is the independent review disposition for the audited #551 head at the 2026-09-10 snapshot. It is not a current implementation-status or allocation claim.
 
 ### 4.1 Workspace/Cargo ownership and P1 entry gate — CLOSED
 
@@ -90,9 +100,9 @@ Cargo.lock  # only when produced by the exact package/dependency delta
 
 It requires package identity, exactly one release role, declared internal dependency edges, valid production closure, `cargo metadata --locked`, architecture-check proof and repository exact-head checks.
 
-P1 admission now requires correction integration/readback plus a fresh LIVE ownership census and explicit allocation for shared workspace paths. This correctly preserves the current serialized Cargo ownership held by #351/#356 as a live execution dependency rather than permanent architecture.
+At the audit snapshot, P1 admission required correction integration/readback plus a fresh LIVE ownership census and explicit allocation for shared workspace paths. This correctly preserved the serialized Cargo ownership then held by #351/#356 as a live execution dependency rather than permanent architecture.
 
-`UI-P1` is therefore **not authorized to start by this audit**.
+`UI-P1` was therefore **not authorized to start by this audit**. This is not a statement of current UI-P1 readiness.
 
 ### 4.2 Input arbitration — CLOSED
 
@@ -107,7 +117,7 @@ input-actions  -> semantic gameplay/action routing
 
 The app must resolve UI ownership/reservation before gameplay emission, and one physical event cannot produce both an intended UI action and an unintended gameplay command.
 
-This matches current code evidence: pointer/text normalized events are not general UI outputs from `InputRouter`, and current UI arbitration does not yet exist in the production shell.
+At the audit snapshot this matched source evidence: pointer/text normalized events were not general UI outputs from `InputRouter`, and UI arbitration did not yet exist in the production shell. Later protected source state must be read independently.
 
 ### 4.3 IME semantics — CLOSED
 
@@ -123,7 +133,7 @@ P2 now explicitly requires:
 - bounded untrusted composition text;
 - Polish-diacritic and real preedit-before-commit tests.
 
-This closes the current implementation gap where `Ime::Preedit(text, cursor)` is collapsed to a marker and its payload is discarded.
+At the audit snapshot this closed the implementation gap where `Ime::Preedit(text, cursor)` was collapsed to a marker and its payload was discarded. Later protected source state must be read independently.
 
 ### 4.4 Active-action cancellation — CLOSED
 
@@ -154,7 +164,7 @@ ui-core           -> framework-neutral UI semantics
 renderer          -> physical GPU/surface/resources
 ```
 
-No third production composition owner is introduced, and current pre-native gameplay-entry fail-closed behavior remains protected.
+No third production composition owner is introduced, and pre-native gameplay-entry fail-closed behavior observed at the snapshot remained protected.
 
 ### 4.6 P2/P3 serialization — CLOSED
 
@@ -168,7 +178,7 @@ P5 requires one production-safe HUD composition seam with synthetic dependencies
 
 P6 requires one bounded qualification host/cell that physically composes representative world presentation plus representative HUD/UI through an actual `wgpu` frame path.
 
-This matches current source boundaries: production `renderer` owns the real DX12/`wgpu` surface but currently performs only a clear pass, while `tools/synthetic-client-harness` currently exercises synthetic state plus `SurfaceState` rather than a physical world+HUD render.
+At the audit snapshot this matched source boundaries: production `renderer` owned the real DX12/`wgpu` surface but performed only a clear pass, while `tools/synthetic-client-harness` exercised synthetic state plus `SurfaceState` rather than a physical world+HUD render. Later protected source state must be read independently.
 
 ### 4.8 Physical / Tier-2 evidence — CLOSED
 
@@ -231,9 +241,9 @@ The correction brings retained-vs-immediate UI ownership into the required `ARCH
 
 The retained production tree is selected only at the ownership-model level needed before P1 public state/interaction contracts. Exact storage and invalidation mechanisms remain implementation details and may be reopened by measured evidence.
 
-## 5. FOV and addon guardrails
+## 5. FOV and addon guardrails at the audit snapshot
 
-The audit confirms that PR #551 preserves:
+The audit confirmed that PR #551 preserved:
 
 ```text
 RESPONSIVE_FOV_POLICY = UNDECIDED
@@ -241,15 +251,15 @@ FIXED_FOV_POLICY = UNDECIDED
 ADDON_PLATFORM = DEFERRED_FUTURE_CONCEPT
 ```
 
-Responsive client-side behavior may be qualified experimentally, but product acceptance remains gated by separate server relevance/network/fairness proof where additional authoritative world projection is required.
+At that snapshot, responsive client-side behavior could be qualified experimentally, but product acceptance remained gated by separate server relevance/network/fairness proof where additional authoritative world projection was required.
 
-No addon/mod/plugin runtime, scripting VM, manifest format, community API, sandbox/capability system, hot reload, marketplace, signing or distribution implementation is authorized.
+No addon/mod/plugin runtime, scripting VM, manifest format, community API, sandbox/capability system, hot reload, marketplace, signing or distribution implementation was authorized by this audit. Current FOV/addon state must be resolved from later protected authority.
 
-## 6. Execution and integration guardrail
+## 6. Historical execution and integration guardrail
 
-The exact-head audit result `KEEP` removes the independent-review content blocker for PR #551 at the audited head only. It does **not** itself merge #551 and does **not** authorize UI-P1.
+At the 2026-09-10 audit snapshot, the exact-head audit result `KEEP` removed the independent-review content blocker for PR #551 at the audited head only. It did **not** itself merge #551 and did **not** authorize UI-P1.
 
-The correction lifecycle remains:
+At audit completion, the outstanding correction lifecycle was:
 
 ```text
 PR #551 exact-head KEEP
@@ -261,9 +271,11 @@ PR #551 exact-head KEEP
   -> UI-P1 may be considered for admission
 ```
 
-Any failed required gate fails closed. No bypass, direct merge, force push, protection weakening or alternate integration authority is implied.
+This sequence is retained only as historical evidence of the then-outstanding lifecycle. It is not a current gate, current UI-P1 status or instruction to repeat completed #551 integration. As of the 2026-09-11 reconciliation, #551 is already protected-integrated; current UI/Cargo/allocation state must be resolved from later protected records and LIVE GitHub.
 
-## 7. Terminal audit result
+At the snapshot, any failed required gate failed closed. No bypass, direct merge, force push, protection weakening or alternate integration authority was implied.
+
+## 7. Terminal audit result at the 2026-09-10 snapshot
 
 ```text
 AUDITED_REPOSITORY = Oteryn/Oteryn-Game
@@ -277,6 +289,8 @@ UI_P1 = BLOCKED_PENDING_CORRECTION_INTEGRATION_READBACK_AND_LIVE_WORKSPACE_ALLOC
 FOV = UNDECIDED_EVIDENCE_GATED
 ADDON_PLATFORM = DEFERRED_FUTURE_CONCEPT
 ```
+
+The terminal block above is a historical snapshot result only. In particular, `UI_P1 = BLOCKED_PENDING_CORRECTION_INTEGRATION_READBACK_AND_LIVE_WORKSPACE_ALLOCATION` does not state current UI-P1, Cargo-custody or allocation readiness. Resolve current state from later protected records and the live control plane.
 
 `IMPLEMENTATION_AUTHORITY: NONE`
 
