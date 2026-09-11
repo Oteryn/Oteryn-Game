@@ -44,6 +44,14 @@ Before consuming owner-funded, personal-quota or metered AI resources, apply `do
 5. Before consuming a packet, the writer refreshes GitHub and rejects head-bound conclusions whose `exact_pr_head_sha` no longer matches the audited candidate.
 6. The writer verifies every accepted finding itself and remains the only mutating WP3 role.
 
+## Atomic writer cadence
+
+For Codex Cloud material execution, also apply `docs/agents/CODEX_CLOUD_WP3_STABILITY_PROFILE.md`.
+
+One writer invocation should normally own one recoverable material unit, not the remainder of the whole WP3 programme. After an authorized accounting cell, focused proof gap or review finding is closed, the SAME writer publishes one coherent checkpoint on the canonical branch and returns exact head/tree plus exactly one next legal cell or exact blocker. A later invocation resumes from that published head.
+
+This cadence changes neither the single-writer rule nor the terminal acceptance bar. Atomic checkpoints are progress evidence; they are not `WP3_PROTECTED_COMPLETE`, final independent review, Ready eligibility or Merge Queue authority.
+
 ## Packet relay
 
 Relay analyst results with this compact directive:
