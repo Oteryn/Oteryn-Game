@@ -17,7 +17,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "e347ceff04e976fe35a010cac930af5aaa22112e"
+APPROVED = "c59b30fde7538e738346eec03a602081dc4ac2d6"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
@@ -80,6 +80,26 @@ def main() -> int:
     candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
     assert candidate is not None
     assert LIFECYCLE_COMMAND in candidate, "required MQ candidate does not execute lifecycle discovery"
+    for fragment in (
+        "      rust: ${{ steps.lanes.outputs.rust }}",
+        "      windows: ${{ steps.lanes.outputs.windows }}",
+        "      - name: Check out protected-base classifier input",
+        "          ref: ${{ github.event.merge_group.base_sha }}",
+        "      - name: Classify trusted merge-group lanes",
+        "path.startswith('docs/architecture/') and path.endswith('.md')",
+        "result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}",
+    ):
+        assert fragment in candidate, f"Merge Queue trusted docs classifier missing: {fragment}"
+
+    for job, condition in (
+        ("rust_linux", "if: needs.candidate.outputs.rust == 'true'"),
+        ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
+        ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
+        ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
+    ):
+        block = core.indented_yaml_mapping_block(original, job, 2)
+        assert block is not None and condition in block, (job, condition)
+
     windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
     assert windows is not None
     for policy in NATIVE_POLICY:
@@ -148,9 +168,32 @@ def main() -> int:
             assert subprocess.run(
                 ["bash", "-c", script], env=dict(env, **{predicate: failure}), check=False
             ).returncode != 0, (predicate, failure)
+
+    docs_env = dict(
+        env,
+        RUST_REQUIRED="false",
+        WINDOWS_REQUIRED="false",
+        RUST_LINUX="skipped",
+        DURABILITY_POSTGRES="skipped",
+        RUST_WINDOWS="skipped",
+        RUST_SUPPLY_CHAIN="skipped",
+    )
+    assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
+    for predicate in ("RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN"):
+        for failure in ("failure", "cancelled", ""):
+            assert subprocess.run(
+                ["bash", "-c", script], env=dict(docs_env, **{predicate: failure}), check=False
+            ).returncode != 0, (predicate, failure)
+    assert subprocess.run(
+        ["bash", "-c", script],
+        env=dict(docs_env, RUST_REQUIRED="false", WINDOWS_REQUIRED="true"),
+        check=False,
+    ).returncode != 0
+
     print(
-        "Queue credibility regressions PASS: approved blob, lifecycle discovery, "
-        f"4 native failure positions, {mutations} workflow mutations, 28 fan-in failures and success controls"
+        "Queue credibility regressions PASS: approved blob, protected-base docs classifier, "
+        f"4 native failure positions, {mutations} workflow mutations, full fan-in failures, "
+        "docs-only skipped-lane success and fail-closed docs negatives"
     )
     return 0
 

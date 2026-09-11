@@ -76,6 +76,14 @@ The Terra profile is additive and does **not** silently supersede `Oteryn: work 
 Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
 
+### Global Reference investigation
+
+- `OTV2_REFERENCE_INVESTIGATOR.md` — parameterized, strictly read-only #486 investigation role for parallel evidence/data discovery. **Canonical short form: `Oteryn: ref <lane>`.** Supported lanes: `world`, `combat`, `char`, `npc`, `move`, `durability`, `evidence`, `qa`.
+
+The Reference investigator is an additive research accelerator, not an implementation worker, formal independent auditor or second control plane. It reads GitHub LIVE for Oteryn project truth; consumes #483/protected Reference evidence before duplicating research; uses CipSoft official evidence and controlled Global observation for authoritative/behavior-sensitive claims; treats Tibia Wiki (`tibiawiki.com.br`) as first-class `STRUCTURED_REFERENCE_DATA` for bulk items/creatures/NPCs/spells/quests/locations; and uses Canary/Crystal/legacy OTS actively for discovery while keeping them `OTS_HYPOTHESIS_ONLY`. The complete source/promotion/conflict rules live in `../programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`, and the launch/effort/concurrency procedure lives in `../programs/OTERYN_REFERENCE_INVESTIGATION_OPERATOR_RUNBOOK_20260910.md`.
+
+Alias invocation grants no tracked-file write, implementation, control-plane, merge, production or cross-repository authority. Existing canonical workers are analyzed, never replaced or mutated by this research alias.
+
 ### External review
 
 Resolve external-review decisions from the META policy named by `../META_AGENT_POLICY_BINDING.json`. Prompt aliases and compatibility metadata never create review or merge authority.

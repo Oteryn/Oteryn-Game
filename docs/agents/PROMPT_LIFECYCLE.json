@@ -437,6 +437,39 @@
       "supersession_rule": "Read-only analyst profile; it never supersedes or becomes the Durability Lead, implementation worker, formal reviewer, control plane or architecture authority."
     },
     {
+      "prompt_id": "OTV2_WP3_WRITER",
+      "path": "docs/agents/prompts/OTV2_WP3_WRITER.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-live-canonical-lineage",
+      "scope": "Single mutating writer profile for the current canonical WP3 SQLx driver accounting lineage; mutation remains limited to exact live protected WP3 allocations and owned paths.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive WP3 execution profile; it never creates a replacement lineage or supersedes the implementation coordinator, active control plane or broader Durability prompts."
+    },
+    {
+      "prompt_id": "OTV2_WP3_TLS_AUDITOR",
+      "path": "docs/agents/prompts/OTV2_WP3_TLS_AUDITOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-read-only-analysis",
+      "scope": "Strict read-only TLS allocation/custody analysis of the exact live WP3 candidate; returns an exact-head advisory packet and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only acceleration profile; it never becomes a WP3 writer, formal independent reviewer, control plane or architecture authority."
+    },
+    {
+      "prompt_id": "OTV2_WP3_QUALIFICATION_AUDITOR",
+      "path": "docs/agents/prompts/OTV2_WP3_QUALIFICATION_AUDITOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-read-only-analysis",
+      "scope": "Strict read-only qualification and integration-prerequisite tracking for the exact live WP3 candidate; returns an exact-head advisory checklist and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only acceleration profile; it never becomes a WP3 writer, formal independent reviewer, control plane or merge authority."
+    },
+    {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
       "version": "1.1",
@@ -534,6 +567,17 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Preparation-only profile; alias reuse never grants write authority. A later exact merged allocation/prompt lifecycle is required before implementation."
+    },
+    {
+      "prompt_id": "OTV2_REFERENCE_INVESTIGATOR",
+      "path": "docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "reference-first-read-only-investigation",
+      "scope": "Parameterized read-only Global Reference investigation across world, combat, character, NPC, movement, durability, evidence and QA lanes; may use public primary/structured/community/OTS sources according to the #486 source registry but grants no tracked-file, control-plane, implementation, merge, production or cross-repository write authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive #486 research accelerator; it supersedes no implementation, lane-lead, coordinator or auditor prompt. Alias reuse never grants write authority."
     }
   ]
 }
