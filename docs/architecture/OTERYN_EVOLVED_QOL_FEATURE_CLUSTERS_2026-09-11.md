@@ -9,7 +9,7 @@
 
 ## 1. Purpose
 
-This document consolidates two owner-provided QoL wishlists into a smaller set of coherent product initiatives. Several original ideas overlap or are better implemented as one reusable system rather than as isolated features.
+This document consolidates three owner-provided Tibia/Oteryn QoL wishlists into a smaller set of coherent product initiatives. Several source ideas overlap and should be implemented as one reusable system rather than as isolated features.
 
 The grouping is deliberately product-oriented:
 
@@ -75,28 +75,44 @@ The scores below are planning aids only:
 | B18 | Better Bestiary sorting/filtering/layout |
 | B19 | Count prepaid future Premium time immediately toward Loyalty |
 
+### Wishlist C
+
+| ID | Original proposal |
+|---|---|
+| C01 | Equipment Presets triggered from the action bar/hotkeys |
+| C02 | Diagonal movement from simultaneous WASD pairs such as `W+A`, `W+D`, `S+A`, `S+D` |
+
 ## 3. Canonical grouped initiatives
 
 ### QOL-01 — Native UI Workspace, Scaling and Input
 
-**Source items:** `B01`, `B02`, `B04`, `B08`
+**Source items:** `B01`, `B02`, `B04`, `B08`, `C02`
 
 **Canonical feature family:**
 
 - independent in-game UI scale;
 - resizable/floating minimap rather than a fixed one- or two-column special case;
 - bindable wheel-up / wheel-down semantic actions with proper UI-scroll precedence;
-- persistent/pinnable chat/read-only tabs as part of the general dock/layout persistence model.
-
-**Why these belong together:** they all consume the native client layout/input/settings foundation. The current Native UI architecture already models `user_ui_scale`, logical UI units, DPI, dock trees, selected tabs and semantic wheel input; the feature family should use those primitives rather than add Tibia-client-specific exceptions.
+- persistent/pinnable chat/read-only tabs as part of the general dock/layout persistence model;
+- optional two-key WASD diagonal movement without requiring dedicated diagonal keys.
 
 **Recommended design:**
 
-- UI scale independent from world-camera zoom;
-- safe scale range such as 75-200%, with accessibility/text scaling separable later;
+- UI scale remains independent from world-camera zoom;
 - minimap is a normal resizable dockable panel;
-- high-resolution/free-spin wheel input is normalized into discrete gameplay steps only after UI scroll has had a chance to consume it;
-- chat/tab layout is versioned and restored safely across sessions/resolution changes.
+- high-resolution/free-spin wheel input becomes discrete gameplay steps only after UI scroll has had a chance to consume it;
+- chat/tab layout is versioned and restored safely across sessions/resolution changes;
+- diagonal movement is resolved from held cardinal key state, not from a fragile millisecond timing macro:
+  - `W + A -> northwest`;
+  - `W + D -> northeast`;
+  - `S + A -> southwest`;
+  - `S + D -> southeast`;
+  - opposite cardinal inputs cancel on their axis;
+  - releasing one key transitions cleanly back to the remaining cardinal direction;
+  - UI/text/modal ownership still suppresses gameplay movement input when appropriate;
+- diagonal input changes only client control ergonomics: server movement legality, cadence, collision and movement cost remain authoritative and unchanged unless a separate gameplay decision says otherwise.
+
+The current input foundation already supports bounded multi-input chords and explicit Gameplay/Text/Modal contexts, so the feature should use that foundation while avoiding accidental double cardinal + diagonal command emission.
 
 **Score:** Value **10/10** · Complexity **4/10** · Adoption sense **10/10** · Priority **S**.
 
@@ -106,7 +122,7 @@ The scores below are planning aids only:
 
 **Source items:** `A08`, `B03`
 
-These are one feature, not two: a party-location projection rendered on the minimap/map.
+These are one feature: a party-location projection rendered on the minimap/map.
 
 **Recommended design:**
 
@@ -116,7 +132,7 @@ These are one feature, not two: a party-location projection rendered on the mini
 - preserve the accepted privacy-first social-presence boundary;
 - permit stricter PvP/ruleset policies and user-controlled sharing where appropriate.
 
-Do not implement public or unconditional GPS. Party membership is the authorization context, not a reason to make exact placement world-public.
+Do not implement public or unconditional GPS.
 
 **Score:** Value **9/10** · Complexity **6/10** · Adoption sense **9/10** · Priority **A**.
 
@@ -124,22 +140,24 @@ Do not implement public or unconditional GPS. Party membership is the authorizat
 
 ### QOL-03 — Equipment Loadouts and Build Preparation
 
-**Source items:** `A09`, `B05`, `B06`
+**Source items:** `A09`, `B05`, `B06`, `C01`
 
-`A09 Full Set Hotkeys` and `B05 Protection Set Management` are the same system and should become generic **Equipment Loadouts** rather than Fire/Death-only shortcuts.
+`A09 Full Set Hotkeys`, `B05 Protection Set Management` and `C01 Equipment Presets` are the same system and should become generic **Equipment Loadouts** rather than three parallel features.
 
 **Canonical feature family:**
 
 - named loadouts such as Fire, Energy, Death, Physical, Damage, Speed or Boss;
+- action-bar button and hotkey activation;
 - one semantic `ActivateEquipmentLoadout` operation rather than a client macro issuing many equip commands;
-- deterministic server validation of all participating item instances, slots, destinations and restrictions;
-- default all-or-nothing behavior, with any partial mode requiring a separate explicit product decision;
-- normal equipment/combat restrictions remain authoritative.
+- deterministic server validation of participating item instances, slots, destinations and restrictions;
+- default all-or-nothing behavior unless a later product decision intentionally allows partial activation;
+- normal equipment/combat restrictions remain authoritative;
+- missing/unavailable items produce an explicit result instead of silently leaving a dangerous half-set.
 
-`B06 Wheel in PZ` belongs to the same broader **build preparation** experience but remains a separate ruleset policy inside the cluster:
+`B06 Wheel in PZ` belongs to the same broader **build preparation** experience but remains a separate ruleset policy:
 
 - Reference may retain its target restriction;
-- Evolved may allow build editing in an accepted safe-zone class, e.g. Any PZ or another explicit safe-state policy;
+- Evolved may allow build editing in an accepted safe-zone class;
 - do not hard-code Temple/PZ geography into generic engine semantics.
 
 **Score:** Value **10/10** · Complexity **7/10** · Adoption sense **10/10** · Priority **S**.
@@ -150,29 +168,16 @@ Do not implement public or unconditional GPS. Party membership is the authorizat
 
 **Source items:** `B13`, `B14`
 
-Food duration and separate food/potion icons should not become two parallel UI systems. They should be one generic **Active Effects** surface backed by authoritative effect/condition state.
+Food duration and separate food/potion icons should be one generic **Active Effects** surface backed by authoritative effect/condition state.
 
-**Recommended design:**
+Provide presentation-safe effect identity, icon, magnitude/summary, optional source label, remaining duration and relevant stack/refresh state. The server owns effect lifetime and stacking semantics; the client may count down locally between authoritative updates.
 
-Each visible effect may expose presentation-safe fields such as:
-
-```text
-semantic effect identity
-icon / presentation key
-resolved magnitude or summary
-source label where permitted
-remaining duration
-stack/refresh state where relevant
-```
-
-The server owns effect lifetime/stacking semantics; the client may locally count down between authoritative updates.
-
-Provide:
+Recommended UI:
 
 - compact configurable HUD icons;
 - precise timer/tooltip;
-- a full Effects panel for overflow/history-relevant presentation;
-- clear separation of buffs and dangerous debuffs;
+- full Effects panel for overflow;
+- clear buff/debuff distinction;
 - no artificial six-icon architectural ceiling.
 
 **Score:** Value **10/10** · Complexity **5/10** · Adoption sense **10/10** · Priority **S**.
@@ -183,33 +188,19 @@ Provide:
 
 **Source items:** `A02`, `A16`, `B16`, `B17`, `B18`
 
-These should become one reusable **Collection Framework** instead of five independent feature implementations.
+These should become one reusable **Collection Framework** instead of five independent implementations.
 
-**Canonical consumers:**
+**Canonical consumers:** Bestiary, Bosstiary, Echo progression, Item Deck/Item Codex and future compatible collections.
 
-- Bestiary;
-- Bosstiary;
-- Echo Warden/Echo progression;
-- Item Deck / Item Codex;
-- future achievements/collections where compatible.
+**Shared capabilities:** search, sort, filter, grid/list/dense views, completion state, current/remaining progress, favorites, tracker presets, `incomplete only` and `nearest completion` views.
 
-**Shared UI capabilities:**
+Additional rules:
 
-- search;
-- sort;
-- filter;
-- grid/list/dense views;
-- completion state;
-- progress/current count/remaining count;
-- favorites;
-- saved tracker presets;
-- `incomplete only` and `nearest completion` views.
-
-**Bestiary indicator:** use the same collection state to render a small incomplete/progress marker on relevant creature surfaces rather than maintain a separate counter model.
-
-**Tracker limit:** separate `saved/tracked interests` from the much smaller active HUD presentation set. Do not make a historic UI limit look like a server subscription limit.
-
-**Item Codex:** stable item-definition identity is the collection key. Keep `discovered/obtained` separate from stronger provenance states such as `earned/looted/crafted` if those are later desired. Avoid power bonuses merely for collecting junk; cosmetic/title/achievement rewards are safer first use.
+- incomplete Bestiary indicators consume the same collection state rather than another counter model;
+- saved/tracked interests are separate from the smaller active HUD set;
+- Item Codex uses stable item-definition identity;
+- `discovered/obtained` may be distinct from stronger provenance such as `earned/looted/crafted`;
+- avoid progression power merely for collecting junk; cosmetic/title/achievement rewards are safer first use.
 
 **Score:** Value **10/10** · Complexity **7/10** · Adoption sense **10/10** · Priority **S**.
 
@@ -221,47 +212,17 @@ These should become one reusable **Collection Framework** instead of five indepe
 
 This cluster removes repetitive inventory manipulation while preserving item/value authority.
 
-#### Reward collection (`A03`)
+**Reward collection (`A03`)**: support collect selected, collect all eligible, keep-in-chest markers and visible expiry warnings rather than hard-coded item exceptions.
 
-Prefer generic reward-retention state over hard-coded Crystal exceptions:
+**Empty potion containers (`A11`)**: prefer configurable keep / move to assigned container / discard. Do not make auto-drop-to-ground the canonical solution because it creates world-item spam and cleanup/network cost.
 
-- collect selected;
-- collect all eligible;
-- mark selected reward/item type as keep in chest;
-- visible expiry warning;
-- expiry remains authoritative and auditable.
+**Larger stacks (`A12`)**: use the accepted per-item-definition stack maximum. Reference and Evolved profiles may select different values; a first Evolved target around 1,000 for high-volume supplies is preferable to a universal 9,999 without evidence.
 
-#### Empty potion containers (`A11`)
+**Sell directly from Stash (`A13`)**: make Stash-to-NPC sale an authoritative atomic value transaction. Add favorites/locks/keep-minimum protection before broad `Sell All Eligible` behavior.
 
-Do **not** prefer auto-drop-to-ground as the canonical solution because it creates world-item spam and cleanup/network cost.
+**Task-aware Stash (`B09`)**: generalize to Objective Relevance using active known requirements and owned-vs-required quantities without unrevealed quest spoilers.
 
-Prefer configurable behavior:
-
-- keep;
-- move to an assigned container;
-- discard.
-
-If discarding intentionally loses deposit/value, the UI must make that consequence explicit.
-
-#### Larger stacks (`A12`)
-
-Use the accepted per-item-definition stack maximum rather than one universal constant. Reference and Evolved profiles may select different content/ruleset values. A first Evolved target around 1,000 for high-volume supplies is preferable to making 9,999 universal without evidence.
-
-#### Sell directly from Stash (`A13`)
-
-Treat Stash-to-NPC sale as an authoritative atomic value transaction, not as hidden client-side withdraw/move/sell automation. Add favorites/locks/keep-minimum protection before broad `Sell All Eligible` behavior.
-
-#### Task-aware Stash (`B09`)
-
-Generalize from `Weekly Task` to **Objective Relevance** where safe:
-
-- active known task requirements;
-- owned vs required quantity;
-- no unrevealed quest spoilers.
-
-#### Ring/amulet normalization (`B11`)
-
-The underlying problem is organization of altered/partially consumed equipment. Prefer a generic `Normalize/Discharge Item` operation or, later, an Equipment Vault. Do not refund unused temporary effect/value unless an owning economy decision explicitly permits it.
+**Ring/amulet normalization (`B11`)**: prefer a generic `Normalize/Discharge Item` operation or later Equipment Vault. Do not refund unused temporary value unless an owning economy decision explicitly permits it.
 
 **Score:** Value **9/10** · Complexity **7/10** · Adoption sense **9/10** · Priority **A/S by slice**.
 
@@ -271,27 +232,11 @@ The underlying problem is organization of altered/partially consumed equipment. 
 
 **Source items:** `A01`, `A15`, `B10`
 
-#### Market anti-abuse (`A01`)
+**Market anti-abuse (`A01`)**: do not freeze a blanket five-minute cooldown. Prefer bounded per-account/per-instrument rate limits, rolling cancel/reprice limits, meaningful fees where appropriate and telemetry before tuning. Normal players should almost never encounter the throttle.
 
-Do not freeze a blanket five-minute cooldown as the architecture. The intended problem is automated/reactive offer churn.
+**Amount shorthand (`A15`)**: create one exact-integer `AmountExpression` parser reusable across bank/market/NPC/trade. Support safe forms such as `2k`, `200k`, `1.5kk`; never use binary floating point for money. High-risk confirmations display the expanded amount.
 
-Prefer bounded anti-abuse throttling using explicit policies such as:
-
-- per-account/per-instrument rate limits;
-- rolling-window cancel/reprice limits;
-- fees that remain meaningful where the economy design uses them;
-- stronger controls for commercial/premium currency if such a product exists;
-- telemetry before tuning.
-
-Normal players should almost never encounter the throttle.
-
-#### Amount shorthand (`A15`)
-
-Create one exact-integer `AmountExpression` parser reusable across bank/market/NPC/trade surfaces. Support safe forms such as `2k`, `200k`, `1.5kk`, with locale-aware decimal input only if parsing remains unambiguous. Never use binary floating point for money. Confirmation must display the fully expanded amount for high-risk transfers.
-
-#### Task-aware Market (`B10`)
-
-Prefer deep links and smart query chips such as `active task`, `missing only`, `owned/required` rather than one-click unbounded auto-buy. Price/slippage decisions remain explicit.
+**Task-aware Market (`B10`)**: prefer deep links and smart query chips such as `active task`, `missing only`, `owned/required` rather than one-click unbounded auto-buy.
 
 **Score:** Value **8/10** · Complexity **6/10** · Adoption sense **9/10** · Priority **A**.
 
@@ -303,20 +248,18 @@ Prefer deep links and smart query chips such as `active task`, `missing only`, `
 
 These belong to one **Party Hunt Settlement** system.
 
-`B15` should not track only foods purchased during the hunt. The useful economic fact is **consumption during the hunt multiplied by the active valuation policy**, regardless of when the supply was purchased.
+The useful expense fact is consumption during the hunt multiplied by the active valuation policy, regardless of when the supply was purchased.
 
 **Canonical flow:**
 
-1. Party/hunt session collects authoritative or reconciled loot/supply usage inputs.
-2. A settlement snapshot freezes participants, interval, valuation policy, loot, supplies and manual adjustments.
-3. The UI shows transparent per-player balances.
-4. Settlement becomes a separate idempotent economy transaction.
-5. No party leader may debit another player's bank without that player's authorization.
-6. Offline recipients and reconnect/crash recovery must not cause double payment.
+1. collect/reconcile loot and supply usage for the party hunt session;
+2. freeze a settlement snapshot with participants, interval, valuation policy, loot, supplies and adjustments;
+3. show transparent per-player balances;
+4. execute settlement as a separate idempotent economy transaction;
+5. never let a party leader debit another player's bank without that player's authorization;
+6. make offline recipients, reconnect and crash recovery safe against double payment.
 
-A simple first model may allow the loot holder to pay all positive balances from their own account. Multi-debtor settlement can later use explicit proposals/acceptance.
-
-Analytics may calculate/propose values, but analytics is not transaction authority.
+A first version may let the loot holder pay all positive balances from their own account. Multi-debtor settlement can later use explicit proposals/acceptance. Analytics may calculate values but is not transaction authority.
 
 **Score:** Value **10/10** · Complexity **8/10** · Adoption sense **10/10** · Priority **S**.
 
@@ -328,15 +271,11 @@ Analytics may calculate/propose values, but analytics is not transaction authori
 
 This cluster intentionally adopts the owner's clarified product direction.
 
-#### Remembered Offline Training (`A04`)
+**Remembered Offline Training (`A04`)**: remember the last/default character-specific choice instead of repeatedly asking the same question.
 
-Prefer `remember last choice` and an explicit favorite/default over repeatedly asking the same question. The preference is character-scoped where the training mode is character-specific.
+**Offline Exercise (`A05`)**: Oteryn Evolved should support a server-authoritative Offline Exercise Session instead of requiring a client and PC to remain connected for hours while repeating deterministic training.
 
-#### Offline Exercise (`A05`)
-
-Oteryn Evolved should plan for a server-authoritative **Offline Exercise Session** rather than requiring a client and PC to remain connected for hours while the character repeats a deterministic training action.
-
-The desired semantic equivalence for one character is:
+Per-character equivalence remains:
 
 ```text
 same exercise item/charges
@@ -346,27 +285,27 @@ same eligibility/restrictions
 same total cost for the same training result
 ```
 
-The player may start offline exercise on multiple different characters. This is **intentional**, not treated as an abuse case by default.
+Multiple different characters on one account may each have an active session. This is **intentional** and not abuse by default.
 
-Product rationale:
+Rationale:
 
-- it removes the artificial requirement to leave a client/PC online for many hours;
-- it can reduce pointless idle gameplay sessions/runtime/network load;
-- if exercise weapons are purchased with gameplay currency, multiple concurrently training characters increase voluntary exercise-weapon consumption and therefore can be a useful **gold sink**;
-- it accelerates account-wide alt development only because the owner intentionally spends the corresponding resources on several characters; it must not secretly improve the per-character rate or per-charge return.
+- removes pointless always-online client/PC time;
+- reduces idle session/runtime/network load;
+- multiple characters legitimately consume more exercise resources;
+- when those resources are bought with gameplay currency, concurrent alt training can be a useful voluntary **gold sink**;
+- it does not secretly improve per-character rate or per-charge return.
 
-**Recommended safety/implementation envelope:**
+Implementation envelope:
 
 - at most one active offline-exercise session per character;
-- multiple characters on one account may each have their own active session;
-- reserve/escrow the selected charges or item state before the session starts;
-- use versioned training rules/rates so later balance changes do not reinterpret an already-started session ambiguously;
-- deterministic elapsed-time settlement/catch-up rather than simulating an always-online character hitting a dummy;
-- idempotent start/stop/claim/reconnect behavior;
+- reserve/escrow selected charges/item state before start;
+- version training rules/rates;
+- deterministic elapsed-time settlement rather than simulating an always-online actor;
+- idempotent start/stop/claim/reconnect;
 - no duplicate charge consumption or progression after crash/retry;
-- telemetry should measure gold removed, charges consumed and skill progression before any later tuning.
+- measure gold removed, charges consumed and skill progression before later tuning.
 
-Reference worlds may retain Global-compatible behavior; this offline exercise model is an explicit Evolved product capability unless a later Reference revision says otherwise.
+Reference worlds may retain Global-compatible behavior; this is an explicit Evolved capability unless a later Reference revision says otherwise.
 
 **Score:** Value **10/10** · Complexity **6/10** · Adoption sense **10/10** · Priority **S**.
 
@@ -378,16 +317,9 @@ Reference worlds may retain Global-compatible behavior; this offline exercise mo
 
 More outfit colors and random colors should ship as one improved **Appearance Color Editor**.
 
-Recommended capabilities:
+Recommended capabilities: larger curated palette and/or bounded safe picker, recent/favorite colors, randomize all, randomize selected part, part locks, and optional harmonious/contrast/dark/light generation later.
 
-- larger curated palette and/or bounded safe color picker appropriate for pixel-art readability;
-- recent/favorite colors;
-- randomize all;
-- randomize selected part;
-- lock selected parts while randomizing the rest;
-- optional harmonious/contrast/dark/light palette generation later.
-
-Avoid making the client assume an unnecessarily narrow permanent color encoding before the protocol/content representation is intentionally frozen.
+Avoid freezing an unnecessarily narrow permanent color encoding before protocol/content representation is intentionally decided.
 
 **Score:** Value **8/10** · Complexity **3/10** · Adoption sense **9/10** · Priority **A**.
 
@@ -399,20 +331,9 @@ Avoid making the client assume an unnecessarily narrow permanent color encoding 
 
 These should consume one coherent contacts/presence/chat presentation model.
 
-#### Contacts/VIP metadata (`A17`, `A18`, `B07`)
+For contacts/VIP metadata, preserve Oteryn's consent-based relationship model while showing authorized/public context such as level, guild/badge/rank and party state. Replace a tiny fixed set of mutually exclusive VIP folders with user-owned tags; one contact may carry several tags such as `Friend`, `Healer`, `Boss Team`, `Trade`.
 
-Oteryn's accepted social direction is consent-based rather than unilateral legacy VIP tracking. On top of that relationship model, the client may display authorized/public contextual information such as:
-
-- level;
-- guild/badge/rank where policy permits;
-- party state;
-- private local organization metadata.
-
-Replace a tiny fixed number of mutually exclusive VIP folders with **user-owned tags**. One contact may carry multiple tags such as `Friend`, `Healer`, `Boss Team`, `Trade`.
-
-#### Event chat (`A10`)
-
-Do not introduce one special `Event Chat` packet type if the general message system can expose typed message categories. The client should be able to route categories into separate tabs, mute them, or combine them according to local preference.
+For event chat, prefer typed message categories that the client may route into separate tabs, mute or combine according to local preference instead of a one-off special packet.
 
 **Score:** Value **8/10** · Complexity **5/10** · Adoption sense **9/10** · Priority **A**.
 
@@ -422,19 +343,9 @@ Do not introduce one special `Event Chat` packet type if the general message sys
 
 **Source item:** `A14`
 
-This is not a normal QoL item; it is a gameplay-system proposal and should remain isolated from the first UX package.
+This is a later gameplay-system proposal, not a normal first-wave QoL item.
 
-Giving every individual mount bespoke combat stats creates strong BIS pressure, substantial balance/content maintenance and potential monetization fairness concerns if any mount source is commercial.
-
-Prefer, if pursued later:
-
-- a small number of gameplay-earned **mount utility archetypes**;
-- terrain/travel/capacity-oriented identity before direct combat power;
-- cosmetic appearance separated from the gameplay utility choice where feasible;
-- no store-exclusive power;
-- explicit PvP and movement-balance review.
-
-Examples of safer utility directions include terrain slow reduction, limited environmental traversal utility or bounded non-combat carrying convenience rather than permanent damage/resistance BIS.
+Giving every individual mount bespoke combat stats creates BIS pressure, balance/content maintenance and potential monetization fairness concerns. If pursued later, prefer a small set of gameplay-earned utility archetypes, terrain/travel/capacity identity before direct combat power, cosmetic appearance separated from utility where feasible, no store-exclusive power, and explicit PvP/movement review.
 
 **Score:** Value **7/10** · Complexity **9/10** · Adoption sense **6/10** · Priority **B**.
 
@@ -458,7 +369,7 @@ elapsed account/premium tenure
 progression power
 ```
 
-If Oteryn later adopts tenure rewards, cosmetic/prestige/account-convenience rewards are a safer first direction than combat/progression power. Platform remains the commercial entitlement authority under the accepted architecture; no monetization model is accepted by this document.
+If Oteryn later adopts tenure rewards, cosmetic/prestige/account-convenience rewards are a safer first direction than combat/progression power. Platform remains the commercial entitlement authority; no monetization model is accepted by this document.
 
 **Score for the original proposal:** Value **3/10** · Complexity/risk **8/10** · Adoption sense **2/10** · Priority **C / reject as proposed**.
 
@@ -467,14 +378,14 @@ If Oteryn later adopts tenure rewards, cosmetic/prestige/account-convenience rew
 | Original items | Canonical Oteryn initiative |
 |---|---|
 | `A08 + B03` | Party Presence, Navigation and Privacy |
-| `A09 + B05` | Equipment Loadouts |
+| `A09 + B05 + C01` | Equipment Loadouts |
 | `B13 + B14` | Active Effects UI |
 | `A02 + A16 + B16 + B17 + B18` | Collection Framework |
 | `B12 + B15` | Party Hunt Accounting and Settlement |
 | `A04 + A05` | Offline Training and Offline Exercise Sessions |
 | `A06 + A07` | Appearance Color Editor |
 | `A17 + A18 + B07` | Consent-based Contacts + Tags + context |
-| `B01 + B02 + B04 + B08` | Native UI workspace/scaling/input family |
+| `B01 + B02 + B04 + B08 + C02` | Native UI workspace/scaling/input family |
 | `A03 + A11 + A12 + A13 + B09 + B11` | Inventory/Stash/Reward convenience family |
 | `A01 + A15 + B10` | Market/Bank/Task-aware economy UX |
 
@@ -482,15 +393,13 @@ If Oteryn later adopts tenure rewards, cosmetic/prestige/account-convenience rew
 
 ### S — design early / high product return
 
-1. `QOL-01` Native UI Workspace, Scaling and Input.
+1. `QOL-01` Native UI Workspace, Scaling and Input, including native WASD diagonal chords.
 2. `QOL-03` Equipment Loadouts and Build Preparation.
 3. `QOL-04` Active Effects, Buffs and Timers.
 4. `QOL-05` Collection Framework.
 5. `QOL-08` Party Hunt Accounting and Settlement.
 6. `QOL-09` Offline Training and Offline Exercise Sessions.
 7. High-value slices of `QOL-06`: larger stacks and direct Stash-to-NPC sale semantics.
-
-These either align closely with work already being architected or become substantially more expensive if their extension points are omitted until after UI/economy/progression contracts harden.
 
 ### A — strong improvements after/with owning domains
 
@@ -510,28 +419,25 @@ These either align closely with work already being architected or become substan
 
 ## 6. Cross-cutting implementation rules
 
-Any future implementation package should preserve these principles:
-
 1. **Reference vs Evolved is explicit.** QoL presentation improvements can often be shared, but mechanics that intentionally differ from Global must be profile/ruleset decisions rather than accidental Reference drift.
 2. **No client macros as transaction authority.** Loadouts, Stash sale and party settlement become server-validated semantic operations.
 3. **No one-off UI data islands.** Active effects, collection progress, contacts and task relevance should expose reusable typed projections.
 4. **No silent economic value creation.** QoL may remove clicks but item/currency conservation and durable transaction rules remain authoritative.
 5. **Offline exercise is an intentional Evolved convenience/gold-sink capability.** Multiple characters may train concurrently when each legitimately consumes its own exercise resources; per-character rate/return remains unchanged unless a separate balance decision says otherwise.
 6. **Exact location remains permissioned.** Party navigation must not weaken the accepted social-presence privacy model.
-7. **Prefer configurable local presentation over server special cases.** Chat routing, panel layout, tracker display and contact tags belong primarily to user-facing presentation/settings unless they affect authoritative gameplay.
-8. **Do not confuse architecture registration with implementation authority.** Each initiative still requires its owning gate/allocation, concrete acceptance tests and live repository coordination before code changes.
+7. **Input QoL must not change movement power.** WASD diagonal chords produce the same semantic diagonal movement already legal to the character; they must not increase movement cadence, bypass collision/exhaustion or emit extra movement commands.
+8. **Prefer configurable local presentation over server special cases.** Chat routing, panel layout, tracker display and contact tags belong primarily to user-facing presentation/settings unless they affect authoritative gameplay.
+9. **Do not confuse architecture registration with implementation authority.** Each initiative still requires its owning gate/allocation, concrete acceptance tests and live repository coordination before code changes.
 
 ## 7. Net result
 
-The original 37 proposals should not become 37 unrelated backlog items. They reduce to **13 coherent initiatives**, with the highest-value product architecture concentrated in:
+The current **39 source proposals** should not become 39 unrelated backlog items. They reduce to **13 coherent initiatives**.
 
-- modern native UI ergonomics;
-- atomic equipment/build preparation;
-- clear active-effect presentation;
-- one reusable Collection Framework;
-- safe party navigation;
-- first-class party hunt accounting/settlement;
-- inventory/Stash/economy friction reduction;
-- server-authoritative offline exercise that removes pointless always-online training while increasing voluntary gold consumption when players train multiple characters.
+The newest proposal does not create a fourteenth system:
 
-This grouping is a product-design input only. It records the owner's requested direction and de-duplication rationale without granting runtime, economy, progression, monetization, production or merge authority.
+- Equipment Presets are already the canonical `QOL-03 Equipment Loadouts` system;
+- simultaneous WASD diagonal movement extends `QOL-01 Native UI Workspace, Scaling and Input`.
+
+The highest-value product architecture remains concentrated in modern native UI ergonomics, atomic equipment/build preparation, active-effect presentation, one reusable Collection Framework, safe party navigation, first-class party hunt settlement, inventory/Stash/economy friction reduction, and server-authoritative offline exercise that removes pointless always-online training while increasing voluntary gold consumption when players train multiple characters.
+
+This grouping is product-design input only. It records the owner's requested direction and de-duplication rationale without granting runtime, economy, progression, monetization, production or merge authority.
