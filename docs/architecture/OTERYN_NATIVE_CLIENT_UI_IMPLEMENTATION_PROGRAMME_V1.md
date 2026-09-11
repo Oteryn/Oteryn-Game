@@ -80,7 +80,7 @@ This candidate remaps historical stage names explicitly:
 | P4 text/resources | P4-T; widgets/layout additionally P4-L |
 | P5 full synthetic HUD | P5-F, clearly labelled native fixture evidence |
 | P6 A/B experiment | P7-A; new P6-N/P6-J separate native and Tier-2 qualification |
-| P7 FOV decision | P7-D, evidence/owner gated |
+| P7 FOV decision | P7-D; fixed disposition is evidence/owner gated, while responsive is pending-only until separate relevance proof plus applicable independent/owner acceptance |
 | P8 production adapters | P5-R; new P8-F is feature-driven higher surfaces |
 | P9 polish/hardening | P9-H/P9-R, with explicit Tier-3/recovery/rollout gates |
 
@@ -138,10 +138,10 @@ Baseline HUD: world viewport; HP/mana/status; minimap; battle list; equipment; a
 
 Persist layout/preferences in the owning application settings boundary, not ui-core. Inherit the accepted per-field scope contract: permitted ephemeral overrides, DEVICE, OS_USER, ACCOUNT, then product defaults; INSTALLATION is not a universal overlay. Preserve privacy opt-outs and restrictive precedence; do not create account-sync authority. Bound/version/validate before failure-atomic replacement; interrupted writes retain a recoverable old or new value. Unknown future schema/downgrade preserves original bytes and refuses destructive overwrite. Corruption uses safe defaults without erasing recoverable evidence. Migration, backup retention and rollback are bounded and tested separately in P5-P.
 
-`RESPONSIVE_FOV_POLICY = UNDECIDED / EVIDENCE-GATED`.
+`RESPONSIVE_FOV_POLICY = UNDECIDED / EVIDENCE-GATED`; after P7-A it may advance only to `RESPONSIVE_FOV_PREFERRED_PENDING_SERVER_RELEVANCE_PROOF` until the separate server/network/fairness relevance spike succeeds.
 `FIXED_FOV_POLICY = UNDECIDED / EVIDENCE-GATED`.
 
-Resource budgets, renderer limits and larger windows are not FOV decisions. Separate render extent, available projection, gameplay visibility and server relevance. Fixed-B experiment: identical aspect, uniform fit, centered letterbox/pillarbox, no crop; bars are not world input. Same world/session/content/HUD population and gameplay zoom for A/B. P7 blocks only FOV-sensitive work. Existing #502/resource registry own resource authority; no new numeric gameplay budget is invented here.
+Resource budgets, renderer limits and larger windows are not FOV decisions. Separate render extent, available projection, gameplay visibility and server relevance. Fixed-B experiment: identical aspect, uniform fit, centered letterbox/pillarbox, no crop; bars are not world input. Same world/session/content/HUD population and gameplay zoom for A/B. P7-A produces reproducible viewport A/B evidence only and MUST NOT claim server relevance, network behavior or fairness truth. P7-D may accept a fixed-FOV policy from its accepted evidence and owner gates. It may not record terminal responsive acceptance from A/B: `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` additionally requires the separate server/network/fairness relevance evidence, applicable independent review and owner decision. These gates block only responsive-FOV-sensitive work; non-FOV-sensitive P8/P9 work remains parallel-safe. Existing #502/resource registry own resource authority; no new numeric gameplay budget is invented here.
 
 ### 4.6 P1 workspace/dependency admission
 
@@ -169,9 +169,12 @@ P0 protected prerequisites + allocation/lease admission
                                                          P6 native / real Tier 2
                                                           |               |
                                                           v               v
-                                                 P7 A/B -> owner    P8 feature-driven
-                                                  decision only     (FOV-independent first)
-                                                          \ FOV-sensitive joins /
+                                                 P7-A A/B -> P7-D   P8 feature-driven
+                                                  fixed decision;   (FOV-independent first)
+                                                  responsive pending
+                                                     | separate server relevance proof
+                                                     | + independent review + owner decision
+                                                     \ responsive-FOV-sensitive joins /
                                                            P9 selected-scope hardening,
                                                               Tier 3 and rollout
 ```
@@ -197,10 +200,10 @@ Machine-friendly edge list below describes stage-level constraints; `condition` 
     {"from":"UI-P6","to":"UI-P7","type":"evidence_only","condition":"native host qualified before comparative A/B"},
     {"from":"UI-P5","to":"UI-P8","type":"hard","condition":"P5-R real integration for product features"},
     {"from":"UI-P6","to":"UI-P8","type":"evidence_only","condition":"applicable native interaction acceptance"},
-    {"from":"UI-P7","to":"UI-P8","type":"owner_decision","condition":"FOV-sensitive features only"},
+    {"from":"UI-P7","to":"UI-P8","type":"owner_decision","condition":"fixed-FOV-sensitive features require accepted fixed P7-D disposition; responsive-FOV-sensitive features require VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF after separate server/network/fairness evidence, applicable independent review and owner decision; non-FOV-sensitive features do not wait"},
     {"from":"UI-P6","to":"UI-P9","type":"evidence_only","condition":"native and Tier-2 acceptance before rollout"},
     {"from":"UI-P8","to":"UI-P9","type":"hard","condition":"only the explicitly selected release feature set"},
-    {"from":"UI-P7","to":"UI-P9","type":"owner_decision","condition":"rollout containing FOV-sensitive behavior only"}
+    {"from":"UI-P7","to":"UI-P9","type":"owner_decision","condition":"fixed-FOV-sensitive release scope requires accepted fixed P7-D disposition; responsive-FOV-sensitive release scope requires VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF after separate server/network/fairness evidence, applicable independent review and owner decision; non-FOV-sensitive hardening and release scope do not wait"}
   ],
   "serialization_points": ["Cargo.toml", "Cargo.lock", "workspace-boundaries.toml", "apps/client composition", "ui-core public exports", "renderer public exports", "prompt lifecycle/index", "physical evidence host"]
 }
@@ -219,9 +222,9 @@ P3-H host discovery/design may proceed read-only before implementation admission
 | P4 | P1 for pure layout; P3 for visual/text integration | required bounded layout/widgets/virtualization and shaped text/resources; deterministic geometry and draw tests; no final art freeze | EVIDENCE_GATED |
 | P5 | necessary P2/P3/P4 joins | full native fixture HUD explicitly labelled; real session/projection-backed product adapter separately proven; bounded settings persistence if included | EVIDENCE_GATED |
 | P6 | runnable native host/full HUD; real contracts for Tier 2 | physical matrix recorded with pass/fail/missing cells; Tier-2 journeys actually completed separately; no synthetic relabel | EVIDENCE_GATED |
-| P7 | comparable qualified native A/B host | reproducible A/B observations; owner-selected policy only with sufficient evidence, or explicit undecided gate retained | EVIDENCE_GATED |
-| P8 | P5-R; applicable P6; feature-specific contracts | individually requested higher surfaces accepted; only FOV-sensitive feature waits P7-D; addons stay deferred | FEATURE_DRIVEN |
-| P9 | selected release features and applicable P6/P7 outcomes | bounded resources/performance/recovery/persistence; exact release Tier 3; rollback exercised; explicit rollout admission and protected readback | EVIDENCE_GATED |
+| P7 | comparable qualified native A/B host | P7-A records reproducible A/B observations without server relevance/network/fairness truth claims; P7-D may accept fixed FOV with sufficient accepted evidence and owner gates, but responsive remains UNDECIDED or `RESPONSIVE_FOV_PREFERRED_PENDING_SERVER_RELEVANCE_PROOF` until separate server/network/fairness evidence, applicable independent review and owner decision permit `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` | EVIDENCE_GATED |
+| P8 | P5-R; applicable P6; feature-specific contracts | individually requested higher surfaces accepted; fixed-FOV-sensitive work waits for its accepted P7-D fixed disposition and responsive-FOV-sensitive work waits for `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF`; non-FOV-sensitive work does not wait; addons stay deferred | FEATURE_DRIVEN |
+| P9 | selected release features and applicable P6 outcomes; applicable fixed or final responsive P7 disposition only for FOV-sensitive scope | bounded resources/performance/recovery/persistence; exact release Tier 3; rollback exercised; explicit rollout admission and protected readback; non-FOV-sensitive hardening/release work does not wait for responsive proof | EVIDENCE_GATED |
 
 ## 7. PR SLICE TABLE
 
@@ -247,11 +250,11 @@ Legend (part of every row): CI `G/U/I/R/W/P/H/C` is defined in section 9. Window
 | P5-P layout/settings persistence | P5-F; parent scopes/storage evidence | bounded atomic/migration/downgrade/privacy cases pass | proposed app settings/UI persistence adapter, not ui-core filesystem | Q14, crash/size/future-schema/opt-out tests; G,P,W; W2; PH-PERSIST | L-COMPOSE; RB5 |
 | P6-N physical native qualification | P5-F plus P2/P3/P4 integrated | complete applicable native matrix, real host IDs and truthful failures | allocated evidence report paths, no implementation files by default | all physical rows; G,H; W2; native fixture labelled | L-EVIDENCE/L-HOST; RB6 |
 | P6-J real Tier-2 journeys | P5-R, applicable P5-P and P6-N | actual parent-required Tier-2 journeys, normal production contracts | separate evidence records, approved host/data scope | PH-TIER2; G,H,P; W2; real journeys | L-EVIDENCE/L-HOST; RB6 |
-| P7-A viewport A/B | P6-N; identical population/world host; owner-approved experimental scope | reproducible measurements/all attempts, no policy inference from budgets | isolated experiment/evidence adapter; no server relevance mutation | paired aspect/no-crop/bar-hit/fairness/Q15; G,H,R,W; W2; PH-AB | L-EVIDENCE/L-HOST/L-COMPOSE only if granted; RB6 |
-| P7-D policy decision | P7-A sufficient evidence; owner decision | explicit responsive/fixed disposition or retained undecided | reviewed decision record only; implementation separate | evidence/decision review; G; W0; source A/B | L-EVIDENCE; RB6 |
-| P8-F one requested higher surface | P5-R; needed P6; P7-D only if FOV-sensitive | named feature and its negative cases accepted, not generic framework | exact app UI feature submodule and necessary ui-core primitive only | feature matrix plus Q01/Q03/Q13; G,P,W; W2; affected journey | L-COMPOSE/L-CORE; RB4 |
+| P7-A viewport A/B | P6-N; identical population/world host; owner-approved experimental scope | reproducible measurements/all attempts; no policy inference from budgets and no server relevance, network or fairness truth claim | isolated experiment/evidence adapter; no server relevance mutation | paired aspect/no-crop/bar-hit/information-surface observations/Q15; G,H,R,W; W2; PH-AB; evidence is not server relevance/fairness proof | L-EVIDENCE/L-HOST/L-COMPOSE only if granted; RB6 |
+| P7-D policy decision | P7-A sufficient evidence; applicable owner decision | fixed policy may be accepted when its evidence/owner gates pass; responsive may remain UNDECIDED or record only `RESPONSIVE_FOV_PREFERRED_PENDING_SERVER_RELEVANCE_PROOF` before the separate spike; terminal `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` requires successful separate server/network/fairness evidence, applicable independent review and owner decision | reviewed decision record only; separate relevance spike and implementation remain outside this slice | A/B evidence/decision review for fixed; separate server/network/fairness evidence plus applicable independent review and owner decision for final responsive; G; W0 | L-EVIDENCE; RB6 |
+| P8-F one requested higher surface | P5-R; needed P6; accepted fixed P7-D disposition only if fixed-FOV-sensitive; `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` only if responsive-FOV-sensitive; no P7 wait if non-FOV-sensitive | named feature and its negative cases accepted, not generic framework; responsive-sensitive acceptance cannot use pending preference as final policy | exact app UI feature submodule and necessary ui-core primitive only | feature matrix plus Q01/Q03/Q13; G,P,W; W2; affected journey | L-COMPOSE/L-CORE; RB4 |
 | P9-H hardening/recovery/performance | integrated relevant slices; can progress before FOV choice | bounded resource limits, cancellation, error taxonomy, loss and persistence recovery; measured budgets | separately leased app/renderer/UI files for one finding family per PR | Q01-Q19 applicable; soak/resource/latency; G,U,I,R,P,W,H as touched; W2 | relevant non-overlapping leases; RB2/RB3/RB5 |
-| P9-R exact release qualification/rollout | P9-H, P6-J, selected P8, applicable P7-D | Tier-3 exact release, no test adapters; rollback exercised; explicit owner rollout admission | release evidence and approved rollout configuration only | PH-TIER3 plus full selected suite; G,H,P,W; W2; exact release | L-EVIDENCE plus explicit release custody; RB4/RB5 |
+| P9-R exact release qualification/rollout | P9-H, P6-J, selected P8; accepted fixed P7-D disposition for fixed-FOV-sensitive scope; `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` for responsive-FOV-sensitive scope; no P7 wait for non-FOV-sensitive scope | Tier-3 exact release, no test adapters; rollback exercised; explicit owner rollout admission; pending responsive preference cannot qualify responsive-sensitive release | release evidence and approved rollout configuration only | PH-TIER3 plus full selected suite; G,H,P,W; W2; exact release | L-EVIDENCE plus explicit release custody; RB4/RB5 |
 | CP-A activate prompt pack | packet reviewed/protected; lifecycle/index lease released; explicit owner/control-plane grant | eight canonical prompts registered reusable, evaluation recorded, no new control plane | proposed `docs/agents/prompts/OTV2_SOL_NATIVE_UI_*.md`, lifecycle and prompt index only after lease | schema/alias/authority negatives, paired prompt canary; G,C; W0; no product evidence | L-REGISTRY; RB0 |
 | CP-S Native UI semantic profile | independent control-plane allocation | genuine invariants/negative fixtures, explicit unsupported/manual checks, no cosmetic PASS | exact existing semantic-audit tools/tests/config selected after fresh source inventory | boundary/DAG/authority mutations, source witnesses; G,C; W0 unless implementation changes | L-CHECK; RB0 for spec; tested checker revert for implementation |
 | CP-D reviewed docs-only routing | separately reviewed versioned consumer closure | only proven inert docs may skip heavy lanes; unknown/mixed/control-plane stays FULL | exact classifier/tests/workflow wiring under separate allocation | rename/delete/symlink/truncation/new-consumer/stale-base negatives; G,C; W0 | L-CHECK; fail back to FULL routing |
@@ -293,7 +296,7 @@ A lease records exact files/symbols, owner, branch, admission main SHA, candidat
 
 The current PR merge-gate has no blanket documentation exemption. BUILD_TEST_MATRIX records an existing merge-group architecture-path-only exception; that exception is not proof of reviewed document-consumer closure and is neither extended nor newly approved here. This packet includes agent instructions, so expect current trusted routing, possibly FULL Rust/Windows/PostgreSQL. Do not cancel/skip/disable lanes to make the planning PR cheaper. CP-D is the separate fix design.
 
-CP-S design: select `NATIVE_CLIENT_UI` by a versioned contract manifest and actual owned source/document consumers. Validate admitted production graph, ui-core forbidden closure, sole composition-root ownership, normalized-value ownership, generation-before-effect call paths, stale identity/geometry fencing, stage edges/leases, evidence-tier requirements and unresolved FOV gates. Structural facts use parsed metadata/source or executable negative fixtures. Semantic properties requiring runtime/physical/independent judgment remain explicitly NOT_VERIFIED until that evidence exists. A text keyword scan, empty check list or generic NOT_APPLICABLE must never become Native UI PASS. Reject unknown schema/consumer, missing witness or modified trusted selector; never add a second required AI gate.
+CP-S design: select `NATIVE_CLIENT_UI` by a versioned contract manifest and actual owned source/document consumers. Validate admitted production graph, ui-core forbidden closure, sole composition-root ownership, normalized-value ownership, generation-before-effect call paths, stale identity/geometry fencing, stage edges/leases, evidence-tier requirements and the distinct fixed versus responsive FOV gates, including the no-A/B-shortcut prerequisite for responsive-sensitive P8/P9 acceptance. Structural facts use parsed metadata/source or executable negative fixtures. Semantic properties requiring runtime/physical/independent judgment remain explicitly NOT_VERIFIED until that evidence exists. A text keyword scan, empty check list or generic NOT_APPLICABLE must never become Native UI PASS. Reject unknown schema/consumer, missing witness or modified trusted selector; never add a second required AI gate.
 
 CP-D design: version the complete document-consumer closure against exact protected base/head trees, not a capped changed-file API. Include scripts, workflow consumers, prompt/lifecycle dispatch, generated inputs, linked contract dependencies, path/type/mode changes and renamed/deleted files. Allowed inert-document families need positive proof and negative fixtures. Unknown consumers, overflow/truncation, mixed changes, symlinks, malformed metadata or stale base select FULL. Separate review of classifier implementation, fixtures and trusted workflow wiring; no workflow path-filter that suppresses required game-gate creation.
 
@@ -363,8 +366,8 @@ Statuses below are candidate recommendations unless already preserved from prote
 | Resource/cache limits | EVIDENCE_REQUIRED_BEFORE_SLICE | each allocating P1/P3/P4 slice | inherit #502/registry; bound before allocation, measure native cells, reviewed values only | new numeric limits/FOV inference |
 | GPU timing mechanism | EVIDENCE_REQUIRED_BEFORE_SLICE | P7-A performance cells | actual backend capabilities, calibrated validity; unsupported values explicit | invented CPU-to-GPU substitute |
 | Physical evidence host | EVIDENCE_REQUIRED_BEFORE_SLICE | P3-H/P6-N | approved Windows/native world+UI binary and host access/instrumentation | unavailable host asserted executable |
-| Responsive FOV policy | OWNER_DECISION_REQUIRED | FOV-sensitive P8/P9 only | comparable P7-A and authority/fairness evidence; currently UNDECIDED / EVIDENCE-GATED | final visibility/relevance policy |
-| Fixed FOV policy | OWNER_DECISION_REQUIRED | FOV-sensitive P8/P9 only | same evidence; fixed-B experiment already no-crop/uniform/centered | final tile count/visibility choice |
+| Responsive FOV policy | OWNER_DECISION_REQUIRED | responsive-FOV-sensitive P8/P9 only | P7-A can support only UNDECIDED or `RESPONSIVE_FOV_PREFERRED_PENDING_SERVER_RELEVANCE_PROOF`; terminal `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` requires successful separate server/network/fairness relevance evidence, applicable independent review and owner decision | final visibility/relevance policy before all terminal prerequisites |
+| Fixed FOV policy | OWNER_DECISION_REQUIRED | fixed-FOV-sensitive P8/P9 only | P7-D may accept fixed policy when comparable P7-A evidence and applicable review/owner gates are satisfied; fixed-B experiment remains no-crop/uniform/centered | final tile count/visibility choice |
 | Addon/mod/plugin architecture | DEFERRED | no baseline slice | separate product requirement, threat/trust boundaries and reviewed architecture | plugin ABI, scripting/runtime ecosystem |
 
 ## 17. OPEN BLOCKERS
@@ -373,7 +376,7 @@ Statuses below are candidate recommendations unless already preserved from prote
 2. This packet requires independent review and normal protected publication. Its author checks are not independent KEEP; no active P1 allocation is created here.
 3. New aliases require CP-A, current lifecycle/index lease resolution and actual prompt evaluation; no workers have been launched by this packet.
 4. P1 external dependency-neutrality enforcement, native world/UI host, real projection admission, shaping/shader/persistence decisions and hardware/display instrumentation are not supplied by documentation. They gate their named slices, not all planning.
-5. FOV remains an owner/evidence gate only for sensitive work; addons stay deferred. Prompt canaries, native physical cells and Tier-2/Tier-3 product acceptance are NOT_RUN here.
+5. Fixed and responsive FOV remain distinct owner/evidence gates only for their sensitive work. Responsive terminal acceptance additionally awaits the separate server/network/fairness relevance spike, applicable independent review and owner decision; an A/B preference remains pending and cannot qualify responsive-sensitive P8/P9 acceptance. Non-FOV-sensitive P8/P9 work remains parallel-safe. Addons stay deferred. Prompt canaries, native physical cells and Tier-2/Tier-3 product acceptance are NOT_RUN here.
 
 ## 18. RECOMMENDED NEXT ACTION
 
