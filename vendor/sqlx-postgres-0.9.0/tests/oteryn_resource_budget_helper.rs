@@ -7,6 +7,7 @@ const SLOT_LIMIT: usize = 4_194_304;
 const ROOT_LIMIT: usize = 12_582_912;
 const DENIAL_MARKER: &str = "OTERYN_WP3_TLS_DENIAL_UNAVAILABLE";
 const POSITIVE_MARKER: &str = "OTERYN_WP3_PG17_TLS13_VERIFY_FULL_POSITIVE";
+const TRACE_LIMIT: usize = 64;
 
 #[derive(Clone, Copy, Default)]
 struct Snapshot {
@@ -20,6 +21,14 @@ struct Snapshot {
     denied_root: usize,
 }
 
+#[derive(Clone, Copy)]
+struct Event {
+    op: char,
+    bytes: usize,
+    ordinary: usize,
+    root: usize,
+}
+
 #[derive(Default)]
 struct State {
     ordinary: usize,
@@ -30,6 +39,27 @@ struct State {
     denied_bytes: usize,
     denied_ordinary: usize,
     denied_root: usize,
+    events: Vec<Event>,
+}
+
+impl State {
+    fn record(&mut self, op: char, bytes: usize) {
+        if self.events.len() == TRACE_LIMIT {
+            self.events.remove(0);
+        }
+        self.events.push(Event {
+            op,
+            bytes,
+            ordinary: self.ordinary,
+            root: self.root,
+        });
+    }
+
+    fn record_denial(&mut self, bytes: usize) {
+        self.denied_bytes = bytes;
+        self.denied_ordinary = self.ordinary;
+        self.denied_root = self.root;
+    }
 }
 
 struct Ledger {
@@ -60,6 +90,21 @@ impl Ledger {
             denied_root: state.denied_root,
         }
     }
+
+    fn trace(&self) -> String {
+        let state = self.state.lock().unwrap();
+        state
+            .events
+            .iter()
+            .map(|event| {
+                format!(
+                    "{}:{}@ordinary={},root={}",
+                    event.op, event.bytes, event.ordinary, event.root
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(";")
+    }
 }
 
 impl ResourceBudget for Ledger {
@@ -67,15 +112,17 @@ impl ResourceBudget for Ledger {
         let Ok(mut state) = self.state.lock() else {
             return Err(BudgetError::Unavailable);
         };
-        let ordinary = state
-            .ordinary
-            .checked_add(bytes)
-            .ok_or(BudgetError::Overflow)?;
-        let root = state.root.checked_add(bytes).ok_or(BudgetError::Overflow)?;
+        state.record('R', bytes);
+        let Some(ordinary) = state.ordinary.checked_add(bytes) else {
+            state.record_denial(bytes);
+            return Err(BudgetError::Overflow);
+        };
+        let Some(root) = state.root.checked_add(bytes) else {
+            state.record_denial(bytes);
+            return Err(BudgetError::Overflow);
+        };
         if ordinary > self.ordinary_limit || root > self.root_limit {
-            state.denied_bytes = bytes;
-            state.denied_ordinary = state.ordinary;
-            state.denied_root = state.root;
+            state.record_denial(bytes);
             return Err(BudgetError::Unavailable);
         }
         state.ordinary = ordinary;
@@ -89,6 +136,7 @@ impl ResourceBudget for Ledger {
         let Ok(mut state) = self.state.lock() else {
             std::process::abort();
         };
+        state.record('L', bytes);
         let Some(ordinary) = state.ordinary.checked_sub(bytes) else {
             std::process::abort();
         };
@@ -103,11 +151,13 @@ impl ResourceBudget for Ledger {
         let Ok(mut state) = self.state.lock() else {
             return Err(BudgetError::Unavailable);
         };
-        let root = state.root.checked_add(bytes).ok_or(BudgetError::Overflow)?;
+        state.record('P', bytes);
+        let Some(root) = state.root.checked_add(bytes) else {
+            state.record_denial(bytes);
+            return Err(BudgetError::Overflow);
+        };
         if root > self.root_limit {
-            state.denied_bytes = bytes;
-            state.denied_ordinary = state.ordinary;
-            state.denied_root = state.root;
+            state.record_denial(bytes);
             return Err(BudgetError::Unavailable);
         }
         state.root = root;
@@ -189,14 +239,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(connection) => connection,
                 Err(error) => {
                     let snapshot = ledger.snapshot();
+                    let trace = ledger.trace();
                     return Err(format!(
-                        "funded owner-aware TLS failed: {error}; denied_bytes={}, denied_at_ordinary={}, denied_at_root={}, peak_ordinary={}, peak_root={}, provider_shared={}",
+                        "funded owner-aware TLS failed: {error}; denied_bytes={}, denied_at_ordinary={}, denied_at_root={}, peak_ordinary={}, peak_root={}, provider_shared={}, trace=[{}]",
                         snapshot.denied_bytes,
                         snapshot.denied_ordinary,
                         snapshot.denied_root,
                         snapshot.peak_ordinary,
                         snapshot.peak_root,
-                        snapshot.provider_shared
+                        snapshot.provider_shared,
+                        trace
                     )
                     .into());
                 }
