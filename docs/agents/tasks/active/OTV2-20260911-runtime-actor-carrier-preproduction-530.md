@@ -28,7 +28,7 @@ depends_on:
   - Issue-530
   - Issue-540 / PR-570 capacity deferral
   - protected actor-generation decisions including Issue-541
-a blocks:
+blocks:
   - future bounded Ability exact-target use under Issue-508
   - future Movement re-evaluation under Issue-139
 cross_repository_coordination_id: null
