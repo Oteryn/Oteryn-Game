@@ -442,8 +442,10 @@ impl<const M: usize> ChannelActorCarrier<M> {
 
 // This state is outside the carrier backing and is required to survive carrier
 // loss/reconstruction. A fresh instance models an independently authorized
-// external owner grant in evidence code; carrier code cannot mint one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// external owner grant in evidence code; carrier code cannot mint one. It is
+// deliberately neither Clone nor Copy so a pre-bootstrap authority snapshot
+// cannot be duplicated and replayed after carrier loss.
+#[derive(Debug, PartialEq, Eq)]
 struct NamespaceContinuityGuard {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
