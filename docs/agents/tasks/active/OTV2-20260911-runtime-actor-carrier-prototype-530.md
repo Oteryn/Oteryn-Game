@@ -45,7 +45,7 @@ Implement and qualify the smallest executable `CHANNEL_RUNTIME_ACTOR_CARRIER_V1`
 
 The candidate uses a fixed const-generic slot array. `ActorLocalId` maps directly and immutably to one logical slot/generation cell, so there is no separately growing lookup index or tombstone/history store. Admission performs deterministic slot probing; lookup and removal are direct single-slot operations.
 
-`UniqueEvidenceNamespaceGrant` is a uniquely issued, move-only prototype capability consumed exactly once to construct or advance the live `NamespaceContinuityGuard` supplied to lookup/removal and kept outside carrier backing. A distinct namespace incarnation prevents independently reissued copyable scope/generation facts from resolving escaped references. The guard survives carrier loss and is neither `Clone` nor `Copy`. Same-generation rebootstrap fails closed; advancing the guard requires a uniquely granted strictly newer `ScopeOwnershipGeneration`. The authority-bearing carrier is also non-Clone; rollback checks use a separate non-authoritative fixed-value snapshot. The prototype does not implement or claim same-generation durable restore or production ownership/persistence of that guard.
+`ScopeOwnershipGeneration` itself is the namespace incarnation fence. The externally supplied live `NamespaceContinuityGuard` is the single surviving continuity authority supplied to lookup/removal and kept outside carrier backing. A move-only `AuthorizedNewerScopeGenerationGrant` may advance it only to a strictly newer generation. The prototype exposes no grant issuer, same-generation grant path, or guard constructor from raw facts. The guard survives carrier loss and is neither `Clone` nor `Copy`; same-generation rebootstrap fails closed, while only an independently authorized strictly newer `ScopeOwnershipGeneration` may establish a fresh namespace. The authority-bearing carrier is also non-Clone; rollback checks use a separate non-authoritative fixed-value snapshot. The prototype does not implement or claim same-generation durable restore or production ownership/persistence of that guard.
 
 ## Required acceptance matrix
 
@@ -54,10 +54,10 @@ The candidate uses a fixed const-generic slot array. `ActorLocalId` maps directl
 - [ ] Lookup/removal consume the live continuity guard rather than a replayable copied owner-generation snapshot.
 - [ ] Missing/out-of-range actor IDs and valid-but-vacant slots reject fail-closed.
 - [ ] Distinct local IDs cannot alias one generation cell.
-- [ ] Removal preserves generation; successful reuse advances generation and stale prior refs reject.
+- [ ] Removal preserves generation; successful reuse advances generation; well-formed retired/reused refs reject as `STALE_GENERATION`, while malformed/out-of-range/never-used vacant identity rejects as `INVALID_REFERENCE`.
 - [ ] Injected post-selection failure preserves complete carrier state.
 - [ ] Local-generation exhaustion returns `ACTOR_LOCAL_GENERATION_EXHAUSTED / CAPACITY_EXCEEDED`, marks only the selected slot terminal and preserves unrelated state.
-- [ ] A uniquely issued, move-only evidence grant is consumed exactly once; carrier loss leaves `NamespaceContinuityGuard` initialized; independently reissued same-generation facts receive a distinct incarnation and cannot resolve escaped refs; same-generation reconstruction fails closed; a genuinely newer independently authorized outer generation may initialize a fresh namespace and fences old refs.
+- [ ] The externally supplied `NamespaceContinuityGuard` is the one surviving authority; carrier loss leaves it initialized; no issuer or raw-fact constructor can establish another namespace under that same generation; same-generation reconstruction fails closed; a genuinely newer independently authorized outer generation may initialize a fresh namespace and fences old refs.
 - [ ] Churn across every configured slot retains exactly `M` generation cells and zero independent retirement-history entries.
 - [ ] Actor-ID one-based count/index overflow and retained-byte arithmetic overflow reject before mutation/allocation evidence.
 - [ ] M and M+1 are independently exercised for every tested M.

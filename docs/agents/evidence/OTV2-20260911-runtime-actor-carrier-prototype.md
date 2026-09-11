@@ -21,11 +21,11 @@ Prototype-local actor identity is fixed-shape only. A one-based `ActorLocalId(u3
 
 ## Live authority and namespace continuity
 
-`UniqueEvidenceNamespaceGrant` is a uniquely issued, move-only prototype evidence capability. It is consumed exactly once to construct or advance the `NamespaceContinuityGuard`, which is separate from carrier backing and survives carrier loss/reconstruction. Every independently issued grant carries a distinct namespace incarnation, so replaying copyable scope/generation facts cannot recreate authority that resolves an escaped reference. Both the grant and guard are deliberately neither `Clone` nor `Copy`. Production grant issuance, ownership, and persistence remain explicitly unselected.
+`ScopeOwnershipGeneration` itself is the namespace incarnation fence. The externally supplied `NamespaceContinuityGuard` is the single surviving continuity authority, separate from carrier backing and retained across carrier loss. A move-only `AuthorizedNewerScopeGenerationGrant` may advance it only to a strictly newer generation. The prototype intentionally exposes no issuer, no same-generation grant path, and no guard constructor from raw scope/generation facts. Both the newer-generation grant and guard are deliberately neither `Clone` nor `Copy`. Production grant issuance, ownership, persistence, and exact same-generation restore remain explicitly unselected.
 
 `lookup` and `remove` consume a live `&NamespaceContinuityGuard`, not a copied `CurrentOwnerFacts` value. A legitimate outer-generation transition therefore immediately fences the old carrier even if a caller retains the old actor reference or the old carrier object. The executable matrix separately changes only `WorldId`, only `ChannelId`, and only the live outer generation to prove all three fences independently.
 
-Carrier materialization is private to a successful guard claim. Once the guard has initialized one actor-local namespace for a `ScopeOwnershipGeneration`, dropping the `ChannelActorCarrier` does not reset the guard. Same-generation rebootstrap fails closed with `SAME_GENERATION_RECONSTRUCTION_BLOCKED`. Advancing an existing guard requires it to consume a uniquely issued grant bound to the same scope and a strictly newer `ScopeOwnershipGeneration`.
+Carrier materialization is private to a successful guard claim. Once the guard has initialized one actor-local namespace for a `ScopeOwnershipGeneration`, dropping the `ChannelActorCarrier` does not reset the guard. Same-generation rebootstrap fails closed with `SAME_GENERATION_RECONSTRUCTION_BLOCKED`. Advancing an existing guard requires it to consume an already-authorized grant bound to the same scope and a strictly newer `ScopeOwnershipGeneration`.
 
 This prototype does not implement an exact same-generation durable restore source; its selected safe behavior is fail closed. Production ownership/persistence of the continuity guard remains outside this allocation.
 
@@ -57,13 +57,13 @@ The exact example contains focused tests for:
 5. legitimate live outer-generation transition immediately fencing the old carrier/reference;
 6. out-of-range/missing actor ID rejection;
 7. valid actor ID rejection while its slot is vacant;
-8. removal retaining slot generation, successful reuse advancing it, and stale prior references never resolving;
+8. removal retaining slot generation, successful reuse advancing it, and well-formed retired/reused references rejecting as `STALE_GENERATION`; malformed, out-of-range, and never-used vacant identities remain `INVALID_REFERENCE`;
 9. distinct local IDs remaining bound to distinct slot/generation cells;
 10. injected failure after reusable-slot selection and valid successor derivation leaving complete carrier state unchanged;
 11. checked local-generation exhaustion producing exactly `ACTOR_LOCAL_GENERATION_EXHAUSTED` in category `CAPACITY_EXCEEDED`, transitioning only the selected vacant max-generation slot to terminal `EXHAUSTED`, and preserving unrelated slots/actors;
 12. churn across every configured slot keeping retained generation cells exactly `M` and independent retirement history exactly zero;
 13. lookup/insertion/removal work measured for every tested M, including sparse, full and fragmented occupancy boundaries;
-14. carrier loss with a surviving non-duplicable guard blocking same-generation reconstruction, independently reissued same-generation evidence receiving a distinct namespace incarnation that rejects the escaped reference, and a uniquely granted strictly newer outer generation permitting a fresh namespace;
+14. carrier loss with the surviving guard blocking same-generation reconstruction, no runtime API capable of issuing a replacement same-generation authority from raw facts, and an independently authorized strictly newer outer generation permitting a fresh namespace;
 15. actor-ID one-based count/index overflow rejection plus retained-byte multiplication overflow rejection.
 
 ## Minimal carried facts

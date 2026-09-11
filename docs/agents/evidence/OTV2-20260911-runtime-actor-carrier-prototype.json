@@ -11,9 +11,10 @@
   "foundation_scope_type": "RuntimeScopeRefV1::Channel",
   "foundation_generation_type": "ScopeOwnershipGeneration",
   "namespace_continuity": {
-    "authority_shape": "move-only UniqueEvidenceNamespaceGrant consumed into NamespaceContinuityGuard outside carrier backing",
-    "grant_uniquely_issued_and_consumed_once": true,
-    "namespace_incarnation_fences_independently_reissued_same_generation_grants": true,
+    "authority_shape": "externally supplied surviving NamespaceContinuityGuard; move-only AuthorizedNewerScopeGenerationGrant accepted only for a strictly newer generation",
+    "newer_generation_grant_consumed_once": true,
+    "scope_ownership_generation_is_namespace_incarnation_fence": true,
+    "same_generation_grant_issuance_api": false,
     "lookup_and_remove_consume_live_guard_reference": true,
     "replayable_current_owner_snapshot_api": false,
     "survives_carrier_loss": true,
@@ -101,6 +102,7 @@
     "post_selection_failure_rollback": "COVERED_BY_EXAMPLE_TEST",
     "local_generation_exhaustion": "COVERED_BY_EXAMPLE_TEST",
     "carrier_loss_same_generation_reconstruction": "COVERED_BY_EXAMPLE_TEST",
+    "retired_and_reused_reference_stale_generation_classification": "COVERED_BY_EXAMPLE_TEST",
     "namespace_wide_churn": "COVERED_BY_EXAMPLE_TEST",
     "actor_id_count_or_index_overflow": "COVERED_BY_EXAMPLE_TEST",
     "retained_byte_overflow": "COVERED_BY_EXAMPLE_TEST"
@@ -116,7 +118,7 @@
   "movement_139_activated": false,
   "notes": [
     "Expected numeric shape/work values are asserted by the Rust example tests but are not marked qualified until repository-native exact-head CI observes them.",
-    "A uniquely issued move-only evidence grant is consumed exactly once into the non-Clone/non-Copy NamespaceContinuityGuard; an independently reissued grant for identical raw outer facts has a distinct namespace incarnation and cannot resolve escaped references. Production issuance, ownership, and persistence are not selected here.",
+    "The non-Clone/non-Copy NamespaceContinuityGuard is the one externally supplied surviving continuity authority. ScopeOwnershipGeneration itself is the namespace incarnation fence; the prototype exposes no issuer, same-generation grant, or raw-fact guard constructor. A move-only AuthorizedNewerScopeGenerationGrant is accepted only when its generation is strictly newer. Carrier loss under the same generation therefore fails closed. Production issuance, ownership, persistence, and exact restore are not selected here.",
     "ChannelActorCarrier is non-Clone; rollback comparisons use a separate non-authoritative fixed-value snapshot.",
     "cargo run executes exact-M admission, M+1 denial, full-state preservation, lookup, removal, and fragmented reinsertion for every M=1..4 and emits the observed outcomes.",
     "No production actor ceiling is selected by any tested M."

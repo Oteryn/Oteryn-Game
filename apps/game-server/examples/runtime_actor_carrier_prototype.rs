@@ -9,7 +9,6 @@ use serde_json::json;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::mem::size_of;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -90,7 +89,6 @@ impl ActorLocalGeneration {
 struct ActorTargetRefPrototype {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
-    namespace_incarnation: u64,
     actor_local_id: ActorLocalId,
     actor_local_generation: ActorLocalGeneration,
 }
@@ -242,7 +240,6 @@ struct RemovalSuccess {
 struct ChannelActorCarrier<const M: usize> {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
-    namespace_incarnation: u64,
     slots: [ActorSlot; M],
 }
 
@@ -251,7 +248,6 @@ struct ChannelActorCarrier<const M: usize> {
 struct CarrierStateSnapshot<const M: usize> {
     scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
-    namespace_incarnation: u64,
     slots: [ActorSlot; M],
 }
 
@@ -261,7 +257,6 @@ impl<const M: usize> ChannelActorCarrier<M> {
     fn materialize_after_namespace_claim(
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
-        namespace_incarnation: u64,
     ) -> Result<Self, CarrierFailure> {
         if !matches!(scope, RuntimeScopeRefV1::Channel { .. }) || M == 0 {
             return Err(CarrierFailure::new(
@@ -275,7 +270,6 @@ impl<const M: usize> ChannelActorCarrier<M> {
         Ok(Self {
             scope,
             scope_generation,
-            namespace_incarnation,
             slots: [ActorSlot::vacant(); M],
         })
     }
@@ -288,7 +282,6 @@ impl<const M: usize> ChannelActorCarrier<M> {
         Ok(ActorTargetRefPrototype {
             scope: self.scope,
             scope_generation: self.scope_generation,
-            namespace_incarnation: self.namespace_incarnation,
             actor_local_id: ActorLocalId::from_slot_index(index)?,
             actor_local_generation: ActorLocalGeneration::new(generation)?,
         })
@@ -365,8 +358,6 @@ impl<const M: usize> ChannelActorCarrier<M> {
             || current.generation != self.scope_generation
             || target.scope != self.scope
             || target.scope_generation != self.scope_generation
-            || current.namespace_incarnation != self.namespace_incarnation
-            || target.namespace_incarnation != self.namespace_incarnation
         {
             return Err(CarrierFailure::new(
                 FailureCode::StaleScopeOrGeneration,
@@ -389,14 +380,11 @@ impl<const M: usize> ChannelActorCarrier<M> {
     ) -> Result<LookupSuccess, CarrierFailure> {
         let index = self.verify_owner(current, target)?;
         let slot = self.slots[index];
-        if slot.lifecycle != SlotLifecycle::Occupied
-            || slot.generation != target.actor_local_generation.0
-        {
-            return Err(CarrierFailure::new(
-                FailureCode::StaleActorReference,
-                FailureCategory::InvalidReference,
-                1,
-            ));
+        if slot.lifecycle != SlotLifecycle::Occupied {
+            return Err(slot_reference_failure(slot, 1));
+        }
+        if slot.generation != target.actor_local_generation.0 {
+            return Err(stale_actor_reference(1));
         }
         Ok(LookupSuccess {
             actor: ActorReadView {
@@ -419,14 +407,11 @@ impl<const M: usize> ChannelActorCarrier<M> {
     ) -> Result<RemovalSuccess, CarrierFailure> {
         let index = self.verify_owner(current, target)?;
         let slot = self.slots[index];
-        if slot.lifecycle != SlotLifecycle::Occupied
-            || slot.generation != target.actor_local_generation.0
-        {
-            return Err(CarrierFailure::new(
-                FailureCode::StaleActorReference,
-                FailureCategory::InvalidReference,
-                1,
-            ));
+        if slot.lifecycle != SlotLifecycle::Occupied {
+            return Err(slot_reference_failure(slot, 1));
+        }
+        if slot.generation != target.actor_local_generation.0 {
+            return Err(stale_actor_reference(1));
         }
         self.slots[index].lifecycle = SlotLifecycle::VacantReusable;
         self.slots[index].kind = ActorKind::Player;
@@ -458,48 +443,37 @@ impl<const M: usize> ChannelActorCarrier<M> {
         CarrierStateSnapshot {
             scope: self.scope,
             scope_generation: self.scope_generation,
-            namespace_incarnation: self.namespace_incarnation,
             slots: self.slots,
         }
     }
 }
 
-static NEXT_EVIDENCE_GRANT: AtomicU64 = AtomicU64::new(1);
-
-// This is a prototype-only stand-in for an external authority issuer. Each grant
-// is a unique, move-only capability. Consuming it binds a namespace incarnation,
-// so another grant for the same copyable scope/generation facts cannot recreate
-// authority capable of resolving references from the lost carrier.
-#[derive(Debug)]
-struct UniqueEvidenceNamespaceGrant {
-    scope: RuntimeScopeRefV1,
-    generation: ScopeOwnershipGeneration,
-    namespace_incarnation: u64,
+const fn stale_actor_reference(work_units: usize) -> CarrierFailure {
+    CarrierFailure::new(
+        FailureCode::StaleActorReference,
+        FailureCategory::StaleGeneration,
+        work_units,
+    )
 }
 
-impl UniqueEvidenceNamespaceGrant {
-    fn independently_issue(
-        scope: RuntimeScopeRefV1,
-        generation: ScopeOwnershipGeneration,
-    ) -> Result<Self, CarrierFailure> {
-        if !matches!(scope, RuntimeScopeRefV1::Channel { .. }) {
-            return Err(CarrierFailure::new(
-                FailureCode::NonChannelScope,
-                FailureCategory::InvalidReference,
-                0,
-            ));
-        }
-        let namespace_incarnation = NEXT_EVIDENCE_GRANT
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
-                value.checked_add(1)
-            })
-            .map_err(|_| CarrierFailure::arithmetic())?;
-        Ok(Self {
-            scope,
-            generation,
-            namespace_incarnation,
-        })
+fn slot_reference_failure(slot: ActorSlot, work_units: usize) -> CarrierFailure {
+    if slot.lifecycle == SlotLifecycle::VacantReusable && slot.generation == 0 {
+        CarrierFailure::new(
+            FailureCode::StaleActorReference,
+            FailureCategory::InvalidReference,
+            work_units,
+        )
+    } else {
+        stale_actor_reference(work_units)
     }
+}
+
+// This move-only value represents an already-authorized *newer* scope-owner
+// transition. It intentionally has no constructor or issuer API.
+#[derive(Debug)]
+struct AuthorizedNewerScopeGenerationGrant {
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
 }
 
 // This state is outside carrier backing and deliberately neither Clone nor Copy.
@@ -507,20 +481,10 @@ impl UniqueEvidenceNamespaceGrant {
 struct NamespaceContinuityGuard {
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
-    namespace_incarnation: u64,
     namespace_initialized: bool,
 }
 
 impl NamespaceContinuityGuard {
-    fn from_unique_evidence_grant(grant: UniqueEvidenceNamespaceGrant) -> Self {
-        Self {
-            scope: grant.scope,
-            generation: grant.generation,
-            namespace_incarnation: grant.namespace_incarnation,
-            namespace_initialized: false,
-        }
-    }
-
     const fn scope(&self) -> RuntimeScopeRefV1 {
         self.scope
     }
@@ -537,18 +501,15 @@ impl NamespaceContinuityGuard {
                 0,
             ));
         }
-        let carrier = ChannelActorCarrier::materialize_after_namespace_claim(
-            self.scope,
-            self.generation,
-            self.namespace_incarnation,
-        )?;
+        let carrier =
+            ChannelActorCarrier::materialize_after_namespace_claim(self.scope, self.generation)?;
         self.namespace_initialized = true;
         Ok(carrier)
     }
 
     fn apply_independently_authorized_newer_generation(
         &mut self,
-        grant: UniqueEvidenceNamespaceGrant,
+        grant: AuthorizedNewerScopeGenerationGrant,
     ) -> Result<(), CarrierFailure> {
         if grant.scope != self.scope || grant.generation <= self.generation {
             return Err(CarrierFailure::new(
@@ -558,7 +519,6 @@ impl NamespaceContinuityGuard {
             ));
         }
         self.generation = grant.generation;
-        self.namespace_incarnation = grant.namespace_incarnation;
         self.namespace_initialized = false;
         Ok(())
     }
@@ -589,11 +549,13 @@ fn channel_scope(seed: u64) -> Result<RuntimeScopeRefV1, Box<dyn Error>> {
 
 fn physical_point<const M: usize>(scope_seed: u64) -> Result<serde_json::Value, Box<dyn Error>> {
     let scope = channel_scope(scope_seed)?;
-    let grant = UniqueEvidenceNamespaceGrant::independently_issue(
+    // Harness injection represents the externally supplied initial continuity
+    // authority; the prototype provides no runtime issuer or constructor.
+    let mut owner = NamespaceContinuityGuard {
         scope,
-        ScopeOwnershipGeneration::new(1)?,
-    )?;
-    let mut owner = NamespaceContinuityGuard::from_unique_evidence_grant(grant);
+        generation: ScopeOwnershipGeneration::new(1)?,
+        namespace_initialized: false,
+    };
     let mut carrier = owner.bootstrap::<M>()?;
     let mut targets = Vec::with_capacity(M);
     let mut insertion_work = Vec::with_capacity(M);
@@ -722,19 +684,26 @@ mod tests {
         )
     }
 
-    fn grant_for(
+    fn newer_grant_for(
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
-    ) -> UniqueEvidenceNamespaceGrant {
-        UniqueEvidenceNamespaceGrant::independently_issue(scope, generation)
-            .expect("channel scope is valid")
+    ) -> AuthorizedNewerScopeGenerationGrant {
+        // Test-only injection of an already-authorized transition. There is no
+        // runtime issuer/reissuer API in the prototype.
+        AuthorizedNewerScopeGenerationGrant { scope, generation }
     }
 
     fn authority_for(
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
     ) -> NamespaceContinuityGuard {
-        NamespaceContinuityGuard::from_unique_evidence_grant(grant_for(scope, generation))
+        // Test-only injection of the one surviving authority. This is not a
+        // runtime constructor and does not model same-generation recovery.
+        NamespaceContinuityGuard {
+            scope,
+            generation,
+            namespace_initialized: false,
+        }
     }
 
     fn prove_m_boundary<const M: usize>() {
@@ -853,7 +822,7 @@ mod tests {
         );
 
         owner
-            .apply_independently_authorized_newer_generation(grant_for(
+            .apply_independently_authorized_newer_generation(newer_grant_for(
                 owner.scope(),
                 generation(2),
             ))
@@ -870,13 +839,13 @@ mod tests {
     #[test]
     fn missing_and_vacant_actor_lookups_fail_closed() {
         let mut owner = authority(350);
-        let mut carrier = owner.bootstrap::<1>().expect("bootstrap");
+        let mut carrier = owner.bootstrap::<2>().expect("bootstrap");
         let admitted = carrier
             .admit(seed(ActorKind::Player, 1), AdmissionFault::None)
             .expect("admit");
 
         let missing = ActorTargetRefPrototype {
-            actor_local_id: ActorLocalId(2),
+            actor_local_id: ActorLocalId(3),
             ..admitted.target
         };
         assert_eq!(
@@ -887,15 +856,27 @@ mod tests {
             FailureCategory::InvalidReference
         );
 
+        let never_used = ActorTargetRefPrototype {
+            actor_local_id: ActorLocalId(2),
+            ..admitted.target
+        };
+        assert_eq!(
+            carrier
+                .lookup(&owner, never_used)
+                .expect_err("never-used vacant identity must reject")
+                .category,
+            FailureCategory::InvalidReference
+        );
+
         carrier
             .remove(&owner, admitted.target)
             .expect("vacate admitted slot");
         assert_eq!(
             carrier
                 .lookup(&owner, admitted.target)
-                .expect_err("vacant slot must not resolve")
+                .expect_err("retired reference must be stale")
                 .category,
-            FailureCategory::InvalidReference
+            FailureCategory::StaleGeneration
         );
     }
 
@@ -913,24 +894,25 @@ mod tests {
                 .removal_work_units,
             1
         );
-        assert_eq!(
-            carrier
-                .lookup(&owner, first.target)
-                .expect_err("vacant old ref rejects")
-                .code,
-            FailureCode::StaleActorReference
-        );
+        let retired_lookup = carrier
+            .lookup(&owner, first.target)
+            .expect_err("vacant old ref rejects");
+        assert_eq!(retired_lookup.code, FailureCode::StaleActorReference);
+        assert_eq!(retired_lookup.category, FailureCategory::StaleGeneration);
         let second = carrier
             .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
             .expect("reuse");
         assert!(second.target.actor_local_generation > first.target.actor_local_generation);
-        assert_eq!(
-            carrier
-                .lookup(&owner, first.target)
-                .expect_err("old ref stale")
-                .code,
-            FailureCode::StaleActorReference
-        );
+        let stale_lookup = carrier
+            .lookup(&owner, first.target)
+            .expect_err("old ref stale");
+        assert_eq!(stale_lookup.code, FailureCode::StaleActorReference);
+        assert_eq!(stale_lookup.category, FailureCategory::StaleGeneration);
+        let stale_remove = carrier
+            .remove(&owner, first.target)
+            .expect_err("old ref cannot remove replacement");
+        assert_eq!(stale_remove.code, FailureCode::StaleActorReference);
+        assert_eq!(stale_remove.category, FailureCategory::StaleGeneration);
         assert_eq!(
             carrier
                 .lookup(&owner, second.target)
@@ -1156,26 +1138,11 @@ mod tests {
             FailureCode::SameGenerationReconstructionBlocked
         );
 
-        // Even an independently issued second grant with identical raw outer
-        // facts creates a distinct incarnation and cannot resolve the escaped
-        // reference. The move-only original grant was consumed exactly once.
-        let mut independently_reissued = authority_for(owner.scope(), owner.generation());
-        let mut reissued_carrier = independently_reissued
-            .bootstrap::<1>()
-            .expect("independent grant creates a distinct evidence namespace");
-        reissued_carrier
-            .admit(seed(ActorKind::Creature, 2), AdmissionFault::None)
-            .expect("same local coordinates may exist only in the new incarnation");
-        assert_eq!(
-            reissued_carrier
-                .lookup(&independently_reissued, old_ref)
-                .expect_err("raw facts cannot reconstruct old namespace authority")
-                .category,
-            FailureCategory::StaleGeneration
-        );
-
+        // There is no issuer/reissuer or raw-fact guard constructor in the
+        // prototype. A fresh namespace can be established only by consuming an
+        // already-authorized strictly newer outer-generation grant.
         owner
-            .apply_independently_authorized_newer_generation(grant_for(
+            .apply_independently_authorized_newer_generation(newer_grant_for(
                 owner.scope(),
                 generation(2),
             ))
