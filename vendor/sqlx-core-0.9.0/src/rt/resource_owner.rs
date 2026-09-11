@@ -1,19 +1,38 @@
+use std::alloc::Layout;
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
-use crate::net::resource_budget::ResourceBudget;
+use crate::net::resource_budget::{
+    BudgetError, ResourceBudget, ResourceReservation,
+};
 
 const OWNED_QUEUE_CAPACITY: usize = 8;
 const OWNED_WORKER_STACK: usize = 2 * 1024 * 1024;
 
-struct BudgetOwner(Arc<dyn ResourceBudget>);
+struct BudgetOwner {
+    budget: Arc<dyn ResourceBudget>,
+    // This reservation is acquired before Arc::new below and is retained by
+    // the same Arc allocation through every Tokio queue/worker clone.  It is
+    // therefore released only when the final runtime-owner Arc is destroyed.
+    _control_allocation: ResourceReservation,
+}
+
+impl BudgetOwner {
+    fn arc_layout() -> Result<usize, BudgetError> {
+        Layout::new::<[AtomicUsize; 2]>()
+            .extend(Layout::new::<Self>())
+            .map(|(layout, _)| layout.pad_to_align().size())
+            .map_err(|_| BudgetError::Overflow)
+    }
+}
 
 impl tokio::task::BlockingOwner for BudgetOwner {
     fn try_reserve(&self, bytes: usize) -> bool {
-        self.0.try_reserve(bytes).is_ok()
+        self.budget.try_reserve(bytes).is_ok()
     }
 
     fn release(&self, bytes: usize) {
-        self.0.release(bytes);
+        self.budget.release(bytes);
     }
 }
 
@@ -32,11 +51,17 @@ impl BlockingJobOwner {
     // Activated by the admitted TLS composition step; focused tests exercise it
     // before the currently excluded rustls owner hook is available.
     #[allow(dead_code)]
-    fn new(budget: Arc<dyn ResourceBudget>) -> Self {
-        Self {
-            runtime_owner: Arc::new(BudgetOwner(budget.clone())),
+    fn new(budget: Arc<dyn ResourceBudget>) -> Result<Self, BudgetError> {
+        let control_allocation =
+            ResourceReservation::try_new(budget.clone(), BudgetOwner::arc_layout()?)?;
+        let runtime_owner = Arc::new(BudgetOwner {
+            budget: budget.clone(),
+            _control_allocation: control_allocation,
+        });
+        Ok(Self {
+            runtime_owner,
             budget,
-        }
+        })
     }
 
     pub(crate) fn budget(&self) -> Arc<dyn ResourceBudget> {
@@ -45,7 +70,9 @@ impl BlockingJobOwner {
 }
 
 #[allow(dead_code)]
-pub(crate) fn blocking_job_owner(budget: Arc<dyn ResourceBudget>) -> BlockingJobOwner {
+pub(crate) fn blocking_job_owner(
+    budget: Arc<dyn ResourceBudget>,
+) -> Result<BlockingJobOwner, BudgetError> {
     BlockingJobOwner::new(budget)
 }
 
