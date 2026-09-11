@@ -61,7 +61,8 @@ Implement one Foundation-owned, fixed-bound, PRE_PRODUCTION Channel actor carrie
 - [x] No API exports/serializes/reports a development bound as production capacity and no production-labeled constructor/default exists.
 - [x] Exact reference binds WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation.
 - [x] Wrong world/channel, stale scope generation, vacant/out-of-range identity, stale actor generation and cross-scope cases reject deterministically.
-- [x] Same-generation carrier reconstruction from raw scope/generation facts is impossible; pre-production continuity authority is move-only/non-replayable and does not mint grants.
+- [x] A non-Clone/non-Copy guard outside carrier backing preserves one namespace claim per generation; carrier loss cannot enable same-generation reconstruction.
+- [x] Lookup/removal require live current continuity and a strictly newer same-scope move-only grant immediately fences retained older carriers/references without minting grants.
 - [x] Removal/reuse advances retained actor-local generation; wrap is forbidden.
 - [x] Checked no-successor at `g_max` performs only `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement, preserves unrelated state and never reselects that slot in the same scope generation.
 - [x] `ScopeRuntimeFence` is not made Clone/Copy and its private raw-grant constructor is not widened.
@@ -77,17 +78,19 @@ No production capacity/default/readiness, `RESOURCE_LIMITS_REGISTRY`, VPS/deploy
 
 ## Implementation / findings
 
-The bounded carrier implementation and local qualification are complete on the single canonical Draft
-PR #573 lineage. A publish-only recovery reconstructed the immediately preceding four-path result after
-confirming the originally reported local object was absent and the live branch remained at its expected
-bootstrap head. Hosted exact-head CI and independent review remain coordinator-owned next steps.
+The bounded carrier implementation and local qualification continue on the single canonical Draft PR
+#573 lineage. Coordinator self-review P1 on published head
+`341e1f56c597c9cc1d3a33056c54f55c709a6ad7` is **ACCEPTED AND REPAIRED**: continuity now survives
+carrier backing, live guard state fences lookup/removal, and only a strictly newer same-scope move-only
+grant opens one fresh namespace claim. The superseded head is not recorded as zero-finding. Hosted
+exact-head CI and independent review remain coordinator-owned next steps and are not requested here.
 
 ## Validation
 
 ### Focused
 
 - command/run: `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier`
-- result: PASS — 7 passed, 0 failed
+- result: PASS — 10 passed, 0 failed
 
 ### Component/integration
 
@@ -112,8 +115,8 @@ bootstrap head. Hosted exact-head CI and independent review remain coordinator-o
 
 - exact head: set at publication
 - method/reviewer: implementing agent, adversarial whole-diff allocation sweep
-- material findings: 0 unresolved
-- verdict: PASS locally; hosted checks/review remain pending
+- material findings: P1 accepted and repaired from superseded `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`; 0 unresolved on repaired successor
+- verdict: PASS locally after focused repair; hosted checks/review remain pending
 
 ## Independent review
 
@@ -135,7 +138,7 @@ bootstrap head. Hosted exact-head CI and independent review remain coordinator-o
 ## Context checkpoint
 
 ```yaml
-last_progress: locally qualified four-path implementation checkpoint prepared for canonical publication
+last_progress: accepted and repaired coordinator P1 on the canonical four-path lineage
 status: implementing
 branch: agent/runtime-actor-carrier-preproduction-530
 head_sha: null
@@ -157,5 +160,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish normally, verify branch and PR exact-head equality, then await coordinator CI/review routing
+next_action: publish normally to the same PR, verify branch and PR exact-head equality, then await coordinator routing
 ```

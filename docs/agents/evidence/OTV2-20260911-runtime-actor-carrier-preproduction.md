@@ -10,15 +10,20 @@
 
 ## Implemented result
 
-The private Foundation module contains one fixed-capacity Channel actor carrier. Construction consumes
-a move-only continuity grant supplied from outside the carrier, requires an explicit non-zero finite
+The private Foundation module contains one fixed-capacity Channel actor carrier and one deliberately
+non-Clone/non-Copy namespace continuity guard outside carrier backing. The guard consumes a move-only
+continuity grant supplied from outside the module's authority boundary. Construction claims the
+guard's current World + Channel + scope generation exactly once, requires an explicit non-zero finite
 capacity, checks identity and byte arithmetic, and uses fallible exact allocation before publishing a
-carrier. The module has no default, production constructor, capacity reporter, issuer, reissuer, or
-raw-fact continuity constructor.
+carrier. Carrier loss does not reset the surviving claim. The module has no default, production
+constructor, capacity reporter, issuer, reissuer, or raw-fact continuity constructor.
 
 Each reference binds `WorldId + ChannelId + ScopeOwnershipGeneration + ActorLocalId +
-ActorLocalGeneration`. Lookup and removal convert the one-based identity directly to the backing slot;
-there is no secondary index, tombstone collection, or retirement history.
+ActorLocalGeneration`. Lookup and removal require the live guard and validate its current scope against
+both carrier and reference before converting the one-based identity directly to the backing slot;
+there is no secondary index, tombstone collection, or retirement history. A move-only externally
+supplied grant can advance the guard only for the same World + Channel and a strictly newer generation;
+that advance immediately fences retained older carriers and permits exactly one fresh namespace claim.
 
 Vacancy retains the local generation and successful reuse advances it. A representable failure after
 selection leaves all slots unchanged. The protected generation-exhaustion exception changes only the
@@ -36,19 +41,28 @@ The publish-only recovery found that the previously reported commit object had n
 local checkout or GitHub. It reconstructed only the same four-path result on the unchanged canonical
 head and reran the deterministic qualification commands before publication.
 
+Coordinator self-review of published head `341e1f56c597c9cc1d3a33056c54f55c709a6ad7` reported a P1:
+the consumed grant had been copied into carrier backing, so an old carrier self-proved generation
+currentness and carrier loss did not preserve a same-generation namespace claim. **Disposition:
+ACCEPTED AND REPAIRED.** That head is superseded and is not described as having zero self-review
+findings. Focused RED tests first captured carrier-loss replay, live generation advancement fencing,
+non-monotonic/cross-scope advance rejection, and legitimate newer-generation reconstruction.
+
 ## Deterministic validation
 
 | Command | Result |
 | --- | --- |
 | `cargo +1.94.0 fmt --all -- --check` | PASS |
-| `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier` | PASS — 7 passed, 0 failed |
+| `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier` | PASS — 10 passed, 0 failed |
 | `cargo +1.94.0 clippy -p oteryn-game-server --all-targets -- -D warnings` | PASS |
 | `python tools/agents/validate_governance.py` | PASS |
 | `git diff --check` | PASS |
 
 Focused coverage uses injected capacities 1, 2, and 4 to prove M/M+1 without selecting a product
 policy. Negative coverage includes zero and overflowing capacities; wrong World, Channel, and scope
-generation; invalid/vacant identities; stale local generations; one-shot continuity consumption;
+generation; invalid/vacant identities; stale local generations; surviving one-shot namespace claims;
+immediate old-carrier lookup/removal fencing after a live generation advance; rejected equal,
+backward, and cross-scope advances without guard mutation; fresh strictly newer namespace claims;
 post-selection rollback; `g_max` exhaustion; unrelated-state preservation; and later avoidance of an
 exhausted slot.
 
@@ -60,8 +74,8 @@ are structurally reviewed rather than forced by unsafe or global allocator subst
 ## Adversarial whole-diff self-review
 
 - **Authority:** no production constructor/default/readiness surface and no continuity issuer exists.
-- **Fencing:** all five exact-reference components are checked; a reference is not treated as current
-  assignment authority beyond the carrier's consumed continuity boundary.
+- **Fencing:** all five exact-reference components are checked against a live continuity guard; neither
+  a reference nor carrier-local snapshots self-prove current outer-generation authority.
 - **Lifecycle:** the local ID remains slot-bound; generation persists across vacancy; wrap cannot reuse
   a generation; the sole terminal bookkeeping mutation is isolated.
 - **Boundedness:** backing storage is fixed after construction. Lookup/removal are direct O(1);
@@ -70,7 +84,8 @@ are structurally reviewed rather than forced by unsafe or global allocator subst
   does not mutate; exhaustion changes only the selected terminal cell.
 - **Scope exclusions:** no geometry, gameplay, protocol, admission, persistence, registry, Cargo,
   deployment, Ability #508, Movement #139, or external-repository changes are present.
-- **Finding verdict:** zero unresolved material self-review findings.
+- **Finding verdict:** the P1 on superseded head `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`
+  is accepted and repaired; the repaired successor has zero unresolved material self-review findings.
 
 ## Qualification state
 
