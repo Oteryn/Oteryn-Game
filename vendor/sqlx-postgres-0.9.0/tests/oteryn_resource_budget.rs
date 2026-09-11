@@ -203,7 +203,9 @@ async fn configure_postgres_tls(admin_url: &str, pki: &TestPki) -> Result<(), Bo
         .fetch_one(&pool)
         .await?;
     if version_num != "170006" {
-        return Err(format!("expected PostgreSQL 17.6, got server_version_num={version_num}").into());
+        return Err(
+            format!("expected PostgreSQL 17.6, got server_version_num={version_num}").into(),
+        );
     }
 
     let container = postgres_service_container()?;
@@ -279,7 +281,11 @@ fn postgres_service_container() -> Result<String, Box<dyn Error>> {
     Ok(matches.remove(0))
 }
 
-fn docker_copy_owned(container: &str, source: &Path, destination: &str) -> Result<(), Box<dyn Error>> {
+fn docker_copy_owned(
+    container: &str,
+    source: &Path,
+    destination: &str,
+) -> Result<(), Box<dyn Error>> {
     run_checked(
         Command::new("docker")
             .arg("cp")
