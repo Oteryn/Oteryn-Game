@@ -95,5 +95,3 @@ Poniższa tabela zachowuje ustalenia pierwszych 50 OP. Jej liczniki nie są peł
 Raport oddziela aktualną dokumentację producenta, relacje graczy i własne propozycje. Nie przeprowadzono testów runtime Global Tibia ani Oteryn, symulacji ekonomii lub kontroli wszystkich późniejszych odpowiedzi. Przeczytanie strony forum nie zatwierdza jej twierdzeń o botach, przyczynach inflacji czy liczbie graczy. Nie oceniono całego archiwum i nie wolno ekstrapolować liczników tej próby na całą społeczność.
 
 Repozytorium pozostało bez zapisów. Kolejne punkty kontrolne będą dopisywane do tego pliku poza repozytorium.
-
-
