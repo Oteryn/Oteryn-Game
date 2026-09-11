@@ -26,9 +26,11 @@ pub struct RustlsSocket<S: Socket> {
     inner: StdSocket<S>,
     state: ClientConnection,
     // Resource-owned TLS configuration backing is dropped with `state` before
-    // either reservation is released.
+    // any reservation retained for that backing is released.
     _client_auth_allocation: Option<crate::net::resource_budget::ResourceReservation>,
     _root_store_allocation: Option<crate::net::resource_budget::ResourceReservation>,
+    _hostname_allocation: Option<crate::net::resource_budget::ResourceReservation>,
+    _config_allocation: Option<crate::net::resource_budget::ResourceReservation>,
     // Connection-held owner Arcs are dropped with `state` before this charge.
     _owner_allocation: Option<crate::net::resource_budget::ResourceReservation>,
     close_notify_sent: bool,
@@ -91,6 +93,46 @@ impl<S: Socket> Socket for RustlsSocket<S> {
 
         Poll::Ready(Ok(()))
     }
+}
+
+fn arc_allocation_size<T>() -> Result<usize, crate::net::resource_budget::BudgetError> {
+    use crate::net::resource_budget::BudgetError;
+    use core::alloc::Layout;
+    use core::sync::atomic::AtomicUsize;
+
+    Layout::new::<[AtomicUsize; 2]>()
+        .extend(Layout::new::<T>())
+        .map(|(layout, _)| layout.pad_to_align().size())
+        .map_err(|_| BudgetError::Overflow)
+}
+
+fn certificate_read_error(error: super::CertificateReadError) -> Error {
+    match error {
+        super::CertificateReadError::Budget(error) => Error::tls(error),
+        super::CertificateReadError::Io(error) => Error::tls(error),
+    }
+}
+
+fn reserve_connection_metadata(
+    budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
+    hostname: &str,
+) -> Result<(
+    crate::net::resource_budget::ResourceReservation,
+    crate::net::resource_budget::ResourceReservation,
+), crate::net::resource_budget::BudgetError> {
+    use crate::net::resource_budget::ResourceReservation;
+
+    // String::to_owned requests exactly the UTF-8 byte length on the pinned
+    // Rust 1.94 path. Hold this debit for the ServerName backing moved into the
+    // ClientConnection.
+    let hostname_allocation = ResourceReservation::try_new(budget.clone(), hostname.len())?;
+    // ClientConfig is moved into this Arc immediately after the reservation.
+    // The inline ArcInner allocation includes the two atomic counters and the
+    // ClientConfig value itself; nested configuration allocations are covered
+    // by their own phase-specific custody.
+    let config_allocation =
+        ResourceReservation::try_new(budget, arc_allocation_size::<ClientConfig>()?)?;
+    Ok((hostname_allocation, config_allocation))
 }
 
 pub async fn handshake<S>(socket: S, tls_config: TlsConfig<'_>) -> Result<RustlsSocket<S>, Error>
@@ -194,6 +236,8 @@ where
         state: ClientConnection::new(Arc::new(config), host).map_err(Error::tls)?,
         _client_auth_allocation: None,
         _root_store_allocation: None,
+        _hostname_allocation: None,
+        _config_allocation: None,
         _owner_allocation: None,
         close_notify_sent: false,
     };
@@ -213,15 +257,10 @@ where
     S: Socket,
 {
     use crate::net::resource_budget::ResourceReservation;
-    use core::alloc::Layout;
-    use core::sync::atomic::AtomicUsize;
 
-    let (owner_arc_layout, _) = Layout::new::<[AtomicUsize; 2]>()
-        .extend(Layout::new::<DeframerBudgetOwner>())
-        .map_err(|_| Error::tls("resource-owner Arc layout overflow"))?;
     let owner_allocation = ResourceReservation::try_new(
         resource_budget.clone(),
-        owner_arc_layout.pad_to_align().size(),
+        arc_allocation_size::<DeframerBudgetOwner>().map_err(Error::tls)?,
     )
     .map_err(Error::tls)?;
     let owner: Arc<dyn rustls::DeframerBufferOwner> =
@@ -240,16 +279,17 @@ where
         .with_safe_default_protocol_versions()
         .unwrap();
 
-    let blocking_owner = crate::rt::resource_owner::blocking_job_owner(resource_budget.clone());
+    let blocking_owner = crate::rt::resource_owner::blocking_job_owner(resource_budget.clone())
+        .map_err(Error::tls)?;
     let mut client_auth_allocation = None;
     let user_auth = match (tls_config.client_cert_path, tls_config.client_key_path) {
         (Some(cert_path), Some(key_path)) => {
             let cert_data = super::read_certificate_input_owned(cert_path, &blocking_owner)
                 .await
-                .map_err(|_| Error::tls("resource-owned certificate load failed"))?;
+                .map_err(certificate_read_error)?;
             let key_data = super::read_certificate_input_owned(key_path, &blocking_owner)
                 .await
-                .map_err(|_| Error::tls("resource-owned private key load failed"))?;
+                .map_err(certificate_read_error)?;
             let (cert_chain, key_der, reservation) = client_auth_from_pem_with_resource_budget(
                 cert_data.get(),
                 key_data.get(),
@@ -286,7 +326,7 @@ where
             let custom_roots = if let Some(ca) = tls_config.root_cert_path {
                 let data = super::read_certificate_input_owned(ca, &blocking_owner)
                     .await
-                    .map_err(|_| Error::tls("resource-owned root certificate load failed"))?;
+                    .map_err(certificate_read_error)?;
                 Some((ca, data))
             } else {
                 None
@@ -336,8 +376,12 @@ where
         }
     };
 
+    let (hostname_allocation, config_allocation) =
+        reserve_connection_metadata(resource_budget.clone(), tls_config.hostname)
+            .map_err(Error::tls)?;
     let host = ServerName::try_from(tls_config.hostname.to_owned()).map_err(Error::tls)?;
-    let state = ClientConnection::new_with_resource_owner(Arc::new(config), host, owner.clone())
+    let config = Arc::new(config);
+    let state = ClientConnection::new_with_resource_owner(config, host, owner.clone())
         .map_err(Error::tls)?;
     drop(owner);
     let mut socket = RustlsSocket {
@@ -345,6 +389,8 @@ where
         state,
         _client_auth_allocation: client_auth_allocation,
         _root_store_allocation: root_store_allocation,
+        _hostname_allocation: Some(hostname_allocation),
+        _config_allocation: Some(config_allocation),
         _owner_allocation: Some(owner_allocation),
         close_notify_sent: false,
     };
@@ -370,12 +416,10 @@ pub(super) fn client_auth_from_pem_with_resource_budget(
     crate::net::resource_budget::ResourceReservation,
 ), Error> {
     use crate::net::resource_budget::ResourceReservation;
-    let bytes = client_auth_pem_heap_bound(cert_pem, key_pem)
-        .map_err(|_| Error::tls("client credential PEM accounting overflow"))?;
+    let bytes = client_auth_pem_heap_bound(cert_pem, key_pem).map_err(Error::tls)?;
     // The pinned rustls-pki-types slice parser allocates its 1024-byte base64
     // scratch in the constructor, so this debit must happen before invoking it.
-    let reservation = ResourceReservation::try_new(budget, bytes)
-        .map_err(|_| Error::tls("client credential PEM allocation denied"))?;
+    let reservation = ResourceReservation::try_new(budget, bytes).map_err(Error::tls)?;
     let certs = certs_from_pem(cert_pem)?;
     let key = private_key_from_pem(key_pem)?;
     Ok((certs, key, reservation))
@@ -412,37 +456,40 @@ pub(super) fn root_store_with_resource_budget(
     RootCertStore,
     crate::net::resource_budget::ResourceReservation,
 ), Error> {
-    use crate::net::resource_budget::ResourceReservation;
+    use crate::net::resource_budget::{BudgetError, ResourceReservation};
     let custom = custom_pem.unwrap_or_default();
     let custom_count = count_marker(custom, b"-----BEGIN CERTIFICATE-----");
     let total_count = webpki_roots::TLS_SERVER_ROOTS
         .len()
         .checked_add(custom_count)
-        .ok_or_else(|| Error::tls("root-store item accounting overflow"))?;
+        .ok_or(BudgetError::Overflow)
+        .map_err(Error::tls)?;
     let outer = total_count
         .checked_mul(core::mem::size_of::<rustls::pki_types::TrustAnchor<'static>>())
-        .ok_or_else(|| Error::tls("root-store allocation accounting overflow"))?;
+        .ok_or(BudgetError::Overflow)
+        .map_err(Error::tls)?;
     // During custom add(), decoded DER may overlap the three owned TrustAnchor
     // byte fields. Parser scratch and an error/unknown-label envelope are also
     // simultaneous. Each child is bounded by the immutable PEM source bytes.
     let custom_bound = if custom.is_empty() {
         0
     } else {
-        let scratch = pem_scratch_capacity_bound(custom.len())
-            .map_err(|_| Error::tls("custom root PEM accounting overflow"))?;
+        let scratch = pem_scratch_capacity_bound(custom.len()).map_err(Error::tls)?;
         let owned = custom
             .len()
             .checked_mul(5)
-            .ok_or_else(|| Error::tls("custom root PEM accounting overflow"))?;
+            .ok_or(BudgetError::Overflow)
+            .map_err(Error::tls)?;
         scratch
             .checked_add(owned)
-            .ok_or_else(|| Error::tls("custom root PEM accounting overflow"))?
+            .ok_or(BudgetError::Overflow)
+            .map_err(Error::tls)?
     };
     let bytes = outer
         .checked_add(custom_bound)
-        .ok_or_else(|| Error::tls("root-store allocation accounting overflow"))?;
-    let reservation = ResourceReservation::try_new(budget, bytes)
-        .map_err(|_| Error::tls("root-store allocation denied"))?;
+        .ok_or(BudgetError::Overflow)
+        .map_err(Error::tls)?;
+    let reservation = ResourceReservation::try_new(budget, bytes).map_err(Error::tls)?;
     // Construct the outer Vec only after the exact slot debit. Static WebPKI
     // anchors borrow their DER; custom anchors are added under the same debit.
     let mut store = RootCertStore::empty();
@@ -766,5 +813,80 @@ impl rustls::DeframerBufferOwner for DeframerBudgetOwner {
         self.0
             .try_reserve_provider_shared(bytes)
             .map_err(|_| rustls::DeframerBufferError)
+    }
+}
+
+#[cfg(test)]
+mod final_review_resource_tests {
+    use super::*;
+    use crate::net::resource_budget::{BudgetError, ResourceBudget};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct Ledger {
+        limit: usize,
+        used: AtomicUsize,
+    }
+
+    impl ResourceBudget for Ledger {
+        fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
+            self.used
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
+                    used.checked_add(bytes).filter(|next| *next <= self.limit)
+                })
+                .map(|_| ())
+                .map_err(|_| BudgetError::Unavailable)
+        }
+
+        fn release(&self, bytes: usize) {
+            self.used.fetch_sub(bytes, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn connection_metadata_is_reserved_before_backing_and_released() {
+        let hostname = "localhost";
+        let required = hostname.len() + arc_allocation_size::<ClientConfig>().unwrap();
+        let budget = Arc::new(Ledger {
+            limit: required,
+            used: AtomicUsize::new(0),
+        });
+        let (hostname_charge, config_charge) =
+            reserve_connection_metadata(budget.clone(), hostname).unwrap();
+        assert_eq!(budget.used.load(Ordering::SeqCst), required);
+        drop(hostname_charge);
+        drop(config_charge);
+        assert_eq!(budget.used.load(Ordering::SeqCst), 0);
+
+        let denied = Arc::new(Ledger {
+            limit: required - 1,
+            used: AtomicUsize::new(0),
+        });
+        assert!(matches!(
+            reserve_connection_metadata(denied.clone(), hostname),
+            Err(BudgetError::Unavailable)
+        ));
+        assert_eq!(denied.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn budget_denials_remain_canonical_tls_error_sources() {
+        let mapped = certificate_read_error(super::super::CertificateReadError::Budget(
+            BudgetError::Unavailable,
+        ));
+        let source = std::error::Error::source(&mapped)
+            .and_then(|error| error.downcast_ref::<BudgetError>());
+        assert_eq!(source, Some(&BudgetError::Unavailable));
+
+        let denied: Arc<dyn ResourceBudget> = Arc::new(Ledger {
+            limit: 0,
+            used: AtomicUsize::new(0),
+        });
+        let error = match client_auth_from_pem_with_resource_budget(&[], &[], denied) {
+            Err(error) => error,
+            Ok(_) => panic!("zero budget unexpectedly admitted client-auth backing"),
+        };
+        let source = std::error::Error::source(&error)
+            .and_then(|source| source.downcast_ref::<BudgetError>());
+        assert_eq!(source, Some(&BudgetError::Unavailable));
     }
 }
