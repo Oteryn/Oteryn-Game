@@ -277,6 +277,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .into());
             }
             drop(connection);
+            drop(runtime);
 
             let snapshot = ledger.snapshot();
             if snapshot.peak_ordinary == 0 || snapshot.peak_ordinary > SLOT_LIMIT {
