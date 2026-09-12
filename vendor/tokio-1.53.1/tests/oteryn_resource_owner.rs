@@ -490,3 +490,82 @@ fn finished_owned_worker_reaps_before_reusing_thread_cap() {
     assert_eq!(ordinary, 13);
     drop(runtime);
 }
+
+#[test]
+fn owned_thread_cap_stays_closed_until_external_join() {
+    use std::time::Duration;
+
+    let first_owner = Arc::new(Witness::default());
+    let second_owner = Arc::new(Witness::default());
+    let gate = Arc::new((Mutex::new((false, false)), Condvar::new()));
+    let stop_gate = gate.clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .max_blocking_threads(1)
+        .thread_keep_alive(Duration::from_millis(5))
+        .on_thread_stop(move || {
+            let (lock, ready) = &*stop_gate;
+            let mut state = lock.lock().unwrap();
+            state.0 = true;
+            ready.notify_all();
+            while !state.1 {
+                state = ready.wait(state).unwrap();
+            }
+        })
+        .build()
+        .unwrap();
+
+    let first = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                first_owner.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                || 1usize,
+            )
+        })
+        .unwrap();
+    assert_eq!(runtime.block_on(first).unwrap(), 1);
+    {
+        let (lock, ready) = &*gate;
+        let mut state = lock.lock().unwrap();
+        while !state.0 {
+            state = ready.wait(state).unwrap();
+        }
+    }
+
+    let denied = runtime.block_on(async {
+        spawn_blocking_owned(
+            second_owner.clone(),
+            BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+            || 2usize,
+        )
+    });
+    assert!(matches!(denied, Err(OwnedSpawnError::ThreadSpawn(_))));
+    assert_eq!(second_owner.reservations.load(Ordering::SeqCst), 0);
+    assert!(first_owner.held.load(Ordering::SeqCst) >= 2 * 1024 * 1024);
+
+    {
+        let (lock, ready) = &*gate;
+        lock.lock().unwrap().1 = true;
+        ready.notify_all();
+    }
+    let second = loop {
+        let result = runtime.block_on(async {
+            spawn_blocking_owned(
+                second_owner.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                || 2usize,
+            )
+        });
+        match result {
+            Ok(handle) => break handle,
+            Err(OwnedSpawnError::ThreadSpawn(_)) => {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            Err(error) => panic!("unexpected owned admission failure: {error}"),
+        }
+    };
+    assert_eq!(first_owner.held.load(Ordering::SeqCst), 0);
+    assert_eq!(runtime.block_on(second).unwrap(), 2);
+    drop(runtime);
+    assert_eq!(second_owner.held.load(Ordering::SeqCst), 0);
+}
