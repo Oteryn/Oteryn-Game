@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Select conservative PR lanes using only a verified protected-base checkout.
 
-Cargo edges are not a complete file-input graph. The audited snapshot additionally
-binds all non-server workspace package trees and root build/dependency inputs.
-Changed consumer code (including new cross-package includes) disables the server
-optimization until a reviewed update adopts that input contract.
+Cargo edges are not a complete file-input graph. The audited non-server snapshot
+binds server-only isolation. Neutral-documentation routing separately compares
+protected consumer drift against an audited protected-main baseline and fails
+closed only when later changes can affect build/document input discovery.
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ import sys
 
 AUDITED_INPUT_SHA256 = "2dbc1273b54b4f63653bc6c5a92ee10a1c095e3bd05dac232751efc4d358fa9d"
 AUDITED_DOC_INPUT_SHA256 = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
+AUDITED_DOC_CONSUMER_BASE_SHA = "1d0916c7476f37589524c7181b5857bcc6c141e1"
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
 REQUIRED = {
@@ -27,6 +28,12 @@ REQUIRED = {
     "oteryn-simulation-determinism": "crates/simulation-determinism",
 }
 BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
+DOC_CONSUMER_MARKERS = (
+    b"include_str!", b"include_bytes!", b"std::fs", b"tokio::fs", b"async_std::fs",
+    b"file::open", b"openoptions", b"read_to_string", b"read_dir", b"read_link",
+    b"walkdir", b"glob::", b"globset", b"command::new",
+    b"docs/", b".md", b"readme", b"changelog", b"contributing", b"agents.md",
+)
 
 
 def full(reason: str, surface: str = "unknown") -> dict:
@@ -99,6 +106,61 @@ def input_digest(metadata: dict, include_server: bool = False) -> str:
     return hashlib.sha256(b"\0".join(sorted(selected)) + b"\0").hexdigest()
 
 
+def document_consumer_content_safe(path: str, content: bytes) -> bool:
+    if path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
+        return False
+    lowered = content.lower()
+    return not any(marker in lowered for marker in DOC_CONSUMER_MARKERS)
+
+
+def document_consumers_safe(metadata: dict) -> bool:
+    try:
+        roots, _ = graph(metadata)
+        if re.fullmatch(r"[0-9a-f]{40}", AUDITED_DOC_CONSUMER_BASE_SHA) is None:
+            return False
+        probe = subprocess.run(
+            ["git", "cat-file", "-e", f"{AUDITED_DOC_CONSUMER_BASE_SHA}^{{commit}}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+        )
+        if probe.returncode != 0:
+            fetched = subprocess.run(
+                ["git", "fetch", "--no-tags", "--depth=1", "origin", AUDITED_DOC_CONSUMER_BASE_SHA],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+            )
+            if fetched.returncode != 0:
+                return False
+            subprocess.check_call(
+                ["git", "cat-file", "-e", f"{AUDITED_DOC_CONSUMER_BASE_SHA}^{{commit}}"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        current = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+        if re.fullmatch(r"[0-9a-f]{40}", current) is None:
+            return False
+        pathspecs = sorted(BUILD_INPUTS) + [".cargo"] + sorted(roots.values())
+        deleted_or_typed = subprocess.check_output(
+            ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
+             "--diff-filter=DT", "--name-only", "-z",
+             AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
+        )
+        if deleted_or_typed:
+            return False
+        changed = subprocess.check_output(
+            ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
+             "--diff-filter=ACMR", "--name-only", "-z",
+             AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
+        )
+        for raw_path in (item for item in changed.split(b"\0") if item):
+            path = raw_path.decode("utf-8")
+            if not valid_path(path):
+                return False
+            content = subprocess.check_output(["git", "show", f"{current}:{path}"])
+            if not document_consumer_content_safe(path, content):
+                return False
+        return True
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
+        return False
+
+
 def candidate_modes_safe(sha: str) -> bool:
     if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
         return False
@@ -107,7 +169,8 @@ def candidate_modes_safe(sha: str) -> bool:
     return bool(entries) and all(row.split(b"\t", 1)[0].split()[0] in {b"100644", b"100755"} for row in entries)
 
 
-def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None, candidate_modes_verified=False) -> dict:
+def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None,
+             candidate_modes_verified=False, docs_consumers_verified=None) -> dict:
     try:
         if candidate_modes_verified is not True:
             return full("unverified-or-special-candidate-modes")
@@ -132,7 +195,9 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
                 paths.append(previous)
         if all(neutral(path) for path in paths):
             graph(metadata)
-            if digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256:
+            if docs_consumers_verified is False:
+                return full("unreviewed-document-consumer-inputs", "docs")
+            if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
                 return full("unreviewed-document-consumer-inputs", "docs")
             return dict(rust=False, windows=False, surface="docs", reason="neutral-documentation")
         if any(path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"} for path in paths):
@@ -167,12 +232,7 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
 
 
 def classify_post_merge(event, metadata) -> dict:
-    """Reuse PR risk semantics only for a verified, complete protected-main push.
-
-    The workflow executes this code and Cargo metadata at the already-protected
-    event SHA. Neither the event's capped commit list nor PR metadata is used.
-    Git's complete before/after tree diff also covers batched queue merges.
-    """
+    """Reuse PR risk semantics only for a verified, complete protected-main push."""
     try:
         if (os.environ.get("GITHUB_EVENT_NAME") != "push"
                 or os.environ.get("GITHUB_REF") != "refs/heads/main"
@@ -191,7 +251,6 @@ def classify_post_merge(event, metadata) -> dict:
         if actual != after or subprocess.check_output(["git", "rev-parse", "--is-shallow-repository"]).strip() != b"false":
             return full("unverified-or-incomplete-protected-checkout")
         subprocess.check_output(["git", "merge-base", "--is-ancestor", before, after], stderr=subprocess.PIPE)
-        # --no-renames retains both sides of renames/copies as ordinary paths.
         raw = subprocess.check_output(["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--name-status", "-z", before, after, "--"])
         if not raw or not raw.endswith(b"\0"):
             return full("empty-or-incomplete-git-diff")
@@ -203,8 +262,8 @@ def classify_post_merge(event, metadata) -> dict:
                  for index in range(0, len(fields), 2)]
         result = classify(files, len(files), metadata, input_digest(metadata),
                           docs_digest=input_digest(metadata, include_server=True),
-                          candidate_modes_verified=candidate_modes_safe(after))
-        # Only reviewed docs may omit runtime lanes; policy/supply chain remain.
+                          candidate_modes_verified=candidate_modes_safe(after),
+                          docs_consumers_verified=document_consumers_safe(metadata))
         if result["rust"] is False and result["windows"] is False and result["surface"] == "docs":
             return result
         if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability"}:
@@ -221,10 +280,21 @@ def main() -> int:
         if post_merge:
             result = classify_post_merge(json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")), metadata)
         else:
+            files = json.loads(os.environ["CHANGED_FILE_RECORDS"])
             digest = input_digest(metadata)
-            result = classify(json.loads(os.environ["CHANGED_FILE_RECORDS"]), int(os.environ["CHANGED_FILE_COUNT"]), metadata, digest,
-                              complete=os.environ["ENUMERATION_COMPLETE"] == "true", docs_digest=input_digest(metadata, include_server=True),
-                              candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]))
+            docs_candidate = (
+                isinstance(files, list) and bool(files)
+                and all(isinstance(item, dict) and isinstance(item.get("filename"), str)
+                        and neutral(item["filename"])
+                        and (item.get("previous_filename") is None or
+                             (isinstance(item.get("previous_filename"), str) and neutral(item["previous_filename"])))
+                        for item in files)
+            )
+            result = classify(files, int(os.environ["CHANGED_FILE_COUNT"]), metadata, digest,
+                              complete=os.environ["ENUMERATION_COMPLETE"] == "true",
+                              docs_digest=input_digest(metadata, include_server=True),
+                              candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]),
+                              docs_consumers_verified=document_consumers_safe(metadata) if docs_candidate else None)
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
         result = full("classifier-or-metadata-failure")
     print(json.dumps(result, sort_keys=True))

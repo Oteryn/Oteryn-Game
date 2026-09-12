@@ -46,7 +46,9 @@ def main():
         old_cwd = os.getcwd()
         os.chdir(root)
         try:
-            with patch.dict(os.environ, env), patch.object(lanes, "AUDITED_INPUT_SHA256", lanes.input_digest(metadata)):
+            with patch.dict(os.environ, env), \
+                    patch.object(lanes, "AUDITED_INPUT_SHA256", lanes.input_digest(metadata)), \
+                    patch.object(lanes, "AUDITED_DOC_CONSUMER_BASE_SHA", before):
                 def classify(change=None, environment=None, meta=None):
                     with patch.dict(os.environ, environment or {}):
                         result = lanes.classify_post_merge(dict(event, **(change or {})), metadata if meta is None else meta)
@@ -123,21 +125,27 @@ def main():
                         with patch.dict(os.environ, GITHUB_SHA=doc_head):
                             result = classify({"before": doc_before, "after": doc_head})
                             assert result["rust"] is False and result["windows"] is False, result
+                            # The bounded protected-base consumer proof supersedes
+                            # stale broad digests for an exact neutral-doc range.
                             with patch.object(lanes, "AUDITED_DOC_INPUT_SHA256", "stale"):
-                                assert classify({"before": doc_before, "after": doc_head})["windows"] is True
+                                result = classify({"before": doc_before, "after": doc_head})
+                                assert result["rust"] is False and result["windows"] is False, result
                             with patch.object(lanes, "AUDITED_INPUT_SHA256", "stale"):
-                                assert classify({"before": doc_before, "after": doc_head})["windows"] is True
-                    # A changed/new consumer can acquire a document dependency.
-                    # Both server and non-server trees must invalidate docs proof.
+                                result = classify({"before": doc_before, "after": doc_head})
+                                assert result["rust"] is False and result["windows"] is False, result
+
+                    # Harmless protected source drift no longer poisons all later
+                    # neutral-doc changes. Material mixed changes themselves still
+                    # use the ordinary conservative PR/post-merge classification.
                     for path in ("apps/game-server/src/main.rs", "apps/game-server/src/doc_reader.rs",
-                                 "apps/client/src/doc_reader.rs", "Cargo.lock", ".github/workflows/other.yml", "unknown.bin"):
+                                 "apps/client/src/doc_reader.rs", ".github/workflows/other.yml", "unknown.bin"):
                         git("checkout", "-q", doc_before)
                         doc.write_text("changed docs\n")
                         target = root / path
                         target.parent.mkdir(parents=True, exist_ok=True)
-                        target.write_text("changed input\n")
+                        target.write_text("harmless changed input\n")
                         git("add", ".")
-                        git("commit", "-qm", "mixed documentation input")
+                        git("commit", "-qm", "harmless mixed documentation input")
                         mixed = git("rev-parse", "HEAD")
                         with patch.dict(os.environ, GITHUB_SHA=mixed):
                             result = classify({"before": doc_before, "after": mixed})
@@ -145,15 +153,36 @@ def main():
                                 assert result["rust"] is True and result["windows"] is False, result
                             else:
                                 assert result["rust"] is True and result["windows"] is True, result
-                        # A subsequent docs-only range uses the changed protected
-                        # consumers; it must not inherit the previous docs proof.
                         doc.write_text("another document change\n")
                         git("add", ".")
-                        git("commit", "-qm", "docs after consumer change")
+                        git("commit", "-qm", "docs after harmless source drift")
                         head = git("rev-parse", "HEAD")
                         with patch.dict(os.environ, GITHUB_SHA=head):
-                            if path.startswith("apps/") or path == "Cargo.lock":
-                                assert classify({"before": mixed, "after": head})["windows"] is True
+                            result = classify({"before": mixed, "after": head})
+                            assert result["rust"] is False and result["windows"] is False, (path, result)
+
+                    # Build inputs and changed source that actually introduces a
+                    # file/document consumer still poison later docs-only proof.
+                    for path, content in (
+                        ("Cargo.lock", "changed lock input\n"),
+                        ("apps/game-server/src/doc_reader.rs", 'fn read() { let _ = std::fs::read_to_string("docs/reference.md"); }\n'),
+                        ("apps/client/src/doc_reader.rs", 'fn read() { let _ = std::fs::read_to_string("docs/reference.md"); }\n'),
+                    ):
+                        git("checkout", "-q", doc_before)
+                        doc.write_text("changed docs\n")
+                        target = root / path
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.write_text(content)
+                        git("add", ".")
+                        git("commit", "-qm", "risky mixed documentation input")
+                        mixed = git("rev-parse", "HEAD")
+                        doc.write_text("another document change\n")
+                        git("add", ".")
+                        git("commit", "-qm", "docs after risky consumer drift")
+                        head = git("rev-parse", "HEAD")
+                        with patch.dict(os.environ, GITHUB_SHA=head):
+                            result = classify({"before": mixed, "after": head})
+                            assert result["rust"] is True and result["windows"] is True, (path, result)
                 git("checkout", "-q", after)
                 (root / "link").symlink_to("apps/game-server/src/main.rs")
                 git("add", ".")
@@ -181,6 +210,7 @@ def main():
         rustup.chmod(0o755)
         result = subprocess.run(["bash", "-c", script], env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output)), capture_output=True, text=True)
         assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        output.unlink(missing_ok=True)
         rustup.write_text("#!/bin/sh\nexit 0\n")
         cargo = Path(directory) / "cargo"
         cargo.write_text("#!/bin/sh\nprintf '{}\\n'\nexit \"$METADATA_EXIT\"\n")
@@ -196,7 +226,7 @@ def main():
                    "rust=false\nwindows=false\nother=false\n", "rust=false\nwindows=false\n\n")
         for payload in valid + invalid:
             for metadata_exit, classifier_exit in ((0, 0), (1, 0), (0, 1)):
-                output.unlink()
+                output.unlink(missing_ok=True)
                 result = subprocess.run(["bash", "-c", script], env=dict(os.environ,
                     PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
                     WIRE_OUTPUT=payload, METADATA_EXIT=str(metadata_exit), CLASSIFIER_EXIT=str(classifier_exit)), capture_output=True, text=True)
