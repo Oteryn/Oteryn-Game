@@ -73,6 +73,28 @@ A7
 
 A7 resumes `agent/otv2-gameplay-server-seam-01`; do not create a new Server Seam worker.
 
+## Mandatory owner-facing successor footer
+
+Every A0-A7 agent must end its completed or blocked final response with an explicit instruction telling the owner which agent to launch next. The recommendation must be resolved from live state and current gates, not copied mechanically from this runbook.
+
+Required shape:
+
+```text
+NEXT_AGENT: <one exact alias, up to three independent aliases, or NONE>
+RUN_WHEN: <exact gate/state making the launch valid>
+WHY: <one concise dependency reason>
+```
+
+Rules:
+
+- use the exact aliases from this runbook;
+- never recommend a mutating worker before its live start gate is true;
+- when several independent lanes are legal, list at most three in launch order;
+- when a blocker prevents launch, state the intended next alias plus the missing gate in `RUN_WHEN`;
+- after `FRESH_G0_READY`, A6 should normally point to `Oteryn: sol server seam lead`;
+- after `SERVER_SEAM_READY_FOR_INTEGRATION`, A7 must use `NEXT_AGENT: NONE` unless live programme state still requires coordinator action;
+- uncertain or cross-lane routing returns to `Oteryn: astra wp3-v2 programme coordinator` rather than guessing.
+
 ## Concurrency ceiling
 
 Prefer no more than 2-3 active agents at once. Only one mutating agent may own a material shared path set. Read-only A2 may overlap A1/A4 as evidence support when useful.
