@@ -54,3 +54,20 @@ Use A2's exact evidence rather than assumptions. Where proof is missing, write `
 The proposed option must preserve PostgreSQL semantics, TLS/hostname security, accepted DFR ceilings/deadlines/custody, finite provable ownership and upgradeability while minimizing unnecessary long-lived dependency forks. Record realistic rejected alternatives and explicit future impact.
 
 Do not claim the architecture is `ACCEPTED` from this worker. Delivery ends with an exact candidate decision ready for repository acceptance.
+
+## Mandatory next-agent instruction
+
+End the final response with:
+
+```text
+NEXT_AGENT: <exact alias>
+RUN_WHEN: <exact gate>
+WHY: <one concise dependency reason>
+```
+
+Default routing for this lane:
+- if the architecture candidate is complete but still needs repository acceptance, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
+- if live state already proves the superseding decision accepted and implementation allocation active, `NEXT_AGENT: Oteryn: astra wp3-v2 implementation lead`;
+- if A2 evidence is still a material blocker, `NEXT_AGENT: Oteryn: sol wp3-v2 evidence auditor` and name the exact missing proof.
+
+Do not recommend A4 before the acceptance/allocation gate is actually true.
