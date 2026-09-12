@@ -267,7 +267,8 @@ fn forced_worker_spawn_failure_releases_never_created_backing_once() {
     });
     assert!(matches!(result, Err(OwnedSpawnError::ThreadSpawn(_))));
     assert_eq!(owner.reservations.load(Ordering::SeqCst), 4);
-    assert_eq!(owner.releases.load(Ordering::SeqCst), 2);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 4);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
     drop(runtime);
     assert_eq!(owner.releases.load(Ordering::SeqCst), 4);
     assert_eq!(owner.held.load(Ordering::SeqCst), 0);

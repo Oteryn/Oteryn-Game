@@ -130,7 +130,7 @@ struct OwnedQueue {
     queue: VecDeque<Task>,
     limit: usize,
     queue_charge: task::OterynCharge,
-    _node_charge: task::OterynCharge,
+    node_charge: Option<task::OterynCharge>,
     worker_running: bool,
     next: Option<Box<OwnedQueue>>,
 }
@@ -144,10 +144,7 @@ impl OwnedQueue {
         }
     }
 
-    fn remove_if_idle(
-        head: &mut Option<Box<OwnedQueue>>,
-        owner: &Arc<dyn BlockingOwner>,
-    ) -> bool {
+    fn remove_if_idle(head: &mut Option<Box<OwnedQueue>>, owner: &Arc<dyn BlockingOwner>) -> bool {
         let remove_head = match head.as_ref() {
             Some(queue) => {
                 queue.queue_charge.same_owner(owner)
@@ -160,6 +157,12 @@ impl OwnedQueue {
         if remove_head {
             let mut removed = head.take().expect("owned queue head checked above");
             *head = removed.next.take();
+            let node_charge = removed
+                .node_charge
+                .take()
+                .expect("owned queue node charge must exist until removal");
+            drop(removed);
+            drop(node_charge);
             true
         } else if let Some(queue) = head.as_deref_mut() {
             Self::remove_if_idle(&mut queue.next, owner)
@@ -382,17 +385,15 @@ impl Spawner {
                 .checked_mul(std::mem::size_of::<Task>())
                 .ok_or(OwnedSpawnError::AccountingOverflow)?;
             let queue_charge = task::OterynCharge::reserve(owner.clone(), bytes)?;
-            let node_charge = task::OterynCharge::reserve(
-                owner.clone(),
-                std::mem::size_of::<OwnedQueue>(),
-            )?;
+            let node_charge =
+                task::OterynCharge::reserve(owner.clone(), std::mem::size_of::<OwnedQueue>())?;
             let queue = VecDeque::with_capacity(config.queue_capacity);
             let next = shared.owned_queues.take();
             shared.owned_queues = Some(Box::new(OwnedQueue {
                 queue,
                 limit: config.queue_capacity,
                 queue_charge,
-                _node_charge: node_charge,
+                node_charge: Some(node_charge),
                 worker_running: false,
                 next,
             }));
@@ -953,5 +954,90 @@ impl Inner {
 impl fmt::Debug for Spawner {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("blocking::Spawner").finish()
+    }
+}
+
+#[cfg(test)]
+mod oteryn_owned_queue_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
+    use std::sync::Mutex as StdMutex;
+
+    #[derive(Default)]
+    struct ReleaseWitness {
+        held: AtomicUsize,
+        releases: StdMutex<Vec<usize>>,
+    }
+
+    impl BlockingOwner for ReleaseWitness {
+        fn try_reserve(&self, bytes: usize) -> bool {
+            self.held.fetch_add(bytes, AtomicOrdering::SeqCst);
+            true
+        }
+
+        fn release(&self, bytes: usize) {
+            self.releases.lock().unwrap().push(bytes);
+            self.held.fetch_sub(bytes, AtomicOrdering::SeqCst);
+        }
+    }
+
+    fn reserve(owner: &std::sync::Arc<ReleaseWitness>, bytes: usize) -> task::OterynCharge {
+        let owner: std::sync::Arc<dyn BlockingOwner> = owner.clone();
+        task::OterynCharge::reserve(owner, bytes).unwrap()
+    }
+
+    fn owned_queue(
+        owner: &std::sync::Arc<ReleaseWitness>,
+        queue_bytes: usize,
+        worker_running: bool,
+    ) -> Box<OwnedQueue> {
+        Box::new(OwnedQueue {
+            queue: VecDeque::new(),
+            limit: 1,
+            queue_charge: reserve(owner, queue_bytes),
+            node_charge: Some(reserve(owner, std::mem::size_of::<OwnedQueue>())),
+            worker_running,
+            next: None,
+        })
+    }
+
+    #[test]
+    fn idle_removal_releases_node_charge_after_box_fields() {
+        let owner = std::sync::Arc::new(ReleaseWitness::default());
+        let dyn_owner: std::sync::Arc<dyn BlockingOwner> = owner.clone();
+        let queue_bytes = 64;
+        let node_bytes = std::mem::size_of::<OwnedQueue>();
+        let mut head = Some(owned_queue(&owner, queue_bytes, false));
+
+        assert_eq!(
+            owner.held.load(AtomicOrdering::SeqCst),
+            queue_bytes + node_bytes
+        );
+        assert!(OwnedQueue::remove_if_idle(&mut head, &dyn_owner));
+        assert!(head.is_none());
+        assert_eq!(
+            owner.releases.lock().unwrap().as_slice(),
+            &[queue_bytes, node_bytes]
+        );
+        assert_eq!(owner.held.load(AtomicOrdering::SeqCst), 0);
+    }
+
+    #[test]
+    fn non_idle_queue_keeps_node_charge_live() {
+        let owner = std::sync::Arc::new(ReleaseWitness::default());
+        let dyn_owner: std::sync::Arc<dyn BlockingOwner> = owner.clone();
+        let queue_bytes = 64;
+        let node_bytes = std::mem::size_of::<OwnedQueue>();
+        let mut head = Some(owned_queue(&owner, queue_bytes, true));
+
+        assert!(!OwnedQueue::remove_if_idle(&mut head, &dyn_owner));
+        assert!(owner.releases.lock().unwrap().is_empty());
+        assert_eq!(
+            owner.held.load(AtomicOrdering::SeqCst),
+            queue_bytes + node_bytes
+        );
+
+        drop(head);
+        assert_eq!(owner.held.load(AtomicOrdering::SeqCst), 0);
     }
 }
