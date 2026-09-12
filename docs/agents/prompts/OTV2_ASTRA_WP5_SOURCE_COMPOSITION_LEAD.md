@@ -52,3 +52,18 @@ Carry forward `OTV2_WP3_GAME_PLATFORM_CROSS_REPO_AUDIT_R01_R21_20260912.md`: in 
 After protected dependencies are terminal, perform a fresh protected-main/source-owner readback and exact composed qualification. G0 must prove the real source/admission/reconnect/durability boundary required to resume #247. It is not G1 and not full programme completion.
 
 Handoff to A0/A7 must name exact protected Game revision, exact Platform revision used for interoperability evidence, source-owner revisions, DB/transport profiles, test evidence and any limitation.
+
+## Mandatory next-agent instruction
+
+End the final response with:
+
+```text
+NEXT_AGENT: <exact alias>
+RUN_WHEN: <exact gate>
+WHY: <one concise dependency reason>
+```
+
+Default routing for this lane:
+- after `FRESH_G0_READY` is truthfully established, `NEXT_AGENT: Oteryn: sol server seam lead`;
+- if G0 is not yet terminal because a dependency or cross-repo condition remains, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator` and name the exact blocker;
+- never recommend A7 merely because local S1/S2/S3 checks are green; fresh composed G0 must actually be established first.
