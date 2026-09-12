@@ -223,22 +223,53 @@ def test_bounded_document_consumer_drift(module):
     assert result["rust"] and result["windows"], result
     assert result["reason"] == "unreviewed-document-consumer-inputs", result
 
-    assert module.document_consumer_content_safe("apps/game-server/src/combat.rs", b"fn damage() -> u32 { 7 }")
-    for path, content in (
-        ("Cargo.toml", b"[workspace]"),
-        ("apps/game-server/build.rs", b"fn main() {}"),
-        ("apps/game-server/src/lib.rs", b'let x = std::fs::read_to_string("config");'),
-        ("apps/game-server/src/lib.rs", b'let x = "docs/reference.md";'),
-        ("apps/game-server/src/lib.rs", b'const X: &str = include_str!("fixture.sql");'),
+    assert not module.document_consumer_content_safe(
+        "apps/game-server/src/combat.rs", b"fn damage() -> u32 { 6 }", b"fn damage() -> u32 { 7 }")
+    unchanged_consumer = b'const GUIDE: &str = include_str!("guide.md");\n'
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", unchanged_consumer, unchanged_consumer + b"// harmless note\n")
+    literal_context = b'''const Q1: char = '\"';\nconst Q2: u8 = b'\"';\nconst ESC: char = '\\u{1F_600}';\n'''
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", literal_context + b"// old note\n",
+        literal_context + b"// changed note\n")
+    malformed_unicode_context = b"const BAD: char = '\\u{_1}';\n"
+    assert not module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", malformed_unicode_context + b"// old note\n",
+        malformed_unicode_context + b"// changed note\n")
+    lifetime_context = b"fn borrow<'a>(value: &'a str) -> &'a str { value }\n'outer: loop { break 'outer; }\n"
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", lifetime_context + b"// old note\n",
+        lifetime_context + b"// changed note\n")
+    for path, baseline, current in (
+        ("Cargo.toml", b"[workspace]", b"[workspace]\n"),
+        ("apps/game-server/build.rs", b"fn main() {}", b"fn main() { println!(); }"),
+        ("apps/game-server/src/lib.rs", b"", b"use std::{fs}; fs::read(path);"),
+        ("apps/game-server/src/lib.rs", b"", b"use std::{fs as storage}; storage::read(path);"),
+        ("apps/game-server/src/lib.rs", b"", b'const X: &str = include_str!("fixture.sql");'),
+        ("apps/game-server/src/lib.rs", b"const USE_DOCS: bool = false;", b"const USE_DOCS: bool = true;"),
+        ("apps/game-server/src/lib.rs", b"fn use_docs() -> bool { false }", b"fn use_docs() -> bool { true }"),
+        ("apps/game-server/src/lib.rs", b"// module", b"/// module"),
+        ("apps/game-server/src/lib.rs", b"// crate", b"//! crate"),
+        ("apps/game-server/src/lib.rs", b"/**\n// old doc text\n*/", b"/**\n// changed doc text\n*/"),
+        ("apps/game-server/src/lib.rs", b"/*!\n// old crate docs\n*/", b"/*!\n// changed crate docs\n*/"),
+        ("apps/game-server/src/lib.rs", b'let text = r#"\n// old string text\n"#;', b'let text = r#"\n// changed string text\n"#;'),
+        ("apps/game-server/src/lib.rs",
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// old string text\n"#;\nconst Q2: u8 = b'\"';''',
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// changed string text\n"#;\nconst Q2: u8 = b'\"';'''),
+        ("apps/game-server/src/lib.rs", b'let text = "\n// old string text\n";', b'let text = "\n// changed string text\n";'),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"/* unterminated\n// uncertain"),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: char = '\\q';\n// uncertain"),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: u8 = b'xy';\n// uncertain"),
     ):
-        assert not module.document_consumer_content_safe(path, content), (path, content)
+        assert not module.document_consumer_content_safe(path, baseline, current), (path, current)
 
     complete = subprocess.CompletedProcess([], 0)
     safe_outputs = [
         ("a" * 40 + "\n").encode(),
         b"",
         b"apps/game-server/src/combat.rs\0",
-        b"fn damage() -> u32 { 7 }",
+        b"// damage remains audited",
+        b"// damage remains audited\n// ordinary note",
     ]
     with patch.object(module.subprocess, "run", return_value=complete), \
             patch.object(module.subprocess, "check_output", side_effect=safe_outputs):
@@ -248,7 +279,8 @@ def test_bounded_document_consumer_drift(module):
         ("a" * 40 + "\n").encode(),
         b"",
         b"apps/game-server/src/combat.rs\0",
-        b'let x = std::fs::read_to_string("docs/reference.md");',
+        b"fn damage() -> u32 { 7 }",
+        b'use std::{fs as storage}; storage::read(path);',
     ]
     with patch.object(module.subprocess, "run", return_value=complete), \
             patch.object(module.subprocess, "check_output", side_effect=unsafe_outputs):
@@ -258,7 +290,80 @@ def test_bounded_document_consumer_drift(module):
     with patch.object(module.subprocess, "run", return_value=complete), \
             patch.object(module.subprocess, "check_output", side_effect=deleted_outputs):
         assert module.document_consumers_safe(fixture()) is False
-    print("Bounded document consumer drift PASS: unrelated source drift allowed; build/I/O/doc drift FULL")
+
+    # Exercise the PR classifier's proof against real immutable Git objects.
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        def git(*args):
+            return subprocess.check_output(["git", "-C", directory, "-c", "user.name=Fixture",
+                                            "-c", "user.email=fixture@example.invalid", *args]).decode().strip()
+        git("init", "-q")
+        source = root / "apps/game-server/src/lib.rs"
+        source.parent.mkdir(parents=True)
+        lexical_contexts = (b"/**\n// old block docs\n*/\n/*!\n// old crate block docs\n*/\n"
+                            b'const TEXT: &str = r#"\n// old raw string\n"#;\n'
+                            b'''const Q1: char = '\"';\nconst QUOTED: &str = r#"\n// old quoted raw string\n"#;\nconst Q2: u8 = b'\"';\n''')
+        baseline_source = unchanged_consumer + b"const USE_DOCS: bool = false;\n" + lexical_contexts
+        source.write_bytes(baseline_source)
+        for package in fixture()["packages"]:
+            manifest = root / Path(package["manifest_path"]).relative_to("/repo")
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\n")
+        git("add", ".")
+        git("commit", "-qm", "baseline")
+        baseline_sha = git("rev-parse", "HEAD")
+        real_meta = copy.deepcopy(fixture())
+        real_meta["workspace_root"] = directory
+        for package in real_meta["packages"]:
+            package["manifest_path"] = package["manifest_path"].replace("/repo", directory, 1)
+            for dependency in package["dependencies"]:
+                dependency["path"] = dependency["path"].replace("/repo", directory, 1)
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            source.write_bytes(baseline_source + b"// harmless note\n")
+            git("add", "."); git("commit", "-qm", "harmless")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                assert module.document_consumers_safe(real_meta) is True
+            git("checkout", "-q", baseline_sha)
+            source.write_bytes(baseline_source + malformed_unicode_context + b"// old note\n")
+            git("add", "."); git("commit", "-qm", "malformed unicode baseline")
+            malformed_base = git("rev-parse", "HEAD")
+            source.write_bytes(baseline_source + malformed_unicode_context + b"// changed note\n")
+            git("add", "."); git("commit", "-qm", "comment after malformed unicode")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", malformed_base):
+                assert module.document_consumers_safe(real_meta) is False
+            for statement in (b"use std::{fs}; fs::read(path);\n",
+                              b"use std::{fs as storage}; storage::read(path);\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(baseline_source + statement)
+                git("add", "."); git("commit", "-qm", "unsafe alias")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+            git("checkout", "-q", baseline_sha)
+            source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = true;\n")
+            git("add", "."); git("commit", "-qm", "unsafe scalar gate")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                assert module.document_consumers_safe(real_meta) is False
+            for doc_comment in (b"/// module docs\n", b"//! crate docs\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(baseline_source + doc_comment)
+                git("add", "."); git("commit", "-qm", "unsafe doc attribute")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+            for ambiguous in (lexical_contexts.replace(b"// old block docs", b"// changed block docs"),
+                              lexical_contexts.replace(b"// old crate block docs", b"// changed crate block docs"),
+                              lexical_contexts.replace(b"// old raw string", b"// changed raw string"),
+                              lexical_contexts.replace(b"// old quoted raw string", b"// changed quoted raw string"),
+                              lexical_contexts + b"/* unterminated\n// uncertain\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = false;\n" + ambiguous)
+                git("add", "."); git("commit", "-qm", "unsafe lexical context")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+        finally:
+            os.chdir(old_cwd)
+    print("Bounded document consumer drift PASS: lexical ordinary comments allowed; strings, block/docs, scalar and uncertain drift FULL")
 
 
 def main() -> int:
