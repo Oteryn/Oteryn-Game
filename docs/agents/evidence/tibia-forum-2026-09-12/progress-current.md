@@ -1,0 +1,39 @@
+# Tibia → Oteryn: bieżący postęp — audyt nieukończony
+
+Właściciel potwierdził zakres: wszystkie 3061 wątków z utrwalonego spisu Last Year, także odczyt brakującej treści. **Gotowy jest spis 103/103 stron; treść nie jest jeszcze opracowana w 100%.**
+
+| Miara | Stan |
+|---|---:|
+| ID w spisie Last Year | 3061 |
+| ID Last Year z zachowanym odczytem/oceną | 712 |
+| ID Last Year bez zachowanej analizy | 2349 |
+| Wszystkie zachowane rekordy, także spoza spisu | 804 |
+| Strony spisu, dla których każde ID ma zachowany odczyt/ocenę | 23 |
+| Nowsze posty z identyfikatorami/datami/hashami | 433 |
+
+Odczyt obejmuje OP i maksymalnie trzy początkowe odpowiedzi. Rekord usuniętej treści jest skontrolowany, ale nie zawiera odtworzonej dawnej propozycji. Pełne dyskusje, dalsze odpowiedzi i obrazy nie są oznaczane jako przeczytane. Ruchomy spis nie jest atomowym eksportem.
+
+[Indeks źródeł](./source-index.json) i [kolejka pozostałych ID](./last-year-progress.json) pozwalają wznowić odczyt bez powtarzania już zachowanych OP. [Ocena jakości](./year-quality-index.json) obejmuje 168 nowszych rekordów; 47 wyłączono z recurrence problemów. Wyłączenie nie oznacza spamu: propozycje bez opisanego problemu nadal pozostają kandydatami.
+
+## Wyniki i porównanie
+
+[Główna synteza potrzeb](./synteza-708.md) oraz [uzupełnienie i korekta duplikatów](./synteza-720.md) są historycznymi punktami kontrolnymi; ich liczniki nie zastępują tabeli powyżej. Nowe rejestry zawierają problem, powtarzalność, status Global, odpowiednik #571 i projekt Oteryn z Q0/Q1/G1/G2 oraz ryzykami Reference/gameplay/economy.
+
+- [year-new12-analysis.md](./year-new12-analysis.md)
+- [year-next12-analysis.md](./year-next12-analysis.md)
+- [year-third12-analysis.md](./year-third12-analysis.md)
+- [year-fourth12-analysis.md](./year-fourth12-analysis.md)
+- [year-fifth12-analysis.md](./year-fifth12-analysis.md)
+- [year-sixth12-analysis.md](./year-sixth12-analysis.md)
+- [year-seventh12-analysis.md](./year-seventh12-analysis.md)
+- [year-eighth12-analysis.md](./year-eighth12-analysis.md)
+- [year-ninth12-analysis.md](./year-ninth12-analysis.md)
+- [year-tenth12-analysis.md](./year-tenth12-analysis.md)
+- [year-eleventh12-analysis.md](./year-eleventh12-analysis.md)
+- [year-twelfth12-analysis.md](./year-twelfth12-analysis.md)
+- [year-thirteenth12-analysis.md](./year-thirteenth12-analysis.md)
+- [year-fourteenth12-analysis.md](./year-fourteenth12-analysis.md)
+
+Porównanie #571 dotyczy rewizji `b2ef322791520130a2683f3004d26abd5c027ac8`, dokumentacji, nie wdrożenia. Historyczne relacje o Global są UNKNOWN bez niezależnego potwierdzenia. Nie przyjmuje się oskarżeń ani satyrycznych liczb jako faktów. Ta sama osoba, skopiowany cytat, własny bump i liczba wyświetleń nie zwiększają liczby niezależnych potrzeb.
+
+Zwykłe anonimowe HTTP otrzymało 403/challenge; nie zastosowano obejścia. Odczyt działa przez przeglądarkę głównego agenta. Subagenci nie mają dostępu do tej karty, więc analizują zapisane partie. Nie działa oddzielny harmonogram ani kolektor po zakończeniu aktywnego zadania.

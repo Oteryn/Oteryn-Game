@@ -1,5 +1,5 @@
 {
-  "scope": "84 additional opening posts with sampled replies; not a quality audit of all historical records",
+  "scope": "168 additional opening posts with sampled replies; not a quality audit of all historical records",
   "entries": [
     {
       "id": "4998413",
@@ -1230,6 +1230,1306 @@
         "G2"
       ],
       "source_file": "year-seventh12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998034",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "mixed"
+      ],
+      "reason": "Party exclusion and boss auto-attack contribution are concrete situations despite emotional language. One independent reply broadly agrees; the OP continuation is not another author, and the July balance state is not current proof.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997575",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "bump_only"
+      ],
+      "reason": "Minimap scaling, transparency and local marker management are concrete. Two independent short supports add no argument; the final bump is the OP.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997890",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "High-resolution UI scaling is a concrete presentation need with three independent signatures but no added evidence or argument.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997268",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "Inactive-name scarcity and recycling are concrete, but inactivity and scale claims are unverified. The OP continuation is one author; an independent player returning after twelve years supplies a counterexample, not support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998039",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Two fleeing creatures define a concrete control case and a two-target Fatal Hold proposal; current behavior and comparative vocation impact remain unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998032",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Vocation-specific private spawn geometry and interference presets are concrete G1/G2 mechanics. The linked Imgur was not read, and claimed combat neutrality does not remove access, geometry or throughput effects.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998025",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "The low-level sustain versus high-level scaling case and perk redistribution are concrete, but all damage, thresholds and future-change claims are unverified historical balance inputs.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998018",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "mixed"
+      ],
+      "reason": "Unused fishing-skill food and proposed stamina/stat fish are concrete. The reply redirects to a larger thread; its claimed reply/view counts neither verify that thread nor support these mechanics.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998017",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "The isolated cooperative world type has specific high-level rules but supplies no concrete player pain case and leaves progression, abuse, population and economy mechanics undefined.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998016",
+      "quality_statuses": [
+        "source_removed"
+      ],
+      "reason": "The read version contains only a disabled-post marker. The title says double post but cannot prove the source or content of a duplicate, so nothing is reconstructed or deduplicated.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4998005",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Occupied spawns and lost limited play time are concrete. A two-hour per-player private instance does not cap simultaneous copies or global loot and XP output.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998003",
+      "quality_statuses": [
+        "concrete_proposal",
+        "underspecified_claim"
+      ],
+      "reason": "The Dawnport reuse and peaceful-island concept is a legitimate content candidate, not spam, but it lacks rules, encounters and a concrete measurable player impact for recurrence.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eighth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997998",
+      "quality_statuses": [
+        "joke_or_offtopic",
+        "mixed"
+      ],
+      "reason": "Interpersonal forum dispute about alleged AI style; no evidence of automation or game anti-bot issue. Accused handle intentionally omitted from analysis.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997999",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Weak high-level familiars and silent instruments are recognizable concerns; stronger summons, cosmetic variants, generative NPCs and music are distinct proposals.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997967",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "joke_or_offtopic",
+        "unverified_numbers"
+      ],
+      "reason": "Four separate Paladin mechanics are proposed. Both replies by the second handle are explicit satire and not support; the third post is the OP responding.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997997",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Staged Charm rewards and Weekly rerolls are distinct G2 proposals. Same final Charm total does not preserve reward timing. Staged rewards independently recur in 4998193.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997964",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "House all-vendor Stash sale is concrete G1/G2 despite unchanged NPC prices. The 25 percent fee reply supports only a conditional variant, not the unqualified OP design.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997981",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Short Premium increments address a specific unused-time concern; one independent reply supports the same thread with a weekend variant.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997971",
+      "quality_statuses": [
+        "underspecified_claim",
+        "concrete_proposal"
+      ],
+      "reason": "Utevo Res upgrade gives a rough summon shape but no concrete pain, targets, stats, eligibility or expected balance outcome.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997932",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "joke_or_offtopic",
+        "unverified_numbers"
+      ],
+      "reason": "Weapon-class specificity and ST/AoE proficiency tuning are concrete. Replies by the second handle are satire; later OP update is not another author, and quoted external text is not an independently read post.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997939",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Monk light access and all-vocation duration variant are concrete; classification depends on whether light changes visibility, duration and resource cost.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997628",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "joke_or_offtopic",
+        "unverified_numbers"
+      ],
+      "reason": "Helmet sharing and Basic Scroll substitution are separate G2 components. The OP attributes the scroll idea to Itzfer, whose original post was not read, so it is not an independent source; satire and hostility add no support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997901",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "joke_or_offtopic"
+      ],
+      "reason": "Neutral both-faction Djinn and depot-at-existing-Djinn are distinct G1/G2 variants. Satire is not support; the depot variant preserves faction choice but changes capacity logistics.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997919",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "joke_or_offtopic",
+        "unverified_numbers"
+      ],
+      "reason": "Helmet tradeoff is concrete; one reply agrees or suggests offensive identity, another proposes stats, and the final satirical reply is not support. All values remain unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-ninth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997929",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "Two substantive posts are one author's ring-mode and regeneration proposals; the only reply is satire. Costs and balance values are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997933",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "A detailed permadeath world proposal does not establish a recurring problem. Outfit, mount and set bonuses are gameplay power despite cosmetic framing.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997927",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component"
+      ],
+      "reason": "Three authors identify recruitment clutter. Replies support the need but propose Party Finder as an alternative rather than independently endorsing a dedicated channel.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997931",
+      "quality_statuses": [
+        "concrete_proposal",
+        "underspecified_claim"
+      ],
+      "reason": "Mouse casting and a damage nerf are specified only at a high level. Same-geometry and same-timing input can be Q1; arbitrary angle or damage changes are G2.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q1",
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997883",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Poison-arrow crafting is a substantive content candidate without a concrete pain case. Replies include a joke, one expansion and one preservation counterargument.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997900",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "The new PvP world bundles collision, walls, red-trap rules, XP rates and one-way transfers. Demand, fairness and economic safety are unverified, and no single recurring problem is established.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997891",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Colored quivers address ammunition identification and receive one short independent agreement. The safe scope changes color only, not ammo, capacity or statistics.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997896",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "City reputation, contribution, discounts, tasks, decay and invasion density form a new progression system. Cosmetic titles are separable; the package is G2 and supplies no concrete recurring pain case.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997894",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Returning from Market to Stash with prior filters is an exact repeated historical signal of lost interface context; current behavior still needs fresh verification.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997744",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "Monk stance and damage-role concerns are concrete. Simon's reply links his own thread 4997885, so it is a variant by the same author across threads, not an independent second need.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997885",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Detailed Monk survivability, spender, virtue and Wheel claims plus proposed changes come from one author in two posts. The same author's link from 4997744 adds no independent support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997763",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "duplicate_reply",
+        "unverified_numbers"
+      ],
+      "reason": "Two independent authors support protecting beginner Targuna but propose different level limits, 20 and 150. Posts 39592033 and 39592034 are the same text by one author three seconds apart, so they count as one reply, not two votes.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-tenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997762",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers",
+        "source_limited"
+      ],
+      "reason": "Detailed OP about Hive unlock and Bosstiary completion. Three captured replies contain no text and may be media or capture gaps, so they are not counted as support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997553",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers",
+        "joke_or_offtopic"
+      ],
+      "reason": "Custom ammo is a broad G2 proposal; one reply independently raises RP supply cost with a different conjured-ammo variant. The final reply is satire and not support.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997875",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers",
+        "joke_or_offtopic"
+      ],
+      "reason": "Detailed leech rebalance proposal without independent measurements or a separately supported pain statement. The only reply is satire.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997724",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Death-loss pain has independent support, but replies prefer disconnect protection or stricter limits and do not support the unqualified stackable token design.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997877",
+      "quality_statuses": [
+        "concrete_problem",
+        "conditional_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Single-author measurement suggests a spell/rune healing difference but same displayed base power does not prove the same formula. Removing a multiplicative 15 percent requires division by 1.15, so the author's times-0.85 check does not prove a bug.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997757",
+      "quality_statuses": [
+        "concrete_proposal",
+        "underspecified_claim",
+        "mixed",
+        "outside_scale"
+      ],
+      "reason": "Full graphical overhaul is an art-direction proposal; audience growth and hardware claims are not measured. Replies do not independently establish the pain.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997874",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Target-mode Use toggle is Q1 input safety; gem filter icons and persistent Back/history are Q0 UI. No automatic attack is proposed.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "Q0"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997870",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Solo Sorcerer positioning-versus-loot friction is concrete. A critical reply frames it as overlure/automation, while the OP clarifies normal combat flow; that criticism is not the audit verdict.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997766",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "EK heal-overlap and burst dilemma is concrete, but a smaller mana pool does not guarantee that Mana Barrier prevents overlap or stays within survivability targets.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997538",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "Buying future Premium for immediate Loyalty power is explicitly rejected by roadmap section 4.19.2. Separating Loyalty highscores does not remove purchased combat/progression power.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997760",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "New independent proposal for Dust supply from Soulseal activity. Roadmap Training Arena zero-reward policy describes its test arena and does not establish runtime Soulseal behavior.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997750",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Key recognition and organization pain is concrete. Labels, organizer and objective hints are Q0 alternatives that preserve physicality; zero weight, no death loss and automatic door entitlement are G1/G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eleventh12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997739",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Resizable map control is a concrete presentation need; current limits remain unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997736",
+      "quality_statuses": [
+        "concrete_proposal",
+        "underspecified_claim",
+        "repeated_author"
+      ],
+      "reason": "World transfer is requested without direction, rules or impact. The same Vlucia later posts dead-world transfer in 4998289, so this is not an independent author signal.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997732",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Earworm Bestiary credit and permanent spawn access are concrete but separate changes; current quest counting and lack of alternative spawns are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997722",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "Two independent authors describe Monk scaling and party-role problems. Their damage, skill-ceiling and bug claims are historical and unverified; proposed Wheel, healing and barrier changes are G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997725",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "mixed"
+      ],
+      "reason": "Bulk same-world item transfer pain has one independent similar Djinn case. Parcel/Stash is an alternative, while the final reply adds no argument; proposed mechanisms differ in ownership and economy impact.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997694",
+      "quality_statuses": [
+        "concrete_problem",
+        "unsupported_claims",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "Affordability for casual and newer players is a concrete need, while inflation, gold-source causality, prices and play-time claims are unverified. Replies raise a distinct rare-item supply explanation.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997714",
+      "quality_statuses": [
+        "underspecified_claim",
+        "mixed"
+      ],
+      "reason": "The Monk complaint gives no combat context, mechanic or target. The sole reply is satirical and does not support the claim.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997716",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "unsupported_claims"
+      ],
+      "reason": "Two independent respondents give firsthand disconnect-death cases. A three-use monthly limit bounds frequency but does not prevent intentional protection use or prove genuine failure.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997478",
+      "quality_statuses": [
+        "concrete_proposal",
+        "corroborated_component",
+        "mixed"
+      ],
+      "reason": "Two replies support hanging decorations. A third adds anchoring, doors and blocking, which is a separate access and permission change rather than support for decoration only; no recurring pain case is stated.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997662",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "bump_only",
+        "unsupported_claims"
+      ],
+      "reason": "This OP independently states the Stash-to-Market context loss. A bump adds no evidence, a link is not read content, and one independent support does not verify the claimed weekly frequency.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997702",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "A detailed recycling and salvage progression candidate receives one independent variant/support. Item destruction plus newly emitted residues and gear does not prove reduced inflation; accidental discard needs separate safeguards.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997690",
+      "quality_statuses": [
+        "concrete_proposal",
+        "source_conflict"
+      ],
+      "reason": "The title says Ctrl plus left click while the body says right click, so the binding is unresolved. Q0 applies only to opening already legally available target information.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-twelfth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997688",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Key identification and storage pain has one short independent support plus two different variants. Q0 labels/organizer are separate from G1/G2 automatic access or permanent unlock; Store access is not pure ergonomics.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997589",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Real self-reported cost of repeating alt access. Two ironic replies are by one author and are not two independent supports; account-world access maps exactly to P9.4.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997677",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Retro skull and Twist of Fate proposals change PvP and death rules. A single OP does not establish that these changes would revive server populations.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997673",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Mouse aim is Q1 only if area, timing, legal directions, cooldown and result remain unchanged. Winter-update claims are unverified and no separate pain is stated.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997672",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only"
+      ],
+      "reason": "Earth/Ice stances and cooldown conversion are G2. Remove-stance can be Q1 only when it invokes the same legal action with unchanged timing and cost; no separate pain is stated.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2",
+        "Q1"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997670",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only"
+      ],
+      "reason": "Detailed coherent quest design, not spam, but it states no separate player pain. Guild access monopoly and rotating Premium are explicit goals and create high G2 product/economy risk.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997356",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "One author across OP and addendum. Stash context maps exactly to P1.3; exact quantity is Q1, Buy/Sell distinction and persistence are Q0, and percentage tick size is G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "Q0",
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997645",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_claim"
+      ],
+      "reason": "Soul-core and boss-scroll-to-Wheel progression, Monk viability and Stash pain are distinct needs. The Stash reply is the same author as thread 4997356 and does not add an independent person.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2",
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997465",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers",
+        "joke_or_offtopic"
+      ],
+      "reason": "Leech credit, proficiency credit and summon survival are real stated problems, separable from the extreme 9999 explosion buff. Satire and criticism are not support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997523",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Bow proficiency coherence problem is concrete. A reply asking whether a future system will allow changes does not establish that the rework exists or resolves it.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997409",
+      "quality_statuses": [
+        "concrete_problem",
+        "mixed",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "Party-hunt observation is a real self-report, not telemetry; inflation is a forecast rather than fact. Personal accusations are omitted. One-button rotation and proficiency coherence are distinct concerns.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997667",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "outside_scope"
+      ],
+      "reason": "Small valid community-board sketch, not spam, but it states no separate pain and is outside the gameplay roadmap.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-thirteenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997665",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "A distinct author independently repeats Targuna crowding, but proposed reward tiers and Soulseal costs are unverified G2 progression changes rather than QoL.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997663",
+      "quality_statuses": [
+        "concrete_problem",
+        "underspecified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Rare access to an annual boss is a recognizable need, but fewer than ten spawns and all current scheduling details are unverified; no concrete solution is supplied.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997661",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "A deliverable versus non-deliverable Stash filter is a concrete Q0 request when based only on authoritative item eligibility.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997646",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "unverified_numbers",
+        "mixed_components"
+      ],
+      "reason": "Four read posts are one author's broad hardcore-world design; later discussion was not read. Level-8 reset preserves griefing impact despite protected loot, while 2x recovery and per-character donations need abuse analysis.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997656",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Monk party and boss roles are concrete contexts, but all healing, magic-level and class-comparison inputs remain unverified historical balance claims.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997626",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "One reply supports server-save reset, another identifies boundary camping, and the final post is the OP. Daily reset does not guarantee at most two kills in every rolling 48-hour window or bound burst supply.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997652",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Knight access to Great Mana Potions in daily rewards is a concrete class-parity proposal, but current eligibility is unverified and reward emission remains G2 even if the potion is usable.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997634",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "translated_duplicate"
+      ],
+      "reason": "Post-tutorial guidance is a concrete need. The PT-BR post is the same author's translation of the OP, not independent evidence; the other reply is satire. Guidance is Q0, Premium trial G1, and boosts G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997642",
+      "quality_statuses": [
+        "concrete_problem",
+        "bug_report",
+        "unsupported_claims"
+      ],
+      "reason": "Mac minimap-click inaccuracy is a concrete platform-parity bug report without independent reproduction or current testing; same legal destination and timing is Q1.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997640",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Moving a timed imbuement between compatible items is concrete. Preserving remaining duration still changes build flexibility and repeated maintenance sinks, so it is G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997637",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "The indicator exposes the selected NPC, Market or custom valuation source. It does not prove the best sale price or that analysis was completed, so the bounded version is Q0.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997635",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers",
+        "author_attribution_conflict"
+      ],
+      "reason": "A large Monk off-tank proposal explicitly labels numbers as placeholders. The continuation displays Marie Crimson but is edited by Mayor Crowny and reads as Final Thoughts, so it is not counted as confirmed independent authorship.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourteenth12-analysis.md",
       "line": 18
     }
   ]
