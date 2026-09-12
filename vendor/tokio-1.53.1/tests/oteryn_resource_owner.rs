@@ -441,3 +441,52 @@ fn shutdown_timeout_never_releases_live_owned_worker_charge() {
         "timed shutdown must conservatively retain the leaked worker debit"
     );
 }
+
+#[test]
+fn finished_owned_worker_reaps_before_reusing_thread_cap() {
+    use std::sync::atomic::AtomicBool;
+    use std::time::Duration;
+
+    let owner = Arc::new(Witness::default());
+    let stopped = Arc::new(AtomicBool::new(false));
+    let stop_flag = stopped.clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .max_blocking_threads(1)
+        .thread_keep_alive(Duration::from_millis(5))
+        .on_thread_stop(move || {
+            stop_flag.store(true, Ordering::SeqCst);
+        })
+        .build()
+        .unwrap();
+
+    let owned = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                || 11usize,
+            )
+        })
+        .unwrap();
+    assert_eq!(runtime.block_on(owned).unwrap(), 11);
+    for _ in 0..200 {
+        if stopped.load(Ordering::SeqCst) {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(stopped.load(Ordering::SeqCst));
+    assert!(owner.held.load(Ordering::SeqCst) >= 2 * 1024 * 1024);
+
+    let ordinary = runtime.block_on(async {
+        let ordinary = tokio::task::spawn_blocking(|| 13usize);
+        assert_eq!(
+            owner.held.load(Ordering::SeqCst),
+            0,
+            "ordinary admission must reap the finished owned worker before reopening the cap"
+        );
+        ordinary.await.unwrap()
+    });
+    assert_eq!(ordinary, 13);
+    drop(runtime);
+}

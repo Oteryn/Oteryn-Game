@@ -365,7 +365,7 @@ impl BlockingPool {
                 let Some(handle) = handle else {
                     break;
                 };
-                Inner::join_owned_worker(handle);
+                self.spawner.inner.join_owned_worker(handle);
             }
         } else {
             let mut shared = self.spawner.inner.shared.lock();
@@ -407,7 +407,7 @@ impl Spawner {
             }
         };
         if let Some(handle) = handle {
-            Inner::join_owned_worker(handle);
+            self.inner.join_owned_worker(handle);
         }
     }
 
@@ -710,6 +710,9 @@ impl Spawner {
     }
 
     fn spawn_task(&self, task: Task, rt: &Handle) -> Result<(), SpawnError> {
+        #[cfg(not(loom))]
+        self.reap_finished_owned();
+
         let mut shared = self.inner.shared.lock();
 
         if shared.shutdown {
@@ -899,10 +902,6 @@ impl Inner {
             None
         };
 
-        self.metrics.dec_num_threads();
-        if shared.shutdown && self.metrics.num_threads() == 0 {
-            self.condvar.notify_one();
-        }
         if shared.shutdown {
             self.owned_condvar.notify_one();
         }
@@ -912,7 +911,7 @@ impl Inner {
             f();
         }
         if let Some(handle) = join_on_owned {
-            Self::join_owned_worker(handle);
+            self.join_owned_worker(handle);
         }
     }
 
@@ -929,6 +928,7 @@ impl Inner {
         worker_thread_id: usize,
         owned_handle: Option<thread::JoinHandle<task::OterynCharge>>,
     ) {
+        let owned_thread = owned_handle.is_some();
         let mut shared = self.shared.lock();
         let mut join_on_thread = None;
         // is this thread currently counted in `num_idle_threads`?
@@ -996,8 +996,11 @@ impl Inner {
             }
         }
 
-        // Thread exit
-        self.metrics.dec_num_threads();
+        // Thread exit. Owned workers keep their physical slot counted until
+        // an outside-thread join proves native termination.
+        if !owned_thread {
+            self.metrics.dec_num_threads();
+        }
 
         // Is this thread currently counted in `num_idle_threads`?
         if is_counted_idle {
@@ -1011,7 +1014,7 @@ impl Inner {
             );
         }
 
-        if shared.shutdown && self.metrics.num_threads() == 0 {
+        if !owned_thread && shared.shutdown && self.metrics.num_threads() == 0 {
             self.condvar.notify_one();
         }
 
@@ -1031,14 +1034,21 @@ impl Inner {
             let _ = handle.join();
         }
         if let Some(handle) = join_on_owned {
-            Self::join_owned_worker(handle);
+            self.join_owned_worker(handle);
         }
     }
 
-    fn join_owned_worker(handle: thread::JoinHandle<task::OterynCharge>) {
-        if let Ok(charge) = handle.join() {
-            drop(charge);
+    fn join_owned_worker(&self, handle: thread::JoinHandle<task::OterynCharge>) {
+        let charge = handle.join().ok();
+        self.metrics.dec_num_threads();
+        {
+            let shared = self.shared.lock();
+            if shared.shutdown && self.metrics.num_threads() == 0 {
+                self.condvar.notify_one();
+                self.owned_condvar.notify_one();
+            }
         }
+        drop(charge);
     }
 }
 
