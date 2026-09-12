@@ -1,0 +1,1044 @@
+{
+  "scope": "72 additional opening posts with sampled replies; not a quality audit of all historical records",
+  "entries": [
+    {
+      "id": "4998413",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Konkretny brak dostępu do Feroxy; żądanie kar i odpowiedzi rozszerzające temat nie tworzą jednej zweryfikowanej diagnozy.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998470",
+      "quality_statuses": [
+        "concrete_proposal",
+        "joke_or_offtopic"
+      ],
+      "reason": "Określona inicjatywa klubów LAN dotyczy fizycznych ośrodków sportowych, nie produktu Oteryn/Tibia.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-new12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4998460",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "OP wskazuje wizualne rozproszenie i proponuje konkretny redesign znacznika eksploracji.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4998454",
+      "quality_statuses": [
+        "underspecified_claim"
+      ],
+      "reason": "Szerokie zarzuty o botach, RMT, inflacji i anty-cheat nie wskazują sprawdzalnego incydentu ani konkretnej zmiany; drugi post jest kontynuacją OP.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-new12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998440",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Problem dotyczy wielu różnych typów przedmiotów; kontynuacja OP prostuje pomylenie go z limitem 100 sztuk jednego typu.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998442",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Randomizer outfitu i mounta jest konkretny, lecz brak opisanej uciążliwej sytuacji produktowej.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998423",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Niechciana aktywacja przez wejście i manualne Use są jednoznaczne; to drugi dokładny sygnał obok 5000666.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998412",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "OP opisuje zachowanie domyślnej ceny po aktualizacji i proponuje przełącznik NPC/Market; odpowiedź popiera.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998401",
+      "quality_statuses": [
+        "source_removed"
+      ],
+      "reason": "Oba odczytane posty tego samego autora są edytowane do Delete; treść źródłowa została usunięta i poprzedniej wersji nie rekonstruowano.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-new12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998417",
+      "quality_statuses": [
+        "underspecified_claim"
+      ],
+      "reason": "Nostalgiczna opinia o kulturze firmy nie zawiera mechaniki, konkretnej sytuacji produktowej ani oczekiwanego wyniku.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-new12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4998350",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Limity wyboru i odkładania tasków są konkretne; odpowiedzi sprzeciwiają się Store i proponują inną walutę.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998411",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "OP opisuje trywialne wybory i utratę czasu prey oraz dwie konkretne zmiany: kategorię rerollu i pauzę.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-new12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998403",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Stash-to-Djinn sale, NPC relocation and dual-faction access are concrete but distinct proposals; one signature and dismissive replies add no argument.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998061",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Remote-house inconvenience and depot-to-house teleport are concrete; one support and one counterargument exist, while the insulting reply is not an argument.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4998367",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Dopisek OP opisuje koszt leczenia i profit/h; niezweryfikowane liczby, jeden autor.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4998405",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Heavy delivery items and completion from Stash or depot define a clear capacity and task-access change; weights and task rules remain unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998402",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Terrain-specific mount movement is concrete; keeping the plus-10 speed does not remove the movement change. Three self-authored delete notices add no support, and a proposal alone does not establish problem recurrence.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998400",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "The lunar expansion specifies lore, quest, environment, enemies, Echo use and a gear sink; it is a substantive proposal, not spam. Sink plus power does not prove anti-inflation, and the proposal is not independent evidence of a concrete problem.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998398",
+      "quality_statuses": [
+        "duplicate"
+      ],
+      "reason": "Same author and identical OP body as earlier thread 4998346 post 39595384. Two IDs represent one text; the later copy adds no recurrence. The proposed change remains G2.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998385",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "A five-tier Paladin potion ladder is specific, but all healing, mana, level and price values are unverified balance inputs. The proposal alone does not establish a recurring concrete problem.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998364",
+      "quality_statuses": [
+        "mixed",
+        "joke_or_offtopic",
+        "concrete_problem"
+      ],
+      "reason": "The author explicitly calls the revenge summon a joke. The retained component is only a Q0 signal that Twist of Fate and blessing protection were misunderstood; the claimed 80 percent loss is not accepted as fact.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998378",
+      "quality_statuses": [
+        "underspecified_claim"
+      ],
+      "reason": "The OP says only this monster, with no name, image or mechanic, so neither the object nor the need can be identified.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-next12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997658",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "The OP identifies concrete congestion, queue and training-dummy effects from global Double Events; only that problem signal is recurrence-eligible. The paid Battle Pass is a proposal, three substantive posts and the final dot are all one author, and paid Double XP and Skill change progression rate even when hunting time is required. P19 is only a policy analogy about prepaid tenure and Loyalty, not a general ban or a Battle Pass decision.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998360",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "numerical_conflict"
+      ],
+      "reason": "The four-target shield-Paladin attack and reply variant are concrete G2 changes. Same single-target damage does not preserve total AoE damage, and the reply's 5 plus 15 equals 20, not 25.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-next12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998376",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Limity stacku i slotów są konkretne, podobnie wartości 1000 i ×5; odpowiedź wskazuje cap jako dalsze ograniczenie.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998362",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Runewarden ma role, broń i czary, lecz sam opis nowej klasy nie dowodzi konkretnego problemu istniejącej gry.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4998361",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Klasa pułapkowa ma szczegółową rotację i warianty, ale nie przedstawia konkretnego problemu jako podstawy powtarzalności.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997902",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Dostępność małego PvP jest rozpoznawalna; OP rozwija areny, matchmaking i balans, a jedyny inny uchwyt podważa wykonalność.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997545",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "OP opisuje limit VIP w kontekście ról gildii, a tytuł wyznacza rolowe rozszerzenie; odpowiedź popiera.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997730",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Bottleneck leadera i prawo vice-leadera są konkretne; jedna odpowiedź to bump OP, druga popiera.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998300",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Meta broni i koszt ponownego treningu są konkretne; płatny transfer ma cenę, a odpowiedzi popierają lub wskazują trening.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998346",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Pościg PvP i ukrycie identyfikatorów są konkretne; 4998346 jest canonical, a 4998398 to kopia tego tekstu.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998224",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "OP zawiera diagnozę i przebudowę żywiołów; odpowiedzi obejmują własny bump, odrębny wariant i powtórzenie 4998245.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998307",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Przestarzałe cele i koniec progresji są konkretne; propozycja ma poziomy, rangi i nagrody, a drugi post to kontynuacja OP.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997878",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "OP chce usunięcia stamina, lecz trzy inne uchwyty preferują rework lub ostrzegają przed removal; nie są trzema głosami poparcia.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998329",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Zużycie timera na innych stworzeniach i creature-specific trigger są konkretne; dwie odpowiedzi krótko popierają.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-third12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998330",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "A scaling sustain concern and multi-layer equipment regeneration design are concrete, but level pace and formulas are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998328",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Alleged dominant-guild denial of bosses and areas is a recognizable access problem; deleting all guild content is an extreme proposal and the allegations are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997181",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "Basic-to-Powerful imbuement conversion is specific, but no concrete pain is stated; both replies are one author and the ratios and prices are speculative.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4998316",
+      "quality_statuses": [
+        "concrete_problem",
+        "underspecified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Perceived Sorcerer scaling and lost investment are concrete concerns, but uncontrolled maximum-hit anecdotes do not establish a nerf and no exact change is proposed.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998314",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_accusations"
+      ],
+      "reason": "The report-response gap and telemetry-to-human-review flow are concrete. Named accusations and the claimed 99.9 percent confidence are not verified facts.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998305",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Poor visibility of equipped state on action bars is a concrete presentation problem with a defined visual treatment.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998299",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Konkretny detal lore bez opisanego problemu, nie potwierdzony żart ani spam.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998289",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "underspecified_claim"
+      ],
+      "reason": "Potrzeba transferu z postrzeganego jako martwy świat jest konkretna; populacja i reguły niezweryfikowane.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998297",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Quest feedback, tutorial, alt access and three Market requests are separate components. The reply adds only a tutorial variant and does not support the whole package.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998296",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Level-band rebalance spillover and separate high-level spells are concrete; claims that level-1000 players destroy the game are opinions.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4998161",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "bump_only"
+      ],
+      "reason": "Solo Sorcerer concern and solo stance are concrete. Two later posts are self-bumps, yielding zero independent support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998294",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "Element resistance access and repetitive rotation are concrete; stance penetration and rune-like spells are G2 proposals. Both posts are one author and all example values are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fourth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998290",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Szczegółowe problemy i propozycje, lecz drugi post jest kontynuacją OP, a pomiary nie są niezależnie zweryfikowane.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998286",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Konkretny disconnect i reconnect proposal; założenie, że hardware token zastępuje autoryzację i zapobiega śmierci, jest nieuzasadnione.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1",
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4998277",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Asymetria ścieżki i proponowane położenie noda są konkretne, choć intencja layoutu pozostaje nieznana.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4998275",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Set bonus jest określoną propozycją nowej mocy; żartobliwe self-praise nie jest spamem ani powodem odrzucenia.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998260",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Usługa nazwy familiara jest konkretna, lecz odpowiedzi są żartami i nie stanowią poparcia ani problem evidence.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998262",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Wyjście do kalkulatora i konkretne pole quantity×price są czytelne; odpowiedzi są niemerytoryczne.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998253",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Pakiet zawiera konkretne UI/social/map mechanics; jedyna odpowiedź jest quote-only i nie zwiększa poparcia.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998255",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Brak informacji o Weekly Delivery i filtr yes/no są konkretne.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998136",
+      "quality_statuses": [
+        "concrete_problem",
+        "underspecified_claim",
+        "mixed"
+      ],
+      "reason": "Problem outnumbering/dominacji jest rozpoznawalny, ale lista napraw pozostaje ogólna; odpowiedź wprost wskazuje brak mechaniki.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998157",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "numerical_conflict"
+      ],
+      "reason": "Toggle/buff są konkretne, lecz OP i odpowiedź sprzecznie opisują trigger oraz sens kosztu many.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4998146",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Online training problem i weapon mechanics są konkretne; odpowiedzi proponują prostsze warianty.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998145",
+      "quality_statuses": [
+        "concrete_problem",
+        "underspecified_claim"
+      ],
+      "reason": "Konkretna relacja ceny wykonania zasługuje na audyt, lecz jeden opis bez jednostek i reprodukcji nie dowodzi buga ani reguły.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G2"
+      ],
+      "source_file": "year-fifth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998111",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Loyalty milestones are specific. Replies add concrete but conflicting accessibility and unused-points concerns: opposition to old-account power, support plus Store-pointing, and an unused-points concern; four authors are not consensus.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998140",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Adding specified pirate mobs to an existing task is concrete, but no independent pain is described.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4998139",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Confusion among similar containers is concrete; user-local aliases preserve true item names and are presentation-only.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4998126",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Capacity and Stash-to-NPC sale are concrete and recur independently in 4998403. Two replies criticize; the Monk-buff reply is off-topic and not support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998129",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "A purchasable tradeable task-point currency is specific but does not state a concrete pain. Calling it crypto does not prove blockchain, and a per-account cap does not guarantee supply control.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998127",
+      "quality_statuses": [
+        "concrete_problem",
+        "underspecified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Ulus Frigo cost, cooldown and solo effectiveness form a concrete concern, but improve it is not a specified solution and all comparisons are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998112",
+      "quality_statuses": [
+        "concrete_proposal",
+        "joke_or_offtopic"
+      ],
+      "reason": "A cosmetic name font is requested without a pain case; the sarcastic reply is not evidence of need or support.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998115",
+      "quality_statuses": [
+        "underspecified_claim"
+      ],
+      "reason": "Metaphors about two worlds and a point of no return do not identify a problem, mechanic or expected result.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998114",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Marker clutter and persistent visibility layers are concrete. The same component appears in independent OP 4998253, giving two OP authors, not counting its quoted reply.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997889",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Depot assignment and auto-sort are specific without a pain case. One 1000x yes message is one supporter; a question mark adds no argument.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4998107",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Spawn concentration and a broader delivery-item pool are recognizable, but claims that current delivery items revive spawns are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998106",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Exercise expiration during a long workday and automatic chaining are concrete. Paid charges do not remove the 24-hour access and progression change; one reply is unsupported opposition.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixth12-analysis.md",
+      "line": 18
+    }
+  ]
+}
