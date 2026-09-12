@@ -52,3 +52,20 @@ Inventory reachable explicit URL/struct, PG environment/passfile/OS fallback, CA
 ## Handoff
 
 Return concise tables usable by A1 and A4. Do not propose broad implementation unless the evidence establishes the need. Do not call sampled memory, a skipped test, local PASS or one dependency edge a universal proof.
+
+## Mandatory next-agent instruction
+
+End the final response with:
+
+```text
+NEXT_AGENT: <exact alias>
+RUN_WHEN: <exact gate>
+WHY: <one concise dependency reason>
+```
+
+Default routing for this lane:
+- when the requested evidence package is complete and A1 is still deciding architecture, `NEXT_AGENT: Oteryn: astra wp3-v2 architecture lead`;
+- when architecture is already accepted and A4 needs implementation proof support, `NEXT_AGENT: Oteryn: astra wp3-v2 implementation lead`;
+- when evidence exposes a programme-level blocker or ownership conflict, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`.
+
+Never recommend a mutating worker before its live start gate is true.
