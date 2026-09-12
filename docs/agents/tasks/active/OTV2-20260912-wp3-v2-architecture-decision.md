@@ -10,9 +10,9 @@ base_branch: main
 branch: arch/wp3-v2-superseding-decision-20260912
 pr: 590
 base_sha: 489e3e390a1bce1ce3439c66521ab75f8a826cd8
-head_sha: e106ac49952112685553b46861b82f75b44f7d8c
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: external_pr_evidence
+final_head_sha: external_pr_evidence
+final_head_frozen_at: external_pr_evidence
 owner: Oteryn: astra wp3-v2 architecture lead
 created_at: 2026-09-12
 updated_at: 2026-09-12
@@ -213,7 +213,7 @@ Those are implementation qualification obligations, not guessed architecture con
 - [x] #356 retention/supersession map recorded.
 - [x] exact-source SQL/lock/pool/config/auth/provider evidence used rather than assumptions.
 - [ ] independent exact-head HIGH-risk architecture/resource/security review complete.
-- [ ] exact-head repository checks green for the Revision-2 head.
+- [ ] exact-head repository checks green for the final candidate head.
 - [ ] candidate protected-integrated/read back before A4 material allocation.
 
 ## Excluded scope
@@ -232,13 +232,18 @@ PASS for protected main, live #351/#356, #329/#335, #364, #451/#453/#458, #588/#
 
 ### Previous exact-head CI
 
-PR #590 head `3f4965404b28065325382d2a4ef8399e0790cb45` had:
+PR #590 head `b084f40595ea5179cb29ca87b639a4a66847ca0a` had:
 
 - Agent Governance: SUCCESS;
 - Architecture Semantic Audit: SUCCESS;
-- Merge Gate: SUCCESS.
+- Merge Gate / validate: SUCCESS;
+- game-gate: SUCCESS.
 
-Those runs are stale after Revision-2 mutation and are **not** claimed for the new head.
+Those runs become historical when this metadata correction creates the successor candidate head and are **not** claimed for that successor.
+
+### Final exact-head evidence convention
+
+Per `docs/agents/tasks/TASK_TEMPLATE.md`, a commit cannot contain its own SHA. The final exact candidate SHA and freeze time are therefore recorded in immutable PR/check evidence after the final commit exists. `head_sha`, `final_head_sha` and `final_head_frozen_at` use `external_pr_evidence` here to avoid an impossible self-referential follow-up commit.
 
 ## Self-review
 
@@ -253,13 +258,13 @@ Those runs are stale after Revision-2 mutation and are **not** claimed for the n
 ## Context checkpoint
 
 ```yaml
-last_progress: Revision-2 exact-source closure committed; A1 candidate is ready for repository acceptance
+last_progress: Revision-2 source closure is complete; exact-head task metadata was repaired to the repository external-evidence convention and the candidate is frozen for successor-head qualification
 status: ready_for_acceptance
 branch: arch/wp3-v2-superseding-decision-20260912
-head_sha: e106ac49952112685553b46861b82f75b44f7d8c
+head_sha: external_pr_evidence
 pr: 590
-final_head_sha: null
-final_head_frozen_at: null
-blocker: independent exact-head architecture review and fresh Revision-2 exact-head CI/protected acceptance
-next_action: re-read PR #590 exact head, exact changed files and new checks; repair only concrete findings
+final_head_sha: external_pr_evidence
+final_head_frozen_at: external_pr_evidence
+blocker: independent exact-head architecture/resource/security review plus fresh exact-head repository checks and protected acceptance
+next_action: read the successor PR #590 exact head from immutable GitHub evidence, then run all required exact-head checks and one independent HIGH-risk review against that exact SHA
 ```
