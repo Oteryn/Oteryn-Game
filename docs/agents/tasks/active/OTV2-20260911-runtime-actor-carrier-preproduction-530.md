@@ -1,0 +1,170 @@
+# OTV2-20260911-runtime-actor-carrier-preproduction-530
+
+```yaml
+task_id: OTV2-20260911-runtime-actor-carrier-preproduction-530
+title: Implement bounded pre-production Channel actor carrier
+mode: IMPLEMENT
+status: implementing
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: agent/runtime-actor-carrier-preproduction-530
+pr: 573
+base_sha: 1a9cb71f424a821633fd42f8a1a19920ffeff2c3
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: OTV2_IMPL_FOUNDATION_RUNTIME
+created_at: 2026-09-11T17:08:57Z
+updated_at: 2026-09-11T18:00:00Z
+execution_policy: continuous_progress
+owned_paths:
+  - apps/game-server/src/foundation/runtime_actor_carrier.rs
+  - apps/game-server/src/foundation/mod.rs
+  - docs/agents/evidence/OTV2-20260911-runtime-actor-carrier-preproduction.md
+  - docs/agents/tasks/active/OTV2-20260911-runtime-actor-carrier-preproduction-530.md
+public_contracts: []
+depends_on:
+  - PR-572 protected allocation/readback
+  - Issue-530
+  - Issue-540 / PR-570 capacity deferral
+  - protected actor-generation decisions including Issue-541
+blocks:
+  - future bounded Ability exact-target use under Issue-508
+  - future Movement re-evaluation under Issue-139
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+Implement one Foundation-owned, fixed-bound, PRE_PRODUCTION Channel actor carrier with direct exact lookup and fail-closed actor/scope generation handling. The implementation exists to make later representative measurement possible; it does not select or expose a production capacity.
+
+## Architecture and source of truth
+
+- PROVEN: protected activation base is `main@1a9cb71f424a821633fd42f8a1a19920ffeff2c3`, the native Merge Queue integration of allocation PR #572.
+- PROVEN: protected allocation `docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_PREPRODUCTION_ALLOCATION_20260911.md` is the exact write authority.
+- PROVEN: #570 defers production actor capacity/VPS selection until representative measurement; `RUNTIME-ACTOR-RL-01` remains evidence-gated.
+- PROVEN: `ScopeRuntimeFence` consumes supplied ownership facts and is not durable scope-assignment producer authority.
+- PROVEN: #335 is READ-ONLY SERIAL HOLD; #356 is the only other active mutating lead at activation.
+- PROVEN: #335/#356 do not own `apps/game-server/src/foundation/mod.rs` or the new carrier path.
+- UNKNOWN until implementation proof: exact internal Rust carrier layout satisfying all allocation invariants without widening authority.
+
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE` to production mutation/recovery qualification: this task has no production authority, durable assignment-producer authority, session/lease mutation, persistence/recovery mutation, or deployment authority. Multichannel fencing semantics are nevertheless high risk and require a genuinely independent exact-head review before integration.
+
+## Acceptance criteria
+
+- [x] Add exactly one bounded Channel carrier and direct exact slot/generation lookup; no second growing index/history.
+- [x] Every construction requires explicit finite non-production capacity; zero/missing/overflow/allocation failure fails closed before partial publication.
+- [x] M succeeds when resources allow; M+1 rejects without retained-state mutation across multiple fixture bounds, without promoting a fixture value to product policy.
+- [x] No API exports/serializes/reports a development bound as production capacity and no production-labeled constructor/default exists.
+- [x] Exact reference binds WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation.
+- [x] Wrong world/channel, stale scope generation, vacant/out-of-range identity, stale actor generation and cross-scope cases reject deterministically.
+- [x] A non-Clone/non-Copy guard outside carrier backing preserves one namespace claim per generation; carrier loss cannot enable same-generation reconstruction.
+- [x] Admission/lookup/removal require live current continuity before slot selection or mutation, and a strictly newer same-scope move-only grant immediately fences retained older carriers/references without minting grants.
+- [x] Removal/reuse advances retained actor-local generation; wrap is forbidden.
+- [x] Checked no-successor at `g_max` performs only `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement, preserves unrelated state and never reselects that slot in the same scope generation.
+- [x] `ScopeRuntimeFence` is not made Clone/Copy and its private raw-grant constructor is not widened.
+- [x] `foundation/mod.rs` receives only minimum private/crate-visible wiring.
+- [x] No Cargo/workspace/lib.rs/protocol/admission/Durability/transport/registry/workflow/production/#508/#139 mutation.
+- [x] Focused RED->GREEN, fmt, focused server tests, strict Clippy and adversarial whole-diff self-review pass on one exact head.
+- [ ] Exact-head repository CI passes.
+- [ ] Genuinely independent exact-head review is clean; unresolved material threads = 0.
+
+## Excluded scope
+
+No production capacity/default/readiness, `RESOURCE_LIMITS_REGISTRY`, VPS/deployment, durable scope-assignment producer/consumer composition, Ability #508, Movement #139, geometry/range/LoS/pathfinding/retargeting, gameplay formulas/state, persistence/schema/migrations, transport/TLS/listeners, public wire IDs, Cargo/workspace, external repositories or protected environment mutation.
+
+## Implementation / findings
+
+The bounded carrier implementation and local qualification continue on the single canonical Draft PR
+#573 lineage. Coordinator self-review P1 on published head
+`341e1f56c597c9cc1d3a33056c54f55c709a6ad7` is **ACCEPTED AND REPAIRED**: continuity now survives
+carrier backing, live guard state fences lookup/removal, and only a strictly newer same-scope move-only
+grant opens one fresh namespace claim. The superseded head is not recorded as zero-finding. Hosted
+exact-head CI and independent review remain coordinator-owned next steps and are not requested here.
+
+Fresh independent review `5186490714` of exact head
+`008cfd5f0b9a066c5ed86a383c85e112a4a73e34` produced P1 `3996281470` and P2 `3996281472`; both are
+**ACCEPTED AND REPAIRED**. Admission now proves live guard currentness before slot selection or
+mutation. Same-generation claimed bootstrap now rejects after zero/overflow validation but before
+allocation, while an unclaimed allocation failure leaves the claim available for a successful retry.
+
+## Validation
+
+### Focused
+
+- command/run: `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier`
+- result: PASS — 12 passed, 0 failed
+
+### Component/integration
+
+- command/run: `cargo +1.94.0 clippy -p oteryn-game-server --all-targets -- -D warnings`
+- result: PASS
+
+### E2E
+
+- scenario: `NOT_APPLICABLE` for physical production-capacity qualification; this is deliberately a pre-production bounded component.
+- result: PASS focused runtime evidence only; production qualification remains `NOT_APPLICABLE`
+
+### Exact-head CI
+
+- final head: pending
+- trigger source: pending
+- workflow/run/job: pending
+- runner assignment: pending
+- classification: pending
+- result: pending
+
+## Self-review
+
+- exact head: set at publication
+- method/reviewer: implementing agent, adversarial whole-diff allocation sweep
+- material findings: coordinator P1 accepted/repaired from superseded `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`; independent-review P1 `3996281470` and P2 `3996281472` accepted/repaired from superseded `008cfd5f0b9a066c5ed86a383c85e112a4a73e34`; 0 unresolved in repair self-review
+- verdict: PASS locally after focused repair; hosted checks/review remain pending
+
+## Independent review
+
+- required: YES — multichannel runtime/fencing semantics are high risk
+- exact head: `008cfd5f0b9a066c5ed86a383c85e112a4a73e34` (superseded by accepted repair findings)
+- method/auditor: independent Codex review `5186490714`
+- material findings: P1 `3996281470`; P2 `3996281472`; both accepted and repaired
+- verdict: BLOCKED on reviewed head; fresh repair-head qualification remains pending
+
+## PR and closeout
+
+- changed-file review: pending
+- unresolved review threads: pending
+- related/superseded PRs: #568 prototype, #570 architecture, #572 allocation
+- protected auto-merge: forbidden substitute; native Merge Queue only
+- merge commit/result: pending
+- ownership release: pending
+
+## Context checkpoint
+
+```yaml
+last_progress: accepted and repaired independent-review P1/P2 on the canonical four-path lineage
+status: implementing
+branch: agent/runtime-actor-carrier-preproduction-530
+head_sha: null
+pr: 573
+final_head_sha: null
+final_head_frozen_at: null
+ci_trigger_source: null
+ci_check_generation: null
+ci_checks_for_current_head: 0
+ci_run_ids: []
+ci_job_ids: []
+runner_assignment_state: unknown
+terminal_ci_wait_started_at: null
+terminal_ci_checks_for_current_generation: 0
+unchanged_state_checks: 0
+identical_failure_retries: 0
+repair_cycles_for_current_gate: 0
+ci_recovery_actions_for_current_head: 0
+stall_warnings: 0
+owner_action_required: null
+blocker: null
+next_action: publish normally to the same PR, verify branch and PR exact-head equality, then await coordinator routing
+```
