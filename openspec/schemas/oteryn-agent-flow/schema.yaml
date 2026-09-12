@@ -1,6 +1,6 @@
 name: oteryn-agent-flow
 version: 1
-description: Oteryn bounded agent-flow contract: authority -> evidence -> work-package -> review -> acceptance
+description: "Oteryn bounded agent-flow contract: authority -> evidence -> work-package -> review -> acceptance"
 artifacts:
   - id: authority
     generates: authority.md
