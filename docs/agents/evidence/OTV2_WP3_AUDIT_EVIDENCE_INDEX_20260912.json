@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "kind": "OTV2_WP3_AUDIT_EVIDENCE_INDEX",
   "date": "2026-09-12",
   "repository": "Oteryn/Oteryn-Game",
@@ -12,18 +12,20 @@
     "verdict": "RED",
     "recommended_path": "REDESIGN_BOUNDARY",
     "terminal_marker": "WP3_BOUNDARY_REDESIGN_REQUIRED",
-    "section_24_scope": "Q47-Q70 refinements only; do not treat section 24 as the complete qualification matrix"
+    "section_24_scope": "Q47-Q70 Revision-3 refinements only; do not treat section 24 as the complete qualification matrix",
+    "post_report_closure_refinements": "Q71-Q75 are retained in the canonical qualification matrix without retroactively changing Revision-3 report claims"
   },
   "qualification_matrix": {
-    "path": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q70_20260912.md",
-    "range": "WP3-Q01..WP3-Q70",
-    "count": 70,
+    "path": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q75_20260912.md",
+    "range": "WP3-Q01..WP3-Q75",
+    "count": 75,
     "self_contained": true,
-    "q01_q46_source": "original complete audit verification matrix; wording preserved",
+    "q01_q46_source": "original complete audit verification matrix; wording preserved except Q32 clarified to make the complete PostgreSQL startup/authentication lifecycle explicit without narrowing the original SASL obligation",
     "q47_q70_source": "Revision-3 consumer/pool/source refinements",
+    "q71_q75_source": "post-consolidation independent closure review: exact SQL corpus, lock footprint, producer-to-completion custody, executor restart/takeover, and retained credential/configuration lifetime",
     "status": "REQUIRES_EXACT_HEAD_EVIDENCE_UNLESS_PROVEN_OTHERWISE",
     "new_native_tests_executed_by_documentation_repair": false,
-    "purpose": "prevent reconstruction of mandatory qualification obligations from Git history"
+    "purpose": "prevent reconstruction of mandatory qualification obligations from Git history and keep all known closure classes explicit"
   },
   "verified_revisions": {
     "protected_main": "489e3e390a1bce1ce3439c66521ab75f8a826cd8",
@@ -58,22 +60,29 @@
     {"id":"WP3-R3-12","severity":"HIGH","title":"provider debt depends on thread lifetime history"}
   ],
   "verification_refinements": {
-    "range": "WP3-Q47..WP3-Q70",
-    "count": 24,
+    "revision3_range": "WP3-Q47..WP3-Q70",
+    "revision3_count": 24,
+    "closure_range": "WP3-Q71..WP3-Q75",
+    "closure_count": 5,
     "status": "REQUIRES_EXACT_HEAD_EVIDENCE",
     "new_native_tests_executed_by_audit": false,
-    "report_location": "Revision-3 report section 24",
-    "complete_matrix_location": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q70_20260912.md"
+    "report_location": "Revision-3 report section 24 contains Q47-Q70",
+    "complete_matrix_location": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q75_20260912.md"
   },
   "coverage": {
-    "tracked_areas": 30,
+    "tracked_areas": 35,
     "complete_executable_qualification": false,
     "explicit_remaining_classes": [
       "complete authored/imported delta and unsafe/FFI qualification",
       "exact production feature/target/build graph",
       "ambient configuration and credential bounds",
+      "complete PostgreSQL startup/authentication profile and retained credential lifetime",
       "bootstrap/pool/connection/transient joint fit",
       "socket/reactor/DNS/TLS finality where reachable",
+      "complete production SQL corpus classification",
+      "exact 64-key/16-relation lock-footprint and sibling-writer fencing proof",
+      "producer-to-queue-to-active-to-SQL-to-completion ownership transfer proof",
+      "executor initialization/restart/takeover and predecessor fencing",
       "production custody and repeated slot recovery",
       "independent allocation and release-order observation",
       "long-run scheduler/latency/churn measurement",
@@ -111,9 +120,9 @@
   },
   "documentation_integrity": {
     "known_section24_gap_detected": true,
-    "gap": "Revision-3 report section 24 listed Q47-Q70 while referring to retained Q01-Q46",
-    "repair": "complete Q01-Q70 matrix retained in a dedicated canonical qualification artifact and indexed here",
-    "git_history_reconstruction_required_for_q01_q70": false
+    "gap": "Revision-3 report section 24 listed Q47-Q70 while referring to retained Q01-Q46; later closure review additionally made Q71-Q75 explicit",
+    "repair": "complete Q01-Q75 matrix retained in a dedicated canonical qualification artifact and indexed here",
+    "git_history_reconstruction_required_for_q01_q75": false
   },
   "authority": {
     "accepted_architecture": false,
