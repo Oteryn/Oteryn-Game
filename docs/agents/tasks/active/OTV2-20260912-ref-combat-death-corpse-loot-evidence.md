@@ -8,14 +8,14 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/ref-combat-death-corpse-loot-evidence-506-513
-pr: null
+pr: 576
 base_sha: 1a9cb71f424a821633fd42f8a1a19920ffeff2c3
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
 created_at: 2026-09-12T09:13:00+02:00
-updated_at: 2026-09-12T09:13:00+02:00
+updated_at: 2026-09-12T09:38:46+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260912-ref-combat-death-corpse-loot-evidence.md
@@ -36,7 +36,7 @@ Retain one official-first evidence pack for the ordinary single-player creature 
 
 `committed lethal result -> death -> XP consequence + corpse/loot selection -> protected corpse interaction -> durable pickup boundary`.
 
-The evidence pack must preserve the immutable Reference target `global-tibia-observable-2026-07-28-post-server-save`, keep party XP/PvP/boss/quick-loot breadth out of scope, and must not invent Global durability ownership or transaction internals.
+The evidence pack preserves the immutable Reference target `global-tibia-observable-2026-07-28-post-server-save`, keeps party XP/PvP/boss/quick-loot breadth out of scope, and does not invent Global durability ownership or transaction internals.
 
 ## Architecture and source of truth
 
@@ -98,7 +98,7 @@ No durability ownership is inferred from Global public behavior.
 ### Focused
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: pending exact-head CI/local-capable validation
+- result: pending exact-head GitHub governance execution; no local command runner was used
 
 ### Component/integration
 
@@ -112,19 +112,19 @@ No durability ownership is inferred from Global public behavior.
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pull request
+- final head: external readback required after this metadata commit; do not create a self-referential SHA-only follow-up
+- trigger source: pull request #576
 - workflow/run/job: pending
 - runner assignment: pending
-- classification: neutral documentation / governance docs; exact GitHub classifier remains authority
+- classification: exact GitHub classifier remains authority; change is documentation only
 - result: pending
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: `7e621a3de48ff71d37a70f786f6e5294af2bbb5d` content candidate before this task-record closeout-only update
+- method/reviewer: implementing/coordinating agent; full base-to-head changed-file review via GitHub compare
+- material findings: none; exactly two intended Markdown files, 799 additions, zero deletions, branch ahead-only from exact protected base
+- verdict: PASS for evidence content; final metadata-only commit requires external exact-head readback without another self-referential commit
 
 ## Independent review
 
@@ -136,24 +136,24 @@ No durability ownership is inferred from Global public behavior.
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: PASS — exactly the task record and evidence document; no unrelated paths
+- unresolved review threads: none at PR creation; live readback still governs
 - related/superseded PRs: none known
 - protected auto-merge: forbidden; Merge Queue policy remains authoritative if integration is later authorized
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: pending; no merge attempted
+- ownership release: pending exact-head CI/review disposition
 
 ## Context checkpoint
 
 ```yaml
-last_progress: dedicated docs-only branch created from protected main and evidence retention started
+last_progress: PR #576 opened with the complete official-first evidence pack; task metadata closed before exact-head CI freeze
 status: validating
 branch: agent/ref-combat-death-corpse-loot-evidence-506-513
 head_sha: null
-pr: null
+pr: 576
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
@@ -168,5 +168,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: add the bounded official-first evidence document and open a docs-only PR
+next_action: read back the new exact PR head and required GitHub checks; preserve the head unless a material finding requires repair
 ```
