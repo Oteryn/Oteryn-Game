@@ -177,7 +177,7 @@ Before WP3 release, the exact final #356 lineage must provide at minimum:
 - exact `I/R/T/active` byte/lifetime proof under the frozen equation;
 - terminal truthful classification of canonical Q01-Q75;
 - cancellation/rollback/ambiguous COMMIT/reconciliation/restart/takeover/finality evidence required by the accepted contracts;
-- genuinely independent HIGH-risk whole-diff review with no unresolved P0/P1;
+- genuinely independent HIGH-risk whole-diff review with explicit `PASS`, `P0=0`, `P1=0`, `P2=0` and `BLOCKING_EVIDENCE_GAP=0` on the exact final head;
 - exact-head canonical repository CI;
 - normal FULL native Merge Queue with real `merge_group` `game-gate`;
 - protected-main source/readback after integration.
