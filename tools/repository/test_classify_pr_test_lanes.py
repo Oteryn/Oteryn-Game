@@ -212,6 +212,55 @@ def test_candidate_modes(module):
     print("Candidate mode family PASS: executable/regular controls, symlink/gitlink rejection and missing evidence FULL")
 
 
+def test_bounded_document_consumer_drift(module):
+    docs = [dict(filename="README.md", status="modified")]
+    result = module.classify(docs, 1, fixture(), "stale-nonserver", docs_digest="stale-all",
+                             candidate_modes_verified=True, docs_consumers_verified=True)
+    assert result["rust"] is False and result["windows"] is False, result
+    result = module.classify(docs, 1, fixture(), module.AUDITED_INPUT_SHA256,
+                             docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                             candidate_modes_verified=True, docs_consumers_verified=False)
+    assert result["rust"] and result["windows"], result
+    assert result["reason"] == "unreviewed-document-consumer-inputs", result
+
+    assert module.document_consumer_content_safe("apps/game-server/src/combat.rs", b"fn damage() -> u32 { 7 }")
+    for path, content in (
+        ("Cargo.toml", b"[workspace]"),
+        ("apps/game-server/build.rs", b"fn main() {}"),
+        ("apps/game-server/src/lib.rs", b'let x = std::fs::read_to_string("config");'),
+        ("apps/game-server/src/lib.rs", b'let x = "docs/reference.md";'),
+        ("apps/game-server/src/lib.rs", b'const X: &str = include_str!("fixture.sql");'),
+    ):
+        assert not module.document_consumer_content_safe(path, content), (path, content)
+
+    complete = subprocess.CompletedProcess([], 0)
+    safe_outputs = [
+        ("a" * 40 + "\n").encode(),
+        b"",
+        b"apps/game-server/src/combat.rs\0",
+        b"fn damage() -> u32 { 7 }",
+    ]
+    with patch.object(module.subprocess, "run", return_value=complete), \
+            patch.object(module.subprocess, "check_output", side_effect=safe_outputs):
+        assert module.document_consumers_safe(fixture()) is True
+
+    unsafe_outputs = [
+        ("a" * 40 + "\n").encode(),
+        b"",
+        b"apps/game-server/src/combat.rs\0",
+        b'let x = std::fs::read_to_string("docs/reference.md");',
+    ]
+    with patch.object(module.subprocess, "run", return_value=complete), \
+            patch.object(module.subprocess, "check_output", side_effect=unsafe_outputs):
+        assert module.document_consumers_safe(fixture()) is False
+
+    deleted_outputs = [("a" * 40 + "\n").encode(), b"apps/game-server/src/old.rs\0"]
+    with patch.object(module.subprocess, "run", return_value=complete), \
+            patch.object(module.subprocess, "check_output", side_effect=deleted_outputs):
+        assert module.document_consumers_safe(fixture()) is False
+    print("Bounded document consumer drift PASS: unrelated source drift allowed; build/I/O/doc drift FULL")
+
+
 def main() -> int:
     assert MODULE.is_file(), "dependency-aware trusted-base classifier is not implemented"
     spec = importlib.util.spec_from_file_location("risk_classifier", MODULE)
@@ -220,6 +269,7 @@ def main() -> int:
     spec.loader.exec_module(module)
     test_candidate_modes(module)
     test_reviewed_document_consumers(module)
+    test_bounded_document_consumer_drift(module)
 
     def classify(paths, metadata=None, digest=None, **kwargs):
         files = [dict(filename=p, status="modified") if isinstance(p, str) else p for p in paths]
