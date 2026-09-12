@@ -207,6 +207,24 @@ def rust_ordinary_comment_lines(content: bytes) -> list[bool] | None:
                 state, escaped = "string", False
                 index += 2
                 continue
+            if line.startswith(b"b'", index):
+                end = rust_character_literal_end(line, index + 1, byte=True)
+                if end is None:
+                    return None
+                index = end
+                continue
+            if line[index] == 0x27:
+                end = rust_character_literal_end(line, index, byte=False)
+                if end is None:
+                    # Lifetimes and labels are not character literals and have
+                    # no lexical state to track. Anything else is uncertain.
+                    lifetime = re.match(br"'[A-Za-z_][A-Za-z0-9_]*(?!')", line[index:])
+                    if lifetime is None:
+                        return None
+                    index += len(lifetime.group(0))
+                    continue
+                index = end
+                continue
             if line[index] == 0x22:
                 state, escaped = "string", False
             index += 1
@@ -215,6 +233,67 @@ def rust_ordinary_comment_lines(content: bytes) -> list[bool] | None:
         elif state == "string" and escaped:
             escaped = False
     return ordinary if state == "code" else None
+
+
+def rust_character_literal_end(line: bytes, quote: int, *, byte: bool) -> int | None:
+    """Return the byte after a valid Rust character literal, else ``None``.
+
+    Character literals cannot span physical lines. Recognizing their complete
+    token here prevents embedded double quotes from corrupting string/raw-string
+    state; rejecting malformed or uncertain forms keeps the proof fail closed.
+    """
+    index = quote + 1
+    if index >= len(line):
+        return None
+    if line[index] == 0x5C:
+        index += 1
+        if index >= len(line):
+            return None
+        escape = line[index]
+        if escape in b"nrt\\0'\"":
+            index += 1
+        elif escape == ord("x"):
+            digits = line[index + 1:index + 3]
+            if len(digits) != 2 or re.fullmatch(br"[0-9A-Fa-f]{2}", digits) is None:
+                return None
+            if not byte and int(digits, 16) > 0x7F:
+                return None
+            index += 3
+        elif escape == ord("u") and not byte:
+            match = re.match(br"u\{([0-9A-Fa-f_]*)\}", line[index:])
+            if match is None:
+                return None
+            try:
+                digits = match.group(1).replace(b"_", b"")
+                if not 1 <= len(digits) <= 6:
+                    return None
+                value = int(digits, 16)
+                if value > 0x10FFFF or 0xD800 <= value <= 0xDFFF:
+                    return None
+            except ValueError:
+                return None
+            index += len(match.group(0))
+        else:
+            return None
+    else:
+        width = 1
+        if line[index] >= 0x80:
+            if byte:
+                return None
+            for candidate in range(2, 5):
+                try:
+                    decoded = line[index:index + candidate].decode("utf-8")
+                except UnicodeDecodeError:
+                    continue
+                if len(decoded) == 1:
+                    width = candidate
+                    break
+            else:
+                return None
+        elif line[index] in b"'\\\t\r\n":
+            return None
+        index += width
+    return index + 1 if index < len(line) and line[index] == 0x27 else None
 
 
 def document_consumers_safe(metadata: dict) -> bool:

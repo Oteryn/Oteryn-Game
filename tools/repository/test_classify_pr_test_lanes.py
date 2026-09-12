@@ -228,6 +228,10 @@ def test_bounded_document_consumer_drift(module):
     unchanged_consumer = b'const GUIDE: &str = include_str!("guide.md");\n'
     assert module.document_consumer_content_safe(
         "apps/game-server/src/lib.rs", unchanged_consumer, unchanged_consumer + b"// harmless note\n")
+    literal_context = b'''const Q1: char = '\"';\nconst Q2: u8 = b'\"';\nconst ESC: char = '\\u{1F_600}';\n'''
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", literal_context + b"// old note\n",
+        literal_context + b"// changed note\n")
     for path, baseline, current in (
         ("Cargo.toml", b"[workspace]", b"[workspace]\n"),
         ("apps/game-server/build.rs", b"fn main() {}", b"fn main() { println!(); }"),
@@ -241,8 +245,13 @@ def test_bounded_document_consumer_drift(module):
         ("apps/game-server/src/lib.rs", b"/**\n// old doc text\n*/", b"/**\n// changed doc text\n*/"),
         ("apps/game-server/src/lib.rs", b"/*!\n// old crate docs\n*/", b"/*!\n// changed crate docs\n*/"),
         ("apps/game-server/src/lib.rs", b'let text = r#"\n// old string text\n"#;', b'let text = r#"\n// changed string text\n"#;'),
+        ("apps/game-server/src/lib.rs",
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// old string text\n"#;\nconst Q2: char = '\"';''',
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// changed string text\n"#;\nconst Q2: char = '\"';'''),
         ("apps/game-server/src/lib.rs", b'let text = "\n// old string text\n";', b'let text = "\n// changed string text\n";'),
         ("apps/game-server/src/lib.rs", b"// baseline", b"/* unterminated\n// uncertain"),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: char = '\\q';\n// uncertain"),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: u8 = b'xy';\n// uncertain"),
     ):
         assert not module.document_consumer_content_safe(path, baseline, current), (path, current)
 
@@ -284,7 +293,8 @@ def test_bounded_document_consumer_drift(module):
         source = root / "apps/game-server/src/lib.rs"
         source.parent.mkdir(parents=True)
         lexical_contexts = (b"/**\n// old block docs\n*/\n/*!\n// old crate block docs\n*/\n"
-                            b'const TEXT: &str = r#"\n// old raw string\n"#;\n')
+                            b'const TEXT: &str = r#"\n// old raw string\n"#;\n'
+                            b'''const Q1: char = '\"';\nconst QUOTED: &str = r#"\n// old quoted raw string\n"#;\nconst Q2: u8 = b'\"';\n''')
         baseline_source = unchanged_consumer + b"const USE_DOCS: bool = false;\n" + lexical_contexts
         source.write_bytes(baseline_source)
         for package in fixture()["packages"]:
@@ -328,6 +338,7 @@ def test_bounded_document_consumer_drift(module):
             for ambiguous in (lexical_contexts.replace(b"// old block docs", b"// changed block docs"),
                               lexical_contexts.replace(b"// old crate block docs", b"// changed crate block docs"),
                               lexical_contexts.replace(b"// old raw string", b"// changed raw string"),
+                              lexical_contexts.replace(b"// old quoted raw string", b"// changed quoted raw string"),
                               lexical_contexts + b"/* unterminated\n// uncertain\n"):
                 git("checkout", "-q", baseline_sha)
                 source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = false;\n" + ambiguous)

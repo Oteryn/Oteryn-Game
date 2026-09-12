@@ -34,7 +34,8 @@ def main():
         source = root / "apps/game-server/src/main.rs"
         source.parent.mkdir()
         lexical_contexts = ('/**\n// old block docs\n*/\n/*!\n// old crate block docs\n*/\n'
-                            'const TEXT: &str = r#"\n// old raw string\n"#;\n')
+                            'const TEXT: &str = r#"\n// old raw string\n"#;\n'
+                            '''const Q1: char = '\"';\nconst QUOTED: &str = r#"\n// old quoted raw string\n"#;\nconst Q2: u8 = b'\"';\n''')
         source.write_text('const GUIDE: &str = include_str!("guide.md");\n// original\n' + lexical_contexts)
         git("add", ".")
         git("commit", "-qm", "base")
@@ -190,6 +191,8 @@ def main():
                          lexical_contexts.replace("// old crate block docs", "// changed crate block docs")),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n// original\n' +
                          lexical_contexts.replace("// old raw string", "// changed raw string")),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n// original\n' +
+                         lexical_contexts.replace("// old quoted raw string", "// changed quoted raw string")),
                     ):
                         git("checkout", "-q", doc_before)
                         doc.write_text("changed docs\n")
