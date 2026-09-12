@@ -349,3 +349,95 @@ fn concurrent_owned_admission_releases_every_reservation() {
         owner.releases.load(Ordering::SeqCst)
     );
 }
+
+#[test]
+fn owned_worker_charge_survives_stop_until_external_join() {
+    use std::sync::atomic::AtomicBool;
+    use std::time::Duration;
+
+    let owner = Arc::new(Witness::default());
+    let stopped = Arc::new(AtomicBool::new(false));
+    let held_at_stop = Arc::new(AtomicUsize::new(0));
+    let stop_owner = owner.clone();
+    let stop_flag = stopped.clone();
+    let stop_held = held_at_stop.clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .thread_keep_alive(Duration::from_millis(5))
+        .on_thread_stop(move || {
+            stop_held.store(stop_owner.held.load(Ordering::SeqCst), Ordering::SeqCst);
+            stop_flag.store(true, Ordering::SeqCst);
+        })
+        .build()
+        .unwrap();
+
+    let handle = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                || 7usize,
+            )
+        })
+        .unwrap();
+    assert_eq!(runtime.block_on(handle).unwrap(), 7);
+
+    for _ in 0..200 {
+        if stopped.load(Ordering::SeqCst) {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(stopped.load(Ordering::SeqCst));
+    let retained = held_at_stop.load(Ordering::SeqCst);
+    assert!(retained >= 2 * 1024 * 1024);
+    std::thread::sleep(Duration::from_millis(20));
+    assert_eq!(owner.held.load(Ordering::SeqCst), retained);
+
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn shutdown_timeout_never_releases_live_owned_worker_charge() {
+    use std::time::Duration;
+
+    let owner = Arc::new(Witness::default());
+    let gate = Arc::new((Mutex::new(false), Condvar::new()));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let worker_gate = gate.clone();
+    let handle = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                move || {
+                    let (lock, ready) = &*worker_gate;
+                    let mut released = lock.lock().unwrap();
+                    while !*released {
+                        released = ready.wait(released).unwrap();
+                    }
+                },
+            )
+        })
+        .unwrap();
+    drop(handle);
+
+    let release_gate = gate.clone();
+    let releaser = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(100));
+        let (lock, ready) = &*release_gate;
+        *lock.lock().unwrap() = true;
+        ready.notify_one();
+    });
+
+    runtime.shutdown_timeout(Duration::from_millis(10));
+    assert!(owner.held.load(Ordering::SeqCst) > 0);
+    releaser.join().unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+    assert!(
+        owner.held.load(Ordering::SeqCst) > 0,
+        "timed shutdown must conservatively retain the leaked worker debit"
+    );
+}

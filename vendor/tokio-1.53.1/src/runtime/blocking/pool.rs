@@ -118,6 +118,8 @@ struct Shared {
     /// <https://github.com/tokio-rs/tokio/commit/646fbae76535e397ef79dbcaacb945d4c829f666>
     /// for more information.
     last_exiting_thread: Option<thread::JoinHandle<()>>,
+    /// Final owned worker awaiting an outside-thread join.
+    last_exiting_owned: Option<thread::JoinHandle<task::OterynCharge>>,
     /// This holds the `JoinHandles` for all running threads; on shutdown, the thread
     /// calling shutdown handles joining on these.
     worker_threads: HashMap<usize, thread::JoinHandle<()>>,
@@ -132,6 +134,7 @@ struct OwnedQueue {
     queue_charge: task::OterynCharge,
     node_charge: Option<task::OterynCharge>,
     worker_running: bool,
+    worker_handle: Option<thread::JoinHandle<task::OterynCharge>>,
     next: Option<Box<OwnedQueue>>,
 }
 
@@ -144,11 +147,33 @@ impl OwnedQueue {
         }
     }
 
+    fn take_worker_handle(
+        head: &mut Option<Box<OwnedQueue>>,
+    ) -> Option<thread::JoinHandle<task::OterynCharge>> {
+        let queue = head.as_deref_mut()?;
+        if queue.worker_handle.is_some() {
+            queue.worker_handle.take()
+        } else {
+            Self::take_worker_handle(&mut queue.next)
+        }
+    }
+
+    fn forget_worker_handles(head: &mut Option<Box<OwnedQueue>>) {
+        let Some(queue) = head.as_deref_mut() else {
+            return;
+        };
+        if let Some(handle) = queue.worker_handle.take() {
+            std::mem::forget(handle);
+        }
+        Self::forget_worker_handles(&mut queue.next);
+    }
+
     fn remove_if_idle(head: &mut Option<Box<OwnedQueue>>, owner: &Arc<dyn BlockingOwner>) -> bool {
         let remove_head = match head.as_ref() {
             Some(queue) => {
                 queue.queue_charge.same_owner(owner)
                     && !queue.worker_running
+                    && queue.worker_handle.is_none()
                     && queue.queue.is_empty()
             }
             None => return false,
@@ -272,6 +297,7 @@ impl BlockingPool {
                         shutdown: false,
                         shutdown_tx: Some(shutdown_tx),
                         last_exiting_thread: None,
+                        last_exiting_owned: None,
                         worker_threads: HashMap::new(),
                         worker_thread_index: 0,
                     }),
@@ -317,8 +343,6 @@ impl BlockingPool {
         if self.shutdown_rx.wait(timeout) {
             let _ = last_exited_thread.map(thread::JoinHandle::join);
 
-            // Loom requires that execution be deterministic, so sort by thread ID before joining.
-            // (HashMaps use a randomly-seeded hash function, so the order is nondeterministic)
             #[cfg(loom)]
             let workers: Vec<(usize, thread::JoinHandle<()>)> = {
                 let mut workers: Vec<_> = workers.into_iter().collect();
@@ -329,6 +353,26 @@ impl BlockingPool {
             for (_id, handle) in workers {
                 let _ = handle.join();
             }
+
+            loop {
+                let handle = {
+                    let mut shared = self.spawner.inner.shared.lock();
+                    shared
+                        .last_exiting_owned
+                        .take()
+                        .or_else(|| OwnedQueue::take_worker_handle(&mut shared.owned_queues))
+                };
+                let Some(handle) = handle else {
+                    break;
+                };
+                Inner::join_owned_worker(handle);
+            }
+        } else {
+            let mut shared = self.spawner.inner.shared.lock();
+            if let Some(handle) = shared.last_exiting_owned.take() {
+                std::mem::forget(handle);
+            }
+            OwnedQueue::forget_worker_handles(&mut shared.owned_queues);
         }
     }
 }
@@ -348,6 +392,25 @@ impl fmt::Debug for BlockingPool {
 // ===== impl Spawner =====
 
 impl Spawner {
+    #[cfg(not(loom))]
+    fn reap_finished_owned(&self) {
+        let handle = {
+            let mut shared = self.inner.shared.lock();
+            if shared
+                .last_exiting_owned
+                .as_ref()
+                .is_some_and(|handle| handle.is_finished())
+            {
+                shared.last_exiting_owned.take()
+            } else {
+                None
+            }
+        };
+        if let Some(handle) = handle {
+            Inner::join_owned_worker(handle);
+        }
+    }
+
     pub(crate) fn spawn_blocking_owned<F, R>(
         &self,
         rt: &Handle,
@@ -362,6 +425,9 @@ impl Spawner {
         if config.queue_capacity == 0 || config.worker_stack_size == 0 {
             return Err(OwnedSpawnError::InvalidConfiguration);
         }
+
+        #[cfg(not(loom))]
+        self.reap_finished_owned();
 
         let mut shared = self.inner.shared.lock();
         if shared.shutdown {
@@ -395,6 +461,7 @@ impl Spawner {
                 queue_charge,
                 node_charge: Some(node_charge),
                 worker_running: false,
+                worker_handle: None,
                 next,
             }));
         }
@@ -475,7 +542,7 @@ impl Spawner {
                     "owned blocking worker would exceed runtime thread cap",
                 )));
             }
-            let Some(bookkeeping) = std::mem::size_of::<thread::JoinHandle<()>>()
+            let Some(bookkeeping) = std::mem::size_of::<thread::JoinHandle<task::OterynCharge>>()
                 .checked_add(std::mem::size_of::<usize>())
                 .and_then(|value| value.checked_add(config.worker_stack_size))
             else {
@@ -506,34 +573,29 @@ impl Spawner {
                 ))
             } else {
                 builder.spawn(move || {
-                    let charge = worker_charge;
                     let enter = rt.enter();
                     rt.inner
                         .blocking_spawner()
                         .inner
                         .run_owned(id, worker_owner);
-                    // Release charged backing only once the worker has finished all
-                    // pool work, then signal shutdown waiters.
                     drop(enter);
                     drop(rt);
-                    drop(charge);
                     drop(shutdown_tx);
+                    worker_charge
                 })
             };
             match result {
                 Ok(handle) => {
-                    // The native thread owns its bookkeeping charge. Detaching the
-                    // handle avoids uncharged HashMap growth; shutdown is tracked by
-                    // the existing sender held by the worker.
-                    drop(handle);
                     self.inner.metrics.inc_num_threads();
                     shared.worker_thread_index += 1;
-                    shared
+                    let queue = shared
                         .owned_queues
                         .as_deref_mut()
                         .and_then(|queue| queue.find_mut(&owner))
-                        .expect("owned queue initialized")
-                        .worker_running = true;
+                        .expect("owned queue initialized");
+                    debug_assert!(queue.worker_handle.is_none());
+                    queue.worker_handle = Some(handle);
+                    queue.worker_running = true;
                 }
                 Err(error) => {
                     task.task.shutdown();
@@ -812,13 +874,14 @@ impl Inner {
             }
         }
 
-        if let Some(queue) = shared
+        let worker_handle = shared
             .owned_queues
             .as_deref_mut()
             .and_then(|queue| queue.find_mut(&owner))
-        {
-            queue.worker_running = false;
-        }
+            .and_then(|queue| {
+                queue.worker_running = false;
+                queue.worker_handle.take()
+            });
         OwnedQueue::remove_if_idle(&mut shared.owned_queues, &owner);
 
         if !shared.queue.is_empty() {
@@ -826,9 +889,15 @@ impl Inner {
             // and spawning a replacement. This prevents both ordinary-work
             // starvation and a transient thread_cap oversubscription.
             drop(shared);
-            self.run_after_start(worker_thread_id);
+            self.run_after_start_with_owned(worker_thread_id, worker_handle);
             return;
         }
+
+        let join_on_owned = if let Some(handle) = worker_handle {
+            shared.last_exiting_owned.replace(handle)
+        } else {
+            None
+        };
 
         self.metrics.dec_num_threads();
         if shared.shutdown && self.metrics.num_threads() == 0 {
@@ -842,6 +911,9 @@ impl Inner {
         if let Some(f) = &self.before_stop {
             f();
         }
+        if let Some(handle) = join_on_owned {
+            Self::join_owned_worker(handle);
+        }
     }
 
     fn run(&self, worker_thread_id: usize) {
@@ -849,10 +921,14 @@ impl Inner {
             f();
         }
 
-        self.run_after_start(worker_thread_id);
+        self.run_after_start_with_owned(worker_thread_id, None);
     }
 
-    fn run_after_start(&self, worker_thread_id: usize) {
+    fn run_after_start_with_owned(
+        &self,
+        worker_thread_id: usize,
+        owned_handle: Option<thread::JoinHandle<task::OterynCharge>>,
+    ) {
         let mut shared = self.shared.lock();
         let mut join_on_thread = None;
         // is this thread currently counted in `num_idle_threads`?
@@ -939,6 +1015,12 @@ impl Inner {
             self.condvar.notify_one();
         }
 
+        let join_on_owned = if let Some(handle) = owned_handle {
+            shared.last_exiting_owned.replace(handle)
+        } else {
+            None
+        };
+
         drop(shared);
 
         if let Some(f) = &self.before_stop {
@@ -947,6 +1029,15 @@ impl Inner {
 
         if let Some(handle) = join_on_thread {
             let _ = handle.join();
+        }
+        if let Some(handle) = join_on_owned {
+            Self::join_owned_worker(handle);
+        }
+    }
+
+    fn join_owned_worker(handle: thread::JoinHandle<task::OterynCharge>) {
+        if let Ok(charge) = handle.join() {
+            drop(charge);
         }
     }
 }
@@ -997,6 +1088,7 @@ mod oteryn_owned_queue_tests {
             queue_charge: reserve(owner, queue_bytes),
             node_charge: Some(reserve(owner, std::mem::size_of::<OwnedQueue>())),
             worker_running,
+            worker_handle: None,
             next: None,
         })
     }
