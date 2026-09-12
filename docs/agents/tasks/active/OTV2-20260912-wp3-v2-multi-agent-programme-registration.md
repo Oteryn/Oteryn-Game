@@ -8,14 +8,14 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/wp3-v2-multi-agent-delivery-20260912
-pr: pending
+pr: 589
 base_sha: 489e3e390a1bce1ce3439c66521ab75f8a826cd8
-head_sha: 9858fb67b1a7b33374869160e03eac09f2fc9776
+head_sha: 7fa4778b00c105b2bc8b74b3f4ecd5234d2e47bf
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT documentation coordinator
 created_at: 2026-09-12T20:05:00+02:00
-updated_at: 2026-09-12T20:05:00+02:00
+updated_at: 2026-09-12T20:20:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/programs/OTV2_WP3_V2_MULTI_AGENT_DELIVERY_PROGRAMME.md
@@ -75,7 +75,7 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 
 ### Focused
 
-- exact branch diff before this metadata refresh: 11 new documentation paths, no runtime/product paths touched
+- exact branch diff before final PR-link metadata: 11 documentation paths, no runtime/product paths touched
 - source/reference readback: PASS for protected main, #162/#247/#319/#351/#364, prompt/META/architecture discipline
 - result: PASS for documentation structure; semantic/runtime behavior remains `NOT_EVALUATED`
 
@@ -89,13 +89,13 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 
 ### Exact-head CI
 
-- final head: pending after this metadata refresh
-- trigger source: PR
+- final head: recorded by live PR #589 after this commit
+- trigger source: draft PR #589
 - result: pending
 
 ## Self-review
 
-- exact head: pending after this metadata refresh
+- exact head: recorded by live PR #589 after this commit
 - method/reviewer: implementing/coordinating agent
 - material findings: no runtime/path-ownership mutation; A7 correctly reuses existing canonical alias rather than creating a duplicate
 - verdict: PASS for draft-PR publication
@@ -110,7 +110,7 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 
 ## PR and closeout
 
-- changed-file review: PASS before metadata refresh; final readback pending
+- changed-file review: PASS before final metadata refresh
 - unresolved review threads: pending
 - related/superseded PRs: #588 evidence remains separate; #356/#335/#247 untouched
 - protected auto-merge: NOT_REQUESTED
@@ -120,14 +120,14 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 ## Context checkpoint
 
 ```yaml
-last_progress: full documentation diff reviewed; preparing draft PR
+last_progress: draft PR #589 created and task record linked
 status: validating
 branch: agent/wp3-v2-multi-agent-delivery-20260912
-head_sha: 9858fb67b1a7b33374869160e03eac09f2fc9776
-pr: pending
+head_sha: 7fa4778b00c105b2bc8b74b3f4ecd5234d2e47bf
+pr: 589
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pr
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
@@ -142,5 +142,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: create draft PR, then re-read exact head and checks
+next_action: re-read PR #589 exact head and repository checks
 ```
