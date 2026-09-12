@@ -69,10 +69,15 @@ impl NamespaceContinuityGuard {
     }
 
     fn claim_current_generation(&mut self) -> Result<(), CarrierError> {
+        self.ensure_current_generation_unclaimed()?;
+        self.current_generation_claimed = true;
+        Ok(())
+    }
+
+    fn ensure_current_generation_unclaimed(&self) -> Result<(), CarrierError> {
         if self.current_generation_claimed {
             return Err(CarrierError::NamespaceAlreadyClaimed);
         }
-        self.current_generation_claimed = true;
         Ok(())
     }
 }
@@ -125,11 +130,10 @@ impl ChannelActorCarrier {
             .checked_mul(size_of::<Slot>())
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
 
-        let mut slots = Vec::new();
-        slots
-            .try_reserve_exact(explicit_capacity)
-            .map_err(|_| CarrierError::AllocationFailed)?;
-        slots.resize(explicit_capacity, Slot::VacantReusable { generation: 0 });
+        // Reject replay before touching allocation while retaining the claim
+        // commit until every fallible construction step has succeeded.
+        continuity.ensure_current_generation_unclaimed()?;
+        let slots = allocate_slots(explicit_capacity)?;
 
         // Claim only after every fallible construction step has succeeded.
         continuity.claim_current_generation()?;
@@ -142,15 +146,23 @@ impl ChannelActorCarrier {
         })
     }
 
-    fn admit(&mut self, actor: ActorState) -> Result<ActorRef, CarrierError> {
-        self.admit_inner(actor, false)
+    fn admit(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ActorState,
+    ) -> Result<ActorRef, CarrierError> {
+        self.admit_inner(continuity, actor, false)
     }
 
     fn admit_inner(
         &mut self,
+        continuity: &NamespaceContinuityGuard,
         actor: ActorState,
         fail_after_selection: bool,
     ) -> Result<ActorRef, CarrierError> {
+        // Current outer authority must be proven before slot selection or any
+        // mutation, including terminal generation-exhaustion bookkeeping.
+        self.validate_current_continuity(continuity)?;
         let Some(index) = self
             .slots
             .iter()
@@ -232,10 +244,8 @@ impl ChannelActorCarrier {
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
     ) -> Result<usize, CarrierError> {
-        if continuity.world_id != self.world_id
-            || continuity.channel_id != self.channel_id
-            || continuity.current_generation != self.scope_generation
-            || actor_ref.world_id != continuity.world_id
+        self.validate_current_continuity(continuity)?;
+        if actor_ref.world_id != continuity.world_id
             || actor_ref.channel_id != continuity.channel_id
             || actor_ref.scope_generation != continuity.current_generation
             || actor_ref.world_id != self.world_id
@@ -255,7 +265,37 @@ impl ChannelActorCarrier {
         }
         Ok(index)
     }
+
+    fn validate_current_continuity(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+    ) -> Result<(), CarrierError> {
+        if continuity.world_id != self.world_id
+            || continuity.channel_id != self.channel_id
+            || continuity.current_generation != self.scope_generation
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        Ok(())
+    }
 }
+
+fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
+    #[cfg(test)]
+    if explicit_capacity == TEST_ALLOCATION_FAILURE_CAPACITY {
+        return Err(CarrierError::AllocationFailed);
+    }
+
+    let mut slots = Vec::new();
+    slots
+        .try_reserve_exact(explicit_capacity)
+        .map_err(|_| CarrierError::AllocationFailed)?;
+    slots.resize(explicit_capacity, Slot::VacantReusable { generation: 0 });
+    Ok(slots)
+}
+
+#[cfg(test)]
+const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -294,11 +334,15 @@ mod tests {
         let (continuity, mut carrier) = carrier(capacity);
         let mut refs = Vec::new();
         for value in 0..capacity {
-            refs.push(carrier.admit(ActorState(value as u64)).expect("M succeeds"));
+            refs.push(
+                carrier
+                    .admit(&continuity, ActorState(value as u64))
+                    .expect("M succeeds"),
+            );
         }
         let before = carrier.slots.clone();
         assert_eq!(
-            carrier.admit(ActorState(99)),
+            carrier.admit(&continuity, ActorState(99)),
             Err(CarrierError::CapacityExceeded)
         );
         assert_eq!(carrier.slots, before);
@@ -329,7 +373,7 @@ mod tests {
     #[test]
     fn exact_lookup_rejects_cross_scope_and_invalid_identity() {
         let (continuity, mut carrier) = carrier(1);
-        let actor_ref = carrier.admit(ActorState(7)).expect("admit");
+        let actor_ref = carrier.admit(&continuity, ActorState(7)).expect("admit");
         assert_eq!(carrier.lookup(&continuity, actor_ref), Ok(&ActorState(7)));
 
         let mut wrong_world = actor_ref;
@@ -361,13 +405,15 @@ mod tests {
     #[test]
     fn removal_retains_generation_and_reuse_stales_old_reference() {
         let (continuity, mut carrier) = carrier(1);
-        let first = carrier.admit(ActorState(1)).expect("first admit");
+        let first = carrier
+            .admit(&continuity, ActorState(1))
+            .expect("first admit");
         assert_eq!(carrier.remove(&continuity, first), Ok(ActorState(1)));
         assert_eq!(
             carrier.lookup(&continuity, first),
             Err(CarrierError::StaleActorGeneration)
         );
-        let second = carrier.admit(ActorState(2)).expect("reuse");
+        let second = carrier.admit(&continuity, ActorState(2)).expect("reuse");
         assert_eq!(second.actor_local_id, first.actor_local_id);
         assert_eq!(second.actor_local_generation.0, 2);
         assert_eq!(
@@ -379,10 +425,12 @@ mod tests {
     #[test]
     fn representable_post_selection_failure_rolls_back_everything() {
         let (continuity, mut carrier) = carrier(2);
-        let first = carrier.admit(ActorState(1)).expect("unrelated actor");
+        let first = carrier
+            .admit(&continuity, ActorState(1))
+            .expect("unrelated actor");
         let before = carrier.slots.clone();
         assert_eq!(
-            carrier.admit_inner(ActorState(2), true),
+            carrier.admit_inner(&continuity, ActorState(2), true),
             Err(CarrierError::InjectedAdmissionFailure)
         );
         assert_eq!(carrier.slots, before);
@@ -391,13 +439,13 @@ mod tests {
 
     #[test]
     fn exhausted_reuse_marks_only_selected_slot_and_never_reselects_it() {
-        let (_continuity, mut carrier) = carrier(2);
+        let (continuity, mut carrier) = carrier(2);
         carrier.slots[0] = Slot::VacantReusable {
             generation: u64::MAX,
         };
         let unrelated = carrier.slots[1];
         assert_eq!(
-            carrier.admit(ActorState(1)),
+            carrier.admit(&continuity, ActorState(1)),
             Err(CarrierError::ActorGenerationExhausted)
         );
         assert_eq!(
@@ -407,7 +455,9 @@ mod tests {
             }
         );
         assert_eq!(carrier.slots[1], unrelated);
-        let admitted = carrier.admit(ActorState(2)).expect("skip exhausted slot");
+        let admitted = carrier
+            .admit(&continuity, ActorState(2))
+            .expect("skip exhausted slot");
         assert_eq!(admitted.actor_local_id, ActorLocalId(2));
     }
 
@@ -424,14 +474,55 @@ mod tests {
     }
 
     #[test]
-    fn advancing_live_continuity_immediately_fences_old_lookup_and_remove() {
+    fn claimed_namespace_rejects_before_the_allocation_sentinel() {
+        let mut continuity = continuity(55, 3);
+        let carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
+            .expect("first bootstrap claims namespace");
+        drop(carrier);
+
+        // This huge capacity is arithmetically valid and would hit the test
+        // allocation-failure sentinel if authority preflight did not win.
+        assert_eq!(
+            ChannelActorCarrier::bootstrap_pre_production(
+                &mut continuity,
+                TEST_ALLOCATION_FAILURE_CAPACITY,
+            ),
+            Err(CarrierError::NamespaceAlreadyClaimed)
+        );
+    }
+
+    #[test]
+    fn allocation_failure_does_not_consume_namespace_claim() {
+        let mut continuity = continuity(56, 3);
+        assert_eq!(
+            ChannelActorCarrier::bootstrap_pre_production(
+                &mut continuity,
+                TEST_ALLOCATION_FAILURE_CAPACITY,
+            ),
+            Err(CarrierError::AllocationFailed)
+        );
+        assert!(!continuity.current_generation_claimed);
+
+        let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
+            .expect("retry after allocation failure");
+        assert!(continuity.current_generation_claimed);
+        assert!(carrier.admit(&continuity, ActorState(8)).is_ok());
+    }
+
+    #[test]
+    fn advancing_live_continuity_immediately_fences_all_old_operations() {
         let mut continuity = continuity(60, 4);
         let mut carrier =
             ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1).expect("bootstrap");
-        let actor_ref = carrier.admit(ActorState(7)).expect("admit");
+        let actor_ref = carrier.admit(&continuity, ActorState(7)).expect("admit");
 
         continuity.advance(grant(60, 5)).expect("strictly newer");
+        let slots_before = carrier.slots.clone();
 
+        assert_eq!(
+            carrier.admit(&continuity, ActorState(9)),
+            Err(CarrierError::WrongScope)
+        );
         assert_eq!(
             carrier.lookup(&continuity, actor_ref),
             Err(CarrierError::WrongScope)
@@ -440,6 +531,7 @@ mod tests {
             carrier.remove(&continuity, actor_ref),
             Err(CarrierError::WrongScope)
         );
+        assert_eq!(carrier.slots, slots_before);
     }
 
     #[test]
@@ -480,13 +572,19 @@ mod tests {
         let mut continuity = continuity(90, 2);
         let mut old_carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
             .expect("old bootstrap");
-        let old_ref = old_carrier.admit(ActorState(1)).expect("old admit");
+        let old_ref = old_carrier
+            .admit(&continuity, ActorState(1))
+            .expect("old admit");
 
         continuity.advance(grant(90, 3)).expect("advance");
-        let new_carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
+        let mut new_carrier = ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1)
             .expect("fresh generation bootstrap");
 
         assert_eq!(new_carrier.scope_generation.get(), 3);
+        let new_ref = new_carrier
+            .admit(&continuity, ActorState(2))
+            .expect("fresh carrier admits under live continuity");
+        assert_eq!(new_carrier.lookup(&continuity, new_ref), Ok(&ActorState(2)));
         assert_eq!(
             old_carrier.lookup(&continuity, old_ref),
             Err(CarrierError::WrongScope)

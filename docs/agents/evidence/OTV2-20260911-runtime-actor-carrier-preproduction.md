@@ -19,8 +19,9 @@ carrier. Carrier loss does not reset the surviving claim. The module has no defa
 constructor, capacity reporter, issuer, reissuer, or raw-fact continuity constructor.
 
 Each reference binds `WorldId + ChannelId + ScopeOwnershipGeneration + ActorLocalId +
-ActorLocalGeneration`. Lookup and removal require the live guard and validate its current scope against
-both carrier and reference before converting the one-based identity directly to the backing slot;
+ActorLocalGeneration`. Admission, lookup, and removal require the live guard and validate its current
+scope against the carrier (and reference where applicable) before slot selection, mutation, or direct
+conversion of the one-based identity to the backing slot;
 there is no secondary index, tombstone collection, or retirement history. A move-only externally
 supplied grant can advance the guard only for the same World + Channel and a strictly newer generation;
 that advance immediately fences retained older carriers and permits exactly one fresh namespace claim.
@@ -48,12 +49,20 @@ ACCEPTED AND REPAIRED.** That head is superseded and is not described as having 
 findings. Focused RED tests first captured carrier-loss replay, live generation advancement fencing,
 non-monotonic/cross-scope advance rejection, and legitimate newer-generation reconstruction.
 
+Independent review `5186490714` of exact head
+`008cfd5f0b9a066c5ed86a383c85e112a4a73e34` reported P1 `3996281470` (admission did not validate the
+live guard before mutation) and P2 `3996281472` (an already-claimed bootstrap allocated before its
+deterministic rejection). **Disposition: BOTH ACCEPTED AND REPAIRED.** Admission now validates live
+currentness before slot selection, including before the sole exhaustion mutation. Bootstrap performs
+zero and checked-arithmetic validation, then preflights an existing namespace claim before allocation,
+while committing an unclaimed namespace only after allocation and initialization succeed.
+
 ## Deterministic validation
 
 | Command | Result |
 | --- | --- |
 | `cargo +1.94.0 fmt --all -- --check` | PASS |
-| `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier` | PASS — 10 passed, 0 failed |
+| `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier` | PASS — 12 passed, 0 failed |
 | `cargo +1.94.0 clippy -p oteryn-game-server --all-targets -- -D warnings` | PASS |
 | `python tools/agents/validate_governance.py` | PASS |
 | `git diff --check` | PASS |
@@ -61,21 +70,24 @@ non-monotonic/cross-scope advance rejection, and legitimate newer-generation rec
 Focused coverage uses injected capacities 1, 2, and 4 to prove M/M+1 without selecting a product
 policy. Negative coverage includes zero and overflowing capacities; wrong World, Channel, and scope
 generation; invalid/vacant identities; stale local generations; surviving one-shot namespace claims;
-immediate old-carrier lookup/removal fencing after a live generation advance; rejected equal,
+immediate old-carrier admission/lookup/removal fencing after a live generation advance with unchanged
+slots; deterministic already-claimed rejection before a huge valid-capacity allocation sentinel;
+allocation failure without claim consumption; rejected equal,
 backward, and cross-scope advances without guard mutation; fresh strictly newer namespace claims;
 post-selection rollback; `g_max` exhaustion; unrelated-state preservation; and later avoidance of an
 exhausted slot.
 
-Allocation failure uses `Vec::try_reserve_exact`; deterministic arithmetic rejection precedes it and
-carrier publication occurs only after the backing allocation and initialization succeed. A physical
-allocator failure is environment-dependent, so the fallible operation and its pre-publication ordering
-are structurally reviewed rather than forced by unsafe or global allocator substitution.
+Allocation failure uses `Vec::try_reserve_exact`; deterministic zero/arithmetic rejection precedes
+claim preflight, which precedes allocation. A test-only capacity sentinel exercises the allocation-error
+path without unsafe or global allocator substitution. The claim and carrier publication occur only
+after backing allocation and initialization succeed, leaving an unclaimed guard retryable on failure.
 
 ## Adversarial whole-diff self-review
 
 - **Authority:** no production constructor/default/readiness surface and no continuity issuer exists.
-- **Fencing:** all five exact-reference components are checked against a live continuity guard; neither
-  a reference nor carrier-local snapshots self-prove current outer-generation authority.
+- **Fencing:** admission, lookup, and removal check the live continuity guard before slot selection or
+  mutation; all five exact-reference components are checked for reference operations. Neither a
+  reference nor carrier-local snapshots self-prove current outer-generation authority.
 - **Lifecycle:** the local ID remains slot-bound; generation persists across vacancy; wrap cannot reuse
   a generation; the sole terminal bookkeeping mutation is isolated.
 - **Boundedness:** backing storage is fixed after construction. Lookup/removal are direct O(1);
@@ -84,11 +96,12 @@ are structurally reviewed rather than forced by unsafe or global allocator subst
   does not mutate; exhaustion changes only the selected terminal cell.
 - **Scope exclusions:** no geometry, gameplay, protocol, admission, persistence, registry, Cargo,
   deployment, Ability #508, Movement #139, or external-repository changes are present.
-- **Finding verdict:** the P1 on superseded head `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`
-  is accepted and repaired; the repaired successor has zero unresolved material self-review findings.
+- **Finding verdict:** the coordinator P1 on superseded head `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`
+  and independent-review P1/P2 on superseded head `008cfd5f0b9a066c5ed86a383c85e112a4a73e34`
+  are accepted and repaired; the repair has zero unresolved material self-review findings.
 
 ## Qualification state
 
-Local deterministic qualification is complete. Hosted exact-head CI and genuinely independent
-exact-head review remain **OPEN** and are intentionally not requested in this pass. This candidate is
+Local deterministic repair qualification is complete. Hosted exact-head CI and fresh independent
+exact-head qualification of the repair remain **OPEN** and are intentionally not requested in this pass. This candidate is
 not ready for Merge Queue, merge, production use, or a production-capacity claim.

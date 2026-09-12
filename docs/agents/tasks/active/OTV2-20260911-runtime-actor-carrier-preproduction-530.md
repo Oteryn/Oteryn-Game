@@ -62,7 +62,7 @@ Implement one Foundation-owned, fixed-bound, PRE_PRODUCTION Channel actor carrie
 - [x] Exact reference binds WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation.
 - [x] Wrong world/channel, stale scope generation, vacant/out-of-range identity, stale actor generation and cross-scope cases reject deterministically.
 - [x] A non-Clone/non-Copy guard outside carrier backing preserves one namespace claim per generation; carrier loss cannot enable same-generation reconstruction.
-- [x] Lookup/removal require live current continuity and a strictly newer same-scope move-only grant immediately fences retained older carriers/references without minting grants.
+- [x] Admission/lookup/removal require live current continuity before slot selection or mutation, and a strictly newer same-scope move-only grant immediately fences retained older carriers/references without minting grants.
 - [x] Removal/reuse advances retained actor-local generation; wrap is forbidden.
 - [x] Checked no-successor at `g_max` performs only `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)`, publishes no replacement, preserves unrelated state and never reselects that slot in the same scope generation.
 - [x] `ScopeRuntimeFence` is not made Clone/Copy and its private raw-grant constructor is not widened.
@@ -85,12 +85,18 @@ carrier backing, live guard state fences lookup/removal, and only a strictly new
 grant opens one fresh namespace claim. The superseded head is not recorded as zero-finding. Hosted
 exact-head CI and independent review remain coordinator-owned next steps and are not requested here.
 
+Fresh independent review `5186490714` of exact head
+`008cfd5f0b9a066c5ed86a383c85e112a4a73e34` produced P1 `3996281470` and P2 `3996281472`; both are
+**ACCEPTED AND REPAIRED**. Admission now proves live guard currentness before slot selection or
+mutation. Same-generation claimed bootstrap now rejects after zero/overflow validation but before
+allocation, while an unclaimed allocation failure leaves the claim available for a successful retry.
+
 ## Validation
 
 ### Focused
 
 - command/run: `cargo +1.94.0 test -p oteryn-game-server runtime_actor_carrier`
-- result: PASS — 10 passed, 0 failed
+- result: PASS — 12 passed, 0 failed
 
 ### Component/integration
 
@@ -115,16 +121,16 @@ exact-head CI and independent review remain coordinator-owned next steps and are
 
 - exact head: set at publication
 - method/reviewer: implementing agent, adversarial whole-diff allocation sweep
-- material findings: P1 accepted and repaired from superseded `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`; 0 unresolved on repaired successor
+- material findings: coordinator P1 accepted/repaired from superseded `341e1f56c597c9cc1d3a33056c54f55c709a6ad7`; independent-review P1 `3996281470` and P2 `3996281472` accepted/repaired from superseded `008cfd5f0b9a066c5ed86a383c85e112a4a73e34`; 0 unresolved in repair self-review
 - verdict: PASS locally after focused repair; hosted checks/review remain pending
 
 ## Independent review
 
 - required: YES — multichannel runtime/fencing semantics are high risk
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- exact head: `008cfd5f0b9a066c5ed86a383c85e112a4a73e34` (superseded by accepted repair findings)
+- method/auditor: independent Codex review `5186490714`
+- material findings: P1 `3996281470`; P2 `3996281472`; both accepted and repaired
+- verdict: BLOCKED on reviewed head; fresh repair-head qualification remains pending
 
 ## PR and closeout
 
@@ -138,7 +144,7 @@ exact-head CI and independent review remain coordinator-owned next steps and are
 ## Context checkpoint
 
 ```yaml
-last_progress: accepted and repaired coordinator P1 on the canonical four-path lineage
+last_progress: accepted and repaired independent-review P1/P2 on the canonical four-path lineage
 status: implementing
 branch: agent/runtime-actor-carrier-preproduction-530
 head_sha: null
