@@ -4,6 +4,8 @@ mod authority_matrix;
 mod authority_recovery;
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[path = "../../../vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs"]
+mod oteryn_resource_budget;
 #[path = "support/postgres.rs"]
 mod postgres;
 
