@@ -25,18 +25,25 @@ This is a prospective correction for the SAME #351/#356 writer. It grants no cur
 
 1. **Must decide now? YES.** WP3 cannot truthfully claim owner-aware PostgreSQL/TLS socket accounting while allocations before `BufferedSocket::new` bypass the operation owner.
 2. **Blocked work.** P1 `3993253930`, complete TLS accounting, PostgreSQL 17.6 qualification, WP4/#335, WP5 and Server Seam #247 remain downstream.
-3. **Harder later.** Treating `BufferedSocket` as the first socket allocation would preserve an unowned TLS socket Box and DNS resolution path in the accepted driver seam.
-4. **Superseding evidence.** A pinned SQLx/Tokio/std API that exposes an earlier exact owner-aware socket/DNS allocation boundary, or measured proof that a listed allocation does not exist, may narrow this amendment.
-5. **Not decided.** No production DNS policy, DNS result count limit, resolver replacement, protocol limit, allocator-overhead policy, or generic Tokio DNS redesign is selected.
+3. **Harder later.** Treating `BufferedSocket` as the first socket allocation would preserve unowned final socket boxes, Tokio reactor registration and DNS resolution in the accepted driver seam.
+4. **Superseding evidence.** A pinned SQLx/Tokio/std API that exposes an earlier exact owner-aware socket/DNS/registration boundary, or measured proof that a listed allocation does not exist, may narrow this amendment.
+5. **Not decided.** No production DNS policy, DNS result count limit, resolver replacement, protocol limit, allocator-overhead policy, generic Tokio DNS redesign, or generic Tokio reactor redesign is selected.
 
-## Proven pre-BufferedSocket gap
+## Proven pre-BufferedSocket graph
 
-Fresh exact-source review of #356 proves the owner-aware path is:
+Fresh exact-source review of #356 proves the TLS-positive path is:
 
 ```text
 PgStream::connect_with_resource_budget
 -> sqlx_core::net::connect_tcp(host, port, MaybeUpgradeTlsOwned(...))
 -> tokio::net::TcpStream::connect((host, port))
+-> mio::net::TcpStream::connect
+-> Tokio TcpStream::new
+-> PollEvented::new
+-> Registration::new_with_interest_and_handle
+-> io::Handle::add_source
+-> RegistrationSet::allocate
+-> Arc::new(ScheduledIo)
 -> MaybeUpgradeTlsOwned::with_socket
 -> tls::handshake_with_resource_budget(..., SocketIntoBox, owner)
 -> sqlx_core::net::socket::SocketIntoBox::with_socket<S>
@@ -44,25 +51,30 @@ PgStream::connect_with_resource_budget
 -> BufferedSocket::new(...)
 ```
 
-The final TLS socket Box in `sqlx-core/src/net/socket/mod.rs` therefore allocates before the old BufferedSocket-only lease can reserve it.
+So the old lease misses at least two retained allocations before `BufferedSocket`: a per-socket Tokio `Arc<ScheduledIo>` reactor registration and the final TLS socket Box.
 
-For hostname connections, pinned Tokio 1.53.1 also reaches `ToSocketAddrs for (&str,u16)`: IP literals parse without hostname allocation, while DNS hostnames allocate an owned host String and run the system resolver through ordinary `spawn_blocking`, returning address-iterator backing before `WithSocket` or `BufferedSocket` exists. Requiring IP literals is forbidden because it would change accepted hostname semantics.
+`RegistrationSet` also retains an Arc clone after `TcpStream`/`Registration` begins teardown: deregistration moves a clone to the driver's pending-release list, and the I/O driver later removes/releases it. Releasing a request debit merely when the SQLx/Tokio socket wrapper drops is therefore too early for that control allocation.
 
-## Prospective exact lease after protection
+For hostname connections, pinned Tokio 1.53.1 `ToSocketAddrs for (&str,u16)` parses IP literals without hostname allocation, but DNS hostnames allocate an owned host String and run `std::net::ToSocketAddrs` through ordinary `spawn_blocking`, returning resolver/address iterator backing before the socket is created. Requiring IP literals is forbidden because it changes accepted hostname semantics.
 
-This correction is deliberately split into two activation cells so an unresolved DNS architecture question cannot silently authorize or prevent path-disjoint downstream custody work.
+The existing owner-aware PostgreSQL `connection/tls.rs::maybe_upgrade_owned` has another final socket Box for `Disable`, `Allow`, and `Prefer` fallback (`Box::new(socket)`) before SQLx buffering. That path is already within existing #351 PostgreSQL authority; it must use the same truthful external Box-custody representation rather than remain an unaccounted mode-specific bypass.
 
-### Cell E1 — final socket Box + BufferedSocket/shared backing
+## Prospective cells after protection
+
+The correction is deliberately split so unresolved dependency internals cannot silently authorize or block path-disjoint accounting improvements. None is active merely because this document is protected.
+
+### Cell E1 — SQLx/PostgreSQL final socket Box + BufferedSocket/shared backing
 
 After protected readback, #162 may explicitly activate E1 for the SAME #351/#356 writer using only:
 
-- `vendor/sqlx-core-0.9.0/src/net/socket/mod.rs` — an owner-aware `WithSocket`/final post-handshake socket-Box representation; not a generic DNS redesign;
+- `vendor/sqlx-core-0.9.0/src/net/socket/mod.rs` — owner-aware `WithSocket`/final post-handshake socket-Box representation;
 - `vendor/sqlx-core-0.9.0/src/net/socket/buffered.rs` — owner-aware initial read/write backing, growth/replacement/shrink/drop and shared `Bytes` custody;
-- `vendor/sqlx-core-0.9.0/src/net/mod.rs` — export/plumbing only if required; this path is already within existing #351 SQLx-core authority.
+- `vendor/sqlx-core-0.9.0/src/net/mod.rs` — export/plumbing only if required; already within existing #351 SQLx-core authority;
+- the already-admitted `vendor/sqlx-postgres-0.9.0/src/connection/tls.rs` only to route `Disable`/`Allow`/`Prefer` fallback boxes through the same owner-aware Box custody, with no TLS-mode semantic change.
 
-Existing admitted PostgreSQL/TLS callers may select the owner-aware boxing/buffering representation. Existing `connect_tcp` hostname/IP semantics remain unchanged by E1. E1 does **not** make the preceding DNS resolver path accounted and cannot close `3993253930` or qualify a hostname PostgreSQL connection by itself.
+E1 preserves existing TCP/UDS/DNS/TLS-mode semantics. It cannot close `3993253930`, because reactor registration and DNS may remain unaccounted.
 
-The owner-aware final socket Box must reserve its exact Box allocation before `Box::new(socket)`. Its debit must live outside the Box it charges, destroy/deallocate the Box first, and release only afterward. Ordinary `SocketIntoBox` remains unchanged.
+Each owner-aware final socket Box must reserve its exact Box allocation before `Box::new(socket)`. Its debit must live outside the Box it charges, deallocate the Box first, and release only afterward. Ordinary owner-free boxing remains unchanged.
 
 The BufferedSocket part must:
 
@@ -75,14 +87,35 @@ The BufferedSocket part must:
 
 If truthful shared-`Bytes` finality requires another exact SQLx-core path/symbol, stop at one new `SHARED_LEASE_REQUIRED`; do not approximate custody.
 
-### Cell E2 — DNS hostname resolution
+### Cell E2 — Tokio per-socket reactor registration
 
-E2 remains **NOT_ACTIVE** after this document is protected unless a later explicit #162 activation says otherwise.
+E2 remains **NOT_ACTIVE**. Pinned source proves `RegistrationSet::allocate` performs `Arc::new(ScheduledIo)` and the registration set/pending-release list can retain that backing after the socket wrapper starts teardown.
 
-A future owner-aware SQLx connect path may reuse the already-protected owned blocking primitive for visible Rust DNS work rather than changing generic Tokio DNS behavior, but acceptance requires proof that every controlled allocation is reserved before allocation:
+A truthful solution needs a separately reviewed owner-aware registration/finality seam that:
+
+- reserves exact `Arc<ScheduledIo>` control/value backing before allocation;
+- carries the same operation owner without changing ordinary Tokio registrations;
+- survives every driver-held Arc clone and pending-release transition;
+- releases only after actual final ScheduledIo Arc backing deallocation;
+- handles register failure, deregister, cancellation, runtime shutdown and driver purge exactly once;
+- introduces no raw/Weak finality bypass analogous to P1 `3993253945`.
+
+No current #351 lease grants generic Tokio I/O driver paths. Until a precise protected amendment names the minimum symbols (likely within Tokio `io/poll_evented.rs`, `runtime/io/registration.rs`, `runtime/io/driver.rs` and/or `registration_set.rs`) and independent review accepts the representation, preserve:
+
+```text
+SHARED_LEASE_REQUIRED_TOKIO_IO_REGISTRATION
+```
+
+Do not charge after `TcpStream::connect`, release on SQLx socket drop, treat reactor state as free runtime overhead, or infer authority from existing blocking-owner Tokio amendments.
+
+### Cell E3 — DNS hostname resolution
+
+E3 remains **NOT_ACTIVE**.
+
+A future owner-aware SQLx connect path may reuse an accepted owner-funded blocking primitive for visible Rust DNS work rather than changing generic Tokio DNS behavior, but acceptance requires proof that every controlled allocation is reserved before allocation:
 
 - hostname owned String backing;
-- owned blocking task/queue/worker custody;
+- blocking task/queue/worker custody;
 - resolver result/address-iterator backing and source/destination overlap;
 - connect-attempt iteration and error cleanup.
 
@@ -92,22 +125,29 @@ The system resolver may allocate opaque platform/std-private backing for which S
 ARCHITECTURE_BLOCKED_DNS_RESOLVER_PREALLOCATION
 ```
 
-Do not truncate DNS results, invent a magic maximum, charge after resolution, require IP literals, silently route owner-aware work through ordinary Tokio `spawn_blocking`, or claim that accounting the host String/task/address Vec proves opaque resolver internals.
+Do not truncate DNS results, invent a magic maximum, charge after resolution, require IP literals, silently route owner-aware work through ordinary Tokio `spawn_blocking`, or claim that accounting host/task/address backing proves opaque resolver internals.
 
-E1 may be implemented as partial accounting progress after its own explicit activation because it does not alter DNS semantics and it does not claim P1 closure. Terminal `3993253930`, `complete_tls_accounting`, and real hostname PostgreSQL qualification remain blocked until E2 is truthfully resolved.
+E1 may be implemented later as partial accounting progress after its own explicit activation because it does not alter E2/E3 semantics and does not claim P1 closure. Terminal `3993253930`, `complete_tls_accounting`, and real hostname PostgreSQL qualification require E1 + truthful E2 + truthful E3. IP-literal TCP qualification still requires E1 + E2.
 
 ## Required focused proof
 
 For E1:
 
-- max-minus-one denies before final TLS `Box::new(socket)`; funded path preserves TLS behavior and releases after actual Box deallocation;
-- owner-free `SocketIntoBox` is unchanged;
+- max-minus-one denies before every final socket `Box::new`; funded TLS-positive and non-TLS/fallback modes preserve behavior and release after actual Box deallocation;
+- owner-free boxing remains unchanged;
 - initial read/write funded and max-minus-one controls;
 - read/write growth proves old+new overlap and rollback on denied growth;
 - split/freeze/multiple concurrent final `Bytes` descendants keep one shared debit until final backing destruction;
-- cancellation/EOF/error/close/drop leave no residual debit.
+- cancellation/EOF/error/close/drop leave no residual E1 debit.
 
-For any later E2:
+For any future E2:
+
+- max-minus-one denies before `Arc<ScheduledIo>` allocation;
+- driver registration list and pending-release clones keep the debit live after socket/Registration drop;
+- final driver purge/deallocation releases exactly once, including concurrent shutdown/error paths;
+- ordinary unrelated Tokio registration behavior remains unchanged.
+
+For any future E3:
 
 - IP literal connect preserves its non-DNS semantics and creates no hostname String debit merely to mimic DNS;
 - DNS positive evidence proves prospective owner funding/finality of every visible controlled allocation;
@@ -117,9 +157,9 @@ Final qualification still requires actual SQLx AWS-LC TLS-positive + PostgreSQL 
 
 ## Explicit exclusions
 
-No numeric resource maximum, DNS result cap, resolver replacement, registry, Cargo/lock, workflow, TLS policy, PostgreSQL protocol redesign, decoder/cache/SASL expansion, Foundation, B/#335, WP5, Server Seam #247, production, deployment or external-repository authority follows.
+No numeric resource maximum, DNS result cap, resolver replacement, generic Tokio I/O/DNS authority, registry, Cargo/lock, workflow, TLS policy, PostgreSQL protocol redesign, decoder/cache/SASL expansion, Foundation, B/#335, WP5, Server Seam #247, production, deployment or external-repository authority follows.
 
-This amendment does not resolve `3993253957`, which remains `ARCHITECTURE_BLOCKED_THREAD_HANDLE_FINALITY`. It does not reopen focused repairs `3993253977` or `3993253965`; the separate OwnedQueue final-destruction regression remains governed by its existing Tokio owner authority.
+This amendment does not resolve `3993253957`, which remains `ARCHITECTURE_BLOCKED_THREAD_HANDLE_FINALITY`. It does not reopen focused repairs `3993253977` or `3993253965`; the separate OwnedQueue final-destruction regression remains governed by its existing Tokio blocking-owner authority.
 
 ## Lifecycle
 
@@ -131,7 +171,7 @@ candidate
 -> protected-main readback
 -> fresh #162 overlap/custody readback
 -> explicit SAME #351/#356 activation of E1 only if still needed/non-overlapping
--> E2 remains blocked until separately resolved/activated
+-> E2/E3 remain blocked until separately resolved/protected/activated
 -> focused RED/GREEN implementation
 -> final whole-diff qualification later
 ```
