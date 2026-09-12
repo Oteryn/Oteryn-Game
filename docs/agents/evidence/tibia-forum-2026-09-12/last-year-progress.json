@@ -7,8 +7,8 @@
   "inventory_pages_completed": 103,
   "inventory_unique_ids": 3061,
   "inventory_count_matches_observed_total": true,
-  "retained_analysis_matches": 616,
-  "listed_without_retained_analysis": 2445,
+  "retained_analysis_matches": 628,
+  "listed_without_retained_analysis": 2433,
   "complete_audit": false,
   "complete_discussion_read": false,
   "rate_limit_event": "Too Many Requests at page 23, paused; subsequent reads paced at eight seconds without further limit",
@@ -46,18 +46,6 @@
     "4999913"
   ],
   "pending_ids": [
-    "4998105",
-    "4998104",
-    "4997963",
-    "4997888",
-    "4998035",
-    "4998094",
-    "4998067",
-    "4998091",
-    "4998090",
-    "4998089",
-    "4997865",
-    "4998063",
     "4998034",
     "4997575",
     "4997890",
@@ -3903,9 +3891,7 @@
         "4998114",
         "4997889",
         "4998107",
-        "4998106"
-      ],
-      "unread_ids": [
+        "4998106",
         "4998105",
         "4998104",
         "4997963",
@@ -3917,7 +3903,9 @@
         "4998090",
         "4998089",
         "4997865",
-        "4998063",
+        "4998063"
+      ],
+      "unread_ids": [
         "4998034",
         "4997575"
       ]

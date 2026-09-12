@@ -1,5 +1,5 @@
 {
-  "scope": "72 additional opening posts with sampled replies; not a quality audit of all historical records",
+  "scope": "84 additional opening posts with sampled replies; not a quality audit of all historical records",
   "entries": [
     {
       "id": "4998413",
@@ -1030,14 +1030,206 @@
       "quality_statuses": [
         "concrete_problem",
         "concrete_proposal",
-        "mixed"
+        "mixed",
+        "duplicate"
       ],
-      "reason": "Exercise expiration during a long workday and automatic chaining are concrete. Paid charges do not remove the 24-hour access and progression change; one reply is unsupported opposition.",
-      "exclude_from_problem_recurrence": false,
+      "reason": "Późniejsza kopia OP 4998104 tego samego autora; 2 ID i 1 tekst. Odpowiedź pozostaje osobnym odczytanym postem.",
+      "exclude_from_problem_recurrence": true,
       "classes": [
         "G2"
       ],
       "source_file": "year-sixth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4998105",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Build comparison currently requires long noisy testing; the proposed authoritative simulator is concrete, while example damage values are illustrative only.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4998104",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Canonical earlier copy of the exercise-weapon auto-chain request. Thread 4998106 post 39592931 repeats the identical OP by the same author, so the two IDs count as one text.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997963",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "Spawn access and external coordination are a concrete need. One reply supports faster respawn, while the contribution tiers, current spawn scaling, dominance and retention claims remain unverified; zero contribution cannot automatically earn rewards.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997888",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "The Lightning rotation complaint and chain proposal are concrete. The OP explicitly identifies the different-handle Monk as their alt, so those posts are one person; the sole independent reply opposes adding a chain.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4998035",
+      "quality_statuses": [
+        "concrete_proposal",
+        "numerical_conflict",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "The skill-to-Wheel conversion is specific and receives one signature, but threshold and Monk coefficients conflict internally, formulas are untested and existing-character migration is unspecified. No concrete pain case is established.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4998094",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "The temporary football event is substantive content with quest, encounter and rewards, not spam. It does not identify a recurring player problem, and item statistics and distribution remain unverified.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4998067",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "The paralysis-removal timing problem and one-second cooldown proposal are concrete and receive one short independent agreement. Minimal healing does not make faster cleanse timing parity-safe.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4998091",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers",
+        "unsupported_claims"
+      ],
+      "reason": "Double proficiency events and a paid boost are specific G2 proposals, but rates and claimed community acceptance are unverified and no concrete pain case is supplied.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4998090",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Unreliable multi-click interpretation on touch hardware and one legal action per physical tap define a concrete same-outcome input ergonomics request; frequency remains unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4998089",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "unsupported_claims"
+      ],
+      "reason": "Two independent authors identify external spawn coordination and want an in-game path. The reply adds exact-location verification but does not endorse bonuses; damage, mitigation or loot bonuses are real G2 changes, not placebo.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997865",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "bump_only",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "Monk role ambiguity and virtue-specific spender mechanics are concrete. One independent reply is pessimistic rather than supportive, and the later bump is the OP; balance and bug claims are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4998063",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Low Etcher desirability and the proposed discharge function are concrete, but demand and current item semantics are unverified. Removing remaining charge enables earlier recharge, so this is not presentation-only QoL.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventh12-analysis.md",
       "line": 18
     }
   ]

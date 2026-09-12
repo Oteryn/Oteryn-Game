@@ -1,11 +1,11 @@
 {
   "read_date": "2026-09-12",
   "complete_archive": false,
-  "unique_thread_count": 708,
-  "new_thread_count": 108,
-  "new_sample_post_count": 218,
-  "coverage": "600 historical All Threads records plus 108 additional Last Year records; OP and selected initial replies only",
-  "remaining_last_year_count": 2445,
+  "unique_thread_count": 720,
+  "new_thread_count": 120,
+  "new_sample_post_count": 241,
+  "coverage": "600 historical All Threads records plus 120 additional Last Year records; OP and selected initial replies only",
+  "remaining_last_year_count": 2433,
   "resume_policy": "Deduplicate by thread ID; use recorded post IDs and hashes for sampled-post coverage. Existing thread does not mean all replies were read. Do not equate All Threads page numbers with Last Year. Reinventory changing lists before estimating remaining work.",
   "entries": [
     {
@@ -9354,10 +9354,11 @@
       "quality_statuses": [
         "concrete_problem",
         "concrete_proposal",
-        "mixed"
+        "mixed",
+        "duplicate"
       ],
-      "reason": "Exercise expiration during a long workday and automatic chaining are concrete. Paid charges do not remove the 24-hour access and progression change; one reply is unsupported opposition.",
-      "exclude_from_problem_recurrence": false,
+      "reason": "Późniejsza kopia OP 4998104 tego samego autora; 2 ID i 1 tekst. Odpowiedź pozostaje osobnym odczytanym postem.",
+      "exclude_from_problem_recurrence": true,
       "classes": [
         "G2"
       ],
@@ -9385,12 +9386,588 @@
       "op_post_id": "Post_39592931",
       "source_file": "year-sixth12-analysis.md",
       "line": 18,
-      "analysis": "| [4998106](https://www.tibia.com/forum/?action=thread&threadid=4998106), OP `39592931`: po wyczerpaniu 8-godzinnej exercise weapon automatycznie uruchomić kolejną z plecaka, umożliwiając 24 h treningu bez obecności. | `concrete_problem + concrete_proposal + mixed reply`. Jedno krótkie „no” to sprzeciw bez argumentu. | Długość charge, logout, demografia i przychód TC są twierdzeniami OP; nie testowano. Płatne ładunki nie zerują wpływu na dostęp ani progresję. | **Roadmapa daje bezpieczniejszy dokładny kierunek P8 §4.8.9:** offline exercise zachowuje rate, skuteczność, eligibility i koszt za ten sam wynik ([§4.8.8–4.8.10](https://github.com/Oteryn/Oteryn-Game/blob/b2ef322791520130a2683f3004d26abd5c027ac8/docs/architecture/OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md#L601-L620)). Nie zatwierdza 24 h auto-chain online. | **G2.** Użyć deklarowanej offline session z limitem czasu/ładunków, preview kosztu i przerwaniem; porównać progresję 24 h, event multipliers i alty. **R:** training/session. **G:** dostęp i skill rate. **E:** weapon sink i TC demand. |",
+      "analysis": "| [4998106](https://www.tibia.com/forum/?action=thread&threadid=4998106), OP `39592931`: po wyczerpaniu 8-godzinnej exercise weapon automatycznie uruchomić kolejną z plecaka, umożliwiając 24 h treningu bez obecności. | `duplicate + concrete_problem + concrete_proposal`. Wcześniejszy identyczny OP [4998104](https://www.tibia.com/forum/?action=thread&threadid=4998104): 2 ID, 1 tekst tego samego autora. Późniejsza kopia nie zwiększa recurrence; krótka odpowiedź „no” to sprzeciw bez argumentu. | Długość charge, logout, demografia i przychód TC są twierdzeniami OP; nie testowano. Płatne ładunki nie zerują wpływu na dostęp ani progresję. | **Roadmapa daje bezpieczniejszy dokładny kierunek P8 §4.8.9:** offline exercise zachowuje rate, skuteczność, eligibility i koszt za ten sam wynik ([§4.8.8–4.8.10](https://github.com/Oteryn/Oteryn-Game/blob/b2ef322791520130a2683f3004d26abd5c027ac8/docs/architecture/OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md#L601-L620)). Nie zatwierdza 24 h auto-chain online. | **G2.** Użyć deklarowanej offline session z limitem czasu/ładunków, preview kosztu i przerwaniem; porównać progresję 24 h, event multipliers i alty. **R:** training/session. **G:** dostęp i skill rate. **E:** weapon sink i TC demand. |",
       "observed_post_text_sha256": {
         "Post_39592931": "4caa6343da94b33499e62820278d5c2d90fcfdd925d4b2458989ff00bc72ea72",
         "Post_39592933": "ed6840bda85b4c78daeaeb255bab18d8a8603345b30b2d7d14f51e714e57f503"
       },
+      "title": "continuous use of the Lasting Exercise Axe",
+      "duplicate_of": "4998104"
+    },
+    {
+      "id": "4998105",
+      "post_ids": [
+        "Post_39592930"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Build comparison currently requires long noisy testing; the proposed authoritative simulator is concrete, while example damage values are illustrative only.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998105",
+      "post_dates": [
+        {
+          "post_id": "Post_39592930",
+          "published_at": "05.07.2026 17:27:21",
+          "edited_at": null
+        }
+      ],
+      "op_date": "05.07.2026 17:27:21",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39592930",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 7,
+      "analysis": "| [4998105](https://www.tibia.com/forum/?action=thread&threadid=4998105), OP `39592930` (05.07.2026): porównanie Wheel i Weapon Proficiency wymaga długich, zakłócanych testów; propozycja kalkulatora pokazuje przed/po dla konfiguracji. | `concrete_problem + concrete_proposal + unverified_numbers`; brak odpowiedzi. Przykładowe obrażenia nie są pomiarem. | Historyczna relacja OP; dostępność formuł i komplet parametrów pozostają niezweryfikowane. | **Dokładnie §4.6.4–4.6.5:** autorytatywne porównanie wpływu buildu i beznagrodowa symulacja. | **Q0.** Udostępnić wyniki testowalne z jawnych danych bez odsłaniania ukrytych parametrów; pokazać zakres i założenia. **R:** te same formuły. **G/E:** brak, jeśli narzędzie nie wykonuje akcji ani nie przyznaje progresji. |",
+      "observed_post_text_sha256": {
+        "Post_39592930": "5a9f53a5e6d900951263f5caebceb0579a5b03c60836952f25f5b6109f241e2d"
+      },
+      "title": "Damage Analyzer Quality of Life Improvements"
+    },
+    {
+      "id": "4998104",
+      "post_ids": [
+        "Post_39592929"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Canonical earlier copy of the exercise-weapon auto-chain request. Thread 4998106 post 39592931 repeats the identical OP by the same author, so the two IDs count as one text.",
+      "exclude_from_problem_recurrence": false,
+      "duplicate_threads": [
+        {
+          "id": 4998106,
+          "post_id": 39592931,
+          "date": "2026-07-05"
+        }
+      ],
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998104",
+      "post_dates": [
+        {
+          "post_id": "Post_39592929",
+          "published_at": "05.07.2026 17:27:18",
+          "edited_at": null
+        }
+      ],
+      "op_date": "05.07.2026 17:27:18",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39592929",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 8,
+      "analysis": "| [4998104](https://www.tibia.com/forum/?action=thread&threadid=4998104), OP `39592929` (05.07.2026): kolejna exercise weapon miałaby uruchamiać się automatycznie po wyczerpaniu poprzedniej, aby trenować bez obecności. | `concrete_problem + concrete_proposal`; to kanoniczny wcześniejszy tekst. `4998106/39592931` to identyczna kopia tego samego autora: **2 ID / 1 tekst**; odpowiedź „nie” w kopii nie potwierdza potrzeby. | Ośmiogodzinny czas, wylogowanie, demografia i wpływ na sprzedaż są twierdzeniami OP. | **Dokładny bezpieczniejszy właściciel §4.8.9 i §4.17.2:** offline exercise sessions zachowują koszt, charge, tempo i eligibility. Auto-chain online nie jest zatwierdzony. | **G1/G2.** Zamiast wymuszać klienta online, kolejkować legalnie opłacone sesje offline z limitem i autorytatywnym zużyciem. **R:** wylogowanie/sesja. **G:** czas treningu. **E:** exercise sink i TC. |",
+      "observed_post_text_sha256": {
+        "Post_39592929": "cde1d71b6e24a6c8691b21c4b5725bfc55b6f4d6f11a43b20644c4d5bf43ec70"
+      },
       "title": "continuous use of the Lasting Exercise Axe"
+    },
+    {
+      "id": "4997963",
+      "post_ids": [
+        "Post_39592506",
+        "Post_39592521",
+        "Post_39592656",
+        "Post_39592681"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "Spawn access and external coordination are a concrete need. One reply supports faster respawn, while the contribution tiers, current spawn scaling, dominance and retention claims remain unverified; zero contribution cannot automatically earn rewards.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4997963",
+      "post_dates": [
+        {
+          "post_id": "Post_39592506",
+          "published_at": "02.07.2026 15:16:27",
+          "edited_at": "02.07.2026 15:40:39"
+        },
+        {
+          "post_id": "Post_39592521",
+          "published_at": "02.07.2026 16:18:36",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592656",
+          "published_at": "03.07.2026 07:58:19",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592681",
+          "published_at": "03.07.2026 12:14:31",
+          "edited_at": null
+        }
+      ],
+      "op_date": "02.07.2026 15:16:27",
+      "op_edit_date": "02.07.2026 15:40:39",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39592506",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 9,
+      "analysis": "| [4997963](https://www.tibia.com/forum/?action=thread&threadid=4997963), OP `39592506` (02.07, edycja 02.07.2026): zewnętrzne rezerwacje i dominacja mają ograniczać dostęp do spawnów; propozycja skaluje respawn z liczbą graczy oraz dzieli XP/loot według wkładu. | `concrete_problem + concrete_proposal + unsupported_claims + unverified_numbers + mixed replies`. Jeden respondent popiera szybszy respawn; dwaj inni dyskutują gospodarkę, bez zgodnego poparcia formuły. | Dominacja, retencja, obecne progi respawnu i liczby wypłat nie są zweryfikowane. Próg 0% nie może automatycznie dawać nagrody. | **Dokładna domena §4.2.7:** dynamic capacity ma zachować ograniczony throughput. Contribution jest tylko kierunkowo §4.15.3; P13/P18 obejmują reguły konfliktu/nadużyć, nie tę formułę. | **G1/G2.** Skalować według pressure i budżetu spawnu; eligibility wymaga rzeczywistego wkładu. Suma loot/XP musi mieć jawny limit. **R:** spawn/ownership. **G:** dostęp i XP. **E:** całkowity loot oraz inflacja. |",
+      "observed_post_text_sha256": {
+        "Post_39592506": "242ac92cbc19194d3c9e01757bf06d2a630a179eca5b864dcdf004d6f0ed2879",
+        "Post_39592521": "3533fd8361a60970b8e2e4a8f764edb5142b56d4880e314a0d5c580a5a129b25",
+        "Post_39592656": "7c8d8f66f8659ea59a09992b8eba00de188a3a3d820db7f7b1483efa17cf75b9",
+        "Post_39592681": "485b2f898c03067e3ccd211d7e54447372aa586f63058d926ddd968b81386922"
+      },
+      "title": "Spawn sharing mechanics to encourage casual players"
+    },
+    {
+      "id": "4997888",
+      "post_ids": [
+        "Post_39592119",
+        "Post_39592120",
+        "Post_39592122",
+        "Post_39592908"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "The Lightning rotation complaint and chain proposal are concrete. The OP explicitly identifies the different-handle Monk as their alt, so those posts are one person; the sole independent reply opposes adding a chain.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4997888",
+      "post_dates": [
+        {
+          "post_id": "Post_39592119",
+          "published_at": "30.06.2026 10:16:45",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592120",
+          "published_at": "30.06.2026 10:27:18",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592122",
+          "published_at": "30.06.2026 10:32:53",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592908",
+          "published_at": "05.07.2026 12:55:46",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.06.2026 10:16:45",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39592119",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 10,
+      "analysis": "| [4997888](https://www.tibia.com/forum/?action=thread&threadid=4997888), OP `39592119` (30.06.2026): Lightning MS ma być słabym, mało użytecznym ogniwem rotacji; autor proponuje większy chain/spread kosztem zasięgu, obrażeń i cooldownu. | `concrete_problem + concrete_proposal + mixed`. `39592120` i `39592908` mają inny uchwyt, lecz OP sam wskazuje, że to jego Monk/alt: **deklarowany ten sam autor**. Jedyny niezależny respondent sprzeciwia się chainowi. | Ocena siły i użycia na wysokich poziomach jest niezweryfikowana; porównanie z Monkiem pochodzi z jednego gracza. | **Dokładna domena §4.15.2 i §4.15.4–4.15.6:** tożsamość, telemetryczne pasma i strojenie kontekstu. Brak zatwierdzonego chaina. | **G2.** Porównać pełną rotację, geometrię, cooldown, proc i PvP; nie stroić na podstawie samego odczucia jednego level bandu. **R:** spell geometry. **G:** AoE/DPS. **E:** XP/loot throughput. |",
+      "observed_post_text_sha256": {
+        "Post_39592119": "d874e23dae697f0058bc9b13fb8adb870f7e6dee822fa7b7b2accbabb5d453f0",
+        "Post_39592120": "e8402ca31b205aa5867bad80c577af078199411a14c4edeef37257ce3f965a9d",
+        "Post_39592122": "fd6de469efad83fe3bdd0c4513f1214554a0338bcd3c1bf165cde419597b4063",
+        "Post_39592908": "b947978ebfa68ffd395edfe9907fb72135241f921ecbce300b83c58924a4de15"
+      },
+      "title": "MS - \"Lightning\" small rework - Better Chain"
+    },
+    {
+      "id": "4998035",
+      "post_ids": [
+        "Post_39592715",
+        "Post_39592881"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "numerical_conflict",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "The skill-to-Wheel conversion is specific and receives one signature, but threshold and Monk coefficients conflict internally, formulas are untested and existing-character migration is unspecified. No concrete pain case is established.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998035",
+      "post_dates": [
+        {
+          "post_id": "Post_39592715",
+          "published_at": "03.07.2026 16:49:12",
+          "edited_at": "04.07.2026 09:04:48"
+        },
+        {
+          "post_id": "Post_39592881",
+          "published_at": "05.07.2026 01:34:10",
+          "edited_at": null
+        }
+      ],
+      "op_date": "03.07.2026 16:49:12",
+      "op_edit_date": "04.07.2026 09:04:48",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39592715",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 11,
+      "analysis": "| [4998035](https://www.tibia.com/forum/?action=thread&threadid=4998035), OP `39592715` (03.07, edycja 04.07.2026): poziomy klasycznych skills miałyby retrospektywnie dawać ułamki punktów Wheel of Destiny. | `concrete_proposal + numerical_conflict + unverified_numbers`; jedna niezależna odpowiedź podpisuje pomysł. Tekst miesza próg 250 z 100 oraz współczynnik Monka 0,15 z 0,17; migracja istniejących postaci jest nieokreślona. | Formuły, progi i równowaga skills między profesjami nie zostały przetestowane. | **Kierunkowo §4.6.3 i §4.8.1/§4.8.11:** systemy mają być spójne, ale klasyczne skills i Weapon Proficiency pozostają odrębne. Brak specyfikacji zamiany skills na Wheel points. | **G2.** Najpierw ustalić budżet mocy i kontrakt migracji; nie dziedziczyć punktów z niespójnego wzoru. **R:** nowa zależność progresji. **G:** Wheel power. **E:** trening, domy i exercise weapons. |",
+      "observed_post_text_sha256": {
+        "Post_39592715": "f1bb881c2e44caa97f61a9bb65e8fe2e04a5baf6fe094ef526309a346fba4ad2",
+        "Post_39592881": "82bd6b88e2d2acb25a00e28904ecf4ecc389bfee42d621e3e1ee6f056e4f6140"
+      },
+      "title": "Skills to achieve Wheel of Destiny points"
+    },
+    {
+      "id": "4998094",
+      "post_ids": [
+        "Post_39592874"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "The temporary football event is substantive content with quest, encounter and rewards, not spam. It does not identify a recurring player problem, and item statistics and distribution remain unverified.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998094",
+      "post_dates": [
+        {
+          "post_id": "Post_39592874",
+          "published_at": "05.07.2026 00:18:06",
+          "edited_at": "06.07.2026 07:49:17"
+        }
+      ],
+      "op_date": "05.07.2026 00:18:06",
+      "op_edit_date": "06.07.2026 07:49:17",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39592874",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 12,
+      "analysis": "| [4998094](https://www.tibia.com/forum/?action=thread&threadid=4998094), OP `39592874` (05.07, edycja 06.07.2026): czasowy event piłkarski obejmuje miniquest, globalny prezent, bossa i przedmioty ze statystykami. | `concrete_proposal`; brak odpowiedzi. To określony kandydat contentu, nie spam, lecz bez rozpoznawalnego problemu do recurrence. | Lore, dostępność assetów, parametry przedmiotów i sposób dystrybucji nie są zweryfikowane. | **Kierunkowo P9/P11/P6:** quest, encounter i balans itemów. Roadmapa nie zawiera tego eventu ani globalnej dystrybucji. | **G2.** Rozdzielić kosmetyczną pamiątkę od shield/boots z mocą; ograniczyć czas, eligibility, wielokrotne odbiory i ekonomię nagród. **R:** event/content. **G:** speed/defense i dostęp. **E:** podaż unikalnych itemów. |",
+      "observed_post_text_sha256": {
+        "Post_39592874": "322f2e7d594e75dc33707ea56c744632fc02781c351ab04b8adaba9957f52707"
+      },
+      "title": "Temporary Tibia event: Football World Cup"
+    },
+    {
+      "id": "4998067",
+      "post_ids": [
+        "Post_39592785",
+        "Post_39592871"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "The paralysis-removal timing problem and one-second cooldown proposal are concrete and receive one short independent agreement. Minimal healing does not make faster cleanse timing parity-safe.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998067",
+      "post_dates": [
+        {
+          "post_id": "Post_39592785",
+          "published_at": "03.07.2026 23:25:45",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592871",
+          "published_at": "04.07.2026 22:55:17",
+          "edited_at": null
+        }
+      ],
+      "op_date": "03.07.2026 23:25:45",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39592785",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 13,
+      "analysis": "| [4998067](https://www.tibia.com/forum/?action=thread&threadid=4998067), OP `39592785` (03.07.2026): dwusekundowa luka w leczeniu ma utrudniać Knightowi seryjne zdejmowanie paraliżu; propozycja skraca cooldown Exura Infir Ico do sekundy. | `concrete_problem + concrete_proposal`; jedno krótkie niezależne poparcie. Brak testów lub porównania profesji. | Cooldown, healing i częstość paraliżu są historycznymi twierdzeniami źródła. Minimalne leczenie nie zeruje wpływu szybszego oczyszczania. | **Dokładna domena §4.15.4–4.15.6:** mobility/utility należy stroić osobno w PvE i PvP; brak zatwierdzonej sekundy. | **G2.** Mierzyć uptime paraliżu, tempo ruchu i spam-cast w PvP/PvE; rozważyć jawny cooldown cleanse oddzielony od heal. **R:** spell timing. **G:** mobility/escape. **E:** pośrednio wynik walki. |",
+      "observed_post_text_sha256": {
+        "Post_39592785": "e7def19911d2008a845a5a0cdbe5b965c3b42dd7ec7264a4da7cfcc4af0d452a",
+        "Post_39592871": "f66289fc3393035495287aae5842ab7d72d2842a3752c04dcc7ffadeec039619"
+      },
+      "title": "ALL KNIGHT"
+    },
+    {
+      "id": "4998091",
+      "post_ids": [
+        "Post_39592852"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers",
+        "unsupported_claims"
+      ],
+      "reason": "Double proficiency events and a paid boost are specific G2 proposals, but rates and claimed community acceptance are unverified and no concrete pain case is supplied.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998091",
+      "post_dates": [
+        {
+          "post_id": "Post_39592852",
+          "published_at": "04.07.2026 18:29:02",
+          "edited_at": null
+        }
+      ],
+      "op_date": "04.07.2026 18:29:02",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39592852",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 14,
+      "analysis": "| [4998091](https://www.tibia.com/forum/?action=thread&threadid=4998091), OP `39592852` (04.07.2026): event 2× Weapon Proficiency XP i płatny boost +50% miałyby przyspieszać specjalizację. | `concrete_proposal + unverified_numbers`; brak odpowiedzi. Brak konkretnego bólu, więc propozycja nie zwiększa recurrence problemu. | Istnienie analogicznych eventów nie dowodzi bezpiecznego budżetu dla nowej progresji; akceptacja społeczności jest twierdzeniem OP. | **Kierunkowo §4.6.10–4.6.12 i §4.8.11:** właściciel proficiency; brak eventu/boostu. P19 dotyczy tenure/Loyalty i nie rozstrzyga tej monetyzacji. | **G2/policy.** Najpierw krzywa progresji, stacking i przewaga płatna; event oraz Store oceniać osobno. **R:** progression rules. **G:** proficiency rate/power timing. **E:** TC, event demand i nierówny dostęp. |",
+      "observed_post_text_sha256": {
+        "Post_39592852": "fc256bb800d23e9ee3886e934823b639ec14a0237bfcca78a6df94c8e8729037"
+      },
+      "title": "Double Weapon Proficiency Event & Store Boost"
+    },
+    {
+      "id": "4998090",
+      "post_ids": [
+        "Post_39592845"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Unreliable multi-click interpretation on touch hardware and one legal action per physical tap define a concrete same-outcome input ergonomics request; frequency remains unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998090",
+      "post_dates": [
+        {
+          "post_id": "Post_39592845",
+          "published_at": "04.07.2026 16:52:08",
+          "edited_at": "04.07.2026 16:53:04"
+        }
+      ],
+      "op_date": "04.07.2026 16:52:08",
+      "op_edit_date": "04.07.2026 16:53:04",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39592845",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 15,
+      "analysis": "| [4998090](https://www.tibia.com/forum/?action=thread&threadid=4998090), OP `39592845` (04.07, edycja 04.07.2026): dotyk bywa interpretowany jako wiele kliknięć; autor proponuje natywny tryb jednego legalnego użycia na fizyczny tap. | `concrete_problem + concrete_proposal`; brak odpowiedzi. Sytuacja i oczekiwany wynik są konkretne, lecz urządzenia nie zostały przetestowane. | Częstość podwójnych zdarzeń i bieżące wsparcie touchscreen są niezweryfikowane. | **Kierunkowo §4.1.4:** natywne, ograniczone semantycznie wejście; roadmapa nie ma literalnego trybu dotykowego. | **Q1.** Normalizować tap do pojedynczej intencji, zachowując cooldown, range, exhaust i legality. **R:** ten sam action endpoint. **G:** ergonomia bez szybszego tempa. **E:** brak. |",
+      "observed_post_text_sha256": {
+        "Post_39592845": "9794eebba16e5458cbf04cd992ddb989dcd461a751649d5c003da39b282062c7"
+      },
+      "title": "Native touchscreen support"
+    },
+    {
+      "id": "4998089",
+      "post_ids": [
+        "Post_39592843",
+        "Post_39592844"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "unsupported_claims"
+      ],
+      "reason": "Two independent authors identify external spawn coordination and want an in-game path. The reply adds exact-location verification but does not endorse bonuses; damage, mitigation or loot bonuses are real G2 changes, not placebo.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1",
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998089",
+      "post_dates": [
+        {
+          "post_id": "Post_39592843",
+          "published_at": "04.07.2026 16:20:42",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592844",
+          "published_at": "04.07.2026 16:39:11",
+          "edited_at": null
+        }
+      ],
+      "op_date": "04.07.2026 16:20:42",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39592843",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 16,
+      "analysis": "| [4998089](https://www.tibia.com/forum/?action=thread&threadid=4998089), OP `39592843` i odpowiedź `39592844` (04.07.2026): Assemble Team jest ukryte i słabo używane; dwaj autorzy niezależnie chcą koordynacji spawnów w grze, a odpowiedź dodaje weryfikację lokalizacji. OP proponuje też bonusy. | `concrete_problem + concrete_proposal + corroborated_component`. Drugi autor potwierdza problem z zewnętrznymi claimami i wnosi dokładną lokalizację; nie popiera bonusów. Twierdzenie, że nikt nie używa funkcji, jest niezweryfikowane. | Użycie funkcji, praktyki serwerów i zajętość spawnów wymagają danych. `0,5%` damage/defense lub loot zmienia wynik i nie jest placebo. | **Dokładnie P3 §4.3.1–4.3.4/§4.3.9** dla finder/party info; **P2 §4.2.2/§4.2.5** dla zajętości i permissioned exact location. Bonusy nie mają odpowiednika. | **Q0/Q1:** odkrywalność, role i zgłoszenia bez premii. **G1/G2:** exact location tylko za zgodą; bonusy damage/loot wymagają balansu. **R:** party/location. **G:** dostęp i power. **E:** loot/XP. |",
+      "observed_post_text_sha256": {
+        "Post_39592843": "bb4eaee91f9aba1eaae3741fb9567d5188a9c721be3b0db45595171d26e7d326",
+        "Post_39592844": "c18f1132db626f961adc910a564061429cac376915e40adc49d9376a67289094"
+      },
+      "title": "Make \"Assemble Team\" feature more accessible"
+    },
+    {
+      "id": "4997865",
+      "post_ids": [
+        "Post_39591969",
+        "Post_39592074",
+        "Post_39592790"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "bump_only",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "Monk role ambiguity and virtue-specific spender mechanics are concrete. One independent reply is pessimistic rather than supportive, and the later bump is the OP; balance and bug claims are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4997865",
+      "post_dates": [
+        {
+          "post_id": "Post_39591969",
+          "published_at": "29.06.2026 10:13:10",
+          "edited_at": "04.07.2026 00:38:40"
+        },
+        {
+          "post_id": "Post_39592074",
+          "published_at": "29.06.2026 22:34:39",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39592790",
+          "published_at": "04.07.2026 00:38:54",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.06.2026 10:13:10",
+      "op_edit_date": "04.07.2026 00:38:40",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 3,
+      "sampled_reply_count": 2,
+      "op_post_id": "Post_39591969",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 17,
+      "analysis": "| [4997865](https://www.tibia.com/forum/?action=thread&threadid=4997865), OP `39591969` (29.06, edycja 04.07.2026): Monk ma niejasne role i mało spenderów; propozycja uzależnia spender od virtue dla offense, bossów lub wsparcia. | `concrete_problem + concrete_proposal + mixed + bump_only`; jeden niezależny respondent komentuje pesymistycznie, nie popiera mechaniki; późniejszy bump jest OP. Błędy i liczby są niezweryfikowane. | Siła, bugi, bossing i support gap są twierdzeniami autorów bez pomiaru. | **Dokładna domena §4.15.2–4.15.6; kierunkowo §4.6.3:** identity/role/context i spójny build layer. Brak zatwierdzonych spenderów. | **G2.** Jeden wybór virtue musi mieć koszt przełączenia i jawny power budget; testować damage, range, sustain, party healing i PvP. **R:** spell/virtue rules. **G:** role i power. **E:** XP/loot throughput. |",
+      "observed_post_text_sha256": {
+        "Post_39591969": "7d94e9fa72a9aa3c51c9fd026bff40f5f63e9e5c332b96ed47c9e8857030493c",
+        "Post_39592074": "7c498dd02b0a776b40abee5562d1f1a4d273d7c3843c03ec18640e9958ed8bf1",
+        "Post_39592790": "c2019710afb43e87dce1cfa89cde518c10f64abe855a5edee59430490840d773"
+      },
+      "title": "Monk Spenders: Virtue Mastery"
+    },
+    {
+      "id": "4998063",
+      "post_ids": [
+        "Post_39592777"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Low Etcher desirability and the proposed discharge function are concrete, but demand and current item semantics are unverified. Removing remaining charge enables earlier recharge, so this is not presentation-only QoL.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4998063",
+      "post_dates": [
+        {
+          "post_id": "Post_39592777",
+          "published_at": "03.07.2026 21:44:24",
+          "edited_at": null
+        }
+      ],
+      "op_date": "03.07.2026 21:44:24",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39592777",
+      "source_file": "year-seventh12-analysis.md",
+      "line": 18,
+      "analysis": "| [4998063](https://www.tibia.com/forum/?action=thread&threadid=4998063), OP `39592777` (03.07.2026): Etcher ma być mało pożądany; autor chce usuwać pozostały charge z pierścieni/amuletów, aby można je było wcześniej ponownie naładować. | `concrete_problem + concrete_proposal`; brak odpowiedzi. Brak danych o popycie i obecnej semantyce Etchera. | Lista przedmiotów, charge i wpływ na sink są historycznym, niezweryfikowanym opisem. Usunięcie reszty ładunku zmienia timing i wartość. | **Najbliżej §4.4.11** (Normalize/Discharge); **kierunkowo P7 §4.7.5–4.7.6 i P17 §4.17.6**. Roadmapa nie zatwierdza Etchera jako endpointu. | **G1/G2.** Autorytatywne Discharge z jasną utratą reszty i potwierdzeniem, następnie legalny recharge; bez duplikacji charge. **R:** lifecycle itemu. **G:** wcześniejsza gotowość. **E:** popyt i maintenance sink. |",
+      "observed_post_text_sha256": {
+        "Post_39592777": "779c5aa713894deed0b9bf316d4e26a00699b9b99aa83bf8a73d1df276bfb91b"
+      },
+      "title": "Etcher - Add a new function"
     }
   ]
 }
