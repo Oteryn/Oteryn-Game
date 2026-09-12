@@ -8,9 +8,9 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/wp3-v2-multi-agent-delivery-20260912
-pr: null
+pr: pending
 base_sha: 489e3e390a1bce1ce3439c66521ab75f8a826cd8
-head_sha: null
+head_sha: 9858fb67b1a7b33374869160e03eac09f2fc9776
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT documentation coordinator
@@ -75,8 +75,9 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 
 ### Focused
 
-- source/reference readback: pending final branch readback
-- result: pending
+- exact branch diff before this metadata refresh: 11 new documentation paths, no runtime/product paths touched
+- source/reference readback: PASS for protected main, #162/#247/#319/#351/#364, prompt/META/architecture discipline
+- result: PASS for documentation structure; semantic/runtime behavior remains `NOT_EVALUATED`
 
 ### Component/integration
 
@@ -88,16 +89,16 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 
 ### Exact-head CI
 
-- final head: pending
+- final head: pending after this metadata refresh
 - trigger source: PR
 - result: pending
 
 ## Self-review
 
-- exact head: pending
+- exact head: pending after this metadata refresh
 - method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- material findings: no runtime/path-ownership mutation; A7 correctly reuses existing canonical alias rather than creating a duplicate
+- verdict: PASS for draft-PR publication
 
 ## Independent review
 
@@ -109,7 +110,7 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: PASS before metadata refresh; final readback pending
 - unresolved review threads: pending
 - related/superseded PRs: #588 evidence remains separate; #356/#335/#247 untouched
 - protected auto-merge: NOT_REQUESTED
@@ -119,11 +120,11 @@ No architecture acceptance, WP3 implementation, Child B implementation, source i
 ## Context checkpoint
 
 ```yaml
-last_progress: registered new programme/evidence/prompt documentation on dedicated branch
+last_progress: full documentation diff reviewed; preparing draft PR
 status: validating
 branch: agent/wp3-v2-multi-agent-delivery-20260912
-head_sha: null
-pr: null
+head_sha: 9858fb67b1a7b33374869160e03eac09f2fc9776
+pr: pending
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -141,5 +142,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: inspect exact branch diff, create draft PR, then record PR live state
+next_action: create draft PR, then re-read exact head and checks
 ```
