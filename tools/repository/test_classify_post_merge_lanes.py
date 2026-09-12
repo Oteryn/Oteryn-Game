@@ -33,11 +33,13 @@ def main():
             manifest.write_text("[package]\n")
         source = root / "apps/game-server/src/main.rs"
         source.parent.mkdir()
-        source.write_text('const GUIDE: &str = include_str!("guide.md");\n// original\n')
+        lexical_contexts = ('/**\n// old block docs\n*/\n/*!\n// old crate block docs\n*/\n'
+                            'const TEXT: &str = r#"\n// old raw string\n"#;\n')
+        source.write_text('const GUIDE: &str = include_str!("guide.md");\n// original\n' + lexical_contexts)
         git("add", ".")
         git("commit", "-qm", "base")
         before = git("rev-parse", "HEAD")
-        source.write_text('const GUIDE: &str = include_str!("guide.md");\n// server repair\n')
+        source.write_text('const GUIDE: &str = include_str!("guide.md");\n// server repair\n' + lexical_contexts)
         git("add", ".")
         git("commit", "-qm", "server")
         after = git("rev-parse", "HEAD")
@@ -144,7 +146,7 @@ def main():
                         target = root / path
                         target.parent.mkdir(parents=True, exist_ok=True)
                         if path == "apps/game-server/src/main.rs":
-                            target.write_text('const GUIDE: &str = include_str!("guide.md");\n// harmless changed input\n')
+                            target.write_text('const GUIDE: &str = include_str!("guide.md");\n// harmless changed input\n' + lexical_contexts)
                         else:
                             target.write_text("// harmless changed input\n" if path.endswith(".rs") else "harmless changed input\n")
                         git("add", ".")
@@ -178,6 +180,16 @@ def main():
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nconst USE_DOCS: bool = true;\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/// consumer-visible docs\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n//! consumer-visible crate docs\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/**\n// changed block docs\n*/\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/*!\n// changed crate block docs\n*/\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nconst TEXT: &str = r#"\n// changed raw string\n"#;\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/* unterminated\n// uncertain\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n// original\n' +
+                         lexical_contexts.replace("// old block docs", "// changed block docs")),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n// original\n' +
+                         lexical_contexts.replace("// old crate block docs", "// changed crate block docs")),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n// original\n' +
+                         lexical_contexts.replace("// old raw string", "// changed raw string")),
                     ):
                         git("checkout", "-q", doc_before)
                         doc.write_text("changed docs\n")

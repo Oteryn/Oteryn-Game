@@ -118,17 +118,103 @@ def document_consumer_content_safe(path: str, baseline: bytes, current: bytes | 
         return baseline == current
     try:
         before_lines, current_lines = baseline.splitlines(), current.splitlines()
+        before_comments = rust_ordinary_comment_lines(baseline)
+        current_comments = rust_ordinary_comment_lines(current)
+        if before_comments is None or current_comments is None:
+            return False
         matcher = difflib.SequenceMatcher(None, before_lines, current_lines, autojunk=False)
         for tag, before_start, before_end, current_start, current_end in matcher.get_opcodes():
             if tag == "equal":
                 continue
-            for line in before_lines[before_start:before_end] + current_lines[current_start:current_end]:
-                value = line.strip()
-                if value and (not value.startswith(b"//") or value.startswith((b"///", b"//!"))):
-                    return False
+            changed = ((before_lines, before_comments, before_start, before_end),
+                       (current_lines, current_comments, current_start, current_end))
+            for lines, comments, start, end in changed:
+                for index in range(start, end):
+                    line = lines[index]
+                    if line.strip() and not comments[index]:
+                        return False
         return True
     except (TypeError, UnicodeError):
         return False
+
+
+def rust_ordinary_comment_lines(content: bytes) -> list[bool] | None:
+    """Identify standalone ordinary line comments in proven Rust code context.
+
+    This deliberately small lexer tracks every Rust construct that can span a
+    line and make a leading ``//`` mere content. Unknown or unterminated state
+    is rejected rather than guessed safe.
+    """
+    lines = content.splitlines()
+    ordinary = [False] * len(lines)
+    state = "code"
+    block_depth = 0
+    raw_hashes = 0
+    escaped = False
+    for line_index, line in enumerate(lines):
+        first = len(line) - len(line.lstrip())
+        if state == "code" and line[first:].startswith(b"//"):
+            ordinary[line_index] = not line[first:].startswith((b"///", b"//!"))
+
+        index = 0
+        while index < len(line):
+            if state == "line":
+                break
+            if state == "block":
+                if line.startswith(b"/*", index):
+                    block_depth += 1
+                    index += 2
+                elif line.startswith(b"*/", index):
+                    block_depth -= 1
+                    index += 2
+                    if block_depth == 0:
+                        state = "code"
+                else:
+                    index += 1
+                continue
+            if state == "string":
+                byte = line[index]
+                index += 1
+                if escaped:
+                    escaped = False
+                elif byte == 0x5C:
+                    escaped = True
+                elif byte == 0x22:
+                    state = "code"
+                continue
+            if state == "raw":
+                terminator = b'"' + (b"#" * raw_hashes)
+                if line.startswith(terminator, index):
+                    index += len(terminator)
+                    state = "code"
+                else:
+                    index += 1
+                continue
+
+            if line.startswith(b"//", index):
+                state = "line"
+                break
+            if line.startswith(b"/*", index):
+                state, block_depth = "block", 1
+                index += 2
+                continue
+            raw = re.match(br"(?:br|cr|r)(\#*)\"", line[index:])
+            if raw is not None:
+                state, raw_hashes = "raw", len(raw.group(1))
+                index += len(raw.group(0))
+                continue
+            if line.startswith((b'b"', b'c"'), index):
+                state, escaped = "string", False
+                index += 2
+                continue
+            if line[index] == 0x22:
+                state, escaped = "string", False
+            index += 1
+        if state == "line":
+            state = "code"
+        elif state == "string" and escaped:
+            escaped = False
+    return ordinary if state == "code" else None
 
 
 def document_consumers_safe(metadata: dict) -> bool:

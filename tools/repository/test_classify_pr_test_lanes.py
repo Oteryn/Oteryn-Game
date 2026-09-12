@@ -238,6 +238,11 @@ def test_bounded_document_consumer_drift(module):
         ("apps/game-server/src/lib.rs", b"fn use_docs() -> bool { false }", b"fn use_docs() -> bool { true }"),
         ("apps/game-server/src/lib.rs", b"// module", b"/// module"),
         ("apps/game-server/src/lib.rs", b"// crate", b"//! crate"),
+        ("apps/game-server/src/lib.rs", b"/**\n// old doc text\n*/", b"/**\n// changed doc text\n*/"),
+        ("apps/game-server/src/lib.rs", b"/*!\n// old crate docs\n*/", b"/*!\n// changed crate docs\n*/"),
+        ("apps/game-server/src/lib.rs", b'let text = r#"\n// old string text\n"#;', b'let text = r#"\n// changed string text\n"#;'),
+        ("apps/game-server/src/lib.rs", b'let text = "\n// old string text\n";', b'let text = "\n// changed string text\n";'),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"/* unterminated\n// uncertain"),
     ):
         assert not module.document_consumer_content_safe(path, baseline, current), (path, current)
 
@@ -278,7 +283,9 @@ def test_bounded_document_consumer_drift(module):
         git("init", "-q")
         source = root / "apps/game-server/src/lib.rs"
         source.parent.mkdir(parents=True)
-        baseline_source = unchanged_consumer + b"const USE_DOCS: bool = false;\n"
+        lexical_contexts = (b"/**\n// old block docs\n*/\n/*!\n// old crate block docs\n*/\n"
+                            b'const TEXT: &str = r#"\n// old raw string\n"#;\n')
+        baseline_source = unchanged_consumer + b"const USE_DOCS: bool = false;\n" + lexical_contexts
         source.write_bytes(baseline_source)
         for package in fixture()["packages"]:
             manifest = root / Path(package["manifest_path"]).relative_to("/repo")
@@ -318,9 +325,18 @@ def test_bounded_document_consumer_drift(module):
                 git("add", "."); git("commit", "-qm", "unsafe doc attribute")
                 with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
                     assert module.document_consumers_safe(real_meta) is False
+            for ambiguous in (lexical_contexts.replace(b"// old block docs", b"// changed block docs"),
+                              lexical_contexts.replace(b"// old crate block docs", b"// changed crate block docs"),
+                              lexical_contexts.replace(b"// old raw string", b"// changed raw string"),
+                              lexical_contexts + b"/* unterminated\n// uncertain\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = false;\n" + ambiguous)
+                git("add", "."); git("commit", "-qm", "unsafe lexical context")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
         finally:
             os.chdir(old_cwd)
-    print("Bounded document consumer drift PASS: ordinary comments allowed; scalar, doc-comment, grouped/aliased and uncertain drift FULL")
+    print("Bounded document consumer drift PASS: lexical ordinary comments allowed; strings, block/docs, scalar and uncertain drift FULL")
 
 
 def main() -> int:
