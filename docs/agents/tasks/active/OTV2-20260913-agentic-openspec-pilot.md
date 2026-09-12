@@ -8,9 +8,10 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-agentic-openspec-pilot-01
-pr: null
+issue: 591
+pr: 592
 base_sha: 253b5c0c464e9b73c8398bcf479bdcca9a1f0932
-head_sha: null
+head_sha: external_pr_evidence
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
@@ -29,8 +30,7 @@ owned_paths:
   - openspec/changes/agentic-orchestration-pilot/**
   - docs/agents/tasks/active/OTV2-20260913-agentic-openspec-pilot.md
 public_contracts: []
-depends_on:
-  - issue:591
+depends_on: []
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -43,7 +43,7 @@ Qualify a reversible canary proving that OpenSpec can carry Oteryn task contract
 ## Architecture and source of truth
 
 - `PROVEN`: allocation baseline is protected `main@253b5c0c464e9b73c8398bcf479bdcca9a1f0932`.
-- `PROVEN`: Issue #591 is the live pilot work authority.
+- `PROVEN`: Issue #591 is the live pilot work authority and PR #592 is the pilot candidate.
 - `PROVEN`: root `AGENTS.md` makes live GitHub Issue, PR and check state lifecycle authority and prefers repository-native GitHub/CI execution.
 - `PROVEN`: `.github/workflows/agent-governance.yml` already verifies a live PR head SHA and checks out that exact target before governance validation.
 - `PROVEN`: bound META policy is `OTERYN_ORGANIZATION_AGENT_POLICY@3.1.0` from immutable META commit `3b39e0be05aef008f1bd442821daefa898a201dd`.
@@ -83,11 +83,11 @@ No WP3 runtime implementation, existing task migration, production mutation, sec
 ### Focused
 
 - command/run: pinned OpenSpec schema/change validation plus pinned gh-aw compilation in `agentic-pilot-qualification`
-- result: pending
+- result: bootstrap generation proved both validators and both gh-aw sources can pass; final exact-head result remains pending after generated locks are committed
 
 ### Component/integration
 
-- command/run: staged router -> real allowlisted worker dispatch -> staged worker handoff preview
+- command/run: router -> real allowlisted worker dispatch -> staged worker handoff preview
 - result: pending behavior canary
 
 ### E2E
@@ -97,16 +97,16 @@ No WP3 runtime implementation, existing task migration, production mutation, sec
 
 ### Exact-head CI
 
-- final head: pending
+- final head: external PR evidence after material freeze
 - trigger source: pull_request
-- workflow/run/job: pending
-- runner assignment: pending
+- workflow/run/job: pending final generation
+- runner assignment: GitHub-hosted qualification; repository aggregate runners resolved by normal control plane
 - classification: control-plane pilot
-- result: pending
+- result: pending final generation
 
 ## Self-review
 
-- exact head: pending
+- exact head: pending stable material candidate
 - method/reviewer: implementing/coordinating agent
 - material findings: pending
 - verdict: pending
@@ -114,14 +114,14 @@ No WP3 runtime implementation, existing task migration, production mutation, sec
 ## Independent review
 
 - required: YES — material GitHub Actions / agent control-plane change under bound AI review policy
-- exact head: pending
+- exact head: pending stable material candidate
 - method/auditor: one independent Codex deep review on stable material candidate
 - material findings: pending
 - verdict: pending
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: in progress on PR #592
 - unresolved review threads: pending
 - related/superseded PRs: none
 - protected auto-merge: NOT_AUTHORIZED
@@ -131,27 +131,27 @@ No WP3 runtime implementation, existing task migration, production mutation, sec
 ## Context checkpoint
 
 ```yaml
-last_progress: Issue #591 and dedicated pilot branch allocated from exact protected-main baseline
+last_progress: OpenSpec validation and gh-aw source compilation passed on bootstrap generation; existing governance exposed and required explicit issue/pr locator
 status: implementing
 branch: agent/otv2-agentic-openspec-pilot-01
-head_sha: null
-pr: null
+head_sha: external_pr_evidence
+pr: 592
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+ci_trigger_source: pull_request
+ci_check_generation: bootstrap
+ci_checks_for_current_head: pending
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: active
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit pilot contract, workflows and qualification harness, then open the pilot PR
+next_action: commit pinned compiler-generated gh-aw locks, then requalify the exact successor head and run the router-to-worker canary
 ```
