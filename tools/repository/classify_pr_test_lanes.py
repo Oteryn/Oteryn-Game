@@ -29,14 +29,6 @@ REQUIRED = {
     "oteryn-simulation-determinism": "crates/simulation-determinism",
 }
 BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
-HARMLESS_RUST_ITEM = re.compile(
-    rb"(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+[A-Z][A-Z0-9_]*\s*:\s*"
-    rb"(?:bool|u(?:8|16|32|64|128|size)|i(?:8|16|32|64|128|size))\s*=\s*"
-    rb"(?:true|false|[0-9][0-9_]*)\s*;|"
-    rb"(?:pub(?:\([^)]*\))?\s+)?fn\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(\s*\)\s*"
-    rb"(?:->\s*(?:bool|u(?:8|16|32|64|128|size)|i(?:8|16|32|64|128|size))\s*)?"
-    rb"\{\s*(?:true|false|[0-9][0-9_]*)?\s*\}",
-)
 
 
 def full(reason: str, surface: str = "unknown") -> dict:
@@ -114,8 +106,9 @@ def document_consumer_content_safe(path: str, baseline: bytes, current: bytes | 
 
     This intentionally is not an absence-of-known-markers test.  Rust is open
     ended (aliases, grouped imports and macros can all hide filesystem access),
-    so only comments/whitespace and a tiny, fully matched scalar item grammar are
-    admitted.  Everything else, including an unparsed line, fails closed.
+    so only blank lines and ordinary non-doc line comments are admitted. Rust
+    doc comments are attributes (and macro-visible), while every executable or
+    uncertain line can change behavior, so all of those fail closed.
     """
     if path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
         return False
@@ -125,16 +118,15 @@ def document_consumer_content_safe(path: str, baseline: bytes, current: bytes | 
         return baseline == current
     try:
         before_lines, current_lines = baseline.splitlines(), current.splitlines()
-        changed = []
         matcher = difflib.SequenceMatcher(None, before_lines, current_lines, autojunk=False)
         for tag, before_start, before_end, current_start, current_end in matcher.get_opcodes():
             if tag == "equal":
                 continue
             for line in before_lines[before_start:before_end] + current_lines[current_start:current_end]:
                 value = line.strip()
-                if value and not value.startswith(b"//"):
-                    changed.append(value)
-        return not changed or all(HARMLESS_RUST_ITEM.fullmatch(line) for line in changed)
+                if value and (not value.startswith(b"//") or value.startswith((b"///", b"//!"))):
+                    return False
+        return True
     except (TypeError, UnicodeError):
         return False
 

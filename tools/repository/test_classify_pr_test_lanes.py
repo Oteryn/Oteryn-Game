@@ -223,7 +223,7 @@ def test_bounded_document_consumer_drift(module):
     assert result["rust"] and result["windows"], result
     assert result["reason"] == "unreviewed-document-consumer-inputs", result
 
-    assert module.document_consumer_content_safe(
+    assert not module.document_consumer_content_safe(
         "apps/game-server/src/combat.rs", b"fn damage() -> u32 { 6 }", b"fn damage() -> u32 { 7 }")
     unchanged_consumer = b'const GUIDE: &str = include_str!("guide.md");\n'
     assert module.document_consumer_content_safe(
@@ -234,6 +234,10 @@ def test_bounded_document_consumer_drift(module):
         ("apps/game-server/src/lib.rs", b"", b"use std::{fs}; fs::read(path);"),
         ("apps/game-server/src/lib.rs", b"", b"use std::{fs as storage}; storage::read(path);"),
         ("apps/game-server/src/lib.rs", b"", b'const X: &str = include_str!("fixture.sql");'),
+        ("apps/game-server/src/lib.rs", b"const USE_DOCS: bool = false;", b"const USE_DOCS: bool = true;"),
+        ("apps/game-server/src/lib.rs", b"fn use_docs() -> bool { false }", b"fn use_docs() -> bool { true }"),
+        ("apps/game-server/src/lib.rs", b"// module", b"/// module"),
+        ("apps/game-server/src/lib.rs", b"// crate", b"//! crate"),
     ):
         assert not module.document_consumer_content_safe(path, baseline, current), (path, current)
 
@@ -242,8 +246,8 @@ def test_bounded_document_consumer_drift(module):
         ("a" * 40 + "\n").encode(),
         b"",
         b"apps/game-server/src/combat.rs\0",
-        b"fn damage() -> u32 { 6 }",
-        b"fn damage() -> u32 { 7 }",
+        b"// damage remains audited",
+        b"// damage remains audited\n// ordinary note",
     ]
     with patch.object(module.subprocess, "run", return_value=complete), \
             patch.object(module.subprocess, "check_output", side_effect=safe_outputs):
@@ -274,7 +278,8 @@ def test_bounded_document_consumer_drift(module):
         git("init", "-q")
         source = root / "apps/game-server/src/lib.rs"
         source.parent.mkdir(parents=True)
-        source.write_bytes(unchanged_consumer)
+        baseline_source = unchanged_consumer + b"const USE_DOCS: bool = false;\n"
+        source.write_bytes(baseline_source)
         for package in fixture()["packages"]:
             manifest = root / Path(package["manifest_path"]).relative_to("/repo")
             manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -291,20 +296,31 @@ def test_bounded_document_consumer_drift(module):
         old_cwd = os.getcwd()
         os.chdir(root)
         try:
-            source.write_bytes(unchanged_consumer + b"// harmless note\n")
+            source.write_bytes(baseline_source + b"// harmless note\n")
             git("add", "."); git("commit", "-qm", "harmless")
             with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
                 assert module.document_consumers_safe(real_meta) is True
             for statement in (b"use std::{fs}; fs::read(path);\n",
                               b"use std::{fs as storage}; storage::read(path);\n"):
                 git("checkout", "-q", baseline_sha)
-                source.write_bytes(unchanged_consumer + statement)
+                source.write_bytes(baseline_source + statement)
                 git("add", "."); git("commit", "-qm", "unsafe alias")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+            git("checkout", "-q", baseline_sha)
+            source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = true;\n")
+            git("add", "."); git("commit", "-qm", "unsafe scalar gate")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                assert module.document_consumers_safe(real_meta) is False
+            for doc_comment in (b"/// module docs\n", b"//! crate docs\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(baseline_source + doc_comment)
+                git("add", "."); git("commit", "-qm", "unsafe doc attribute")
                 with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
                     assert module.document_consumers_safe(real_meta) is False
         finally:
             os.chdir(old_cwd)
-    print("Bounded document consumer drift PASS: real-Git unchanged consumers allowed; grouped/aliased and uncertain drift FULL")
+    print("Bounded document consumer drift PASS: ordinary comments allowed; scalar, doc-comment, grouped/aliased and uncertain drift FULL")
 
 
 def main() -> int:

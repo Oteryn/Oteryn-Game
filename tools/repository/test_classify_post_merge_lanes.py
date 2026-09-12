@@ -175,6 +175,9 @@ def main():
                         ("apps/client/src/doc_reader.rs", 'fn read() { let _ = std::fs::read_to_string("docs/reference.md"); }\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nuse std::{fs}; fs::read(path);\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nuse std::{fs as storage}; storage::read(path);\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nconst USE_DOCS: bool = true;\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/// consumer-visible docs\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n//! consumer-visible crate docs\n'),
                     ):
                         git("checkout", "-q", doc_before)
                         doc.write_text("changed docs\n")

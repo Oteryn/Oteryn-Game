@@ -70,7 +70,7 @@ No product/runtime behavior, Cargo/lock change, workflow fan-in change, required
 
 The #581 implementation is now protected-main evidence, not the final accepted solution. Its finite whole-current-blob marker scan is insufficiently fail-closed for alias/grouped filesystem syntax and over-conservative for unchanged audited consumers in otherwise harmless edits.
 
-The corrective branch starts from exact protected `main@06c06a69d8d5affaf07049bad07f45b83df89392`. The proof compares the fixed audited baseline with the current tree and admits only modified Rust whose changed lines are comments/blanks or fully match a tiny scalar constant/function grammar. Added, deleted, type-changed, build/Cargo and non-Rust workspace inputs fail closed. This positive grammar catches grouped/aliased consumers without relying on finite marker absence, while unchanged baseline consumer lines are ignored.
+The corrective branch starts from exact protected `main@06c06a69d8d5affaf07049bad07f45b83df89392`. The proof compares the fixed audited baseline with the current tree and admits only modified Rust whose changed lines are blank or ordinary non-doc `//` comments. Scalar constants/functions, executable syntax, attributes, `///`/`//!` doc comments and uncertain syntax fail closed. Added, deleted, type-changed, build/Cargo and non-Rust workspace inputs also fail closed. This lexical proof does not rely on finite marker absence, while unchanged baseline consumer lines are ignored.
 
 ## Validation
 
