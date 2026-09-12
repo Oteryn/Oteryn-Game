@@ -260,7 +260,9 @@ def rust_character_literal_end(line: bytes, quote: int, *, byte: bool) -> int | 
                 return None
             index += 3
         elif escape == ord("u") and not byte:
-            match = re.match(br"u\{([0-9A-Fa-f_]*)\}", line[index:])
+            # Rust requires the first code-point digit after ``{`` to be
+            # hexadecimal; separators may only follow that first digit.
+            match = re.match(br"u\{([0-9A-Fa-f][0-9A-Fa-f_]*)\}", line[index:])
             if match is None:
                 return None
             try:

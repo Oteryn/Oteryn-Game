@@ -232,6 +232,10 @@ def test_bounded_document_consumer_drift(module):
     assert module.document_consumer_content_safe(
         "apps/game-server/src/lib.rs", literal_context + b"// old note\n",
         literal_context + b"// changed note\n")
+    malformed_unicode_context = b"const BAD: char = '\\u{_1}';\n"
+    assert not module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", malformed_unicode_context + b"// old note\n",
+        malformed_unicode_context + b"// changed note\n")
     lifetime_context = b"fn borrow<'a>(value: &'a str) -> &'a str { value }\n'outer: loop { break 'outer; }\n"
     assert module.document_consumer_content_safe(
         "apps/game-server/src/lib.rs", lifetime_context + b"// old note\n",
@@ -321,6 +325,14 @@ def test_bounded_document_consumer_drift(module):
             git("add", "."); git("commit", "-qm", "harmless")
             with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
                 assert module.document_consumers_safe(real_meta) is True
+            git("checkout", "-q", baseline_sha)
+            source.write_bytes(baseline_source + malformed_unicode_context + b"// old note\n")
+            git("add", "."); git("commit", "-qm", "malformed unicode baseline")
+            malformed_base = git("rev-parse", "HEAD")
+            source.write_bytes(baseline_source + malformed_unicode_context + b"// changed note\n")
+            git("add", "."); git("commit", "-qm", "comment after malformed unicode")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", malformed_base):
+                assert module.document_consumers_safe(real_meta) is False
             for statement in (b"use std::{fs}; fs::read(path);\n",
                               b"use std::{fs as storage}; storage::read(path);\n"):
                 git("checkout", "-q", baseline_sha)

@@ -184,6 +184,7 @@ def main():
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/**\n// changed block docs\n*/\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/*!\n// changed crate block docs\n*/\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nconst TEXT: &str = r#"\n// changed raw string\n"#;\n'),
+                        ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\nconst BAD: char = \'\\u{_1}\';\n// ordinary note\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n/* unterminated\n// uncertain\n'),
                         ("apps/game-server/src/main.rs", 'const GUIDE: &str = include_str!("guide.md");\n// original\n' +
                          lexical_contexts.replace("// old block docs", "// changed block docs")),
