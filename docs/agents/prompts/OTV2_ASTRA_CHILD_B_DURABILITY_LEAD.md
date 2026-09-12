@@ -52,3 +52,20 @@ Preserve complete semantic records; do not truncate history or silently paginate
 Use configured real PostgreSQL qualification for fresh admission, reconnect, replacement/nonreuse, cross-origin races, lost response, ambiguous COMMIT/recovery, restart, queue/slot saturation, deadline/cancellation, lock contention and max/max+1 boundaries. Skipped/unconfigured DB tests are not proof.
 
 Finish whole-diff self-review, applicable independent review and exact candidate repository checks with no unresolved P0/P1 before reporting the lane ready for protected integration.
+
+## Mandatory next-agent instruction
+
+End the final response with:
+
+```text
+NEXT_AGENT: <exact alias>
+RUN_WHEN: <exact gate>
+WHY: <one concise dependency reason>
+```
+
+Default routing for this lane:
+- after Child B is ready but still needs coordinator/protected integration handling, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
+- when live state already proves protected Child B/WP4 and source-composition gates are open, `NEXT_AGENT: Oteryn: astra wp5 source composition lead`;
+- if WP3/custody is still blocking mutation, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator` and name the precise gate.
+
+Do not recommend A6 S2/S3 before the protected WP3/WP4 gates required by its allocation are true.
