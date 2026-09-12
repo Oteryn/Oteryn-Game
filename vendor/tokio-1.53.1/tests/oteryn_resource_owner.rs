@@ -569,3 +569,81 @@ fn owned_thread_cap_stays_closed_until_external_join() {
     drop(runtime);
     assert_eq!(second_owner.held.load(Ordering::SeqCst), 0);
 }
+
+#[test]
+fn owned_to_ordinary_handoff_retains_worker_charge_until_final_join() {
+    use std::sync::atomic::AtomicBool;
+    use std::time::Duration;
+
+    let owner = Arc::new(Witness::default());
+    let task_gate = Arc::new((Mutex::new((false, false)), Condvar::new()));
+    let stopped = Arc::new(AtomicBool::new(false));
+    let held_at_stop = Arc::new(AtomicUsize::new(0));
+    let stop_owner = owner.clone();
+    let stop_flag = stopped.clone();
+    let stop_held = held_at_stop.clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .max_blocking_threads(1)
+        .thread_keep_alive(Duration::from_millis(5))
+        .on_thread_stop(move || {
+            stop_held.store(stop_owner.held.load(Ordering::SeqCst), Ordering::SeqCst);
+            stop_flag.store(true, Ordering::SeqCst);
+        })
+        .build()
+        .unwrap();
+
+    let worker_gate = task_gate.clone();
+    let owned = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                move || {
+                    let (lock, ready) = &*worker_gate;
+                    let mut state = lock.lock().unwrap();
+                    state.0 = true;
+                    ready.notify_all();
+                    while !state.1 {
+                        state = ready.wait(state).unwrap();
+                    }
+                    17usize
+                },
+            )
+        })
+        .unwrap();
+
+    {
+        let (lock, ready) = &*task_gate;
+        let mut state = lock.lock().unwrap();
+        while !state.0 {
+            state = ready.wait(state).unwrap();
+        }
+    }
+
+    let ordinary = {
+        let _enter = runtime.enter();
+        tokio::task::spawn_blocking(|| 19usize)
+    };
+
+    {
+        let (lock, ready) = &*task_gate;
+        lock.lock().unwrap().1 = true;
+        ready.notify_all();
+    }
+
+    assert_eq!(runtime.block_on(owned).unwrap(), 17);
+    assert_eq!(runtime.block_on(ordinary).unwrap(), 19);
+    for _ in 0..200 {
+        if stopped.load(Ordering::SeqCst) {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(stopped.load(Ordering::SeqCst));
+    let retained = held_at_stop.load(Ordering::SeqCst);
+    assert!(retained >= 2 * 1024 * 1024);
+    assert_eq!(owner.held.load(Ordering::SeqCst), retained);
+
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+}
