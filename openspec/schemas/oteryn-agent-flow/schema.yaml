@@ -1,0 +1,54 @@
+name: oteryn-agent-flow
+version: 1
+description: "Oteryn bounded agent-flow contract: authority -> evidence -> work-package -> review -> acceptance"
+artifacts:
+  - id: authority
+    generates: authority.md
+    description: Live authority locators, writable boundaries and explicit non-authority
+    template: authority.md
+    instruction: |
+      Record only task-specific authority locators and scope boundaries. Separate live GitHub
+      lifecycle authority from planning evidence. Never infer merge, production, credential or
+      cross-repository authority from this artifact.
+    requires: []
+
+  - id: evidence
+    generates: evidence.md
+    description: Verified facts, derived facts, unknowns and candidate identity
+    template: evidence.md
+    instruction: |
+      Record exact revisions and live evidence needed by the change. Classify each material fact
+      as PROVEN, DERIVED, UNKNOWN or CONFLICT. Historical evidence is not current lifecycle state.
+    requires:
+      - authority
+
+  - id: work-package
+    generates: work-package.md
+    description: One bounded worker objective with inputs, exclusions and validation
+    template: work-package.md
+    instruction: |
+      Define the smallest independently executable work package. Keep model/effort outside this
+      semantic contract. Name observable acceptance and the one next safe handoff.
+    requires:
+      - authority
+      - evidence
+
+  - id: review
+    generates: review.md
+    description: Exact-candidate review requirements and finding disposition
+    template: review.md
+    instruction: |
+      Bind review to the exact candidate. Distinguish deterministic checks, self-review and any
+      genuinely independent review. A review result is evidence and never merge authority.
+    requires:
+      - work-package
+
+  - id: acceptance
+    generates: acceptance.md
+    description: Terminal qualification facts and integration boundary
+    template: acceptance.md
+    instruction: |
+      State which acceptance gates are proven and which remain pending. A candidate is never
+      integration-ready merely because planning artifacts are complete.
+    requires:
+      - review
