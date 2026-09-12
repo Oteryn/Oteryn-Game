@@ -8,9 +8,9 @@ status: evidence_blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/wp3-v2-superseding-decision-20260912
-pr: pending
+pr: 590
 base_sha: 489e3e390a1bce1ce3439c66521ab75f8a826cd8
-head_sha: null
+head_sha: f6720ff4d5011f3e2e7176813fbf3b2204cfc695
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: astra wp3-v2 architecture lead
@@ -133,7 +133,10 @@ No runtime Rust, vendor, Cargo/lockfile, SQL/migration, workflow/ruleset, #356/#
 
 ### Exact-head CI
 
-Pending publication of this candidate as a draft PR.
+- trigger source: draft PR #590
+- pre-link head: `f6720ff4d5011f3e2e7176813fbf3b2204cfc695`
+- current exact head: live PR readback required after this metadata commit
+- result: pending
 
 ## Self-review
 
@@ -146,11 +149,13 @@ Pending publication of this candidate as a draft PR.
 ## Context checkpoint
 
 ```yaml
-last_progress: Option B architecture candidate committed on dedicated A1 branch
+last_progress: draft PR #590 published and linked from the A1 task record
 status: evidence_blocked
 branch: arch/wp3-v2-superseding-decision-20260912
-head_sha: null
-pr: pending
+head_sha: f6720ff4d5011f3e2e7176813fbf3b2204cfc695
+pr: 590
+final_head_sha: null
+final_head_frozen_at: null
 blocker: A2 exact profile/corpus/finality evidence package not yet verified
-next_action: publish draft PR, exact-head readback, then consume A2 evidence without guessing missing bounds
+next_action: re-read PR #590 exact head, changed files and exact-head checks; then consume A2 evidence without guessing missing bounds
 ```
