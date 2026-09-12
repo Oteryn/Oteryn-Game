@@ -96,6 +96,23 @@ recommended_control_plane_action: integrate | return_to_lane | wait | escalate
 next_action: <exactly one concrete action>
 ```
 
+## Mandatory next-agent instruction
+
+After the handoff, end the final response with:
+
+```text
+NEXT_AGENT: <exact alias or NONE>
+RUN_WHEN: <exact gate/state>
+WHY: <one concise dependency reason>
+```
+
+Routing for this terminal lane:
+- when the Server Seam is truthfully `READY_FOR_INTEGRATION` and no further programme worker is required, `NEXT_AGENT: NONE`;
+- when integration/coordination work remains outside this lane, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
+- when blocked on a dependency/architecture gate, also route to `Oteryn: astra wp3-v2 programme coordinator` and name the exact blocker.
+
+Do not invent a successor worker after programme terminal success.
+
 ## Safety
 
 No production deployment/secret/certificate/port selection, live accounts/sessions/data, external-repository writes or Reference-parity claims.

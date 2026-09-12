@@ -666,6 +666,83 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Additive Native UI role; it supersedes no coordinator, implementation, review or control-plane prompt. Reuse and alias resolution never grant write, allocation, lease, merge or control-plane authority."
+    },
+    {
+      "prompt_id": "OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR",
+      "path": "docs/agents/prompts/OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-v2-programme-coordination",
+      "scope": "Task-specific WP3-v2 through Child B/WP5/G0/Server-Seam programme routing under live #162/#364 authority; creates no independent control plane or write lease.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive programme-routing profile; it supersedes no canonical coordinator or lane prompt and cannot create authority absent live repository allocation."
+    },
+    {
+      "prompt_id": "OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD",
+      "path": "docs/agents/prompts/OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-v2-architecture-closure",
+      "scope": "Architecture-only closure/acceptance preparation for the protected Revision-3 WP3-v2 successor; no runtime implementation or acceptance authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive WP3-v2 closure profile; it does not supersede the Supervising Architect, #162 control plane or accepted architecture artifact."
+    },
+    {
+      "prompt_id": "OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR",
+      "path": "docs/agents/prompts/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-v2-read-only-analysis",
+      "scope": "Strict read-only exact-source evidence support for Revision-3 closure and later A4 qualification; no tracked-file, control-plane, review-disposition or merge authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only acceleration profile; it never becomes the WP3 writer, architecture acceptance authority, formal reviewer or control plane."
+    },
+    {
+      "prompt_id": "OTV2_ASTRA_PLATFORM_NATIVE_EVIDENCE_HARDENING",
+      "path": "docs/agents/prompts/OTV2_ASTRA_PLATFORM_NATIVE_EVIDENCE_HARDENING.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "cross-repository-platform-handoff",
+      "scope": "Game-stored task handoff for Platform native-evidence hardening; grants no Platform, Game, PKI, production or credential write authority by itself.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Cross-repository handoff profile only; actual Platform work remains governed by Platform live authority and task lifecycle."
+    },
+    {
+      "prompt_id": "OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD",
+      "path": "docs/agents/prompts/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp3-v2-live-implementation-allocation",
+      "scope": "WP3-v2 implementation lead activated only after architecture acceptance and fresh exact #162/#364 allocation/path custody; read-only otherwise.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive successor-implementation profile; it does not create a replacement lineage or supersede existing WP3 writer/control-plane authority without live allocation."
+    },
+    {
+      "prompt_id": "OTV2_ASTRA_CHILD_B_DURABILITY_LEAD",
+      "path": "docs/agents/prompts/OTV2_ASTRA_CHILD_B_DURABILITY_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "child-b-canonical-lineage",
+      "scope": "Canonical #329/#335 Child B durability completion profile; mutating work requires protected WP3 and exact live shared-path custody, read-only preparation otherwise.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Child B completion profile; it never creates a replacement #335 lineage or supersedes the Durability/control-plane prompts absent live allocation."
+    },
+    {
+      "prompt_id": "OTV2_ASTRA_WP5_SOURCE_COMPOSITION_LEAD",
+      "path": "docs/agents/prompts/OTV2_ASTRA_WP5_SOURCE_COMPOSITION_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "wp5-source-composition",
+      "scope": "#319/WP5 Game source-readiness, ingestion and composed G0 profile under live allocations; no implicit Platform, PKI, production, Child B or Server Seam write authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive WP5 composition profile; it does not supersede #319, Platform ownership, Child B or Server Seam authority and requires live path allocation."
     }
   ]
 }
