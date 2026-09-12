@@ -45,3 +45,17 @@ Use `docs/agents/programs/OTV2_WP3_V2_MULTI_AGENT_DELIVERY_PROGRAMME.md` as the 
 ## Acceptance
 
 Maintain one compact programme ledger with lane, live head, canonical owner, state, blocker, next action and evidence. Terminal success requires the criteria in the programme plan and the existing repository controls. If blocked, name exactly one blocker with owner/capability, affected dependency, evidence, why it cannot be resolved under current authority and the smallest required action.
+
+## Mandatory next-agent instruction
+
+At the end of every completed or blocked response, tell the owner exactly which agent/session to launch next. Resolve this from fresh live programme state; do not blindly repeat a historical order.
+
+Use this exact footer:
+
+```text
+NEXT_AGENT: <one exact alias, up to three independent aliases, or NONE>
+RUN_WHEN: <gate/state that makes the launch valid>
+WHY: <one concise dependency reason>
+```
+
+When several independent lanes are simultaneously legal, list at most three aliases in launch order. When the programme is terminal, use `NEXT_AGENT: NONE`. When a material blocker prevents the next worker from starting, name the blocked alias in `NEXT_AGENT`, state the precise gate in `RUN_WHEN`, and do not fabricate readiness.
