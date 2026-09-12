@@ -17,21 +17,29 @@ A7  Oteryn: sol server seam lead
 
 A7 is the existing canonical Server Seam alias and must use `docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md` / #247 rather than a replacement prompt or branch.
 
+## Current Gate 1 baseline
+
+Protected `main` contains merged PR #590 and Revision 3 of `WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`. The artifact explicitly remains `CANDIDATE / NOT ACCEPTED`; merge/readback alone does not grant A4 implementation authority.
+
+Revision 3 already selects first-slice Option B and freezes the root ownership/overlap and recovery-trigger semantics. A1 must close/validate that exact successor rather than create a second B-vs-C decision. A2 supplies read-only exact-source closure evidence. A4 remains gated on architecture acceptance plus fresh #162/#364 implementation allocation/path custody.
+
 ## Launch order
 
-### Start first
+### Start / current architecture-closure wave
 
 Launch A0 as coordinator.
 
-Then launch these three as separate sessions when A0's fresh readback confirms their start conditions:
+Then, when A0's fresh readback confirms their start conditions, run these as separate sessions:
 
 ```text
 A1 + A2 + A3
 ```
 
-A1 and A2 work on the WP3 decision/evidence split. A2 is read-only. A3 targets `Oteryn/Oteryn-Platform` and must start under Platform's own live authority/task rules.
+A1 closes the protected Revision-3 architecture candidate. A2 is read-only evidence support. A3 targets `Oteryn/Oteryn-Platform` and must start under Platform's own live authority/task rules.
 
-### After WP3-v2 architecture acceptance/allocation
+Do not ask A1 to draft another superseding decision unless new material evidence invalidates Revision 3.
+
+### After Revision-3 architecture acceptance + A4 allocation
 
 Launch:
 
@@ -39,11 +47,19 @@ Launch:
 A4
 ```
 
-Do not launch A4 as a mutating worker before Gate 1.
+Both gates are required:
+
+```text
+architecture accepted through repository controls
++
+fresh #162/#364 A4 implementation allocation/path custody
+```
+
+Protected presence of #590 is insufficient by itself.
 
 A5 may be started only for read-only preparation while shared WP3/Cargo/Durability custody remains unavailable.
 
-### After protected WP3
+### After protected WP3 implementation
 
 Launch/activate in parallel when live custody permits:
 
