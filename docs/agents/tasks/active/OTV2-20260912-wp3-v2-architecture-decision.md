@@ -4,13 +4,13 @@
 task_id: OTV2-20260912-wp3-v2-architecture-decision
 title: Draft WP3-v2 superseding architecture decision
 mode: CONTRACT
-status: evidence_blocked
+status: ready_for_acceptance
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/wp3-v2-superseding-decision-20260912
 pr: 590
 base_sha: 489e3e390a1bce1ce3439c66521ab75f8a826cd8
-head_sha: f6720ff4d5011f3e2e7176813fbf3b2204cfc695
+head_sha: e106ac49952112685553b46861b82f75b44f7d8c
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: astra wp3-v2 architecture lead
@@ -28,9 +28,9 @@ depends_on:
   - pr:356
   - issue:364
   - pr:588
-  - wp3-v2:A2-exact-evidence
+  - pr:589
 blocks:
-  - WP3-v2 Gate 1 architecture acceptance
+  - WP3-v2 Gate 1 repository acceptance
   - A4 WP3-v2 material implementation allocation
   - terminal composed WP3 qualification
 cross_repository_coordination_id: WP3-V2-GAME-PLATFORM-20260912
@@ -40,122 +40,226 @@ external_repositories:
 
 ## Outcome
 
-Produce one bounded superseding WP3-v2 architecture candidate for the real Child B consumer without granting implementation or architecture-acceptance authority.
+Produce one coherent superseding WP3-v2 architecture decision for the real Child B consumer without granting implementation or self-acceptance authority.
 
-Current candidate: `WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`.
+Current candidate:
+
+`WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`, Revision 2.
 
 Current lane result:
 
 ```text
-WP3_V2_ARCHITECTURE_CANDIDATE_OPTION_B
-BLOCKING_EVIDENCE_GAP = A2 exact profile/corpus/finality evidence
+WP3_V2_ARCHITECTURE_READY_FOR_ACCEPTANCE
 ARCHITECTURE_ACCEPTED = NO
 IMPLEMENTATION_AUTHORITY = NONE
 ```
 
-The intended terminal worker result remains `WP3_V2_ARCHITECTURE_READY_FOR_ACCEPTANCE`, but it is not truthful until the exact A2 evidence obligations recorded below are closed.
-
 ## Architecture and source of truth
 
-- `PROVEN`: protected admission is `main@489e3e390a1bce1ce3439c66521ab75f8a826cd8`.
+- `PROVEN`: protected admission remains `main@489e3e390a1bce1ce3439c66521ab75f8a826cd8`.
 - `PROVEN`: #162 remains product allocation/integration authority and #364 remains the active remediation programme.
-- `PROVEN`: #351 / Draft PR #356 remains the canonical WP3 implementation/evidence lineage; this task does not mutate it.
-- `PROVEN`: #329 / PR #335 remains the canonical Child B lineage; this task does not mutate it.
-- `PROVEN`: PR #588 is retained audit evidence with no architecture-acceptance authority.
-- `PROVEN`: the canonical WP3 qualification package remains `WP3-Q01..WP3-Q75`.
-- `PROVEN`: the WP3-v2 programme records A1 as architecture/docs only and A2 as read-only exact-source evidence.
-- `UNKNOWN`: no terminal A2 evidence package has been located for this candidate head.
+- `PROVEN`: #351 / Draft PR #356 remains the canonical WP3 implementation/evidence lineage and was not mutated by A1.
+- `PROVEN`: #329 / PR #335 remains the canonical Child B lineage and was not mutated by A1.
+- `PROVEN`: PR #588 remains retained audit evidence; canonical `WP3-Q01..WP3-Q75` remains binding.
+- `PROVEN`: PR #451 is merged and protects exact-target finite AWS-LC provider/KX accounting architecture.
+- `PROVEN`: PR #453 is merged and protects provider-config owner allocation.
+- `PROVEN`: PR #458 is merged and protects the AWS-LC PQ-first feature-edge allocation.
+- `PROVEN`: PR #455 is closed/unmerged and is not architecture authority.
 
-## Selected option
+## Selected architecture
 
-Select Option B for the first slice:
+Option B is selected for the first slice:
 
-- one logical Durability executor and one accepted DFR root ledger;
-- bounded lazy `PgPool` as a single-ready-connection holder;
-- `max_connections = 1`, `min_connections = 0` candidate topology;
-- root-owned serialized connection establishment outside active DFR work;
-- ready-only active checkout;
-- two logical active custody slots but at most one physical DB pass at a time;
-- minimal SQLx/PostgreSQL seams only where exact consumer/query/profile repair cannot close the bound.
+- one process-scoped logical Durability executor and one accepted DFR root ledger;
+- lazy `PgPool` used as one-ready-connection holder;
+- `max_connections=1`, `min_connections=0`;
+- SQLx default finite retirement retained: idle 10 minutes, max lifetime 30 minutes;
+- one root-owned connect/reconnect transient at a time, five-second root connect deadline;
+- active DB work uses `Pool::try_begin()` so it cannot manufacture a connection;
+- two logical active custody slots, at most one physical DB pass at a time;
+- one-second queue deadline and one absolute two-second DB-pass deadline;
+- narrow PostgreSQL root-owner seam instead of generic SQLx/Tokio ownership redesign;
+- explicit no-ambient PostgreSQL config;
+- literal-IP TCP transport + separate TLS server name;
+- `VerifyFull`, TLS1.3-only owner-aware profile;
+- exact non-FIPS AWS-LC Linux x86-64 GNU profile, Rust 1.94 / rustls 0.23.43 / aws-lc-rs 1.18.0 / aws-lc-sys 0.44.0 / SQLx 0.9.0 / Tokio 1.53.1;
+- SCRAM-SHA-256-only PostgreSQL authentication;
+- built-in PostgreSQL type profile and statement-cache capacity 100 initially;
+- broad dependency forks removed only after replacement proof.
 
-Option A is rejected as terminal architecture but its useful evidence/primitives are retained. Option C remains a valid future supersession option if exact proof shows the holder-style pool requires a broader invasive seam or representative latency/contention evidence requires more physical DB concurrency.
+Option A is rejected as terminal architecture but useful primitives/evidence remain. Option C remains a supersession option if exact implementation evidence shows the narrow holder-style pool seam is worse than an actor or if later measured product evidence requires additional physical DB concurrency.
 
-## A2 evidence required before READY_FOR_ACCEPTANCE
+## Exact-source evidence closure
 
-The exact evidence handoff must close or explicitly classify:
+The missing A2 evidence categories were closed through a read-only exact-source pass against #335/#356 and protected architecture. This did not mutate an A2 branch or claim independent review.
 
-1. every reachable production Child B/WP3 SQL statement family, including parameters, result cardinality/bytes, same-snapshot guards, retained backing, error lifetime and cache effects;
-2. exact correctness-required lock footprint, ordering, parent/sibling participation and maxima;
-3. exact production PostgreSQL connection lifecycle from bounded configuration through DNS/socket/TLS/startup/authentication/ReadyForQuery, checkout, COMMIT/rollback, return/ping, idle/reaping/replacement and lower-layer close/finality;
-4. exact production startup/authentication mechanism allowlist; unlisted mechanisms require reachability proof rather than assumption;
-5. exact resolved Cargo/TLS/provider/runtime feature graph and target/profile assumptions;
-6. exact bounded configuration/credential source set, including PG environment/passfile/OS-fallback disposition and diagnostic redaction;
-7. source-backed `I`, `R`, `T`, `Q`, `A` terms where derivable and every remaining `UNKNOWN`/`BLOCKING_EVIDENCE_GAP`;
-8. finite pool idle/max-lifetime/retirement policy and proof that `min_connections = 0` cannot create automatic replacement;
-9. deferred reactor/provider/socket finality term or one narrowly justified finality seam;
-10. B-vs-C evidence respecting cross-repository finding R21: one connection is not declared performance-sufficient solely because current relation locks serialize writes.
+### SQL corpus
+
+Exact production call-site census at #335:
+
+- `admission_journal.rs`: 33 `sqlx::query*` call-sites;
+- `mod.rs`: 22;
+- `fresh_admission.rs`: 10;
+- `admission_authority_guards.rs`: 4;
+- total base call-sites: 69.
+
+Exact repair families identified:
+
+- schema migration-ledger unbounded `fetch_all` -> embedded `N+1` sentinel bound;
+- two pending-command child `fetch_all` families -> bounded ordered aggregate preserving accepted 64 commands;
+- active committed binding vector -> exact-cardinality `LIMIT 2` shape;
+- all unguarded reconnect `record_json` reads -> same-snapshot byte guard before transfer;
+- SQLx error/dependency logging -> bounded normalized Durability result and bounded/redacted sink;
+- 15 relation-lock statements -> one static multi-table statement preserving exact order/mode.
+
+Conservative statement-shape bound is 95 before lock consolidation and 81 after it, below pinned statement-cache count 100. Metadata bytes remain an A4 qualification obligation.
+
+### Lock footprint
+
+Exact current maximum normal V1/V2 footprint:
+
+```text
+1 shared executor-custody advisory root
++ up to 8 domain advisory roots
++ 15 relation classes
+= 9 logical advisory roots / 15 relation classes
+```
+
+Executor takeover uses one exclusive executor advisory root plus the same 15 relation classes. This fits accepted DFR `64 / 16` without inventing capacity.
+
+### Pool lifecycle
+
+Pinned SQLx proves:
+
+- ordinary `acquire()` may open a connection and retries ConnectionRefused/transient connect errors with exponential backoff;
+- `try_acquire()` only pops an existing idle connection;
+- `Pool::try_begin()` uses `try_acquire()` and returns an owned transaction, preserving the existing transaction-oriented Child B boundary without connection creation;
+- `after_release` runs before the final return `ping()`;
+- drop can spawn asynchronous return-to-pool work;
+- reaper may close idle/lifetime-expired connections, but with `min_connections=0` its minimum-maintenance call does not create a replacement.
+
+### Configuration
+
+Pinned SQLx ordinary options can consume ambient `PG*`, OS username and `.pgpass`; `.pgpass` uses an unbounded `read_line(String)` and may log the full malformed line. Therefore the production profile forbids ambient configuration and uses an explicit Oteryn-owned bounded configuration path.
+
+### PostgreSQL startup/authentication
+
+Pinned source reaches AuthenticationOk, CleartextPassword, MD5Password and SASL; other methods reject. SASL implements non-channel-binding SCRAM-SHA-256. `SCRAM-SHA-256-PLUS` is not qualified because the implementation sends `plus:false`.
+
+Revision 2 therefore freezes SCRAM-SHA-256 only and authorizes a narrow fail-closed owner-aware auth-profile seam.
+
+### TLS/provider graph
+
+Current root Game Server profile selects ring, but exact #356 owner-aware TLS code requires the qualified AWS-LC feature and fails otherwise. Protected #451/#453/#458 plus exact #356 source make the AWS-LC profile the smallest evidence-backed first-slice provider. This is a future Gate-1 implementation profile change, not a claim that protected main already uses AWS-LC.
+
+## Resource qualification state
+
+Architecture defines:
+
+```text
+I + max(R,T) + Q + A <= 12 MiB
+```
+
+`Q <= 4 MiB` and `A <= 8 MiB` are accepted DFR ceilings. One settled connection and one connect transient are architecture maxima. Complete `I`, `R`, `T`, active SQL peak, deferred reactor tail and metadata-byte bounds remain `UNKNOWN` until the exact A4 candidate.
+
+Those are implementation qualification obligations, not guessed architecture constants. Failure of the root equation requires escalation; it never authorizes a second ledger, extra slot or weakened TLS/DFR semantics.
+
+## #356 disposition
+
+### RETAIN
+
+- ResourceBudget/ResourceReservation and applicable backing/finality primitives;
+- protected AWS-LC provider/KX work and matching exact-profile source/tests;
+- PostgreSQL 17.6 / real TLS harness;
+- hostile frame/count/denial vectors;
+- provenance/source census;
+- valid runtime/socket/reactor finality research;
+- direct owner-aware establishment primitives reused by root-owned pool creation.
+
+### REWORK / NARROW
+
+- SQLx core/PostgreSQL changes to exact root-owner, receive/count/status/cache/finality seams;
+- final Game Server TLS feature from ring to selected AWS-LC profile after acceptance/allocation;
+- pool/bootstrap to lazy max1/min0 + root maintenance + active try-begin;
+- config/auth/TLS setup to no-ambient + VerifyFull/TLS1.3/SCRAM-only.
+
+### HISTORICAL EVIDENCE ONLY / removable after replacement proof
+
+- generic Tokio blocking-owner expansion not required by the frozen profile;
+- broad rustls ownership outside retained exact AWS-LC seams;
+- generic DNS/UDS work excluded by the first-slice transport profile;
+- operation-owned direct-connect architecture assumptions;
+- closed/unmerged #455 as authority.
+
+### SUPERSEDED
+
+- broad operation-owned direct connection as terminal WP3 architecture;
+- earlier two-connection first-slice recommendations;
+- timeout/drop/after_release/SQLx-close-as-finality assumptions;
+- current ring profile as the final first-slice WP3-v2 provider once this candidate is accepted and A4 is allocated.
 
 ## Acceptance criteria
 
-- [x] Options A/B/C are compared as realistic alternatives.
-- [x] One root/executor ownership model is defined.
-- [x] Queue/active ownership and definitive release/finality semantics are defined.
-- [x] PgPool establishment/replacement/retirement/checkout responsibilities are defined at architecture level.
-- [x] Configuration/credential authority is narrowed to an explicit bounded profile; unresolved exact bounds are not invented.
-- [x] PostgreSQL startup/authentication and TLS/runtime/provider profiles are explicitly evidence-gated.
-- [x] Cancellation, rollback, ambiguous COMMIT and reconciliation ownership are defined.
-- [x] Restart/takeover/predecessor fencing requirements are defined.
-- [x] Canonical Q01-Q75 remains binding; later audit refinements do not silently replace it.
-- [x] #356 artifacts have explicit RETAIN / REWORK-NARROW / HISTORICAL-EVIDENCE_ONLY / SUPERSEDED dispositions.
-- [ ] A2 exact-source evidence package closes the blocking profile/corpus/finality gaps.
-- [ ] Independent architecture review validates the Option B-vs-C decision and #356 disposition.
-- [ ] Exact-head repository/governance checks are green.
-- [ ] Candidate is protected-integrated/read back before any A4 material allocation.
+- [x] A/B/C compared with real implementation/maintenance/finality trade-offs.
+- [x] one root/executor ownership model defined.
+- [x] queue/active ownership and exact release/finality semantics defined.
+- [x] pool construction/connect/replacement/retirement/ready-only active checkout defined.
+- [x] configuration/credential sources and lifetimes defined without ambient libpq discovery.
+- [x] PostgreSQL startup/authentication profile frozen to SCRAM-SHA-256 only.
+- [x] exact TLS/runtime/provider first-slice profile frozen.
+- [x] cancellation/rollback/ambiguous COMMIT/reconciliation ownership defined.
+- [x] restart/takeover/predecessor fencing defined.
+- [x] canonical Q01-Q75 preserved as final qualification matrix.
+- [x] #356 retention/supersession map recorded.
+- [x] exact-source SQL/lock/pool/config/auth/provider evidence used rather than assumptions.
+- [ ] independent exact-head HIGH-risk architecture/resource/security review complete.
+- [ ] exact-head repository checks green for the Revision-2 head.
+- [ ] candidate protected-integrated/read back before A4 material allocation.
 
 ## Excluded scope
 
-No runtime Rust, vendor, Cargo/lockfile, SQL/migration, workflow/ruleset, #356/#335 worker mutation, Platform write, production/deployment/secret, merge, Merge Queue submission or architecture self-acceptance.
+No runtime Rust, vendor, Cargo/lockfile, SQL/migration, workflow/ruleset, #356/#335 material mutation, Platform write, production/deployment/secret, merge, Merge Queue submission or architecture self-acceptance.
 
 ## Validation
 
-### Focused source/readback
+### Focused readback
 
-- protected `main@489e3e390a1bce1ce3439c66521ab75f8a826cd8`: PASS
-- live #351/#356, #329/#335, #364, #588 readback: PASS
-- accepted DFR resource authority readback: PASS
-- Architecture Decision Discipline readback: PASS
-- Revision-4 audit and cross-repository R01-R21 readback: PASS
-- exact Child B `apps/game-server/src/durability/db.rs` readback at `#335@834db1d7118d751e31287715d3eaac7780a0c7b9`: PASS
+PASS for protected main, live #351/#356, #329/#335, #364, #451/#453/#458, #588/#589, accepted DFR, architecture discipline, exact Child B durability source and exact #356 SQLx/rustls/pool/config/auth source.
 
 ### Component/integration/E2E
 
-`NOT_APPLICABLE`: docs-only architecture candidate; no product behavior is changed or claimed qualified.
+`NOT_APPLICABLE`: this PR remains docs-only and changes no product behavior.
 
-### Exact-head CI
+### Previous exact-head CI
 
-- trigger source: draft PR #590
-- pre-link head: `f6720ff4d5011f3e2e7176813fbf3b2204cfc695`
-- current exact head: live PR readback required after this metadata commit
-- result: pending
+PR #590 head `3f4965404b28065325382d2a4ef8399e0790cb45` had:
+
+- Agent Governance: SUCCESS;
+- Architecture Semantic Audit: SUCCESS;
+- Merge Gate: SUCCESS.
+
+Those runs are stale after Revision-2 mutation and are **not** claimed for the new head.
 
 ## Self-review
 
 - no runtime/product/external-repository path mutation;
 - no architecture acceptance claim;
-- no invented I/R/T/auth/provider bound;
-- R21 correction preserved: max-one connection is a first-slice topology candidate, not a measured throughput conclusion;
-- #356 evidence is preserved until replacement qualification.
+- no fabricated I/R/T bound;
+- R21 retained: one connection is not claimed performance-sufficient from serialization alone;
+- protected AWS-LC authority is distinguished from unmerged #455 and unprotected #356 material code;
+- current protected ring profile is distinguished from the proposed accepted first-slice AWS-LC profile;
+- all broad-removal actions remain conditional on replacement proof.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: draft PR #590 published and linked from the A1 task record
-status: evidence_blocked
+last_progress: Revision-2 exact-source closure committed; A1 candidate is ready for repository acceptance
+status: ready_for_acceptance
 branch: arch/wp3-v2-superseding-decision-20260912
-head_sha: f6720ff4d5011f3e2e7176813fbf3b2204cfc695
+head_sha: e106ac49952112685553b46861b82f75b44f7d8c
 pr: 590
 final_head_sha: null
 final_head_frozen_at: null
-blocker: A2 exact profile/corpus/finality evidence package not yet verified
-next_action: re-read PR #590 exact head, changed files and exact-head checks; then consume A2 evidence without guessing missing bounds
+blocker: independent exact-head architecture review and fresh Revision-2 exact-head CI/protected acceptance
+next_action: re-read PR #590 exact head, exact changed files and new checks; repair only concrete findings
 ```
