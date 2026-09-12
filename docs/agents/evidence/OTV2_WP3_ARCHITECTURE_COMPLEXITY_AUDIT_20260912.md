@@ -1,17 +1,17 @@
 # OTV2 WP3 — Architecture / Complexity Audit and Recovery Decision
 
 - Date: 2026-09-12
-- Revision: 2 — consolidated source/consumer/quantitative pass
+- Revision: 3 — consolidated source, consumer, quantitative and concurrent-review pass
 - Repository: `Oteryn/Oteryn-Game`
 - Scope: WP3 SQLx/TLS resource accounting plus the exact Child B consumer lifecycle needed to qualify it
 - Canonical WP3 Issue: `#351`
 - Canonical WP3 Draft PR: `#356`
 - WP3 branch: `agent/sqlx-driver-budget-351`
 - WP3 exact source head inspected: `fe7891989b1247012e32c89c10cff6a10bacb943`
-- Child B / WP4 Draft PR inspected: `#335`
+- Child B / WP4 PR inspected: `#335` — open, non-draft at the final audit readback
 - Child B exact source head inspected: `834db1d7118d751e31287715d3eaac7780a0c7b9`
-- Protected `main` at final Revision-2 readback: `489e3e390a1bce1ce3439c66521ab75f8a826cd8`
-- Previous full audit revision: branch head `aea03a69b5b6526eea4af1b413286f3ed2865ccd`, report blob `9b156703d9c06aa9c9f5c281ef9b669d2b201cdb`
+- Protected `main` at final Revision-3 readback: `489e3e390a1bce1ce3439c66521ab75f8a826cd8`
+- Previous full audit revisions remain immutable in Git history; Revision 3 consolidates them into this one evidence file
 - Evidence class: retained architecture audit evidence
 - Architecture authority: **none** — this file does not itself accept, activate, supersede or implement architecture
 
@@ -30,17 +30,23 @@ WP3_V2_SUPERSEDING_DECISION
 Implementation hold:
 HOLD NEW BROAD RUSTLS/TOKIO OWNERSHIP EXPANSION
 
-Confidence:
+Child B composition:
+DFR EXECUTOR / DEADLINE / QUERY-SHAPE REPAIR REQUIRED
+
+Confidence in source-backed NO-GO:
 HIGH
+
+Completeness of executable replacement qualification:
+NOT ESTABLISHED
 ```
 
-The deeper audit confirms the original `WP3_BOUNDARY_REDESIGN_REQUIRED` conclusion and makes it more specific.
+The deeper audit confirms the original `WP3_BOUNDARY_REDESIGN_REQUIRED` conclusion and makes it more precise.
 
-The core defect is no longer best described as “some allocations are still uncharged.” The stronger finding is that the current operation-owned connection model does not match the real production consumer lifecycle. Child B owns a shared `RuntimeBackend` and `PgPool`; pool bootstrap, TLS/connect work, idle connection residency, pool control state, reactor state and connection caches can exist before or after any individual active B operation.
+The problem is no longer best described as “some allocations are still uncharged.” The stronger finding is that the current operation-owned connection model does not match the real production consumer lifecycle. Child B owns a shared `RuntimeBackend` and `PgPool`; configuration, schema bootstrap, pool control state, TLS/connect work, idle connection residency, reactor state, connection caches and maintenance can exist before or after any individual active B operation.
 
-At the same time, the actual Child B semantic workload is not yet routed through its own accepted eight-queued/two-active custody model, and its current database wait/retry behavior does not enforce the accepted `DFR-WAIT` contract. Therefore a perfectly instrumented dependency fork would still not make the composed product resource-safe.
+At the same time, the actual Child B semantic workload is not yet routed through its own accepted eight-queued/two-active custody model, its current database wait/retry behavior does not enforce the accepted `DFR-WAIT` contract, and several SQL transfer shapes bypass the accepted resource policy.
 
-The recommended direction is:
+The recommended direction remains promising but is **not yet a proven replacement**:
 
 ```text
 one accepted DFR root ledger
@@ -52,13 +58,23 @@ one accepted DFR root ledger
     + a much smaller SQLx seam
 ```
 
+Round-3 source review adds important constraints to that proposal:
+
+- eager/minimum-connection and maintenance paths can overlap; sequential loops do not prove one handshake at a time;
+- awaited connection return is not necessarily pool quiescence;
+- `after_release` occurs before the final return ping;
+- `close_hard` can still perform asynchronous TLS shutdown work;
+- schema compatibility inspection is itself an unbounded bootstrap transfer today;
+- environment/pgpass/OS configuration input remains outside a simple “literal IP + preloaded cert” profile unless explicitly frozen;
+- source-derived or measured phase peaks must prove all overlapping lifetimes and failure exits, not merely observe one sample maximum.
+
 The broad rustls/Tokio custody work remains valuable source research, hostile-test evidence and bound derivation material. It should not automatically remain in the final product simply because it has already been written.
 
 ## 2. Live state and audit freshness
 
 ### 2.1 Protected repository state
 
-At the final Revision-2 readback:
+At the final Revision-3 readback:
 
 | Item | State |
 |---|---|
@@ -72,6 +88,7 @@ At the final Revision-2 readback:
 | WP3 changed files | 928 |
 | WP3 GitHub diff stats | `+257002 / -24` |
 | Child B PR | `#335` |
+| Child B state | OPEN / NON-DRAFT / UNMERGED |
 | Child B exact head | `834db1d7118d751e31287715d3eaac7780a0c7b9` |
 | Audit PR | `#588` |
 
@@ -93,9 +110,11 @@ The prior audit verified exact-head GitHub Actions evidence for `fe7891989...`:
 
 This is meaningful positive evidence for the exercised path. It is **not** proof that every accepted resource family, TLS mode, pool path, returned value, cancellation path or opaque runtime allocation is bounded.
 
+No new Rust/PostgreSQL/concurrency/performance execution is claimed by Revision 3. This pass is source/API/repository evidence analysis.
+
 ### 2.3 Audit history preservation
 
-Revision 2 intentionally consolidates the earlier 1300+ line report to reduce instruction/evidence duplication. The exact previous report remains immutable in Git history at branch head `aea03a69...` / blob `9b156703...`. No historical evidence is claimed deleted or retroactively invalidated.
+Revision 3 consolidates the earlier long-form audit and the concurrent Round-3 supplement into this one file. Prior bytes remain in Git history. Consolidation is intended to reduce evidence fragmentation, not to erase historical findings.
 
 ## 3. Governing resource contract
 
@@ -121,7 +140,7 @@ Relevant first-slice maxima are conjunctive hard ceilings:
 | queue wait | 1,000 ms |
 | one DB execution/reconciliation pass | 2,000 ms including lock waits |
 
-The root queue+active ceiling is therefore:
+The root queue+active ceiling is:
 
 ```text
 12 MiB per one logical Durability executor
@@ -137,18 +156,29 @@ Binding semantic rules include:
 6. the inherited 64 pending commands cannot be returned as 64 SQL rows — the accepted shape is one bounded ordered aggregate per exact attempt;
 7. variable payload size must be checked in the same protected database snapshot before transferring oversized data into the driver.
 
-The accepted provider-shared amendment additionally establishes an important precedent: root-shared residency can consume capacity from the same root and reduce what remains available to later queue/active work. The individual DFR maxima are ceilings, not a promise that every maximum is simultaneously fillable.
+The accepted provider-shared amendment establishes an important precedent: root-shared residency can consume capacity from the same root and reduce what remains available to later queue/active work. The DFR maxima are ceilings, not a promise that every maximum is simultaneously fillable.
+
+### 3.1 No automatic free allowance for shared infrastructure
+
+`PROVEN / DERIVED`.
+
+The nominal queue ceiling is 4 MiB and nominal two-active ceiling is 8 MiB, exactly 12 MiB total. Therefore if every queue/active ceiling were simultaneously fully reserved, any additional positive executor/pool/shared reservation would exceed the root.
+
+This does **not** prove the architecture is impossible. It proves that the final v2 design needs a non-double-counted admission schedule using **actual current charges** and must be willing to deny new queue/active work when infrastructure residency has consumed root headroom.
+
+A connection/runtime reservation is not a bonus budget.
 
 ## 4. What WP3 actually has to prove
 
 A terminal WP3/Child-B composition must prove all of the following, not merely a TLS handshake:
 
 ```text
-root executor admission
-  -> pool/bootstrap
-  -> connection establishment or ready-idle selection
-  -> optional connect/replacement transient peak
-  -> active-slot admission
+configuration / allowed ambient inputs
+  -> pool/bootstrap control state
+  -> eager connect and any maintenance connect overlap
+  -> schema compatibility inspection
+  -> executor custody takeover / pending restore
+  -> queue and active-operation admission
   -> pool checkout / liveness check
   -> transaction begin
   -> relation/key locks
@@ -158,10 +188,12 @@ root executor admission
   -> returned row/value/error custody
   -> commit or ambiguity/reconciliation
   -> rollback/drain on cancellation/timeout
-  -> connection cleanup
-  -> return-to-pool or close
-  -> no operation-owned backing remains
-  -> active-slot release
+  -> after_release decision
+  -> final ping / protocol drain
+  -> idle return OR asynchronous close
+  -> root-funded minimum-connection repair if selected
+  -> last result/error/cache/driver/runtime owner
+  -> truthful debit release
 ```
 
 The architecture must separately represent resources whose lifetime is longer than a single operation:
@@ -173,7 +205,8 @@ idle connections
 connection caches/status
 reactor registrations
 shared TLS configuration/provider state
-connection replacement/transient work
+connection maintenance/replacement/transient work
+provider process/thread-resident state
 ```
 
 ## 5. Current implementation shape
@@ -195,19 +228,15 @@ It contains valuable primitives and evidence:
 - a real PostgreSQL 17.6 + TLS1.3 test harness;
 - source-derived TLS phase-bound work.
 
-But `PgConnection::establish_with_resource_budget()` explicitly describes itself as an **operation-owned connection without changing ordinary pool behavior**. Child B production composition uses ordinary `PgPool`. This is the central composition gap.
+But `PgConnection::establish_with_resource_budget()` explicitly describes itself as an **operation-owned connection without changing ordinary pool behavior**. Child B composition uses ordinary `PgPool`. This remains the central WP3 composition gap.
 
 ## 6. Original WP3 finding families — retained disposition
-
-The earlier report's material findings remain valid unless explicitly corrected below.
 
 ### WP3-A01 — HIGH — rustls test/production owner representation differs
 
 `PROVEN`.
 
 Parts of rustls decoded custody are compiled differently under crate-local `cfg(test)`. Cross-crate production-compiled tests remain useful, but internal library tests do not prove the exact production owner representation.
-
-Required disposition: one production/test semantics model, or explicit qualification proving why a test-only representation difference cannot invalidate the resource proof.
 
 ### WP3-A02 — HIGH — TLS verifier owner-aware scheme allocation is incomplete
 
@@ -219,7 +248,7 @@ SQLx verifier wrappers expose ordinary allocating `supported_verify_schemes()` p
 
 `PROVEN`.
 
-Workspace SQLx currently selects `tls-rustls-ring-webpki`. The current owner-aware positive helper is AWS-LC-oriented, and the owner-aware handshake path rejects unsupported provider composition.
+Workspace SQLx currently selects a ring/webpki edge. The current owner-aware positive helper is AWS-LC-oriented, and the owner-aware handshake path rejects unsupported provider composition.
 
 A green helper is not proof of the frozen production Game feature graph.
 
@@ -245,13 +274,13 @@ This is valid for upstream owner-free callers, but the accepted B profile must s
 
 `PROVEN`.
 
-An accounting reservation stored inside the same `Arc`-controlled allocation it charges can release before the Arc control allocation itself is deallocated. Protected architecture therefore selected a controlled final-owner direction based on exact finality rather than strong-count snapshots.
+An accounting reservation stored inside the same `Arc`-controlled allocation it charges can release before the Arc control allocation itself is deallocated. Protected architecture therefore selected controlled final-owner semantics rather than strong-count snapshots.
 
 ### WP3-A08 — HIGH — native thread metadata finality remains unresolved
 
 `PROVEN`.
 
-`JoinHandle::join()` does not prove destruction of every cloneable `std::thread::Thread` metadata/name owner. Protected architecture correctly keeps this as an explicit blocker rather than silently releasing at join.
+`JoinHandle::join()` does not prove destruction of every cloneable `std::thread::Thread` metadata/name owner. Protected architecture correctly keeps this explicit rather than releasing at join.
 
 ### WP3-A09 — HIGH — DNS and reactor registration are infrastructure boundaries
 
@@ -259,13 +288,13 @@ An accounting reservation stored inside the same `Arc`-controlled allocation it 
 
 Protected #583 correctly shows that `BufferedSocket` begins too late. TCP/UDS reactor registration and hostname-resolution work can occur before it and can outlive the SQLx wrapper.
 
-Revision 2 changes the architectural question: these resources should not automatically be forced into per-operation ownership if a finite executor/pool-shared reservation is more truthful.
+Revision 3 changes the architectural question: these resources should not automatically be forced into per-operation ownership if a finite executor/pool-shared reservation is more truthful.
 
 ### WP3-A10 — HIGH — making buffers fallible changes cleanup semantics
 
 `PROVEN`.
 
-SQLx contains cleanup/control paths written under assumptions that small protocol-control writes cannot fail; rollback queuing even uses `expect`. Resource denial therefore needs one coherent failure/ambiguity contract, not isolated `Result` conversions.
+SQLx contains cleanup/control paths written under assumptions that small protocol-control writes cannot fail; rollback queuing uses `expect`. Resource denial therefore needs one coherent failure/ambiguity contract, not isolated `Result` conversions.
 
 ### WP3-A11 — HIGH — PostgreSQL TLS harness target binding needs hardening
 
@@ -277,7 +306,7 @@ The real PG/TLS test is valuable, but privileged test mutation must fail before 
 
 `PROVEN / DERIVED`.
 
-`used == 0` after drop proves exercised hooks released. An allocation site that never calls the hook remains invisible. Closure therefore requires source census plus forced-denial families plus an independent allocation/memory observation strategy.
+`used == 0` after drop proves exercised hooks released. An allocation site that never calls the hook remains invisible. Closure requires source census plus forced-denial families plus an independent allocation/memory observation strategy.
 
 ## 7. Consumer-lifecycle findings — Child B / #335
 
@@ -290,137 +319,214 @@ The exact `registered_backend()` ordering is:
 ```text
 schema::connect_runtime(database_url)
     -> PgPoolOptions::connect(...)
+    -> schema compatibility inspect
 DurabilityCustody::acquire(&pool)
     -> real DB transaction / lock / pending read
 WorkCustody::new(&pending)
 RuntimeBackend { pool, custody, work, pending }
 ```
 
-Therefore TCP/TLS/reactor/socket/pool connection residency cannot be exclusively owned by a later active-operation slot.
+Therefore configuration/TCP/TLS/reactor/socket/pool/bootstrap residency cannot be exclusively owned by a later active-operation slot.
 
-### B-A02 — P1 — WorkCustody is not the real production executor yet
+### B-A02 — P1 — schema bootstrap transfers before validating the ledger
 
 `PROVEN`.
 
-`WorkCustody` contains fixed `queued[8]` and `active[2]`, but its own source states that it is not yet the executor's queue/active-operation byte budget.
+`schema::inspect()` performs:
+
+```text
+SELECT version, checksum, success
+FROM _sqlx_migrations
+ORDER BY version ASC
+```
+
+with `fetch_all()`, then compares the returned count to the embedded migration set and materializes checksums as `Vec<u8>`.
+
+This occurs during `connect_runtime()`, before `WorkCustody` exists.
+
+Required closure: bound migration-ledger row count and checksum transfer before client materialization while preserving complete incompatibility detection and the no-runtime-DDL rule.
+
+### B-A03 — P1 — WorkCustody is not the real production executor yet
+
+`PROVEN`.
+
+`WorkCustody` contains fixed `queued[8]` and `active[2]`, but its own source states that it is not yet the executor's complete queue/active-operation byte budget.
 
 Only checkpoint submission is currently routed through this custody layer. `AdmissionRuntime` explicitly states that existing semantic APIs are not yet routed through the queue.
 
-Direct handles remain available for:
+Direct handles remain available for reconnect, fresh admission and guard publication, and those paths call `backend.begin()` directly.
 
-- reconnect journal;
-- fresh-admission store;
-- guard publication store.
+Required architecture: one sealed production executor entrypoint. Raw persistence methods should be internal/fixture-only once the executor is composed.
 
-Those stores/journals call `backend.begin()` directly.
-
-Consequence: the accepted `8 -> 2` scheduler, timeout-custody rule and future byte ledger can currently be bypassed by normal semantic APIs.
-
-Required architecture: one sealed production executor entrypoint. Raw persistence methods should be crate-private/internal or explicitly fixture-only once the real executor is composed.
-
-### B-A03 — P1 — accepted 2-second DB-pass deadline is not enforced
+### B-A04 — P1 — accepted 2-second DB-pass deadline is not enforced
 
 `PROVEN`.
 
-Child B defines a five-second `PgPoolOptions::acquire_timeout`. Main semantic operations then perform `backend.begin().await`, locks and multiple SQL statements without one propagated two-second absolute deadline.
+Child B defines a five-second pool acquire timeout. Main semantic operations then perform `backend.begin().await`, locks and multiple SQL statements without one propagated two-second absolute deadline.
 
 No production `statement_timeout` / `lock_timeout` enforcement was found in the #335 diff.
-
-This conflicts with the accepted `DFR-WAIT` rule: one DB execution/reconciliation pass is bounded by 2,000 ms including lock waits.
 
 Required repair:
 
 ```text
 one absolute pass deadline
-  -> executor admission
   -> pool checkout
   -> DB locks
   -> every SQL await
   -> commit/reconcile
 ```
 
-A server-side timeout derived from the remaining deadline is a candidate physical-cleanup aid, not authority to release custody at timeout.
+Server-side timeout derived from remaining time is a candidate cleanup aid, not permission to release custody at timeout.
 
-### B-A04 — P1 — ordinary PgPool connect path contains automatic retries
-
-`PROVEN`.
-
-Pinned SQLx `PoolInner::connect()` retries `ConnectionRefused` and transient database errors with exponential backoff until the acquire deadline. The accepted DFR contract says **no automatic retry loop** inside a pass.
-
-The architecture must choose one of these truthful shapes:
-
-1. pool connection maintenance/retry is root-shared infrastructure outside any active pass, while an active operation fails fast when no ready connection exists; or
-2. the bounded SQLx seam exposes a one-shot connect path for DFR-owned work.
-
-Leaving ordinary retrying acquire under the active pass is not compatible with the accepted first-slice contract.
-
-### B-A05 — P1 — pool checkout and return perform extra I/O
+### B-A05 — P1 — ordinary PgPool connect path contains automatic retries
 
 `PROVEN`.
 
-Pinned SQLx defaults `test_before_acquire=true`; an idle checkout pings the database. `PoolConnection::return_to_pool()` also performs liveness/cleanup work and a ping before returning the connection idle.
+Pinned SQLx `PoolInner::connect()` retries `ConnectionRefused` and transient database errors with exponential backoff until the acquire deadline. The DFR contract says **no automatic retry loop** inside one pass.
 
-Therefore the operation resource lifecycle is larger than `BEGIN -> business queries -> COMMIT`.
+Truthful choices are:
 
-### B-A06 — P1 — transaction drop only queues rollback
+1. connection maintenance/retry is root-shared infrastructure outside the active pass and an active operation fails fast when no ready connection exists; or
+2. the bounded SQLx seam exposes one-shot connect semantics for DFR-owned work.
 
-`PROVEN`.
-
-`sqlx_core::Transaction::Drop` invokes `start_rollback()` when the transaction remains open. PostgreSQL `start_rollback()` queues a rollback query and returns; it does not await physical rollback completion.
-
-Therefore cancellation/timeout cannot release the active slot when the future is dropped. The executor must retain ownership of the connection and slot until rollback/drain/return/close or ambiguity reconciliation reaches a truthful finality point.
-
-### B-A07 — P1 — pending-command query shape violates accepted SQL-result policy
+### B-A06 — P1 — pool checkout and return perform extra I/O
 
 `PROVEN`.
 
-#335 still contains production `fetch_all()` paths over reconnect pending-command child rows and checks vector length only after materialization.
+Pinned SQLx defaults `test_before_acquire=true`; idle checkout pings the database. Return processing also performs cleanup and a ping before idle release.
+
+The operation resource lifecycle is larger than `BEGIN -> business queries -> COMMIT`.
+
+### B-A07 — P1 — after_release is not the final resident-state observation point
+
+`PROVEN`.
+
+The internal return path invokes `after_release` before its final ping/protocol drain. `clear_cached_statements()` and `shrink_buffers()` also do not clear every retained type/table/status map.
+
+Therefore an `after_release` memory check cannot alone prove the final idle resident bound.
+
+### B-A08 — P1 — transaction drop only queues rollback
+
+`PROVEN`.
+
+Dropping an open SQLx transaction invokes `start_rollback()`, which queues rollback rather than awaiting physical completion.
+
+Cancellation/timeout cannot release the active slot when the submitter future disappears. The executor must retain connection and slot custody until rollback/drain/return/close or ambiguity reconciliation reaches truthful finality.
+
+### B-A09 — P1 — awaited return does not necessarily mean pool quiescence
+
+`PROVEN / DERIVED`.
+
+`PoolConnection::Drop` can spawn return/maintenance work, especially when `min_connections > 0`. Minimum-connection maintenance without a supplied deadline can use its own long internal deadline.
+
+Operation-specific finality and root-funded background maintenance must therefore be distinct. An active slot must not be held for an unrelated 300-second maintenance allowance, and released operation budget must not fund later background repair.
+
+### B-A10 — P1 — `close_hard` is not synonymous with immediate physical release
+
+`PROVEN / source-backed`.
+
+The PostgreSQL/TLS close path is asynchronous. Rustls shutdown can send close-notify and drive I/O before the underlying socket is fully shut down; readiness may remain pending.
+
+The architecture needs an explicitly tested stalled-I/O close/cancel policy that retains accounting until the true resource owner is gone.
+
+### B-A11 — P1 — pending-command query shape violates accepted SQL-result policy
+
+`PROVEN`.
+
+#335 still contains production `fetch_all()` paths over reconnect pending-command child rows and checks vector length after materialization.
 
 The accepted DFR shape is one bounded ordered aggregate per exact attempt, not 64 returned child rows.
 
-### B-A08 — P1 — variable `record_json` reads bypass same-snapshot size guards
+### B-A12 — P1 — variable `record_json` reads bypass same-snapshot size guards
 
 `PROVEN`.
 
-Multiple production queries still select `state, record_json` directly from reconnect attempts without the already-used `CASE WHEN octet_length(...) <= ... THEN ... END` pattern.
+Multiple production queries still select variable `record_json` directly without the already-used guarded projection pattern.
 
 Even a perfect driver fork cannot make this consumer policy compliant.
 
-### B-A09 — P1 — raw `sqlx::Error` can escape the active resource lifetime
+### B-A13 — P1 — raw `sqlx::Error` can escape the active resource lifetime
 
 `PROVEN`.
 
 `DurabilityError::Database(sqlx::Error)` retains and formats the driver error. PostgreSQL errors/notices contain variable peer-originated message/detail/hint/context/object fields.
 
-Recommendation: normalize the full driver error **inside the active slot** into a small bounded Durability disposition, bounded SQLSTATE/correlation information and no unbounded server prose. Destroy the driver error before slot release.
+Recommendation: normalize the driver error **inside the active slot** into a small bounded Durability disposition plus bounded SQLSTATE/correlation data, then destroy the full error before release.
 
-### B-A10 — P2 — global relation locking serializes the first implementation
+### B-A14 — P1 — production custody does not yet prove repeated active-slot recovery
 
-`PROVEN`.
+`PROVEN / INCOMPLETE`.
 
-Child B uses a conservative relation-level locking strategy across roughly the accepted relation-class ceiling and intentionally makes no broad concurrency claim.
+Current `WorkCustody` tests prove fixed queue/active admission and cancellation of queued work. Active custody is intentionally not cleared merely because a submitter cancels. The final definitive-disposition + owner-acknowledgement release layer is not yet the general production executor path.
 
-This supports reducing the pool ceiling from four, but it does not by itself prove that a one-connection pool is safe for all ambiguity/cleanup/liveness cases.
+Closure must include more than two sequential acknowledged operations in one process, two occupied ambiguous slots, same-slot reconciliation and capacity recovery without a third slot.
 
-## 8. PgPool source audit and corrected pool recommendation
-
-### 8.1 Current Child B pool policy
+### B-A15 — P2 — global relation locking serializes the first implementation
 
 `PROVEN`.
 
-`schema::connect_runtime()` currently uses `max_connections(4)` and Child B configures `acquire_timeout=5s`; other SQLx pool options remain at upstream defaults.
+Child B uses a conservative relation-level locking strategy and intentionally makes no broad concurrency claim.
 
-Relevant SQLx defaults include:
+This supports reducing the pool ceiling from four, but does not prove that a one-connection pool is safe for all ambiguity/cleanup/liveness cases.
+
+## 8. Configuration and credential-input boundary
+
+### 8.1 URL size is not the whole configuration bound
+
+`PROVEN`.
+
+SQLx PostgreSQL options can consume ambient `PG*` environment values, OS username information and pgpass configuration in addition to the explicit URL.
+
+Therefore a bounded URL plus literal transport address plus preloaded TLS material does **not** by itself prove finite configuration intake.
+
+### 8.2 pgpass has unbounded line intake in the inspected path
+
+`PROVEN`.
+
+Pinned `pgpass.rs` uses `BufRead::read_line(&mut String)` without a project hard line-size bound.
+
+Malformed lines are logged including the complete line.
+
+Consequences:
+
+- configuration-time memory remains unbounded by the URL limit;
+- a malformed local credential record can be copied into diagnostics before later B-level error normalization.
+
+No actual credential leak is claimed by this audit.
+
+### 8.3 Required v2 decision
+
+Freeze the production configuration source set:
+
+```text
+explicit bounded URL/struct only?
+selected PG* environment fields?
+pgpass allowed or disabled?
+OS username fallback allowed?
+credential/root paths or preloaded bytes?
+```
+
+Any enabled source needs a finite intake bound and redaction before library diagnostic sinks. Do not silently remove a required credential mechanism merely to simplify accounting.
+
+## 9. PgPool source audit and corrected pool recommendation
+
+### 9.1 Current Child B pool policy
+
+`PROVEN`.
+
+`schema::connect_runtime()` uses `max_connections(4)` and Child B configures `acquire_timeout=5s`; other SQLx pool options remain largely upstream defaults.
+
+Relevant defaults include:
 
 - `min_connections = 0`;
-- `idle_timeout = 10 minutes`;
-- `max_lifetime = 30 minutes`;
+- finite idle timeout;
+- finite max lifetime;
 - `test_before_acquire = true`;
 - fair acquisition.
 
-### 8.2 Correction to the earlier audit candidate
+### 9.2 Correction to the earlier audit candidate
 
-The earlier Revision-1 candidate:
+The earlier candidate:
 
 ```text
 min_connections = 2
@@ -429,17 +535,17 @@ idle_timeout = None
 max_lifetime = None
 ```
 
-is **SUPERSEDED AS A RECOMMENDATION** by the deeper pool-source audit.
+is **SUPERSEDED AS A RECOMMENDATION**.
 
 Reasons:
 
-1. upstream explicitly warns that an infinite connection lifetime can allow database-side resources to accumulate;
-2. `min_connections > 0` causes background maintenance/replacement work;
-3. the maintenance path uses the same retrying connection loop;
-4. background replacement itself therefore needs a root-shared budget/deadline policy;
+1. infinite connection lifetime can accumulate database-side resources;
+2. `min_connections > 0` causes maintenance/replacement work;
+3. maintenance uses the retrying connect machinery;
+4. background replacement needs its own root reservation/deadline policy;
 5. disabling all churn without evidence is not a valid substitute for bounding churn.
 
-### 8.3 Current supported conclusion
+### 9.3 Current supported ceiling conclusion
 
 `DERIVED — HIGH CONFIDENCE`:
 
@@ -447,9 +553,9 @@ Reasons:
 max_connections <= 2
 ```
 
-is a sufficient first-slice ceiling **after** every production semantic DB operation is routed through the sealed two-active-slot executor and no nested independent second connection exists inside one pass.
+is sufficient after every production semantic DB operation is routed through the sealed two-active-slot executor and no nested independent second connection exists inside one pass.
 
-`2` is **not** proven to be the mathematical minimum. One connection may be semantically possible, but ambiguity cleanup, liveness and progress guarantees require separate evaluation.
+`2` is **not** proven to be the mathematical minimum.
 
 The following remain `NEEDS_DECISION`:
 
@@ -459,93 +565,107 @@ idle_timeout
 max_lifetime / explicit retirement policy
 background maintenance policy
 ready-connection replacement policy
+whether active work may trigger a connect
 ```
 
-### 8.4 Pool queue itself is fixed resident backing
+### 9.4 Pool control state is real resident backing
 
 `PROVEN`.
 
-SQLx creates a Crossbeam `ArrayQueue` with capacity derived from `max_connections`; Crossbeam allocates its fixed slot backing at construction. Reducing the ceiling from 4 to 2 therefore reduces real fixed pool memory even before considering connection objects.
+SQLx creates a fixed-capacity Crossbeam `ArrayQueue` sized from `max_connections`, plus semaphore/atomic/event/control state. Reducing the ceiling from 4 to 2 reduces real fixed pool backing.
 
-### 8.5 Replacement connect is part of the root peak
+### 9.5 Connection establishment is not globally serialized today
 
-`PROVEN / DERIVED`.
+`PROVEN / DERIVED — HIGH CONFIDENCE`.
 
-The SQLx reaper closes an expired idle connection before invoking minimum-connection maintenance. Missing minimum connections are opened sequentially.
+`PoolInner::new_arc()` starts maintenance tasks during pool construction. `PoolOptions::connect_with()` can separately invoke minimum-connection establishment. SQLx source itself notes the race when the reaper/maintenance path is active.
 
-For a two-connection ceiling, define:
+An individual `try_min_connections()` loop awaits connections sequentially, but multiple callers can overlap. Therefore **one loop being sequential does not prove one TLS handshake at a time**.
+
+A two-connection pool can have up to two permitted connect attempts in flight unless v2 explicitly serializes connection establishment.
+
+### 9.6 Corrected root connection-peak formula
+
+Define:
 
 ```text
 I = fixed executor/runtime/pool shared resident
 R = settled resident cost of one ready connection
-T = total cost attributable to one connection while it is at connect peak,
-    including the part that will become its settled resident state
-Q = current queue charge
-A = current active charge
+T = total cost attributable to one connection while at connect peak,
+    including the resident portion it will retain
+Q = actual current queue charge
+A = actual current active charge
 ```
 
-Then the connection portion of root residency must be able to satisfy at least:
+Without a new global connect serializer, a conservative two-connection connection component must admit:
 
 ```text
-steady:
-I + 2R + Q + A <= 12 MiB
+steady two ready:
+2R
 
-bootstrap / replacement:
-I + max(2R, R + T) + Q + A <= 12 MiB
+one ready + one connecting:
+R + T
+
+cold/two concurrent connects:
+2T
 ```
 
-If the root cannot fund `T`, replacement must wait or fail closed. No extra connection budget may be invented.
+Therefore the root feasibility condition is at least:
 
-This is an audit formula candidate, not an accepted architecture equation until the exact final pool policy is selected and the lifetimes are independently reviewed.
+```text
+I + max(2R, R + T, 2T) + Q + A <= 12 MiB
+```
 
-## 9. Connection-resident state audit
+using **actual current** Q/A charges, not blindly substituting all nominal maxima.
 
-### 9.1 Hard source-visible socket-buffer lower bound
+If v2 intentionally serializes all connection establishment across eager/checkout/maintenance/replacement paths, the `2T` term may be narrowed only after that serialization is source-proven and qualified.
+
+If the root cannot fund the next connect, replacement must wait/fail closed; no extra connection budget is invented.
+
+## 10. Connection-resident state audit
+
+### 10.1 Hard source-visible socket-buffer lower bound
 
 `PROVEN`.
 
-Pinned SQLx `BufferedSocket` starts with:
+Pinned SQLx `BufferedSocket` starts with approximately:
 
 ```text
 write buffer: 8 KiB
 read spare capacity: 8 KiB
 ```
 
-Therefore the heap lower bound is at least:
+Source-visible lower bound:
 
 ```text
-16,384 B per live connection
-32,768 B for two live connections
+>= 16,384 B per live connection
+>= 32,768 B for two live connections
 ```
 
 before TLS state, socket boxing, reactor registration, statement/status/type caches or allocator overhead.
 
-This is a lower bound only, not `CONNECTION_RESIDENT`.
-
-### 9.2 Statement cache is finite but should not be disabled blindly
+### 10.2 Statement cache is finite but should not be disabled blindly
 
 `PROVEN`.
 
-PostgreSQL statement-cache default capacity is 100. Persistent queries create named prepared statements. Cache eviction sends `Close::Statement`.
+PostgreSQL statement-cache default capacity is finite (100). Persistent queries create named prepared statements and normal cache eviction sends `Close::Statement`.
 
-If the cache is set to zero while queries remain persistent, named statements can be prepared without being retained in the client LRU and therefore without the normal eviction/close lifecycle.
+Setting cache capacity to zero while keeping persistent queries can lose the normal client cache/eviction lifecycle for those named statements.
 
-Current recommendation:
+Recommendation:
 
-- keep a finite statement cache initially;
-- inventory exact unique B SQL strings and metadata size;
-- include the maximum reachable statement metadata in `R`;
-- if later disabling the cache, also make all B queries non-persistent/unnamed or otherwise prove server statement cleanup.
+- keep a finite cache initially;
+- inventory exact unique B SQL strings and metadata;
+- include maximum reachable statement metadata in `R`;
+- if later disabling the cache, make B queries non-persistent/unnamed or separately prove statement cleanup.
 
-### 9.3 Custom PostgreSQL type/table cache growth is likely unreachable in the first B profile
+### 10.3 Custom type/table cache growth is likely avoidable, not yet proven absent
 
-`DERIVED — HIGH CONFIDENCE, REQUIRES FINAL QUERY/TYPE INVENTORY`.
+`DERIVED — REQUIRES FINAL QUERY/TYPE/FEATURE INVENTORY`.
 
-Pinned SQLx resolves built-in OIDs without filling custom-type caches. Runtime query execution uses `resolve_column_origin=false`, so generic table-column origin discovery is not required by ordinary B execution.
+Pinned SQLx has fast paths for built-in OIDs and ordinary runtime execution does not need generic column-origin discovery. The inspected B query corpus uses built-in PostgreSQL types.
 
-The inspected B query corpus uses built-in PostgreSQL types.
-
-Recommended first-slice profile:
+Candidate first-slice profile:
 
 ```text
 built-in PostgreSQL types only
@@ -553,25 +673,29 @@ no generic by-name custom type resolution
 no table-origin discovery requirement
 ```
 
-Any future custom type use requires a separately bounded profile rather than silently widening the connection-resident map.
+But final reachability must be proven from the complete resolved production graph, not only one dependency edge or a source search.
 
-### 9.4 ParameterStatus is a connection-resident unbounded-growth surface
+### 10.4 ParameterStatus is a connection-resident growth surface
 
 `PROVEN`.
 
-`PgStream::recv()` decodes `ParameterStatus` into owned `String` name/value pairs. Except for `server_version`, entries are inserted into a connection-lifetime `BTreeMap<String, String>`.
-
-A peer can therefore send repeated unique names/large values and grow retained connection state.
-
-The inspected SQLx describe path uses only a tiny subset of status names for alternate-server detection (`crdb_version`, `mz_version`, `questdb_version`). B production runtime does not need a general arbitrary-status store.
+`PgStream::recv()` decodes `ParameterStatus` into owned `String` name/value pairs and retains most entries in a connection-lifetime `BTreeMap<String, String>`.
 
 Required v2 disposition: exact allowlist and aggregate bytes/count ceiling, or no retained generic status map in the B profile.
 
-### 9.5 Fail-closed connection return policy
+### 10.5 Cache/buffer cleanup is not complete residency proof
+
+`PROVEN`.
+
+`clear_cached_statements()` does not clear every retained PostgreSQL type/table map. `shrink_buffers()` addresses stream buffers, not all connection metadata. `after_release` is called before the final ping.
+
+Therefore final connection residency must be established after all cleanup/protocol work, or `R` must conservatively include what survives it.
+
+### 10.6 Fail-closed return policy
 
 `RECOMMENDATION`.
 
-If connection residual state after an operation cannot be proven to fit the accepted resident reservation:
+If final accepted resident state cannot be established within `R`:
 
 ```text
 close connection
@@ -579,29 +703,23 @@ close connection
 
 rather than returning it idle.
 
-This can be implemented with the existing SQLx pool release hooks after the final profile is selected. It does not remove the need to account the connection while it exists.
+Closing is itself asynchronous and must retain root/operation ownership until finality.
 
-## 10. PostgreSQL receive/decode audit
+## 11. PostgreSQL receive/decode audit
 
-### 10.1 Peer frame length is still accepted before a budget/profile gate
+### 11.1 Peer frame length is still accepted before a budget/profile gate
 
 `PROVEN`.
 
 `PgStream::recv_unchecked()` reads PostgreSQL's peer-provided message length and requests that size from ordinary `BufferedSocket::try_read(expected_len)`.
 
-The final minimal seam still requires a checked bound before buffer growth/reserve.
+The minimal seam still requires a checked bound before buffer growth/reserve.
 
-### 10.2 Huge-count/tiny-body DataRow is a concrete exploit family
+### 11.2 Huge-count/tiny-body DataRow is a concrete hostile family
 
 `PROVEN`.
 
-`DataRow::decode_body()` reads a peer `u16` column count and immediately executes:
-
-```text
-Vec::with_capacity(count)
-```
-
-before validating the whole body.
+`DataRow::decode_body()` reads a peer `u16` column count and immediately executes `Vec::with_capacity(count)`.
 
 A DataRow containing 65,535 NULL columns requires only:
 
@@ -611,31 +729,53 @@ A DataRow containing 65,535 NULL columns requires only:
 
 which is below the accepted 524,288 B aggregate logical SQL-result byte ceiling, yet causes a huge metadata vector allocation.
 
-Therefore byte limits alone are insufficient.
+Byte limits alone are insufficient. This is exactly the original #351 huge-count/tiny-body acceptance family.
 
-This is exactly the original #351 hostile family: **huge-count / tiny-body**.
-
-Required seam: count/query-shape admission before the metadata vector allocation. For B, the accepted durable-row contract already gives a maximum of 32 variable-length SQL columns; the exact message/query-profile count rule must be frozen and enforced before allocation.
-
-### 10.3 RowDescription has the same count/name pattern
+### 11.3 RowDescription has the same count/name family
 
 `PROVEN`.
 
-`RowDescription::decode_body()` reads a peer `u16` count, reserves a field vector of that count and clones every field name into an owned `String`.
+`RowDescription::decode_body()` reads a peer count, reserves a field vector and copies field names into owned strings.
 
-Final qualification needs both byte and count controls for the accepted query profile.
+Final qualification needs both byte and count/query-profile controls.
 
-### 10.4 Returned row backing remains operation custody
+### 11.4 Returned row backing remains operation custody
 
 `PROVEN`.
 
-A `PgRow` holds `DataRow` storage plus statement metadata `Arc`; values can retain `Bytes` slices or make copies. Active-slot release must wait until all operation-retained rows/values are consumed/dropped or deliberately copied through another charged boundary.
+A `PgRow` holds DataRow storage plus statement metadata; values can retain `Bytes` slices or allocate copies. Active-slot release waits for those descendants to be consumed/dropped or for an explicit charged copy boundary.
 
-## 11. TLS phase-bound quantitative evidence
+## 12. SQL result/query-shape consumer findings
 
-### 11.1 Exact ring decode bound already exists in #356 research
+### 12.1 Pending commands
 
-`PROVEN FOR THE PINNED RING PROFILE ONLY`.
+`PROVEN`.
+
+The accepted DFR decision requires one bounded ordered aggregate for the inherited 64 pending commands. Current #335 still has `fetch_all()` paths for child rows.
+
+### 12.2 Variable durable records
+
+`PROVEN`.
+
+Some #335 reads already use good guarded projections. Other `record_json` reads do not.
+
+Required rule: same protected SQL snapshot must validate logical byte limits before transferring variable payload into the driver.
+
+### 12.3 Schema ledger
+
+`PROVEN`.
+
+The migration compatibility read itself uses unbounded `fetch_all` before WorkCustody. Its row count/checksum size must be bounded independently of the permanent admission-history limits.
+
+### 12.4 Positive control
+
+Not every `fetch_all()` is automatically a defect. For example, guarded fixed-cardinality reads that establish an exact upper count/byte transfer before materialization can satisfy the contract. Findings must remain query-specific.
+
+## 13. TLS phase-bound quantitative evidence
+
+### 13.1 Exact ring decode research bound
+
+`PROVEN FOR THE PINNED RESEARCH PROFILE ONLY`.
 
 Pinned `handshake_decode_heap_bound()` derives:
 
@@ -647,53 +787,108 @@ selected bound             = 3,276,650 B
 
 The function explicitly states that this is **only a phase term**. Configuration, input buffers, fragment spans, crypto, retained certificates and returned errors are separate.
 
-### 11.2 Known retained-fragment overlap term
+### 13.2 Known retained-fragment overlap term
 
-Existing WP3 source research records a retained fragment-span/high-water term of approximately:
+Existing WP3 source research records approximately:
 
 ```text
 327,680 B
 ```
 
-that can overlap decoded handshake state in the pinned research profile.
+of retained fragment-span/high-water state that can overlap decoded handshake state in the pinned research profile.
 
-A concrete partial phase term is therefore:
+Partial term:
 
 ```text
 3,276,650 + 327,680 = 3,604,330 B
 ```
 
-Compared with one accepted 4 MiB active slot:
+Against one 4 MiB active slot:
 
 ```text
 4,194,304 - 3,604,330 = 589,974 B
 ```
 
-Only ~590 KiB would remain for every other simultaneous operation-owned component if this connect/TLS phase were funded entirely from one active slot.
+This does **not** prove that a 4 MiB slot is impossible. It strongly supports treating connect/TLS as root `CONNECT_TRANSIENT` rather than assuming abundant per-operation headroom.
 
-This does **not** prove that the 4 MiB slot is impossible. It does prove that per-operation connection/TLS accounting is very tight and gives strong evidence for a separate root `CONNECT_TRANSIENT` reservation.
+### 13.3 Feature absence must be proven from the resolved graph
 
-### 11.3 Provider mismatch blocks final numeric adoption
+`CORRECTION / PROVEN PRINCIPLE`.
 
-The source-derived bound above is compiled for the ring/webpki profile, while the currently qualified owner-aware handshake is AWS-LC-oriented.
+One dependency edge using `default-features = false` and omitting `brotli`/`zlib` does not, by itself, prove those features are absent in the complete Cargo build because features can be unified across edges/contexts.
 
-Therefore no final `CONNECT_TRANSIENT_PEAK` number may be accepted until the production provider/profile is frozen.
+Revision 3 therefore retracts any unconditional “certificate compression is production-unreachable” claim until the exact target's **resolved production feature graph** is recorded.
 
-## 12. Timeout, cancellation and cleanup finality
+The final profile may still choose to disable compression/resumption, but absence must be proven from the resolved graph and runtime configuration.
 
-### 12.1 A submitter timeout is not executor cancellation
+### 13.4 Measurement is not a universal phase-bound proof
+
+`PROVEN CONTRACTUAL REQUIREMENT`.
+
+A defensible phase reservation must identify:
+
+- admission point;
+- every reachable allocation family;
+- reallocation/conversion overlap;
+- external descendants;
+- concurrent re-entry/overlap;
+- success exit/transfer;
+- every failure/cancellation exit;
+- exact finality event.
+
+Independent measurement is corroboration/regression evidence. A sampled maximum alone is not an accepted universal bound.
+
+## 14. Provider process/thread-shared residency
+
+### 14.1 AWS-LC provider shared accounting remains valid evidence
+
+`PROVEN FROM PROTECTED ARCHITECTURE`.
+
+The protected provider-resident decision derives finite process and per-thread provider-shared reservation terms for its exact provider profile.
+
+### 14.2 Thread first-use debt depends on thread cohort/lifetime
+
+`PROVEN / DERIVED`.
+
+The owner-aware AWS-LC model contains process-wide initialization plus a per-thread first-use reservation (1360 B in the protected profile). A lifetime sequence of fresh threads can therefore consume additional accounting even if only a small number of connections are live at one time.
+
+This is an accounting/availability concern, not a claim that native memory leaks by exactly that amount.
+
+A dedicated fixed Durability thread makes this easier to bound, but the final architecture must still prove the accepted crypto-thread cohort and provider lifetime.
+
+## 15. Timeout, cancellation, return and close finality
+
+### 15.1 Submitter timeout is not executor cancellation
 
 `PROVEN / CONTRACTUAL`.
 
-DFR already says timeout never releases outstanding custody. The executor must own work independently from a caller future/handle.
+DFR already says timeout never releases outstanding custody. Work must be owned independently from a caller wait handle.
 
-### 12.2 Transaction drop is not rollback completion
+### 15.2 Transaction drop is not rollback completion
 
 `PROVEN`.
 
-Dropping an open SQLx transaction only queues rollback. The next asynchronous use of the connection performs the actual protocol work.
+Dropping an open SQLx transaction only queues rollback; later asynchronous connection work performs the protocol drain.
 
-### 12.3 Recommended executor cleanup shape
+### 15.3 after_release is not final return state
+
+`PROVEN`.
+
+The final return ping occurs after the hook. A hook that observes “small enough” state has not automatically observed all later receive/status/error work.
+
+### 15.4 awaited return is not global pool quiescence
+
+`PROVEN / DERIVED`.
+
+Wrapper Drop/minimum-connection maintenance can schedule root work after an explicit return path. Root-funded maintenance must be separated from operation-specific finality.
+
+### 15.5 close_hard remains asynchronous
+
+`PROVEN / source-backed`.
+
+The TLS close path can drive close-notify/I/O before underlying shutdown. Stalled-peer cleanup needs a bounded tested policy; the name `close_hard` is not proof of instant deallocation.
+
+### 15.6 Recommended executor cleanup shape
 
 `RECOMMENDATION`.
 
@@ -709,27 +904,27 @@ executor owns active slot
   -> on success: commit/reconcile
   -> on timeout/error: rollback/drain/reconcile
   -> consume/drop operation rows/driver errors
-  -> shrink/validate connection residual state
-  -> await return-to-pool OR close
-  -> publish bounded completion / disposition
+  -> establish operation-clean connection state or decide to close
+  -> transfer any legitimate background maintenance to root ownership
+  -> publish bounded completion/disposition
   -> only then release active slot
 ```
 
-Using an explicit `PoolConnection` rather than letting `Pool::begin()` hide ownership is the clearer finality representation because the executor can retain the connection after transaction commit/drop and control the cleanup boundary.
+The active slot does not need to fund unrelated long-lived pool maintenance after all operation ownership has truthfully transferred to a pre-reserved root owner.
 
-## 13. Production DB/TLS profile is not frozen
+## 16. Production DB/TLS/configuration profile is not frozen
 
-### 13.1 Current SSL mode is URL/default driven
+### 16.1 Current SSL mode is URL/default driven
 
 `PROVEN`.
 
-`PgConnectOptions` defaults to `Prefer`; Child B passes the database URL through the ordinary pool constructor and does not enforce a production SSL mode in `db.rs`.
+`PgConnectOptions` defaults to `Prefer`; Child B passes the database URL through ordinary pool construction and does not enforce a product SSL mode in `db.rs`.
 
-`Prefer` can fall back to plaintext when TLS is unavailable or refused.
+`Prefer` can fall back to plaintext when TLS is unavailable/refused.
 
-This audit does **not** declare a new TLS policy. It records that the final profile is missing.
+This audit records missing product policy; it does not invent one.
 
-### 13.2 Candidate bounded first-slice transport identity split
+### 16.2 Candidate bounded transport identity split
 
 `RECOMMENDATION / REQUIRES SUPERSEDING ARCHITECTURE`.
 
@@ -737,21 +932,22 @@ Evaluate:
 
 ```text
 connect_address = literal SocketAddr / IP endpoint
-TLS server_name = separate hostname used for SNI and VerifyFull
+TLS server_name = separate hostname used for SNI/hostname verification
 CA/root material = preloaded bounded shared configuration
+configuration sources = explicitly frozen/bounded
 ```
 
-This preserves hostname certificate verification while removing runtime hostname resolution from the DB connect path.
+This can remove runtime DNS from the DB connect path without disabling hostname verification.
 
-Current SQLx `hostaddr` parsing does not preserve a full libpq-like independent `hostaddr + host` model, so a small SQLx seam may be needed.
+However the final profile must also decide environment/pgpass/OS-username behavior. Literal transport address alone does not eliminate configuration-time blocking/file/string allocations.
 
-This recommendation must not be implemented under the current protected #583 authority without a reviewed superseding decision because #583 correctly forbids simply changing accepted hostname semantics as a local workaround.
+Current SQLx does not provide a complete libpq-like independent `hostaddr + host` seam, so a small SQLx change may be necessary.
 
-## 14. Dedicated Durability runtime option
+No such policy may be implemented as a local workaround under #583 without a reviewed superseding architecture decision.
+
+## 17. Dedicated Durability runtime option
 
 `RECOMMENDATION / REQUIRES MEASUREMENT`.
-
-The accepted topology requires an async Durability worker/PgPool but does not require sharing the gameplay Tokio runtime.
 
 Candidate:
 
@@ -764,115 +960,102 @@ one dedicated Durability executor thread
 
 Benefits:
 
-- reactor allocations become attributable to the Durability root rather than global gameplay I/O;
-- unrelated network registrations cannot inflate the DB pending-release structure;
-- no multi-worker scheduler is required for two I/O-bound active operations;
-- literal address + preloaded TLS data can remove the generic blocking-owner path.
+- reactor allocations become attributable to Durability rather than global gameplay I/O;
+- unrelated network registrations cannot inflate DB pending-release state;
+- fixed thread cohort helps bound provider per-thread first-use residency;
+- literal address + preloaded TLS data can remove the generic blocking-owner path;
+- no multi-worker scheduler is required for two I/O-bound active operations.
 
 Unknowns:
 
-- exact OS thread stack and runtime resident bytes;
-- exact Tokio current-thread runtime allocation baseline;
-- exact registration/pending-release bound under two DB connections;
+- exact OS thread stack/runtime resident bytes;
+- exact Tokio current-thread runtime baseline;
+- exact registration/pending-release bound under the selected pool;
+- continuous driving/fairness behavior under the final workload;
 - whether this is smaller/simpler than a narrow shared-runtime reactor seam.
 
-No choice is accepted by this report.
-
-## 15. Minimal SQLx seam — current best candidate
+## 18. Minimal SQLx seam — current best candidate
 
 The deeper audit does **not** support keeping a broad “fork every private allocation owner” strategy by default.
 
-A much smaller final product fork appears sufficient if phase reservations and the final profile are accepted.
+### SQLx core candidates
 
-### SQLx core seam candidates
-
-- root/connection budget/profile plumbing usable by ordinary `PgPool`, not only direct `PgConnection` fixture;
-- separate transport address from TLS server name if the bounded profile selects it;
-- one-shot connect mode or a composition that prevents retry loops from occurring inside an active DFR pass;
+- root/connection budget/profile plumbing usable by ordinary `PgPool`;
+- separate transport address from TLS server name if selected;
+- one-shot connect mode or a composition preventing retry loops inside active DFR passes;
 - prospective `BufferedSocket` read/write growth checks;
 - exact cleanup/high-water information only where upstream API is insufficient.
 
-### SQLx PostgreSQL seam candidates
+### SQLx PostgreSQL candidates
 
-- validate backend message frame length before receive-buffer reserve;
-- validate DataRow/RowDescription count/profile before `Vec::with_capacity`;
+- validate backend frame length before receive-buffer reserve;
+- validate DataRow/RowDescription count/profile before vector allocation;
 - bound/allowlist retained `ParameterStatus` state;
-- prevent unbounded custom type/table cache growth in the B production profile;
-- expose or enforce the connection-cleanup contract needed before idle return;
+- bound schema/configuration/bootstrap intake where SQL-side protection cannot do it;
+- prevent unbounded custom type/table cache growth in the B profile;
+- expose/enforce the cleanup contract needed before idle return;
 - preserve full PostgreSQL semantics inside the frozen profile.
 
-### Prefer not to patch in the final product if avoidable
+### Prefer not to patch if avoidable
 
 - generic Tokio DNS behavior;
-- generic Tokio blocking worker internals;
+- generic Tokio blocking-worker internals;
 - broad rustls private AST/container ownership;
 - unrelated Tokio TCP/UDS behavior;
-- dependency paths unreachable under the final DB profile.
+- dependency paths proven unreachable under the exact resolved production graph.
 
-## 16. Updated dependency-fork disposition
+## 19. Updated dependency-fork disposition
 
-| Component | Revision-2 disposition | Reason |
+| Component | Revision-3 disposition | Reason |
 |---|---|---|
 | `ResourceBudget` | KEEP | Useful single root admission abstraction. |
-| `ResourceReservation` | KEEP | Valid RAII/phase reservation primitive. |
+| `ResourceReservation` | KEEP | Valid RAII/phase reservation primitive with caller proof obligations. |
 | `Charged<T>` | KEEP where exact backing custody is needed | Correct drop-order direction. |
-| SQLx PostgreSQL fork | REWORK / NARROW | Frame/count/status/cache/transport/cleanup seams remain real. |
+| SQLx PostgreSQL fork | REWORK / NARROW | Frame/count/status/config/cache/transport/cleanup seams remain real. |
 | SQLx core fork | REWORK / NARROW | Pool/root/buffer/profile plumbing may remain necessary. |
 | broad rustls custody fork | PRESERVE AS EVIDENCE; candidate removal | Valuable census/bound research; may be replaced by finite phase reservation. |
-| Tokio blocking-owner fork | PRESERVE AS EVIDENCE; candidate removal | May become unreachable with literal address + preloaded TLS + dedicated runtime. |
+| Tokio blocking-owner fork | PRESERVE AS EVIDENCE; candidate removal | May become unreachable under the final bounded profile/runtime. |
 | Tokio reactor fork | NEEDS_DECISION | Could be replaced by finite root-shared DB-runtime registration reservation. |
-| runtime-owner finality research | PRESERVE | Important evidence if any owner-aware runtime path survives. |
+| runtime-owner/thread-finality research | PRESERVE | Important if any owner-aware runtime path survives. |
 | real PG17.6/TLS harness | KEEP / HARDEN | High-value end-to-end evidence. |
 | hostile denial/source census | KEEP | Needed regardless of implementation strategy. |
+| blanket phase bound based only on one measured peak | REJECT | Does not prove overlap/failure/re-entry/finality. |
 
-## 17. Quantitative status of the four requested v2 bounds
+No fork should be deleted merely because Revision 3 prefers a smaller architecture. Removal becomes safe only after the replacement consumer is qualified.
 
-The audit can now replace “completely unknown” with partial source-derived constraints, but none of the four is terminally accepted.
+## 20. Quantitative status of the four requested v2 bounds
 
-### 17.1 `EXECUTOR_RUNTIME_RESIDENT`
+### 20.1 `EXECUTOR_RUNTIME_RESIDENT`
 
 `UNKNOWN — PARTIALLY CONSTRAINED`.
 
 Must include at minimum:
 
-- final executor state/queue bookkeeping;
+- final executor queue/active bookkeeping;
 - pool control/semaphore/idle queue backing;
 - selected Tokio runtime attribution;
-- shared TLS config/provider reservation;
-- any maintenance/reaper task retained state;
-- fixed connection-slot metadata not already counted in `R`.
+- shared TLS/provider reservation;
+- selected maintenance/reaper task retained state;
+- fixed connection-slot metadata not already counted in `R`;
+- bounded configuration/bootstrap retained state.
 
-The pool's `ArrayQueue` is fixed-capacity and therefore a real source-derived resident term once the final `max_connections` is selected.
-
-Dedicated-current-thread runtime measurement is still required before accepting `I`.
-
-### 17.2 `CONNECTION_RESIDENT`
+### 20.2 `CONNECTION_RESIDENT`
 
 `UNKNOWN — HARD LOWER BOUND ESTABLISHED`.
 
-Source-visible lower bound:
+Source-visible socket-buffer lower bound:
 
 ```text
 >= 16,384 B / connection
 ```
 
-from SQLx socket buffers alone.
+Final `R` additionally includes socket/reactor/TLS settled state, bounded statement/status/type metadata and required control/allocator overhead.
 
-The final `R` must additionally include:
-
-- socket object/control backing;
-- reactor registration attributable to the connection;
-- settled TLS state;
-- bounded statement metadata cache;
-- bounded ParameterStatus state;
-- any reachable built-in-type metadata/caches;
-- allocator/control overhead required by the accepted accounting method.
-
-### 17.3 `CONNECT_TRANSIENT_PEAK`
+### 20.3 `CONNECT_TRANSIENT_PEAK`
 
 `UNKNOWN — LARGE SOURCE-DERIVED PARTIAL TERM ESTABLISHED`.
 
-For the pinned ring decode research profile:
+For the pinned ring research profile:
 
 ```text
 handshake decoded heap:      3,276,650 B
@@ -880,26 +1063,19 @@ known overlapping span term:   327,680 B
 partial connect term:         3,604,330 B
 ```
 
-This is not a complete `T`: socket construction overlap, TLS configuration, crypto/KX, retained certificate state, reactor work and other selected-profile terms still need composition.
+This is not complete `T`. Final provider graph, configuration, socket/reactor, crypto/KX, retained certs and other overlap remain to be composed.
 
-### 17.4 `ACTIVE_SQL_PEAK`
+Because two connects can overlap under ordinary pool behavior, final root proof must either fund up to the selected concurrent connect count or source-prove a global connection-establishment serializer.
+
+### 20.4 `ACTIVE_SQL_PEAK`
 
 `UNKNOWN — CONSUMER REPAIR REQUIRED BEFORE MEASUREMENT`.
 
-The current B consumer does not yet route all semantic work through active slots, still has pending-command/result-shape violations and unbounded error/record reads. Measuring a final active peak before those repairs would measure the wrong architecture.
+Current B still bypasses the real active executor for semantic operations and has unresolved query/error/timeout shapes. Measuring a final active peak now would measure the wrong composition.
 
-Known accepted ceilings still apply:
+Known accepted ceiling remains 4 MiB per active slot, two active slots maximum.
 
-```text
-4 MiB / active slot
-2 active slots maximum
-```
-
-A checkpoint-specific partial copy path currently can retain at most two 65,536-byte operation-string copies (~131,072 B) plus metadata, but this is not the full production active bound.
-
-## 18. Root-envelope feasibility test for v2
-
-Once the final profile supplies exact values, the architecture should be rejected or accepted with a simple root inequality rather than another chain of micro-amendments.
+## 21. Root-envelope feasibility test for v2
 
 Define:
 
@@ -911,172 +1087,230 @@ Q = actual current queue charge
 A = actual current active charge
 ```
 
-For a two-connection ceiling and sequential replacement:
+Without global connect serialization, a two-connection ceiling requires at least:
 
 ```text
-steady:
-I + 2R + Q + A <= 12 MiB
-
-connect/replacement:
-I + max(2R, R + T) + Q + A <= 12 MiB
+I + max(2R, R + T, 2T) + Q + A <= 12 MiB
 ```
 
-The root may deny connection replacement or new admission when there is insufficient headroom. Availability loss is acceptable before accounting escape; hidden overcommit is not.
+The equation uses actual current queue/active charges. It does not assert that full nominal queue+active ceilings can coexist with positive infrastructure residency.
 
-This formula deliberately does not create a new DFR maximum.
+A valid design must publish an admission schedule and at least one funded successful witness at required semantic maxima without double counting.
 
-## 19. Required WP3-v2 / Child-B-v2 decision packet
+Completion, ambiguity, cleanup and root-transfer state must already be funded before irreversible COMMIT; they are not post-commit bonus budgets.
 
-One superseding decision should replace further micro-amendment growth and answer all of the following in one place.
+## 22. Required WP3-v2 / Child-B-v2 decision packet
+
+One superseding decision should replace further micro-amendment growth and answer these questions in one place.
 
 ### Resource ownership
 
-1. Which cells are executor/root-shared?
-2. Which cells are per-connection resident?
-3. Which cells are connect-transient?
-4. Which cells are active-operation charged?
-5. What exact event releases/converts each reservation?
+1. executor/root-shared cells;
+2. per-connection resident cells;
+3. connect-transient cells;
+4. active-operation cells;
+5. exact release/transfer event for each reservation;
+6. double-count prevention between root, connection and active views.
 
 ### Consumer executor
 
-6. What is the single sealed production executor API?
-7. How are all fresh/reconnect/guard operations routed through `8 -> 2` custody?
-8. How is one 1s queue deadline enforced?
-9. How is one 2s DB-pass deadline propagated?
-10. How does submitter cancellation leave executor custody intact?
+7. single sealed production executor API;
+8. routing of all fresh/reconnect/guard work through `8 -> 2` custody;
+9. one 1s queue deadline;
+10. one 2s DB-pass deadline including lock waits;
+11. submitter cancellation semantics;
+12. definitive disposition + owner acknowledgement slot release;
+13. repeated sequential capacity recovery.
+
+### Bootstrap/configuration
+
+14. bounded schema-ledger compatibility inspection;
+15. environment input policy;
+16. pgpass policy and line-size bound if enabled;
+17. diagnostic redaction before library sinks;
+18. bootstrap/custody resource owner before WorkCustody exists.
 
 ### Pool
 
-11. Final `max_connections` ceiling.
-12. `min_connections` policy.
-13. finite connection retirement/lifetime policy.
-14. idle policy.
-15. background maintenance/retry policy.
-16. whether an active pass may ever trigger a new connect.
-17. cleanup/return/close finality.
+19. final `max_connections` ceiling;
+20. `min_connections` policy;
+21. finite retirement/lifetime policy;
+22. idle policy;
+23. background maintenance/retry policy;
+24. global connect concurrency admission;
+25. whether an active pass may trigger a connect;
+26. after_release/final-ping/idle-return boundary;
+27. close/stalled-I/O finality.
 
 ### SQL profile
 
-18. exact static query corpus or allowed query family;
-19. built-in/custom type policy;
-20. statement cache policy;
-21. returned-row/count/byte policy;
-22. ParameterStatus retention policy;
-23. bounded error representation;
-24. pending-command aggregate shape;
-25. same-snapshot oversized-value rejection.
+28. exact static query corpus or allowed family;
+29. built-in/custom type policy;
+30. statement cache policy;
+31. returned row/count/byte policy;
+32. ParameterStatus retention policy;
+33. bounded error representation;
+34. pending-command aggregate shape;
+35. same-snapshot oversized-value rejection;
+36. migration-ledger bound.
 
-### Transport/TLS
+### Transport/TLS/runtime
 
-26. provider/features;
-27. TLS version(s);
-28. SSL mode;
-29. transport address form;
-30. TLS server-name/hostname verification form;
-31. CA/root/client-auth input form;
-32. DNS policy;
-33. session resumption policy;
-34. certificate compression policy;
-35. exact connect-transient bound formula.
-
-### Runtime
-
-36. dedicated versus shared Tokio runtime;
-37. reactor registration reservation/finality;
-38. whether any blocking-owner/thread-owner seam remains production-reachable.
+37. resolved provider/features for the exact production target;
+38. TLS version(s);
+39. SSL mode;
+40. transport address form;
+41. TLS server-name/hostname verification form;
+42. CA/root/client-auth input form;
+43. DNS policy;
+44. session resumption/compression policy;
+45. exact connect-transient proof;
+46. dedicated versus shared Tokio runtime;
+47. reactor registration reservation/finality;
+48. accepted provider process/thread cohort;
+49. whether any blocking-owner/thread-owner seam remains reachable.
 
 ### Supersession
 
-39. which protected WP3 amendments remain active authority;
-40. which are superseded but retained as evidence;
-41. which #356 code/tests are salvaged;
-42. which broad vendor patches are removed from the final product diff.
+50. which protected WP3 amendments remain active authority;
+51. which become historical evidence;
+52. which #356 code/tests are salvaged;
+53. which broad vendor patches are removed only after replacement qualification.
 
-## 20. Required implementation sequence after a protected v2 decision
+## 23. Required implementation sequence after a protected v2 decision
 
-This is a recommended sequence only; the audit grants no implementation authority.
+This audit grants no implementation authority.
 
 ### V2-0 — freeze expansion
 
-Hold new broad rustls/Tokio ownership work. Continue read-only census and bounded experiments only.
+Hold new broad rustls/Tokio ownership work. Continue read-only census/bounded experiments.
 
-### V2-1 — repair Child B consumer substrate
+### V2-1 — repair Child B substrate
 
-- create the real root ledger;
-- route every production semantic DB operation through one executor;
-- seal/remove bypass entrypoints;
-- implement 8 queued / 2 active byte custody;
-- enforce one absolute DB-pass deadline;
-- repair pending-command aggregate query;
-- repair same-snapshot payload guards;
-- normalize driver errors inside the slot.
+- real root ledger;
+- one production executor;
+- seal bypass entrypoints;
+- 8 queued / 2 active byte custody;
+- absolute queue/pass deadlines;
+- no active-pass retry loop;
+- bounded migration-ledger inspect;
+- pending-command aggregate;
+- same-snapshot payload guards;
+- bounded errors;
+- definitive acknowledgement/release lifecycle.
 
-### V2-2 — freeze exact production DB/TLS profile
+### V2-2 — freeze exact production configuration/DB/TLS/runtime profile
 
-Decide provider, TLS/SSL mode, address/name split, root input form, DNS, resumption, compression and runtime topology.
+Decide configuration sources, provider/features, TLS/SSL mode, address/name split, credential/root input form, DNS, resumption/compression, pool policy and runtime topology.
 
 ### V2-3 — derive/measure `I`, `R`, `T`, `ACTIVE_SQL_PEAK`
 
-Do not invent a new root maximum. If the exact profile cannot fit the existing root, return to architecture.
+Each phase bound must include all overlapping lifetimes, escaping descendants, re-entry and failure exits. Measurement corroborates source proof; it does not replace it.
 
-### V2-4 — implement only the remaining minimal SQLx seams
+### V2-4 — implement only remaining minimal SQLx seams
 
-Prefer upstream rustls/Tokio behavior behind finite phase/root reservations where proof is sufficient.
+Prefer upstream rustls/Tokio behavior behind finite root/phase reservations where the proof is complete.
 
 ### V2-5 — exact consumer qualification
 
-Required minimum:
+Minimum matrix:
 
-- exact production SQLx/rustls feature graph;
+- exact resolved production Cargo feature graph;
 - real PostgreSQL 17.6;
-- real hostname-verifying TLS;
+- real hostname-verifying TLS according to the selected policy;
 - real `RuntimeBackend/PgPool` path;
+- bounded ambient configuration;
+- bounded migration compatibility read;
 - bootstrap before work admission;
 - two active slots;
-- queue 8 and max+1 rejection;
+- queue 8/max+1;
 - 1s queue timeout;
-- 2s pass deadline including lock waits;
+- 2s DB pass including lock waits;
 - no active-pass automatic retry;
+- concurrent connect admission according to selected pool policy;
 - connection unavailable/replacement behavior;
 - cancellation with retained executor custody;
 - rollback/drain finality;
+- stalled TLS close;
 - ambiguous/lost COMMIT reconciliation;
+- more than two sequential completed/acknowledged operations;
+- both ambiguous slots occupied and reconciled;
 - pending-command bounded aggregate;
-- max/max+1 returned row/count/bytes;
+- max/max+1 returned rows/count/bytes;
 - huge-count/tiny-body protocol denial;
-- oversized `record_json` denial before transfer;
+- oversized durable value denial before transfer;
 - bounded ParameterStatus behavior;
 - retained row/value/error lifetime;
-- return-to-pool vs forced close behavior;
+- after_release + final-ping resident proof;
+- return-to-pool vs forced close;
 - hostile frame/error/status vectors;
-- root inequality at worst accepted concurrency;
-- independent memory/allocation observation;
+- provider cold/warm/thread-cohort behavior;
+- root inequality at worst permitted concurrency;
+- independent allocation/release-order observation while runtime stays alive;
 - strict Rust 1.94 fmt/check/Clippy/tests;
+- affected vendored and ordinary-consumer profiles;
 - supply-chain/provenance checks;
 - genuinely independent exact-head HIGH-risk review;
 - canonical CI;
 - FULL Merge Queue;
 - protected-main readback.
 
-## 21. What must not be inferred from this audit
+## 24. Verification refinements
 
-This report does **not** prove or authorize any of the following:
+The original audit tracked `WP3-Q01`–`WP3-Q46`. Revision 3 retains them and adds the following refinements from the concurrent source review. These are requirements, **not claims of executed new tests**.
+
+| ID | Required observation |
+|---|---|
+| Q47 | Fund configuration, pool bootstrap and custody restoration before work admission. |
+| Q48 | Bound migration-ledger count/checksum transfer before client materialization. |
+| Q49 | Bound/authorize PG environment, passfile and username configuration inputs. |
+| Q50 | Redact diagnostics before library sinks, including malformed credential records. |
+| Q51 | Exercise concurrent eager/maintenance/checkout connect attempts under one admission bound. |
+| Q52 | Observe maintenance after explicit return/wrapper Drop under selected pool policy. |
+| Q53 | Establish post-ping residency, not only after_release state. |
+| Q54 | Close during stalled TLS I/O while retaining truthful ownership. |
+| Q55 | Verify all reachable retained connection maps, not only statements/buffers. |
+| Q56 | Complete/acknowledge more than two sequential operations without runtime restart. |
+| Q57 | Reconcile two occupied slots without a third slot/replacement identity. |
+| Q58 | Classify pre-effect initialization failure versus uncertain takeover without blind reset. |
+| Q59 | Exercise registered production B construction separately from `LegacyFixture`. |
+| Q60 | Observe release order/reuse while runtime remains alive, then audit shutdown separately. |
+| Q61 | Record resolved production features and prove excluded-family reachability claims. |
+| Q62 | Bind layout/phase evidence to compiler, allocator, target, panic and optimization profile. |
+| Q63 | Prove each phase entry, overlap, escaping descendants and failure exits. |
+| Q64 | Show simultaneous root/sub-budget fit without double counting. |
+| Q65 | Reserve completion/cleanup before COMMIT and retain ambiguity if delivery fails. |
+| Q66 | Separate provider cold/warm initialization and lifetime crypto-thread churn. |
+| Q67 | Charge old/new configuration/connection overlap during permitted rotation/failover. |
+| Q68 | Prove runtime driving/scheduling under crypto/parser load for selected topology. |
+| Q69 | Run affected vendored and ordinary-consumer tests in exact supported profiles. |
+| Q70 | Retain source identities, test names/skips, independent observations and cleanup outcomes. |
+
+## 25. What must not be inferred
+
+This report does **not** prove or authorize:
 
 - that `max_connections=2` is the mathematical minimum;
 - that `min_connections=2` is correct;
+- that one connect is always in flight;
 - that infinite connection lifetime is acceptable;
 - that a dedicated Tokio runtime is required;
 - that production must use ring or AWS-LC;
-- that production must use VerifyFull, although a hostname-verifying final profile needs to be explicitly decided;
-- that production may discard hostname semantics merely to avoid DNS;
-- that the 3.604 MB partial ring term is the full TLS/connect bound;
+- that compression/resumption are absent until the resolved production graph/config proves it;
+- that production must use a specific SSL mode without an owning decision;
+- that production may discard hostname semantics to avoid DNS;
+- that literal IP + preloaded certs remove all configuration I/O;
+- that `after_release` or an awaited return is final pool quiescence;
+- that `close_hard` means immediate deallocation;
+- that the 3.604 MB partial ring term is the full connect bound;
 - that 4 MiB active slots must be enlarged;
 - that broad rustls/Tokio forks can already be deleted;
-- that #335 is authorized to mutate before its normal dependency/custody gates;
-- that #356 can be closed before the evidence needed by the superseding decision is retained;
-- that a green helper or CI run proves terminal WP3 readiness.
+- that a measured peak without source/lifetime proof is an accepted bound;
+- that #335 is authorized to mutate before normal dependency/custody gates;
+- that #356 can be closed before superseding-decision evidence is retained;
+- that green helper/CI evidence proves terminal WP3 readiness.
 
-## 22. Integration impact
+## 26. Integration impact
 
 ### WP2
 
@@ -1084,78 +1318,86 @@ Do not restart already-protected WP2 work. Preserve its semantic/replay/nonreuse
 
 ### WP4 / Child B
 
-WP4 remains owner of durable atomicity/reconciliation policy, but the real executor/resource substrate must be repaired before WP3 can be qualified as a production dependency.
+WP4 remains owner of durable atomicity/reconciliation policy. The real executor/resource/bootstrap/query substrate must be repaired before WP3 can be qualified as a production dependency.
 
 ### WP5
 
-Source-owner/bootstrap readiness remains separate. Resource-accounting completion does not manufacture missing producers.
+Source-owner/bootstrap readiness remains separate. Resource accounting does not manufacture missing producers.
 
 ### G0 / Server Seam
 
-No release follows from this audit alone. G0 and Server Seam require the composed exact state after terminal WP3, repaired/qualified WP4 and required WP5 composition.
+No release follows from this audit. G0 and Server Seam require the composed exact state after terminal WP3, repaired/qualified WP4 and required WP5 composition.
 
-## 23. Current unknowns that still block terminal architecture
+## 27. Current unknowns that still block terminal architecture
 
 `UNKNOWN` — exact `EXECUTOR_RUNTIME_RESIDENT` (`I`).
 
 `UNKNOWN` — exact final per-connection resident bound (`R`).
 
-`UNKNOWN` — exact final connect peak (`T`) after provider/profile selection.
+`UNKNOWN` — exact final connect peak (`T`) after provider/config/profile selection.
 
-`UNKNOWN` — exact active SQL peak after the real executor and query-shape repairs.
+`UNKNOWN` — exact active SQL peak after the real executor/query-shape repairs.
 
-`UNKNOWN` — shared-vs-dedicated Tokio runtime comparison measured on the intended topology.
+`UNKNOWN` — exact permitted concurrent-connect count if v2 does not add a serializer.
 
-`UNKNOWN` — final production DB endpoint/DNS requirements.
+`UNKNOWN` — shared-vs-dedicated Tokio runtime comparison on intended topology.
 
-`UNKNOWN` — final statement-cache size after exact unique SQL inventory.
+`UNKNOWN` — final production DB endpoint/DNS/configuration requirements.
 
-`UNKNOWN` — exact status/type metadata allowance for the final profile.
+`UNKNOWN` — final statement-cache size after exact SQL inventory.
 
-No unknown above authorizes a guessed cap, silent TLS weakening or an additional independent resource budget.
+`UNKNOWN` — exact status/type metadata allowance.
 
-## 24. Final go/no-go
+`UNKNOWN` — accepted provider thread cohort/lifetime.
+
+No unknown above authorizes a guessed cap, silent TLS weakening or an additional independent budget.
+
+## 28. Final go/no-go
 
 ### Current decision
 
 **NO-GO for integrating #356 as terminal WP3 architecture in its audited state.**
 
-**GO for preserving #356 as the canonical research/evidence lineage while a single superseding WP3-v2 architecture decision is prepared and reviewed.**
+**GO for preserving #356 as the canonical research/evidence lineage while one superseding WP3-v2 architecture decision is prepared and reviewed.**
 
-**NO-GO for further broad per-allocation rustls/Tokio ownership expansion until that decision answers the root/pool/active boundary.**
+**NO-GO for further broad per-allocation rustls/Tokio ownership expansion until that decision answers the root/pool/configuration/active boundary.**
 
 ### Strongest blockers, ordered
 
 1. real Child B workload bypasses its own accepted executor/custody model;
-2. accepted 2-second DB pass deadline is not enforced;
-3. ordinary PgPool acquire/connect contains automatic retry behavior forbidden by the DFR pass contract;
-4. pool/bootstrap/idle residency exists outside an active operation;
-5. PostgreSQL receive frame/count and ParameterStatus retained growth remain unbounded in the real consumer profile;
-6. pending-command and variable-record query shapes still violate accepted DFR transfer rules;
-7. cancellation/drop does not physically finish rollback/connection cleanup;
-8. production TLS/provider/SSL-mode profile is not frozen and does not match the current owner-aware helper profile;
-9. exact `I/R/T/ACTIVE_SQL_PEAK` values are not yet proven;
-10. broad dependency-owner expansion has worse maintenance cost than the now-evidenced root/phase-reservation alternative.
+2. accepted 2-second DB-pass deadline is not enforced;
+3. ordinary PgPool acquire/connect contains automatic retry behavior forbidden inside the DFR pass;
+4. pool/bootstrap/schema/configuration work exists outside active operations;
+5. SQLx pool establishment can overlap through independent eager/maintenance entrypoints unless explicitly serialized/funded;
+6. PostgreSQL receive frame/count and ParameterStatus retained growth remain unbounded in the real profile;
+7. pending-command, record and schema-ledger query shapes still contain pre-transfer gaps;
+8. cancellation/drop does not physically finish rollback/cleanup, and after_release/return are not complete finality boundaries;
+9. ambient configuration/pgpass intake is not bounded by the URL limit;
+10. production TLS/provider/feature/SSL-mode profile is not frozen and current helper differs from the consumer graph;
+11. exact `I/R/T/ACTIVE_SQL_PEAK` and joint root admission schedule are not proven;
+12. broad dependency-owner expansion has worse maintenance risk than the now-evidenced root/phase-reservation alternative, but that alternative still requires full qualification.
 
 ### Positive work to preserve
 
 - `ResourceBudget` / reservation primitives;
-- exact source census and provenance;
+- exact source census/provenance;
 - hostile denial vectors;
 - real PostgreSQL 17.6/TLS harness;
-- provider/native finite-bound work;
+- provider/native finite-bound research;
 - handshake phase-bound research;
 - sound backing-finality repairs;
-- corrected socket/reactor/DNS source decomposition;
-- repository governance and exact-head qualification discipline.
+- corrected socket/reactor/DNS decomposition;
+- guarded two-slot pending reload where already correctly bounded;
+- repository governance/exact-head qualification discipline.
 
 ### Final markers
 
 ```text
 WP3_V2_BOUNDARY_DECISION_REQUIRED
 CHILD_B_DFR_EXECUTOR_REPAIR_REQUIRED
+CONFIGURATION_BOOTSTRAP_BOUND_REQUIRED
 #356 = OPEN / DRAFT / PRESERVE EVIDENCE / NEEDS_DECISION
-#335 = NOT READY FOR FINAL WP3/WP4 COMPOSED QUALIFICATION
+#335 = OPEN / NON-DRAFT / NOT READY FOR FINAL COMPOSED QUALIFICATION
 ```
 
 This report is evidence and recommendation only. Protected repository architecture, live #162/#351/#329 authority and normal review/CI/Merge Queue controls remain binding until a separately reviewed/protected decision changes them.
