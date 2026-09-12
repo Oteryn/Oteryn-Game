@@ -54,3 +54,20 @@ Prepare the exact non-production qualification boundary for Platform route `/int
 - Real database/filesystem/concurrency tests cover the repaired boundaries where applicable.
 - Cross-repository evidence names exact Game and Platform revisions and does not promote local PASS to composed PASS.
 - Any production or credential action remains separately gated.
+
+## Mandatory next-agent instruction
+
+End the final response with:
+
+```text
+NEXT_AGENT: <exact alias>
+RUN_WHEN: <exact gate>
+WHY: <one concise dependency reason>
+```
+
+Default routing for this lane:
+- when Platform hardening is terminal but Game source composition is not yet ready, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
+- when Game prerequisites for real source composition are already protected and interoperability can proceed, `NEXT_AGENT: Oteryn: astra wp5 source composition lead`;
+- if a Platform-owned blocker remains, still route to `Oteryn: astra wp3-v2 programme coordinator` and name the exact external blocker/gate.
+
+Do not claim A6 can perform S3 until the required Game and Platform gates are actually true.
