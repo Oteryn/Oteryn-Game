@@ -232,6 +232,10 @@ def test_bounded_document_consumer_drift(module):
     assert module.document_consumer_content_safe(
         "apps/game-server/src/lib.rs", literal_context + b"// old note\n",
         literal_context + b"// changed note\n")
+    lifetime_context = b"fn borrow<'a>(value: &'a str) -> &'a str { value }\n'outer: loop { break 'outer; }\n"
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", lifetime_context + b"// old note\n",
+        lifetime_context + b"// changed note\n")
     for path, baseline, current in (
         ("Cargo.toml", b"[workspace]", b"[workspace]\n"),
         ("apps/game-server/build.rs", b"fn main() {}", b"fn main() { println!(); }"),
@@ -246,8 +250,8 @@ def test_bounded_document_consumer_drift(module):
         ("apps/game-server/src/lib.rs", b"/*!\n// old crate docs\n*/", b"/*!\n// changed crate docs\n*/"),
         ("apps/game-server/src/lib.rs", b'let text = r#"\n// old string text\n"#;', b'let text = r#"\n// changed string text\n"#;'),
         ("apps/game-server/src/lib.rs",
-         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// old string text\n"#;\nconst Q2: char = '\"';''',
-         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// changed string text\n"#;\nconst Q2: char = '\"';'''),
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// old string text\n"#;\nconst Q2: u8 = b'\"';''',
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// changed string text\n"#;\nconst Q2: u8 = b'\"';'''),
         ("apps/game-server/src/lib.rs", b'let text = "\n// old string text\n";', b'let text = "\n// changed string text\n";'),
         ("apps/game-server/src/lib.rs", b"// baseline", b"/* unterminated\n// uncertain"),
         ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: char = '\\q';\n// uncertain"),
