@@ -2578,15 +2578,12 @@ impl Deref for TicketPayload {
 
 impl Drop for TicketPayload {
     fn drop(&mut self) {
+        let Some(payload) = self.payload.take() else { return; };
+        let Some(payload) = Arc::into_inner(payload) else { return; };
+        drop(payload);
         #[cfg(feature = "std")]
-        let final_control = self.control_owner.is_some()
-            && self.payload.as_ref().is_some_and(|payload| Arc::strong_count(payload) == 1);
-        drop(self.payload.take());
-        #[cfg(feature = "std")]
-        if final_control {
-            if let Some(owner) = self.control_owner.take() {
-                owner.release(self.control_bytes);
-            }
+        if let Some(owner) = self.control_owner.take() {
+            owner.release(self.control_bytes);
         }
     }
 }
@@ -3461,6 +3458,7 @@ mod tests {
     struct TicketOwner {
         limit: usize,
         used: AtomicUsize,
+        releases: AtomicUsize,
     }
 
     #[cfg(feature = "std")]
@@ -3477,6 +3475,7 @@ mod tests {
         }
 
         fn release(&self, bytes: usize) {
+            self.releases.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
             self.used.fetch_sub(bytes, core::sync::atomic::Ordering::SeqCst);
         }
     }
@@ -3491,6 +3490,7 @@ mod tests {
         let owner = Arc::new(TicketOwner {
             limit: decoded_arc + ticket_arc + 3,
             used: AtomicUsize::new(0),
+            releases: AtomicUsize::new(0),
         });
         let (decoded, decoded_charge) = DecodedOwner::new(owner.clone()).unwrap();
         let encoded = [0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 3, 1, 2, 3, 0, 0];
@@ -3510,6 +3510,43 @@ mod tests {
         assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), ticket_arc + 3);
         drop(retained);
         assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn tls13_ticket_concurrent_final_drops_release_once() {
+        use crate::msgs::codec::DecodedOwner;
+
+        let decoded_arc = DecodedOwner::arc_layout().unwrap();
+        let ticket_arc = TicketPayload::arc_layout().unwrap();
+        let owner = Arc::new(TicketOwner {
+            limit: decoded_arc + ticket_arc + 3,
+            used: AtomicUsize::new(0),
+            releases: AtomicUsize::new(0),
+        });
+        let (decoded, decoded_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let encoded = [0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 3, 1, 2, 3, 0, 0];
+        let mut reader = Reader::init_with_owner(&encoded, decoded.clone());
+        let ticket = NewSessionTicketPayloadTls13::read(&mut reader).unwrap().ticket;
+        let retained = ticket.clone();
+
+        drop(reader);
+        drop(decoded);
+        drop(decoded_charge);
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), ticket_arc + 3);
+        owner.releases.store(0, core::sync::atomic::Ordering::SeqCst);
+
+        let barrier = Arc::new(std::sync::Barrier::new(3));
+        let first_barrier = barrier.clone();
+        let first = std::thread::spawn(move || { first_barrier.wait(); drop(ticket); });
+        let second_barrier = barrier.clone();
+        let second = std::thread::spawn(move || { second_barrier.wait(); drop(retained); });
+        barrier.wait();
+        first.join().unwrap();
+        second.join().unwrap();
+
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), 0);
+        assert_eq!(owner.releases.load(core::sync::atomic::Ordering::SeqCst), 1);
     }
 
     #[test]

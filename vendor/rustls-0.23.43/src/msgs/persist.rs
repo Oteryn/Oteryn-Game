@@ -435,14 +435,11 @@ impl core::ops::Deref for RetainedCertificateChain {
 
 impl Drop for RetainedCertificateChain {
     fn drop(&mut self) {
+        let Some(chain) = self.chain.take() else { return; };
+        let Some(chain) = Arc::into_inner(chain) else { return; };
+        drop(chain);
         #[cfg(feature = "std")]
-        let final_control = self.owner.is_some()
-            && self.chain.as_ref().is_some_and(|chain| Arc::strong_count(chain) == 1);
-        drop(self.chain.take());
-        #[cfg(feature = "std")]
-        if final_control {
-            if let Some(owner) = self.owner.take() { owner.release(self.bytes); }
-        }
+        if let Some(owner) = self.owner.take() { owner.release(self.bytes); }
     }
 }
 
@@ -855,6 +852,60 @@ mod owner_tests {
         assert_eq!(owner.used.load(Ordering::Relaxed), expected);
         drop(clone);
         assert_eq!(owner.used.load(Ordering::Relaxed), 0);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn retained_certificate_chain_concurrent_final_drops_release_once() {
+        #[derive(Debug)]
+        struct CountingOwner {
+            limit: usize,
+            used: AtomicUsize,
+            releases: AtomicUsize,
+        }
+
+        impl crate::DeframerBufferOwner for CountingOwner {
+            fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+                self.used
+                    .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
+                        used.checked_add(bytes).filter(|next| *next <= self.limit)
+                    })
+                    .map(|_| ())
+                    .map_err(|_| crate::DeframerBufferError)
+            }
+
+            fn release(&self, bytes: usize) {
+                self.releases.fetch_add(1, Ordering::SeqCst);
+                self.used.fetch_sub(bytes, Ordering::SeqCst);
+            }
+        }
+
+        let source = CertificateChain(vec![
+            CertificateDer::from(vec![1, 2, 3]),
+            CertificateDer::from(vec![4, 5]),
+        ]);
+        let expected = 2 * size_of::<CertificateDer<'static>>()
+            + 5
+            + RetainedCertificateChain::arc_layout().unwrap();
+        let owner = Arc::new(CountingOwner {
+            limit: expected,
+            used: AtomicUsize::new(0),
+            releases: AtomicUsize::new(0),
+        });
+        let retained = RetainedCertificateChain::deep_copy(&source, owner.clone()).unwrap();
+        let clone = retained.clone();
+        let barrier = Arc::new(std::sync::Barrier::new(3));
+
+        let first_barrier = barrier.clone();
+        let first = std::thread::spawn(move || { first_barrier.wait(); drop(retained); });
+        let second_barrier = barrier.clone();
+        let second = std::thread::spawn(move || { second_barrier.wait(); drop(clone); });
+        barrier.wait();
+        first.join().unwrap();
+        second.join().unwrap();
+
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+        assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
     }
 
     #[test]
