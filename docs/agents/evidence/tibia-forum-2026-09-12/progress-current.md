@@ -5,15 +5,15 @@ Właściciel potwierdził zakres: wszystkie 3061 wątków z utrwalonego spisu La
 | Miara | Stan |
 |---|---:|
 | ID w spisie Last Year | 3061 |
-| ID Last Year z zachowanym odczytem/oceną | 712 |
-| ID Last Year bez zachowanej analizy | 2349 |
-| Wszystkie zachowane rekordy, także spoza spisu | 804 |
-| Strony spisu, dla których każde ID ma zachowany odczyt/ocenę | 23 |
-| Nowsze posty z identyfikatorami/datami/hashami | 433 |
+| ID Last Year z zachowanym odczytem/oceną | 796 |
+| ID Last Year bez zachowanej analizy | 2265 |
+| Wszystkie zachowane rekordy, także spoza spisu | 888 |
+| Strony spisu, dla których każde ID ma zachowany odczyt/ocenę | 26 |
+| Nowsze posty z identyfikatorami/datami/hashami | 589 |
 
 Odczyt obejmuje OP i maksymalnie trzy początkowe odpowiedzi. Rekord usuniętej treści jest skontrolowany, ale nie zawiera odtworzonej dawnej propozycji. Pełne dyskusje, dalsze odpowiedzi i obrazy nie są oznaczane jako przeczytane. Ruchomy spis nie jest atomowym eksportem.
 
-[Indeks źródeł](./source-index.json) i [kolejka pozostałych ID](./last-year-progress.json) pozwalają wznowić odczyt bez powtarzania już zachowanych OP. [Ocena jakości](./year-quality-index.json) obejmuje 168 nowszych rekordów; 47 wyłączono z recurrence problemów. Wyłączenie nie oznacza spamu: propozycje bez opisanego problemu nadal pozostają kandydatami.
+[Indeks źródeł](./source-index.json) i [kolejka pozostałych ID](./last-year-progress.json) pozwalają wznowić odczyt bez powtarzania już zachowanych OP. [Ocena jakości](./year-quality-index.json) obejmuje 252 nowszych rekordów; 70 wyłączono z recurrence problemów. Wyłączenie nie oznacza spamu: propozycje bez opisanego problemu nadal pozostają kandydatami.
 
 ## Wyniki i porównanie
 
@@ -33,6 +33,13 @@ Odczyt obejmuje OP i maksymalnie trzy początkowe odpowiedzi. Rekord usuniętej 
 - [year-twelfth12-analysis.md](./year-twelfth12-analysis.md)
 - [year-thirteenth12-analysis.md](./year-thirteenth12-analysis.md)
 - [year-fourteenth12-analysis.md](./year-fourteenth12-analysis.md)
+- [year-fifteenth12-analysis.md](./year-fifteenth12-analysis.md)
+- [year-sixteenth12-analysis.md](./year-sixteenth12-analysis.md)
+- [year-seventeenth12-analysis.md](./year-seventeenth12-analysis.md)
+- [year-eighteenth12-analysis.md](./year-eighteenth12-analysis.md)
+- [year-nineteenth12-analysis.md](./year-nineteenth12-analysis.md)
+- [year-twentieth12-analysis.md](./year-twentieth12-analysis.md)
+- [year-twentyfirst12-analysis.md](./year-twentyfirst12-analysis.md)
 
 Porównanie #571 dotyczy rewizji `b2ef322791520130a2683f3004d26abd5c027ac8`, dokumentacji, nie wdrożenia. Historyczne relacje o Global są UNKNOWN bez niezależnego potwierdzenia. Nie przyjmuje się oskarżeń ani satyrycznych liczb jako faktów. Ta sama osoba, skopiowany cytat, własny bump i liczba wyświetleń nie zwiększają liczby niezależnych potrzeb.
 

@@ -1,5 +1,5 @@
 {
-  "scope": "168 additional opening posts with sampled replies; not a quality audit of all historical records",
+  "scope": "252 additional opening posts with sampled replies; not a quality audit of all historical records",
   "entries": [
     {
       "id": "4998413",
@@ -2530,6 +2530,1319 @@
         "G2"
       ],
       "source_file": "year-fourteenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997606",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Edron detour is concrete and one reply opposes the change. Removing a wall changes world pathing and is G1; route labels alone could be Q0.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997627",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Swiftfoot cure, attack-debuff removal, mana, duration and speed are G2. A terrain-aware authoritative breakpoint display can be Q0; all values remain unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2",
+        "Q0"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997564",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported"
+      ],
+      "reason": "New Stash/Inbox OP plus one independent reply reporting the same intended request. Another reply is the same author as 4997356 and does not add a new person.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997613",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Equal displayed attack does not establish equal AoE, level requirement or cost. Explanation/comparison is Q0; merging ammunition and changing NPC supply is G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G2"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997599",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "outside_scale"
+      ],
+      "reason": "Small valid mobile-client proposal, not spam. P1 scaling and input parity are prerequisites rather than a ready mobile-port programme; no separate pain is stated.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997597",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Boss-versus-XP stamina is a separate concrete problem. Paid house NPC combat buffs are G2 buyable power; the level-200-at-700-spawn claim and values are unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997245",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "Imbuement slot design has broad independent support; fist-food absence is a separate stated need. Parity with other vocation rewards still changes power and remains G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997596",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_numbers"
+      ],
+      "reason": "Forge attractiveness is a personal self-report. Tier-5/tier-10 math and inflation effects are not endorsed without a combat/economy model; a stronger sink does not guarantee lower net inflation.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997588",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report"
+      ],
+      "reason": "Specific 1080x1200 eight-inch handheld readability report maps directly to Q0 UI/font scaling in P1.1.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997562",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "mixed",
+        "joke_or_offtopic"
+      ],
+      "reason": "Angry wording still contains a concrete two-hour access self-report. Two satirical replies are not support or votes.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997582",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Whole-set loadout is Q1 only under existing timing and item constraints; instant equip is G2. Market deep links and favorites are Q0.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "G2",
+        "Q0"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997544",
+      "quality_statuses": [
+        "concrete_proposal",
+        "supported"
+      ],
+      "reason": "Alliance Chat has one independent explicit support. It is G1/Q1 conditional on consent and guild-role permissions and is not evidence for a combat alliance pact.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "Q1"
+      ],
+      "source_file": "year-fifteenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997577",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Dodge is a Charm major/minor slot issue, not a craftable rune. Moving or adding defensive packs changes opportunity cost and power; equipment proficiency is a separate proposal.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997552",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "mixed"
+      ],
+      "reason": "Monk access to Superior Mana Potions in daily rewards parallels the Knight GMP request 4997652. The generic critical reply is not an independent reward-table report.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997540",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "Physical-only Bane Bringer damage and Explosion Rune effectiveness are competing unverified claims. The reply offers an alternative rather than confirming current resistance rules.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997502",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "numerical_ambiguity",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "The 95/98 ratio is not 3.06 percent; 3/98 may describe the increment's share of the total but not final damage. Item value also includes eligibility, resistance and defense tradeoffs, so the post does not prove BiS uselessness.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997559",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "A Bazaar character's inherited addon allegedly changes Iksupan charges from the desired three-loop behavior to 99. A toggle changes access and hunt tempo even though the trigger is cosmetic.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997530",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_continuation",
+        "mixed"
+      ],
+      "reason": "Three OP posts are one author's report, source text and correction. A reply claims two errors remain but does not verify all corrections; safe Q0 editing must preserve puzzle and lore semantics.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997541",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "IP-change disconnect and death risk form a concrete resilience report without reproduction. Authentication details remain a security design decision; no automatic trust in IP or tokens is inferred.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997539",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_accusations",
+        "underspecified_claim"
+      ],
+      "reason": "Random teams, 4-to-8 limits and one-time boss access are proposed restrictions, not verified current behavior. Guild and bot allegations are unsupported and omitted from factual recurrence.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997440",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed"
+      ],
+      "reason": "Persistent light and repeated casting are concrete, while replies offer untested hotkey, equipment, duration and ambient-setting alternatives. Presentation is Q0; removing resource or cast constraints is G1/G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997537",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Mouse-directed wave ergonomics are concrete. Q1 applies only with the same allowed direction, cone, range, damage and timing; the post does not request arbitrary-angle permission.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997531",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "The aiming burden and Death Echo proposal have one independent contributor posting twice. Seventy percent is a requested target rather than a measurement, and the linked image was not read; no medical inference is made.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997483",
+      "quality_statuses": [
+        "concrete_problem",
+        "uncontrolled_comparison",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "Before-and-after max hits do not control target, resistance, build, buffs or sample size and may compare different enemies. Replies criticize the claim but do not prove either a nerf or that the OP is false.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixteenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997522",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "high_risk",
+        "unverified_claim"
+      ],
+      "reason": "Optional premium permadeath is a detailed proposal without separately established pain. Historical and waiver/legal claims are unverified author assumptions; removing PvP XP does not eliminate griefing.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997519",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Repeated event mechanics and low participation are concretely reported. Punitive no-loot invasions remain G2 through damage, travel disruption and grief potential.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997513",
+      "quality_statuses": [
+        "concrete_problem",
+        "mixed",
+        "self_report",
+        "unverified_numbers"
+      ],
+      "reason": "Ruse/tier perceived value is a real signal with one independent mixed counterpoint. Higher baseline defense does not prove percentage dodge worthless; marginal value, cost, mean mitigation and risk variance differ.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997514",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Language accessibility is concrete and retention impact unverified. Q0 localization requires canonical IDs and stable NPC keywords/puzzles; it must not automatically translate command execution.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997365",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "mixed",
+        "unverified_numbers",
+        "joke_or_offtopic"
+      ],
+      "reason": "OP continuation is the same author; one reply is a joke and the later objector repeats author 4997409 across topics. Proposed 500-to-501 and 750-to-751 price cliffs, binding and reduced resupply sink require full modeling.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997505",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_claim"
+      ],
+      "reason": "Remote-house friction is concrete. Paid house teleport changes traffic, travel and location value; death respawn is a separate variant rather than support for the bidirectional teleport.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997503",
+      "quality_statuses": [
+        "positive_counterevidence",
+        "self_report"
+      ],
+      "reason": "Positive EK ergonomics and competitiveness counter-signal, not spam or telemetry. Personal health details are omitted; no change is proposed.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997501",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "unverified_claim"
+      ],
+      "reason": "Player TC trade transfers gold rather than minting it. A 10kk Premium sink requires defined payer, payee and burn; paid travel unlock changes access and logistics as G1/G2.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997475",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "high_risk",
+        "source_limited"
+      ],
+      "reason": "Two text posts are one author's coherent boss proposal; the third is unread media. Zero-reward 24h loser lockout and one-player veto create collusion and grief risks at high-level access.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997500",
+      "quality_statuses": [
+        "concrete_problem",
+        "subjective_preference"
+      ],
+      "reason": "Concrete sprite preference expressed profanely; public analysis uses a neutral description. Art/readability remains Q0 if item identity and gameplay stay unchanged.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997499",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Shield Slam debuff icon and duration display map to Q0 Active Effects only when driven by authoritative server state.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997441",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "unverified_claim"
+      ],
+      "reason": "Four-cardinal-quadrant mouse aim is Q1 if geometry and server rules remain stable; autoloot is G1/G2. One independent reply supports both needs but is one source, and Store payment does not prove a net gold sink.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-seventeenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997490",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_continuation",
+        "unsupported_claims"
+      ],
+      "reason": "Two angry but concrete OP posts are one author describing fleeing, paralyzing monsters and Fatal Hold availability before Bestiary unlock. The reply suggests alternatives without verifying current behavior.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997493",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "XP lottery odds and price are design inputs, not evidence of neutral balance. Existing boost rewards do not make a new gold-purchased progression source parity-safe.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997458",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims"
+      ],
+      "reason": "Universal ammunition and rune NPC catalogs change logistics, access and regional supply. The public house-NPC reply is an unverified alternative, not proof the need is solved.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997473",
+      "quality_statuses": [
+        "underspecified_claim",
+        "unsupported_accusations",
+        "mixed",
+        "repeated_author"
+      ],
+      "reason": "The OP's streamer-motive allegations are unsupported. Ares repeats the damage complaint later recorded in 4997483, so this does not add a new independent author signal.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997474",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "Twenty-hour weapon decay and repair are concrete G2 upkeep. The design can force returns and weaken equipment, so it does not guarantee preserved gameplay or balance.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997466",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "bug_report"
+      ],
+      "reason": "Focus or resize allegedly closes panels, and the OP requests both layout persistence and an individual backpack lock. These are Q0 when item and world state remain unchanged.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997252",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "bump_only",
+        "unverified_numbers"
+      ],
+      "reason": "A new OP independently resembles Inferniarch concern 4997523. The bump adds no support, and two reply variants with different values are proposals rather than validated balance targets.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997401",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers",
+        "bump_only"
+      ],
+      "reason": "Sanctuary mitigation, auto-cast and cleave are concrete G2 proposals. The reply is a bump plus speculation about development cadence, not an independent case.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997453",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "quoted_prior_source",
+        "mixed"
+      ],
+      "reason": "The OP quotes 4997440 but adds its own experience, toggle and color design, so it is not an exact duplicate; the quoted author is not another contributor. Color can be Q0, while permanent light and a new imbuement slot are G1/G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997444",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unsupported_claims",
+        "unverified_numbers"
+      ],
+      "reason": "Vocation conversion is G2. Hyd's two posts are one respondent; Bazaar is a counterexample that does not preserve the same character's name, quests, skills and Bestiary, and a future service is speculation.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997456",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component",
+        "unsupported_claims"
+      ],
+      "reason": "Two authors support character-bound imbuement loadouts. It closely matches P7 library and active channels but remains G2 because cost, lifecycle and equipment demand change despite equal simultaneous power.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997438",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Separating already-owned helmet and weapon visuals can be Q0 when ownership and permissions stay identical. New addons, rewards, assets or purchases are separate product scope.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-eighteenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997432",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "Species changes power, access and permanent PvP as G2 rather than cosmetics. A reply's lore interpretation is not verified canon.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997436",
+      "quality_statuses": [
+        "concrete_problem",
+        "subjective_preference",
+        "underspecified_claim"
+      ],
+      "reason": "Concrete sprite preference; general bug allegations have no examples and are not counted. The personal accusation is omitted.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997395",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "unverified_claim"
+      ],
+      "reason": "English and Spanish OP are one text. Two independent replies support Monk balance; the third respondent translates the second and gives language guidance rather than adding a third support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997431",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Death Echo always inheriting stance element is G2 despite being labeled consistency because it changes damage type and resistance interactions.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997430",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "unverified_numbers"
+      ],
+      "reason": "Detailed Monk shield-slot item stat list without a separately stated pain; valid proposal rather than spam.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997427",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corrected_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Accidental transform supports Q1 protection. The author's NVM corrects skill-versus-attack interpretation, so the initial formula is not treated as fact; buffs are separate G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997418",
+      "quality_statuses": [
+        "concrete_problem",
+        "unverified_claim"
+      ],
+      "reason": "Separate OP flags missing newer potion rewards while explicitly acknowledging price may be relevant. Adding free potion supply is G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2",
+        "Q0"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997353",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "unverified_numbers"
+      ],
+      "reason": "Three OP posts are one author and one reply independently raises weak-value equipment slots. Helmet and amulet tradeoffs lack proof that every compared or proposed item is BiS.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997410",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_numbers"
+      ],
+      "reason": "18-to-15kk party raw is one player's uncontrolled self-report rather than telemetry. A five-person party bonus changes progression and is G2.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997397",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "unverified_numbers"
+      ],
+      "reason": "Same author/reasoning as 4997502; 8 then 4 percent are variants, not sources. Two other authors support redesign. 90/93 is not a 3.23 percent damage proof and skill ratio is not the damage formula.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997408",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only"
+      ],
+      "reason": "Exploration/lore project without separately stated pain. Catalog can be Q0 only for legally discovered data; entry tickets alter access/rewards as G1/G2.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997384",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed",
+        "unverified_claim"
+      ],
+      "reason": "Crafting RNG stats, repair, durability and sinks are G2. One respondent supports this OP; 30k views and 100 replies refer to another thread and do not support this OP.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-nineteenth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997386",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unsupported_claims",
+        "mixed"
+      ],
+      "reason": "Fishing and cooking with combat buffs are G2. Random monsters do not prove anti-macro effectiveness, and linked threads' claimed views or replies are not support read in this sample.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4997399",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "New stronger runes and water or air elements are substantive G2 content proposals without a concrete recurring pain case or balance inputs.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997398",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unsupported_claims"
+      ],
+      "reason": "Market mastery markers and a permanent-progression tab are Q0 only when displaying authoritative states. Unknown or incomplete historical migration must be explicit.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997394",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mockup_numbers",
+        "privacy_policy"
+      ],
+      "reason": "Every number is a fictional profile mockup, not a real player's data. Self-view can be Q0; public exposure requires granular consent and should keep finances and play time private by default.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0",
+        "G1"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997392",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers",
+        "mixed"
+      ],
+      "reason": "Single-modifier reroll or targeted selection changes Greater Gem outcome distribution and build cost. One signature adds no data, and Tibia Coin spending is not automatically a gold sink.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997390",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "underspecified_claim"
+      ],
+      "reason": "Element conversion for AoE ammunition and physical spells changes damage type and access despite being called a fix; current eligibility and formulas are unknown.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997381",
+      "quality_statuses": [
+        "concrete_proposal",
+        "mixed",
+        "self_continuation",
+        "unsupported_claims"
+      ],
+      "reason": "Two proposal posts are one author, and the reply does not confirm a need. Attack-speed buffs can raise total party output despite XP, loot, mana or defense penalties.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997385",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Weapon Proficiency session feedback is Q0. Use actual server delta per weapon, handling swaps, bonuses, credit and zero duration; 100,000 is illustrative and 474 kills do not prove it.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997345",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "corroborated_component"
+      ],
+      "reason": "Two independent authors report NPC chat window friction. Layout or visibility is Q0; preventing accidental focus from blocking movement is Q1 input safety.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997383",
+      "quality_statuses": [
+        "concrete_proposal",
+        "privacy_policy"
+      ],
+      "reason": "Local appearance or streamer masking can be Q0. Server-public inspect must not be hidden without an explicit rule and granular consent; the post does not establish armor rendering on avatars.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "Q0",
+        "G1"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997382",
+      "quality_statuses": [
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Cursed weapons are a G2 power and economy proposal without a recurring pain case. Percentage drain and high upkeep do not by themselves guarantee a balanced tradeoff.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997376",
+      "quality_statuses": [
+        "concrete_proposal"
+      ],
+      "reason": "Merging elemental gems reduces RNG and build cost, while new gems add bonuses. This is G2 even though the proposal reads like a catalog cleanup.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentieth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4997374",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only"
+      ],
+      "reason": "New Daily Reward potion proposal without separately stated pain. Adding free potion supply is G2.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4995797",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_numbers",
+        "historical_test"
+      ],
+      "reason": "All four posts are one author; quoted Averemos is not a captured respondent. Hunt style and rune self-target are real stated needs, while proposed test values and a May 22 OP edit do not establish current runtime.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4997366",
+      "quality_statuses": [
+        "concrete_problem",
+        "self_report",
+        "unverified_numbers"
+      ],
+      "reason": "Concrete Monk party/value self-report. Sixty-percent damage and three-times cost are not controlled measurements.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4997352",
+      "quality_statuses": [
+        "concrete_problem",
+        "corrected_claim",
+        "mixed"
+      ],
+      "reason": "OP continuation retracts the bug interpretation and acknowledges misunderstanding priority instead of cycling. Q0 explanation is appropriate; Multi-Cycle is Q1 only with one legal action per input.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4997130",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported"
+      ],
+      "reason": "Weekly tags/filter are Q0 with three respondents; the third supports only the filter and questions the icon, while custom tags are a variant.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4997355",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "positive_counterevidence"
+      ],
+      "reason": "New Daily Reward potion supply is G2. Positive balance feedback is a separate qualitative counter-signal rather than telemetry.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4997351",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_numbers"
+      ],
+      "reason": "Paid Gift of Life reset is G2; price and limits do not guarantee safety or prevent abuse.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4997347",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only"
+      ],
+      "reason": "Avoid automatically maintaining distance four changes movement and kiting as G1/G2; only moving interface icons is Q0.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G1",
+        "G2",
+        "Q0"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4997346",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal"
+      ],
+      "reason": "Damage dummy closely matches P6.5 Training Arena when it gives no rewards, XP, loot or progression.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4997342",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "unverified_numbers"
+      ],
+      "reason": "Dynamic buffer formulas are G2 proposals without evidence they meet safety, class or abuse targets.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4997341",
+      "quality_statuses": [
+        "concrete_proposal",
+        "preference",
+        "proposal_only",
+        "outside_scope",
+        "unverified_claim"
+      ],
+      "reason": "Retro 7.x nostalgia is a valid preference, while a guaranteed return of thousands is not fact. A historical server/client is outside the current Evolved roadmap.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4997336",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "unverified_claim"
+      ],
+      "reason": "Online-training difficulty after Full Defense removal is concrete. An AI-translation label is not spam evidence; new weak-weapon or training rules are G1/G2 and require diagnosis before tuning.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-twentyfirst12-analysis.md",
       "line": 18
     }
   ]
