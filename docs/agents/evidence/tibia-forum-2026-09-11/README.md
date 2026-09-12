@@ -1,5 +1,7 @@
 # Tibia forum research evidence — partial snapshot
 
+Latest continuation: [636-thread synthesis, 2026-09-12](../tibia-forum-2026-09-12/synteza-636.md). Counts below describe the historical 600-thread snapshot.
+
 This retained evidence bundle makes the previously completed forum research accessible to later analysis in the repository. It contains original Polish summaries, topic links and metadata, not full third-party posts or a complete forum mirror. It does not authorize gameplay implementation.
 
 ## Coverage and provenance
