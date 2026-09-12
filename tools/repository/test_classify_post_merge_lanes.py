@@ -210,7 +210,7 @@ def main():
         rustup.chmod(0o755)
         result = subprocess.run(["bash", "-c", script], env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output)), capture_output=True, text=True)
         assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
-        output.unlink()
+        output.unlink(missing_ok=True)
         rustup.write_text("#!/bin/sh\nexit 0\n")
         cargo = Path(directory) / "cargo"
         cargo.write_text("#!/bin/sh\nprintf '{}\\n'\nexit \"$METADATA_EXIT\"\n")
@@ -226,7 +226,7 @@ def main():
                    "rust=false\nwindows=false\nother=false\n", "rust=false\nwindows=false\n\n")
         for payload in valid + invalid:
             for metadata_exit, classifier_exit in ((0, 0), (1, 0), (0, 1)):
-                output.unlink()
+                output.unlink(missing_ok=True)
                 result = subprocess.run(["bash", "-c", script], env=dict(os.environ,
                     PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
                     WIRE_OUTPUT=payload, METADATA_EXIT=str(metadata_exit), CLASSIFIER_EXIT=str(classifier_exit)), capture_output=True, text=True)
