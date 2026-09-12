@@ -1,0 +1,6 @@
+context: |
+  Oteryn Game uses live GitHub Issue, PR and check state as repository lifecycle authority.
+  OpenSpec artifacts are planning and contract evidence only. They never grant repository,
+  merge, production, credential, cross-repository or protected-environment authority.
+  Existing AGENTS.md, bound META policy, deterministic CI, exact-head validation and Merge
+  Queue controls remain authoritative.

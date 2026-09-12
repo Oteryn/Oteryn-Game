@@ -1,0 +1,124 @@
+name: Agentic pilot qualification
+
+on:
+  pull_request:
+    paths:
+      - '.gitattributes'
+      - '.github/workflows/agentic-pilot-qualification.yml'
+      - '.github/workflows/oteryn-agentic-pilot-router.md'
+      - '.github/workflows/oteryn-agentic-pilot-router.lock.yml'
+      - '.github/workflows/oteryn-agentic-pilot-worker.md'
+      - '.github/workflows/oteryn-agentic-pilot-worker.lock.yml'
+      - 'openspec/**'
+      - 'docs/agents/tasks/active/OTV2-20260913-agentic-openspec-pilot.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agentic-pilot-qualification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Agentic pilot / validate exact head
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact target
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+
+      - name: Verify exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          echo "Exact target: $TARGET_SHA"
+
+      - name: Verify runtime prerequisite
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          npm --version
+
+      - name: Validate OpenSpec pilot schema and change
+        env:
+          OPENSPEC_TELEMETRY: '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes @fission-ai/openspec@1.13.0 schema validate oteryn-agent-flow
+          npx --yes @fission-ai/openspec@1.13.0 validate agentic-orchestration-pilot --strict --no-interactive
+          npx --yes @fission-ai/openspec@1.13.0 status --change agentic-orchestration-pilot --json
+
+      - name: Install pinned gh-aw compiler
+        uses: github/gh-aw/actions/setup-cli@bde367913adeb3132f0a171594c88a17f4b7d08c # v0.88.7
+        with:
+          version: v0.88.7
+
+      - name: Compile and validate agentic workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh aw version
+          gh aw compile .github/workflows/oteryn-agentic-pilot-worker.md
+          gh aw compile .github/workflows/oteryn-agentic-pilot-router.md
+          gh aw compile --validate
+
+      - name: Enforce pilot permission and staging fences
+        shell: bash
+        run: |
+          set -euo pipefail
+          for source in \
+            .github/workflows/oteryn-agentic-pilot-router.md \
+            .github/workflows/oteryn-agentic-pilot-worker.md; do
+            if grep -Eq '^[[:space:]]+(contents|issues|pull-requests|actions|checks):[[:space:]]+write([[:space:]]|$)' "$source"; then
+              echo "forbidden direct GitHub write permission in $source" >&2
+              exit 1
+            fi
+            grep -q 'copilot-requests: write' "$source"
+          done
+          grep -A4 '^  add-comment:' .github/workflows/oteryn-agentic-pilot-worker.md | grep -q 'staged: true'
+          grep -A4 '^  add-comment:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'staged: true'
+          grep -A4 '^  dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'workflows: \[oteryn-agentic-pilot-worker\]'
+          ! grep -Eq 'merge-pull-request:|create-pull-request:|push-to-pull-request-branch:' .github/workflows/oteryn-agentic-pilot-router.md
+          ! grep -Eq 'merge-pull-request:|create-pull-request:|push-to-pull-request-branch:|dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-worker.md
+
+      - name: Verify committed lock files when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          stale=0
+          for lock in \
+            .github/workflows/oteryn-agentic-pilot-worker.lock.yml \
+            .github/workflows/oteryn-agentic-pilot-router.lock.yml; do
+            if git ls-files --error-unmatch "$lock" >/dev/null 2>&1; then
+              if ! git diff --exit-code -- "$lock"; then
+                stale=1
+              fi
+            else
+              echo "BOOTSTRAP_LOCK_MISSING: $lock"
+            fi
+          done
+          test "$stale" -eq 0
+
+      - name: Emit generated locks for bootstrap capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          for lock in \
+            .github/workflows/oteryn-agentic-pilot-worker.lock.yml \
+            .github/workflows/oteryn-agentic-pilot-router.lock.yml; do
+            echo "GH_AW_LOCK_BASE64_BEGIN:$lock"
+            base64 -w0 "$lock"
+            echo
+            echo "GH_AW_LOCK_BASE64_END:$lock"
+          done
