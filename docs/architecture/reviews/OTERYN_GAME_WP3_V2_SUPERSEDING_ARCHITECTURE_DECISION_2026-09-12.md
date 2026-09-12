@@ -1,9 +1,9 @@
 # Oteryn Game — WP3-v2 superseding architecture decision
 
 - Decision ID: `WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`
-- Revision: **2 — exact-source closure and frozen first-slice profile**
+- Revision: **3 — independent-review P1/P2 closure; frozen lifecycle overlap and recovery trigger**
 - Date: 2026-09-12
-- Status: **CANDIDATE / READY FOR REPOSITORY ACCEPTANCE / NOT ACCEPTED**
+- Status: **CANDIDATE / SUCCESSOR EXACT-HEAD VALIDATION / NOT ACCEPTED**
 - Worker: `Oteryn: astra wp3-v2 architecture lead`
 - Protected admission: `main@489e3e390a1bce1ce3439c66521ab75f8a826cd8`
 - Canonical WP3 lineage: Issue #351 / Draft PR #356 @ `fe7891989b1247012e32c89c10cff6a10bacb943`
@@ -12,7 +12,7 @@
 - Retained audit: Draft PR #588
 - WP3-v2 programme: Draft PR #589
 - This candidate: Draft PR #590
-- Architecture authority: **none**. `READY_FOR_ACCEPTANCE` is not `ACCEPTED`; A4 receives no write authority from this file.
+- Architecture authority: **none**. This revision repairs only the independent-review P1/P2 findings; A4 receives no write authority from this file.
 
 ## 1. Resolution
 
@@ -33,14 +33,15 @@ one Durability executor / one DFR root
 |   +-- lazy construction
 |   +-- idle_timeout = 10 minutes
 |   +-- max_lifetime = 30 minutes
-|   +-- at most one settled ready PG connection R
+|   +-- at most one established/retiring PG generation R
 |
 +-- root connection maintenance
 |   +-- only production connect/reconnect owner
-|   +-- one connect transient T at a time
-|   +-- 5 second root-maintenance acquire/connect deadline
-|   +-- bounded SQLx connect backoff allowed only inside this root phase
-|   +-- awaited return/ping before connection is declared ready
+|   +-- one connect/failed-retirement generation T at a time
+|   +-- 5 second root-maintenance acquire/connect deadline per recovery window
+|   +-- bounded SQLx connect backoff allowed only inside that root window
+|   +-- awaited return/ping before T -> R readiness transfer
+|   +-- no new T while any prior R or T retirement tail is non-final
 |
 +-- DFR work custody
     +-- queued <= 8
@@ -57,7 +58,14 @@ Root feasibility invariant:
 I + max(R, T) + Q + A <= 12 MiB
 ```
 
-`Q` and `A` are the actual current queue/active charges under `DUR-FRESH-RESOURCE-ENVELOPE-V1`; they are not duplicated per connection. Exact final values for `I`, complete `R`, complete `T` and active SQL peak remain implementation-qualification obligations. They are deliberately `UNKNOWN` here rather than fabricated architecture numbers.
+For this first slice the terms and overlap behind that equation are frozen, not left to A4:
+
+- `I` is root/process backing whose lifetime is independent of one physical connection generation: executor/pool control structures, explicit retained configuration, and genuinely shared runtime/provider backing. Per-connection socket/TLS/driver/reactor descendants do **not** migrate into `I` merely because their cleanup is asynchronous.
+- `T` is the complete charge for the single root-owned connection-establishment generation, beginning before the first controlled connect/TLS/auth allocation and ending only by either (a) charged ownership transfer into `R` after successful establishment plus awaited pool return/final ping, or (b) complete finality of every descendant after connect failure, timeout or cancellation. A failed/timed-out attempt remains `T` during its retirement tail.
+- `R` is the complete charge for the single established physical-connection generation from the successful `T -> R` transfer through ready/checked-out use and through any fenced, reaper, close, return or reactor retirement tail until every per-connection descendant is final. A logically removed/reaped connection remains `R` until that finality point.
+- `R` and `T` are mutually exclusive connection generations. Root maintenance must not begin a new `T` while any prior `R` or `T` retirement tail remains non-final. Successful establishment is an ownership transfer `T -> R`, never a double-charged overlap.
+
+Therefore there is no hidden third retirement term outside `max(R,T)`: every connection-attributable tail remains inside the generation that created it, while genuinely process-shared residency is in `I`. `Q` and `A` are the actual current queue/active charges under `DUR-FRESH-RESOURCE-ENVELOPE-V1`; they are not duplicated per connection. Exact final byte values for `I`, complete lifecycle `R`, complete lifecycle `T` and active SQL peak remain implementation-qualification obligations. They are deliberately `UNKNOWN` here rather than fabricated architecture numbers. If the exact implementation cannot enforce the frozen non-overlap/finality boundary above, the equation is invalid and A4 must escalate rather than choosing a different overlap model.
 
 ## 2. Mandatory decision test
 
@@ -101,7 +109,7 @@ Cross-repository finding R21 remains binding: **one physical connection is not d
 - gameplay Server Seam TLS profile;
 - any new public resource maximum not already accepted by DFR.
 
-## 3. Exact evidence pins used by Revision 2
+## 3. Exact evidence pins used by Revision 3
 
 ### Protected / live state
 
@@ -164,10 +172,10 @@ The root owns:
 - fixed executor/runtime structures;
 - pool structures and maintenance task state;
 - explicit bounded DB configuration and credential backing;
-- one settled physical connection;
-- the one serialized connect/reconnect transient;
+- one established-or-retiring physical connection generation `R`;
+- the one serialized connect-or-failed-retirement generation `T`;
 - selected TLS/provider shared residency;
-- lower-layer socket/reactor/provider tails attributable to the profile;
+- lower-layer socket/reactor/provider tails according to the frozen `I/R/T` classification above;
 - queue/active sub-reservations and their descendants until transfer/finality.
 
 A connection, request, account, task, retry, reconnect or TLS provider use does **not** mint another 12 MiB budget.
@@ -216,23 +224,39 @@ min_connections = 0
 construction = connect_lazy_with(explicit bounded PgConnectOptions)
 idle_timeout = 10 minutes
 max_lifetime = 30 minutes
-root acquire/connect timeout = 5 seconds
+root acquire/connect timeout = 5 seconds per recovery window
 active checkout = Pool::try_begin()
+recovery trigger = coalesced root_ready_demand event; no periodic/polling retry loop
 ```
 
 The 10-minute/30-minute values are the pinned SQLx 0.9.0 defaults and are intentionally retained rather than inventing a new policy. They may be superseded later by measurement.
 
 ### Root maintenance
 
-Only root maintenance may create a connection. It may use SQLx's existing connect/backoff loop inside its five-second root deadline because that work is outside active DFR custody and funded by `T`.
+Only root maintenance may create a connection. It may use SQLx's existing connect/backoff loop inside one five-second root recovery window because that work is outside active DFR custody and funded by `T`.
 
-After connect, root maintenance must explicitly await the pool return path through its final return ping before publishing readiness. A spawned/drop-only return is not enough for the readiness transition.
+The root owns one coalescing `root_ready_demand` latch. Exactly these first-slice events may set it:
 
-If reaping closes the idle connection, `min_connections=0` means the reaper's maintenance call opens no replacement. Readiness becomes absent until the explicit root-maintenance owner successfully creates and returns a new connection.
+1. **startup/takeover demand:** entry into a lifecycle step that must obtain the ready physical connection before that step can progress;
+2. **ready miss:** an otherwise authorized active DB pass calls `Pool::try_begin()` (or the exact ready-only equivalent) and receives `None`; that pass still fails closed/unavailable, while the miss signals root maintenance;
+3. **root-owned retirement:** the root explicitly fences/retires a connection and knows readiness has become absent.
+
+A silent SQLx reaper close does not require a new generic reaper callback: `min_connections=0` permits the holder to become empty, and the next ready-only `try_begin()==None` is the exact demand trigger. The reaper itself never opens a replacement.
+
+Trigger handling is frozen as follows:
+
+- triggers are idempotently coalesced; they do not allocate one retry object per caller;
+- one latched demand authorizes at most one five-second recovery window;
+- a recovery window may begin only after every prior `R` or `T` retirement tail is proven final, preserving the frozen `max(R,T)` non-overlap;
+- at window start, the currently latched demand is consumed; any new demand arriving while that window or its retirement tail is in progress may set the latch once for a later successor window;
+- on successful connect, root maintenance explicitly awaits the pool return path through its final return ping, performs the charged `T -> R` transfer, publishes readiness, and does not run another window unless a later demand occurs;
+- on failure/timeout/cancellation, readiness remains absent, the failed generation remains charged as `T` until all descendants are final, and there is **no autonomous periodic or immediate retry loop**. Only a new/coalesced demand event authorizes a later recovery window.
+
+This freezes recovery policy rather than delegating it to A4. A4 may implement the narrow signalling/finality observability needed by this state machine, but may not substitute timer polling, unbounded reconnect spinning, a reaper-created minimum connection or active-path connecting acquire without architecture supersession.
 
 ### Active pass
 
-Active work calls `Pool::try_begin()` or an exact equivalent that uses only `try_acquire()`. `None` means fail closed/unavailable for that pass; it never creates a connection and never enters connect backoff.
+Active work calls `Pool::try_begin()` or an exact equivalent that uses only `try_acquire()`. `None` means fail closed/unavailable for that pass and emits the coalesced ready-miss demand above; it never creates a connection, waits for root recovery inside the pass, or enters connect backoff.
 
 One absolute two-second pass deadline covers:
 
@@ -362,7 +386,7 @@ A narrow owner-aware PostgreSQL auth-profile seam may reject every non-SCRAM cha
 
 The SCRAM work stays under the root connect deadline. Server-selected excessive work cannot consume an active DFR slot; the five-second root connect deadline remains authoritative for the attempt.
 
-`BackendKeyData`, startup/status/error messages and all retained authentication backing remain part of `T`/`R` until their actual finality.
+`BackendKeyData`, startup/status/error messages and all retained authentication backing remain part of the owning `T` or `R` generation until their actual finality.
 
 ## 12. SQL corpus closure
 
@@ -453,9 +477,9 @@ Consumer/query repairs do not close every peer-controlled driver allocation. Min
 - finite selected statement/type/table cache behavior;
 - prospective socket-buffer growth checks where root reservation cannot prove them externally;
 - exact transport-address vs TLS-server-name separation;
-- only the cleanup/high-water observability needed to prove `R`/return finality.
+- only the cleanup/high-water observability needed to prove `R`/`T` retirement finality and the non-overlap gate.
 
-The exact source-visible settled connection lower bound remains at least 16 KiB from initial SQLx read/write socket backing before TLS/reactor/cache state. That is a lower bound, not `R`.
+The exact source-visible settled connection lower bound remains at least 16 KiB from initial SQLx read/write socket backing before TLS/reactor/cache state. That is a lower bound, not complete lifecycle `R`.
 
 ## 15. Cancellation, rollback and ambiguous COMMIT
 
@@ -464,8 +488,8 @@ The exact source-visible settled connection lower bound remains at least 16 KiB 
 - lost response after COMMIT is `AMBIGUOUS`, never inferred rollback;
 - reconciliation uses the original immutable operation/replay identity;
 - completion/cleanup/ambiguity capacity is funded before irreversible COMMIT;
-- unusable connection is fenced/retired under root ownership;
-- root maintenance may later restore readiness under a new bounded connect transient;
+- unusable connection is fenced/retired under root ownership and remains `R` until finality;
+- root maintenance may later restore readiness only through the frozen demand-triggered recovery state machine and a new bounded `T` generation after prior tails are final;
 - any later semantic retry is a new authorized operation/reconciliation action, never hidden dependency retry.
 
 ## 16. Restart/takeover and predecessor fencing
@@ -474,7 +498,7 @@ The executor keeps one durable generation/fence and two durable pending custody 
 
 On startup/takeover:
 
-1. obtain the ready physical connection through root maintenance;
+1. emit the startup/takeover `root_ready_demand` and obtain the ready physical connection through root maintenance;
 2. acquire the exclusive executor custody advisory fence;
 3. acquire the same 15-relation fence;
 4. validate/increment exact executor generation;
@@ -484,31 +508,33 @@ On startup/takeover:
 8. fence stale predecessor generation/process work before accepting new semantic work;
 9. retire durable pending + active + recovered in-memory copies only through the definitive release/ack protocol.
 
-The current permanent fail-closed `RuntimeRegistration::Starting` behavior after uncertain initialization is safe as an intermediate state but is not terminal operational recovery. A4 must implement one reviewed takeover/recovery transition without blind reset or duplicate capacity.
+The current permanent fail-closed `RuntimeRegistration::Starting` behavior after uncertain initialization is safe as an intermediate state but is not terminal operational recovery. A4 must implement the frozen root-demand transition above plus one reviewed takeover/recovery transition without blind reset, duplicate capacity or an autonomous reconnect loop.
 
 ## 17. Resource terms and proof responsibility
 
-Architecture freezes ownership and overlap, not guessed numbers.
+Architecture freezes ownership **and overlap**, not guessed numbers.
 
-### PROVEN / accepted
+### PROVEN / accepted architecture semantics
 
 - `Q <= 4 MiB` under DFR queue rules;
 - `A <= 8 MiB` under two logical active slots;
-- one physical settled connection maximum;
-- one connect transient maximum;
+- at most one established-or-retiring `R` generation;
+- at most one connect-or-failed-retiring `T` generation;
+- `R` and `T` never overlap: a new `T` is gated on full finality of every prior `R`/`T` descendant, and successful establishment transfers ownership `T -> R`;
+- connection-attributable retirement tails remain in their owning `R`/`T` generation; genuinely shared process-lifetime runtime/provider/config backing is in `I`;
 - AWS-LC protected provider-residency/KX accounting model for the exact target;
 - source-visible SQLx socket backing lower bound `R >= 16,384 B` before TLS/reactor/cache state.
 
 ### UNKNOWN until exact A4 candidate
 
-- complete `I`;
-- complete settled `R`;
-- complete connect `T` for the selected TLS1.3/SCRAM/config profile;
+- complete `I` byte value;
+- complete lifecycle `R` byte value, including all established-connection retirement descendants;
+- complete lifecycle `T` byte value for the selected TLS1.3/SCRAM/config profile, including failed/timed-out attempt retirement descendants;
 - exact active SQL peak after query/executor repairs;
-- exact deferred Tokio reactor-retirement term;
+- exact bytes of any connection-attributable deferred Tokio reactor retirement inside the owning `R`/`T` generation;
 - exact statement/type/status metadata bytes for the final corpus.
 
-A4 must prove phase entry, overlap, escaping descendants, re-entry, success transfer and every failure/cancellation exit. Measurement corroborates source/lifetime proof; it does not replace it.
+A4 must prove phase entry, the frozen non-overlap gate, escaping descendants, re-entry, `T -> R` success transfer and every failure/cancellation/retirement exit. It may measure the unknown byte values, but it may not decide a different overlap or tail-classification model. Measurement corroborates source/lifetime proof; it does not replace it.
 
 If the exact candidate cannot satisfy:
 
@@ -516,7 +542,7 @@ If the exact candidate cannot satisfy:
 I + max(R, T) + Q + A <= 12 MiB
 ```
 
-it is a hard architecture/resource failure, not permission to add another budget or weaken security/DFR semantics.
+under those frozen semantics, it is a hard architecture/resource failure, not permission to overlap generations, add a retirement exemption, add another budget or weaken security/DFR semantics.
 
 ## 18. Q01-Q75 disposition
 
@@ -529,7 +555,7 @@ Selected-profile consequences include:
 - DNS and UDS production cells become exact-unreachable claims that require graph/config proof, not `N/A` by assertion;
 - TLS1.2 cells become exact-unreachable only after the TLS1.3-only owner-aware config is proven on the final graph;
 - AWS-LC provider cold/warm/thread-cohort and PQ-first group behavior remain applicable;
-- Q47-Q54 pool/bootstrap/finality cells are exercised on max1/min0/lazy/finite-retirement policy;
+- Q47-Q54 pool/bootstrap/finality cells are exercised on max1/min0/lazy/finite-retirement policy, including `R/T` tail non-overlap and demand-triggered recovery;
 - Q56/Q57 prove sequential active-slot reuse and two simultaneous logical ambiguous obligations despite one physical DB pass;
 - Q71/Q72 close exact SQL corpus and lock inventory;
 - Q73-Q75 prove producer-to-completion custody, restart/takeover and retained startup/config lifetime.
@@ -555,7 +581,7 @@ Selected-profile consequences include:
 
 - SQLx core/postgres forks to the exact root-owner, receive/count/status/cache/finality seams above;
 - root Game Server TLS feature from current ring profile to the accepted AWS-LC first-slice profile after Gate 1 allocation;
-- pool/bootstrap path to lazy max1/min0 + root maintenance + active `try_begin`;
+- pool/bootstrap path to lazy max1/min0 + root maintenance + active `try_begin` plus the frozen coalesced root-demand signal/finality gate;
 - config/auth/TLS setup to no-ambient + VerifyFull/TLS1.3/SCRAM-only profile.
 
 ### HISTORICAL EVIDENCE ONLY / REMOVE AFTER REPLACEMENT PROOF
@@ -571,6 +597,8 @@ Selected-profile consequences include:
 - #356 broad operation-owned direct connection as terminal WP3 architecture;
 - earlier `min=2/max=2` or generic two-connection first-slice recommendation;
 - any assumption that caller timeout, transaction drop, `after_release`, pool wrapper drop or SQLx close alone proves finality;
+- any implementation choice that overlaps a new connect transient with a prior connection/attempt retirement tail under the unchanged root equation;
+- timer/polling/unbounded reconnect policy substituted for the frozen demand-triggered recovery model;
 - current production ring profile as the final WP3-v2 first-slice TLS provider choice, once this decision is accepted and A4 is allocated.
 
 No vendor patch is deleted before the replacement consumer is independently qualified.
@@ -589,23 +617,23 @@ R01-R21 remain qualification constraints, including:
 
 ## 21. Candidate acceptance state
 
-The topology/profile evidence gap that blocked Revision 1 is closed sufficiently to present one exact candidate for repository acceptance.
+Revision 3 changes only the two independent-review findings against the prior exact candidate: P1 freezes complete `I/R/T` overlap/retirement-tail semantics so the root equation is complete, and P2 freezes the exact demand-triggered root-maintenance recovery state machine after reaper absence or a failed connect window. No runtime or broader architecture scope is added.
 
 Current terminal worker marker:
 
 ```text
-WP3_V2_ARCHITECTURE_READY_FOR_ACCEPTANCE
+WP3_V2_ARCHITECTURE_SUCCESSOR_VALIDATING
 ARCHITECTURE_ACCEPTED = NO
 IMPLEMENTATION_AUTHORITY = NONE
 ```
 
 Still required before material A4 work:
 
-1. genuinely independent exact-head HIGH-risk architecture/resource/security review of this Revision-2 decision;
-2. exact-head repository/governance checks on the Revision-2 PR head;
-3. normal repository architecture acceptance/protected integration/readback;
+1. fresh exact-head repository/governance checks on the Revision-3 successor head;
+2. genuinely independent exact-head HIGH-risk architecture/resource/security re-review of that successor, because the accepted P1 repair supersedes the reviewed generation;
+3. normal repository architecture acceptance/protected integration/readback only after that successor is clean;
 4. fresh #162/#364 allocation identifying canonical A4 lineage and exact owned paths/custody.
 
-The remaining `I/R/T/active` unknowns are **implementation qualification obligations**, not permission to guess and not evidence that this architecture is already safe. If they fail the root equation, A4 must stop and escalate rather than widening the envelope.
+The remaining `I/R/T/active` **byte values** are implementation qualification obligations. Their lifecycle ownership, retirement classification, non-overlap and recovery trigger are no longer A4 architecture choices. If the measured exact candidate fails the frozen root equation, A4 must stop and escalate rather than changing those semantics or widening the envelope.
 
 This file performs no runtime, Cargo, vendor, SQL/migration, workflow, Platform, production, secret, merge or Merge Queue mutation.
