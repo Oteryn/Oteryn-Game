@@ -223,21 +223,26 @@ def test_bounded_document_consumer_drift(module):
     assert result["rust"] and result["windows"], result
     assert result["reason"] == "unreviewed-document-consumer-inputs", result
 
-    assert module.document_consumer_content_safe("apps/game-server/src/combat.rs", b"fn damage() -> u32 { 7 }")
-    for path, content in (
-        ("Cargo.toml", b"[workspace]"),
-        ("apps/game-server/build.rs", b"fn main() {}"),
-        ("apps/game-server/src/lib.rs", b'let x = std::fs::read_to_string("config");'),
-        ("apps/game-server/src/lib.rs", b'let x = "docs/reference.md";'),
-        ("apps/game-server/src/lib.rs", b'const X: &str = include_str!("fixture.sql");'),
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/combat.rs", b"fn damage() -> u32 { 6 }", b"fn damage() -> u32 { 7 }")
+    unchanged_consumer = b'const GUIDE: &str = include_str!("guide.md");\n'
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", unchanged_consumer, unchanged_consumer + b"// harmless note\n")
+    for path, baseline, current in (
+        ("Cargo.toml", b"[workspace]", b"[workspace]\n"),
+        ("apps/game-server/build.rs", b"fn main() {}", b"fn main() { println!(); }"),
+        ("apps/game-server/src/lib.rs", b"", b"use std::{fs}; fs::read(path);"),
+        ("apps/game-server/src/lib.rs", b"", b"use std::{fs as storage}; storage::read(path);"),
+        ("apps/game-server/src/lib.rs", b"", b'const X: &str = include_str!("fixture.sql");'),
     ):
-        assert not module.document_consumer_content_safe(path, content), (path, content)
+        assert not module.document_consumer_content_safe(path, baseline, current), (path, current)
 
     complete = subprocess.CompletedProcess([], 0)
     safe_outputs = [
         ("a" * 40 + "\n").encode(),
         b"",
         b"apps/game-server/src/combat.rs\0",
+        b"fn damage() -> u32 { 6 }",
         b"fn damage() -> u32 { 7 }",
     ]
     with patch.object(module.subprocess, "run", return_value=complete), \
@@ -248,7 +253,8 @@ def test_bounded_document_consumer_drift(module):
         ("a" * 40 + "\n").encode(),
         b"",
         b"apps/game-server/src/combat.rs\0",
-        b'let x = std::fs::read_to_string("docs/reference.md");',
+        b"fn damage() -> u32 { 7 }",
+        b'use std::{fs as storage}; storage::read(path);',
     ]
     with patch.object(module.subprocess, "run", return_value=complete), \
             patch.object(module.subprocess, "check_output", side_effect=unsafe_outputs):
@@ -258,7 +264,47 @@ def test_bounded_document_consumer_drift(module):
     with patch.object(module.subprocess, "run", return_value=complete), \
             patch.object(module.subprocess, "check_output", side_effect=deleted_outputs):
         assert module.document_consumers_safe(fixture()) is False
-    print("Bounded document consumer drift PASS: unrelated source drift allowed; build/I/O/doc drift FULL")
+
+    # Exercise the PR classifier's proof against real immutable Git objects.
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        def git(*args):
+            return subprocess.check_output(["git", "-C", directory, "-c", "user.name=Fixture",
+                                            "-c", "user.email=fixture@example.invalid", *args]).decode().strip()
+        git("init", "-q")
+        source = root / "apps/game-server/src/lib.rs"
+        source.parent.mkdir(parents=True)
+        source.write_bytes(unchanged_consumer)
+        for package in fixture()["packages"]:
+            manifest = root / Path(package["manifest_path"]).relative_to("/repo")
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\n")
+        git("add", ".")
+        git("commit", "-qm", "baseline")
+        baseline_sha = git("rev-parse", "HEAD")
+        real_meta = copy.deepcopy(fixture())
+        real_meta["workspace_root"] = directory
+        for package in real_meta["packages"]:
+            package["manifest_path"] = package["manifest_path"].replace("/repo", directory, 1)
+            for dependency in package["dependencies"]:
+                dependency["path"] = dependency["path"].replace("/repo", directory, 1)
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            source.write_bytes(unchanged_consumer + b"// harmless note\n")
+            git("add", "."); git("commit", "-qm", "harmless")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                assert module.document_consumers_safe(real_meta) is True
+            for statement in (b"use std::{fs}; fs::read(path);\n",
+                              b"use std::{fs as storage}; storage::read(path);\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(unchanged_consumer + statement)
+                git("add", "."); git("commit", "-qm", "unsafe alias")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+        finally:
+            os.chdir(old_cwd)
+    print("Bounded document consumer drift PASS: real-Git unchanged consumers allowed; grouped/aliased and uncertain drift FULL")
 
 
 def main() -> int:

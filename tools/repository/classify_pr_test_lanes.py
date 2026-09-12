@@ -8,6 +8,7 @@ closed only when later changes can affect build/document input discovery.
 """
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import os
@@ -28,11 +29,13 @@ REQUIRED = {
     "oteryn-simulation-determinism": "crates/simulation-determinism",
 }
 BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
-DOC_CONSUMER_MARKERS = (
-    b"include_str!", b"include_bytes!", b"std::fs", b"tokio::fs", b"async_std::fs",
-    b"file::open", b"openoptions", b"read_to_string", b"read_dir", b"read_link",
-    b"walkdir", b"glob::", b"globset", b"command::new",
-    b"docs/", b".md", b"readme", b"changelog", b"contributing", b"agents.md",
+HARMLESS_RUST_ITEM = re.compile(
+    rb"(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+[A-Z][A-Z0-9_]*\s*:\s*"
+    rb"(?:bool|u(?:8|16|32|64|128|size)|i(?:8|16|32|64|128|size))\s*=\s*"
+    rb"(?:true|false|[0-9][0-9_]*)\s*;|"
+    rb"(?:pub(?:\([^)]*\))?\s+)?fn\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(\s*\)\s*"
+    rb"(?:->\s*(?:bool|u(?:8|16|32|64|128|size)|i(?:8|16|32|64|128|size))\s*)?"
+    rb"\{\s*(?:true|false|[0-9][0-9_]*)?\s*\}",
 )
 
 
@@ -106,11 +109,34 @@ def input_digest(metadata: dict, include_server: bool = False) -> str:
     return hashlib.sha256(b"\0".join(sorted(selected)) + b"\0").hexdigest()
 
 
-def document_consumer_content_safe(path: str, content: bytes) -> bool:
+def document_consumer_content_safe(path: str, baseline: bytes, current: bytes | None = None) -> bool:
+    """Prove that baseline-to-current drift cannot add or modify a consumer.
+
+    This intentionally is not an absence-of-known-markers test.  Rust is open
+    ended (aliases, grouped imports and macros can all hide filesystem access),
+    so only comments/whitespace and a tiny, fully matched scalar item grammar are
+    admitted.  Everything else, including an unparsed line, fails closed.
+    """
     if path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
         return False
-    lowered = content.lower()
-    return not any(marker in lowered for marker in DOC_CONSUMER_MARKERS)
+    if current is None:
+        current, baseline = baseline, b""
+    if PurePosixPath(path).suffix != ".rs":
+        return baseline == current
+    try:
+        before_lines, current_lines = baseline.splitlines(), current.splitlines()
+        changed = []
+        matcher = difflib.SequenceMatcher(None, before_lines, current_lines, autojunk=False)
+        for tag, before_start, before_end, current_start, current_end in matcher.get_opcodes():
+            if tag == "equal":
+                continue
+            for line in before_lines[before_start:before_end] + current_lines[current_start:current_end]:
+                value = line.strip()
+                if value and not value.startswith(b"//"):
+                    changed.append(value)
+        return not changed or all(HARMLESS_RUST_ITEM.fullmatch(line) for line in changed)
+    except (TypeError, UnicodeError):
+        return False
 
 
 def document_consumers_safe(metadata: dict) -> bool:
@@ -137,24 +163,25 @@ def document_consumers_safe(metadata: dict) -> bool:
         if re.fullmatch(r"[0-9a-f]{40}", current) is None:
             return False
         pathspecs = sorted(BUILD_INPUTS) + [".cargo"] + sorted(roots.values())
-        deleted_or_typed = subprocess.check_output(
+        added_deleted_or_typed = subprocess.check_output(
             ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-             "--diff-filter=DT", "--name-only", "-z",
+             "--diff-filter=ADT", "--name-only", "-z",
              AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
         )
-        if deleted_or_typed:
+        if added_deleted_or_typed:
             return False
         changed = subprocess.check_output(
             ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-             "--diff-filter=ACMR", "--name-only", "-z",
+             "--diff-filter=M", "--name-only", "-z",
              AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
         )
         for raw_path in (item for item in changed.split(b"\0") if item):
             path = raw_path.decode("utf-8")
             if not valid_path(path):
                 return False
+            baseline = subprocess.check_output(["git", "show", f"{AUDITED_DOC_CONSUMER_BASE_SHA}:{path}"])
             content = subprocess.check_output(["git", "show", f"{current}:{path}"])
-            if not document_consumer_content_safe(path, content):
+            if not document_consumer_content_safe(path, baseline, content):
                 return False
         return True
     except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):

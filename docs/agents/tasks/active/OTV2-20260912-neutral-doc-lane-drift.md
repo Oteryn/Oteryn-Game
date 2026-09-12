@@ -8,7 +8,7 @@ status: corrective_repair
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/neutral-doc-drift-proof-corrective-580
-pr: null
+pr: 582
 base_sha: 06c06a69d8d5affaf07049bad07f45b83df89392
 head_sha: null
 final_head_sha: null
@@ -52,12 +52,12 @@ Neutral Markdown pull requests remain on always-required checks without Linux/Wi
 - [x] Reproduce the original docs-only incident from exact run/PR evidence.
 - [x] Keep PR #579 unchanged as an optimization workaround.
 - [x] Record the #581 protected-main integration and exact independent-review findings.
-- [ ] Repair P1 so grouped/aliased filesystem APIs and other uncertain source drift fail closed to FULL.
-- [ ] Repair P2 so unchanged pre-existing audited consumer behavior does not itself invalidate harmless unrelated source drift.
-- [ ] Preserve build/Cargo, deletion/type-change, special-mode and unavailable/malformed Git evidence as FULL.
-- [ ] Preserve existing server-only consumer snapshot behavior.
-- [ ] Add focused and real-Git PR/post-merge regression coverage for P1 and P2.
-- [ ] Keep BUILD_TEST_MATRIX claims truthful to the final algorithm.
+- [x] Repair P1 so grouped/aliased filesystem APIs and other uncertain source drift fail closed to FULL.
+- [x] Repair P2 so unchanged pre-existing audited consumer behavior does not itself invalidate harmless unrelated source drift.
+- [x] Preserve build/Cargo, deletion/type-change, special-mode and unavailable/malformed Git evidence as FULL.
+- [x] Preserve existing server-only consumer snapshot behavior.
+- [x] Add focused and real-Git PR/post-merge regression coverage for P1 and P2.
+- [x] Keep BUILD_TEST_MATRIX claims truthful to the final algorithm.
 - [ ] Pass fresh exact-head repository-native FULL CI.
 - [ ] Obtain one fresh independent deep review on the final exact head with no blocking findings.
 - [ ] Integrate only through normal Merge Queue and verify protected-main readback.
@@ -70,19 +70,19 @@ No product/runtime behavior, Cargo/lock change, workflow fan-in change, required
 
 The #581 implementation is now protected-main evidence, not the final accepted solution. Its finite whole-current-blob marker scan is insufficiently fail-closed for alias/grouped filesystem syntax and over-conservative for unchanged audited consumers in otherwise harmless edits.
 
-The corrective branch starts from exact protected `main@06c06a69d8d5affaf07049bad07f45b83df89392`. The final proof must compare the audited baseline with current protected source changes in a way that distinguishes consumer-relevant drift from unchanged baseline behavior. Any source drift the proof cannot positively classify as harmless must select FULL.
+The corrective branch starts from exact protected `main@06c06a69d8d5affaf07049bad07f45b83df89392`. The proof compares the fixed audited baseline with the current tree and admits only modified Rust whose changed lines are comments/blanks or fully match a tiny scalar constant/function grammar. Added, deleted, type-changed, build/Cargo and non-Rust workspace inputs fail closed. This positive grammar catches grouped/aliased consumers without relying on finite marker absence, while unchanged baseline consumer lines are ignored.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python tools/repository/test_classify_pr_test_lanes.py`
-- required result: PASS including grouped/aliased filesystem negatives and unchanged-baseline-consumer positive coverage
+- result: PASS including grouped/aliased filesystem negatives and unchanged-baseline-consumer positive coverage
 
 ### Component/integration
 
 - command/run: `python tools/repository/test_classify_post_merge_lanes.py`; `python tools/repository/test_validate_pr_gate_pg_sim.py`; `python tools/repository/validate_repository_policy.py`; `python tools/agents/validate_governance.py`
-- required result: PASS
+- result: PR/post-merge, repository-policy and governance checks PASS; PR-gate simulation reaches its existing PowerShell canary and cannot complete because `pwsh` is unavailable in this environment
 
 ### E2E
 
@@ -117,7 +117,7 @@ The corrective branch starts from exact protected `main@06c06a69d8d5affaf07049ba
 
 - original merged PR: #581 / protected merge `06c06a69d8d5affaf07049bad07f45b83df89392`
 - original blocking review: `5186012563`; P1 `3995788327`; P2 `3995788330`
-- corrective PR: pending
+- corrective PR: #582
 - unresolved corrective review threads: pending
 - protected integration: normal Merge Queue only
 - merge commit/result: pending
@@ -130,7 +130,7 @@ last_progress: #581 reached protected main before its independent review finding
 status: corrective_repair
 branch: ci/neutral-doc-drift-proof-corrective-580
 head_sha: null
-pr: null
+pr: 582
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pending
