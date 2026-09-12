@@ -1,5 +1,5 @@
 {
-  "scope": "684 additional opening posts with sampled replies; not a quality audit of all historical records",
+  "scope": "720 additional opening posts with sampled replies; not a quality audit of all historical records",
   "entries": [
     {
       "id": "4998413",
@@ -11373,6 +11373,683 @@
         "G2"
       ],
       "source_file": "year-fiftyseventh12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4995464",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "security_sensitive_claim",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three replies support action on alleged skull abuse. Operational details, levels, world and case-identifying material are omitted; grace versus login displacement are separate G2 policies, and the source's Rule 3b label is not an adjudication.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4995680",
+      "quality_statuses": [
+        "lore_concept",
+        "low_actionability",
+        "proposal_only",
+        "linked_image_unviewed",
+        "outside_scale"
+      ],
+      "reason": "Atmospheric Rookgaard rupture lore has no actionable mechanics, and the linked image was not viewed. One question is not support; the record is outside scale and excluded from problem recurrence, with G2 only conditional on a future concrete content specification.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4995685",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Active Gift of Life healing 30 percent HP and mana below 25 percent every 30 minutes is G2. The claimed passive save about once per 30 hours is a separate unverified behavior rather than a baseline.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4995678",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "supported",
+        "unverified_claim"
+      ],
+      "reason": "Removing protection zones from Ankrahmun pyramids is a G2 safe-zone-rights change with one independent support. Exact tiles, services, access and per-world PvP implications remain unknown.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4995645",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "author_followup",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three authors across four posts provide two independent supports; the OP follow-up is not a new vote. Guild List is Q0 only for an authorized roster and already legal level or vocation fields, without exposing hidden online status.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4995576",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "mixed_scope",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three replies support the broad VIP package. Q0 may filter existing authorized public or guild status, while new visibility is G1 and automated enemy monitoring can be G2 strategic information; the claimed 100 limit is unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4995675",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Permanent Stake or Knife breakage is a G2 item sink. A small chance, infinite crafting, falling value and improved economy are unverified and require explicit odds plus supply and demand simulation.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4995642",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "contested",
+        "mixed",
+        "two_counters",
+        "conditional_variant",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers",
+        "infrastructure_scope"
+      ],
+      "reason": "Removing server caps is primarily outside-scale infrastructure; Q0 can expose queue information, while actual world-density increases are G2. Two counters and one conditional 1200-to-1300 variant with a 5-to-6-hour queue self-report do not form consensus, and safe capacity must remain bounded.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4995669",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Yellow-to-Green transfer for 5000 TC is G1/G2 provenance and destination-economy migration. A high fee and claims of little difference do not prove safety; P19 and cross-world asset, PvP and history restrictions remain necessary.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4995666",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "Market offer capacity is G1 commerce policy and infrastructure. No-downsides, healthy flooding, cash-drain and easy-implementation claims are unsupported; a measured bounded cap with reservation, rate, fee, expiry and anti-abuse rules is safer than infinity.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4995373",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "contested",
+        "mixed",
+        "two_opponents",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers",
+        "ambiguous_world_list"
+      ],
+      "reason": "A level-25 Rookgaard tutorial with isolated economy and PvP variants is G2 and receives two opposing replies, not consensus. Targuna is listed for both Open and Retro PvP; the ambiguity is preserved rather than silently repaired.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4995662",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "mixed",
+        "alternative",
+        "counter",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "One reply supports broader Djinn access, one proposes switching one active faction by repeatable quest, and one counters. Both-rights-for-100k-per-day and one-faction switching are distinct G1/G2 models without consensus.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4995621",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "controller_accessibility",
+        "all_caps_not_spam",
+        "supported",
+        "two_supports",
+        "quoted_google_answer_unverified"
+      ],
+      "reason": "An all-caps controller need is concrete rather than spam. A quoted Google answer is not verified current behavior; optional NPC presentation and controller navigation are Q0/Q1 only with preserved quest choices and confirmations and no hidden default choice.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4995563",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "author_followup",
+        "mixed_scope",
+        "hyperbole_not_vote",
+        "analogy_unverified",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Permanent world completion and individual or hybrid access are distinct G1/G2 world-versus-character scopes. Three authors make four posts with two supports; thousand-times is not vote count, and the Farmine analogy is unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4995646",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "independent_cross_thread_need",
+        "fee_behavior_unverified",
+        "unverified_claim"
+      ],
+      "reason": "An independent OP and one support reinforce Charm Presets relative to 4995704. Saving and preview are Q0 and applying legal assignments is Q1 with actual diff cost; unchanged fees are not assumed.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4995640",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "contested",
+        "alternative_proposal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Party-size-scaled Sorcerer healing at proposed 100/75/0-to-25 percent is G2 group composition and sustain. The reply's UH cooldown is an alternative rather than full support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4995618",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "broad_package",
+        "scope_ambiguous",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Seven axes need separate review. Imbuement amortization display is Q0 and distinct from actual cash without double counting; Djinn depot is G1/G2 logistics; streak rewards, loot, leg imbuements, unspecified quest restrictions and mount stats are G2. Two replies support broadly, one especially depot.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4995644",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "alternative_design",
+        "unverified_claim"
+      ],
+      "reason": "Removing ranged monster behavior is G2 AI and positioning. A new minor Charm creates a slot tradeoff, while adding the effect to Fatal Hold combines powers and is a distinct design.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4995582",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "author_followup",
+        "autonomy_change",
+        "unverified_claim"
+      ],
+      "reason": "Auto-follow through floors and gates is G2 movement autonomy and cannot bypass level, quest, key, cost or combat checks. A manual confirmation for each legal transition is a narrower Q1 alternative.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4995657",
+      "quality_statuses": [
+        "outside_product_scale",
+        "external_commerce_candidate",
+        "proposal_only",
+        "personal_data_sanitized",
+        "unverified_claim"
+      ],
+      "reason": "Physical-event tickets, meals and TC integration are outside the PR571 product scale and need separate commercial review. Public text removes the person's full name and support-ticket identifier, and no external message or third-party instruction is sent.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4995648",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "one_support",
+        "eligibility_change",
+        "unverified_claim"
+      ],
+      "reason": "Removing PvE battle state when no creature is on screen changes logout and teleport eligibility as G2, not Q0 icon presentation. Off-screen threats and pending effects require review without publishing abuse instructions.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4995654",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "single_author",
+        "unverified_claim"
+      ],
+      "reason": "An authoritative Test Server calendar with timezone, version and cancellation state plus optional export is Q0. No reminder or automation is created.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4994030",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "three_supports",
+        "one_conditional_support",
+        "controlled_rng",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Same-color and same-slot Greater Gem mod transfer that consumes the source plus proposed 10/20/30kk and fragments is G2 controlled RNG and economy. High cost alone does not preserve rarity; three replies support, one conditionally.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4995650",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "supported",
+        "one_support",
+        "version_underspecified",
+        "analogy_unverified",
+        "unverified_claim"
+      ],
+      "reason": "An old-2005 client request actually implies a G2 historical world ruleset, not a skin. Exact version is underspecified; one support and a WoW analogy do not prove feasibility, and Reference does not imply 2005.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 18
+    },
+    {
+      "id": "4995649",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed_scope",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "A World Changes window is Q0 for already public known state. New spoiler or real-time visibility is G1 and can be G2 when it changes competition for encounters or rewards, requiring audience and disclosure policy.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 7
+    },
+    {
+      "id": "4995537",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "self_report",
+        "bump_only",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three authors provide two independent supports; the OP bump is not another vote. Extending house AFK from 15 to 30 minutes changes G1 session rights, while Q0 bounded Guild Chat history can solve the missed-conversation need without extending presence.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 8
+    },
+    {
+      "id": "4995638",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed_scope",
+        "variant_proposal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Pouch pages are Q0 and an exact manual withdrawal can be Q1 under existing rights. Free auto-conversion every five minutes is G2 currency cadence, remote party deposit is G1/G2, and house Wheel access changes a temple or location gate and is G1/G2 rather than Q1.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1",
+        "G1",
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 9
+    },
+    {
+      "id": "4994697",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "bump_only"
+      ],
+      "reason": "An optional explicit copy from Sio target configuration to Gran Sio configuration is Q1, not autocast or automatic healing. One author's later bump is not support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 10
+    },
+    {
+      "id": "4995634",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "continuation",
+        "single_author",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Two posts from one author propose forced PvP and harsher death penalties for alleged KS. Without objective server-authoritative KS attribution, notice and appeal, these G2 punishments can weaponize accusations and are not endorsed as stated.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 11
+    },
+    {
+      "id": "4995547",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "Three replies support DPI scaling. It is Q0 only when fonts, icons and minimap scale over the same visible information without extending field of view, explored area or detection range.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 12
+    },
+    {
+      "id": "4995536",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "one_question",
+        "one_support",
+        "author_followup",
+        "unverified_claim"
+      ],
+      "reason": "Three authors across four posts provide one support; a question is not support and the OP follow-up is not a new need. Virtual Depot views and sorting are Q0, while physical moves are Q1 only under existing legal rules with preview and exact item identity.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 13
+    },
+    {
+      "id": "4995622",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "self_report",
+        "underspecified_rules",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Tutoring mode is G2 temporary power and progression projection with one support. Level, HP, MP, Wheel, gear and skills need a complete scaling and restoration ledger; death basis is unclear and earned XP must be credited exactly once.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 14
+    },
+    {
+      "id": "4995627",
+      "quality_statuses": [
+        "concrete_engineering_problem",
+        "self_report",
+        "outside_scale",
+        "unverified_root_cause"
+      ],
+      "reason": "A repeated post-update crash is a concrete engineering incident outside gameplay classes. Version, sanitized error and crash review are needed; anti-cheat bypass is not suggested and the stated service or device issue is not a verified root cause.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 15
+    },
+    {
+      "id": "4995340",
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "contested",
+        "mixed",
+        "two_supporting_variants",
+        "one_dismissal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Four authors provide two supports for different models and one dismissal. One free weekly alternate and paid random rerolls with gold or points are distinct G2 task-distribution models; fees and limits do not prove balance.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 16
+    },
+    {
+      "id": "4995623",
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "supported_direction",
+        "continuation",
+        "mixed_scope",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "MOBA, scaled dungeon and battle royale are three G2 programmes from one OP across two posts. One reply supports alternative leveling broadly rather than all designs; match gear must stay isolated while world XP and loot need contribution, anti-idle and reward budgets.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 17
+    },
+    {
+      "id": "4995584",
+      "quality_statuses": [
+        "concrete_process_problem",
+        "concrete_proposal",
+        "supported",
+        "mixed",
+        "outside_scale_process",
+        "speculative_balance_signal",
+        "unverified_claim",
+        "inconsistent_schedule",
+        "unverified_numbers"
+      ],
+      "reason": "The title says four test days while the body describes roughly two plus one, and the inconsistency is preserved. One author supports a larger sample; RP fear and arithmetic are speculative G2 signals rather than results. Longer duration alone does not ensure quality without cohorts and repeated matched tests.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "source_file": "year-sixtieth12-analysis.md",
       "line": 18
     }
   ]

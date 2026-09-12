@@ -1,11 +1,11 @@
 {
   "read_date": "2026-09-12",
   "complete_archive": false,
-  "unique_thread_count": 1320,
-  "new_thread_count": 720,
-  "new_sample_post_count": 1496,
-  "coverage": "600 historical All Threads records plus 720 additional Last Year records; OP and selected initial replies only",
-  "remaining_last_year_count": 1833,
+  "unique_thread_count": 1356,
+  "new_thread_count": 756,
+  "new_sample_post_count": 1591,
+  "coverage": "600 historical All Threads records plus 756 additional Last Year records; OP and selected initial replies only",
+  "remaining_last_year_count": 1797,
   "resume_policy": "Deduplicate by thread ID; use recorded post IDs and hashes for sampled-post coverage. Existing thread does not mean all replies were read. Do not equate All Threads page numbers with Last Year. Reinventory changing lists before estimating remaining work.",
   "entries": [
     {
@@ -40446,6 +40446,2034 @@
       },
       "capture_format": "body-author-footer-v1",
       "title": "Reviving Tibia’s Useless Spells"
+    },
+    {
+      "id": "4995464",
+      "post_ids": [
+        "Post_39579672",
+        "Post_39579673",
+        "Post_39579748",
+        "Post_39579857"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "security_sensitive_claim",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three replies support action on alleged skull abuse. Operational details, levels, world and case-identifying material are omitted; grace versus login displacement are separate G2 policies, and the source's Rule 3b label is not an adjudication.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995464",
+      "post_dates": [
+        {
+          "post_id": "Post_39579672",
+          "published_at": "23.04.2026 02:54:07",
+          "edited_at": "23.04.2026 02:58:16"
+        },
+        {
+          "post_id": "Post_39579673",
+          "published_at": "23.04.2026 03:24:00",
+          "edited_at": "23.04.2026 03:38:27"
+        },
+        {
+          "post_id": "Post_39579748",
+          "published_at": "23.04.2026 20:46:53",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39579857",
+          "published_at": "24.04.2026 20:01:47",
+          "edited_at": "24.04.2026 20:04:11"
+        }
+      ],
+      "op_date": "23.04.2026 02:54:07",
+      "op_edit_date": "23.04.2026 02:58:16",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39579672",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 7,
+      "analysis": "| [4995464](https://www.tibia.com/forum/?action=thread&threadid=4995464), OP `39579672`: zarzut wymuszania skull przez pojawienie się graczy w aktywnej walce na Retro Open PvP oraz propozycje grace period dla AoE albo odsunięcia miejsca logowania; trzech autorów podpisuje potrzebę działania. | `concrete_problem + concrete_proposal + supported + security_sensitive_claim + self_report + unverified_claim + unverified_numbers`. Czterech autorów i trzy niezależne poparcia. Pominięto obelgę oraz operacyjne szczegóły, poziomy, świat i dane pozwalające identyfikować konkretny przypadek. Określenie zachowania jako naruszenia Rule 3b jest twierdzeniem autora, nie adjudykacją. | **UNKNOWN:** login placement, collision/stacking, AoE attribution, skull/frag rules, grace windows, case facts i enforcement classification nie zostały sprawdzone. | **G2 P12/P13/P18:** grace dla damage oraz displacement miejsca pojawienia to różne policy candidates. Każdy musi definiować combat/session continuity, hostile eligibility, AoE already in flight, safe landing/fallback, abuse symmetry i audit; rozwiązanie nie może tworzyć darmowej immunity, escape lub ofensywnego repositioningu. Rule 3b wymaga osobnego evidence review. | **G2. R:** world/PvP mode, account/character/session/login tile, surrounding occupancy, attack/cast event, damage/kill attribution, skull/frag state i case audit. **G:** hostile eligibility, positioning i death risk. **E:** item/death loss oraz loot attribution. **Reference:** bez adjudykacji i bez instrukcji nadużycia. |",
+      "observed_post_text_sha256": {
+        "Post_39579672": "a4fa52052774c9fba86eb86b3552a89340edd0e30279a608306a7d03749412c3",
+        "Post_39579673": "df599bac989316715b6c5368208ac9c3cee0654b989aff265029b3aa152e21a0",
+        "Post_39579748": "5bb00bbf49400ad21d1e9bc709777968021a162e7b785c617b0cfac2c9969351",
+        "Post_39579857": "c6e443f7898891f282c8b5b140d0846cff6cf407feb57c470a417cfb45014512"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Skull System Mechanical Abuse"
+    },
+    {
+      "id": "4995680",
+      "post_ids": [
+        "Post_39580921",
+        "Post_39580964"
+      ],
+      "quality_statuses": [
+        "lore_concept",
+        "low_actionability",
+        "proposal_only",
+        "linked_image_unviewed",
+        "outside_scale"
+      ],
+      "reason": "Atmospheric Rookgaard rupture lore has no actionable mechanics, and the linked image was not viewed. One question is not support; the record is outside scale and excluded from problem recurrence, with G2 only conditional on a future concrete content specification.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995680",
+      "post_dates": [
+        {
+          "post_id": "Post_39580921",
+          "published_at": "01.05.2026 22:15:48",
+          "edited_at": "02.05.2026 19:56:39"
+        },
+        {
+          "post_id": "Post_39580964",
+          "published_at": "02.05.2026 05:37:58",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.05.2026 22:15:48",
+      "op_edit_date": "02.05.2026 19:56:39",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580921",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 8,
+      "analysis": "| [4995680](https://www.tibia.com/forum/?action=thread&threadid=4995680), OP `39580921`: atmosferyczny koncept lore o rozpadzie i przekształceniu Rookgaard przez „Rupture”; odpowiedź pyta, jaka jest właściwa propozycja. | `lore_concept + low_actionability + proposal_only + linked_image_unviewed + outside_scale`. Jeden autor konceptu; pytanie nie jest poparciem. Tekst nie podaje encounters, questów, zasad ruchu, rewardów ani innej implementowalnej mechaniki, a obrazu z linku nie oglądano. | **UNKNOWN:** obraz, lore canon, mapa, content scope i jakiekolwiek mechaniki nie zostały sprawdzone. | **Outside scale #571:** brak obecnego mapowalnego wymagania. Jeśli zostanie doprecyzowany literalny content z mapą, encounters, hazards i rewards, stanie się kandydatem **G2 P2/P9/P11/P17**; sama narracja nie tworzy backlogu. | **Poza Q0/Q1/G1/G2. R/G/E:** brak reguł do modelowania. **Reference:** wyłączony z problem recurrence; conditional G2 dopiero po specyfikacji. |",
+      "observed_post_text_sha256": {
+        "Post_39580921": "414df88d6887f4031918da4fe002c5542f3f2e3a7fdef6b8f2992a834df99254",
+        "Post_39580964": "0049167c9e3cc8f1f37e3792c1be70d5990f69944ce71e67e2f6c920d33e5a2b"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Rookgaard Rupture..."
+    },
+    {
+      "id": "4995685",
+      "post_ids": [
+        "Post_39580963"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Active Gift of Life healing 30 percent HP and mana below 25 percent every 30 minutes is G2. The claimed passive save about once per 30 hours is a separate unverified behavior rather than a baseline.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995685",
+      "post_dates": [
+        {
+          "post_id": "Post_39580963",
+          "published_at": "02.05.2026 05:14:40",
+          "edited_at": null
+        }
+      ],
+      "op_date": "02.05.2026 05:14:40",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580963",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 9,
+      "analysis": "| [4995685](https://www.tibia.com/forum/?action=thread&threadid=4995685), OP `39580963`: aktywne użycie Gift of Life przy HP poniżej 25%, leczące 30% HP i many co 30 minut; osobno autor twierdzi, że pasyw ratuje życie mniej więcej raz na 30 godzin. | `concrete_proposal + proposal_only + self_report + unverified_claim + unverified_numbers`. Jeden autor bez odpowiedzi. Active heal i passive trigger są odrębnymi mechanikami. Częstotliwość 30 godzin jest nieweryfikowanym self-reportem, nie baseline. | **UNKNOWN:** Gift of Life passive/active state, HP threshold, heal formula, mana, cooldown, death prevention i wartości nie zostały sprawdzone. | **G2 P8/P15:** active trigger potrzebuje current/max HP semantics, strict `<25%` lub `≤25%`, target/self, 30% base, overheal, mana recovery, cooldown ownership, passive interaction i PvE/PvP rules. Nie wolno łączyć 30-min aktywu z deklarowanym 30-h pasywem bez osobnego lifecycle. | **G2. R:** character/build/Wheel, current/max HP/mana, active/passive state, trigger/cast, cooldown i death event. **G:** burst healing, mana recovery i survivability. **E:** resource recovery, hunt throughput i Wheel opportunity cost. **Reference:** active i passive rozdzielone. |",
+      "observed_post_text_sha256": {
+        "Post_39580963": "f7a13315afbc41f73ecbf237ea6a807a1e410e245b2188632d1a4493fc4e5d08"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Gift of Life, Active Effect, 30% Heal 30mins"
+    },
+    {
+      "id": "4995678",
+      "post_ids": [
+        "Post_39580907",
+        "Post_39580908"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "supported",
+        "unverified_claim"
+      ],
+      "reason": "Removing protection zones from Ankrahmun pyramids is a G2 safe-zone-rights change with one independent support. Exact tiles, services, access and per-world PvP implications remain unknown.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995678",
+      "post_dates": [
+        {
+          "post_id": "Post_39580907",
+          "published_at": "01.05.2026 18:56:50",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580908",
+          "published_at": "01.05.2026 18:59:43",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.05.2026 18:56:50",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580907",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 10,
+      "analysis": "| [4995678](https://www.tibia.com/forum/?action=thread&threadid=4995678), OP `39580907`: usunięcie protection zone z piramid Ankrahmun, aby umożliwić PvP/skull play; drugi autor popiera kierunek. | `concrete_proposal + proposal_only + supported + unverified_claim`. Dwóch autorów i jedno niezależne poparcie. Brak mapy, dokładnych obszarów, wejść i analizy skutków. | **UNKNOWN:** aktualne PZ tiles, pyramid access, logout/temple/depot/quest functions, PvP world differences i player use nie zostały sprawdzone. | **G2 P2/P9/P12/P13:** PZ removal zmienia safe-zone rights, hostile eligibility, logout, escape i quest/travel access. Wymaga tile-by-tile mapy, per-world policy, protected services/entry transitions i migration; nie może wynikać wyłącznie z preferencji PvP. | **G2. R:** world/PvP mode, zone/tile polygon, character combat/skull state, service/quest/entry/exit i logout. **G:** safe-zone access, combat i movement. **E:** death loss i regional hunt/trade access. **Reference:** materialna zmiana praw obszaru. |",
+      "observed_post_text_sha256": {
+        "Post_39580907": "1f7ef1246d0945940a68971ca97be2fefa8e278a1ca87b4f0d87816488256c9e",
+        "Post_39580908": "cfec98370ec1220e3ea54d90a39cb019d49515c55e102e4e84259581acf46efe"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Ankrahmun pyramids not pz"
+    },
+    {
+      "id": "4995645",
+      "post_ids": [
+        "Post_39580706",
+        "Post_39580717",
+        "Post_39580745",
+        "Post_39580894"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "author_followup",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three authors across four posts provide two independent supports; the OP follow-up is not a new vote. Guild List is Q0 only for an authorized roster and already legal level or vocation fields, without exposing hidden online status.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995645",
+      "post_dates": [
+        {
+          "post_id": "Post_39580706",
+          "published_at": "30.04.2026 11:06:55",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580717",
+          "published_at": "30.04.2026 13:03:12",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580745",
+          "published_at": "30.04.2026 17:21:03",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580894",
+          "published_at": "01.05.2026 16:57:35",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 11:06:55",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580706",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 11,
+      "analysis": "| [4995645](https://www.tibia.com/forum/?action=thread&threadid=4995645), OP `39580706` + follow-up `39580745`: osobna Guild List, z grupowaniem po vocation i level obok nazwy; dwóch innych autorów popiera, a follow-up OP akceptuje wariant. | `concrete_problem + concrete_proposal + supported + author_followup + unverified_claim + unverified_numbers`. Trzech autorów, cztery posty i dwa niezależne poparcia. Follow-up OP nie jest nowym głosem. Liczebność guild i obecna widoczność pól nie zostały sprawdzone. | **UNKNOWN:** guild roster, level/vocation visibility, online status, permissions, privacy i list limits nie zostały sprawdzone. | **Q0 P3:** lista może prezentować wyłącznie autoryzowany roster oraz level/vocation już legalnie widoczne dla viewer/guild context, z filtrem/sortem i privacy/block policy ([§4.3.12](https://github.com/Oteryn/Oteryn-Game/blob/b2ef322791520130a2683f3004d26abd5c027ac8/docs/architecture/OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md#L286-L291)). Nie wolno domyślnie ujawniać ukrytego online statusu ani danych poza prawami guild membership. | **Q0. R:** guild/member identity, viewer role, authorized roster fields, level/vocation/presence visibility i privacy. **G:** presentation only. **E:** brak. **Reference:** trzy osoby, dwa supporty. |",
+      "observed_post_text_sha256": {
+        "Post_39580706": "99dcfdd9744210c311a54cc55609dc593823fdd83df0e9630b2a64f2a33fcb01",
+        "Post_39580717": "2ce5e7546225f43f5bb59ae0cf7d18375a87b69f94629d6981eba10835dee727",
+        "Post_39580745": "c5c27e7100b7328d4154bef53953b0f5007cf0ecccbbd5bd42fc9505403b558a",
+        "Post_39580894": "f7349538e5f1f3dca9dd01c5ffb89c40e134bcd4a224b7e977772e6450099b6f"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Guild List."
+    },
+    {
+      "id": "4995576",
+      "post_ids": [
+        "Post_39580264",
+        "Post_39580493",
+        "Post_39580570",
+        "Post_39580588"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "mixed_scope",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three replies support the broad VIP package. Q0 may filter existing authorized public or guild status, while new visibility is G1 and automated enemy monitoring can be G2 strategic information; the claimed 100 limit is unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995576",
+      "post_dates": [
+        {
+          "post_id": "Post_39580264",
+          "published_at": "27.04.2026 21:29:38",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580493",
+          "published_at": "29.04.2026 09:47:55",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580570",
+          "published_at": "29.04.2026 16:27:12",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580588",
+          "published_at": "29.04.2026 16:45:03",
+          "edited_at": null
+        }
+      ],
+      "op_date": "27.04.2026 21:29:38",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580264",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 12,
+      "analysis": "| [4995576](https://www.tibia.com/forum/?action=thread&threadid=4995576), OP `39580264`: większy lub nieograniczony VIP oraz automatyczne filtry online dla własnej i wrogiej guild; trzech respondentów ogólnie popiera. | `concrete_problem + concrete_proposal + supported + mixed_scope + unverified_claim + unverified_numbers`. Czterech autorów i trzy niezależne poparcia ogólnego pakietu, bez dowodu poparcia każdego enemy-monitoring szczegółu. Limit 100 i brak przyczyny limitu są nieweryfikowane. | **UNKNOWN:** VIP cap, public/guild online state, enemy guild membership, privacy/block rules i strategic use nie zostały sprawdzone. | **Rozdzielić:** większa prywatna lista i filtrowanie już autoryzowanego/publicznego statusu to **Q0 P3**. Nowa visibility dla osób, których status nie był legalnie widoczny, jest **G1 P18** privacy/policy; automatyczny enemy-guild monitoring może być **G2 P12/P13**, bo zmienia strategic information. Potrzebne consent/visibility source, refresh/caps i block policy, nie bezgraniczny feed. | **Q0/G1/G2. R:** viewer/contact/guild relation, membership snapshot, presence source/authorization, privacy/block i refresh. **G:** organization only w Q0; nowa strategic visibility materialna. **E:** storage/server cost UNKNOWN. **Reference:** public status odróżnić od nowych praw. |",
+      "observed_post_text_sha256": {
+        "Post_39580264": "e898cdc33f99064fc0b8ff5e28dbf33a5203ba77b7aafed2eed9b43a2c70a6d4",
+        "Post_39580493": "a2abab2381a125d2a4c6a04d51a922b4274ee0709d5d82d714b4c9e093b34879",
+        "Post_39580570": "ae819eca06cf2425510bbc91780784d708019ae1bd9cbd2b7d8c6e5f17ba3a48",
+        "Post_39580588": "ba8d96daa42936248ed294d1fe8099771faa807048e5ecdf946917fe060f21dc"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Modernizing the VIP list. Remove limits & add smart filters"
+    },
+    {
+      "id": "4995675",
+      "post_ids": [
+        "Post_39580891"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Permanent Stake or Knife breakage is a G2 item sink. A small chance, infinite crafting, falling value and improved economy are unverified and require explicit odds plus supply and demand simulation.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995675",
+      "post_dates": [
+        {
+          "post_id": "Post_39580891",
+          "published_at": "01.05.2026 16:54:50",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.05.2026 16:54:50",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580891",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 13,
+      "analysis": "| [4995675](https://www.tibia.com/forum/?action=thread&threadid=4995675), OP `39580891`: bardzo mała szansa permanentnego zniszczenia Blessed Wooden Stake lub Obsidian Knife przy użyciu, aby usuwać itemy z obiegu. | `concrete_proposal + proposal_only + self_report + unverified_claim + unverified_numbers`. Jeden autor bez odpowiedzi. „Extremely small”, nieskończony crafting, spadek wartości i poprawa gospodarki nie zostały zweryfikowane. | **UNKNOWN:** crafting/source, use frequency, durability/break rules, market supply/prices i sink demand nie zostały sprawdzone. | **G2 P6/P17:** permanent break zmienia tool availability, action outcome i item sink. Potrzebuje jawnych odds, event timing, equipped/container identity, failure/result messaging, protection from double-consume oraz simulation supply/demand; samo zmniejszenie podaży nie gwarantuje lepszych cen ani gospodarki. | **G2. R:** tool instance/owner/location, use action/target, RNG version/result, consumed state i replacement source. **G:** tool loss i availability. **E:** permanent sink, crafting demand, scarcity i price volatility. **Reference:** economy claim wymaga danych. |",
+      "observed_post_text_sha256": {
+        "Post_39580891": "208bfe1deef0fc6ec41d8c8dc9f759885159966563eb3a32f66686c9b6126321"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Economic Balance for the Blessed Wooden Stake and Obsidian K"
+    },
+    {
+      "id": "4995642",
+      "post_ids": [
+        "Post_39580700",
+        "Post_39580705",
+        "Post_39580708",
+        "Post_39580718"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "contested",
+        "mixed",
+        "two_counters",
+        "conditional_variant",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers",
+        "infrastructure_scope"
+      ],
+      "reason": "Removing server caps is primarily outside-scale infrastructure; Q0 can expose queue information, while actual world-density increases are G2. Two counters and one conditional 1200-to-1300 variant with a 5-to-6-hour queue self-report do not form consensus, and safe capacity must remain bounded.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995642",
+      "post_dates": [
+        {
+          "post_id": "Post_39580700",
+          "published_at": "30.04.2026 10:17:03",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580705",
+          "published_at": "30.04.2026 10:59:42",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580708",
+          "published_at": "30.04.2026 11:41:06",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580718",
+          "published_at": "30.04.2026 13:06:17",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 10:17:03",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580700",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 14,
+      "analysis": "| [4995642](https://www.tibia.com/forum/?action=thread&threadid=4995642), OP `39580700`: usunięcie player cap lub podniesienie go do 2000–3000; dwaj respondenci wskazują niską populację albo lag, a trzeci warunkowo proponuje 1200–1300 podczas double XP i raportuje kolejkę 5–6 godzin. | `concrete_problem + concrete_proposal + contested + mixed + two_counters + conditional_variant + self_report + unverified_claim + unverified_numbers + infrastructure_scope`. Czterech autorów. Są dwa countery i jeden warunkowy wariant, nie konsens. Kolejka 5–6 h, limity, populacje i lag nie zostały zmierzone. | **UNKNOWN:** world caps, concurrency, queue duration, latency/tick/load, populations, events i infrastructure nie zostały sprawdzone. | **Domyślnie infrastructure/outside-scale #571:** capacity planning wymaga load tests, SLO i failure budgets. **Q0 P2** może pokazać kolejkę, ETA/range i alternatywne światy z aktualnych danych. Realne podniesienie density jest **G2 P2/P11/P17**, bo zmienia spawn competition, encounter/reward throughput i stability; rozwiązaniem nie jest dosłownie nieskończony limit. | **Q0/G2 + infrastructure. R:** world/event, configured cap, queue position/arrival, server load/latency/tick, admitted population i capacity tier. **G:** density, access i hunt contention. **E:** spawn/reward competition i operating capacity. **Reference:** bounded limits i anti-abuse, nie infinity. |",
+      "observed_post_text_sha256": {
+        "Post_39580700": "7c450b206728ba856a781380909d7f122054afe0e44f98f9010fbbb1eee09227",
+        "Post_39580705": "8656e084d2ee9e0b6cc808cbe8c0802d63a052faa21028164e4fb843b2f74fc4",
+        "Post_39580708": "1f91ffb12431a2f87ea2ef6a8667899cc1ac336e71118872ea052f594d29230a",
+        "Post_39580718": "bc8399f55e6dcb0b4a12df642090159ca2199b82e0455f6c55ab69723f7035e2"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "remove the player limit to log in. in new update!"
+    },
+    {
+      "id": "4995669",
+      "post_ids": [
+        "Post_39580838"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Yellow-to-Green transfer for 5000 TC is G1/G2 provenance and destination-economy migration. A high fee and claims of little difference do not prove safety; P19 and cross-world asset, PvP and history restrictions remain necessary.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995669",
+      "post_dates": [
+        {
+          "post_id": "Post_39580838",
+          "published_at": "01.05.2026 13:28:58",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.05.2026 13:28:58",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580838",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 15,
+      "analysis": "| [4995669](https://www.tibia.com/forum/?action=thread&threadid=4995669), OP `39580838`: płatny transfer Yellow→Green za około 5000 TC, z ograniczeniem według PvP, aby ułatwić handel rzadkimi itemami i dobór teamów. | `concrete_problem + concrete_proposal + self_report + unverified_claim + unverified_numbers`. Jeden autor bez odpowiedzi. Twierdzenia o małych różnicach, skuteczniejszej kontroli botów i zbędności ograniczeń nie zostały zweryfikowane. Wysoka opłata nie dowodzi bezpiecznego transferu ani równoważności światów. | **UNKNOWN:** Yellow/Green provenance rules, PvP restrictions, bot/enforcement state, eligible assets, TC fee i destination economies nie zostały sprawdzone. | **G1/G2 P5/P13/P17/P18/P19:** cross-world transfer wymaga immutable origin/provenance, world-history eligibility, asset/quest/achievement reconciliation, sanctions, cooldown i destination restrictions. 5000 TC jest commercial gate, nie kontrolą inflacji lub legacy scarcity; P19 chroni przed kupowaną przewagą ([§4.19.1–3](https://github.com/Oteryn/Oteryn-Game/blob/b2ef322791520130a2683f3004d26abd5c027ac8/docs/architecture/OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md#L1147-L1170)). | **G1/G2. R:** account/character, origin/current/destination world history, PvP/provenance class, assets/quests/sanctions, fee i transfer id. **G:** world/team/PvP access. **E:** TC fee, item migration, rarity, market liquidity i destination inflation. **Reference:** fee nie zastępuje restrictions. |",
+      "observed_post_text_sha256": {
+        "Post_39580838": "9d6d415b8929ab9300d359ba89a1257374b8379780ee55e065be3b4cd18a4f98"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Transfer between Yellow to Green Servers"
+    },
+    {
+      "id": "4995666",
+      "post_ids": [
+        "Post_39580816"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "Market offer capacity is G1 commerce policy and infrastructure. No-downsides, healthy flooding, cash-drain and easy-implementation claims are unsupported; a measured bounded cap with reservation, rate, fee, expiry and anti-abuse rules is safer than infinity.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995666",
+      "post_dates": [
+        {
+          "post_id": "Post_39580816",
+          "published_at": "01.05.2026 09:45:30",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.05.2026 09:45:30",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580816",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 16,
+      "analysis": "| [4995666](https://www.tibia.com/forum/?action=thread&threadid=4995666), OP `39580816`: usunięcie limitu liczby Market buy/sell offers, aby obsługiwać więcej itemów bez wielu postaci. | `concrete_problem + concrete_proposal + self_report + unverified_claim`. Jeden autor bez odpowiedzi. „No cons”, healthy flood, cash drain i łatwa implementacja są niepoparte. Nieograniczona liczba ofert nie jest bezpiecznym wymaganiem capacity. | **UNKNOWN:** current offer cap/scope, fees, matching, storage/query cost, spam/manipulation, alts i liquidity nie zostały sprawdzone. | **G1 P5/P17/P18:** zwiększenie capacity wymaga bounded per-account limits, rate limits, fees, expiry, duplicate/overlap policy, reserved balances/items, cancellation i surveillance/appeal. Celem może być wyższy mierzalny cap, nie infinity; zapobiega to spamowi, denial-of-service i market manipulation bez wymuszania altów. | **G1. R:** account/character, offer/item/price/quantity/side, reserved asset, active-count/rate/expiry, fee i cancellation. **G:** market access/capacity, bez combat power. **E:** liquidity, fees, manipulation, reserved wealth i infrastructure cost. **Reference:** bounded policy, nie unlimited. |",
+      "observed_post_text_sha256": {
+        "Post_39580816": "599189f34e41da9ea7b2a7d3bda1a43a1a4f0ba8193acc8928dd7a42f8af7b76"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Unlimited marker offers buy/sell."
+    },
+    {
+      "id": "4995373",
+      "post_ids": [
+        "Post_39579349",
+        "Post_39579359",
+        "Post_39580811"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "contested",
+        "mixed",
+        "two_opponents",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers",
+        "ambiguous_world_list"
+      ],
+      "reason": "A level-25 Rookgaard tutorial with isolated economy and PvP variants is G2 and receives two opposing replies, not consensus. Targuna is listed for both Open and Retro PvP; the ambiguity is preserved rather than silently repaired.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995373",
+      "post_dates": [
+        {
+          "post_id": "Post_39579349",
+          "published_at": "20.04.2026 18:40:12",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39579359",
+          "published_at": "20.04.2026 19:32:57",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580811",
+          "published_at": "01.05.2026 08:52:40",
+          "edited_at": null
+        }
+      ],
+      "op_date": "20.04.2026 18:40:12",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 3,
+      "sampled_reply_count": 2,
+      "op_post_id": "Post_39579349",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 17,
+      "analysis": "| [4995373](https://www.tibia.com/forum/?action=thread&threadid=4995373), OP `39579349`: Rookgaard jako rozbudowany tutorial i izolowana gospodarka do level 25 z testowaniem profesji oraz różnymi PvP modes; dwóch respondentów sprzeciwia się powrotowi lub PvP na Rookgaard. | `concrete_problem + concrete_proposal + contested + mixed + two_opponents + self_report + unverified_claim + unverified_numbers + ambiguous_world_list`. Trzech autorów. Dwa sprzeciwy nie tworzą konsensusu dla projektu. OP wymienia Targunę dwukrotnie — jako Open PvP i Retro PvP — a niejednoznaczności nie naprawiono po cichu ani nie przypisano drugiego trybu innej lokacji. | **UNKNOWN:** Rookgaard/current tutorial, wymienione obszary, level gates, vocation switching, PvP modes, deposits/banks/TC i economy isolation nie zostały sprawdzone. | **G2 P2/P3/P9/P13/P17/P19:** tutorial/world segment wymaga jawnych region-mode assignments, level 25 exit/lock, vocation trial/reset, PvP/death rules, account rewards i twardej granicy inventory/currency/bank/Market. Izolacja economy musi zapobiegać import/export laundering. Najpierw wyjaśnić podwójną Targunę, bez wymyślania mapowania. | **G2. R:** account/character, tutorial region/world/PvP mode, level/vocation trial, entry/exit, inventory/bank/currency i reward provenance. **G:** onboarding, combat/access i progression cap. **E:** isolated economy, TC/account reward boundary i transfer prevention. **Reference:** radykalny contested redesign. |",
+      "observed_post_text_sha256": {
+        "Post_39579349": "629ad61ecdd294997f19689fe3b6870a38bcc2ddb64323ae968672404b1a9a1c",
+        "Post_39579359": "7ebc51923bbc34a5ba265cfec7ef83c25bc4f5d73618e579e8415c69805dfbb5",
+        "Post_39580811": "f717626d8ffb41e53297036e746e5df35d5be9975ec8a0ecc6e092a6a271e8f8"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Rookguard forever."
+    },
+    {
+      "id": "4995662",
+      "post_ids": [
+        "Post_39580785",
+        "Post_39580789",
+        "Post_39580805",
+        "Post_39580809"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "mixed",
+        "alternative",
+        "counter",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "One reply supports broader Djinn access, one proposes switching one active faction by repeatable quest, and one counters. Both-rights-for-100k-per-day and one-faction switching are distinct G1/G2 models without consensus.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995662",
+      "post_dates": [
+        {
+          "post_id": "Post_39580785",
+          "published_at": "01.05.2026 01:33:44",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580789",
+          "published_at": "01.05.2026 02:54:50",
+          "edited_at": "01.05.2026 02:56:16"
+        },
+        {
+          "post_id": "Post_39580805",
+          "published_at": "01.05.2026 08:16:26",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580809",
+          "published_at": "01.05.2026 08:46:51",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.05.2026 01:33:44",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580785",
+      "source_file": "year-fiftyeighth12-analysis.md",
+      "line": 18,
+      "analysis": "| [4995662](https://www.tibia.com/forum/?action=thread&threadid=4995662), OP `39580785`: czasowa łapówka 100k/dzień dająca dostęp do sprzedaży u obu frakcji Djinn; jeden autor szeroko popiera, drugi proponuje zamiast tego krótki repeatable quest przełączający frakcję, a trzeci broni roleplay/current choice. | `concrete_problem + concrete_proposal + supported + mixed + alternative + counter + unverified_claim + unverified_numbers`. Czterech autorów: jedno poparcie, jeden alternatywny switch i jeden counter. Nie ma konsensusu między równoczesnymi prawami do obu sprzedawców a przełączaniem jednej aktywnej frakcji. | **UNKNOWN:** Djinn quest/faction flags, sell catalogs/prices, switchability, server-save duration, 100k fee i economy nie zostały sprawdzone. | **G1/G2 P5/P9/P17:** jawnie wybrać model: `both rights until expiry` albo `one active faction after switch`; mają inne access, cooldown i economy. Każdy wymaga quest prerequisites/history, NPC/location, duration/reset, fee/quest completion, catalog validation i atomic sale. 100k/day nie dowodzi balansu ani właściwego sinku. | **G1/G2. R:** character, quest/faction history, active/both-rights state, NPC/catalog, fee or repeatable quest, expiry/server save i sale transaction. **G:** vendor access i faction identity. **E:** gold sink, loot liquidation, NPC supply/cashflow i market prices. **Reference:** warianty nie mogą zostać zlane. |",
+      "observed_post_text_sha256": {
+        "Post_39580785": "9241ce623739359382f33de6536cfbc2f2e34fb2b13555574b317a39af474703",
+        "Post_39580789": "02dba50c29e213d5368bec0cb3a42253dd0e5abab4d230cb2593f46ff7e3d27c",
+        "Post_39580805": "601bc5025b9c26dd1a684d2417a92f538d49dfc6be9c85ce77333a72185f550e",
+        "Post_39580809": "ef5a50cef5728389071255f7482eb1ee47543de8f2a541b188a017e874556885"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "both djinns"
+    },
+    {
+      "id": "4995621",
+      "post_ids": [
+        "Post_39580542",
+        "Post_39580671",
+        "Post_39580807"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "controller_accessibility",
+        "all_caps_not_spam",
+        "supported",
+        "two_supports",
+        "quoted_google_answer_unverified"
+      ],
+      "reason": "An all-caps controller need is concrete rather than spam. A quoted Google answer is not verified current behavior; optional NPC presentation and controller navigation are Q0/Q1 only with preserved quest choices and confirmations and no hidden default choice.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995621",
+      "post_dates": [
+        {
+          "post_id": "Post_39580542",
+          "published_at": "29.04.2026 13:54:41",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580671",
+          "published_at": "30.04.2026 02:46:48",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580807",
+          "published_at": "01.05.2026 08:23:51",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.04.2026 13:54:41",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 3,
+      "sampled_reply_count": 2,
+      "op_post_id": "Post_39580542",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 7,
+      "analysis": "| [4995621](https://www.tibia.com/forum/?action=thread&threadid=4995621), OP `39580542`: controller user prosi o wyłączenie lub uproszczenie modalnego NPC dialogue window; dwa reply popierają opcjonalność. | `concrete_problem + concrete_proposal + controller_accessibility + all_caps_not_spam + supported + two_supports + quoted_google_answer_unverified`. Trzech autorów. Wielkie litery nie czynią wpisu spamem, a wklejona odpowiedź Google nie jest dowodem obecnego client behavior. | **UNKNOWN:** aktualny NPC modal, możliwość wyłączenia, controller focus i cytowane workarounds nie zostały sprawdzone. | **Q0/Q1 w P1:** opcjonalny layout/modal presentation może być Q0, a controller navigation Q1 przy tej samej conversation state i legalnych NPC actions. Musi zachować quest choices, price/transaction confirmations i visible focus; nie może wybierać ukrytej/default odpowiedzi ani pomijać potwierdzeń. | **Q0/Q1.** **R:** client/input mode/NPC/conversation state/focused option/quest choice/transaction confirmation. **G/E:** te same działania i ceny. |",
+      "observed_post_text_sha256": {
+        "Post_39580542": "7eaeb67dfc032d9718df7f2c706f16542fdd95a3c459cb4b4d96bdbe5b178ca6",
+        "Post_39580671": "e407ed21bf18d7bf07a14ebf055bcaf5d84b6aafe6413bfcfa05d8169c9857cf",
+        "Post_39580807": "86e737b96fafa10de17349890ccb60fe75fb087d028b46fb1d0bbfcf5213ba61"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "HI IM FROM ESCURA"
+    },
+    {
+      "id": "4995563",
+      "post_ids": [
+        "Post_39580171",
+        "Post_39580285",
+        "Post_39580286",
+        "Post_39580483"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "author_followup",
+        "mixed_scope",
+        "hyperbole_not_vote",
+        "analogy_unverified",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Permanent world completion and individual or hybrid access are distinct G1/G2 world-versus-character scopes. Three authors make four posts with two supports; thousand-times is not vote count, and the Farmine analogy is unverified.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995563",
+      "post_dates": [
+        {
+          "post_id": "Post_39580171",
+          "published_at": "27.04.2026 06:17:57",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580285",
+          "published_at": "28.04.2026 04:28:27",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580286",
+          "published_at": "28.04.2026 05:35:54",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580483",
+          "published_at": "29.04.2026 09:15:29",
+          "edited_at": null
+        }
+      ],
+      "op_date": "27.04.2026 06:17:57",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580171",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 8,
+      "analysis": "| [4995563](https://www.tibia.com/forum/?action=thread&threadid=4995563), OP `39580171`: trwałe ukończenie world change, niższe points albo częściowy character/hybrid unlock dla obszarów takich jak Hive/Fiehonja; dwóch innych autorów popiera ograniczenie powtarzanego global gate. | `concrete_problem + concrete_proposal + supported + two_supports + author_followup + mixed_scope + hyperbole_not_vote + analogy_unverified + unverified_claim + unverified_numbers`. Trzech autorów i cztery posty. „Tysiąc razy” nie jest liczbą głosów, a analogia Farmine i wszystkie progi pozostają niezweryfikowane. | **UNKNOWN:** world-change state/reset, Hive/Fiehonja/Farmine access, point requirements, bosses i population nie zostały sprawdzone. | **G1/G2 w P9/P14:** permanent world unlock zmienia shared world state; individual/hybrid variant tworzy character/account access rights. Należy rozdzielić world completion od personal contribution, quest/boss/reward gates, maintenance/reset i low-population fallback, bez automatycznego otwierania wszystkich ekonomicznych sources. | **G1/G2.** **R:** world/world-change/version/contribution/character/account/access area/quest/boss/reward/reset. **G:** exploration i hunt availability. **E:** loot/reward sources i server capacity. |",
+      "observed_post_text_sha256": {
+        "Post_39580171": "c61bd8a9df353ae771ec7309872680ae2e91042321c71bab1bd406b489b9ed36",
+        "Post_39580285": "d287a5492f8510b70c284f7d30b746a30462dc70b18d2cd38750e3e0ec45899f",
+        "Post_39580286": "35ffcae156979e6682121e6601482bd4e3d3e9eec94d060e4e8bde8a595c71ad",
+        "Post_39580483": "d7706f3752312f93c93f67cd560e0f7e8503ca9d63c9ddf6e373b352ac213d4b"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Proposal Improving Access to Areas Locked Behind World Chang"
+    },
+    {
+      "id": "4995646",
+      "post_ids": [
+        "Post_39580707",
+        "Post_39580803"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "independent_cross_thread_need",
+        "fee_behavior_unverified",
+        "unverified_claim"
+      ],
+      "reason": "An independent OP and one support reinforce Charm Presets relative to 4995704. Saving and preview are Q0 and applying legal assignments is Q1 with actual diff cost; unchanged fees are not assumed.",
+      "exclude_from_problem_recurrence": false,
+      "related_thread_id": 4995704,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995646",
+      "post_dates": [
+        {
+          "post_id": "Post_39580707",
+          "published_at": "30.04.2026 11:27:44",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580803",
+          "published_at": "01.05.2026 08:14:29",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 11:27:44",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580707",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 9,
+      "analysis": "| [4995646](https://www.tibia.com/forum/?action=thread&threadid=4995646), OP `39580707`: Charm presets analogiczne do Wheel presets; respondent podpisuje propozycję. Jest to niezależny OP wobec późniejszego 4995704. | `concrete_problem + concrete_proposal + supported + independent_cross_thread_need + fee_behavior_unverified + unverified_claim`. Dwóch autorów. Wątek wzmacnia recurrence kierunku, ale nie dowodzi current fees, PZ gate ani pełnej semantyki zastosowania. | **UNKNOWN:** Charm assignment, fees, PZ restrictions, limits i current UI nie zostały sprawdzone. | **Q0 plan/preview i Q1 legal apply w P10:** preset przechowuje assignments, pokazuje actual diff/cost i stosuje tylko legalne zmiany z atomic albo jawnym partial-failure result. Nie zakłada się zerowej ani niezmienionej opłaty bez weryfikacji. | **Q0/Q1.** **R:** character/preset/charm/creature/current assignment/diff/fee/eligibility/result. **G:** te same legalne przypisania. **E:** rzeczywisty koszt diff. |",
+      "observed_post_text_sha256": {
+        "Post_39580707": "627bba0a842c71c20e1893b262f46cc8faf4cff4ce501b57f0372b3b2af3bf77",
+        "Post_39580803": "791a85dba3d5b3c0e2bc1f781e64a61b62f0db925f85f0ab31c3b9766663c8eb"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Charm presets"
+    },
+    {
+      "id": "4995640",
+      "post_ids": [
+        "Post_39580697",
+        "Post_39580802"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "contested",
+        "alternative_proposal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Party-size-scaled Sorcerer healing at proposed 100/75/0-to-25 percent is G2 group composition and sustain. The reply's UH cooldown is an alternative rather than full support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995640",
+      "post_dates": [
+        {
+          "post_id": "Post_39580697",
+          "published_at": "30.04.2026 10:06:22",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580802",
+          "published_at": "01.05.2026 08:13:58",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 10:06:22",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580697",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 10,
+      "analysis": "| [4995640](https://www.tibia.com/forum/?action=thread&threadid=4995640), OP `39580697`: Sorcerer healing spell skalowany party size, przykładowo 100% duo, 75% trio i 0–25% full team; reply odrzuca nowy heal i proponuje zachowanie UH z dużym cooldownem. | `concrete_problem + concrete_proposal + contested + alternative_proposal + self_report + unverified_claim + unverified_numbers`. Dwóch autorów. Reply wspiera emergency healing need, ale nie pełny party-scaling spell. | **UNKNOWN:** UH/update, healer availability, party sizes, effectiveness, cooldown i podane wartości nie zostały sprawdzone. | **G2 w P3/P15:** party-size healing zmienia composition, role substitution i boss/duo sustain. UH-cooldown alternative jest osobną G2. Oba wymagają target eligibility, formula, cooldown/mana, party transition edge cases oraz solo/PvE/Boss/PvP target bands. | **G2.** **R:** caster/recipient/party membership-size/spell-or-UH/heal formula/cooldown/context. **G:** party sustain i healer role. **E:** mana/UH consumption i group efficiency. |",
+      "observed_post_text_sha256": {
+        "Post_39580697": "709102c54223930d4ef3e6c8334a8083d397d602ab868fcb83b0bb12e2dbd5d6",
+        "Post_39580802": "d255d445e5eadfbcc81b09232e66d99091cbecd589ae17a78662974cde02b35e"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "What to do with UH"
+    },
+    {
+      "id": "4995618",
+      "post_ids": [
+        "Post_39580527",
+        "Post_39580632",
+        "Post_39580801"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "broad_package",
+        "scope_ambiguous",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Seven axes need separate review. Imbuement amortization display is Q0 and distinct from actual cash without double counting; Djinn depot is G1/G2 logistics; streak rewards, loot, leg imbuements, unspecified quest restrictions and mount stats are G2. Two replies support broadly, one especially depot.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995618",
+      "post_dates": [
+        {
+          "post_id": "Post_39580527",
+          "published_at": "29.04.2026 12:19:50",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580632",
+          "published_at": "29.04.2026 19:36:24",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580801",
+          "published_at": "01.05.2026 08:12:01",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.04.2026 12:19:50",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 3,
+      "sampled_reply_count": 2,
+      "op_post_id": "Post_39580527",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 11,
+      "analysis": "| [4995618](https://www.tibia.com/forum/?action=thread&threadid=4995618), OP `39580527`: siedem osi — login rewards, old-monster loot, leg imbuements, quest level restrictions/rewards, Djinn depots, mount stats oraz imbuement cost w Hunt Analyzer; dwa reply popierają pakiet, jeden szczególnie depots. | `concrete_problem + concrete_proposal + supported + two_supports + broad_package + scope_ambiguous + unverified_claim + unverified_numbers`. Trzech autorów. Szerokie poparcie nie zatwierdza wszystkich osi; „level restrictions” prawdopodobnie oznacza ograniczenie, lecz kierunek/zakres nie jest dość precyzyjny, by założyć konkretny próg lub upper cap. | **UNKNOWN:** rewards/streak, loot, slots, quests, Djinn, mounts, analyzer i liczby nie zostały sprawdzone. | **Q0 P1/P7/P17:** imbuement cost jako estimated amortization z jasną metodą, oddzielone od actual cash/supply, bez double count. **G1/G2 P4/P5:** Djinn depot zmienia endpoint/location/custody. **G2 P6/P9/P14/P16/P17:** streak rewards/FOMO, loot, leg imbuements, quest gates/rewards i mount stats zmieniają progression/economy; Store-exclusive power należy unikać. | **Q0/G1/G2.** **R:** account/day/streak/reward; creature/loot; equipment/imbuement; quest/gate; depot/NPC; mount/stat; hunt session/cost. **G:** progression, access i stats. **E:** reward/loot supply, sinks i logistics. |",
+      "observed_post_text_sha256": {
+        "Post_39580527": "2b612b4437c344dd5f899ac6bb12d2ae833dac268c5d886058be1926bb3fa837",
+        "Post_39580632": "bb5e029ce0c281657278e1701a4f111032a71a2409e72864db32e7ddc8e7575b",
+        "Post_39580801": "c8ee73b98a7975bf88cfd5feb63b627058422158390a1cb5b7a6d71b2c44a25e"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "New proposals to Summer/Winter Updates"
+    },
+    {
+      "id": "4995644",
+      "post_ids": [
+        "Post_39580704",
+        "Post_39580746",
+        "Post_39580800"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "alternative_design",
+        "unverified_claim"
+      ],
+      "reason": "Removing ranged monster behavior is G2 AI and positioning. A new minor Charm creates a slot tradeoff, while adding the effect to Fatal Hold combines powers and is a distinct design.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995644",
+      "post_dates": [
+        {
+          "post_id": "Post_39580704",
+          "published_at": "30.04.2026 10:47:47",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580746",
+          "published_at": "30.04.2026 17:32:39",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580800",
+          "published_at": "01.05.2026 08:10:17",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 10:47:47",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 3,
+      "sampled_reply_count": 2,
+      "op_post_id": "Post_39580704",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 12,
+      "analysis": "| [4995644](https://www.tibia.com/forum/?action=thread&threadid=4995644), OP `39580704`: nowy minor charm wyłączający ranged behavior wybranego monster; reply proponuje alternatywnie dołączenie funkcji do Fatal Hold, a drugi podpisuje kierunek. | `concrete_problem + concrete_proposal + supported + two_supports + alternative_design + unverified_claim`. Trzech autorów. Dodanie funkcji do Fatal Hold nie jest neutralne ani tym samym projektem co nowy slot/charm. | **UNKNOWN:** Fatal Hold, ranged AI, taunt interaction, charm percentages i assignment limits nie zostały sprawdzone. | **G2 w P10/P15:** usunięcie ranged behavior zmienia AI, pathing, threat i solo/party positioning. Nowy charm tworzy opportunity cost slotu; rozszerzony Fatal Hold łączy dwa efekty i ma inny tradeoff. Potrzebne eligible creatures/boss exclusions, proc/duration, reset i telemetry. | **G2.** **R:** character/charm/assigned creature/AI mode/ranged action/proc/duration/Fatal Hold/slot. **G:** monster behavior i positioning. **E:** Charm value i hunt throughput. |",
+      "observed_post_text_sha256": {
+        "Post_39580704": "edb5522e1ed16732d4c5b4910116cfe089699eac416f05f9230bc9fb72e5b578",
+        "Post_39580746": "409f59a58996f53ff052f7ac54b1c66a4963ec4dec59d3e310b5b0ca7657b4bc",
+        "Post_39580800": "c6f3c500ab9cee5de5518752b3d42f511424f287dd0980299a8018275572fab3"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "New minor charm"
+    },
+    {
+      "id": "4995582",
+      "post_ids": [
+        "Post_39580297",
+        "Post_39580495",
+        "Post_39580633",
+        "Post_39580749"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "two_supports",
+        "author_followup",
+        "autonomy_change",
+        "unverified_claim"
+      ],
+      "reason": "Auto-follow through floors and gates is G2 movement autonomy and cannot bypass level, quest, key, cost or combat checks. A manual confirmation for each legal transition is a narrower Q1 alternative.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995582",
+      "post_dates": [
+        {
+          "post_id": "Post_39580297",
+          "published_at": "28.04.2026 09:44:09",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580495",
+          "published_at": "29.04.2026 09:49:18",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580633",
+          "published_at": "29.04.2026 19:37:49",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580749",
+          "published_at": "30.04.2026 17:40:20",
+          "edited_at": null
+        }
+      ],
+      "op_date": "28.04.2026 09:44:09",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580297",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 13,
+      "analysis": "| [4995582](https://www.tibia.com/forum/?action=thread&threadid=4995582), OP `39580297`: auto-follow utrzymujący śledzenie przez ladders, holes, floors i level gates; dwóch innych autorów podpisuje, a OP odpowiada. | `concrete_problem + concrete_proposal + supported + two_supports + author_followup + autonomy_change + unverified_claim`. Trzech autorów i cztery posty. Kontynuacja OP nie jest nowym głosem. | **UNKNOWN:** follow/pathing, transition rules, level gates, tempo gry i accessibility nie zostały sprawdzone. | **G2 w P1/P9/P15:** autonomiczne przechodzenie między floors/gates wykonuje traversal i access actions. Nie może omijać level, quest, cost, key, combat ani destination-safety checks. Bezpieczniejsza **Q1** alternative utrzymuje selected leader i podpowiada transition, ale każdą legalną zmianę poziomu gracz potwierdza ręcznie. | **Q1/G2.** **R:** follower/leader/follow state/transition/level-quest-cost gate/key/combat/destination/path. **G:** movement autonomy i access. **E:** travel/time i ewentualne opłaty. |",
+      "observed_post_text_sha256": {
+        "Post_39580297": "bf599335decc105fc5e299d78a3832d1047a73d45bc486d8dfec2b83a72a356e",
+        "Post_39580495": "0a52af7096c70523ad9b21a2e1a89e0c05764bc5c99b14033db05159bc30f4a8",
+        "Post_39580633": "fcdedab38de5f51cd18ade1434de87e753731699acc336238f18e681f29dff32",
+        "Post_39580749": "1c9def2393bc34965a9a9e2467fa8c1392f042fccd59d9ef35e80fd4eb00c5ac"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Auto-Follow System (new)"
+    },
+    {
+      "id": "4995657",
+      "post_ids": [
+        "Post_39580753"
+      ],
+      "quality_statuses": [
+        "outside_product_scale",
+        "external_commerce_candidate",
+        "proposal_only",
+        "personal_data_sanitized",
+        "unverified_claim"
+      ],
+      "reason": "Physical-event tickets, meals and TC integration are outside the PR571 product scale and need separate commercial review. Public text removes the person's full name and support-ticket identifier, and no external message or third-party instruction is sent.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995657",
+      "post_dates": [
+        {
+          "post_id": "Post_39580753",
+          "published_at": "30.04.2026 18:00:05",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 18:00:05",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580753",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 14,
+      "analysis": "| Integracja wydarzeń poza grą z TC, wątek [4995657](https://www.tibia.com/forum/?action=thread&threadid=4995657), post `39580753`: pomysł sprzedaży event tickets/meals lub użycia TC podczas fizycznego wydarzenia. | `outside_product_scale + external_commerce_candidate + proposal_only + personal_data_sanitized + unverified_claim`. Jeden post. Publiczny tytuł/opis usuwa pełne dane osobowe i identyfikator zgłoszenia; nie wykonano kontaktu ani polecenia wobec strony trzeciej. | **UNKNOWN:** organizacja wydarzenia, ticketing, meal fulfillment, TC/legal/payment rules i wykonalność nie zostały sprawdzone. | **Poza skalą #571:** osobny external-event/commercial candidate wymagający owner, legal, payments, tax i fulfillment review. Nie mapuje się bezpośrednio na runtime gameplay ani roadmapową walutę bez oddzielnej decyzji. | **Poza Q0/Q1/G1/G2.** **R/G:** external event/commerce. **E:** TC/payment/redemption/fulfillment poza tym audytem. |",
+      "observed_post_text_sha256": {
+        "Post_39580753": "c08b87801a1be708e24db0b2d47d16d10fd9d7b1ad1d08edfc81c15ab39fef71"
+      },
+      "capture_format": "body-author-footer-v1",
+      "label": "Integracja wydarzeń poza grą z TC",
+      "source_title_omitted": true
+    },
+    {
+      "id": "4995648",
+      "post_ids": [
+        "Post_39580716",
+        "Post_39580750"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "one_support",
+        "eligibility_change",
+        "unverified_claim"
+      ],
+      "reason": "Removing PvE battle state when no creature is on screen changes logout and teleport eligibility as G2, not Q0 icon presentation. Off-screen threats and pending effects require review without publishing abuse instructions.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995648",
+      "post_dates": [
+        {
+          "post_id": "Post_39580716",
+          "published_at": "30.04.2026 12:59:31",
+          "edited_at": "30.04.2026 13:00:26"
+        },
+        {
+          "post_id": "Post_39580750",
+          "published_at": "30.04.2026 17:43:49",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 12:59:31",
+      "op_edit_date": "30.04.2026 13:00:26",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580716",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 15,
+      "analysis": "| [4995648](https://www.tibia.com/forum/?action=thread&threadid=4995648), OP `39580716`: wygaśnięcie PvE battle sign, gdy brak creature na ekranie, aby umożliwić logout lub teleport; respondent popiera albo proponuje krótszy czas. | `concrete_problem + concrete_proposal + supported + one_support + eligibility_change + unverified_claim`. Dwóch autorów. To zmiana server eligibility, nie Q0 icon; off-screen threats i pending effects wymagają sprawdzenia. Nie opisano sposobu wykorzystania. | **UNKNOWN:** battle sign duration, on/off-screen creatures, projectiles/effects, logout/cube/scroll rules i PvP split nie zostały sprawdzone. | **G2 w P12/P15/P18:** visible-creature absence nie jest wystarczającym dowodem braku zagrożenia lub attribution. Potrzebne server-known hostile state, pending damage/projectiles, aggro ownership, recent actions, off-screen sources, teleport/logout destination i abuse review; UI może Q0 tylko wyjaśniać pozostałą blokadę. | **G2.** **R:** character/combat sign/hostile source/aggro/pending effect/projectile/time/logout-or-teleport request/context. **G:** escape i combat persistence. **E:** death/supply avoidance i abuse incentive. |",
+      "observed_post_text_sha256": {
+        "Post_39580716": "9091d52e7ee2ede1263b8e8d149d833b1b3dc75840fa4e7f6b562bd0f00cc98c",
+        "Post_39580750": "c1b69fac58196451556c487e3358a43514595239b17f627073e17462e0a1794f"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "The Battle Sign"
+    },
+    {
+      "id": "4995654",
+      "post_ids": [
+        "Post_39580748"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "single_author",
+        "unverified_claim"
+      ],
+      "reason": "An authoritative Test Server calendar with timezone, version and cancellation state plus optional export is Q0. No reminder or automation is created.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995654",
+      "post_dates": [
+        {
+          "post_id": "Post_39580748",
+          "published_at": "30.04.2026 17:38:56",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 17:38:56",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580748",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 16,
+      "analysis": "| [4995654](https://www.tibia.com/forum/?action=thread&threadid=4995654), OP `39580748`: publikowanie dat Test Server w in-game/app calendar z opcjonalnym exportem do zewnętrznego kalendarza. | `concrete_problem + concrete_proposal + single_author + unverified_claim`. Jeden OP bez odpowiedzi. | **UNKNOWN:** Test Server schedule source, client/apps calendar i export support nie zostały sprawdzone. | **Q0 w P1:** authoritative published calendar powinien mieć timezone, start/end, environment/build version, update/cancellation status i link do źródła. Optional export jest statycznym subscribe/export convenience; nie utworzono automatycznego reminder ani zadania. | **Q0.** **R:** event/schedule/version/environment/timezone/status/cancellation/export feed. **G/E:** brak zmiany test access i rewardów. |",
+      "observed_post_text_sha256": {
+        "Post_39580748": "496c04d0e2f61ce006f9042bfa129994befe636665c71fd9ac8ce3ceb8e4fab4"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Test Server on Calendar"
+    },
+    {
+      "id": "4994030",
+      "post_ids": [
+        "Post_39573917",
+        "Post_39575156",
+        "Post_39575174",
+        "Post_39580731"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "three_supports",
+        "one_conditional_support",
+        "controlled_rng",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Same-color and same-slot Greater Gem mod transfer that consumes the source plus proposed 10/20/30kk and fragments is G2 controlled RNG and economy. High cost alone does not preserve rarity; three replies support, one conditionally.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4994030",
+      "post_dates": [
+        {
+          "post_id": "Post_39573917",
+          "published_at": "07.03.2026 18:01:36",
+          "edited_at": "07.03.2026 18:02:10"
+        },
+        {
+          "post_id": "Post_39575156",
+          "published_at": "16.03.2026 22:36:56",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39575174",
+          "published_at": "17.03.2026 00:55:18",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580731",
+          "published_at": "30.04.2026 15:00:05",
+          "edited_at": null
+        }
+      ],
+      "op_date": "07.03.2026 18:01:36",
+      "op_edit_date": "07.03.2026 18:02:10",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39573917",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 17,
+      "analysis": "| [4994030](https://www.tibia.com/forum/?action=thread&threadid=4994030), OP `39573917`: transfer wybranego mod ze source Greater Gem do target gem tego samego domain/color i slotu, niszczący source, za 10/20/30kk plus fragments; trzy reply popierają, jedno warunkowo wskazuje potrzebę ograniczenia mocy. | `concrete_problem + concrete_proposal + supported + three_supports + one_conditional_support + controlled_rng + unverified_claim + unverified_numbers`. Czterech autorów. Koszt i zniszczenie source nie dowodzą automatycznego zachowania rarity ani balansu. | **UNKNOWN:** Gem Atelier, domains/colors, slots/mod rarity, costs, fragments, failure i economy nie zostały sprawdzone. | **G2 w P6/P17:** controllable mod transfer zmienia RNG, build ceiling i sink. Wymaga same-domain/same-slot validation, exact before/after preview, source destruction atomic z target update, failure/pity policy, idempotency oraz simulation supply/rarity; wszystkie koszty pozostają propozycjami. | **G2.** **R:** account/character/source gem/target gem/domain/slot/mod/fragments/gold/transaction result. **G:** build optimization i progression. **E:** gem destruction, fragment/gold sinks i rarity distribution. |",
+      "observed_post_text_sha256": {
+        "Post_39573917": "7b7f8306930142a28d58e530474518ab7d1bfd22072cab9de3cadaef62f5d3a5",
+        "Post_39575156": "9bee6c0da55d908a8684fa5e998ea747e70d856eb388b1b975ed79deeb316a97",
+        "Post_39575174": "1fbe6a0d02b4bba1cb000903b744ed07b72ab611c2031d87c64d8fe9b8e58299",
+        "Post_39580731": "a1abd6666b71de4691efe50162f0eeb8097d2dc6c90465fca5c8c258021689ce"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Gem Crafting System"
+    },
+    {
+      "id": "4995650",
+      "post_ids": [
+        "Post_39580723",
+        "Post_39580726"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "supported",
+        "one_support",
+        "version_underspecified",
+        "analogy_unverified",
+        "unverified_claim"
+      ],
+      "reason": "An old-2005 client request actually implies a G2 historical world ruleset, not a skin. Exact version is underspecified; one support and a WoW analogy do not prove feasibility, and Reference does not imply 2005.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995650",
+      "post_dates": [
+        {
+          "post_id": "Post_39580723",
+          "published_at": "30.04.2026 13:32:29",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580726",
+          "published_at": "30.04.2026 14:03:47",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 13:32:29",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580723",
+      "source_file": "year-fiftyninth12-analysis.md",
+      "line": 18,
+      "analysis": "| [4995650](https://www.tibia.com/forum/?action=thread&threadid=4995650), OP `39580723`: powrót do gry „jak w 2005” opisany jako old client; respondent podpisuje. | `concrete_proposal + proposal_only + supported + one_support + version_underspecified + analogy_unverified + unverified_claim`. Dwóch autorów. WoW Classic jest analogią produktu, nie dowodem wykonalności; wskazanie 2005 nie definiuje patcha ani zasad. | **UNKNOWN:** oczekiwany ruleset/version, client assets, demand, population split i koszt utrzymania nie zostały sprawdzone. | **G2 ruleset/product decision poza zatwierdzonym kierunkiem #571:** request dotyczy combat, progression, economy i content state, nie samej skórki klienta Q0. Trzeba wskazać exact version/patch, migration, account/world separation i maintenance; Reference profile nie oznacza automatycznie 2005. | **G2.** **R:** world/ruleset/version/client protocol/account/character/content/migration. **G:** cała pętla gry. **E:** odrębna gospodarka, population split i operating cost. |",
+      "observed_post_text_sha256": {
+        "Post_39580723": "35ac2f6741f8cf8e350e32c2693f40c405a54cf69abda8f7eebb9c3dc7d05494",
+        "Post_39580726": "44f2cc36787aab38989b2d2db03476ecf9124290ff197b1f71a5cbbccf9e244f"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Old tibia"
+    },
+    {
+      "id": "4995649",
+      "post_ids": [
+        "Post_39580719"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed_scope",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "A World Changes window is Q0 for already public known state. New spoiler or real-time visibility is G1 and can be G2 when it changes competition for encounters or rewards, requiring audience and disclosure policy.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995649",
+      "post_dates": [
+        {
+          "post_id": "Post_39580719",
+          "published_at": "30.04.2026 13:09:00",
+          "edited_at": null
+        }
+      ],
+      "op_date": "30.04.2026 13:09:00",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580719",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 7,
+      "analysis": "| [4995649](https://www.tibia.com/forum/?action=thread&threadid=4995649), OP `39580719`: okno World Changes pokazujące aktywne danego dnia wydarzenia, miasta/lokalizacje i dodatkowe informacje, z postulatem także statusu wydarzeń dziejących się w czasie rzeczywistym. | `concrete_problem + concrete_proposal + mixed_scope + self_report + unverified_claim`. Jeden autor bez odpowiedzi. Potrzeba discovery jest konkretna, lecz dzienny znany stan i real-time/spoiler visibility mają różne prawa. | **UNKNOWN:** World Changes schedule/state, NPC information, invasion visibility, discovery/spoiler policy i lokalizacje nie zostały sprawdzone. | **Rozdzielić:** **Q0 P2/P9** może zebrać już publiczny, legalnie znany stan i wskazówki, zachowując discovery/quest prerequisites. Nowy real-time status, exact location lub informacja wcześniej niedostępna jest **G1**, a jeśli wpływa na wyścig o encounter/reward może być **G2 P11/P17**; wymaga delay, audience i spoiler policy. | **Q0/G1/G2. R:** world/event identity, schedule/phase, public/discovered state, viewer eligibility, location granularity i update time. **G:** Q0 presentation; nowa real-time wiedza może zmienić access/competition. **E:** reward timing i event competition. **Reference:** znany publiczny stan oddzielić od nowej widoczności. |",
+      "observed_post_text_sha256": {
+        "Post_39580719": "27fd7af20cc83d21a2a4b2a31f47bfc2dc32ea712e6561cb163fbcc85e27fa20"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "WINDOW FOR WORLD CHANGES"
+    },
+    {
+      "id": "4995537",
+      "post_ids": [
+        "Post_39580037",
+        "Post_39580077",
+        "Post_39580301",
+        "Post_39580634"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "self_report",
+        "bump_only",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Three authors provide two independent supports; the OP bump is not another vote. Extending house AFK from 15 to 30 minutes changes G1 session rights, while Q0 bounded Guild Chat history can solve the missed-conversation need without extending presence.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "G1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995537",
+      "post_dates": [
+        {
+          "post_id": "Post_39580037",
+          "published_at": "26.04.2026 10:49:10",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580077",
+          "published_at": "26.04.2026 12:08:28",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580301",
+          "published_at": "28.04.2026 09:57:47",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580634",
+          "published_at": "29.04.2026 19:38:21",
+          "edited_at": null
+        }
+      ],
+      "op_date": "26.04.2026 10:49:10",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580037",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 8,
+      "analysis": "| [4995537](https://www.tibia.com/forum/?action=thread&threadid=4995537), OP `39580037` + bump `39580634`: wydłużenie house/guildhall AFK logout z 15 do 30 minut bez PZ lock, aby zachować obecność i ciągłość Guild Chat; dwóch innych autorów popiera. | `concrete_problem + concrete_proposal + supported + self_report + bump_only + unverified_claim + unverified_numbers`. Trzech autorów, dwa niezależne poparcia; bump OP nie jest nowym głosem. Limity 15/30 i bieżące PZ/logout rules nie zostały sprawdzone. | **UNKNOWN:** idle timeout, house/guildhall/PZ state, presence/concurrency, chat retention i server cost nie zostały sprawdzone. | **Rozdzielić:** dłuższa obecność to **G1 P3/P12/P16**, bo zmienia session/presence rights, occupancy i account concurrency. Stated need „co ominęło mnie na czacie” można rozwiązać **Q0 P3** przez bounded Guild Chat history/unread marker bez utrzymywania postaci online; to wymaga retention/privacy, ale nie rozszerza presence. | **Q0/G1. R:** account/session/character, house/guildhall/PZ/idle state, presence; osobno guild channel/history/retention/unread. **G:** Q0 history only; timeout zmienia session rights. **E:** server/session capacity i house occupancy. **Reference:** chat continuity bez wymuszania obecności. |",
+      "observed_post_text_sha256": {
+        "Post_39580037": "f6e89cd663de321e647ad617acc0c31b903e8ed716fe3459c73ccd04d3a3d3ec",
+        "Post_39580077": "442b925ce9c53c4b450187be0bbd246382759ec5f8a8c6e99c1b4ea46c4ab2d9",
+        "Post_39580301": "ef71fb24df197529793593995ed9c0aeff95d960b2e3ffaa4c1280c97cccec97",
+        "Post_39580634": "65270886adb862cf5388a8fd53c254d429fee1b63ef6fff6d62e1676c78a8cdc"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "AFK - Proposal for new logout rule."
+    },
+    {
+      "id": "4995638",
+      "post_ids": [
+        "Post_39580680",
+        "Post_39580684"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed_scope",
+        "variant_proposal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Pouch pages are Q0 and an exact manual withdrawal can be Q1 under existing rights. Free auto-conversion every five minutes is G2 currency cadence, remote party deposit is G1/G2, and house Wheel access changes a temple or location gate and is G1/G2 rather than Q1.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1",
+        "G1",
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995638",
+      "post_dates": [
+        {
+          "post_id": "Post_39580680",
+          "published_at": "30.04.2026 05:55:41",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580684",
+          "published_at": "30.04.2026 06:28:30",
+          "edited_at": "30.04.2026 06:30:22"
+        }
+      ],
+      "op_date": "30.04.2026 05:55:41",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580680",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 9,
+      "analysis": "| [4995638](https://www.tibia.com/forum/?action=thread&threadid=4995638), OP `39580680`: strony/sortowanie Gold Pouch i możliwość użycia Wheel w house/guildhall; respondent proponuje układ kolumn, darmowy auto-convert co 5 minut i zdalny transfer środków na konto członka party. | `concrete_problem + concrete_proposal + mixed_scope + variant_proposal + self_report + unverified_claim + unverified_numbers`. Dwóch autorów. Widok monet, conversion, remote deposit i Wheel access są czterema osobnymi zmianami. | **UNKNOWN:** Gold Pouch storage/withdrawal/converter, bank transfer, party/account rights, Wheel temple gate, house services i wszystkie koszty nie zostały sprawdzone. | **Rozdzielić:** pages/sort to **Q0 P1/P4** bez nowych praw; ręczny withdraw exact amount może być **Q1**, jeśli używa tych samych istniejących praw i conservation. Darmowy auto-convert co 5 min jest **G2 P17**, bo zmienia currency charges/cadence. Remote party deposit jest **G1/G2 P5** z recipient confirmation, ledger i fraud controls. Wheel w house usuwa temple/location gate i jest **G1/G2 P8/P16**, nie Q1, dopóki parity access nie zostanie dowiedzione. | **Q0/Q1/G1/G2. R:** pouch/coin/quantity/view; converter charge/timer; sender/recipient/account/ledger; character/Wheel/location/house rights. **G:** display/manual existing action vs nowe remote/currency/build access. **E:** coin conservation, free conversion, transfer fraud i respec sinks. **Reference:** cztery osobne scopes. |",
+      "observed_post_text_sha256": {
+        "Post_39580680": "2077502fd026432b0174b78928597143cbc812a567b7484c7ce71af7f0c0276b",
+        "Post_39580684": "cc3d9bd47fedbb4a840fa6604dffe09bf1dc359c4168d04752cda6a848e2d4d7"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Ideas for improvement in quality of life"
+    },
+    {
+      "id": "4994697",
+      "post_ids": [
+        "Post_39577134",
+        "Post_39580666"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "self_report",
+        "bump_only"
+      ],
+      "reason": "An optional explicit copy from Sio target configuration to Gran Sio configuration is Q1, not autocast or automatic healing. One author's later bump is not support.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4994697",
+      "post_dates": [
+        {
+          "post_id": "Post_39577134",
+          "published_at": "01.04.2026 18:39:06",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580666",
+          "published_at": "29.04.2026 23:38:09",
+          "edited_at": null
+        }
+      ],
+      "op_date": "01.04.2026 18:39:06",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39577134",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 10,
+      "analysis": "| [4994697](https://www.tibia.com/forum/?action=thread&threadid=4994697), OP `39577134` + bump `39580666`: opcjonalny checkbox/prompt kopiujący ręcznie dodawaną osobę z listy `sio` także do konfiguracji `gran sio`. | `concrete_problem + concrete_proposal + self_report + bump_only`. Jeden autor, dwa posty; bump nie jest supportem. | **UNKNOWN:** sio/gran sio list semantics, party/target eligibility i current config UI nie zostały sprawdzone. | **Q1 P1/P3:** po jawnej decyzji użytkownika klient może skopiować tę samą identity do drugiej konfiguracji, a serwer/UI waliduje legalny target i pokazuje wynik. To nie jest autocast, auto-target ani wykonanie heal; każde późniejsze użycie czaru zachowuje range, party, cooldown, mana i target rights. | **Q1. R:** owner, source/destination spell config, selected character identity, party/legal target i confirmation. **G:** config only; cast pozostaje ręczny i legalny. **E:** bez zmiany many lub reward. **Reference:** optional copy, nie automatyzacja walki. |",
+      "observed_post_text_sha256": {
+        "Post_39577134": "a9f3b3a98d31bd82f4aec5d8e520811eabaf47786917d50966ff9adc7fe72e28",
+        "Post_39580666": "bdc804f4bb039aea4898cd047f91d2c0cd12aaa57accc13128dfb7050f1231df"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Quality of Life Suggestion: Gran Sio Add-on OptioN"
+    },
+    {
+      "id": "4995634",
+      "post_ids": [
+        "Post_39580648",
+        "Post_39580649"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "continuation",
+        "single_author",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Two posts from one author propose forced PvP and harsher death penalties for alleged KS. Without objective server-authoritative KS attribution, notice and appeal, these G2 punishments can weaponize accusations and are not endorsed as stated.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995634",
+      "post_dates": [
+        {
+          "post_id": "Post_39580648",
+          "published_at": "29.04.2026 21:14:42",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580649",
+          "published_at": "29.04.2026 21:18:25",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.04.2026 21:14:42",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580648",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 11,
+      "analysis": "| [4995634](https://www.tibia.com/forum/?action=thread&threadid=4995634), OP `39580648` + kontynuacja `39580649`: ostrzejsza kara śmierci i automatyczne otwieranie PvP dla osoby oznaczonej jako kill-stealing, z wariantem utraty pełnych blessings zamiast Twisted Fate. | `concrete_problem + concrete_proposal + continuation + single_author + unverified_claim + unverified_numbers`. Dwa posty jednego autora, bez odpowiedzi. Brak obiektywnej definicji KS, attribution, dowodu intencji i procedury odwoławczej. Nie potwierdzamy oskarżeń o trollowanie ani recovery time. | **UNKNOWN:** KS definition/credit, PvP flags, Twisted Fate/blessings, death penalties, world rules i abuse evidence nie zostały sprawdzone. | **G2 P12/P13/P18:** forced PvP i zwiększony death loss nie mogą wynikać z subiektywnej etykiety. Potrzebne server-authoritative contribution/ownership, notice, contest/appeal, repeated-behavior window, per-world legality i audit; błędna klasyfikacja tworzy griefing weapon. Full-bless removal i automatic PvP flag to dwa osobne, wysokiego ryzyka candidates. | **G2. R:** world/PvP mode, actors/party, creature/damage/kill/reward contribution, alleged event history, flag/notice/appeal, death/blessings. **G:** hostile eligibility i kill credit. **E:** XP/item/blessing loss oraz loot ownership. **Reference:** brak endorsementu accusations. |",
+      "observed_post_text_sha256": {
+        "Post_39580648": "7bd3e452ec255183b6f6db2ad89de1e5db7c28ad6cfa47eb9c4053b70d760e05",
+        "Post_39580649": "72faa1cd1a35d33be06a75343b1b5b3e36118222ba8cd95c06038a75aa176397"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "The current PvP problem is Twisted Fate"
+    },
+    {
+      "id": "4995547",
+      "post_ids": [
+        "Post_39580111",
+        "Post_39580169",
+        "Post_39580179",
+        "Post_39580190"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "self_report",
+        "unverified_claim"
+      ],
+      "reason": "Three replies support DPI scaling. It is Q0 only when fonts, icons and minimap scale over the same visible information without extending field of view, explored area or detection range.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995547",
+      "post_dates": [
+        {
+          "post_id": "Post_39580111",
+          "published_at": "26.04.2026 19:08:26",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580169",
+          "published_at": "27.04.2026 05:52:45",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580179",
+          "published_at": "27.04.2026 08:25:20",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580190",
+          "published_at": "27.04.2026 11:11:29",
+          "edited_at": null
+        }
+      ],
+      "op_date": "26.04.2026 19:08:26",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580111",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 12,
+      "analysis": "| [4995547](https://www.tibia.com/forum/?action=thread&threadid=4995547), OP `39580111`: DPI/UI scaling fontów, ikon, mapy i całego okna dla ekranów high-resolution; trzech respondentów popiera. | `concrete_problem + concrete_proposal + supported + self_report + unverified_claim`. Czterech autorów i trzy niezależne poparcia. Konkretne rozdzielczości/sprzęt i bieżące skalowanie nie zostały sprawdzone. | **UNKNOWN:** renderer, DPI awareness, font/icon/minimap scaling, Windows scaling i urządzenia nie zostały sprawdzone. | **Q0 P1/P2:** user-controlled DPI presets muszą skalować te same visible UI/map data, zachować layout, hit targets, text clarity i accessibility. Powiększenie minimapy nie rozszerza field of view, explored area, detection range ani innych informacji; potrzebne bounded viewport/pan semantics. | **Q0. R:** device DPI/resolution, UI scale, font/icon assets, minimap viewport i saved preference. **G:** presentation only; identyczny FOV i visible area. **E:** brak. **Reference:** trzy supporty dostępności. |",
+      "observed_post_text_sha256": {
+        "Post_39580111": "d37034e4b38608652fc3e0bedca26b7ef37d6b1002f9667808c530d464c77a58",
+        "Post_39580169": "e09c87584f82c87dd9d7b9692677a61300a2204a0651d6f35f110fbd1fcb2f99",
+        "Post_39580179": "33a06fc76d3f224d9c5c766e6d1174548f093febd1d41770c91cddc481f1a82c",
+        "Post_39580190": "8cef3acc2dacf183308793609d31814c0d507ac6072b543836b37232ca4dc8e4"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Modern systems are high res. We need scaling."
+    },
+    {
+      "id": "4995536",
+      "post_ids": [
+        "Post_39580035",
+        "Post_39580076",
+        "Post_39580078",
+        "Post_39580295"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "mixed",
+        "one_question",
+        "one_support",
+        "author_followup",
+        "unverified_claim"
+      ],
+      "reason": "Three authors across four posts provide one support; a question is not support and the OP follow-up is not a new need. Virtual Depot views and sorting are Q0, while physical moves are Q1 only under existing legal rules with preview and exact item identity.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "Q0",
+        "Q1"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995536",
+      "post_dates": [
+        {
+          "post_id": "Post_39580035",
+          "published_at": "26.04.2026 10:40:57",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580076",
+          "published_at": "26.04.2026 12:04:17",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580078",
+          "published_at": "26.04.2026 12:09:33",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580295",
+          "published_at": "28.04.2026 09:41:53",
+          "edited_at": null
+        }
+      ],
+      "op_date": "26.04.2026 10:40:57",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580035",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 13,
+      "analysis": "| [4995536](https://www.tibia.com/forum/?action=thread&threadid=4995536), OP `39580035` + pytanie `39580078`: sortowanie Depot po atrybutach i przypisywanie depot chests do kategorii; respondent pyta o utratę orientacji, a drugi popiera. | `concrete_problem + concrete_proposal + mixed + one_question + one_support + author_followup + unverified_claim`. Trzech autorów, cztery posty. Pytanie/counter nie jest supportem, follow-up OP nie jest nową potrzebą, a jeden respondent popiera. | **UNKNOWN:** Depot model, stowability, sort fields, chest assignment, item order/location i search nie zostały sprawdzone. | **Rozdzielić:** virtual views/filter/sort to **Q0 P1/P4**, zachowują canonical item location/identity i mogą odpowiedzieć na obawę o odnajdywanie. Faktyczne przenoszenie do chests to **Q1** tylko jako ręcznie potwierdzony preview/plan dokładnych item instances z tymi samymi ownership/capacity/legal-move rules, partial failure i undo/audit gdzie możliwe. | **Q0/Q1. R:** owner/depot/chest, item instance/type/attributes/current-target location, virtual view/filter i move plan/result. **G:** presentation lub te same legalne ruchy. **E:** custody/conservation, bez duplikacji lub utraty. **Reference:** view przed reorganizacją fizyczną. |",
+      "observed_post_text_sha256": {
+        "Post_39580035": "5ebe5883d4605399979337838ecdda19dbccccd45f9d92bc5b24709bfcc0bace",
+        "Post_39580076": "e56da228904117723adcf5ced755ff47b17dd25b7d1ab8fef609b9cdecdf7ef8",
+        "Post_39580078": "1228a53577fde24d083366beee573b9f1c9d9947cd796eb2c39c3e59f3b12329",
+        "Post_39580295": "77b8fe03f17092a2a33d80e63c4008ba9a34c688df14df14066cd02a69a9d07f"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "A couple of organisational options."
+    },
+    {
+      "id": "4995622",
+      "post_ids": [
+        "Post_39580545",
+        "Post_39580590"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "self_report",
+        "underspecified_rules",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Tutoring mode is G2 temporary power and progression projection with one support. Level, HP, MP, Wheel, gear and skills need a complete scaling and restoration ledger; death basis is unclear and earned XP must be credited exactly once.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995622",
+      "post_dates": [
+        {
+          "post_id": "Post_39580545",
+          "published_at": "29.04.2026 14:06:43",
+          "edited_at": "29.04.2026 14:10:12"
+        },
+        {
+          "post_id": "Post_39580590",
+          "published_at": "29.04.2026 17:01:33",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.04.2026 14:06:43",
+      "op_edit_date": "29.04.2026 14:10:12",
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 2,
+      "sampled_reply_count": 1,
+      "op_post_id": "Post_39580545",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 14,
+      "analysis": "| [4995622](https://www.tibia.com/forum/?action=thread&threadid=4995622), OP `39580545`: tutoring mode tymczasowo obniżający level, HP/MP, Wheel i pozostałą moc wysokopoziomowej postaci do shared-XP range niższej party, a potem przywracający stan i dodający EXP zdobyte w trybie; jeden autor popiera. | `concrete_problem + concrete_proposal + supported + self_report + underspecified_rules + unverified_claim + unverified_numbers`. Dwóch autorów i jedno niezależne poparcie. „Everything” nie określa gear, skills, charms, quest access ani summonów; death deduction i restoration są niejasne. | **UNKNOWN:** shared-XP range, level-derived stats, Wheel/gear/skills, death penalties, XP ledger, enable/disable i abuse paths nie zostały sprawdzone. | **G2 P3/P6/P8/P13/P15/P17:** potrzebny shadow/effective-level state bez nadpisywania permanent progression, kompletna scaling matrix HP/MP/Wheel/gear/skills/effects, context locks i immutable before/tutoring/earned/death ledger. EXP zdobyty w tutoring liczy się dokładnie raz; restoration nie może zwrócić loss i jednocześnie ponownie dodać tę samą wartość. Death penalty musi jawnie określać effective czy permanent basis. | **G2. R:** account/character/permanent level-XP, tutoring effective state, party/shared XP, gear/skills/Wheel, earned XP/death loss, activation/restore transaction. **G:** power scaling, eligibility i progression. **E:** XP conservation, boosting i Bazaar/transfer boundary. **Reference:** temporary projection z trwałym ledgerem. |",
+      "observed_post_text_sha256": {
+        "Post_39580545": "4b8a2d7eb9ffa20bf22fe8d223c1f0b1e1758fd4753a230fc7d9b721fd9cb62a",
+        "Post_39580590": "0dc8c7b1b7edb11eac0df7c025152111f2d151ef4f2445547ea28fb6d9186356"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Player tutoring mode (level downgrade adaptation)"
+    },
+    {
+      "id": "4995627",
+      "post_ids": [
+        "Post_39580567"
+      ],
+      "quality_statuses": [
+        "concrete_engineering_problem",
+        "self_report",
+        "outside_scale",
+        "unverified_root_cause"
+      ],
+      "reason": "A repeated post-update crash is a concrete engineering incident outside gameplay classes. Version, sanitized error and crash review are needed; anti-cheat bypass is not suggested and the stated service or device issue is not a verified root cause.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995627",
+      "post_dates": [
+        {
+          "post_id": "Post_39580567",
+          "published_at": "29.04.2026 16:11:53",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.04.2026 16:11:53",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 1,
+      "sampled_reply_count": 0,
+      "op_post_id": "Post_39580567",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 15,
+      "analysis": "| [4995627](https://www.tibia.com/forum/?action=thread&threadid=4995627), OP `39580567`: po aktualizacji klient ma wielokrotnie crashować, z komunikatem dotyczącym usługi anti-cheat/device, powodując utratę gry i ryzyko śmierci. | `concrete_engineering_problem + self_report + outside_scale + unverified_root_cause`. Jeden autor bez odpowiedzi. To konkretny incident lead, lecz jeden raport nie ustala przyczyny; wzmianka o anti-cheat/device jest obserwacją komunikatu, nie diagnozą. | **UNKNOWN:** client/build/platform/device, crash signature, anti-cheat status, frequency, death events i account entitlement impact nie zostały sprawdzone. | **Outside scale #571 / engineering:** zebrać wersję klienta/OS, timestamp, sanitized error/crash id i reproduction context, korelować z release telemetry oraz dać bezpieczny support/review flow. Nie sugerować obchodzenia anti-cheat ani obniżania zabezpieczeń; root cause wymaga triage. | **Poza Q0/Q1/G1/G2. R:** build/platform/session/crash/error id i support case. **G/E:** możliwy wpływ przez disconnect/death/Premium pozostaje skutkiem do weryfikacji, nie mapowalną propozycją. **Reference:** engineering incident. |",
+      "observed_post_text_sha256": {
+        "Post_39580567": "c0664578f2d83f52d45c2607f7e0ee115fb7645761482dd772e315e219fc472a"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "THE GAME IS CRASHING OUT"
+    },
+    {
+      "id": "4995340",
+      "post_ids": [
+        "Post_39579184",
+        "Post_39580496",
+        "Post_39580511",
+        "Post_39580555"
+      ],
+      "quality_statuses": [
+        "concrete_problem",
+        "concrete_proposal",
+        "supported",
+        "contested",
+        "mixed",
+        "two_supporting_variants",
+        "one_dismissal",
+        "self_report",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "Four authors provide two supports for different models and one dismissal. One free weekly alternate and paid random rerolls with gold or points are distinct G2 task-distribution models; fees and limits do not prove balance.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995340",
+      "post_dates": [
+        {
+          "post_id": "Post_39579184",
+          "published_at": "18.04.2026 21:53:08",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580496",
+          "published_at": "29.04.2026 09:50:58",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580511",
+          "published_at": "29.04.2026 10:36:35",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580555",
+          "published_at": "29.04.2026 14:48:10",
+          "edited_at": null
+        }
+      ],
+      "op_date": "18.04.2026 21:53:08",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39579184",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 16,
+      "analysis": "| [4995340](https://www.tibia.com/forum/?action=thread&threadid=4995340), OP `39579184`: losowy swap creature lub item w Weekly Task za Hunting Task points albo gold; jeden respondent proponuje jeden darmowy swap tygodniowo, drugi popiera gold sink, a trzeci odrzuca potrzebę. | `concrete_problem + concrete_proposal + supported + contested + mixed + two_supporting_variants + one_dismissal + self_report + unverified_claim + unverified_numbers`. Czterech autorów. Dwa supporty dotyczą różnych modeli — free weekly alternate i paid random reroll — więc nie tworzą konsensusu ceny. Przykłady availability/Market i fee nie zostały sprawdzone. | **UNKNOWN:** Weekly Task targets/items, access, point/gold balances, reroll RNG, free allowances, Market i reward values nie zostały sprawdzone. | **G2 P10/P14/P17:** reroll zmienia task eligibility/distribution i koszt ukończenia. Trzeba rozdzielić target vs delivery-item pools, equal/difficulty bands, exclusions, one-free-per-week albo paid cost, confirmation, deterministic RNG audit i no-repeat/pity policy. Ani fee, ani weekly cap nie dowodzą balansu bez completion/reward telemetry. | **G2. R:** character/week/task slot/type, current target/item, eligible pool/version, free allowance/points/gold, RNG result/confirmation i completion. **G:** task access/cadence. **E:** point/gold sink, item demand i reward throughput. **Reference:** dwa warianty poparcia, jeden dismissal. |",
+      "observed_post_text_sha256": {
+        "Post_39579184": "088588033ae363c72946ca0c0f4a92cc24a50a929f7c63ecd4d939ab41a7dd70",
+        "Post_39580496": "f07db84ca0d502944ddd8129d0d33ce3269bc3868faa91142ea2317b68c8a1f1",
+        "Post_39580511": "2a2f9f5c75504520965168553dfd5236e2bdacde2b0517b1880057d92392fb07",
+        "Post_39580555": "379e497e33d251170d55d8535609de173ace58fbd7c8056a7616c4fceb373ef3"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "creature / item swap in Weekly Task"
+    },
+    {
+      "id": "4995623",
+      "post_ids": [
+        "Post_39580549",
+        "Post_39580553",
+        "Post_39580554"
+      ],
+      "quality_statuses": [
+        "concrete_proposal",
+        "proposal_only",
+        "supported_direction",
+        "continuation",
+        "mixed_scope",
+        "unverified_claim",
+        "unverified_numbers"
+      ],
+      "reason": "MOBA, scaled dungeon and battle royale are three G2 programmes from one OP across two posts. One reply supports alternative leveling broadly rather than all designs; match gear must stay isolated while world XP and loot need contribution, anti-idle and reward budgets.",
+      "exclude_from_problem_recurrence": true,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995623",
+      "post_dates": [
+        {
+          "post_id": "Post_39580549",
+          "published_at": "29.04.2026 14:27:46",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580553",
+          "published_at": "29.04.2026 14:35:11",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580554",
+          "published_at": "29.04.2026 14:38:07",
+          "edited_at": null
+        }
+      ],
+      "op_date": "29.04.2026 14:27:46",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 3,
+      "sampled_reply_count": 2,
+      "op_post_id": "Post_39580549",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 17,
+      "analysis": "| [4995623](https://www.tibia.com/forum/?action=thread&threadid=4995623), OP `39580549` + kontynuacja `39580553`: trzy osobne programme gameplay — 5v5 MOBA z match gear, skalowany dungeon 1–5 oraz battle-royale PvP z kurczącą się mapą; jeden autor ogólnie popiera więcej sposobów levelowania. | `concrete_proposal + proposal_only + supported_direction + continuation + mixed_scope + unverified_claim + unverified_numbers`. Dwóch autorów, trzy posty; dwie części OP są jednym autorem, a reply popiera kierunek alternatywnego levelowania, nie każdy tryb i reward model. | **UNKNOWN:** matchmaking, instance tech, class kits, temporary gear, dungeon scaling, PvP/death rules, anti-idle, XP/loot i schedules nie zostały sprawdzone. | **G2 P3/P11/P13/P17:** MOBA, dungeon i battle royale to trzy oddzielne programmes. Match-only gear/currency muszą być izolowane i usuwane po matchu; world XP/loot ma bounded reward budget, eligibility, anti-idle/contribution, collusion/queue controls i no-export rules. Weekend/daily cadence, team composition i death/penalty policy wymagają osobnych decyzji. | **G2. R:** mode/match/instance, queue/team/role, temporary loadout/currency, objectives/contribution/anti-idle, death/end/result/reward. **G:** instanced combat, scaling i PvP rules. **E:** isolated match economy versus world XP/loot, reward caps i collusion. **Reference:** trzy programmes, jedno ogólne poparcie. |",
+      "observed_post_text_sha256": {
+        "Post_39580549": "e217f106af4b50f1182934e83ade3a101ef8539fff6ccab4e331971e4a99872e",
+        "Post_39580553": "edcb68cf4498d4a5f3807fcb6e17a98b3fd94689119f7f05933c9c217c9c62be",
+        "Post_39580554": "69d0cc99ff8161682ea46ae1bbd0f8852642f994d53767782c6e634364bec78d"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "Different Way to Up Lvl and Profit"
+    },
+    {
+      "id": "4995584",
+      "post_ids": [
+        "Post_39580312",
+        "Post_39580494",
+        "Post_39580541",
+        "Post_39580546"
+      ],
+      "quality_statuses": [
+        "concrete_process_problem",
+        "concrete_proposal",
+        "supported",
+        "mixed",
+        "outside_scale_process",
+        "speculative_balance_signal",
+        "unverified_claim",
+        "inconsistent_schedule",
+        "unverified_numbers"
+      ],
+      "reason": "The title says four test days while the body describes roughly two plus one, and the inconsistency is preserved. One author supports a larger sample; RP fear and arithmetic are speculative G2 signals rather than results. Longer duration alone does not ensure quality without cohorts and repeated matched tests.",
+      "exclude_from_problem_recurrence": false,
+      "classes": [
+        "G2"
+      ],
+      "url": "https://www.tibia.com/forum/?action=thread&threadid=4995584",
+      "post_dates": [
+        {
+          "post_id": "Post_39580312",
+          "published_at": "28.04.2026 12:03:01",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580494",
+          "published_at": "29.04.2026 09:48:34",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580541",
+          "published_at": "29.04.2026 13:53:54",
+          "edited_at": null
+        },
+        {
+          "post_id": "Post_39580546",
+          "published_at": "29.04.2026 14:06:50",
+          "edited_at": "29.04.2026 14:37:05"
+        }
+      ],
+      "op_date": "28.04.2026 12:03:01",
+      "op_edit_date": null,
+      "read_date": "2026-09-12",
+      "filter": "Last Year",
+      "complete_thread": false,
+      "coverage": "opening post and up to three initial replies; later discussion pages not covered",
+      "sample_post_count": 4,
+      "sampled_reply_count": 3,
+      "op_post_id": "Post_39580312",
+      "source_file": "year-sixtieth12-analysis.md",
+      "line": 18,
+      "analysis": "| [4995584](https://www.tibia.com/forum/?action=thread&threadid=4995584), OP `39580312`: krytyka krótkiego procesu testowego vocation changes i propozycja co najmniej dwóch tygodni oraz etapów PvE/PvP; jeden respondent popiera większą próbę, drugi obawia się RP solo, a trzeci podaje spekulacyjne wyliczenia. | `concrete_process_problem + concrete_proposal + supported + mixed + outside_scale_process + speculative_balance_signal + unverified_claim + inconsistent_schedule + unverified_numbers`. Czterech autorów. Tytuł mówi o czterech dniach, tekst o około dwóch dniach pierwszej i jednym drugiej fazy; źródło nie rozstrzyga harmonogramu. Jeden support dotyczy sample size; obawa i matematyka RP nie są realnym testem. | **UNKNOWN:** actual schedule, participant/sample size, builds, test coverage, RP mechanics i wszystkie prognozy nie zostały sprawdzone. | **Outside scale #571 / QA process:** dłuższy czas sam nie gwarantuje jakości. Potrzebne versioned builds, cohorts, repeated matched scenarios, telemetry, structured PvE/PvP/solo/team matrix i coverage gates. Osobny **G2 P15** sygnał RP można zachować jako hipotezę do testu, lecz procentowe wyliczenia i expected solo boost nie są wynikami. | **G2 signal + process outside scale. R:** test phase/build, participant/cohort, scenario/repetitions, metrics/results; osobno RP build/actions. **G:** balance decyzje dopiero z danych. **E:** hunt throughput/economy wpływ wymagają prób. **Reference:** 2+1 versus 4 pozostaje niespójne. |",
+      "observed_post_text_sha256": {
+        "Post_39580312": "7e4afe523929b3db4d312f3d4940d7892ef17472de3d31470111a9d751ac78f4",
+        "Post_39580494": "c5d3f02a6b43a61a46781b9d684410bc546a92ccc8ec9c894e71e52b355158bc",
+        "Post_39580541": "af6d9ae30fa273d1aadc6cf5de6d4b18352068915ef2d681fb8af4f9e243fd22",
+        "Post_39580546": "c0f1ed398ee782433d419e4faf343cda7f963dff5559df5e24bb183d91e42081"
+      },
+      "capture_format": "body-author-footer-v1",
+      "title": "4 days of testing for major vocation changes? This Is not OK"
     }
   ],
   "hash_comparison_caveat": "Compare captured text hashes only within the same capture_format; formatting changes are not evidence of source edits."

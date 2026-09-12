@@ -5,15 +5,15 @@ Właściciel potwierdził zakres: wszystkie 3061 wątków z utrwalonego spisu La
 | Miara | Stan |
 |---|---:|
 | ID w spisie Last Year | 3061 |
-| ID Last Year z zachowanym odczytem/oceną | 1228 |
-| ID Last Year bez zachowanej analizy | 1833 |
-| Wszystkie zachowane rekordy, także spoza spisu | 1320 |
-| Strony spisu, dla których każde ID ma zachowany odczyt/ocenę | 40 |
-| Nowsze posty z identyfikatorami/datami/hashami | 1496 |
+| ID Last Year z zachowanym odczytem/oceną | 1264 |
+| ID Last Year bez zachowanej analizy | 1797 |
+| Wszystkie zachowane rekordy, także spoza spisu | 1356 |
+| Strony spisu, dla których każde ID ma zachowany odczyt/ocenę | 42 |
+| Nowsze posty z identyfikatorami/datami/hashami | 1591 |
 
 Odczyt obejmuje OP i maksymalnie trzy początkowe odpowiedzi. Rekord usuniętej treści jest skontrolowany, ale nie zawiera odtworzonej dawnej propozycji. Pełne dyskusje, dalsze odpowiedzi i obrazy nie są oznaczane jako przeczytane. Ruchomy spis nie jest atomowym eksportem.
 
-[Indeks źródeł](./source-index.json) i [kolejka pozostałych ID](./last-year-progress.json) pozwalają wznowić odczyt bez powtarzania już zachowanych OP. [Ocena jakości](./year-quality-index.json) obejmuje 684 nowszych rekordów; 148 wyłączono z recurrence problemów. Wyłączenie nie oznacza spamu: propozycje bez opisanego problemu nadal pozostają kandydatami.
+[Indeks źródeł](./source-index.json) i [kolejka pozostałych ID](./last-year-progress.json) pozwalają wznowić odczyt bez powtarzania już zachowanych OP. [Ocena jakości](./year-quality-index.json) obejmuje 720 nowszych rekordów; 155 wyłączono z recurrence problemów. Wyłączenie nie oznacza spamu: propozycje bez opisanego problemu nadal pozostają kandydatami.
 
 ## Wyniki i porównanie
 
@@ -76,6 +76,11 @@ Odczyt obejmuje OP i maksymalnie trzy początkowe odpowiedzi. Rekord usuniętej 
 - [year-fiftyfifth12-analysis.md](./year-fiftyfifth12-analysis.md)
 - [year-fiftysixth12-analysis.md](./year-fiftysixth12-analysis.md)
 - [year-fiftyseventh12-analysis.md](./year-fiftyseventh12-analysis.md)
+- [year-fiftyeighth12-analysis.md](./year-fiftyeighth12-analysis.md)
+- [year-fiftyninth12-analysis.md](./year-fiftyninth12-analysis.md)
+- [year-sixtieth12-analysis.md](./year-sixtieth12-analysis.md)
+
+[Zapis przerwy na polecenie właściciela](./pause-checkpoint.md). Dalszy odczyt jest wstrzymany.
 
 Porównanie #571 dotyczy rewizji `b2ef322791520130a2683f3004d26abd5c027ac8`, dokumentacji, nie wdrożenia. Historyczne relacje o Global są UNKNOWN bez niezależnego potwierdzenia. Nie przyjmuje się oskarżeń ani satyrycznych liczb jako faktów. Ta sama osoba, skopiowany cytat, własny bump i liczba wyświetleń nie zwiększają liczby niezależnych potrzeb.
 

@@ -7,8 +7,8 @@
   "inventory_pages_completed": 103,
   "inventory_unique_ids": 3061,
   "inventory_count_matches_observed_total": true,
-  "retained_analysis_matches": 1228,
-  "listed_without_retained_analysis": 1833,
+  "retained_analysis_matches": 1264,
+  "listed_without_retained_analysis": 1797,
   "complete_audit": false,
   "complete_discussion_read": false,
   "rate_limit_event": "Too Many Requests at page 23, paused; subsequent reads paced at eight seconds without further limit",
@@ -46,42 +46,6 @@
     "4999913"
   ],
   "pending_ids": [
-    "4995464",
-    "4995680",
-    "4995685",
-    "4995678",
-    "4995645",
-    "4995576",
-    "4995675",
-    "4995642",
-    "4995669",
-    "4995666",
-    "4995373",
-    "4995662",
-    "4995621",
-    "4995563",
-    "4995646",
-    "4995640",
-    "4995618",
-    "4995644",
-    "4995582",
-    "4995657",
-    "4995648",
-    "4995654",
-    "4994030",
-    "4995650",
-    "4995649",
-    "4995537",
-    "4995638",
-    "4994697",
-    "4995634",
-    "4995547",
-    "4995536",
-    "4995622",
-    "4995627",
-    "4995340",
-    "4995623",
-    "4995584",
     "4995620",
     "4995619",
     "4995617",
@@ -4664,11 +4628,10 @@
         "4995697",
         "4995696",
         "4995682",
-        "4995681"
-      ],
-      "unread_ids": [
+        "4995681",
         "4995464"
-      ]
+      ],
+      "unread_ids": []
     },
     {
       "page": 42,
@@ -4704,8 +4667,7 @@
         "4995547",
         "4995536"
       ],
-      "retained_analysis_ids": [],
-      "unread_ids": [
+      "retained_analysis_ids": [
         "4995680",
         "4995685",
         "4995678",
@@ -4736,7 +4698,8 @@
         "4995634",
         "4995547",
         "4995536"
-      ]
+      ],
+      "unread_ids": []
     },
     {
       "page": 43,
@@ -4772,13 +4735,14 @@
         "4995531",
         "4995106"
       ],
-      "retained_analysis_ids": [],
-      "unread_ids": [
+      "retained_analysis_ids": [
         "4995622",
         "4995627",
         "4995340",
         "4995623",
-        "4995584",
+        "4995584"
+      ],
+      "unread_ids": [
         "4995620",
         "4995619",
         "4995617",
@@ -8828,5 +8792,9 @@
         "4987346"
       ]
     }
-  ]
+  ],
+  "collection_status": "paused_by_owner",
+  "pause_date": "2026-09-12",
+  "pause_reason": "Finish analysis of already captured material; stop further forum reading until owner resumes.",
+  "captured_year_batch_ids_without_retained_analysis": []
 }
