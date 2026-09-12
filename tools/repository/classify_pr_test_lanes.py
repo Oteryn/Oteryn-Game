@@ -8,6 +8,7 @@ closed only when later changes can affect build/document input discovery.
 """
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import os
@@ -28,12 +29,6 @@ REQUIRED = {
     "oteryn-simulation-determinism": "crates/simulation-determinism",
 }
 BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
-DOC_CONSUMER_MARKERS = (
-    b"include_str!", b"include_bytes!", b"std::fs", b"tokio::fs", b"async_std::fs",
-    b"file::open", b"openoptions", b"read_to_string", b"read_dir", b"read_link",
-    b"walkdir", b"glob::", b"globset", b"command::new",
-    b"docs/", b".md", b"readme", b"changelog", b"contributing", b"agents.md",
-)
 
 
 def full(reason: str, surface: str = "unknown") -> dict:
@@ -106,11 +101,201 @@ def input_digest(metadata: dict, include_server: bool = False) -> str:
     return hashlib.sha256(b"\0".join(sorted(selected)) + b"\0").hexdigest()
 
 
-def document_consumer_content_safe(path: str, content: bytes) -> bool:
+def document_consumer_content_safe(path: str, baseline: bytes, current: bytes | None = None) -> bool:
+    """Prove that baseline-to-current drift cannot add or modify a consumer.
+
+    This intentionally is not an absence-of-known-markers test.  Rust is open
+    ended (aliases, grouped imports and macros can all hide filesystem access),
+    so only blank lines and ordinary non-doc line comments are admitted. Rust
+    doc comments are attributes (and macro-visible), while every executable or
+    uncertain line can change behavior, so all of those fail closed.
+    """
     if path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
         return False
-    lowered = content.lower()
-    return not any(marker in lowered for marker in DOC_CONSUMER_MARKERS)
+    if current is None:
+        current, baseline = baseline, b""
+    if PurePosixPath(path).suffix != ".rs":
+        return baseline == current
+    try:
+        before_lines, current_lines = baseline.splitlines(), current.splitlines()
+        before_comments = rust_ordinary_comment_lines(baseline)
+        current_comments = rust_ordinary_comment_lines(current)
+        if before_comments is None or current_comments is None:
+            return False
+        matcher = difflib.SequenceMatcher(None, before_lines, current_lines, autojunk=False)
+        for tag, before_start, before_end, current_start, current_end in matcher.get_opcodes():
+            if tag == "equal":
+                continue
+            changed = ((before_lines, before_comments, before_start, before_end),
+                       (current_lines, current_comments, current_start, current_end))
+            for lines, comments, start, end in changed:
+                for index in range(start, end):
+                    line = lines[index]
+                    if line.strip() and not comments[index]:
+                        return False
+        return True
+    except (TypeError, UnicodeError):
+        return False
+
+
+def rust_ordinary_comment_lines(content: bytes) -> list[bool] | None:
+    """Identify standalone ordinary line comments in proven Rust code context.
+
+    This deliberately small lexer tracks every Rust construct that can span a
+    line and make a leading ``//`` mere content. Unknown or unterminated state
+    is rejected rather than guessed safe.
+    """
+    lines = content.splitlines()
+    ordinary = [False] * len(lines)
+    state = "code"
+    block_depth = 0
+    raw_hashes = 0
+    escaped = False
+    for line_index, line in enumerate(lines):
+        first = len(line) - len(line.lstrip())
+        if state == "code" and line[first:].startswith(b"//"):
+            ordinary[line_index] = not line[first:].startswith((b"///", b"//!"))
+
+        index = 0
+        while index < len(line):
+            if state == "line":
+                break
+            if state == "block":
+                if line.startswith(b"/*", index):
+                    block_depth += 1
+                    index += 2
+                elif line.startswith(b"*/", index):
+                    block_depth -= 1
+                    index += 2
+                    if block_depth == 0:
+                        state = "code"
+                else:
+                    index += 1
+                continue
+            if state == "string":
+                byte = line[index]
+                index += 1
+                if escaped:
+                    escaped = False
+                elif byte == 0x5C:
+                    escaped = True
+                elif byte == 0x22:
+                    state = "code"
+                continue
+            if state == "raw":
+                terminator = b'"' + (b"#" * raw_hashes)
+                if line.startswith(terminator, index):
+                    index += len(terminator)
+                    state = "code"
+                else:
+                    index += 1
+                continue
+
+            if line.startswith(b"//", index):
+                state = "line"
+                break
+            if line.startswith(b"/*", index):
+                state, block_depth = "block", 1
+                index += 2
+                continue
+            raw = re.match(br"(?:br|cr|r)(\#*)\"", line[index:])
+            if raw is not None:
+                state, raw_hashes = "raw", len(raw.group(1))
+                index += len(raw.group(0))
+                continue
+            if line.startswith((b'b"', b'c"'), index):
+                state, escaped = "string", False
+                index += 2
+                continue
+            if line.startswith(b"b'", index):
+                end = rust_character_literal_end(line, index + 1, byte=True)
+                if end is None:
+                    return None
+                index = end
+                continue
+            if line[index] == 0x27:
+                end = rust_character_literal_end(line, index, byte=False)
+                if end is None:
+                    # Lifetimes and labels are not character literals and have
+                    # no lexical state to track. Anything else is uncertain.
+                    lifetime = re.match(br"'[A-Za-z_][A-Za-z0-9_]*(?!')", line[index:])
+                    if lifetime is None:
+                        return None
+                    index += len(lifetime.group(0))
+                    continue
+                index = end
+                continue
+            if line[index] == 0x22:
+                state, escaped = "string", False
+            index += 1
+        if state == "line":
+            state = "code"
+        elif state == "string" and escaped:
+            escaped = False
+    return ordinary if state == "code" else None
+
+
+def rust_character_literal_end(line: bytes, quote: int, *, byte: bool) -> int | None:
+    """Return the byte after a valid Rust character literal, else ``None``.
+
+    Character literals cannot span physical lines. Recognizing their complete
+    token here prevents embedded double quotes from corrupting string/raw-string
+    state; rejecting malformed or uncertain forms keeps the proof fail closed.
+    """
+    index = quote + 1
+    if index >= len(line):
+        return None
+    if line[index] == 0x5C:
+        index += 1
+        if index >= len(line):
+            return None
+        escape = line[index]
+        if escape in b"nrt\\0'\"":
+            index += 1
+        elif escape == ord("x"):
+            digits = line[index + 1:index + 3]
+            if len(digits) != 2 or re.fullmatch(br"[0-9A-Fa-f]{2}", digits) is None:
+                return None
+            if not byte and int(digits, 16) > 0x7F:
+                return None
+            index += 3
+        elif escape == ord("u") and not byte:
+            # Rust requires the first code-point digit after ``{`` to be
+            # hexadecimal; separators may only follow that first digit.
+            match = re.match(br"u\{([0-9A-Fa-f][0-9A-Fa-f_]*)\}", line[index:])
+            if match is None:
+                return None
+            try:
+                digits = match.group(1).replace(b"_", b"")
+                if not 1 <= len(digits) <= 6:
+                    return None
+                value = int(digits, 16)
+                if value > 0x10FFFF or 0xD800 <= value <= 0xDFFF:
+                    return None
+            except ValueError:
+                return None
+            index += len(match.group(0))
+        else:
+            return None
+    else:
+        width = 1
+        if line[index] >= 0x80:
+            if byte:
+                return None
+            for candidate in range(2, 5):
+                try:
+                    decoded = line[index:index + candidate].decode("utf-8")
+                except UnicodeDecodeError:
+                    continue
+                if len(decoded) == 1:
+                    width = candidate
+                    break
+            else:
+                return None
+        elif line[index] in b"'\\\t\r\n":
+            return None
+        index += width
+    return index + 1 if index < len(line) and line[index] == 0x27 else None
 
 
 def document_consumers_safe(metadata: dict) -> bool:
@@ -137,24 +322,25 @@ def document_consumers_safe(metadata: dict) -> bool:
         if re.fullmatch(r"[0-9a-f]{40}", current) is None:
             return False
         pathspecs = sorted(BUILD_INPUTS) + [".cargo"] + sorted(roots.values())
-        deleted_or_typed = subprocess.check_output(
+        added_deleted_or_typed = subprocess.check_output(
             ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-             "--diff-filter=DT", "--name-only", "-z",
+             "--diff-filter=ADT", "--name-only", "-z",
              AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
         )
-        if deleted_or_typed:
+        if added_deleted_or_typed:
             return False
         changed = subprocess.check_output(
             ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-             "--diff-filter=ACMR", "--name-only", "-z",
+             "--diff-filter=M", "--name-only", "-z",
              AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
         )
         for raw_path in (item for item in changed.split(b"\0") if item):
             path = raw_path.decode("utf-8")
             if not valid_path(path):
                 return False
+            baseline = subprocess.check_output(["git", "show", f"{AUDITED_DOC_CONSUMER_BASE_SHA}:{path}"])
             content = subprocess.check_output(["git", "show", f"{current}:{path}"])
-            if not document_consumer_content_safe(path, content):
+            if not document_consumer_content_safe(path, baseline, content):
                 return False
         return True
     except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
