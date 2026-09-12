@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "OTV2_WP3_AUDIT_EVIDENCE_INDEX",
   "date": "2026-09-12",
   "repository": "Oteryn/Oteryn-Game",
@@ -11,7 +11,19 @@
     "blob_sha": "763e357bb234bc49ccd3d02b22ee928af5496879",
     "verdict": "RED",
     "recommended_path": "REDESIGN_BOUNDARY",
-    "terminal_marker": "WP3_BOUNDARY_REDESIGN_REQUIRED"
+    "terminal_marker": "WP3_BOUNDARY_REDESIGN_REQUIRED",
+    "section_24_scope": "Q47-Q70 refinements only; do not treat section 24 as the complete qualification matrix"
+  },
+  "qualification_matrix": {
+    "path": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q70_20260912.md",
+    "range": "WP3-Q01..WP3-Q70",
+    "count": 70,
+    "self_contained": true,
+    "q01_q46_source": "original complete audit verification matrix; wording preserved",
+    "q47_q70_source": "Revision-3 consumer/pool/source refinements",
+    "status": "REQUIRES_EXACT_HEAD_EVIDENCE_UNLESS_PROVEN_OTHERWISE",
+    "new_native_tests_executed_by_documentation_repair": false,
+    "purpose": "prevent reconstruction of mandatory qualification obligations from Git history"
   },
   "verified_revisions": {
     "protected_main": "489e3e390a1bce1ce3439c66521ab75f8a826cd8",
@@ -50,7 +62,8 @@
     "count": 24,
     "status": "REQUIRES_EXACT_HEAD_EVIDENCE",
     "new_native_tests_executed_by_audit": false,
-    "canonical_location": "Revision-3 report section 24"
+    "report_location": "Revision-3 report section 24",
+    "complete_matrix_location": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q70_20260912.md"
   },
   "coverage": {
     "tracked_areas": 30,
@@ -96,11 +109,17 @@
       "source-derived phase terms are not complete measured AWS-LC production peaks"
     ]
   },
+  "documentation_integrity": {
+    "known_section24_gap_detected": true,
+    "gap": "Revision-3 report section 24 listed Q47-Q70 while referring to retained Q01-Q46",
+    "repair": "complete Q01-Q70 matrix retained in a dedicated canonical qualification artifact and indexed here",
+    "git_history_reconstruction_required_for_q01_q70": false
+  },
   "authority": {
     "accepted_architecture": false,
     "implementation_authority": false,
     "merge_authority": false,
     "production_authority": false,
-    "purpose": "machine-readable retained evidence index for the canonical audit"
+    "purpose": "machine-readable retained evidence index for the canonical audit package"
   }
 }
