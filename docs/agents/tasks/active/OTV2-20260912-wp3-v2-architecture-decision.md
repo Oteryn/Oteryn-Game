@@ -4,7 +4,7 @@
 task_id: OTV2-20260912-wp3-v2-architecture-decision
 title: Draft WP3-v2 superseding architecture decision
 mode: CONTRACT
-status: ready_for_acceptance
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/wp3-v2-superseding-decision-20260912
@@ -44,12 +44,12 @@ Produce one coherent superseding WP3-v2 architecture decision for the real Child
 
 Current candidate:
 
-`WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`, Revision 2.
+`WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`, Revision 3.
 
 Current lane result:
 
 ```text
-WP3_V2_ARCHITECTURE_READY_FOR_ACCEPTANCE
+WP3_V2_ARCHITECTURE_SUCCESSOR_VALIDATING
 ARCHITECTURE_ACCEPTED = NO
 IMPLEMENTATION_AUTHORITY = NONE
 ```
@@ -74,7 +74,10 @@ Option B is selected for the first slice:
 - lazy `PgPool` used as one-ready-connection holder;
 - `max_connections=1`, `min_connections=0`;
 - SQLx default finite retirement retained: idle 10 minutes, max lifetime 30 minutes;
-- one root-owned connect/reconnect transient at a time, five-second root connect deadline;
+- one root-owned connect/reconnect generation at a time, five-second root connect deadline per recovery window;
+- `R` and `T` are mutually exclusive lifecycle generations, including every connection-attributable retirement tail; no new `T` begins until prior `R`/`T` descendants are final;
+- successful establishment is a charged `T -> R` ownership transfer, not an overlap;
+- root recovery is event-driven through one coalesced `root_ready_demand` latch: startup/takeover demand, ready-only `try_begin()==None`, or explicit root-owned retirement; one demand authorizes at most one five-second recovery window and there is no periodic/immediate reconnect loop after failure;
 - active DB work uses `Pool::try_begin()` so it cannot manufacture a connection;
 - two logical active custody slots, at most one physical DB pass at a time;
 - one-second queue deadline and one absolute two-second DB-pass deadline;
@@ -138,6 +141,8 @@ Pinned SQLx proves:
 - drop can spawn asynchronous return-to-pool work;
 - reaper may close idle/lifetime-expired connections, but with `min_connections=0` its minimum-maintenance call does not create a replacement.
 
+Revision 3 freezes the architectural consequences rather than leaving them to A4: connection-attributable reaper/close/reactor tails stay in the owning `R`/`T` generation until finality; generations do not overlap; a silent reaper is recovered on the next coalesced ready-miss demand; a failed root connect window does not self-loop and requires a new/coalesced demand before a successor window.
+
 ### Configuration
 
 Pinned SQLx ordinary options can consume ambient `PG*`, OS username and `.pgpass`; `.pgpass` uses an unbounded `read_line(String)` and may log the full malformed line. Therefore the production profile forbids ambient configuration and uses an explicit Oteryn-owned bounded configuration path.
@@ -146,11 +151,29 @@ Pinned SQLx ordinary options can consume ambient `PG*`, OS username and `.pgpass
 
 Pinned source reaches AuthenticationOk, CleartextPassword, MD5Password and SASL; other methods reject. SASL implements non-channel-binding SCRAM-SHA-256. `SCRAM-SHA-256-PLUS` is not qualified because the implementation sends `plus:false`.
 
-Revision 2 therefore freezes SCRAM-SHA-256 only and authorizes a narrow fail-closed owner-aware auth-profile seam.
+Revision 3 retains SCRAM-SHA-256 only and the narrow fail-closed owner-aware auth-profile seam from Revision 2.
 
 ### TLS/provider graph
 
 Current root Game Server profile selects ring, but exact #356 owner-aware TLS code requires the qualified AWS-LC feature and fails otherwise. Protected #451/#453/#458 plus exact #356 source make the AWS-LC profile the smallest evidence-backed first-slice provider. This is a future Gate-1 implementation profile change, not a claim that protected main already uses AWS-LC.
+
+## Independent-review remediation
+
+The independent review of predecessor exact head `8f5e45dd1a7bdaf28dbf088543518f40cea38e29` produced exactly the two findings assigned to this repair lane. No additional architecture scope is admitted here.
+
+### P1 — accepted and repaired
+
+**Finding:** the prior `I + max(R,T) + Q + A` equation did not unambiguously classify or prohibit overlap between settled/retiring `R`, connect `T`, and asynchronous retirement tails, leaving A4 to choose architecture semantics.
+
+**Repair:** Revision 3 freezes `I`, lifecycle-complete `R`, lifecycle-complete `T`, the `T -> R` transfer point, and strict non-overlap. Per-connection retirement descendants remain in the generation that created them; shared process residency is `I`; a new `T` is blocked until every prior `R`/`T` tail is final. The equation is therefore complete under a single fixed architecture model. Failure to implement/prove that model is escalation, not implementation discretion.
+
+### P2 — fixed
+
+**Finding:** the prior root-maintenance text did not freeze the exact recovery trigger after a silent reaper close or a failed five-second connect window.
+
+**Repair:** Revision 3 freezes one coalesced `root_ready_demand` event source set and one-window consumption rule. Startup/takeover demand, ready-only `try_begin()==None`, or explicit root-owned retirement may set the latch. A silent reaper is detected by the next ready miss. One latched demand authorizes one five-second window; a failed/timed-out window retires fully as `T` and never self-retries. Only a new/coalesced demand may authorize a later window.
+
+Because P1 is a material accepted repair, the predecessor review does not qualify the successor exact head. A fresh genuinely independent HIGH-risk architecture/resource/security re-review remains required before repository architecture acceptance.
 
 ## Resource qualification state
 
@@ -160,9 +183,9 @@ Architecture defines:
 I + max(R,T) + Q + A <= 12 MiB
 ```
 
-`Q <= 4 MiB` and `A <= 8 MiB` are accepted DFR ceilings. One settled connection and one connect transient are architecture maxima. Complete `I`, `R`, `T`, active SQL peak, deferred reactor tail and metadata-byte bounds remain `UNKNOWN` until the exact A4 candidate.
+`Q <= 4 MiB` and `A <= 8 MiB` are accepted DFR ceilings. Architecture now fixes the complete lifecycle classification and mutual exclusion of `R` and `T`: no separate retirement-tail term exists outside them, and per-connection deferred tails cannot be moved into `I` to evade the bound. Complete byte values for `I`, lifecycle `R`, lifecycle `T`, active SQL peak and metadata remain `UNKNOWN` until the exact A4 candidate.
 
-Those are implementation qualification obligations, not guessed architecture constants. Failure of the root equation requires escalation; it never authorizes a second ledger, extra slot or weakened TLS/DFR semantics.
+Those byte values are implementation qualification obligations, not architecture choices. Failure of the frozen root equation requires escalation; it never authorizes overlap, a tail exemption, a second ledger, extra slot or weakened TLS/DFR semantics.
 
 ## #356 disposition
 
@@ -180,7 +203,7 @@ Those are implementation qualification obligations, not guessed architecture con
 
 - SQLx core/PostgreSQL changes to exact root-owner, receive/count/status/cache/finality seams;
 - final Game Server TLS feature from ring to selected AWS-LC profile after acceptance/allocation;
-- pool/bootstrap to lazy max1/min0 + root maintenance + active try-begin;
+- pool/bootstrap to lazy max1/min0 + root maintenance + active try-begin + coalesced root-demand/finality gate;
 - config/auth/TLS setup to no-ambient + VerifyFull/TLS1.3/SCRAM-only.
 
 ### HISTORICAL EVIDENCE ONLY / removable after replacement proof
@@ -196,6 +219,8 @@ Those are implementation qualification obligations, not guessed architecture con
 - broad operation-owned direct connection as terminal WP3 architecture;
 - earlier two-connection first-slice recommendations;
 - timeout/drop/after_release/SQLx-close-as-finality assumptions;
+- implementation-selected overlap between new connects and prior connection/attempt retirement tails;
+- timer/polling/unbounded reconnect policy substituted for the frozen demand-triggered recovery model;
 - current ring profile as the final first-slice WP3-v2 provider once this candidate is accepted and A4 is allocated.
 
 ## Acceptance criteria
@@ -204,6 +229,8 @@ Those are implementation qualification obligations, not guessed architecture con
 - [x] one root/executor ownership model defined.
 - [x] queue/active ownership and exact release/finality semantics defined.
 - [x] pool construction/connect/replacement/retirement/ready-only active checkout defined.
+- [x] P1: exact `I/R/T` lifecycle and retirement-tail classification plus non-overlap frozen so A4 has no architecture choice.
+- [x] P2: exact coalesced root-maintenance recovery trigger/window semantics frozen for reaper absence and failed connect windows.
 - [x] configuration/credential sources and lifetimes defined without ambient libpq discovery.
 - [x] PostgreSQL startup/authentication profile frozen to SCRAM-SHA-256 only.
 - [x] exact TLS/runtime/provider first-slice profile frozen.
@@ -212,8 +239,8 @@ Those are implementation qualification obligations, not guessed architecture con
 - [x] canonical Q01-Q75 preserved as final qualification matrix.
 - [x] #356 retention/supersession map recorded.
 - [x] exact-source SQL/lock/pool/config/auth/provider evidence used rather than assumptions.
-- [ ] independent exact-head HIGH-risk architecture/resource/security review complete.
-- [ ] exact-head repository checks green for the final candidate head.
+- [ ] successor exact-head repository/governance checks green.
+- [ ] fresh independent exact-head HIGH-risk architecture/resource/security re-review complete with no blocking material finding.
 - [ ] candidate protected-integrated/read back before A4 material allocation.
 
 ## Excluded scope
@@ -224,22 +251,15 @@ No runtime Rust, vendor, Cargo/lockfile, SQL/migration, workflow/ruleset, #356/#
 
 ### Focused readback
 
-PASS for protected main, live #351/#356, #329/#335, #364, #451/#453/#458, #588/#589, accepted DFR, architecture discipline, exact Child B durability source and exact #356 SQLx/rustls/pool/config/auth source.
+PASS for protected main, live #351/#356, #329/#335, #364, #451/#453/#458, #588/#589, accepted DFR, architecture discipline, exact Child B durability source and exact #356 SQLx/rustls/pool/config/auth source. Revision-3 changes are confined to the accepted independent-review P1/P2 findings and task lifecycle metadata.
 
 ### Component/integration/E2E
 
 `NOT_APPLICABLE`: this PR remains docs-only and changes no product behavior.
 
-### Previous exact-head CI
+### Previous exact-head evidence
 
-PR #590 head `b084f40595ea5179cb29ca87b639a4a66847ca0a` had:
-
-- Agent Governance: SUCCESS;
-- Architecture Semantic Audit: SUCCESS;
-- Merge Gate / validate: SUCCESS;
-- game-gate: SUCCESS.
-
-Those runs become historical when this metadata correction creates the successor candidate head and are **not** claimed for that successor.
+Predecessor candidate head `8f5e45dd1a7bdaf28dbf088543518f40cea38e29` is historical after the P1/P2 repair. Its checks/review evidence cannot qualify the Revision-3 successor exact head.
 
 ### Final exact-head evidence convention
 
@@ -249,7 +269,9 @@ Per `docs/agents/tasks/TASK_TEMPLATE.md`, a commit cannot contain its own SHA. T
 
 - no runtime/product/external-repository path mutation;
 - no architecture acceptance claim;
-- no fabricated I/R/T bound;
+- no fabricated `I/R/T` byte bound;
+- P1 is resolved by a single explicit lifecycle/non-overlap model rather than adding a hidden retirement allowance;
+- P2 is resolved without timer polling, unbounded reconnect spin or active-path connect;
 - R21 retained: one connection is not claimed performance-sufficient from serialization alone;
 - protected AWS-LC authority is distinguished from unmerged #455 and unprotected #356 material code;
 - current protected ring profile is distinguished from the proposed accepted first-slice AWS-LC profile;
@@ -258,13 +280,13 @@ Per `docs/agents/tasks/TASK_TEMPLATE.md`, a commit cannot contain its own SHA. T
 ## Context checkpoint
 
 ```yaml
-last_progress: Revision-2 source closure is complete; exact-head task metadata was repaired to the repository external-evidence convention and the candidate is frozen for successor-head qualification
-status: ready_for_acceptance
+last_progress: Revision-3 repairs only independent-review P1/P2 by freezing lifecycle-complete R/T non-overlap and exact demand-triggered root recovery; successor exact-head qualification is in progress
+status: validating
 branch: arch/wp3-v2-superseding-decision-20260912
 head_sha: external_pr_evidence
 pr: 590
 final_head_sha: external_pr_evidence
 final_head_frozen_at: external_pr_evidence
-blocker: independent exact-head architecture/resource/security review plus fresh exact-head repository checks and protected acceptance
-next_action: read the successor PR #590 exact head from immutable GitHub evidence, then run all required exact-head checks and one independent HIGH-risk review against that exact SHA
+blocker: fresh successor exact-head repository checks plus genuinely independent exact-head re-review before architecture acceptance
+next_action: read the final successor PR #590 head from immutable GitHub evidence, run all required exact-head checks on it, then stop before architecture acceptance pending independent successor re-review
 ```
