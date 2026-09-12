@@ -48,63 +48,72 @@ The final TLS socket Box in `sqlx-core/src/net/socket/mod.rs` therefore allocate
 
 For hostname connections, pinned Tokio 1.53.1 also reaches `ToSocketAddrs for (&str,u16)`: IP literals parse without hostname allocation, while DNS hostnames allocate an owned host String and run the system resolver through ordinary `spawn_blocking`, returning address-iterator backing before `WithSocket` or `BufferedSocket` exists. Requiring IP literals is forbidden because it would change accepted hostname semantics.
 
-## Prospective exact lease after protection and explicit activation
+## Prospective exact lease after protection
 
-The SAME #351/#356 writer may receive only these additional SQLx-core surfaces:
+This correction is deliberately split into two activation cells so an unresolved DNS architecture question cannot silently authorize or prevent path-disjoint downstream custody work.
 
-- `vendor/sqlx-core-0.9.0/src/net/socket/mod.rs` — owner-aware TCP-connect entry point and final post-handshake socket Box custody only;
+### Cell E1 — final socket Box + BufferedSocket/shared backing
+
+After protected readback, #162 may explicitly activate E1 for the SAME #351/#356 writer using only:
+
+- `vendor/sqlx-core-0.9.0/src/net/socket/mod.rs` — an owner-aware `WithSocket`/final post-handshake socket-Box representation; not a generic DNS redesign;
 - `vendor/sqlx-core-0.9.0/src/net/socket/buffered.rs` — owner-aware initial read/write backing, growth/replacement/shrink/drop and shared `Bytes` custody;
-- `vendor/sqlx-core-0.9.0/src/net/mod.rs` — export/plumbing only if required for that exact owner-aware entry point; this path is already within existing #351 SQLx-core authority.
+- `vendor/sqlx-core-0.9.0/src/net/mod.rs` — export/plumbing only if required; this path is already within existing #351 SQLx-core authority.
 
-Existing admitted PostgreSQL paths may call the new owner-aware entry point. Existing `src/rt/resource_owner.rs` primitives may be reused but this amendment does not widen their semantics beyond separately protected authority.
+Existing admitted PostgreSQL/TLS callers may select the owner-aware boxing/buffering representation. Existing `connect_tcp` hostname/IP semantics remain unchanged by E1. E1 does **not** make the preceding DNS resolver path accounted and cannot close `3993253930` or qualify a hostname PostgreSQL connection by itself.
 
-### Final socket Box
+The owner-aware final socket Box must reserve its exact Box allocation before `Box::new(socket)`. Its debit must live outside the Box it charges, destroy/deallocate the Box first, and release only afterward. Ordinary `SocketIntoBox` remains unchanged.
 
-The owner-aware `WithSocket`/boxing seam must reserve the exact Box allocation before `Box::new(socket)`. The reservation must live outside the Box it charges, destroy/deallocate the Box first, and release only afterward. Ordinary `SocketIntoBox` remains unchanged.
-
-### Buffered socket and shared backing
-
-The corrected BufferedSocket part retains the old invariants:
+The BufferedSocket part must:
 
 - reserve actual initial read/write capacity before allocation;
 - reserve growth/replacement prospectively, including simultaneous old/new capacity;
 - release old backing only after destruction;
 - carry one charge with shared `Bytes` backing across freeze/split/slice/clone descendants until the final backing owner dies;
-- cancellation, partial IO, EOF/error, close and drop release exactly once;
-- ordinary owner-free `BufferedSocket` behavior remains unchanged.
+- release exactly once across cancellation, partial IO, EOF/error, close and drop;
+- preserve ordinary owner-free `BufferedSocket` behavior.
 
 If truthful shared-`Bytes` finality requires another exact SQLx-core path/symbol, stop at one new `SHARED_LEASE_REQUIRED`; do not approximate custody.
 
-## DNS hostname boundary — explicit unresolved subcell
+### Cell E2 — DNS hostname resolution
 
-This amendment does **not** claim that simply moving hostname resolution into SQLx makes it accounted. A candidate owner-aware SQLx connect path may reuse the already-protected owned blocking primitive for DNS rather than changing generic Tokio DNS behavior, but acceptance requires proof that every controlled Rust allocation is reserved before allocation:
+E2 remains **NOT_ACTIVE** after this document is protected unless a later explicit #162 activation says otherwise.
+
+A future owner-aware SQLx connect path may reuse the already-protected owned blocking primitive for visible Rust DNS work rather than changing generic Tokio DNS behavior, but acceptance requires proof that every controlled allocation is reserved before allocation:
 
 - hostname owned String backing;
 - owned blocking task/queue/worker custody;
 - resolver result/address-iterator backing and source/destination overlap;
 - connect-attempt iteration and error cleanup.
 
-The system resolver may allocate opaque platform/std-private backing for which SQLx has no prospective sizing seam. If exact implementation proof cannot establish a finite preallocation boundary without a new resolver architecture or semantic limit, return:
+The system resolver may allocate opaque platform/std-private backing for which SQLx has no prospective sizing seam. If exact proof cannot establish a finite preallocation/finality boundary without a new resolver architecture or semantic limit, preserve:
 
 ```text
 ARCHITECTURE_BLOCKED_DNS_RESOLVER_PREALLOCATION
 ```
 
-Do not truncate DNS results, invent a magic maximum, charge after resolution, require IP literals, silently use ordinary Tokio `spawn_blocking`, or claim that accounting the host String/task/address Vec proves opaque resolver internals.
+Do not truncate DNS results, invent a magic maximum, charge after resolution, require IP literals, silently route owner-aware work through ordinary Tokio `spawn_blocking`, or claim that accounting the host String/task/address Vec proves opaque resolver internals.
 
-The socket Box + BufferedSocket work is path-disjoint from that unresolved resolver subcell and may be activated separately after protected readback if #162 explicitly says so; terminal P1 closure and real hostname PostgreSQL qualification still require the DNS subcell to be resolved.
+E1 may be implemented as partial accounting progress after its own explicit activation because it does not alter DNS semantics and it does not claim P1 closure. Terminal `3993253930`, `complete_tls_accounting`, and real hostname PostgreSQL qualification remain blocked until E2 is truthfully resolved.
 
 ## Required focused proof
+
+For E1:
 
 - max-minus-one denies before final TLS `Box::new(socket)`; funded path preserves TLS behavior and releases after actual Box deallocation;
 - owner-free `SocketIntoBox` is unchanged;
 - initial read/write funded and max-minus-one controls;
 - read/write growth proves old+new overlap and rollback on denied growth;
 - split/freeze/multiple concurrent final `Bytes` descendants keep one shared debit until final backing destruction;
-- cancellation/EOF/error/close/drop leave no residual debit;
-- IP literal owner-aware connect preserves allocation-free address parsing and does not create a hostname String debit;
-- DNS positive evidence, when architecture permits it, proves prospective owner funding of every visible Rust allocation and does not infer opaque resolver backing;
-- actual SQLx AWS-LC TLS-positive + PostgreSQL 17.6 qualification later consumes the final protected path; compile-only/plaintext evidence is insufficient.
+- cancellation/EOF/error/close/drop leave no residual debit.
+
+For any later E2:
+
+- IP literal connect preserves its non-DNS semantics and creates no hostname String debit merely to mimic DNS;
+- DNS positive evidence proves prospective owner funding/finality of every visible controlled allocation;
+- opaque resolver backing is either covered by a separately accepted finite mechanism or remains explicitly architecture-blocked.
+
+Final qualification still requires actual SQLx AWS-LC TLS-positive + PostgreSQL 17.6 traffic through the protected complete owner-aware path; compile-only/plaintext evidence is insufficient.
 
 ## Explicit exclusions
 
@@ -121,7 +130,8 @@ candidate
 -> native FULL Merge Queue + merge_group game-gate
 -> protected-main readback
 -> fresh #162 overlap/custody readback
--> explicit SAME #351/#356 activation of only proven path-disjoint cells
+-> explicit SAME #351/#356 activation of E1 only if still needed/non-overlapping
+-> E2 remains blocked until separately resolved/activated
 -> focused RED/GREEN implementation
 -> final whole-diff qualification later
 ```
