@@ -54,7 +54,7 @@ Required implementation domains, as applicable to the accepted choice:
 
 Work test-first where a behavioral regression can be made deterministic. Run focused checks while iterating, then the exact resolved production graph, configured PostgreSQL/TLS qualification and every applicable Q01-Q75 obligation on the exact candidate. Source/lifetime proof is required for universal resource claims; sampled memory peaks only corroborate.
 
-Require independent review for material architecture/resource/security/unsafe changes. Do not call the lane terminal with unresolved P0/P1. Handoff must include exact candidate head, Q01-Q75 ledger, retained/superseded #356 map and any precise blocker.
+Require independent review for material architecture/resource/security/unsafe changes. A terminal WP3 implementation candidate requires an exact-final-head whole-diff independent review with `PASS`, `P0=0`, `P1=0`, `P2=0`, and `BLOCKING_EVIDENCE_GAP=0`; any weaker review wording or non-PASS disposition cannot authorize terminal handoff, integration, or release. Handoff must include exact candidate head, Q01-Q75 ledger, retained/superseded #356 map and any precise blocker.
 
 ## Mandatory next-agent instruction
 
