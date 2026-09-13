@@ -17,6 +17,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md
   - docs/agents/tasks/active/OTV2-20260913-work-dispatcher-lane-blocker-continuation.md
+  - docs/agents/PROMPT_LIFECYCLE.json
 public_contracts: []
 depends_on:
   - issue:162
@@ -48,10 +49,16 @@ Make the active Work coordinator a thin dispatcher: lane-local blockers do not t
 
 The Work prompt is intentionally a compact execution profile over `OTV2_IMPLEMENTATION_COORDINATOR`. It does not restate historical wave sequencing; current programme/allocation records remain authoritative for live order.
 
+## Corrective custody reconciliation
+
+PR #596 reached protected `main` before the final review P1 about lifecycle-registry ownership was repaired. This corrective successor records the full path set actually required by that delivery. `docs/agents/PROMPT_LIFECYCLE.json` is therefore explicitly part of this task's serialized governance custody.
+
+At corrective admission on protected `main@5d67ebb88b1775af665452b1b4ea1696ecfe6a98`, the live open PR path scan for the other current documentation/control-plane candidates checked (#592, #588 and #585) shows no overlapping write to `docs/agents/PROMPT_LIFECYCLE.json`. This corrective task changes only this task record and does not reopen or mutate the lifecycle registry itself.
+
 ## Scope
 
 Documentation/governance only. No product/runtime implementation or integration action is performed by this task.
 
 ## Validation
 
-Require exact-head Agent Governance, Architecture Semantic Audit and Merge Gate plus one fresh independent review on the final material prompt head. Existing allocations and authority remain unchanged.
+Require exact-head Agent Governance, Architecture Semantic Audit and Merge Gate plus one fresh independent review on the final corrective head. Existing allocations and authority remain unchanged.
