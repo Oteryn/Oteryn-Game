@@ -1,4 +1,4 @@
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
 use crate::message::{BackendMessage, BackendMessageFormat};
@@ -25,17 +25,15 @@ impl BackendMessage for ReadyForQuery {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::ReadyForQuery;
 
     fn decode_body(buf: Bytes) -> Result<Self, Error> {
+        if buf.len() != 1 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         let status = match buf[0] {
             b'I' => TransactionStatus::Idle,
             b'T' => TransactionStatus::Transaction,
             b'E' => TransactionStatus::Error,
 
-            status => {
-                return Err(err_protocol!(
-                    "unknown transaction status: {:?}",
-                    status as char
-                ));
-            }
+            _ => return Err(Error::Io(std::io::ErrorKind::InvalidData.into())),
         };
 
         Ok(Self {

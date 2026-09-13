@@ -1,5 +1,5 @@
 use byteorder::{BigEndian, ByteOrder};
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 use std::ops::Range;
 
 use crate::error::Error;
@@ -14,6 +14,7 @@ pub struct DataRow {
     /// This uses `u32` instead of usize to reduce the size of this type. Values cannot be larger
     /// than `i32` in postgres.
     pub(crate) values: Vec<Option<Range<u32>>>,
+    _allocation: crate::statement::AllocationLease,
 }
 
 impl DataRow {
@@ -30,14 +31,35 @@ impl BackendMessage for DataRow {
 
     fn decode_body(buf: Bytes) -> Result<Self, Error> {
         if buf.len() < 2 {
-            return Err(err_protocol!(
-                "expected at least 2 bytes, got {}",
-                buf.len()
-            ));
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
         }
 
         let cnt = BigEndian::read_u16(&buf) as usize;
 
+        // Validate the complete body before any peer-count allocation.
+        let mut cursor = 2usize;
+        for _ in 0..cnt {
+            let end = cursor
+                .checked_add(4)
+                .filter(|end| *end <= buf.len())
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+            let len = BigEndian::read_i32(&buf[cursor..end]);
+            if len < -1 {
+                return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+            }
+            cursor = end
+                .checked_add(len.max(0) as usize)
+                .filter(|end| *end <= buf.len())
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+        }
+        if cursor != buf.len() {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
+        let allocation = crate::statement::AllocationLease::reserve(
+            buf.budget(),
+            cnt.checked_mul(std::mem::size_of::<Option<Range<u32>>>())
+                .ok_or_else(crate::statement::allocation_denied)?,
+        )?;
         let mut values = Vec::with_capacity(cnt);
         let mut offset: u32 = 2;
 
@@ -80,6 +102,7 @@ impl BackendMessage for DataRow {
         Ok(Self {
             storage: buf,
             values,
+            _allocation: allocation,
         })
     }
 }
@@ -135,4 +158,28 @@ fn bench_decode_data_row(b: &mut test::Bencher) {
     b.iter(|| {
         let _ = DataRow::decode_body(test::black_box(Bytes::from_static(DATA)));
     });
+}
+
+#[cfg(test)]
+mod custody_tests {
+    use super::*;
+    use crate::statement::custody_test_support::Ledger;
+    #[test]
+    fn decoded_row_and_sliced_value_keep_backing_after_input_drops() {
+        let budget = Ledger::new(usize::MAX);
+        let input = Bytes::try_copy_from_slice(b"\0\x01\0\0\0\x03row", budget.clone()).unwrap();
+        let backing = budget.held();
+        let row = DataRow::decode_body(input).unwrap();
+        assert!(budget.held() > backing);
+        let value = row.storage.slice_ref(row.get(0).unwrap());
+        drop(row);
+        assert_eq!(budget.held(), backing);
+        assert_eq!(&*value, b"row");
+        drop(value);
+        assert_eq!(budget.held(), 0);
+        let input = Bytes::try_copy_from_slice(b"\0\x01\0\0\0\x03row", budget.clone()).unwrap();
+        budget.limit(budget.held());
+        assert!(DataRow::decode_body(input).is_err());
+        assert_eq!(budget.held(), 0);
+    }
 }

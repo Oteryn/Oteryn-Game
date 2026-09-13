@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use crate::HashMap;
 
-use crate::common::StatementCache;
 use crate::error::Error;
 use crate::ext::ustr::UStr;
 use crate::io::StatementId;
@@ -13,7 +12,7 @@ use crate::message::{
     BackendMessageFormat, Close, Query, ReadyForQuery, ReceivedMessage, Terminate,
     TransactionStatus,
 };
-use crate::statement::PgStatementMetadata;
+use crate::statement::Metadata;
 use crate::transaction::Transaction;
 use crate::types::Oid;
 use crate::{PgConnectOptions, PgTypeInfo, Postgres};
@@ -37,6 +36,7 @@ mod tls;
 /// See [`PgConnectOptions`] for connection URL reference.
 pub struct PgConnection {
     pub(crate) inner: Box<PgConnectionInner>,
+    _allocation: Option<sqlx_core::net::resource_budget::ResourceReservation>,
 }
 
 pub struct PgConnectionInner {
@@ -60,7 +60,7 @@ pub struct PgConnectionInner {
     next_statement_id: StatementId,
 
     // cache statement by query string to the id and columns
-    cache_statement: StatementCache<(StatementId, Arc<PgStatementMetadata>)>,
+    cache_statement: PgStatementCache,
 
     // cache user-defined types by id <-> info
     cache_type_info: HashMap<Oid, PgTypeInfo>,
@@ -76,6 +76,7 @@ pub struct PgConnectionInner {
     pub(crate) transaction_depth: usize,
 
     log_settings: LogSettings,
+    root_profile: bool,
 }
 
 pub(crate) struct TableData {
@@ -252,5 +253,131 @@ impl Connection for PgConnection {
 impl AsMut<PgConnection> for PgConnection {
     fn as_mut(&mut self) -> &mut PgConnection {
         self
+    }
+}
+
+struct CacheEntry {
+    key: String,
+    value: (StatementId, Metadata),
+    _allocation: Option<sqlx_core::net::resource_budget::ResourceReservation>,
+}
+struct PgStatementCache {
+    entries: Vec<CacheEntry>,
+    _allocation: Option<sqlx_core::net::resource_budget::ResourceReservation>,
+    budget: Option<Arc<dyn sqlx_core::net::resource_budget::ResourceBudget>>,
+    capacity: usize,
+}
+impl PgStatementCache {
+    fn new(
+        capacity: usize,
+        budget: Option<Arc<dyn sqlx_core::net::resource_budget::ResourceBudget>>,
+    ) -> Result<Self, Error> {
+        let bytes = capacity
+            .checked_mul(std::mem::size_of::<CacheEntry>())
+            .ok_or_else(crate::statement::allocation_denied)?;
+        let allocation = budget
+            .as_ref()
+            .map(|b| {
+                sqlx_core::net::resource_budget::ResourceReservation::try_new(b.clone(), bytes)
+            })
+            .transpose()
+            .map_err(|_| crate::statement::allocation_denied())?;
+        Ok(Self {
+            entries: Vec::with_capacity(capacity),
+            _allocation: allocation,
+            budget,
+            capacity,
+        })
+    }
+    fn len(&self) -> usize {
+        self.entries.len()
+    }
+    fn is_enabled(&self) -> bool {
+        self.capacity > 0
+    }
+    fn get_mut(&mut self, key: &str) -> Option<&mut (StatementId, Metadata)> {
+        let index = self.entries.iter().position(|entry| entry.key == key)?;
+        self.entries[index..].rotate_left(1);
+        self.entries.last_mut().map(|entry| &mut entry.value)
+    }
+    fn remove_lru(&mut self) -> Option<(StatementId, Metadata)> {
+        if self.entries.is_empty() {
+            None
+        } else {
+            Some(self.entries.remove(0).value)
+        }
+    }
+    fn insert(
+        &mut self,
+        key: &str,
+        value: (StatementId, Metadata),
+    ) -> Result<Option<(StatementId, Metadata)>, Error> {
+        let allocation = self
+            .budget
+            .as_ref()
+            .map(|budget| {
+                sqlx_core::net::resource_budget::ResourceReservation::try_new(
+                    budget.clone(),
+                    key.len(),
+                )
+            })
+            .transpose()
+            .map_err(|_| crate::statement::allocation_denied())?;
+        let entry = CacheEntry {
+            key: key.to_owned(),
+            value,
+            _allocation: allocation,
+        };
+        let replaced = if let Some(index) = self.entries.iter().position(|entry| entry.key == key) {
+            Some(self.entries.remove(index).value)
+        } else if self.entries.len() == self.capacity {
+            self.remove_lru()
+        } else {
+            None
+        };
+        self.entries.push(entry);
+        Ok(replaced)
+    }
+}
+
+#[cfg(test)]
+mod custody_tests {
+    use super::*;
+    use crate::statement::custody_test_support::Ledger;
+    #[test]
+    fn statement_cache_denial_eviction_replacement_and_escape() {
+        let budget = Ledger::new(usize::MAX);
+        let mut cache = PgStatementCache::new(2, Some(budget.clone())).unwrap();
+        let metadata = Metadata::empty(Some(budget.clone())).unwrap();
+        let baseline = budget.held();
+        cache
+            .insert("one", (StatementId::UNNAMED, metadata.clone()))
+            .unwrap();
+        cache
+            .insert("two", (StatementId::UNNAMED, metadata.clone()))
+            .unwrap();
+        assert!(cache.get_mut("one").is_some());
+        budget.limit(budget.held() + 4);
+        assert!(cache
+            .insert("three", (StatementId::UNNAMED, metadata.clone()))
+            .is_err());
+        assert_eq!(cache.len(), 2);
+        assert_eq!(budget.held(), baseline + 6);
+        budget.limit(usize::MAX);
+        assert!(cache
+            .insert("three", (StatementId::UNNAMED, metadata.clone()))
+            .unwrap()
+            .is_some());
+        assert!(cache.get_mut("two").is_none());
+        assert!(cache
+            .insert("one", (StatementId::UNNAMED, metadata.clone()))
+            .unwrap()
+            .is_some());
+        assert_eq!(cache.len(), 2);
+        assert_eq!(budget.held(), baseline + 8);
+        drop(cache);
+        assert!(budget.held() > 0);
+        drop(metadata);
+        assert_eq!(budget.held(), 0);
     }
 }

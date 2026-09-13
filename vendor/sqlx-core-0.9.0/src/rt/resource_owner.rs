@@ -67,6 +67,10 @@ impl BlockingJobOwner {
         })
     }
 
+    pub(crate) fn runtime_owner(&self) -> tokio::task::OterynBlockingOwner {
+        self.runtime_owner.clone()
+    }
+
     pub(crate) fn budget(&self) -> Arc<dyn ResourceBudget> {
         self.budget.clone()
     }

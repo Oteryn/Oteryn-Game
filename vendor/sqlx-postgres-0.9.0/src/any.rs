@@ -134,8 +134,17 @@ impl AnyConnectionBackend for PgConnection {
         _parameters: &[AnyTypeInfo],
     ) -> BoxFuture<'c, sqlx_core::Result<AnyStatement>> {
         Box::pin(async move {
+            if self.inner.stream.resource_budget().is_some() {
+                return Err(sqlx_core::Error::Io(std::io::ErrorKind::Unsupported.into()));
+            }
             let statement = Executor::prepare_with(self, sql, &[]).await?;
-            let column_names = statement.metadata.column_names.clone();
+            let column_names = statement
+                .metadata
+                .column_names
+                .iter()
+                .cloned()
+                .collect::<sqlx_core::HashMap<_, _>>()
+                .into();
             AnyStatement::try_from_statement(statement, column_names)
         })
     }
@@ -232,7 +241,18 @@ impl<'a> TryFrom<&'a PgRow> for AnyRow {
     type Error = sqlx_core::Error;
 
     fn try_from(row: &'a PgRow) -> Result<Self, Self::Error> {
-        AnyRow::map_from(row, row.metadata.column_names.clone())
+        if row.data.storage.budget().is_some() {
+            return Err(sqlx_core::Error::Io(std::io::ErrorKind::Unsupported.into()));
+        }
+        AnyRow::map_from(
+            row,
+            row.metadata
+                .column_names
+                .iter()
+                .cloned()
+                .collect::<sqlx_core::HashMap<_, _>>()
+                .into(),
+        )
     }
 }
 

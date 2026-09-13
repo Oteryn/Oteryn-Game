@@ -19,7 +19,7 @@ impl FrontendMessage for Password<'_> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::PasswordPolymorphic;
 
     #[inline(always)]
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         let mut size = Saturating(0);
 
         match self {

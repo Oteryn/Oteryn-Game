@@ -22,7 +22,7 @@ pub struct Parse<'a> {
 impl FrontendMessage for Parse<'_> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Parse;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         let mut size = Saturating(0);
 
         size += self.statement.name_len();

@@ -15,7 +15,7 @@ pub enum Close {
 impl FrontendMessage for Close {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Close;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         // Either `CLOSE_PORTAL` or `CLOSE_STATEMENT`
         let mut size = Saturating(1);
 

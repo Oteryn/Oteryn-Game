@@ -3,10 +3,10 @@ use std::str::from_utf8;
 
 use memchr::memchr;
 
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
-use crate::io::ProtocolDecode;
+use crate::message::PgDecode;
 use crate::message::{BackendMessage, BackendMessageFormat};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -43,9 +43,7 @@ impl TryFrom<&str> for PgSeverity {
             "INFO" => PgSeverity::Info,
             "LOG" => PgSeverity::Log,
 
-            severity => {
-                return Err(err_protocol!("unknown severity: {:?}", severity));
-            }
+            _ => return Err(Error::Io(std::io::ErrorKind::InvalidData.into())),
         };
 
         Ok(result)
@@ -108,8 +106,21 @@ impl Notice {
     }
 }
 
-impl ProtocolDecode<'_> for Notice {
-    fn decode_with(buf: Bytes, _: ()) -> Result<Self, Error> {
+impl PgDecode for Notice {
+    fn decode(buf: Bytes) -> Result<Self, Error> {
+        let mut tail = &buf[..];
+        loop {
+            let tag = *tail.first().ok_or_else(notice_protocol_err)?;
+            tail = &tail[1..];
+            if tag == 0 {
+                if !tail.is_empty() {
+                    return Err(notice_protocol_err());
+                }
+                break;
+            }
+            let nul = memchr(0, tail).ok_or_else(notice_protocol_err)?;
+            tail = &tail[nul + 1..];
+        }
         // In order to support PostgreSQL 9.5 and older we need to parse the localized S field.
         // Newer versions additionally come with the V field that is guaranteed to be in English.
         // We thus read both versions and prefer the unlocalized one if available.
@@ -185,7 +196,7 @@ impl BackendMessage for Notice {
 
     fn decode_body(buf: Bytes) -> Result<Self, Error> {
         // Keeping both impls for now
-        Self::decode_with(buf, ())
+        Self::decode(buf)
     }
 }
 
@@ -224,14 +235,7 @@ impl Iterator for Fields<'_> {
 }
 
 fn notice_protocol_err() -> Error {
-    // https://github.com/launchbadge/sqlx/issues/1144
-    Error::Protocol(
-        "Postgres returned a non-UTF-8 string for its error message. \
-         This is most likely due to an error that occurred during authentication and \
-         the default lc_messages locale is not binary-compatible with UTF-8. \
-         See the server logs for the error details."
-            .into(),
-    )
+    Error::Io(std::io::ErrorKind::InvalidData.into())
 }
 
 #[test]

@@ -9,7 +9,7 @@ pub struct Query<'a>(pub &'a str);
 impl FrontendMessage for Query<'_> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Query;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         let mut size = Saturating(0);
 
         size += self.0.len();

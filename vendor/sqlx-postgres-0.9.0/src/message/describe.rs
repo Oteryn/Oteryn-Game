@@ -17,7 +17,7 @@ pub enum Describe {
 impl FrontendMessage for Describe {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Describe;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         // Either `DESCRIBE_PORTAL` or `DESCRIBE_STATEMENT`
         let mut size = Saturating(1);
 

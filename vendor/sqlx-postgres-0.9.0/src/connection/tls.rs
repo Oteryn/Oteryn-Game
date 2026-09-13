@@ -1,19 +1,18 @@
 use crate::error::Error;
 use crate::net::tls::{self, CertificateInput, TlsConfig};
 use crate::net::{Socket, SocketIntoBox, WithSocket};
+use sqlx_core::net::{ConnectionOwner, OwnedSocket, SocketIntoOwnedBox};
 
 use crate::message::SslRequest;
 use crate::{PgConnectOptions, PgSslMode};
-use sqlx_core::net::resource_budget::ResourceBudget;
 use std::net::IpAddr;
-use std::sync::Arc;
 
 pub struct MaybeUpgradeTls<'a>(pub &'a PgConnectOptions);
 
-pub struct MaybeUpgradeTlsOwned<'a>(pub &'a PgConnectOptions, pub Arc<dyn ResourceBudget>);
+pub struct MaybeUpgradeTlsOwned<'a>(pub &'a PgConnectOptions, pub ConnectionOwner);
 
 impl WithSocket for MaybeUpgradeTlsOwned<'_> {
-    type Output = crate::Result<Box<dyn Socket>>;
+    type Output = crate::Result<OwnedSocket>;
 
     async fn with_socket<S: Socket>(self, socket: S) -> Self::Output {
         maybe_upgrade_owned(socket, self.0, self.1).await
@@ -123,14 +122,16 @@ fn validate_oteryn_root_profile(options: &PgConnectOptions) -> Result<(), Error>
 async fn maybe_upgrade_owned<S: Socket>(
     mut socket: S,
     options: &PgConnectOptions,
-    owner: Arc<dyn ResourceBudget>,
-) -> Result<Box<dyn Socket>, Error> {
+    owner: ConnectionOwner,
+) -> Result<OwnedSocket, Error> {
     validate_oteryn_root_profile(options)?;
     match options.ssl_mode {
-        PgSslMode::Allow | PgSslMode::Disable => return Ok(Box::new(socket)),
+        PgSslMode::Allow | PgSslMode::Disable => {
+            return SocketIntoOwnedBox(owner.budget()).with_socket(socket).await
+        }
         PgSslMode::Prefer => {
             if !tls::available() || !request_upgrade(&mut socket, options).await? {
-                return Ok(Box::new(socket));
+                return SocketIntoOwnedBox(owner.budget()).with_socket(socket).await;
             }
         }
         PgSslMode::Require | PgSslMode::VerifyFull | PgSslMode::VerifyCa => {
@@ -152,7 +153,8 @@ async fn maybe_upgrade_owned<S: Socket>(
         client_cert_path: options.ssl_client_cert.as_ref(),
         client_key_path: options.ssl_client_key.as_ref(),
     };
-    tls::handshake_with_resource_budget(socket, config, SocketIntoBox, owner).await
+    tls::handshake_with_connection_owner(socket, config, SocketIntoOwnedBox(owner.budget()), owner)
+        .await?
 }
 
 async fn request_upgrade(

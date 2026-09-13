@@ -1,10 +1,11 @@
 use std::str::from_utf8;
 
 use memchr::memchr;
-use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::bytes::Buf;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
-use crate::io::ProtocolDecode;
+use crate::message::PgDecode;
 
 use crate::message::{BackendMessage, BackendMessageFormat};
 use base64::prelude::{Engine as _, BASE64_STANDARD};
@@ -64,25 +65,55 @@ impl BackendMessage for Authentication {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::Authentication;
 
     fn decode_body(mut buf: Bytes) -> Result<Self, Error> {
+        if buf.len() < 4 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         Ok(match buf.get_u32() {
-            0 => Authentication::Ok,
+            0 => {
+                if !buf.is_empty() {
+                    return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+                }
+                Authentication::Ok
+            }
 
-            3 => Authentication::CleartextPassword,
+            3 => {
+                if !buf.is_empty() {
+                    return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+                }
+                Authentication::CleartextPassword
+            }
 
             5 => {
+                if buf.len() != 4 {
+                    return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+                }
                 let mut salt = [0; 4];
                 buf.copy_to_slice(&mut salt);
 
                 Authentication::Md5Password(AuthenticationMd5Password { salt })
             }
 
-            10 => Authentication::Sasl(AuthenticationSasl(buf)),
+            10 => {
+                let mut tail = &buf[..];
+                loop {
+                    let nul = memchr(0, tail)
+                        .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+                    std::str::from_utf8(&tail[..nul])
+                        .map_err(|_| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+                    tail = &tail[nul + 1..];
+                    if nul == 0 {
+                        if !tail.is_empty() {
+                            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+                        }
+                        break;
+                    }
+                }
+                Authentication::Sasl(AuthenticationSasl(buf))
+            }
             11 => Authentication::SaslContinue(AuthenticationSaslContinue::decode(buf)?),
             12 => Authentication::SaslFinal(AuthenticationSaslFinal::decode(buf)?),
 
-            ty => {
-                return Err(err_protocol!("unknown authentication method: {}", ty));
-            }
+            _ => return Err(Error::Io(std::io::ErrorKind::InvalidData.into())),
         })
     }
 }
@@ -129,11 +160,43 @@ pub struct AuthenticationSaslContinue {
     pub iterations: u32,
     pub nonce: String,
     pub message: String,
+    _allocation: crate::statement::AllocationLease,
 }
 
-impl ProtocolDecode<'_> for AuthenticationSaslContinue {
-    fn decode_with(buf: Bytes, _: ()) -> Result<Self, Error> {
-        let mut iterations: u32 = 4096;
+impl PgDecode for AuthenticationSaslContinue {
+    fn decode(buf: Bytes) -> Result<Self, Error> {
+        std::str::from_utf8(&buf).map_err(|_| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+        let mut seen = 0u8;
+        let mut reserve = buf.len();
+        for item in buf.split(|b| *b == b',') {
+            if item.len() < 2 || item[1] != b'=' {
+                return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+            }
+            let bit = match item[0] {
+                b'r' => 1,
+                b's' => 2,
+                b'i' => 4,
+                b'm' => return Err(Error::Io(std::io::ErrorKind::InvalidData.into())),
+                _ => 0,
+            };
+            if bit != 0 && seen & bit != 0 {
+                return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+            }
+            seen |= bit;
+            let extra = match item[0] {
+                b'r' => item.len() - 2,
+                b's' => base64::decoded_len_estimate(item.len() - 2),
+                _ => 0,
+            };
+            reserve = reserve
+                .checked_add(extra)
+                .ok_or_else(crate::statement::allocation_denied)?;
+        }
+        if seen != 7 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
+        let allocation = crate::statement::AllocationLease::reserve(buf.budget(), reserve)?;
+        let mut iterations: u32 = 0;
         let mut salt = Vec::new();
         let mut nonce = Bytes::new();
 
@@ -150,11 +213,17 @@ impl ProtocolDecode<'_> for AuthenticationSaslContinue {
                 }
 
                 b'i' => {
-                    iterations = atoi::atoi(value).unwrap_or(4096);
+                    iterations = std::str::from_utf8(value)
+                        .ok()
+                        .and_then(|value| value.parse().ok())
+                        .filter(|value| *value > 0)
+                        .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
                 }
 
                 b's' => {
-                    salt = BASE64_STANDARD.decode(value).map_err(Error::protocol)?;
+                    salt = BASE64_STANDARD
+                        .decode(value)
+                        .map_err(|_| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
                 }
 
                 _ => {}
@@ -166,6 +235,7 @@ impl ProtocolDecode<'_> for AuthenticationSaslContinue {
             salt,
             nonce: from_utf8(&nonce).map_err(Error::protocol)?.to_owned(),
             message: from_utf8(&buf).map_err(Error::protocol)?.to_owned(),
+            _allocation: allocation,
         })
     }
 }
@@ -173,10 +243,32 @@ impl ProtocolDecode<'_> for AuthenticationSaslContinue {
 #[derive(Debug)]
 pub struct AuthenticationSaslFinal {
     pub verifier: Vec<u8>,
+    _allocation: crate::statement::AllocationLease,
 }
 
-impl ProtocolDecode<'_> for AuthenticationSaslFinal {
-    fn decode_with(buf: Bytes, _: ()) -> Result<Self, Error> {
+impl PgDecode for AuthenticationSaslFinal {
+    fn decode(buf: Bytes) -> Result<Self, Error> {
+        let mut reserve = 0usize;
+        let mut seen = false;
+        for item in buf.split(|b| *b == b',') {
+            if item.len() < 2 || item[1] != b'=' {
+                return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+            }
+            if item[0] == b'e' {
+                return Err(Error::Io(std::io::ErrorKind::PermissionDenied.into()));
+            }
+            if item[0] == b'v' {
+                if seen {
+                    return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+                }
+                seen = true;
+                reserve = base64::decoded_len_estimate(item.len() - 2);
+            }
+        }
+        if !seen {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
+        let allocation = crate::statement::AllocationLease::reserve(buf.budget(), reserve)?;
         let mut verifier = Vec::new();
 
         for item in buf.split(|b| *b == b',') {
@@ -184,10 +276,48 @@ impl ProtocolDecode<'_> for AuthenticationSaslFinal {
             let value = &item[2..];
 
             if let b'v' = key {
-                verifier = BASE64_STANDARD.decode(value).map_err(Error::protocol)?;
+                verifier = BASE64_STANDARD
+                    .decode(value)
+                    .map_err(|_| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
             }
         }
 
-        Ok(Self { verifier })
+        Ok(Self {
+            verifier,
+            _allocation: allocation,
+        })
+    }
+}
+
+#[cfg(test)]
+mod custody_tests {
+    use super::*;
+    use crate::statement::custody_test_support::Ledger;
+    #[test]
+    fn scram_challenge_and_verifier_are_charged_and_reject_malformed_attributes() {
+        let budget = Ledger::new(usize::MAX);
+        let input =
+            Bytes::try_copy_from_slice(b"r=client-server,s=c2FsdA==,i=4096", budget.clone())
+                .unwrap();
+        let challenge = AuthenticationSaslContinue::decode(input).unwrap();
+        assert_eq!(challenge.salt, b"salt");
+        assert_eq!(challenge.iterations, 4096);
+        assert!(budget.held() > 0);
+        drop(challenge);
+        assert_eq!(budget.held(), 0);
+        for bytes in [
+            &b"r=x,s=eA=="[..],
+            &b"r=x,s=eA==,i=0"[..],
+            &b"r=x,r=y,s=eA==,i=1"[..],
+            &b"r=x,s=eA==,i=1junk"[..],
+        ] {
+            assert!(AuthenticationSaslContinue::decode(Bytes::copy_from_slice(bytes)).is_err());
+        }
+        let input = Bytes::try_copy_from_slice(b"v=eA==", budget.clone()).unwrap();
+        let baseline = budget.held();
+        budget.limit(baseline);
+        assert!(AuthenticationSaslFinal::decode(input).is_err());
+        assert_eq!(budget.held(), 0);
+        assert!(AuthenticationSaslFinal::decode(Bytes::from_static(b"e=server-error")).is_err());
     }
 }

@@ -6,7 +6,7 @@ use crate::message::{
     self, BackendMessageFormat, Bind, Close, CommandComplete, DataRow, ParameterDescription, Parse,
     ParseComplete, RowDescription,
 };
-use crate::statement::PgStatementMetadata;
+use crate::statement::Metadata;
 use crate::{
     statement::PgStatement, PgArguments, PgConnection, PgQueryResult, PgRow, PgTypeInfo,
     PgValueFormat, Postgres,
@@ -18,16 +18,16 @@ use futures_util::TryStreamExt;
 use sqlx_core::arguments::Arguments;
 use sqlx_core::sql_str::SqlStr;
 use sqlx_core::Either;
-use std::{pin::pin, sync::Arc};
+use std::pin::pin;
 
 async fn prepare(
     conn: &mut PgConnection,
     sql: &str,
     arg_types: &[PgTypeInfo],
-    metadata: Option<Arc<PgStatementMetadata>>,
+    metadata: Option<Metadata>,
     persistent: bool,
     resolve_column_origin: bool,
-) -> Result<(StatementId, Arc<PgStatementMetadata>), Error> {
+) -> Result<(StatementId, Metadata), Error> {
     let id = if persistent {
         let id = conn.inner.next_statement_id;
         conn.inner.next_statement_id = id.next();
@@ -148,13 +148,16 @@ impl PgConnection {
 
     #[inline(always)]
     pub(crate) fn write_sync(&mut self) {
-        self.inner
-            .stream
-            .write_msg(message::Sync)
-            .expect("BUG: Sync should not be too big for protocol");
-
+        if self.inner.stream.write_msg(message::Sync).is_err() {
+            self.inner.stream.poison();
+            return;
+        }
         // all SYNC messages will return a ReadyForQuery
-        self.inner.pending_ready_for_query_count += 1;
+        if let Some(count) = self.inner.pending_ready_for_query_count.checked_add(1) {
+            self.inner.pending_ready_for_query_count = count;
+        } else {
+            self.inner.stream.poison();
+        }
     }
 
     async fn get_or_prepare(
@@ -164,9 +167,9 @@ impl PgConnection {
         persistent: bool,
         // optional metadata that was provided by the user, this means they are reusing
         // a statement object
-        metadata: Option<Arc<PgStatementMetadata>>,
+        metadata: Option<Metadata>,
         resolve_column_origin: bool,
-    ) -> Result<(StatementId, Arc<PgStatementMetadata>), Error> {
+    ) -> Result<(StatementId, Metadata), Error> {
         if let Some(statement) = self.inner.cache_statement.get_mut(sql) {
             return Ok((*statement).clone());
         }
@@ -182,7 +185,14 @@ impl PgConnection {
         .await?;
 
         if persistent && self.inner.cache_statement.is_enabled() {
-            if let Some((id, _)) = self.inner.cache_statement.insert(sql, statement.clone()) {
+            let replaced = match self.inner.cache_statement.insert(sql, statement.clone()) {
+                Ok(replaced) => replaced,
+                Err(error) => {
+                    self.inner.stream.poison();
+                    return Err(error);
+                }
+            };
+            if let Some((id, _)) = replaced {
                 self.inner.stream.write_msg(Close::Statement(id))?;
                 self.write_sync();
 
@@ -201,7 +211,7 @@ impl PgConnection {
         query: SqlStr,
         arguments: Option<PgArguments>,
         persistent: bool,
-        metadata_opt: Option<Arc<PgStatementMetadata>>,
+        metadata_opt: Option<Metadata>,
     ) -> Result<impl Stream<Item = Result<Either<PgQueryResult, PgRow>, Error>> + 'e, Error> {
         let mut logger = QueryLogger::new(query, self.inner.log_settings.clone());
         let sql = logger.sql().as_str();
@@ -209,7 +219,7 @@ impl PgConnection {
         // before we continue, wait until we are "ready" to accept more queries
         self.wait_until_ready().await?;
 
-        let mut metadata: Arc<PgStatementMetadata>;
+        let mut metadata: Metadata;
 
         let format = if let Some(mut arguments) = arguments {
             // Check this before we write anything to the stream.
@@ -284,7 +294,7 @@ impl PgConnection {
             self.queue_simple_query(sql)?;
 
             // metadata starts out as "nothing"
-            metadata = Arc::new(PgStatementMetadata::default());
+            metadata = Metadata::empty(self.inner.stream.resource_budget().cloned())?;
 
             // and unprepared statements are text
             PgValueFormat::Text
@@ -346,11 +356,17 @@ impl PgConnection {
                         logger.increment_rows_returned();
 
                         // one of the set of rows returned by a SELECT, FETCH, etc query
+                        let count = message.contents.get(..2)
+                            .map(|bytes| usize::from(u16::from_be_bytes([bytes[0], bytes[1]])))
+                            .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+                        if count != metadata.columns.len() {
+                            Err(Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+                        }
                         let data: DataRow = message.decode()?;
                         let row = PgRow {
                             data,
                             format,
-                            metadata: Arc::clone(&metadata),
+                            metadata: metadata.clone(),
                         };
 
                         r#yield!(Either::Right(row));
@@ -391,7 +407,7 @@ impl<'c> Executor<'c> for &'c mut PgConnection {
     {
         // False positive: https://github.com/rust-lang/rust-clippy/issues/12560
         #[allow(clippy::map_clone)]
-        let metadata = query.statement().map(|s| Arc::clone(&s.metadata));
+        let metadata = query.statement().map(|s| s.metadata.clone());
         let arguments = query.take_arguments().map_err(Error::Encode);
         let persistent = query.persistent();
         let sql = query.sql();
@@ -417,7 +433,7 @@ impl<'c> Executor<'c> for &'c mut PgConnection {
     {
         // False positive: https://github.com/rust-lang/rust-clippy/issues/12560
         #[allow(clippy::map_clone)]
-        let metadata = query.statement().map(|s| Arc::clone(&s.metadata));
+        let metadata = query.statement().map(|s| s.metadata.clone());
         let arguments = query.take_arguments().map_err(Error::Encode);
         let persistent = query.persistent();
 

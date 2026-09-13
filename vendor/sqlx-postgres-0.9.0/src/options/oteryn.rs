@@ -29,6 +29,9 @@ impl PgConnectOptions {
         root_ca_pem: Vec<u8>,
         resource_budget: Arc<dyn ResourceBudget>,
     ) -> Self {
+        let mut log_settings = LogSettings::default();
+        log_settings.statements_level = log::LevelFilter::Off;
+        log_settings.slow_statements_level = log::LevelFilter::Off;
         Self {
             host: transport_ip.to_string(),
             port,
@@ -42,7 +45,7 @@ impl PgConnectOptions {
             ssl_client_key: None,
             statement_cache_capacity: 100,
             application_name: None,
-            log_settings: LogSettings::default(),
+            log_settings,
             extra_float_digits: Some("2".into()),
             options: None,
             resource_budget: Some(PgResourceBudget(resource_budget)),
@@ -99,7 +102,7 @@ mod tests {
         assert_eq!(options.host, "127.0.0.1");
         assert_eq!(options.tls_server_name(), "postgres.internal.example");
         assert!(options.socket.is_none());
-        assert_eq!(options.ssl_mode, PgSslMode::VerifyFull);
+        assert!(matches!(options.ssl_mode, PgSslMode::VerifyFull));
         assert!(options.ssl_client_cert.is_none());
         assert!(options.ssl_client_key.is_none());
         assert!(options.application_name.is_none());

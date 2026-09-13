@@ -124,7 +124,7 @@ impl PgArguments {
 
         let resolved_holes = conn.resolve_types(hole_types).await?;
 
-        for (&offset, oid) in hole_offsets.iter().zip(resolved_holes) {
+        for (&offset, oid) in hole_offsets.iter().zip(resolved_holes.iter()) {
             buffer[offset..][..4].copy_from_slice(&oid.0.to_be_bytes());
         }
 

@@ -17,11 +17,11 @@ pub struct Execute {
 impl FrontendMessage for Execute {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Execute;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         let mut size = Saturating(0);
 
         size += self.portal.name_len();
-        size += 2; // limit
+        size += 4; // limit
 
         size
     }

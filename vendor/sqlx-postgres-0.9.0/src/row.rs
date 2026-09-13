@@ -1,18 +1,17 @@
 use crate::column::ColumnIndex;
 use crate::error::Error;
 use crate::message::DataRow;
-use crate::statement::PgStatementMetadata;
+use crate::statement::Metadata;
 use crate::value::PgValueFormat;
 use crate::{PgColumn, PgValueRef, Postgres};
 use sqlx_core::row::debug_row;
 pub(crate) use sqlx_core::row::Row;
-use std::sync::Arc;
 
 /// Implementation of [`Row`] for PostgreSQL.
 pub struct PgRow {
     pub(crate) data: DataRow,
     pub(crate) format: PgValueFormat,
-    pub(crate) metadata: Arc<PgStatementMetadata>,
+    pub(crate) metadata: Metadata,
 }
 
 impl Row for PgRow {
@@ -43,9 +42,11 @@ impl ColumnIndex<PgRow> for &'_ str {
     fn index(&self, row: &PgRow) -> Result<usize, Error> {
         row.metadata
             .column_names
-            .get(*self)
+            .iter()
+            .rev()
+            .find(|(name, _)| &**name == *self)
+            .map(|(_, index)| *index)
             .ok_or_else(|| Error::ColumnNotFound((*self).into()))
-            .copied()
     }
 }
 

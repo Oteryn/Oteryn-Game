@@ -392,3 +392,179 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ```
+
+## Frozen M02/M04 PostgreSQL custody continuation — 2026-09-13
+
+This bounded continuation consumes the preserved WIP at canonical f568963 under
+Work162 inventory5655890678, grouping5656017872, activation5656038508 and owner
+handoff5656281533. E1 and existing PostgreSQL authority apply. It does not claim
+complete M04 escaping-error custody, selected TLS, registered production-root
+qualification, or terminal WP3. Historical checkpoints above remain evidence.
+
+### Material behavior and source bounds
+
+- PgStream uses the same pre-established ConnectionOwner for transport and TLS,
+  the externally funded final socket Box, and owned initial/growing buffers.
+  It validates the five-byte header and signed protocol length range before
+  reserving the frame body. Completed frames use private shared OwnedBytes;
+  decoder descendants retain its single debit after stream/connection drop.
+- DataRow validates count, every length (only -1 means NULL), all body ranges,
+  and trailing bytes before allocating the exact range array. The executor
+  checks the wire count against current metadata before this allocation.
+  RowDescription preflights all names, UTF-8, fixed field tails and total body
+  before reserving exact Field-array and name-string backing. ParameterDescription
+  and CopyResponse validate count/body sufficiency before collection allocation.
+  BackendKeyData, ReadyForQuery, Authentication, Notification and status bodies
+  now reject malformed minimum/fixed/trailing forms without indexing panics.
+- Status strings borrow charged frame slices. The status Vec grows with exact
+  old+new capacity overlap; duplicate-name replacement destroys old frame
+  descendants under their original charge. Server-version parsing uses a fixed
+  three-number array and checked arithmetic, with no peer-driven allocation.
+- Metadata uses an exact array/name/Arc-layout reservation shared through private
+  finalizing AllocationLease handles. PgColumn clones retain this lease;
+  Metadata destroys its data Arc before its outer lease. Arrays include
+  parameters, columns, and (name,index) entries; each shared name uses the padded
+  Arc<str> layout. Reverse lookup preserves last-duplicate-column-name behavior.
+  ResolvedTypes carries its OID-vector charge through use and destruction.
+- The owned statement cache reserves its complete capacity times CacheEntry size
+  before the entry Vec, charges each copied SQL key before creation, preserves
+  LRU/replacement behavior, and releases keys after destruction. Entry count and
+  every variable backing are constrained by the supplied ledger, not a new
+  numeric driver allowance. The selected root retains configured capacity100.
+  The selected root rejects non-built-in OIDs before generic type/table discovery;
+  custom discovery remains ordinary/unqualified profile behavior. Any/offline
+  compile compatibility is retained; conversion of owned rows/statements into
+  Any's naked name maps is rejected because the selected root is typed Postgres.
+- PgConnectionInner Box is reserved before Box::new, with its reservation outside
+  the Box. Rows, values, metadata and columns may outlive this connection safely.
+- Startup's outer parameter list is a six-entry inline array. Its complete wire
+  length is checked from all supplied key/value strings and terminators before
+  encoding. Every FrontendMessage now exposes a source upper bound. Bind includes
+  two bytes per parameter/result format and the actual result-format count;
+  Execute includes four limit bytes; CopyFail includes its trailing NUL. The
+  complete prefix/body reservation precedes the Vec encoder. Neither a guessed
+  size hint nor a formatted replacement allocation error is a funding boundary.
+- If Sync or Drop rollback cannot reserve output, the stream is poisoned and
+  later send/receive/flush refuses it. The socket and its R/T charge remain held
+  until connection destruction; no detached cleanup or early permit release is
+  introduced. A failed cache insertion also poisons the connection, preventing
+  reuse that would accumulate untracked prepared statements. The existing
+  `src/transaction.rs::start_rollback` change is this same admitted cleanup seam.
+- Owned peer notices are decoded under charged backing but never emitted to the
+  notice logging sink. The root LogSettings disables query/slow-query logging.
+  Owned unexpected-auth diagnostics do not format peer authentication contents.
+  PgDatabaseError continues to preserve original SQLSTATE and borrowed fields.
+
+### SCRAM temporary and decoded ownership
+
+The ordinary authentication implementation remains the ordinary route. The owned
+route retains SCRAM-SHA-256/non-channel-binding semantics and uses exact-capacity
+AuthText allocations, each reserved before String::with_capacity and destroyed
+before its external reservation. Nonce/proof/base64 buffers and HMAC/SHA state
+are inline. An inline StdRng seeded from SysRng avoids rand0.10.2's thread-local
+Rc; nonce length and printable-except-comma alphabet are preserved. The server
+nonce must extend the sent nonce. Hi retains its existing periodic runtime yield;
+this batch does not replace the authoritative root connect deadline.
+
+Decoded server-first/final messages precharge copied message/nonce/salt/verifier
+backing and private reservation Arc layout before construction. Missing,
+duplicate, malformed or nonpositive iteration attributes are rejected; errors
+and resource denial do not format a replacement peer string. Salt/verifier
+base64 capacity follows base64::decoded_len_estimate, including spare capacity.
+
+stringprep0.1.5 borrows printable ASCII without allocation. Its non-ASCII path
+uses unicode-normalization0.1.25 NFKC, then validates the prepared output.
+Pinned source-table census: 2081 canonical entries, max4 scalars; 3849 compatible
+entries, max18 scalars at U+FDFA; Hangul decomposition has at most3. Let
+`N=max(8,18*input_scalar_count)` and `P=size_of::<(u8,char)>()`. A checked finite
+reservation `N*(3*(P+size_of::<char>()+4)+P)` covers old+new geometric backing
+for decomposition pairs, recomposition chars and UTF-8 String, plus at most N
+stable-sort scratch pairs. The reservation is obtained before saslprep and held
+through its returned Cow<String> destruction. This is a conservative finite
+source bound against the same remaining budget; no ASCII-only credential
+restriction, new semantic cap, dependency source edit or hidden allocator
+percentage is introduced. Tests include U+FDFA normalization and prior denial.
+
+### Qualification evidence and remaining scope
+
+Local Rust1.94 locked root graph: PostgreSQL lib tests161 PASS/0 FAIL/0 ignored,
+including hostile body/count tests, asymmetric encoders, shared row/value
+backing, metadata clone finality, cache denial/eviction/replacement, status
+replacement/growth denial, SCRAM normalization/challenge denial, and Sync/Drop
+rollback denial fencing. The actual TCP mock test executes startup and a simple
+query, then checks row/value/column custody after connection and runtime drop.
+This is a protocol-component test, not PostgreSQL17.6 qualification.
+
+The malformed fixed-body test first failed at byteorder's BackendKeyData read
+of an empty body; the repaired three-case group passed. A previous TLS-budget
+fixture hung because denial now correctly precedes TCP connect. Its corrected
+mock sets the denial gate immediately before sending SSL acceptance, so the
+existing test still exercises TLS-phase denial rather than waiting for a
+connection that should never occur. No test is ignored or weakened.
+
+Strict Clippy passes for PostgreSQL lib/tests, core lib/tests, and game-server
+all targets; unchanged rustls dependency warnings remain. Changed Rust files
+are rustfmt checked. Any/offline compilation passes using an external temporary
+manifest pointing to exact source, with ordinary APIs. Root Cargo/lock and both
+imported package manifests/locks are unchanged. Original digest manifests remain
+intact; only the explicitly listed authored paths change.
+
+No local PostgreSQL executable/container is configured. The exact canonical
+successor still requires actual PostgreSQL17.6/AWS-LC VerifyFull/TLS1.3 CI; no
+absent-env skip is reported as qualification. The core provenance records the
+baseline-reproduced historical HRR and parallel KX test gaps.
+
+**Remaining precise error boundary:** core src/error.rs is excluded by protected
+plan §Authority and E1. Its Error::Database outer Box allocation/deallocation and
+consuming database-error/downcast APIs cannot be funded by an interior
+PgDatabaseError lease. Existing Configuration/Tls escaping boxes share this
+separate finality problem. No naked-box workaround, SQLSTATE loss or unallocated
+core error edit is included. Work162/5656188739 retains that amendment lane.
+Final selected TLS composition is M03; complete per-query byte census,
+registered root/active-pass custody and completion/ambiguity capacity are E01/M05.
+The nested/custom/Any/COPY/listener families are not promoted to production-root
+reachability merely because their ordinary compatibility code compiles.
+
+Exact authored paths in this continuation (relative to this package):
+
+- `src/any.rs`
+- `src/arguments.rs`
+- `src/column.rs`
+- `src/connection/establish.rs`
+- `src/connection/executor.rs`
+- `src/connection/mod.rs`
+- `src/connection/resolve.rs`
+- `src/connection/sasl.rs`
+- `src/connection/stream.rs`
+- `src/connection/tls.rs`
+- `src/error.rs`
+- `src/message/authentication.rs`
+- `src/message/backend_key_data.rs`
+- `src/message/bind.rs`
+- `src/message/close.rs`
+- `src/message/command_complete.rs`
+- `src/message/copy.rs`
+- `src/message/data_row.rs`
+- `src/message/describe.rs`
+- `src/message/execute.rs`
+- `src/message/flush.rs`
+- `src/message/mod.rs`
+- `src/message/notification.rs`
+- `src/message/parameter_description.rs`
+- `src/message/parameter_status.rs`
+- `src/message/parse.rs`
+- `src/message/parse_complete.rs`
+- `src/message/password.rs`
+- `src/message/query.rs`
+- `src/message/ready_for_query.rs`
+- `src/message/response.rs`
+- `src/message/row_description.rs`
+- `src/message/sasl.rs`
+- `src/message/startup.rs`
+- `src/message/sync.rs`
+- `src/message/terminate.rs`
+- `src/options/oteryn.rs`
+- `src/row.rs`
+- `src/statement.rs`
+- `src/transaction.rs`
+- `src/value.rs`

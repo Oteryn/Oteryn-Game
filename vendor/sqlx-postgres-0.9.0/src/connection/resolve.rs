@@ -2,7 +2,7 @@ use crate::connection::TableData;
 use crate::error::Error;
 use crate::ext::ustr::UStr;
 use crate::message::{ParameterDescription, RowDescription};
-use crate::statement::PgStatementMetadata;
+use crate::statement::{Metadata, PgStatementMetadata};
 use crate::type_info::{PgCustomType, PgType, PgTypeKind};
 use crate::types::Oid;
 use crate::{HashMap, PgRow, PgValueRef, Postgres};
@@ -32,22 +32,36 @@ impl PgConnection {
         param_desc: Option<ParameterDescription>,
         row_desc: Option<RowDescription>,
         resolve_column_origin: bool,
-    ) -> Result<Arc<PgStatementMetadata>, Error> {
-        let param_types = param_desc.map_or_else(Default::default, |desc| desc.types);
+    ) -> Result<Metadata, Error> {
+        let param_types = param_desc
+            .as_ref()
+            .map_or(&[][..], |desc| desc.types.as_slice());
 
-        let fields = row_desc.map_or_else(Default::default, |desc| desc.fields);
+        let fields = row_desc
+            .as_ref()
+            .map_or(&[][..], |desc| desc.fields.as_slice());
 
-        if QUERIES_ALLOWED {
+        if self.inner.root_profile
+            && (param_types
+                .iter()
+                .any(|oid| PgTypeInfo::try_from_oid(*oid).is_none())
+                || fields
+                    .iter()
+                    .any(|field| PgTypeInfo::try_from_oid(field.data_type_id).is_none()))
+        {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
+        if QUERIES_ALLOWED && !self.inner.root_profile {
             let mut type_resolver = TypeResolver::default();
             let mut column_resolver = ColumnResolver::default();
 
-            for ty in &param_types {
+            for ty in param_types {
                 if self.try_oid_to_type(*ty).is_none() {
                     type_resolver.push_type("NULL", ty.0);
                 }
             }
 
-            for field in &fields {
+            for field in fields {
                 if self.try_oid_to_type(field.data_type_id).is_none() {
                     type_resolver.push_type("NULL", field.data_type_id.0);
                 }
@@ -68,9 +82,41 @@ impl PgConnection {
             column_resolver.fill_cache(self).await?;
         }
 
+        // Fund all overlapping metadata backing before creating any of it.
+        let budget = self.inner.stream.resource_budget().cloned();
+        let mut metadata_bytes = crate::statement::arc_size::<PgStatementMetadata>()?;
+        metadata_bytes = metadata_bytes
+            .checked_add(
+                param_types
+                    .len()
+                    .checked_mul(std::mem::size_of::<PgTypeInfo>())
+                    .ok_or_else(crate::statement::allocation_denied)?,
+            )
+            .and_then(|n| {
+                n.checked_add(fields.len().checked_mul(
+                    std::mem::size_of::<PgColumn>() + std::mem::size_of::<(UStr, usize)>(),
+                )?)
+            })
+            .ok_or_else(crate::statement::allocation_denied)?;
+        for field in fields {
+            let name_layout = std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+                .extend(
+                    std::alloc::Layout::array::<u8>(field.name.len())
+                        .map_err(|_| crate::statement::allocation_denied())?,
+                )
+                .map_err(|_| crate::statement::allocation_denied())?
+                .0
+                .pad_to_align()
+                .size();
+            metadata_bytes = metadata_bytes
+                .checked_add(name_layout)
+                .ok_or_else(crate::statement::allocation_denied)?;
+        }
+        let lease = crate::statement::AllocationLease::reserve(budget, metadata_bytes)?;
+
         let mut parameters = Vec::with_capacity(param_types.len());
 
-        for ty in param_types {
+        for &ty in param_types {
             if let Some(type_info) = self.try_oid_to_type(ty) {
                 parameters.push(type_info);
             } else {
@@ -79,10 +125,10 @@ impl PgConnection {
         }
 
         let mut columns = Vec::with_capacity(fields.len());
-        let mut column_names = HashMap::with_capacity(fields.len());
+        let mut column_names = Vec::with_capacity(fields.len());
 
         for field in fields {
-            let name = UStr::from(field.name);
+            let name = UStr::Shared(Arc::from(field.name.as_str()));
             let ordinal = columns.len();
 
             let type_info = self
@@ -100,20 +146,24 @@ impl PgConnection {
             columns.push(PgColumn {
                 ordinal,
                 name: name.clone(),
+                _allocation: lease.clone(),
                 type_info,
                 origin,
                 relation_id: field.relation_id,
                 relation_attribute_no: field.relation_attribute_no,
             });
 
-            column_names.insert(name, ordinal);
+            column_names.push((name, ordinal));
         }
 
-        Ok(Arc::new(PgStatementMetadata {
-            columns,
-            column_names: column_names.into(),
-            parameters,
-        }))
+        Ok(Metadata::new(
+            PgStatementMetadata {
+                columns,
+                column_names,
+                parameters,
+            },
+            lease,
+        ))
     }
 
     fn try_table_column(&self, relation_oid: Oid, attribute_no: i16) -> Option<TableColumn> {
@@ -134,7 +184,30 @@ impl PgConnection {
             .is_some_and(|data| data.columns.contains_key(&attribute_no))
     }
 
-    pub(crate) async fn resolve_types(&mut self, types: &[PgTypeInfo]) -> Result<Vec<Oid>, Error> {
+    pub(crate) async fn resolve_types(
+        &mut self,
+        types: &[PgTypeInfo],
+    ) -> Result<ResolvedTypes, Error> {
+        if self.inner.root_profile
+            && types
+                .iter()
+                .any(|ty| ty.try_oid().and_then(PgTypeInfo::try_from_oid).is_none())
+        {
+            return Err(Error::Io(std::io::ErrorKind::InvalidInput.into()));
+        }
+        let allocation = self
+            .inner
+            .stream
+            .resource_budget()
+            .map(|budget| {
+                let bytes = types
+                    .len()
+                    .checked_mul(std::mem::size_of::<Oid>())
+                    .ok_or(sqlx_core::net::resource_budget::BudgetError::Overflow)?;
+                sqlx_core::net::resource_budget::ResourceReservation::try_new(budget.clone(), bytes)
+            })
+            .transpose()
+            .map_err(|_| crate::statement::allocation_denied())?;
         let mut oids = Vec::with_capacity(types.len());
 
         let mut unresolved_types = types.iter().peekable();
@@ -151,7 +224,10 @@ impl PgConnection {
 
         // Fast-path: all types resolved
         if oids.len() == types.len() {
-            return Ok(oids);
+            return Ok(ResolvedTypes {
+                oids,
+                _allocation: allocation,
+            });
         }
 
         let mut resolver = TypeResolver::default();
@@ -192,7 +268,10 @@ impl PgConnection {
             );
         }
 
-        Ok(oids)
+        Ok(ResolvedTypes {
+            oids,
+            _allocation: allocation,
+        })
     }
 
     pub(crate) fn try_type_to_oid(&self, ty: &PgTypeInfo) -> Option<Oid> {
@@ -695,5 +774,16 @@ impl<'r> Decode<'r, Postgres> for TypCategory {
 impl Type<Postgres> for TypCategory {
     fn type_info() -> PgTypeInfo {
         PgTypeInfo(PgType::Char)
+    }
+}
+
+pub(crate) struct ResolvedTypes {
+    oids: Vec<Oid>,
+    _allocation: Option<sqlx_core::net::resource_budget::ResourceReservation>,
+}
+impl std::ops::Deref for ResolvedTypes {
+    type Target = [Oid];
+    fn deref(&self) -> &[Oid] {
+        &self.oids
     }
 }

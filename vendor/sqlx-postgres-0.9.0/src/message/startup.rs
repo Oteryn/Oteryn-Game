@@ -22,7 +22,7 @@ pub struct Startup<'a> {
 // Startup cannot impl FrontendMessage because it doesn't have a format code.
 impl ProtocolEncode<'_> for Startup<'_> {
     fn encode_with(&self, buf: &mut Vec<u8>, _context: ()) -> Result<(), crate::Error> {
-        buf.reserve(120);
+        buf.reserve(self.encoded_size()?);
 
         buf.put_length_prefixed(|buf| {
             // The protocol version number. The most significant 16 bits are the
@@ -93,4 +93,29 @@ fn bench_encode_startup(b: &mut test::Bencher) {
         })
         .encode(&mut buf);
     });
+}
+
+impl Startup<'_> {
+    pub(crate) fn encoded_size(&self) -> Result<usize, crate::Error> {
+        let mut size = 9usize; // length, protocol version, final NUL
+        let mut add = |key: &str, value: &str| -> Result<(), crate::Error> {
+            size = size
+                .checked_add(key.len())
+                .and_then(|n| n.checked_add(value.len()))
+                .and_then(|n| n.checked_add(2))
+                .filter(|n| *n <= i32::MAX as usize)
+                .ok_or_else(|| crate::Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+            Ok(())
+        };
+        if let Some(value) = self.username {
+            add("user", value)?;
+        }
+        if let Some(value) = self.database {
+            add("database", value)?;
+        }
+        for (key, value) in self.params {
+            add(key, value)?;
+        }
+        Ok(size)
+    }
 }

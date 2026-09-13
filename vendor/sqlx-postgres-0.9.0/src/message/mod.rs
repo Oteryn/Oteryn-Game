@@ -1,4 +1,4 @@
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 use std::num::Saturating;
 
 use crate::error::Error;
@@ -127,6 +127,9 @@ impl ReceivedMessage {
         T: BackendMessage,
     {
         if T::FORMAT != self.format {
+            if self.contents.budget().is_some() {
+                return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+            }
             return Err(err_protocol!(
                 "Postgres protocol error: expected {:?}, got {:?}",
                 T::FORMAT,
@@ -170,7 +173,7 @@ impl BackendMessageFormat {
             b's' => BackendMessageFormat::PortalSuspended,
             b't' => BackendMessageFormat::ParameterDescription,
 
-            _ => return Err(err_protocol!("unknown message type: {:?}", v as char)),
+            _ => return Err(Error::Io(std::io::ErrorKind::InvalidData.into())),
         })
     }
 }
@@ -180,7 +183,7 @@ pub(crate) trait FrontendMessage: Sized {
     const FORMAT: FrontendMessageFormat;
 
     /// Return the amount of space, in bytes, to reserve in the buffer passed to [`Self::encode_body()`].
-    fn body_size_hint(&self) -> Saturating<usize>;
+    fn body_size_bound(&self) -> Saturating<usize>;
 
     /// Encode this type as a Frontend message in the Postgres protocol.
     ///
@@ -210,7 +213,7 @@ pub struct EncodeMessage<F>(pub F);
 
 impl<F: FrontendMessage> ProtocolEncode<'_, ()> for EncodeMessage<F> {
     fn encode_with(&self, buf: &mut Vec<u8>, _context: ()) -> Result<(), Error> {
-        let mut size_hint = self.0.body_size_hint();
+        let mut size_hint = self.0.body_size_bound();
         // plus format code and length prefix
         size_hint += 5;
 
@@ -226,5 +229,63 @@ impl<F: FrontendMessage> ProtocolEncode<'_, ()> for EncodeMessage<F> {
         buf.push(F::FORMAT as u8);
 
         buf.put_length_prefixed(|buf| self.0.encode_body(buf))
+    }
+}
+
+pub(crate) trait PgDecode: Sized {
+    fn decode(buf: Bytes) -> Result<Self, Error>;
+}
+
+#[cfg(test)]
+mod custody_tests {
+    use super::*;
+
+    #[test]
+    fn malformed_fixed_backend_messages_return_errors() {
+        for data in [&b""[..], &b"1234567"[..], &b"123456789"[..]] {
+            assert!(BackendKeyData::decode_body(Bytes::copy_from_slice(data)).is_err());
+        }
+        for data in [&b""[..], &b"II"[..], &b"?"[..]] {
+            assert!(ReadyForQuery::decode_body(Bytes::copy_from_slice(data)).is_err());
+        }
+        assert!(Notification::decode_body(Bytes::from_static(b"123")).is_err());
+        assert!(ParameterStatus::decode_body(Bytes::from_static(b"a\0b\0tail")).is_err());
+    }
+
+    #[test]
+    fn hostile_count_bodies_are_rejected_before_materialization() {
+        assert!(DataRow::decode_body(Bytes::from_static(b"\xff\xff")).is_err());
+        assert!(DataRow::decode_body(Bytes::from_static(b"\0\x01\xff\xff\xff\xfe")).is_err());
+        assert!(DataRow::decode_body(Bytes::from_static(b"\0\x01\0\0\0\x02x")).is_err());
+        assert!(RowDescription::decode_body(Bytes::from_static(b"\xff\xff")).is_err());
+        assert!(ParameterDescription::decode_body(Bytes::from_static(b"\xff\xff")).is_err());
+    }
+
+    #[test]
+    fn outbound_bounds_match_asymmetric_bind_execute_and_copy_fail() {
+        use crate::io::{PortalId, StatementId};
+        use crate::PgValueFormat;
+        fn exact(message: impl FrontendMessage) {
+            let expected = message.body_size_bound().0;
+            let mut data = Vec::with_capacity(expected);
+            message.encode_body(&mut data).unwrap();
+            assert_eq!(data.len(), expected);
+            assert_eq!(data.capacity(), expected);
+        }
+        exact(Bind {
+            portal: PortalId::UNNAMED,
+            statement: StatementId::UNNAMED,
+            formats: &[PgValueFormat::Binary],
+            num_params: 0,
+            params: &[],
+            result_formats: &[PgValueFormat::Text, PgValueFormat::Binary],
+        });
+        exact(Execute {
+            portal: PortalId::UNNAMED,
+            limit: 0,
+        });
+        exact(CopyFail {
+            message: "failure".into(),
+        });
     }
 }

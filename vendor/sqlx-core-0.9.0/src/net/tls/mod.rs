@@ -113,16 +113,24 @@ where
     S: Socket,
     Ws: WithSocket,
 {
+    let owner = crate::net::ConnectionOwner::try_new(resource_budget)?;
+    handshake_with_connection_owner(socket, config, with_socket, owner).await
+}
+
+pub async fn handshake_with_connection_owner<S: Socket, Ws: WithSocket>(
+    socket: S,
+    config: TlsConfig<'_>,
+    with_socket: Ws,
+    owner: crate::net::ConnectionOwner,
+) -> crate::Result<Ws::Output> {
     #[cfg(all(feature = "_tls-rustls", not(feature = "_tls-native-tls")))]
     return Ok(with_socket
-        .with_socket(
-            tls_rustls::handshake_with_resource_budget(socket, config, resource_budget).await?,
-        )
+        .with_socket(tls_rustls::handshake_with_resource_budget(socket, config, owner).await?)
         .await);
 
     #[cfg(not(all(feature = "_tls-rustls", not(feature = "_tls-native-tls"))))]
     {
-        drop((socket, config, with_socket, resource_budget));
+        drop((socket, config, with_socket, owner));
         Err(Error::tls(
             "resource-owned TLS requires the qualified rustls backend",
         ))

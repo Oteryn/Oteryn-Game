@@ -3,7 +3,8 @@ use crate::io::BufMutExt;
 use crate::message::{
     BackendMessage, BackendMessageFormat, FrontendMessage, FrontendMessageFormat,
 };
-use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::bytes::Buf;
+use sqlx_core::net::OwnedBytes as Bytes;
 use sqlx_core::Error;
 use std::num::Saturating;
 use std::ops::Deref;
@@ -13,6 +14,7 @@ pub struct CopyResponseData {
     pub format: i8,
     pub num_columns: i16,
     pub format_codes: Vec<i16>,
+    _allocation: crate::statement::AllocationLease,
 }
 
 pub struct CopyInResponse(pub CopyResponseData);
@@ -31,15 +33,31 @@ pub struct CopyDone;
 impl CopyResponseData {
     #[inline]
     fn decode(mut buf: Bytes) -> Result<Self> {
+        if buf.len() < 3 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         let format = buf.get_i8();
         let num_columns = buf.get_i16();
 
-        let format_codes = (0..num_columns).map(|_| buf.get_i16()).collect();
+        let count = usize::try_from(num_columns)
+            .map_err(|_| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+        if buf.len() != count * 2 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
+        let allocation = crate::statement::AllocationLease::reserve(
+            buf.budget(),
+            count * std::mem::size_of::<i16>(),
+        )?;
+        let mut format_codes = Vec::with_capacity(count);
+        for _ in 0..count {
+            format_codes.push(buf.get_i16());
+        }
 
         Ok(CopyResponseData {
             format,
             num_columns,
             format_codes,
+            _allocation: allocation,
         })
     }
 }
@@ -75,7 +93,7 @@ impl<B: Deref<Target = [u8]>> FrontendMessage for CopyData<B> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::CopyData;
 
     #[inline(always)]
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         Saturating(self.0.len())
     }
 
@@ -90,8 +108,8 @@ impl FrontendMessage for CopyFail {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::CopyFail;
 
     #[inline(always)]
-    fn body_size_hint(&self) -> Saturating<usize> {
-        Saturating(self.message.len())
+    fn body_size_bound(&self) -> Saturating<usize> {
+        Saturating(self.message.len()) + Saturating(1)
     }
 
     #[inline(always)]
@@ -113,7 +131,7 @@ impl CopyFail {
 impl FrontendMessage for CopyDone {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::CopyDone;
     #[inline(always)]
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         Saturating(0)
     }
 
@@ -137,5 +155,12 @@ impl BackendMessage for CopyDone {
         }
 
         Ok(CopyDone)
+    }
+}
+
+impl BackendMessage for CopyData<sqlx_core::bytes::Bytes> {
+    const FORMAT: BackendMessageFormat = BackendMessageFormat::CopyData;
+    fn decode_body(buf: Bytes) -> Result<Self, Error> {
+        Ok(Self(buf.into_unowned()?))
     }
 }

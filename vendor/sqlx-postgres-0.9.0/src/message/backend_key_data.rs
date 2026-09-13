@@ -1,5 +1,5 @@
 use byteorder::{BigEndian, ByteOrder};
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
 use crate::message::{BackendMessage, BackendMessageFormat};
@@ -19,6 +19,9 @@ impl BackendMessage for BackendKeyData {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::BackendKeyData;
 
     fn decode_body(buf: Bytes) -> Result<Self, Error> {
+        if buf.len() != 8 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         let process_id = BigEndian::read_u32(&buf);
         let secret_key = BigEndian::read_u32(&buf[4..]);
 

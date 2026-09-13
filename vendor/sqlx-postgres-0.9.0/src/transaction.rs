@@ -61,10 +61,14 @@ impl TransactionManager for PgTransactionManager {
 
     fn start_rollback(conn: &mut PgConnection) {
         if conn.inner.transaction_depth > 0 {
-            conn.queue_simple_query(
-                rollback_ansi_transaction_sql(conn.inner.transaction_depth).as_str(),
-            )
-            .expect("BUG: Rollback query somehow too large for protocol");
+            if conn
+                .queue_simple_query(
+                    rollback_ansi_transaction_sql(conn.inner.transaction_depth).as_str(),
+                )
+                .is_err()
+            {
+                conn.inner.stream.poison();
+            }
 
             conn.inner.transaction_depth -= 1;
         }

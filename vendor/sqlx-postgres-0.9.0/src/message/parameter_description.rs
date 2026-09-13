@@ -1,5 +1,6 @@
 use smallvec::SmallVec;
-use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::bytes::Buf;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
 use crate::message::{BackendMessage, BackendMessageFormat};
@@ -8,6 +9,7 @@ use crate::types::Oid;
 #[derive(Debug)]
 pub struct ParameterDescription {
     pub types: SmallVec<[Oid; 6]>,
+    _allocation: crate::statement::AllocationLease,
 }
 
 impl BackendMessage for ParameterDescription {
@@ -16,14 +18,30 @@ impl BackendMessage for ParameterDescription {
     fn decode_body(mut buf: Bytes) -> Result<Self, Error> {
         // Note: this is correct, max parameters is 65535, not 32767
         // https://github.com/launchbadge/sqlx/issues/3464
-        let cnt = buf.get_u16();
-        let mut types = SmallVec::with_capacity(cnt as usize);
+        if buf.len() < 2 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
 
+        let cnt = buf.get_u16();
+        let count = usize::from(cnt);
+        if buf.len() != count * 4 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
+        let bytes = if count > 6 {
+            count * std::mem::size_of::<Oid>()
+        } else {
+            0
+        };
+        let allocation = crate::statement::AllocationLease::reserve(buf.budget(), bytes)?;
+        let mut types = SmallVec::with_capacity(count);
         for _ in 0..cnt {
             types.push(Oid(buf.get_u32()));
         }
 
-        Ok(Self { types })
+        Ok(Self {
+            types,
+            _allocation: allocation,
+        })
     }
 }
 

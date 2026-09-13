@@ -1,6 +1,7 @@
 use crate::error::{BoxDynError, UnexpectedNullError};
 use crate::{PgTypeInfo, Postgres};
-use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::bytes::Buf;
+use sqlx_core::net::OwnedBytes as Bytes;
 pub(crate) use sqlx_core::value::{Value, ValueRef};
 use std::borrow::Cow;
 use std::str::from_utf8;

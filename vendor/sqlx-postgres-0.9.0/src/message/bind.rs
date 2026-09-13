@@ -45,14 +45,14 @@ pub struct Bind<'a> {
 impl FrontendMessage for Bind<'_> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Bind;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         let mut size = Saturating(0);
         size += self.portal.name_len();
         size += self.statement.name_len();
 
         // Parameter formats and length prefix
         size += 2;
-        size += self.formats.len();
+        size += self.formats.len().saturating_mul(2);
 
         // `num_params`
         size += 2;
@@ -61,7 +61,7 @@ impl FrontendMessage for Bind<'_> {
 
         // Result formats and length prefix
         size += 2;
-        size += self.result_formats.len();
+        size += self.result_formats.len().saturating_mul(2);
 
         size
     }
@@ -89,8 +89,12 @@ impl FrontendMessage for Bind<'_> {
 
         buf.extend(self.params);
 
-        let result_formats_len = u16::try_from(self.formats.len())
-            .map_err(|_| err_protocol!("too many result format codes ({})", self.formats.len()))?;
+        let result_formats_len = u16::try_from(self.result_formats.len()).map_err(|_| {
+            err_protocol!(
+                "too many result format codes ({})",
+                self.result_formats.len()
+            )
+        })?;
 
         buf.extend(result_formats_len.to_be_bytes());
 

@@ -12,7 +12,8 @@ struct Ledger {
 }
 impl ResourceBudget for Ledger {
     fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
-        let previous = self.used
+        let previous = self
+            .used
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |used| {
                 used.checked_add(bytes)
                     .filter(|next| *next <= self.limit.load(Ordering::Acquire))
@@ -26,7 +27,10 @@ impl ResourceBudget for Ledger {
     fn release(&self, bytes: usize) {
         let prior = self.used.fetch_sub(bytes, Ordering::AcqRel);
         assert!(prior >= bytes, "reservation released twice");
-        self.events.lock().unwrap().push((false, bytes, prior - bytes));
+        self.events
+            .lock()
+            .unwrap()
+            .push((false, bytes, prior - bytes));
     }
     fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), BudgetError> {
         self.try_reserve(bytes)?;
@@ -49,7 +53,9 @@ fn provider_shared_default_denies_and_adapter_delegates_to_same_root() {
     #[derive(Debug)]
     struct Unsupported;
     impl ResourceBudget for Unsupported {
-        fn try_reserve(&self, _bytes: usize) -> Result<(), BudgetError> { Ok(()) }
+        fn try_reserve(&self, _bytes: usize) -> Result<(), BudgetError> {
+            Ok(())
+        }
         fn release(&self, _bytes: usize) {}
     }
     assert_eq!(
@@ -100,7 +106,10 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     let main_thread_provider =
         rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(process_owner).unwrap();
     assert!(Arc::ptr_eq(provider, &main_thread_provider));
-    assert_eq!(provider.cipher_suites.capacity(), provider.cipher_suites.len());
+    assert_eq!(
+        provider.cipher_suites.capacity(),
+        provider.cipher_suites.len()
+    );
     assert_eq!(provider.kx_groups.capacity(), provider.kx_groups.len());
     let ordinary = rustls::crypto::aws_lc_rs::default_provider();
     let expected = [
@@ -295,8 +304,7 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
             .with_no_client_auth()
             .with_single_cert(vec![cert], key)
             .unwrap();
-        let owner: Arc<dyn rustls::DeframerBufferOwner> =
-            Arc::new(DeframerBudgetOwner(budget));
+        let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(budget));
         (
             ClientConnection::new_with_resource_owner(
                 Arc::new(client),
@@ -317,10 +325,8 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     }
 
     let budget = ledger(2_000_000);
-    let owner: Arc<dyn rustls::DeframerBufferOwner> =
-        Arc::new(DeframerBudgetOwner(budget.clone()));
-    let provider =
-        rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).unwrap();
+    let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(budget.clone()));
+    let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).unwrap();
 
     // Drive a real ClientHello into a P-256-only server.  The server emits an
     // HRR because the PQ-first client did not initially offer a P-256 share.
@@ -401,18 +407,23 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     let completion_events = budget.events.lock().unwrap();
     let decoded_reservations = completion_events[completion_event_start..]
         .iter()
-        .filter(|(reserve, bytes, _)| *reserve && !matches!(*bytes, 554 | 1_625 | 1_705 | 6_264 | 7_881))
+        .filter(|(reserve, bytes, _)| {
+            *reserve && !matches!(*bytes, 554 | 1_625 | 1_705 | 6_264 | 7_881)
+        })
         .map(|(_, bytes, _)| *bytes)
         .collect::<Vec<_>>();
     assert!(
         !decoded_reservations.is_empty(),
         "production Message decode did not reserve any decoded backing"
     );
-    assert!(decoded_reservations.iter().any(|bytes| {
-        completion_events[completion_event_start..]
-            .iter()
-            .any(|(reserve, released, _)| !*reserve && released == bytes)
-    }), "production Message dropped without releasing decoded backing");
+    assert!(
+        decoded_reservations.iter().any(|bytes| {
+            completion_events[completion_event_start..]
+                .iter()
+                .any(|(reserve, released, _)| !*reserve && released == bytes)
+        }),
+        "production Message dropped without releasing decoded backing"
+    );
     drop(completion_events);
 
     // Cancellation before receiving HRR retains the initial reservation until
@@ -449,7 +460,9 @@ fn unsupported_custom_kx_fails_before_ordinary_start() {
             self.0.fetch_add(1, Ordering::Relaxed);
             Err(rustls::Error::FailedToGetRandomBytes)
         }
-        fn name(&self) -> rustls::NamedGroup { rustls::NamedGroup::Unknown(0xff01) }
+        fn name(&self) -> rustls::NamedGroup {
+            rustls::NamedGroup::Unknown(0xff01)
+        }
     }
     let group = Unsupported(AtomicUsize::new(0));
     let owner: Arc<dyn rustls::DeframerBufferOwner> =
@@ -739,34 +752,32 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     let data = vec![11u8; 7000];
     std::fs::write(&cleanup.0, &data).unwrap();
 
-    let denied = ledger(cleanup.0.as_os_str().len());
+    let probe = ledger(usize::MAX);
+    let probe_owner = blocking_job_owner(probe.clone()).unwrap();
+    let owner_bytes = probe.used.load(Ordering::Acquire);
+    drop(probe_owner);
+    assert_eq!(probe.used.load(Ordering::Acquire), 0);
+    let denied = ledger(owner_bytes + cleanup.0.as_os_str().len());
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
-    let denied_owner = blocking_job_owner(denied.clone());
+    let denied_owner = blocking_job_owner(denied.clone()).unwrap();
     assert!(runtime
-        .block_on(read_certificate_file_owned(
-            &cleanup.0,
-            &denied_owner
-        ))
+        .block_on(read_certificate_file_owned(&cleanup.0, &denied_owner))
         .is_err());
+    assert_eq!(denied.used.load(Ordering::Acquire), owner_bytes);
+    drop(denied_owner);
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 
     let funded = ledger(4 * 1024 * 1024);
-    let funded_owner = blocking_job_owner(funded.clone());
+    let funded_owner = blocking_job_owner(funded.clone()).unwrap();
     let loaded = runtime
-        .block_on(read_certificate_file_owned(
-            &cleanup.0,
-            &funded_owner,
-        ))
+        .block_on(read_certificate_file_owned(&cleanup.0, &funded_owner))
         .unwrap();
     assert_eq!(loaded.get().as_slice(), data);
     drop(loaded);
     let loaded_again = runtime
-        .block_on(read_certificate_file_owned(
-            &cleanup.0,
-            &funded_owner,
-        ))
+        .block_on(read_certificate_file_owned(&cleanup.0, &funded_owner))
         .unwrap();
     assert_eq!(loaded_again.get().as_slice(), data);
     drop(loaded_again);
@@ -775,6 +786,8 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
         "owned pool remains charged"
     );
     drop(runtime);
+    assert_eq!(funded.used.load(Ordering::Acquire), owner_bytes);
+    drop(funded_owner);
     assert_eq!(funded.used.load(Ordering::Acquire), 0);
 }
 
@@ -826,9 +839,8 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
         .with_no_client_auth();
     config.alpn_protocols = vec![b"h2".to_vec()];
     let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let error =
-        rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner)
-            .unwrap_err();
+    let error = rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner)
+        .unwrap_err();
     assert!(error.to_string().contains("resource budget unavailable"));
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 }
@@ -857,7 +869,10 @@ fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
     assert_eq!(cert.get().as_ptr(), cert_ptr);
     assert_eq!(key.get().as_ptr(), key_ptr);
     assert_eq!(chain.len(), 1);
-    assert!(matches!(private_key, rustls::pki_types::PrivateKeyDer::Pkcs8(_)));
+    assert!(matches!(
+        private_key,
+        rustls::pki_types::PrivateKeyDer::Pkcs8(_)
+    ));
     drop((chain, private_key));
     assert_eq!(budget.used.load(Ordering::Acquire), used_before);
     drop((cert, key));
@@ -896,12 +911,14 @@ fn credential_and_custom_root_precharge_are_same_ledger_and_fail_closed() {
 
     let credential_bound = super::tls_rustls::client_auth_pem_heap_bound(CERT, KEY).unwrap();
     let denied_credentials = ledger(credential_bound - 1);
-    assert!(super::tls_rustls::client_auth_from_pem_with_resource_budget(
-        CERT,
-        KEY,
-        denied_credentials.clone(),
-    )
-    .is_err());
+    assert!(
+        super::tls_rustls::client_auth_from_pem_with_resource_budget(
+            CERT,
+            KEY,
+            denied_credentials.clone(),
+        )
+        .is_err()
+    );
     assert_eq!(denied_credentials.used.load(Ordering::Acquire), 0);
 
     let credentials = ledger(credential_bound);
@@ -922,8 +939,7 @@ fn credential_and_custom_root_precharge_are_same_ledger_and_fail_closed() {
 
     let root_probe = ledger(usize::MAX);
     let (probe_store, probe_reservation) =
-        super::tls_rustls::root_store_with_resource_budget(Some(CERT), root_probe.clone())
-            .unwrap();
+        super::tls_rustls::root_store_with_resource_budget(Some(CERT), root_probe.clone()).unwrap();
     let root_bound = probe_reservation.bytes();
     drop(probe_store);
     assert_eq!(root_probe.used.load(Ordering::Acquire), root_bound);
@@ -931,11 +947,10 @@ fn credential_and_custom_root_precharge_are_same_ledger_and_fail_closed() {
     assert_eq!(root_probe.used.load(Ordering::Acquire), 0);
 
     let denied_roots = ledger(root_bound - 1);
-    assert!(super::tls_rustls::root_store_with_resource_budget(
-        Some(CERT),
-        denied_roots.clone(),
-    )
-    .is_err());
+    assert!(
+        super::tls_rustls::root_store_with_resource_budget(Some(CERT), denied_roots.clone(),)
+            .is_err()
+    );
     assert_eq!(denied_roots.used.load(Ordering::Acquire), 0);
 
     let roots = ledger(root_bound);

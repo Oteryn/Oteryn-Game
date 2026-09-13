@@ -3,8 +3,8 @@ use std::fmt::{self, Debug, Display, Formatter};
 
 use atoi::atoi;
 use smallvec::alloc::borrow::Cow;
-use sqlx_core::bytes::Bytes;
 pub(crate) use sqlx_core::error::*;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::message::{BackendMessage, BackendMessageFormat, Notice, PgSeverity};
 

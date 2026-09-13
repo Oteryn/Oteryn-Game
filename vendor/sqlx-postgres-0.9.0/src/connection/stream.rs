@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::ops::{ControlFlow, Deref, DerefMut};
 use std::str::FromStr;
 
@@ -15,8 +14,9 @@ use crate::message::{
     BackendMessage, BackendMessageFormat, EncodeMessage, FrontendMessage, Notice, Notification,
     ParameterStatus, ReceivedMessage,
 };
-use crate::net::{self, BufferedSocket, Socket};
+use crate::net::{self, BufferedSocket};
 use crate::{PgConnectOptions, PgDatabaseError, PgSeverity};
+use sqlx_core::net::{ConnectionOwner, OwnedSocket};
 
 // the stream is a separate type from the connection to uphold the invariant where an instantiated
 // [PgConnection] is a **valid** connection to postgres
@@ -30,17 +30,18 @@ use crate::{PgConnectOptions, PgDatabaseError, PgSeverity};
 pub struct PgStream {
     // A trait object is okay here as the buffering amortizes the overhead of both the dynamic
     // function call as well as the syscall.
-    inner: BufferedSocket<Box<dyn Socket>>,
+    inner: BufferedSocket<OwnedSocket>,
 
     // buffer of unreceived notification messages from `PUBLISH`
     // this is set when creating a PgListener and only written to if that listener is
     // re-used for query execution in-between receiving messages
     pub(crate) notifications: Option<UnboundedSender<Notification>>,
 
-    pub(crate) parameter_statuses: BTreeMap<String, String>,
+    pub(crate) parameter_statuses: ParameterStatuses,
 
     pub(crate) server_version_num: Option<u32>,
     resource_budget: Option<Arc<dyn ResourceBudget>>,
+    poisoned: bool,
 }
 
 impl PgStream {
@@ -53,11 +54,12 @@ impl PgStream {
         let socket = socket_result?;
 
         Ok(Self {
-            inner: BufferedSocket::new(socket),
+            inner: BufferedSocket::new(OwnedSocket::unowned(socket)),
             notifications: None,
-            parameter_statuses: BTreeMap::default(),
+            parameter_statuses: ParameterStatuses::default(),
             server_version_num: None,
             resource_budget: None,
+            poisoned: false,
         })
     }
 
@@ -65,17 +67,50 @@ impl PgStream {
         options: &PgConnectOptions,
         resource_budget: Arc<dyn ResourceBudget>,
     ) -> Result<Self, Error> {
+        let owner = ConnectionOwner::try_new(resource_budget.clone())?;
         let socket_result = match options.fetch_socket() {
-            Some(ref path) => net::connect_uds(path, MaybeUpgradeTlsOwned(options, resource_budget.clone())).await?,
-            None => net::connect_tcp(&options.host, options.port, MaybeUpgradeTlsOwned(options, resource_budget.clone())).await?,
+            Some(ref path) => {
+                net::connect_uds_owned(path, MaybeUpgradeTlsOwned(options, owner.clone()), &owner)
+                    .await?
+            }
+            None => {
+                net::connect_tcp_owned(
+                    &options.host,
+                    options.port,
+                    MaybeUpgradeTlsOwned(options, owner.clone()),
+                    &owner,
+                )
+                .await?
+            }
         };
         Ok(Self {
-            inner: BufferedSocket::new(socket_result?),
+            inner: BufferedSocket::new_owned(socket_result?, resource_budget.clone())?,
             notifications: None,
-            parameter_statuses: BTreeMap::default(),
+            parameter_statuses: ParameterStatuses::default(),
             server_version_num: None,
             resource_budget: Some(resource_budget),
+            poisoned: false,
         })
+    }
+
+    pub(crate) fn poison(&mut self) {
+        // Keep socket/R/T custody until actual connection destruction. Every
+        // later protocol entry refuses this connection so a pool must retire it.
+        self.poisoned = true;
+    }
+
+    pub(crate) async fn flush(&mut self) -> std::io::Result<()> {
+        if self.poisoned {
+            return Err(std::io::ErrorKind::ConnectionAborted.into());
+        }
+        self.inner.flush().await
+    }
+
+    pub(crate) async fn shutdown(&mut self) -> std::io::Result<()> {
+        if self.poisoned {
+            return Err(std::io::ErrorKind::ConnectionAborted.into());
+        }
+        self.inner.shutdown().await
     }
 
     pub(crate) fn resource_budget(&self) -> Option<&Arc<dyn ResourceBudget>> {
@@ -84,7 +119,18 @@ impl PgStream {
 
     #[inline(always)]
     pub(crate) fn write_msg(&mut self, message: impl FrontendMessage) -> Result<(), Error> {
-        self.write(EncodeMessage(message))
+        if self.poisoned {
+            return Err(Error::Io(std::io::ErrorKind::ConnectionAborted.into()));
+        }
+        use sqlx_core::io::ProtocolEncode;
+        let size = message
+            .body_size_bound()
+            .0
+            .checked_add(5)
+            .filter(|size| *size - 1 <= i32::MAX as usize)
+            .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+        self.inner
+            .write_precharged(size, |buf| EncodeMessage(message).encode(buf))
     }
 
     pub(crate) async fn send<T>(&mut self, message: T) -> Result<(), Error>
@@ -102,6 +148,24 @@ impl PgStream {
     }
 
     pub(crate) async fn recv_unchecked(&mut self) -> Result<ReceivedMessage, Error> {
+        if self.poisoned {
+            return Err(Error::Io(std::io::ErrorKind::ConnectionAborted.into()));
+        }
+        if self.resource_budget.is_some() {
+            let header = self.inner.peek_owned(5).await?;
+            let format = BackendMessageFormat::try_from_u8(header[0])?;
+            let length =
+                u32::from_be_bytes(header[1..5].try_into().expect("five-byte header")) as usize;
+            if !(4..=i32::MAX as usize).contains(&length) {
+                return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+            }
+            let total = length
+                .checked_add(1)
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+            let mut contents = self.inner.read_owned_buffered(total).await?;
+            contents.advance(5);
+            return Ok(ReceivedMessage { format, contents });
+        }
         // NOTE: to not break everything, this should be cancel-safe;
         // DO NOT modify `buf` unless a full message has been read
         self.inner
@@ -116,6 +180,9 @@ impl PgStream {
 
                 let message_len = header.get_u32() as usize;
 
+                if message_len < 4 {
+                    return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+                }
                 let expected_len = message_len
                     .checked_add(1)
                     // this shouldn't really happen but is mostly a sanity check
@@ -138,7 +205,10 @@ impl PgStream {
                 // cut off the length prefix
                 contents.advance(4);
 
-                Ok(ControlFlow::Break(ReceivedMessage { format, contents }))
+                Ok(ControlFlow::Break(ReceivedMessage {
+                    format,
+                    contents: sqlx_core::net::OwnedBytes::unowned(contents),
+                }))
             })
             .await
     }
@@ -176,7 +246,10 @@ impl PgStream {
                             self.server_version_num = parse_server_version(&value);
                         }
                         _ => {
-                            self.parameter_statuses.insert(name, value);
+                            self.parameter_statuses.insert(
+                                ParameterStatus { name, value },
+                                self.resource_budget.clone(),
+                            )?;
                         }
                     }
 
@@ -188,6 +261,10 @@ impl PgStream {
                     // if you are reading this comment and think so, open an issue
 
                     let notice: Notice = message.decode()?;
+                    // Peer notice text is never a logging payload on the owned path.
+                    if self.resource_budget.is_some() {
+                        continue;
+                    }
 
                     let (log_level, tracing_level) = match notice.severity() {
                         PgSeverity::Fatal | PgSeverity::Panic | PgSeverity::Error => {
@@ -226,7 +303,7 @@ impl PgStream {
 }
 
 impl Deref for PgStream {
-    type Target = BufferedSocket<Box<dyn Socket>>;
+    type Target = BufferedSocket<OwnedSocket>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -244,7 +321,8 @@ impl DerefMut for PgStream {
 // reference:
 // https://github.com/postgres/postgres/blob/6feebcb6b44631c3dc435e971bd80c2dd218a5ab/src/interfaces/libpq/fe-exec.c#L1030-L1065
 fn parse_server_version(s: &str) -> Option<u32> {
-    let mut parts = Vec::<u32>::with_capacity(3);
+    let mut parts = [0u32; 3];
+    let mut count = 0;
 
     let mut from = 0;
     let mut chs = s.char_indices().peekable();
@@ -252,7 +330,11 @@ fn parse_server_version(s: &str) -> Option<u32> {
         match ch {
             '.' => {
                 if let Ok(num) = u32::from_str(&s[from..i]) {
-                    parts.push(num);
+                    if count == parts.len() {
+                        return None;
+                    }
+                    parts[count] = num;
+                    count += 1;
                     from = i + 1;
                 } else {
                     break;
@@ -261,25 +343,40 @@ fn parse_server_version(s: &str) -> Option<u32> {
             _ if ch.is_ascii_digit() => {
                 if chs.peek().is_none() {
                     if let Ok(num) = u32::from_str(&s[from..]) {
-                        parts.push(num);
+                        if count == parts.len() {
+                            return None;
+                        }
+                        parts[count] = num;
+                        count += 1;
                     }
                     break;
                 }
             }
             _ => {
                 if let Ok(num) = u32::from_str(&s[from..i]) {
-                    parts.push(num);
+                    if count == parts.len() {
+                        return None;
+                    }
+                    parts[count] = num;
+                    count += 1;
                 }
                 break;
             }
         };
     }
 
-    let version_num = match parts.as_slice() {
-        [major, minor, rev] => (100 * major + minor) * 100 + rev,
-        [major, minor] if *major >= 10 => 100 * 100 * major + minor,
-        [major, minor] => (100 * major + minor) * 100,
-        [major] => 100 * 100 * major,
+    let version_num = match &parts[..count] {
+        [major, minor, rev] => major
+            .checked_mul(100)?
+            .checked_add(*minor)?
+            .checked_mul(100)?
+            .checked_add(*rev)?,
+        [major, minor] if *major >= 10 => major.checked_mul(10000)?.checked_add(*minor)?,
+        [major, minor] => major
+            .checked_mul(100)?
+            .checked_add(*minor)?
+            .checked_mul(100)?,
+        [major] => major.checked_mul(10000)?,
         _ => return None,
     };
 
@@ -303,5 +400,99 @@ mod tests {
         assert_eq!(parse_server_version("13devel87"), Some(130000));
         // unknown
         assert_eq!(parse_server_version("unknown"), None);
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct ParameterStatuses {
+    entries: Vec<ParameterStatus>,
+    allocation: Option<sqlx_core::net::resource_budget::ResourceReservation>,
+}
+impl ParameterStatuses {
+    pub(crate) fn contains_key(&self, key: &str) -> bool {
+        self.entries.iter().any(|entry| entry.name.as_str() == key)
+    }
+    fn insert(
+        &mut self,
+        entry: ParameterStatus,
+        budget: Option<Arc<dyn ResourceBudget>>,
+    ) -> Result<(), Error> {
+        if let Some(old) = self
+            .entries
+            .iter_mut()
+            .find(|old| old.name.as_str() == entry.name.as_str())
+        {
+            *old = entry;
+            return Ok(());
+        }
+        if self.entries.len() == self.entries.capacity() {
+            let capacity = self
+                .entries
+                .len()
+                .checked_add(1)
+                .ok_or_else(crate::statement::allocation_denied)?;
+            let bytes = capacity
+                .checked_mul(std::mem::size_of::<ParameterStatus>())
+                .ok_or_else(crate::statement::allocation_denied)?;
+            let allocation = budget
+                .map(|budget| {
+                    sqlx_core::net::resource_budget::ResourceReservation::try_new(budget, bytes)
+                })
+                .transpose()
+                .map_err(|_| crate::statement::allocation_denied())?;
+            let mut entries = Vec::with_capacity(capacity);
+            entries.append(&mut self.entries);
+            drop(std::mem::replace(&mut self.entries, entries));
+            self.allocation = allocation;
+        }
+        self.entries.push(entry);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod custody_tests {
+    use super::*;
+    use crate::statement::custody_test_support::Ledger;
+    use sqlx_core::net::OwnedBytes;
+    #[test]
+    fn status_replacement_and_denied_growth_preserve_custody() {
+        let budget = Ledger::new(usize::MAX);
+        let mut statuses = ParameterStatuses::default();
+        let message = OwnedBytes::try_copy_from_slice(b"a\0first\0", budget.clone()).unwrap();
+        statuses
+            .insert(
+                ParameterStatus::decode_body(message).unwrap(),
+                Some(budget.clone()),
+            )
+            .unwrap();
+        let message = OwnedBytes::try_copy_from_slice(b"a\0second\0", budget.clone()).unwrap();
+        statuses
+            .insert(
+                ParameterStatus::decode_body(message).unwrap(),
+                Some(budget.clone()),
+            )
+            .unwrap();
+        assert_eq!(statuses.entries.len(), 1);
+        assert_eq!(statuses.entries[0].value.as_str(), "second");
+        let held = budget.held();
+        let message = OwnedBytes::try_copy_from_slice(b"b\0denied\0", budget.clone()).unwrap();
+        budget.limit(budget.held());
+        assert!(statuses
+            .insert(
+                ParameterStatus::decode_body(message).unwrap(),
+                Some(budget.clone())
+            )
+            .is_err());
+        assert_eq!(budget.held(), held);
+        assert_eq!(statuses.entries.len(), 1);
+        drop(statuses);
+        assert_eq!(budget.held(), 0);
+    }
+    #[test]
+    fn version_parser_does_not_allocate_or_overflow_on_peer_numbers() {
+        assert_eq!(parse_server_version("1.2.3.4"), None);
+        assert_eq!(parse_server_version("4294967295.1"), None);
+        assert_eq!(parse_server_version("17.6"), Some(170006));
     }
 }

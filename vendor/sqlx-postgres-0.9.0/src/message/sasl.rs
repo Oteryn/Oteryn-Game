@@ -23,7 +23,7 @@ impl FrontendMessage for SaslInitialResponse<'_> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::PasswordPolymorphic;
 
     #[inline(always)]
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         let mut size = Saturating(0);
 
         size += self.selected_mechanism().len();
@@ -58,7 +58,7 @@ pub struct SaslResponse<'a>(pub &'a str);
 impl FrontendMessage for SaslResponse<'_> {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::PasswordPolymorphic;
 
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         Saturating(self.0.len())
     }
 

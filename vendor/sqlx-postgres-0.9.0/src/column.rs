@@ -18,6 +18,8 @@ pub struct PgColumn {
     pub(crate) relation_id: Option<crate::types::Oid>,
     #[cfg_attr(feature = "offline", serde(skip))]
     pub(crate) relation_attribute_no: Option<i16>,
+    #[cfg_attr(feature = "offline", serde(skip))]
+    pub(crate) _allocation: crate::statement::AllocationLease,
 }
 
 impl PgColumn {

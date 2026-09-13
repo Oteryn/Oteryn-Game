@@ -4,7 +4,7 @@ use std::path::Path;
 use std::pin::Pin;
 use std::task::{ready, Context, Poll};
 
-pub use buffered::{BufferedSocket, WriteBuffer};
+pub use buffered::{BufferedSocket, OwnedBytes, WriteBuffer};
 use bytes::BufMut;
 use cfg_if::cfg_if;
 
@@ -155,6 +155,73 @@ impl WithSocket for SocketIntoBox {
     }
 }
 
+/// A final socket box with its debit outside the allocation it owns.
+/// Field order destroys the box before returning its reservation.
+pub struct OwnedSocket {
+    socket: Box<dyn Socket>,
+    _reservation: Option<crate::net::resource_budget::ResourceReservation>,
+}
+
+impl OwnedSocket {
+    pub fn unowned(socket: Box<dyn Socket>) -> Self {
+        Self {
+            socket,
+            _reservation: None,
+        }
+    }
+
+    pub fn try_new<S: Socket>(
+        socket: S,
+        budget: std::sync::Arc<dyn crate::net::resource_budget::ResourceBudget>,
+    ) -> Result<Self, crate::net::resource_budget::BudgetError> {
+        let reservation = crate::net::resource_budget::ResourceReservation::try_new(
+            budget,
+            std::mem::size_of::<S>(),
+        )?;
+        Ok(Self {
+            socket: Box::new(socket),
+            _reservation: Some(reservation),
+        })
+    }
+}
+
+pub struct SocketIntoOwnedBox(pub std::sync::Arc<dyn crate::net::resource_budget::ResourceBudget>);
+
+impl WithSocket for SocketIntoOwnedBox {
+    type Output = crate::Result<OwnedSocket>;
+
+    async fn with_socket<S: Socket>(self, socket: S) -> Self::Output {
+        OwnedSocket::try_new(socket, self.0)
+            .map_err(|_| crate::Error::Io(io::ErrorKind::OutOfMemory.into()))
+    }
+}
+
+impl Socket for OwnedSocket {
+    fn try_read(&mut self, buf: &mut dyn ReadBuf) -> io::Result<usize> {
+        self.socket.try_read(buf)
+    }
+
+    fn try_write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.socket.try_write(buf)
+    }
+
+    fn poll_read_ready(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.socket.poll_read_ready(cx)
+    }
+
+    fn poll_write_ready(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.socket.poll_write_ready(cx)
+    }
+
+    fn poll_flush(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.socket.poll_flush(cx)
+    }
+
+    fn poll_shutdown(&mut self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.socket.poll_shutdown(cx)
+    }
+}
+
 impl<S: Socket + ?Sized> Socket for Box<S> {
     fn try_read(&mut self, buf: &mut dyn ReadBuf) -> io::Result<usize> {
         (**self).try_read(buf)
@@ -290,5 +357,89 @@ pub async fn connect_uds<P: AsRef<Path>, Ws: WithSocket>(
             "Unix domain sockets are not supported on this platform",
         )
         .into())
+    }
+}
+
+#[cfg(test)]
+mod custody_tests {
+    use super::*;
+    use crate::net::resource_budget::{BudgetError, ResourceBudget};
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    struct Ledger {
+        held: AtomicUsize,
+        limit: usize,
+    }
+    impl ResourceBudget for Ledger {
+        fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
+            if bytes > self.limit {
+                return Err(BudgetError::Unavailable);
+            }
+            self.held.fetch_add(bytes, Ordering::SeqCst);
+            Ok(())
+        }
+        fn release(&self, bytes: usize) {
+            assert_eq!(self.held.fetch_sub(bytes, Ordering::SeqCst), bytes);
+        }
+    }
+    struct DropSocket {
+        budget: Arc<Ledger>,
+    }
+    impl Drop for DropSocket {
+        fn drop(&mut self) {
+            let held = self.budget.held.load(Ordering::SeqCst);
+            assert!(held == 0 || held == std::mem::size_of::<Self>());
+        }
+    }
+    impl Socket for DropSocket {
+        fn try_read(&mut self, _: &mut dyn ReadBuf) -> io::Result<usize> {
+            Ok(0)
+        }
+        fn try_write(&mut self, _: &[u8]) -> io::Result<usize> {
+            Ok(0)
+        }
+        fn poll_read_ready(&mut self, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+        fn poll_write_ready(&mut self, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+        fn poll_shutdown(&mut self, _: &mut Context<'_>) -> Poll<io::Result<()>> {
+            Poll::Pending
+        }
+    }
+    #[test]
+    fn final_box_is_precharged_and_stalled_close_keeps_custody() {
+        use futures_util::FutureExt;
+        let size = std::mem::size_of::<DropSocket>();
+        let denied = Arc::new(Ledger {
+            held: AtomicUsize::new(0),
+            limit: size - 1,
+        });
+        assert!(OwnedSocket::try_new(
+            DropSocket {
+                budget: denied.clone()
+            },
+            denied.clone()
+        )
+        .is_err());
+        assert_eq!(denied.held.load(Ordering::SeqCst), 0);
+        let budget = Arc::new(Ledger {
+            held: AtomicUsize::new(0),
+            limit: size,
+        });
+        let mut socket = OwnedSocket::try_new(
+            DropSocket {
+                budget: budget.clone(),
+            },
+            budget.clone(),
+        )
+        .unwrap();
+        assert!(socket.shutdown().now_or_never().is_none());
+        assert_eq!(budget.held.load(Ordering::SeqCst), size);
+        drop(socket);
+        assert_eq!(budget.held.load(Ordering::SeqCst), 0);
     }
 }

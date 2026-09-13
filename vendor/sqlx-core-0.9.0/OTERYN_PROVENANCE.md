@@ -1124,3 +1124,115 @@ Focused evidence on Rust 1.94 x86_64 Linux:
 M01 authored-path manifest: `src/rt/resource_owner.rs` (concrete finalizer,
 private-handle storage and focused unit tests) and this provenance record.
 The separate Tokio manifest enumerates its exact owned transport/test surfaces.
+
+## Frozen M02/M04 E1 custody continuation — 2026-09-13
+
+This section records the bounded SAME-writer continuation from canonical
+`f56896334d5c6b5d6e6419c21c56092b56b8f28e`, protected base
+`448309c4042e3fb783d1ab9d7bb324f7ee977420`. Authority is Work162 E1
+5646365380, E2 propagation5655057468, frozen inventory5655890678,
+grouping5656017872, activation5656038508 and owner handoff5656281533.
+The recovered 45-file unpublished delta was preserved before continuation;
+it was WIP, not previously qualified evidence. This is not terminal WP3 or
+complete TLS qualification. Core `src/error.rs` remains byte-identical.
+
+### Added/updated core patch surface
+
+- `src/net/mod.rs`: ConnectionOwner and owned TCP/UDS entrypoints. One existing
+  BlockingJobOwner identity is created before transport and reused by the
+  established Tokio registration hook and TLS loading. No second ledger or
+  per-phase runtime owner is created. Unsupported runtimes do not fall back to
+  ordinary I/O. Literal IP uses the pinned lookup_host non-DNS fast path;
+  hostname DNS custody remains outside this component's proof.
+- `src/net/socket/mod.rs`: final OwnedSocket Box and bounded SocketIntoOwnedBox.
+  Reserve `size_of::<S>()` before Box::new. Declaration order destroys the Box
+  before releasing its external reservation; stalled shutdown retains it.
+- `src/net/socket/buffered.rs`: owned read/write buffers, prospective replacement,
+  cancellation-safe pending read, and private shared OwnedBytes custody.
+  Ordinary owner-free methods remain available. Uncharged mutable/generic
+  decode/boxing escape paths reject owned use; raw Bytes cannot escape owned
+  backing via into_unowned or Buf::copy_to_bytes.
+- `src/rt/resource_owner.rs`: existing same-owner runtime handle export only.
+- `src/net/tls/{mod.rs,tls_rustls.rs}`: receive and reuse ConnectionOwner;
+  no new TLS/provider/state implementation is included.
+- `src/net/tls/resource_budget_tests.rs`: repair the three concrete test-call
+  type failures after the already-accepted fallible M01 constructor, retaining
+  the loader denial phase and checking explicit owner finality after shutdown.
+  This validates existing behavior; it does not reopen M01 or change TLS code.
+
+### Source equations and lifetime proof
+
+Owned BufferedSocket starts with exactly 8192 requested bytes each for read and
+write. Initial denial releases the first reservation if the second fails.
+Growth to capacity C reserves C while old capacity O remains held, allocates a
+new Vec with requested capacity C, copies retained data, destroys O, then
+replaces its reservation. Shrink follows the same overlap rule and retains the
+old backing if the new reservation is denied. No post-allocation budget check
+is used. A pending read records only actually returned bytes; cancelling or
+receiving EOF removes uncommitted initialized bytes without losing prior data.
+A zero-byte write is WriteZero rather than an endless flush loop.
+
+An owned frame copy of N nonempty bytes reserves
+`N + size_of::<bytes::Shared>() + ArcLayout<BytesCustody>` before either backing
+allocation. On the pinned bytes1.12.1 target Shared is the layout of
+`(*mut u8, usize, AtomicUsize)` (24 bytes on x86_64); BytesCustody's private Arc
+layout is computed from the two counters plus its actual value (56 bytes on
+x86_64). The first Bytes clone is forced before publication to materialize the
+precharged Shared control block. Every allowed slice/split/clone carries a
+private lease; its data handle is destroyed before its lease. All private lease
+strong references finalize with Arc::into_inner, which destroys that Arc
+allocation before returning/dropping its reservation. No Weak/raw handle is
+exported. The full shared debit may conservatively outlive an empty slice; it
+never ends before the last permitted backing descendant. The receive Vec and
+frame copy are separately charged during overlap. Tests measure ledger state;
+actual deallocation order follows these source/field-order invariants, not an
+allocator hook or sampled RSS claim.
+
+The write_precharged closure is a trusted cross-crate encoder seam: every
+production caller is Startup or the closed PostgreSQL FrontendMessage trait.
+Its argument is a source-proven complete bound, including outer framing, not
+an upstream sizing hint. Direct arbitrary encoding is not a qualified caller.
+The PostgreSQL provenance contains the matching closed encoder obligation.
+
+### Validation and limits
+
+On Rust1.94 x86_64 Linux, six focused socket/buffer tests PASS: exact/max-minus-one
+Box funding with stalled shutdown, initial denial, growth rollback and peak
+overlap, shrink, split/slice/clone finality, partial read/EOF/cancellation,
+ordinary/owned partial writes. The existing owned certificate-loader test also
+passes after its test API repair. Strict Clippy for the core lib/tests passes.
+
+Root cargo cannot directly test this excluded package with dev-dependencies.
+Local explicit tests use a temporary manifest copied from this package, with
+lib.path pointing at these exact source files, root-lock seed, and absolute
+root SQLx-Postgres/Tokio/rustls patches. No repository manifest/lock is modified.
+Features are `_rt-tokio,_tls-rustls-aws-lc-rs`; the resulting temporary lock is
+retained with the execution evidence. Focused command is
+`cargo test --manifest-path <temporary>/Cargo.toml --locked --features
+_rt-tokio,_tls-rustls-aws-lc-rs --lib custody_tests`.
+
+A full explicit core unit run was NOT GREEN: two historical AWS-LC tests failed
+under parallel execution. An isolated archive of exact f568963, using only the
+same three-site test API adaptation, reproduces the failures. With identical
+`aws_lc_ -- --test-threads=1` commands, both baseline and candidate produce one
+KX PASS and one HRR FAIL at the assertion that denied_client.process_new_packets
+must fail. Parallel KX counters depend on shared process-provider initialization.
+These are retained M03/E02 test-isolation/HRR evidence gaps, not repaired or
+suppressed by this batch. Six unchanged rustls dependency warnings are retained.
+
+Final exact-head PostgreSQL17.6 + AWS-LC VerifyFull/TLS1.3 qualification remains
+required in canonical CI. No local PostgreSQL executable/container was available.
+Core Error::Database/Configuration/Tls external-box and consuming-extraction
+finality remains separately held by Work162/5656188739. M02 cannot promote that
+boundary, DNS, selected TLS state, complete R/T retirement equations, or the
+registered production M05 root to PROVEN.
+
+Exact authored paths in this continuation (relative to this package):
+
+- `src/net/mod.rs`
+- `src/net/socket/buffered.rs`
+- `src/net/socket/mod.rs`
+- `src/net/tls/mod.rs`
+- `src/net/tls/resource_budget_tests.rs`
+- `src/net/tls/tls_rustls.rs`
+- `src/rt/resource_owner.rs`

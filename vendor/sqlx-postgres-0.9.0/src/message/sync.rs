@@ -9,7 +9,7 @@ impl FrontendMessage for Sync {
     const FORMAT: FrontendMessageFormat = FrontendMessageFormat::Sync;
 
     #[inline(always)]
-    fn body_size_hint(&self) -> Saturating<usize> {
+    fn body_size_bound(&self) -> Saturating<usize> {
         Saturating(0)
     }
 

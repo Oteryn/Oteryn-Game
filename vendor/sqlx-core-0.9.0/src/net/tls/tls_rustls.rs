@@ -116,10 +116,13 @@ fn certificate_read_error(error: super::CertificateReadError) -> Error {
 fn reserve_connection_metadata(
     budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
     hostname: &str,
-) -> Result<(
-    crate::net::resource_budget::ResourceReservation,
-    crate::net::resource_budget::ResourceReservation,
-), crate::net::resource_budget::BudgetError> {
+) -> Result<
+    (
+        crate::net::resource_budget::ResourceReservation,
+        crate::net::resource_budget::ResourceReservation,
+    ),
+    crate::net::resource_budget::BudgetError,
+> {
     use crate::net::resource_budget::ResourceReservation;
 
     // String::to_owned requests exactly the UTF-8 byte length on the pinned
@@ -251,12 +254,13 @@ where
 pub async fn handshake_with_resource_budget<S>(
     socket: S,
     tls_config: TlsConfig<'_>,
-    resource_budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
+    connection_owner: crate::net::ConnectionOwner,
 ) -> Result<RustlsSocket<S>, Error>
 where
     S: Socket,
 {
     use crate::net::resource_budget::ResourceReservation;
+    let resource_budget = connection_owner.budget();
 
     let owner_allocation = ResourceReservation::try_new(
         resource_budget.clone(),
@@ -285,8 +289,7 @@ where
             .unwrap()
     };
 
-    let blocking_owner = crate::rt::resource_owner::blocking_job_owner(resource_budget.clone())
-        .map_err(Error::tls)?;
+    let blocking_owner = connection_owner.blocking;
     let mut client_auth_allocation = None;
     let user_auth = match (tls_config.client_cert_path, tls_config.client_key_path) {
         (Some(cert_path), Some(key_path)) => {
@@ -356,13 +359,17 @@ where
                 if let Some(user_auth) = user_auth {
                     config
                         .dangerous()
-                        .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                        .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier {
+                            verifier,
+                        }))
                         .with_client_auth_cert(user_auth.0, user_auth.1)
                         .map_err(Error::tls)?
                 } else {
                     config
                         .dangerous()
-                        .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                        .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier {
+                            verifier,
+                        }))
                         .with_no_client_auth()
                 }
             } else if let Some(user_auth) = user_auth {
@@ -371,7 +378,9 @@ where
                     .with_client_auth_cert(user_auth.0, user_auth.1)
                     .map_err(Error::tls)?
             } else {
-                config.with_root_certificates(cert_store).with_no_client_auth()
+                config
+                    .with_root_certificates(cert_store)
+                    .with_no_client_auth()
             }
         }
         #[cfg(not(feature = "webpki-roots"))]
@@ -423,11 +432,14 @@ pub(super) fn client_auth_from_pem_with_resource_budget(
     cert_pem: &[u8],
     key_pem: &[u8],
     budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
-) -> Result<(
-    Vec<CertificateDer<'static>>,
-    PrivateKeyDer<'static>,
-    crate::net::resource_budget::ResourceReservation,
-), Error> {
+) -> Result<
+    (
+        Vec<CertificateDer<'static>>,
+        PrivateKeyDer<'static>,
+        crate::net::resource_budget::ResourceReservation,
+    ),
+    Error,
+> {
     use crate::net::resource_budget::ResourceReservation;
     let bytes = client_auth_pem_heap_bound(cert_pem, key_pem).map_err(Error::tls)?;
     // The pinned rustls-pki-types slice parser allocates its 1024-byte base64
@@ -465,10 +477,13 @@ pub(super) fn client_auth_pem_heap_bound(
 pub(super) fn root_store_with_resource_budget(
     custom_pem: Option<&[u8]>,
     budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
-) -> Result<(
-    RootCertStore,
-    crate::net::resource_budget::ResourceReservation,
-), Error> {
+) -> Result<
+    (
+        RootCertStore,
+        crate::net::resource_budget::ResourceReservation,
+    ),
+    Error,
+> {
     use crate::net::resource_budget::{BudgetError, ResourceReservation};
     let custom = custom_pem.unwrap_or_default();
     let custom_count = count_marker(custom, b"-----BEGIN CERTIFICATE-----");
@@ -525,9 +540,7 @@ fn pem_scratch_capacity_bound(
 }
 
 #[cfg(feature = "_tls-rustls")]
-fn vec_capacity_for_items(
-    count: usize,
-) -> Result<usize, crate::net::resource_budget::BudgetError> {
+fn vec_capacity_for_items(count: usize) -> Result<usize, crate::net::resource_budget::BudgetError> {
     use crate::net::resource_budget::BudgetError;
     if count == 0 {
         return Ok(0);
@@ -543,7 +556,10 @@ fn count_marker(bytes: &[u8], marker: &[u8]) -> usize {
     if marker.is_empty() || bytes.len() < marker.len() {
         return 0;
     }
-    bytes.windows(marker.len()).filter(|window| *window == marker).count()
+    bytes
+        .windows(marker.len())
+        .filter(|window| *window == marker)
+        .count()
 }
 
 fn certs_from_pem(pem: &[u8]) -> Result<Vec<CertificateDer<'static>>, Error> {
@@ -819,10 +835,7 @@ impl rustls::DeframerBufferOwner for DeframerBudgetOwner {
         self.0.release(bytes);
     }
 
-    fn try_reserve_provider_shared(
-        &self,
-        bytes: usize,
-    ) -> Result<(), rustls::DeframerBufferError> {
+    fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), rustls::DeframerBufferError> {
         self.0
             .try_reserve_provider_shared(bytes)
             .map_err(|_| rustls::DeframerBufferError)

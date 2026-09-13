@@ -1,22 +1,24 @@
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
-use crate::io::BufExt;
 use crate::message::{BackendMessage, BackendMessageFormat};
 
 #[derive(Debug)]
 pub struct ParameterStatus {
-    pub name: String,
-    pub value: String,
+    pub name: StatusText,
+    pub value: StatusText,
 }
 
 impl BackendMessage for ParameterStatus {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::ParameterStatus;
 
     fn decode_body(mut buf: Bytes) -> Result<Self, Error> {
-        let name = buf.get_str_nul()?;
-        let value = buf.get_str_nul()?;
+        let name = StatusText::new(buf.get_bytes_nul()?)?;
+        let value = StatusText::new(buf.get_bytes_nul()?)?;
 
+        if !buf.is_empty() {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         Ok(Self { name, value })
     }
 }
@@ -62,4 +64,34 @@ fn test_decode_parameter_status_response() {
         message.value,
         "CockroachDB CCL v21.1.0 (x86_64-unknown-linux-gnu, built 2021/05/17 13:49:40, go1.15.11)"
     );
+}
+
+#[derive(Debug)]
+pub struct StatusText(Bytes);
+impl StatusText {
+    fn new(bytes: Bytes) -> Result<Self, Error> {
+        std::str::from_utf8(&bytes)
+            .map_err(|_| Error::Io(std::io::ErrorKind::InvalidData.into()))?;
+        Ok(Self(bytes))
+    }
+    pub fn as_str(&self) -> &str {
+        std::str::from_utf8(&self.0).expect("validated status")
+    }
+}
+impl std::ops::Deref for StatusText {
+    type Target = str;
+    fn deref(&self) -> &str {
+        self.as_str()
+    }
+}
+impl PartialEq<str> for StatusText {
+    fn eq(&self, rhs: &str) -> bool {
+        self.as_str() == rhs
+    }
+}
+
+impl PartialEq<&str> for StatusText {
+    fn eq(&self, rhs: &&str) -> bool {
+        self.as_str() == *rhs
+    }
 }

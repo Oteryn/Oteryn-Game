@@ -1,6 +1,6 @@
 use atoi::atoi;
 use memchr::memrchr;
-use sqlx_core::bytes::Bytes;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
 use crate::message::{BackendMessage, BackendMessageFormat};

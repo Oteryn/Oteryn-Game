@@ -1,7 +1,7 @@
-use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::bytes::Buf;
+use sqlx_core::net::OwnedBytes as Bytes;
 
 use crate::error::Error;
-use crate::io::BufExt;
 use crate::message::{BackendMessage, BackendMessageFormat};
 
 #[derive(Debug, Clone)]
@@ -15,10 +15,16 @@ impl BackendMessage for Notification {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::NotificationResponse;
 
     fn decode_body(mut buf: Bytes) -> Result<Self, Error> {
+        if buf.len() < 6 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         let process_id = buf.get_u32();
         let channel = buf.get_bytes_nul()?;
         let payload = buf.get_bytes_nul()?;
 
+        if !buf.is_empty() {
+            return Err(Error::Io(std::io::ErrorKind::InvalidData.into()));
+        }
         Ok(Self {
             process_id,
             channel,
