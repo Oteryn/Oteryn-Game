@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::Duration;
 
+const TRANSPORT_DENIAL_MARKER: &str = "OTERYN_WP3_CONNECTION_OWNER_DENIAL_UNAVAILABLE";
 const DENIAL_MARKER: &str = "OTERYN_WP3_TLS_DENIAL_UNAVAILABLE";
 const POSITIVE_MARKER: &str = "OTERYN_WP3_PG17_TLS13_VERIFY_FULL_POSITIVE";
 const POSTGRES_IMAGE: &str = "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3";
@@ -57,6 +58,13 @@ fn owner_aware_aws_lc_tls_positive_and_denial_qualification() -> Result<(), Box<
     let positive = run_helper(&binary, "positive", &admin_url, &pki.ca_cert)?;
     ensure_success(&positive, "real PostgreSQL 17.6 AWS-LC TLS-positive helper")?;
     ensure_marker(&positive, POSITIVE_MARKER)?;
+
+    let transport_denial = run_helper(&binary, "deny-transport", &admin_url, &pki.ca_cert)?;
+    ensure_success(
+        &transport_denial,
+        "zero-budget connection-owner denial helper",
+    )?;
+    ensure_marker(&transport_denial, TRANSPORT_DENIAL_MARKER)?;
 
     let denial = run_helper(&binary, "deny", &admin_url, &pki.ca_cert)?;
     ensure_success(&denial, "real PostgreSQL 17.6 AWS-LC denial helper")?;

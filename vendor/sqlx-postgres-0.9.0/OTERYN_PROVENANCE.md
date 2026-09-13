@@ -631,3 +631,73 @@ PostgreSQL 17.6/AWS-LC VerifyFull/TLS1.3 qualification on the eventual canonical
 successor. No local PostgreSQL executable was available. The separately held
 core Error custody boundary, baseline HRR/parallel KX evidence and remaining
 M03/M05/root qualification are unchanged and are not claimed complete here.
+
+
+## M02/M04 configured-CI denial phase fixture repair (2026-09-13)
+
+Canonical parent `f10cab5b7d1d388fb20acf0beec4a5a62aef49fc` has the independently
+reviewed repair-1 tree `e5b129530ae7ca7f8a0136f346153e72ad7f93d9`.
+[Linux job 103804595570](https://github.com/Oteryn/Oteryn-Game/actions/runs/34787142075/job/103804595570)
+reported 414 passing durability tests and one failure in the configured
+PostgreSQL 17.6 AWS-LC qualification: its denial helper returned
+`error communicating with database: out of memory`. The retained failure
+excerpt is `/tmp/m02-m04-ci-f10-failure.log`. The qualification function runs
+and verifies the positive helper before running denial; reaching this denial
+failure therefore establishes that the configured positive helper completed
+and emitted its required marker on this parent. It does not establish that the
+whole qualification passed.
+
+The old zero-budget TLS fixture now denies `ConnectionOwner::try_new`'s first
+reservation in core `net/mod.rs`, before TCP/TLS; that admitted M02 path maps
+its denial to `Error::Io(OutOfMemory)`. This is a fixture phase mismatch, not
+proof of a TLS BudgetError classification regression. The coordinator admitted
+only the existing E02 resource-budget qualification/helper phase correction.
+Production code, including excluded core `src/error.rs`, is unchanged.
+
+- A distinct `deny-transport` subprocess retains the zero-budget assertion,
+  requires exactly `Io(OutOfMemory)`, verifies zero peak/final debt and no
+  provider witness, and emits `OTERYN_WP3_CONNECTION_OWNER_DENIAL_UNAVAILABLE`.
+- The TLS-denial subprocess uses the existing positive profile's unchanged
+  SLOT/ROOT limits to reach TLS. An observed successful provider-shared debit
+  arms deterministic denial of the next ordinary reservation. No byte-size
+  threshold, larger numeric allowance or generic IO acceptance selects TLS.
+  It requires exactly `Error::Tls` containing `BudgetError::Unavailable`, a
+  recorded TLS-phase denial, positive provider-shared custody, bounded peaks,
+  zero final ordinary debt and final root debt equal to the process-retained
+  provider-shared debit. Timeout is no longer accepted as denial proof.
+- The configured harness requires both distinct denial markers and retains
+  its real PostgreSQL 17.6 VerifyFull/TLS1.3 positive verification unchanged.
+
+Test-first local evidence: the new phase regression with the old zero-budget
+constructor failed at its transport-prefix reservation. The same test passes
+with phase injection and checks shared-root finality. The actual helper binary
+was also run in fresh subprocesses against a deterministic SSLRequest peer:
+transport denial opened no connection; TLS denial sent one valid SSLRequest,
+received `S`, then denied funding before ClientHello. Its strict TLS source
+check passed, with 34 denied bytes and 150096 provider-shared/root bytes retained
+(the observed values are evidence, not fixture thresholds). This mock peer is
+not a PostgreSQL server and does not replace configured successor qualification.
+
+Validation uses `/tmp/a4-m01-run` (pinned 1.94 tools) and temporary manifest/lock
+`/tmp/m02-m04-ci-helper/Cargo.toml` / `Cargo.lock`, with the binary source pointing
+to the tracked helper and all four imported dependency patches to this worktree:
+
+- `cargo test --locked --offline --manifest-path /tmp/m02-m04-ci-helper/Cargo.toml phase_tests`
+  — RED then GREEN logs `/tmp/m02-m04-ci-phase-{red,green}.log`.
+- `cargo build --locked --offline --manifest-path /tmp/m02-m04-ci-helper/Cargo.toml`
+  and `python3 /tmp/m02-m04-ci-mock.py` — build/mock logs with the same prefix.
+- `cargo clippy --locked --offline --manifest-path /tmp/m02-m04-ci-helper/Cargo.toml --all-targets -- -D warnings`
+  — helper Clippy PASS.
+- `cargo clippy --locked --manifest-path apps/game-server/Cargo.toml --test durability_postgres -- -D warnings`
+  — targeted root Clippy PASS; existing dependency warnings are retained.
+- Changed-file rustfmt and `git diff --check` pass. Tracked manifests/locks,
+  production source and numeric qualification limits are unchanged. Initial
+  unrestricted-target offline metadata preparation reported uncached Windows
+  `etcetera 0.11.0`; Linux locked offline build/tests/Clippy subsequently passed.
+  Temporary lock package identities remain within the canonical root seed plus
+  the isolated helper package.
+
+Independent successor review and canonical configured PostgreSQL 17.6 CI remain
+required. Local PostgreSQL is unavailable. Prior accepted M02/M04 evidence and
+the separately held core Error, M03/M05 and quantitative root boundaries are
+retained without re-audit or expanded completion claims.

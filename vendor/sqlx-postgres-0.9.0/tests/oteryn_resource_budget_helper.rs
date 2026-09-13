@@ -9,6 +9,7 @@ const ROOT_LIMIT: usize = 12_582_912;
 const ROOT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
+const TRANSPORT_DENIAL_MARKER: &str = "OTERYN_WP3_CONNECTION_OWNER_DENIAL_UNAVAILABLE";
 const DENIAL_MARKER: &str = "OTERYN_WP3_TLS_DENIAL_UNAVAILABLE";
 const POSITIVE_MARKER: &str = "OTERYN_WP3_PG17_TLS13_VERIFY_FULL_POSITIVE";
 const TRACE_LIMIT: usize = 64;
@@ -23,6 +24,7 @@ struct Snapshot {
     denied_bytes: usize,
     denied_ordinary: usize,
     denied_root: usize,
+    denied_tls_phase: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -43,6 +45,7 @@ struct State {
     denied_bytes: usize,
     denied_ordinary: usize,
     denied_root: usize,
+    denied_tls_phase: bool,
     events: Vec<Event>,
 }
 
@@ -70,6 +73,7 @@ struct Ledger {
     ordinary_limit: usize,
     root_limit: usize,
     state: Mutex<State>,
+    deny_after_provider: bool,
 }
 
 impl Ledger {
@@ -78,6 +82,7 @@ impl Ledger {
             ordinary_limit,
             root_limit,
             state: Mutex::new(State::default()),
+            deny_after_provider: false,
         }
     }
 
@@ -92,6 +97,7 @@ impl Ledger {
             denied_bytes: state.denied_bytes,
             denied_ordinary: state.denied_ordinary,
             denied_root: state.denied_root,
+            denied_tls_phase: state.denied_tls_phase,
         }
     }
 
@@ -117,6 +123,14 @@ impl ResourceBudget for Ledger {
             return Err(BudgetError::Unavailable);
         };
         state.record('R', bytes);
+        // The observed provider-shared reservation is the TLS phase boundary.
+        // Fund the same bounded transport prefix as the positive profile, then
+        // deny its next ordinary TLS allocation, independently of byte sizes.
+        if self.deny_after_provider && state.provider_shared != 0 {
+            state.denied_tls_phase = true;
+            state.record_denial(bytes);
+            return Err(BudgetError::Unavailable);
+        }
         let Some(ordinary) = state.ordinary.checked_add(bytes) else {
             state.record_denial(bytes);
             return Err(BudgetError::Overflow);
@@ -192,6 +206,12 @@ fn holder_pool(options: PgConnectOptions, owner: Arc<dyn ResourceBudget>) -> sql
         .connect_lazy_with(options.with_resource_budget(owner))
 }
 
+fn tls_denial_ledger() -> Ledger {
+    let mut ledger = Ledger::new(SLOT_LIMIT, ROOT_LIMIT);
+    ledger.deny_after_provider = true;
+    ledger
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let mode = std::env::var("OTERYN_WP3_MODE")?;
     let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
@@ -202,12 +222,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build()?;
 
     match mode.as_str() {
-        "deny" => {
-            let ledger = Arc::new(Ledger::new(0, 0));
+        "deny" | "deny-transport" => {
+            let tls_phase = mode == "deny";
+            let ledger = Arc::new(if tls_phase {
+                tls_denial_ledger()
+            } else {
+                Ledger::new(0, 0)
+            });
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
             let pool = runtime.block_on(async { holder_pool(options, owner) });
             if runtime.block_on(pool.try_begin())?.is_some() {
-                return Err("lazy empty holder unexpectedly produced a ready-only transaction".into());
+                return Err(
+                    "lazy empty holder unexpectedly produced a ready-only transaction".into(),
+                );
             }
             let error = match runtime.block_on(pool.acquire()) {
                 Ok(mut connection) => {
@@ -218,8 +245,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Err(error) => error,
             };
             match &error {
-                sqlx::Error::PoolTimedOut => {}
-                sqlx::Error::Tls(source) => {
+                sqlx::Error::Io(source)
+                    if !tls_phase && source.kind() == std::io::ErrorKind::OutOfMemory => {}
+                sqlx::Error::Tls(source) if tls_phase => {
                     let Some(cause) = source.downcast_ref::<BudgetError>() else {
                         return Err(format!(
                             "resource denial lost canonical BudgetError source: {source}"
@@ -232,7 +260,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 other => {
                     return Err(format!(
-                        "resource denial escaped through unexpected holder surface: {other}"
+                        "{mode} resource denial escaped through unexpected holder surface: {other}"
                     )
                     .into());
                 }
@@ -244,15 +272,35 @@ fn main() -> Result<(), Box<dyn Error>> {
             if snapshot.denied_bytes == 0 {
                 return Err("holder denial did not reach the caller-supplied root ledger".into());
             }
-            if snapshot.ordinary != 0
-                || snapshot.root != 0
-                || snapshot.peak_ordinary != 0
-                || snapshot.peak_root != 0
-                || snapshot.provider_shared != 0
-            {
-                return Err("denied holder retained or acquired resource debt".into());
+            if tls_phase {
+                if !snapshot.denied_tls_phase
+                    || snapshot.provider_shared == 0
+                    || snapshot.peak_ordinary == 0
+                    || snapshot.peak_ordinary > SLOT_LIMIT
+                    || snapshot.peak_root > ROOT_LIMIT
+                    || snapshot.ordinary != 0
+                    || snapshot.root != snapshot.provider_shared
+                {
+                    return Err(
+                        "TLS denial lacked its phase witness or violated final custody".into(),
+                    );
+                }
+                println!(
+                    "{DENIAL_MARKER} denied_bytes={} provider_shared={} retained_root={}",
+                    snapshot.denied_bytes, snapshot.provider_shared, snapshot.root
+                );
+            } else {
+                if snapshot.ordinary != 0
+                    || snapshot.root != 0
+                    || snapshot.peak_ordinary != 0
+                    || snapshot.peak_root != 0
+                    || snapshot.provider_shared != 0
+                    || snapshot.denied_tls_phase
+                {
+                    return Err("denied connection owner retained or acquired resource debt".into());
+                }
+                println!("{TRANSPORT_DENIAL_MARKER}");
             }
-            println!("{DENIAL_MARKER}");
         }
         "positive" => {
             let ledger = Arc::new(Ledger::new(SLOT_LIMIT, ROOT_LIMIT));
@@ -260,7 +308,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             let pool = runtime.block_on(async { holder_pool(options, owner) });
 
             if runtime.block_on(pool.try_begin())?.is_some() {
-                return Err("lazy empty holder unexpectedly manufactured an active connection".into());
+                return Err(
+                    "lazy empty holder unexpectedly manufactured an active connection".into(),
+                );
             }
 
             let mut root_connection = runtime.block_on(async {
@@ -346,14 +396,33 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             println!(
                 "{POSITIVE_MARKER} peak_ordinary={} peak_root={} provider_shared={} retained_root={}",
-                snapshot.peak_ordinary,
-                snapshot.peak_root,
-                snapshot.provider_shared,
-                snapshot.root
+                snapshot.peak_ordinary, snapshot.peak_root, snapshot.provider_shared, snapshot.root
             );
         }
         other => return Err(format!("unknown qualification mode: {other}").into()),
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod phase_tests {
+    use super::*;
+
+    #[test]
+    fn tls_denial_requires_provider_witness_and_preserves_shared_finality() {
+        let ledger = tls_denial_ledger();
+        ledger
+            .try_reserve(128)
+            .expect("transport prefix must be funded before TLS denial");
+        ledger.try_reserve_provider_shared(1024).unwrap();
+        assert_eq!(ledger.try_reserve(64), Err(BudgetError::Unavailable));
+        ledger.release(128);
+        let snapshot = ledger.snapshot();
+        assert!(snapshot.denied_tls_phase);
+        assert_eq!(snapshot.denied_bytes, 64);
+        assert_eq!(snapshot.ordinary, 0);
+        assert_eq!(snapshot.root, snapshot.provider_shared);
+        assert_eq!(snapshot.provider_shared, 1024);
+    }
 }
