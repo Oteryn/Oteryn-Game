@@ -55,19 +55,20 @@ Prepare the exact non-production qualification boundary for Platform route `/int
 - Cross-repository evidence names exact Game and Platform revisions and does not promote local PASS to composed PASS.
 - Any production or credential action remains separately gated.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
 End the final response with:
 
 ```text
-NEXT_AGENT: <exact alias>
-RUN_WHEN: <exact gate>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate>
 WHY: <one concise dependency reason>
 ```
 
-Default routing for this lane:
-- when Platform hardening is terminal but Game source composition is not yet ready, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
-- when Game prerequisites for real source composition are already protected and interoperability can proceed, `NEXT_AGENT: Oteryn: astra wp5 source composition lead`;
-- if a Platform-owned blocker remains, still route to `Oteryn: astra wp3-v2 programme coordinator` and name the exact external blocker/gate.
+Routing:
+- when Platform hardening is terminal but Game source composition is still gated, put any required control-plane reconciliation in `CONTROL_PLANE_ACTION`, set `NEXT_WORKER: Oteryn: astra wp5 source composition lead`, and state the exact missing Game gate in `RUN_WORKER_WHEN`;
+- when Game prerequisites for real source composition are already protected, use `CONTROL_PLANE_ACTION: NONE` and `NEXT_WORKER: Oteryn: astra wp5 source composition lead`;
+- if a Platform-owned blocker leaves no truthful next worker yet, name the required control-plane reconciliation/escalation and use `NEXT_WORKER: NONE`.
 
-Do not claim A6 can perform S3 until the required Game and Platform gates are actually true.
+Never place a control-plane-only alias in `NEXT_WORKER`. Do not claim A6 can perform S3 until the required Game and Platform gates are actually true.
