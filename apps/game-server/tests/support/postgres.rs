@@ -1091,6 +1091,36 @@ mod durability_contract_tests {
     }
 }
 
+pub fn fixture_account_for_character(character: u64) -> String {
+    if character == 11 {
+        "123e4567-e89b-12d3-a456-426614174000".into()
+    } else {
+        format!(
+            "{:08x}-{:04x}-4000-8000-{:012x}",
+            character >> 32,
+            (character >> 16) & 0xffff,
+            character & 0xffff
+        )
+    }
+}
+
+pub async fn begin_transport_corruption(
+    pool: &sqlx::PgPool,
+) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, sqlx::Error> {
+    let mut transaction = pool.begin().await?;
+    sqlx::query("ALTER TABLE game_durability_transport_ref_reservations DISABLE TRIGGER game_transport_reservation_immutable")
+        .execute(&mut *transaction).await?;
+    Ok(transaction)
+}
+
+pub async fn finish_transport_corruption(
+    mut transaction: sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("ALTER TABLE game_durability_transport_ref_reservations ENABLE TRIGGER game_transport_reservation_immutable")
+        .execute(&mut *transaction).await?;
+    transaction.commit().await
+}
+
 /// Independently controlled test owners. No production constructor or seal is added.
 pub mod fresh {
     use crate::authority_matrix::{TestResult, checked};

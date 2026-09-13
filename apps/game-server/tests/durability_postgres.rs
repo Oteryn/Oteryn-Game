@@ -277,7 +277,7 @@ fn record_for_actor_epoch_with_protection(
         game_session_id,
         ReconnectAttemptRef::new(attempt_raw)
             .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        "123e4567-e89b-12d3-a456-426614174000",
+        &postgres::fixture_account_for_character(character_raw),
         character_id,
         world_id,
         RuntimeScopeRefV1::channel(world_id, channel_id),
@@ -1129,6 +1129,7 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 );
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
+                let mut corruption = postgres::begin_transport_corruption(&pool).await?;
                 let corrupted = sqlx::query(
                     "UPDATE game_durability_transport_ref_reservations \
                      SET game_session_id = encode($2, 'hex')::uuid, reconnect_attempt_ref = $3 \
@@ -1144,8 +1145,9 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 )
                 .bind(uuid_v7(0x9a))
                 .bind([0xfe_u8; 8].as_slice())
-                .execute(&pool)
+                .execute(&mut *corruption)
                 .await?;
+                postgres::finish_transport_corruption(corruption).await?;
                 assert_eq!(corrupted.rows_affected(), 1);
                 assert!(matches!(
                     journal.commit(&commit).await,
@@ -1289,6 +1291,7 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                     .map_err(foundation_error)?;
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
+                let mut corruption = postgres::begin_transport_corruption(&pool).await?;
                 let deleted = sqlx::query(
                     "DELETE FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
                 )
@@ -1300,8 +1303,9 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                         .to_bytes()
                         .as_slice(),
                 )
-                .execute(&pool)
+                .execute(&mut *corruption)
                 .await?;
+                postgres::finish_transport_corruption(corruption).await?;
                 assert_eq!(deleted.rows_affected(), 1);
 
                 assert!(matches!(
@@ -2789,13 +2793,16 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                             .await?;
                         }
                         "transport_reservation" => {
+                            let mut corruption =
+                                postgres::begin_transport_corruption(&pool).await?;
                             sqlx::query(
                                 "DELETE FROM game_durability_transport_ref_reservations \
                                  WHERE transport_ref = $1",
                             )
                             .bind(transport_ref.as_slice())
-                            .execute(&pool)
+                            .execute(&mut *corruption)
                             .await?;
+                            postgres::finish_transport_corruption(corruption).await?;
                         }
                         "protection_continuity" => {
                             sqlx::query(
