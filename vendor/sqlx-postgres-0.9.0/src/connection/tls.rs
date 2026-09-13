@@ -96,7 +96,10 @@ fn validate_oteryn_root_profile(options: &PgConnectOptions) -> Result<(), Error>
             "Oteryn PostgreSQL root profile requires a separate DNS TLS identity".into(),
         ));
     }
-    if !matches!(options.ssl_root_cert, Some(CertificateInput::Inline(_))) {
+    if !matches!(
+        options.ssl_root_cert,
+        Some(CertificateInput::OterynInline(_))
+    ) {
         return Err(Error::Configuration(
             "Oteryn PostgreSQL root profile requires an inline root CA".into(),
         ));
@@ -106,7 +109,10 @@ fn validate_oteryn_root_profile(options: &PgConnectOptions) -> Result<(), Error>
             "Oteryn PostgreSQL root profile forbids client certificates".into(),
         ));
     }
-    if options.application_name.is_some() || options.options.is_some() || options.statement_cache_capacity != 100 {
+    if options.application_name.is_some()
+        || options.options.is_some()
+        || options.statement_cache_capacity != 100
+    {
         return Err(Error::Configuration(
             "Oteryn PostgreSQL root profile forbids ambient startup options".into(),
         ));
@@ -135,7 +141,10 @@ async fn maybe_upgrade_owned<S: Socket>(
         }
     }
     let config = TlsConfig {
-        accept_invalid_certs: !matches!(options.ssl_mode, PgSslMode::VerifyCa | PgSslMode::VerifyFull),
+        accept_invalid_certs: !matches!(
+            options.ssl_mode,
+            PgSslMode::VerifyCa | PgSslMode::VerifyFull
+        ),
         accept_invalid_hostnames: !matches!(options.ssl_mode, PgSslMode::VerifyFull),
         hostname: options.tls_server_name(),
         oteryn_root_profile: options.oteryn_root_profile(),
