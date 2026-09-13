@@ -80,20 +80,31 @@ impl PgConnection {
         let mut process_id = 0;
         let mut secret_key = 0;
         let transaction_status;
+        let strict_scram = options.oteryn_root_profile();
+        let mut scram_authenticated = false;
 
         loop {
             let message = stream.recv().await?;
             match message.format {
                 BackendMessageFormat::Authentication => match message.decode()? {
                     Authentication::Ok => {
-                        // the authentication exchange is successfully completed
-                        // do nothing; no more information is required to continue
+                        if strict_scram && !scram_authenticated {
+                            return Err(Error::Configuration(
+                                "Oteryn PostgreSQL root profile rejects passwordless authentication"
+                                    .into(),
+                            ));
+                        }
                     }
 
                     Authentication::CleartextPassword => {
+                        if strict_scram {
+                            return Err(Error::Configuration(
+                                "Oteryn PostgreSQL root profile requires SCRAM-SHA-256".into(),
+                            ));
+                        }
+
                         // The frontend must now send a [PasswordMessage] containing the
                         // password in clear-text form.
-
                         stream
                             .send(Password::Cleartext(
                                 options.password.as_deref().unwrap_or_default(),
@@ -102,11 +113,16 @@ impl PgConnection {
                     }
 
                     Authentication::Md5Password(body) => {
+                        if strict_scram {
+                            return Err(Error::Configuration(
+                                "Oteryn PostgreSQL root profile requires SCRAM-SHA-256".into(),
+                            ));
+                        }
+
                         // The frontend must now send a [PasswordMessage] containing the
                         // password (with user name) encrypted via MD5, then encrypted again
                         // using the 4-byte random salt specified in the
                         // [AuthenticationMD5Password] message.
-
                         stream
                             .send(Password::Md5 {
                                 username: &options.username,
@@ -117,7 +133,17 @@ impl PgConnection {
                     }
 
                     Authentication::Sasl(body) => {
+                        if strict_scram
+                            && !body.mechanisms().any(|mechanism| mechanism == "SCRAM-SHA-256")
+                        {
+                            return Err(Error::Configuration(
+                                "Oteryn PostgreSQL root profile requires SCRAM-SHA-256".into(),
+                            ));
+                        }
                         sasl::authenticate(&mut stream, options, body).await?;
+                        if strict_scram {
+                            scram_authenticated = true;
+                        }
                     }
 
                     method => {
@@ -139,6 +165,12 @@ impl PgConnection {
                 }
 
                 BackendMessageFormat::ReadyForQuery => {
+                    if strict_scram && !scram_authenticated {
+                        return Err(Error::Configuration(
+                            "Oteryn PostgreSQL root profile requires completed SCRAM-SHA-256"
+                                .into(),
+                        ));
+                    }
                     // start-up is completed. The frontend can now issue commands
                     transaction_status = message.decode::<ReadyForQuery>()?.transaction_status;
 
