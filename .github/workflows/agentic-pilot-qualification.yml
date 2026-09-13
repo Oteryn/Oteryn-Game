@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: agentic-pilot-qualification-${{ github.event.pull_request.number || github.ref }}
@@ -119,3 +119,25 @@ jobs:
             .github/workflows/oteryn-agentic-pilot-router.lock.yml
           if-no-files-found: error
           retention-days: 1
+
+      - name: Bootstrap generated locks onto pilot branch
+        if: >
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.head_ref == 'agent/otv2-agentic-openspec-pilot-01'
+        env:
+          PUSH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- \
+            .github/workflows/oteryn-agentic-pilot-worker.lock.yml \
+            .github/workflows/oteryn-agentic-pilot-router.lock.yml
+          if git diff --cached --quiet; then
+            echo 'Generated locks already committed; bootstrap no-op.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'ci(agentic): commit generated pilot locks'
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${GITHUB_HEAD_REF}"
