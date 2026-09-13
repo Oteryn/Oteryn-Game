@@ -37,7 +37,7 @@ impl PgConnectOptions {
             password: Some(password.to_owned()),
             database: Some(database.to_owned()),
             ssl_mode: PgSslMode::VerifyFull,
-            ssl_root_cert: Some(CertificateInput::Inline(root_ca_pem)),
+            ssl_root_cert: Some(CertificateInput::OterynInline(root_ca_pem)),
             ssl_client_cert: None,
             ssl_client_key: None,
             statement_cache_capacity: 100,
@@ -106,6 +106,11 @@ mod tests {
         assert!(options.options.is_none());
         assert_eq!(options.statement_cache_capacity, 100);
         assert!(options.oteryn_root_profile());
+        assert!(options.resource_budget().is_some());
+        assert!(matches!(
+            options.ssl_root_cert,
+            Some(CertificateInput::OterynInline(_))
+        ));
         assert!(options.resource_budget().is_some());
     }
 }
