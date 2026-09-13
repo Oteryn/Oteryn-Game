@@ -341,3 +341,34 @@ Work162 comment5560037097 extends this same coordinator PR352 by only the346 act
 Foundation338/PR343 and B329/PR335 retain their canonical branches, original admissions and counters. B native8f73d12c105e230817524fa91287d82586a65b8a is partial queue/custody work awaiting hosted qualification, not full acceptance. Foundation repaired owning-loss candidate is in final integration qualification. ChildC319 remains separate: protected Platform3b2ea1c7392187d5d22488673073dc8f8305a374 lacks the inspected native UUID/account-security/signing-trust producers; read-only evidence and exact external boundary are recorded in319 comment5559932791. Platform mutation is outside current Game authority. Preserve Server Seam247 branch9370b254c6ac4f6529e069c1968ae6bfa1e1750e WAITING_DEPENDENCY.
 
 Next action: qualify and protect this six-path allocation/closeout package, read back, then consider sole driver351 admission under preserved programme budget and overlap checks.
+
+
+## Current prospective WP3-v2 root Cargo provider amendment — 2026-09-13
+
+Work #162 scope grant
+[5654245867](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5654245867)
+authorizes this documentation-only package on
+`coord/wp3-v2-provider-cargo-allocation`, based on protected
+`35ce1fa058066a3777ae9b0a9f50ff9040e15223`.
+Exactly two coordinator-owned files change: LIVE_ALLOCATIONS and this Work task.
+No runtime, root Cargo, lockfile, worker task, workflow or external file is changed.
+
+The prospective AWS-LC Cargo feature amendment in LIVE_ALLOCATIONS is the exact
+scope authority for this package. It remains `PROSPECTIVE_NOT_ACTIVE` until
+independent qualification, normal FULL native Merge Queue, protected readback and
+explicit Work activation. It adds only the root SQLx provider feature replacement
+and strictly necessary lock consequences to the existing canonical #351/#356 lease.
+Verify the public SQLx feature before material mutation. No new architecture,
+dependency upgrades, blanket vendor scope or replacement implementation lineage.
+
+Current canonical implementation at preparation is
+`#356@6a1453ddd48d4eafa85798d5b268cec72678e127`, Open/Draft; its CI remains a
+separate implementation qualification. Live subsequent GitHub state supersedes this
+coordinate. The companion migration/test composition repairs do not prove full
+WP3 readiness. #335/WP4 and #247 remain held, with existing ownership/history intact.
+
+Next action: independently review this exact two-file allocation delta, satisfy its
+required repository checks, use the governed native queue integration, read back
+protected contents, reconcile current Cargo overlap, and explicitly activate the
+bounded amendment for the SAME canonical A4 writer. No activation follows from
+this task text or a green documentation check alone.
