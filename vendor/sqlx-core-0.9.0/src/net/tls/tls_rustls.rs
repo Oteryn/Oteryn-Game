@@ -275,9 +275,15 @@ where
             "resource-owned TLS requires the qualified AWS-LC provider",
         ));
     }
-    let config = ClientConfig::builder_with_provider(provider.clone())
-        .with_safe_default_protocol_versions()
-        .unwrap();
+    let config = if tls_config.oteryn_root_profile {
+        ClientConfig::builder_with_provider(provider.clone())
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .map_err(Error::tls)?
+    } else {
+        ClientConfig::builder_with_provider(provider.clone())
+            .with_safe_default_protocol_versions()
+            .unwrap()
+    };
 
     let blocking_owner = crate::rt::resource_owner::blocking_job_owner(resource_budget.clone())
         .map_err(Error::tls)?;
@@ -375,6 +381,13 @@ where
             ));
         }
     };
+
+    let mut config = config;
+    if tls_config.oteryn_root_profile {
+        config.resumption = rustls::client::Resumption::disabled();
+        config.cert_decompressors.clear();
+        config.cert_compressors.clear();
+    }
 
     let (hostname_allocation, config_allocation) =
         reserve_connection_metadata(resource_budget.clone(), tls_config.hostname)
