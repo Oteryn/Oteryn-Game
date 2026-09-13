@@ -1309,17 +1309,8 @@ async fn transport_reservation_binding_is_valid(
             == attempt_ref)
 }
 
-async fn active_committed_binding_is_valid(
-    transaction: &mut Transaction<'_, Postgres>,
-    session_id: &[u8],
-    session: &PgRow,
-) -> Result<bool, DurabilityError> {
-    let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
-    let Some(current_ref) = current_ref else {
-        return Ok(false);
-    };
-    let rows = sqlx::query(
-        "SELECT reconnect_attempt_ref, control_loss_epoch::text AS control_loss_epoch, \
+// Two rows preserve the duplicate sentinel without transferring every match.
+const ACTIVE_COMMITTED_BINDING_SQL: &str = "SELECT reconnect_attempt_ref, control_loss_epoch::text AS control_loss_epoch, \
                 transport_ref, account_id::text AS account_id, \
                 uuid_send(character_id) AS character_id, uuid_send(world_id) AS world_id, \
                 runtime_scope_kind, uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
@@ -1331,13 +1322,23 @@ async fn active_committed_binding_is_valid(
                 record_json \
          FROM game_durability_reconnect_attempts \
          WHERE game_session_id = encode($1, 'hex')::uuid \
-           AND state = $2 AND transport_ref = $3",
-    )
-    .bind(session_id)
-    .bind(COMMITTED)
-    .bind(current_ref.as_slice())
-    .fetch_all(&mut **transaction)
-    .await?;
+           AND state = $2 AND transport_ref = $3 LIMIT 2";
+
+async fn active_committed_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    session: &PgRow,
+) -> Result<bool, DurabilityError> {
+    let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+    let Some(current_ref) = current_ref else {
+        return Ok(false);
+    };
+    let rows = sqlx::query(ACTIVE_COMMITTED_BINDING_SQL)
+        .bind(session_id)
+        .bind(COMMITTED)
+        .bind(current_ref.as_slice())
+        .fetch_all(&mut **transaction)
+        .await?;
     if rows.len() != 1 {
         return Ok(false);
     }
@@ -2148,4 +2149,147 @@ fn encode_evidence(
         "decision_identity": evidence.decision_identity(),
         "source_observed_at": evidence.source_observed_at(),
     })
+}
+
+#[cfg(test)]
+mod committed_binding_tests {
+    use super::*;
+
+    fn local_test_options(url: &str) -> Result<sqlx::postgres::PgConnectOptions, &'static str> {
+        const UNSAFE: &str = "unsafe PostgreSQL test-admin URL";
+        // Require explicit credentials, port and database; reject query options
+        // before parsing (unknown parameters can otherwise reach SQLx logging).
+        if !url.starts_with("postgresql://oteryn_test_admin:")
+            || !url.ends_with(":5432/postgres")
+            || url.contains(['?', '#', '\n', '\r', '\t'])
+        {
+            return Err(UNSAFE);
+        }
+        let options: sqlx::postgres::PgConnectOptions = url.parse().map_err(|_| UNSAFE)?;
+        checked_local_test_options(options)
+    }
+
+    fn checked_local_test_options(
+        options: sqlx::postgres::PgConnectOptions,
+    ) -> Result<sqlx::postgres::PgConnectOptions, &'static str> {
+        if !matches!(options.get_host(), "127.0.0.1" | "localhost")
+            || options.get_port() != 5432
+            || options.get_username() != "oteryn_test_admin"
+            || options.get_database() != Some("postgres")
+            || options.get_socket().is_some()
+            || options.get_options().is_some()
+        {
+            return Err("unsafe PostgreSQL test-admin URL");
+        }
+        // Use these same parsed options, pinning localhost to the allowed numeric
+        // loopback endpoint. Never reparse or inherit a new target at connect time.
+        Ok(options.host("127.0.0.1"))
+    }
+
+    #[test]
+    fn committed_binding_test_target_rejects_disguised_and_ambient_targets() {
+        for url in [
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres",
+            "postgresql://oteryn_test_admin:secret@localhost:5432/postgres",
+        ] {
+            let options = local_test_options(url).expect("explicit local test endpoint");
+            assert_eq!(options.get_host(), "127.0.0.1");
+            assert_eq!(options.get_port(), 5432);
+            assert_eq!(options.get_username(), "oteryn_test_admin");
+            assert_eq!(options.get_database(), Some("postgres"));
+            assert!(options.get_socket().is_none());
+            assert!(checked_local_test_options(options.clone().socket("/tmp")).is_err());
+            assert!(
+                checked_local_test_options(options.options([("search_path", "public")])).is_err()
+            );
+        }
+        for url in [
+            "postgresql://oteryn_test_admin:secret@remote.invalid:5432/@127.0.0.1:5432/postgres",
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres?hostaddr=192.0.2.1",
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres?host=/tmp",
+            "postgresql://oteryn_test_admin:secret@%2Ftmp:5432/postgres",
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5433/postgres",
+            "postgresql://other:secret@127.0.0.1:5432/postgres",
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/other",
+            "postgresql://oteryn_test_admin:secret@127.0.0.1/postgres",
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres#fragment",
+            "postgresql://oteryn_test_admin:%FF@127.0.0.1:5432/postgres",
+        ] {
+            assert!(local_test_options(url).is_err());
+        }
+    }
+
+    #[test]
+    fn committed_binding_transfer_keeps_exact_cardinality_sentinel()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let url = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+            Ok(url) => url,
+            Err(std::env::VarError::NotPresent) => {
+                eprintln!(
+                    "PostgreSQL E2E NOT_APPLICABLE: committed-binding assertions require configured harness"
+                );
+                return Ok(());
+            }
+            Err(_) => return Err("invalid PostgreSQL test-admin configuration".into()),
+        };
+        let options = local_test_options(&url)?;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .max_connections(1)
+                    .acquire_timeout(std::time::Duration::from_secs(5))
+                    .connect_with(options)
+                    .await?;
+                let result: Result<(), Box<dyn std::error::Error>> = async {
+                    let mut tx = pool.begin().await?;
+                    // Temporary projection deliberately permits duplicate bindings. No
+                    // schema constraint is disabled, and no persistent row is changed.
+                    sqlx::query("CREATE TEMP TABLE game_durability_reconnect_attempts AS SELECT \
+                        decode('01', 'hex') AS reconnect_attempt_ref, 1::bigint AS control_loss_epoch, \
+                        decode('02', 'hex') AS transport_ref, 1::bigint AS account_id, \
+                        '00000000-0000-0000-0000-000000000000'::uuid AS character_id, \
+                        '00000000-0000-0000-0000-000000000000'::uuid AS world_id, \
+                        1::smallint AS runtime_scope_kind, \
+                        '00000000-0000-0000-0000-000000000000'::uuid AS runtime_scope_world_id, \
+                        NULL::uuid AS runtime_scope_channel_id, NULL::uuid AS runtime_scope_instance_id, \
+                        1::bigint AS fnd02_next_command_id, 'invalid json'::text AS record_json, \
+                        '00000000-0000-0000-0000-000000000000'::uuid AS game_session_id, \
+                        $1::smallint AS state")
+                        .bind(COMMITTED).execute(&mut *tx).await?;
+                    sqlx::query("CREATE TEMP TABLE binding_seed AS SELECT * FROM game_durability_reconnect_attempts")
+                        .execute(&mut *tx).await?;
+                    let session = sqlx::query("SELECT decode('02', 'hex') AS current_transport_ref, \
+                        control_loss_epoch::text AS control_loss_epoch, account_id::text AS account_id, \
+                        uuid_send(character_id) AS character_id, uuid_send(world_id) AS world_id, \
+                        runtime_scope_kind, uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
+                        NULL::bytea AS runtime_scope_channel_id, NULL::bytea AS runtime_scope_instance_id \
+                        FROM binding_seed").fetch_one(&mut *tx).await?;
+                    for count in [0_i32, 1, 2, 3, 128] {
+                        sqlx::query("TRUNCATE game_durability_reconnect_attempts")
+                            .execute(&mut *tx).await?;
+                        sqlx::query("INSERT INTO game_durability_reconnect_attempts SELECT binding_seed.* \
+                            FROM binding_seed CROSS JOIN generate_series(1, $1)")
+                            .bind(count).execute(&mut *tx).await?;
+                        let rows = sqlx::query(ACTIVE_COMMITTED_BINDING_SQL)
+                            .bind([0_u8; 16].as_slice()).bind(COMMITTED)
+                            .bind([2_u8].as_slice()).fetch_all(&mut *tx).await?;
+                        assert_eq!(rows.len(), count.min(2) as usize);
+                        let outcome = active_committed_binding_is_valid(&mut tx, &[0_u8; 16], &session).await;
+                        if count == 1 {
+                            // Exactly one row must still traverse full validation;
+                            // malformed persisted JSON cannot grant authority.
+                            assert!(matches!(outcome, Err(DurabilityError::InvalidStoredState)));
+                        } else {
+                            assert!(matches!(outcome, Ok(false)));
+                        }
+                    }
+                    tx.rollback().await?;
+                    Ok(())
+                }.await;
+                pool.close().await;
+                result
+            })
+    }
 }
