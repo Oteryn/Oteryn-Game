@@ -210,8 +210,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 return Err("lazy empty holder unexpectedly produced a ready-only transaction".into());
             }
             let error = match runtime.block_on(pool.acquire()) {
-                Ok(connection) => {
-                    drop(connection);
+                Ok(mut connection) => {
+                    runtime.block_on(connection.return_to_pool());
                     runtime.block_on(pool.close());
                     return Err("underfunded holder unexpectedly established TLS".into());
                 }
@@ -263,7 +263,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 return Err("lazy empty holder unexpectedly manufactured an active connection".into());
             }
 
-            let root_connection = runtime.block_on(async {
+            let mut root_connection = runtime.block_on(async {
                 match tokio::time::timeout(ROOT_CONNECT_TIMEOUT, pool.acquire()).await {
                     Ok(Ok(connection)) => Ok::<_, Box<dyn Error>>(connection),
                     Ok(Err(error)) => {
@@ -284,7 +284,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Err(_) => Err("funded root-maintenance acquire exceeded five seconds".into()),
                 }
             })?;
-            drop(root_connection);
+            runtime.block_on(root_connection.return_to_pool());
 
             let mut transaction = runtime.block_on(async {
                 for _ in 0..100 {
