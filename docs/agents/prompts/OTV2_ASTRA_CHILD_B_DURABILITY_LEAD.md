@@ -53,19 +53,20 @@ Use configured real PostgreSQL qualification for fresh admission, reconnect, rep
 
 Finish whole-diff self-review, applicable independent review and exact candidate repository checks with no unresolved P0/P1 before reporting the lane ready for protected integration.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
 End the final response with:
 
 ```text
-NEXT_AGENT: <exact alias>
-RUN_WHEN: <exact gate>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate>
 WHY: <one concise dependency reason>
 ```
 
-Default routing for this lane:
-- after Child B is ready but still needs coordinator/protected integration handling, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
-- when live state already proves protected Child B/WP4 and source-composition gates are open, `NEXT_AGENT: Oteryn: astra wp5 source composition lead`;
-- if WP3/custody is still blocking mutation, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator` and name the precise gate.
+Routing:
+- after Child B is qualified but still needs protected integration/readback or source-custody release, put that exact action in `CONTROL_PLANE_ACTION`, set `NEXT_WORKER: Oteryn: astra wp5 source composition lead`, and gate A6 on the required protected WP3/WP4/source allocation state;
+- when live state already proves protected Child B/WP4 and source-composition gates are open, use `CONTROL_PLANE_ACTION: NONE` and `NEXT_WORKER: Oteryn: astra wp5 source composition lead`;
+- if WP3/custody remains blocking and no substantive worker can run, name the control-plane reconciliation action and use `NEXT_WORKER: NONE`.
 
-Do not recommend A6 S2/S3 before the protected WP3/WP4 gates required by its allocation are true.
+Never place a control-plane-only alias in `NEXT_WORKER`. Do not recommend A6 S2/S3 before the protected WP3/WP4 gates required by its allocation are true.
