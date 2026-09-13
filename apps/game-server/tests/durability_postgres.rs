@@ -3114,3 +3114,495 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
             result
         })
 }
+
+#[test]
+fn registered_process_restart_reconciles_real_originals_without_releasing_custody()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::AdmissionRuntime;
+    use durability::fresh_admission::{
+        FreshLossReconciliation, FreshReconciliation, decode_fresh_loss, decode_operation,
+        encode_fresh_loss, encode_operation,
+    };
+    use foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+    use foundation::*;
+    const CHILD_URL: &str = "OTERYN_ORIGINAL_RESTART_TEST_DATABASE";
+    const CHILD_MODE: &str = "OTERYN_ORIGINAL_RESTART_TEST_MODE";
+    const TEST: &str =
+        "registered_process_restart_reconciles_real_originals_without_releasing_custody";
+    struct LossSource(ControlLossObservationV1);
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl ControlLossSourceV1 for LossSource {
+        fn resolve_loss(
+            &self,
+            _: GameSessionId,
+            _: i64,
+        ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
+            Ok(self.0.clone())
+        }
+    }
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        if let Ok(url) = std::env::var(CHILD_URL) {
+            let runtime = AdmissionRuntime::connect(&url).await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let fresh = runtime.fresh();
+            if std::env::var(CHILD_MODE)?.starts_with("produce") {
+                assert!(runtime.recovered_pending().iter().all(Option::is_none));
+                let now = postgres_clock(&pool).await?;
+                let owner = postgres::fresh::Source::new(now)?;
+                runtime.guards().publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?).await?;
+                let request = owner.request()?;
+                let original = encode_operation(request.operation(), 65536)?;
+                assert_eq!(runtime.enqueue_checkpoint(1, &original)?.establish().await?, 1);
+                assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
+                let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err("producer fresh receipt absent".into()); };
+                let session = initial.current_session;
+                let source = LossSource(ControlLossObservationV1 {
+                    source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
+                    decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?, accepted_decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                    observed_at: now, session,
+                    account_presence: authority_matrix::checked(AccountPresenceClaimV1::new("00000000-0000-4000-8000-000000000001", session.commit().character_id()))?,
+                    placement_identity: [9;16], placement_revision: 1, actor_present: true, runtime_ready: true,
+                    cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss, loss_epoch: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                    loss_origin: now, original_grace_deadline: now + 120, history: ControlLossHistoryV1::FreshOrigin,
+                    protection: RecoveryProtectionContinuityV1 { usage: RecoveryProtectionUseV1::NotEntitled,
+                        rearm: RecoveryProtectionRearmV1::NotRearmed { generation: 7, stable_control_started_at: None, accepted_deadline: None } },
+                });
+                let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(&source, session.commit().game_session_id(), now))?;
+                let mut flow = ControlLossFlowV1::begin(authorization);
+                let request = authority_matrix::checked(flow.take_request())?;
+                assert_eq!(runtime.enqueue_checkpoint(2, &encode_fresh_loss(request.operation())?)?.establish().await?, 2);
+                if std::env::var(CHILD_MODE)? == "produce_absent" { std::process::exit(0); }
+                assert!(matches!(fresh.commit_fresh_loss(&request, &source).await?, ControlLossOutcomeV1::Committed { .. }));
+                // Terminate this actual producer process with unresolved originals;
+                // neither destructors nor an acknowledgement release active slots.
+                std::process::exit(0);
+            }
+            let pending = runtime.recovered_pending();
+            let first = pending[0].as_ref().ok_or("lost first pending original")?;
+            let second = pending[1].as_ref().ok_or("lost second pending original")?;
+            assert_eq!((first.slot, first.operation_kind), (1,1));
+            assert_eq!((second.slot, second.operation_kind), (2,2));
+            let original = decode_operation(&first.operation_json, 65536)?;
+            let FreshReconciliation::Committed(current) = fresh.reconcile(&original).await? else { return Err("restart fresh receipt absent".into()); };
+            let loss = decode_fresh_loss(&second.operation_json, current.receipt.binding().initial_commit().map_err(|_| "invalid initial receipt")?)?;
+            if std::env::var(CHILD_MODE)? == "recover_absent" {
+                assert_eq!(fresh.reconcile_fresh_loss(&loss).await?, FreshLossReconciliation::Absent);
+                assert_eq!(current.current_session.session_state(), GameSessionState::Active);
+                assert_eq!(current.current_session.current_transport(), Some(current.receipt.binding().transport));
+            } else {
+                let FreshLossReconciliation::Committed { completion, current: loss_current } = fresh.reconcile_fresh_loss(&loss).await? else { return Err("restart loss receipt absent".into()); };
+                assert_eq!(completion.operation, loss);
+                assert_eq!(loss_current, current);
+                assert_eq!(current.current_session.session_state(), GameSessionState::Reconnectable);
+                assert_eq!(current.current_session.current_transport(), None);
+                assert!(matches!(completion.outcome, ControlLossOutcomeV1::Committed { decided_at } if decided_at >= loss.authorized_at));
+            }
+            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss.clone()))?;
+            assert!(history.take_request().is_err());
+            let delivery = fresh.loss_completion_source(&loss).await?;
+            if std::env::var(CHILD_MODE)? == "recover_absent" {
+                assert!(delivery.is_none(), "absence is not a definitive rejection completion");
+                assert_eq!(history.phase(), ControlLossPhaseV1::ReconciliationRequired);
+            } else {
+                let mut delivery = delivery.ok_or("missing registered durable completion")?;
+                assert_eq!(delivery.current_snapshot(), current.as_ref());
+                let mut wrong = loss.clone();
+                wrong.observation.source_revision = 2;
+                wrong.observation.accepted_source_revision = 2;
+                assert!(matches!(delivery.take_loss_completion(&wrong), Err(ReconnectDurabilityErrorV1::IdempotencyConflict)));
+                authority_matrix::checked(history.accept_completion(&mut delivery))?;
+                assert_eq!(history.phase(), ControlLossPhaseV1::Completed);
+                let receipt = history.receipt().ok_or("missing owning flow receipt")?.clone();
+                assert_eq!(receipt.operation(), &loss);
+                let original_l: i64 = sqlx::query_scalar("SELECT decided_at FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool).await?;
+                assert_eq!(receipt.decided_at(), original_l);
+                assert!(authority_matrix::checked(delivery.take_loss_completion(&loss))?.is_none(), "one source instance delivers at most once");
+                authority_matrix::checked(history.accept_completion(&mut delivery))?;
+                assert_eq!(history.receipt(), Some(&receipt));
+                assert!(history.take_request().is_err());
+                assert!(fresh.loss_completion_source(&wrong).await?.is_none(), "conflicting original cannot acquire completion authority");
+            }
+            assert!(matches!(runtime.enqueue_checkpoint(1, "different third work")?.establish().await, Err(DurabilityError::Unavailable)));
+            let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
+            assert_eq!(attempts, 0);
+            pool.close().await;
+            return Ok(());
+        }
+        for committed in [true, false] {
+        let database = postgres::IsolatedPostgres::create("real_original_restart").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let run = |mode: &str| -> Result<(), Box<dyn std::error::Error>> {
+                let status = std::process::Command::new(std::env::current_exe()?).args(["--exact", TEST, "--nocapture"])
+                    .env(CHILD_URL, &url).env(CHILD_MODE, mode).status()?;
+                if !status.success() { return Err(format!("restart child failed: {mode}").into()); }
+                Ok(())
+            };
+            run(if committed { "produce" } else { "produce_absent" })?;
+            let originals: Vec<(i16, i16, String)> = sqlx::query_as("SELECT slot, operation_kind, operation_json FROM game_durability_executor_custody WHERE slot IN (1,2) ORDER BY slot").fetch_all(&pool).await?;
+            let receipt: Option<(Vec<u8>, String, i64)> = sqlx::query_as("SELECT operation_key, operation_json, decided_at FROM game_durability_admission_lifecycle_receipts").fetch_optional(&pool).await?;
+            assert_eq!(receipt.is_some(), committed);
+            let session: String = sqlx::query_scalar("SELECT to_jsonb(s)::text FROM game_durability_reconnect_sessions s").fetch_one(&pool).await?;
+            for expected_generation in [2u64,3] {
+                run(if committed { "recover" } else { "recover_absent" })?;
+                let generation: String = sqlx::query_scalar("SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0").fetch_one(&pool).await?;
+                assert_eq!(generation, expected_generation.to_string());
+                assert_eq!(sqlx::query_as::<_, (i16,i16,String)>("SELECT slot, operation_kind, operation_json FROM game_durability_executor_custody WHERE slot IN (1,2) ORDER BY slot").fetch_all(&pool).await?, originals);
+                assert_eq!(sqlx::query_as::<_, (Vec<u8>,String,i64)>("SELECT operation_key, operation_json, decided_at FROM game_durability_admission_lifecycle_receipts").fetch_optional(&pool).await?, receipt);
+                assert_eq!(sqlx::query_scalar::<_,String>("SELECT to_jsonb(s)::text FROM game_durability_reconnect_sessions s").fetch_one(&pool).await?, session);
+            }
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{AdmissionRuntime, DurabilityCustody};
+    use foundation::ReconnectDurabilityFlowV2;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("registered_runtime").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let (predecessor, _) = DurabilityCustody::acquire(&pool).await?;
+                predecessor
+                    .checkpoint(&pool, 1, 1, "retained fresh original")
+                    .await?;
+                predecessor
+                    .checkpoint(&pool, 2, 2, "retained guard original")
+                    .await?;
+                let runtime = AdmissionRuntime::connect(&url).await?;
+                let repeated = AdmissionRuntime::connect(&url).await?;
+                let generation: String = sqlx::query_scalar(
+                    "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(
+                    generation, "2",
+                    "same process registration must not take custody twice"
+                );
+                assert_eq!(runtime.recovered_pending(), repeated.recovered_pending());
+                for (slot, expected) in [
+                    (0, "retained fresh original"),
+                    (1, "retained guard original"),
+                ] {
+                    assert_eq!(
+                        runtime.recovered_pending()[slot]
+                            .as_ref()
+                            .ok_or("registered runtime lost pending original")?
+                            .operation_json,
+                        expected
+                    );
+                }
+                assert!(matches!(
+                    predecessor.fence(&pool).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let guards = runtime.guards();
+                assert!(guards.load(&[]).await?.is_empty());
+                let fresh = repeated.fresh();
+                let owner = postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
+                let fresh_request = owner.request()?;
+                assert!(matches!(
+                    fresh.reconcile(fresh_request.operation()).await?,
+                    durability::fresh_admission::FreshReconciliation::Absent
+                ));
+                let record = authority_matrix::prepared_record(authority_matrix::Seed::fixed())?;
+                let v1_request = ReconnectDurabilityFlowV1::begin(record.clone()).1;
+                let v2_request = ReconnectDurabilityFlowV2::begin(record, None).1;
+                let v1 = runtime.reconnect_v1();
+                let v2 = repeated.reconnect_v2();
+                // A real successor invalidates every previously issued handle.
+                let (_successor, retained) = DurabilityCustody::acquire(&pool).await?;
+                assert_eq!(&retained, runtime.recovered_pending());
+                assert!(matches!(
+                    guards.load(&[]).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    fresh.reconcile(fresh_request.operation()).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    v1.prepare(&v1_request).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    v2.prepare(&v2_request).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                // Registration cannot mint replacement capacity after its token is stale.
+                let stale = AdmissionRuntime::connect(&url).await?;
+                assert!(matches!(
+                    stale.guards().load(&[]).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    AdmissionRuntime::connect("postgres://different.invalid/other").await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let attempts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts")
+                        .fetch_one(&pool)
+                        .await?;
+                assert_eq!(attempts, 0, "stale handles must retain no command effects");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn guard_publication_is_atomic_replayable_and_retains_decision_history()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::admission_authority_guards::{
+        AdmissionGuardStore, GuardPublicationDisposition,
+    };
+    use foundation::admission_authority_publication::*;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("guard_publication").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let mut source = postgres::fresh::Source::new(now)?;
+                // Explicit test allocation, not a selected production resource default.
+                let store = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                let request = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(
+                    &source, now,
+                ))?;
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Applied
+                );
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Existing
+                );
+                let keys: Vec<_> = source.rows.iter().map(|row| row.key.clone()).collect();
+                assert_eq!(
+                    store.load(&keys).await?,
+                    source.rows.iter().cloned().map(Some).collect::<Vec<_>>()
+                );
+                for row in &mut source.rows {
+                    row.publication_revision = 2;
+                    row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                        expected_publication_revision: 1,
+                    };
+                    row.source.source_revision = 2;
+                    row.source.decision_identity = "next-independent-decision".into();
+                    if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state
+                    {
+                        security.provenance.publication_revision = 2;
+                    }
+                }
+                // Independently valid full-u64 source/runtime fences survive SQL
+                // NUMERIC storage and exact textual mirror reconstruction.
+                source.rows[2].source.source_revision = u64::MAX;
+                if let AdmissionAuthorityGuardStateV1::Runtime {
+                    ownership_generation,
+                    ..
+                } = &mut source.rows[2].state
+                {
+                    *ownership_generation = u64::MAX;
+                }
+                // Reusing an accepted decision for different effects must reject the
+                // entire batch, including otherwise valid changes preceding it.
+                source.rows[3].source.decision_identity = "platform-observation-1".into();
+                let conflicting = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&source, now),
+                )?;
+                assert_eq!(
+                    store.publish(&conflicting).await?,
+                    GuardPublicationDisposition::Conflict
+                );
+                assert_eq!(
+                    store.load(&keys).await?,
+                    request
+                        .changes()
+                        .iter()
+                        .cloned()
+                        .map(Some)
+                        .collect::<Vec<_>>()
+                );
+                source.rows[3].source.decision_identity = "next-independent-decision".into();
+                let successor = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&source, now),
+                )?;
+                assert_eq!(
+                    store.publish(&successor).await?,
+                    GuardPublicationDisposition::Applied
+                );
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Stale
+                );
+                let restarted = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                assert_eq!(
+                    restarted.load(&keys).await?,
+                    source.rows.iter().cloned().map(Some).collect::<Vec<_>>()
+                );
+                let history: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_admission_guard_history",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(history, 8);
+                // Observe the exact production SELECT before decoding/mirror
+                // validation. Old per-mirror rejection cannot satisfy this test.
+                if restarted.projected_guard_presence(&keys[1]).await? != (true, true) {
+                    return Err("bounded positive guard projection missing".into());
+                }
+                let overhead: i64 = sqlx::query_scalar("SELECT (octet_length(to_jsonb(g)::text) - octet_length(source_authority))::bigint FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                for (size, presence) in [(131072_i64, (true, true)), (131073, (false, false))] {
+                    let padding = size.checked_sub(overhead).and_then(|n| i32::try_from(n).ok()).filter(|n| *n > 0).ok_or("invalid complete-row boundary fixture")?;
+                    sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = repeat('x', $1)").bind(padding).execute(&pool).await?;
+                    let actual: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text)::bigint FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                    if actual != size || restarted.projected_guard_presence(&keys[1]).await? != presence {
+                        return Err(format!("guard SQL complete-row boundary failed: wanted {size}, actual {actual}").into());
+                    }
+                    if !matches!(restarted.load(&keys).await, Err(DurabilityError::InvalidStoredState)) {
+                        return Err("corrupt mirror passed full guard consistency checks".into());
+                    }
+                }
+                sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = $1").bind(&source.rows[1].source.authority).execute(&pool).await?;
+                if restarted.load(&keys).await? != source.rows.iter().cloned().map(Some).collect::<Vec<_>>() {
+                    return Err("bounded guard row failed after restoring its exact mirror".into());
+                }
+                // Isolated administrator corrupts one mirror; decoded history
+                // must not override the independently stored eligibility field.
+                sqlx::query(
+                    "UPDATE game_durability_admission_character_guards SET eligible = NOT eligible",
+                )
+                .execute(&pool)
+                .await?;
+                assert!(matches!(
+                    restarted.load(&keys).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn fresh_operation_codec_retains_effects_and_rejects_trailing_or_oversized_storage()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::fresh_admission::{decode_operation, encode_operation, encoded_operation_size};
+    let source = postgres::fresh::Source::new(100)?;
+    let request = source.request()?;
+    // Test allocation budget; no production resource ceiling is selected here.
+    let budget = 65_536;
+    let encoded = encode_operation(request.operation(), budget)?;
+    assert_eq!(
+        encoded_operation_size(request.operation(), budget)?,
+        encoded.len()
+    );
+    assert!(encoded_operation_size(request.operation(), encoded.len() - 1).is_err());
+    assert_eq!(
+        encode_operation(request.operation(), encoded.len())?,
+        encoded
+    );
+    assert_eq!(decode_operation(&encoded, budget)?, *request.operation());
+    assert!(decode_operation(&encoded, encoded.len() - 1).is_err());
+    assert!(encode_operation(request.operation(), encoded.len() - 1).is_err());
+    assert!(decode_operation(&format!("{encoded}x"), budget).is_err());
+    let duplicate = encoded.replacen("\"version\":1", "\"version\":1,\"version\":1", 1);
+    assert!(decode_operation(&duplicate, budget).is_err());
+    let mut different_effect = request.operation().clone();
+    different_effect.transition.successors[0]
+        .source
+        .decision_identity = "another-exact-decision".into();
+    let other = encode_operation(&different_effect, budget)?;
+    assert_ne!(other, encoded);
+    assert_eq!(encode_operation(&different_effect, other.len())?, other);
+    assert_eq!(decode_operation(&other, budget)?, different_effect);
+    Ok(())
+}
+
+#[test]
+fn fresh_guard_codec_preserves_full_u64_and_rejects_invalid_binary()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::Engine;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use durability::admission_authority_guards::{decode_guard, encode_guard, encoded_guard_size};
+    use foundation::admission_authority_publication::AdmissionPublicationPreconditionV1;
+    let source = postgres::fresh::Source::new(100)?;
+    let budget = 65_536;
+    for original in &source.rows {
+        let encoded = encode_guard(original, budget)?;
+        println!(
+            "guard fixture {:?}: {} encoded bytes",
+            original.source.purpose,
+            encoded.len()
+        );
+        assert_eq!(encoded_guard_size(original, budget)?, encoded.len());
+        assert!(encoded_guard_size(original, encoded.len() - 1).is_err());
+        assert_eq!(decode_guard(&encoded, budget)?, *original);
+        let mut maximum = original.clone();
+        maximum.publication_revision = u64::MAX;
+        maximum.source.source_revision = u64::MAX;
+        maximum.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: u64::MAX - 1,
+        };
+        let encoded = encode_guard(&maximum, budget)?;
+        assert_eq!(decode_guard(&encoded, budget)?, maximum);
+        let envelope: serde_json::Value = serde_json::from_str(&encoded)?;
+        let payload = envelope["payload"].as_str().ok_or("payload missing")?;
+        let mut bytes = URL_SAFE_NO_PAD.decode(payload)?;
+        bytes.push(0);
+        let trailing = format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            URL_SAFE_NO_PAD.encode(&bytes)
+        );
+        assert!(decode_guard(&trailing, budget).is_err());
+        bytes.truncate(1);
+        let truncated = format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            URL_SAFE_NO_PAD.encode(&bytes)
+        );
+        assert!(decode_guard(&truncated, budget).is_err());
+    }
+    Ok(())
+}
