@@ -623,6 +623,9 @@ jobs:
       - name: Test workspace
         run: cargo +1.94.0 test --locked --workspace
 
+      - name: Test vendored Tokio resource ownership and sockets
+        run: cargo +1.94.0 test --locked --manifest-path vendor/tokio-1.53.1/Cargo.toml --features full --test oteryn_resource_owner --test tcp_connect --test tcp_stream --test uds_stream
+
       - name: Run Durability PostgreSQL E2E when allocated
         env:
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
