@@ -331,13 +331,13 @@ pub(crate) trait Schedule: Sync + Sized + 'static {
 
 cfg_rt! {
     pub(crate) struct OterynCharge {
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
         bytes: usize,
     }
 
     impl OterynCharge {
         pub(crate) fn reserve(
-            owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+            owner: crate::task::OterynBlockingOwner,
             bytes: usize,
         ) -> std::result::Result<Self, crate::task::OwnedSpawnError> {
             if bytes == 0 || !owner.try_reserve(bytes) {
@@ -348,9 +348,9 @@ cfg_rt! {
 
         pub(crate) fn same_owner(
             &self,
-            owner: &std::sync::Arc<dyn crate::task::BlockingOwner>,
+            owner: &crate::task::OterynBlockingOwner,
         ) -> bool {
-            std::sync::Arc::ptr_eq(&self.owner, owner)
+            self.owner.same_owner(owner)
         }
     }
 
@@ -433,7 +433,7 @@ cfg_rt! {
         scheduler: S,
         id: Id,
         spawned_at: SpawnLocation,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> std::result::Result<
         (UnownedTask<S>, JoinHandle<T::Output>),
         crate::task::OwnedSpawnError,

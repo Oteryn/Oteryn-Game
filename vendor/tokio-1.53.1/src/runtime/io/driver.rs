@@ -18,8 +18,6 @@ use crate::runtime::io::{IoDriverMetrics, RegistrationSet, ScheduledIo};
 use mio::event::Source;
 use std::fmt;
 use std::io;
-#[cfg(feature = "rt")]
-use std::sync::Arc;
 use std::time::Duration;
 
 /// I/O driver, backed by Mio.
@@ -280,7 +278,7 @@ impl Handle {
         &self,
         source: &mut impl mio::event::Source,
         interest: Interest,
-        #[cfg(feature = "rt")] owner: Option<Arc<dyn crate::task::BlockingOwner>>,
+        #[cfg(feature = "rt")] owner: Option<crate::task::OterynBlockingOwner>,
     ) -> io::Result<super::registration_set::RegistrationHandle> {
         let scheduled_io = self.registrations.allocate(
             &mut self.synced.lock(),

@@ -127,7 +127,7 @@ impl<E: Source> PollEvented<E> {
     #[cfg(all(feature = "net", feature = "rt"))]
     pub(crate) fn new_oteryn_owned(
         io: E,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> io::Result<Self> {
         Self::new_with_interest_and_handle_oteryn_owned(
             io,
@@ -142,7 +142,7 @@ impl<E: Source> PollEvented<E> {
         mut io: E,
         interest: Interest,
         handle: scheduler::Handle,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> io::Result<Self> {
         let registration = Registration::new_with_interest_and_handle_oteryn_owned(
             &mut io, interest, handle, owner,

@@ -10,7 +10,7 @@ use crate::runtime::{Builder, Callback, Handle, BOX_FUTURE_THRESHOLD};
 use crate::util::metric_atomics::MetricAtomicUsize;
 use crate::util::trace::{blocking_task, SpawnMeta};
 
-use crate::task::{BlockingOwner, BlockingOwnerConfig, OwnedSpawnError};
+use crate::task::{BlockingOwnerConfig, OterynBlockingOwner, OwnedSpawnError};
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::io;
@@ -139,7 +139,7 @@ struct OwnedQueue {
 }
 
 impl OwnedQueue {
-    fn find_mut(&mut self, owner: &Arc<dyn BlockingOwner>) -> Option<&mut Self> {
+    fn find_mut(&mut self, owner: &OterynBlockingOwner) -> Option<&mut Self> {
         if self.queue_charge.same_owner(owner) {
             Some(self)
         } else {
@@ -168,7 +168,7 @@ impl OwnedQueue {
         Self::forget_worker_handles(&mut queue.next);
     }
 
-    fn remove_if_idle(head: &mut Option<Box<OwnedQueue>>, owner: &Arc<dyn BlockingOwner>) -> bool {
+    fn remove_if_idle(head: &mut Option<Box<OwnedQueue>>, owner: &OterynBlockingOwner) -> bool {
         let remove_head = match head.as_ref() {
             Some(queue) => {
                 queue.queue_charge.same_owner(owner)
@@ -414,7 +414,7 @@ impl Spawner {
     pub(crate) fn spawn_blocking_owned<F, R>(
         &self,
         rt: &Handle,
-        owner: Arc<dyn BlockingOwner>,
+        owner: OterynBlockingOwner,
         config: BlockingOwnerConfig,
         func: F,
     ) -> Result<JoinHandle<R>, OwnedSpawnError>
@@ -525,7 +525,7 @@ impl Spawner {
         shared: &mut Shared,
         task: Task,
         rt: &Handle,
-        owner: Arc<dyn BlockingOwner>,
+        owner: OterynBlockingOwner,
         config: BlockingOwnerConfig,
     ) -> Result<(), OwnedSpawnError> {
         let worker_running = shared
@@ -825,7 +825,7 @@ fn is_temporary_os_thread_error(error: &io::Error) -> bool {
 }
 
 impl Inner {
-    fn run_owned(&self, worker_thread_id: usize, owner: Arc<dyn BlockingOwner>) {
+    fn run_owned(&self, worker_thread_id: usize, owner: OterynBlockingOwner) {
         if let Some(f) = &self.after_start {
             f();
         }
@@ -1061,6 +1061,7 @@ impl fmt::Debug for Spawner {
 #[cfg(test)]
 mod oteryn_owned_queue_tests {
     use super::*;
+    use crate::task::BlockingOwner;
     use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
     use std::sync::Mutex as StdMutex;
 
@@ -1084,7 +1085,7 @@ mod oteryn_owned_queue_tests {
 
     fn reserve(owner: &std::sync::Arc<ReleaseWitness>, bytes: usize) -> task::OterynCharge {
         let owner: std::sync::Arc<dyn BlockingOwner> = owner.clone();
-        task::OterynCharge::reserve(owner, bytes).unwrap()
+        task::OterynCharge::reserve(owner.into(), bytes).unwrap()
     }
 
     fn owned_queue(
@@ -1106,7 +1107,7 @@ mod oteryn_owned_queue_tests {
     #[test]
     fn idle_removal_releases_node_charge_after_box_fields() {
         let owner = std::sync::Arc::new(ReleaseWitness::default());
-        let dyn_owner: std::sync::Arc<dyn BlockingOwner> = owner.clone();
+        let dyn_owner = OterynBlockingOwner::from(owner.clone());
         let queue_bytes = 64;
         let node_bytes = std::mem::size_of::<OwnedQueue>();
         let mut head = Some(owned_queue(&owner, queue_bytes, false));
@@ -1127,7 +1128,7 @@ mod oteryn_owned_queue_tests {
     #[test]
     fn non_idle_queue_keeps_node_charge_live() {
         let owner = std::sync::Arc::new(ReleaseWitness::default());
-        let dyn_owner: std::sync::Arc<dyn BlockingOwner> = owner.clone();
+        let dyn_owner = OterynBlockingOwner::from(owner.clone());
         let queue_bytes = 64;
         let node_bytes = std::mem::size_of::<OwnedQueue>();
         let mut head = Some(owned_queue(&owner, queue_bytes, true));

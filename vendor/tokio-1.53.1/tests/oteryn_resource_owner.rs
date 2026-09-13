@@ -888,6 +888,70 @@ fn oteryn_io_registration_owner_tcp_exact_backing_finality() {
     });
     assert_eq!(owner.held.load(Ordering::SeqCst), 0);
     assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+
+    // Exercise the owner control allocation with the same independent allocator
+    // observer. Normal Arc destruction releases its inner debit too early;
+    // every private capability drop must instead consume Arc::into_inner.
+    struct Control {
+        ledger: Arc<Owner>,
+    }
+    impl BlockingOwner for Control {
+        fn try_reserve(&self, _bytes: usize) -> bool {
+            false
+        }
+        fn release(&self, _bytes: usize) {
+            unreachable!()
+        }
+        fn finalize(self: Arc<Self>) {
+            drop(Arc::into_inner(self));
+        }
+    }
+    impl Drop for Control {
+        fn drop(&mut self) {
+            self.ledger
+                .release(self.ledger.requested.load(Ordering::SeqCst));
+        }
+    }
+    let control_bytes = Layout::new::<[AtomicUsize; 2]>()
+        .extend(Layout::new::<Control>())
+        .unwrap()
+        .0
+        .pad_to_align()
+        .size();
+    let denied = Owner::new(control_bytes - 1);
+    assert!(!denied.try_reserve(control_bytes));
+    assert_eq!(REQUESTED.load(Ordering::SeqCst), 0);
+    assert!(BACKING.load(Ordering::SeqCst).is_null());
+    assert_eq!(denied.releases.load(Ordering::SeqCst), 0);
+
+    let ledger = Owner::new(control_bytes);
+    assert!(ledger.try_reserve(control_bytes));
+    let control = tokio::task::OterynBlockingOwner::from(Arc::new(Control {
+        ledger: ledger.clone(),
+    }));
+    assert_eq!(REQUESTED.load(Ordering::SeqCst), control_bytes);
+    assert!(!BACKING.load(Ordering::SeqCst).is_null());
+    let first = control.clone();
+    let second = control.clone();
+    assert!(first.same_owner(&second));
+    drop(control);
+    assert!(!DEALLOCATED.load(Ordering::SeqCst));
+    assert_eq!(ledger.held.load(Ordering::SeqCst), control_bytes);
+    let barrier = std::sync::Barrier::new(2);
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            barrier.wait();
+            drop(first);
+        });
+        scope.spawn(|| {
+            barrier.wait();
+            drop(second);
+        });
+    });
+    assert!(DEALLOCATED.load(Ordering::SeqCst));
+    assert_eq!(ledger.held.load(Ordering::SeqCst), 0);
+    assert_eq!(ledger.releases.load(Ordering::SeqCst), 1);
+    eprintln!("M01 owner Arc: exact allocation observed, debit released once after deallocation");
 }
 
 #[cfg(feature = "net")]

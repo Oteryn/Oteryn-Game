@@ -640,5 +640,48 @@
       "Handle::deregister_source",
       "Driver::turn (pointer-custody comment only)"
     ]
+  },
+  "runtime_owner_finality_symbols": {
+    "src/task/blocking.rs": [
+      "BlockingOwner::finalize",
+      "OterynBlockingOwner private Arc clone/drop/identity",
+      "spawn_blocking_owned owner conversion"
+    ],
+    "src/task/mod.rs": [
+      "cfg_rt OterynBlockingOwner re-export"
+    ],
+    "src/runtime/task/mod.rs": [
+      "OterynCharge owner transport/identity",
+      "new_unowned_task_owned owner transport"
+    ],
+    "src/runtime/task/raw.rs": [
+      "new_owned owner transport"
+    ],
+    "src/runtime/blocking/pool.rs": [
+      "OwnedQueue owner identity arguments",
+      "owned spawn/worker handle transport",
+      "existing queue test conversion"
+    ],
+    "src/net/tcp/stream.rs": [
+      "existing owned constructor handle transport"
+    ],
+    "src/net/unix/stream.rs": [
+      "existing owned constructor handle transport"
+    ],
+    "src/io/poll_evented.rs": [
+      "existing owned constructor handle transport"
+    ],
+    "src/runtime/io/registration.rs": [
+      "existing owned constructor handle transport"
+    ],
+    "src/runtime/io/driver.rs": [
+      "Handle::add_source owner transport"
+    ],
+    "src/runtime/io/registration_set.rs": [
+      "RegistrationSet::allocate owner transport; backing finality unchanged"
+    ],
+    "tests/oteryn_resource_owner.rs": [
+      "existing independent allocator observer extended to owner-control finality"
+    ]
   }
 }

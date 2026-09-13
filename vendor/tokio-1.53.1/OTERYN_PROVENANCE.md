@@ -234,3 +234,62 @@ backing and custody of its debit. Existing pending-release vector capacity,
 shutdown-vector capacity, driver/runtime allocations and socket/provider
 resources are not newly charged by this cell and must retain their separate
 composition proofs; this cell establishes no universal runtime resource bound.
+
+
+## M01 runtime-owner control finality (bounded successor to 50563f46)
+
+Authority: Work162/5645077494, protected
+`WP3-RUNTIME-OWNER-FINALITY-AND-SPAWN-V1`, frozen inventory162/5655890678.
+This is the same #351/#356 lineage. It implements only M01 plus its inseparable
+already-owned E2 handle transport, under E2/5655057468. P06 registration-backing
+allocation/finalization, queue-node destruction order and external-join worker
+custody remain unchanged. No std-thread metadata/name debit is introduced;
+3993253957 applicability and terminal WP3 remain open.
+
+SQLx `src/rt/resource_owner.rs` reserves the exact `Arc<BudgetOwner>` layout
+before allocation and immediately converts its sole strong reference to Tokio's
+hidden `OterynBlockingOwner`. Its field is private; no raw Arc or Weak can be
+extracted. All clones share that same allocation without allocating. Every
+handle drop dispatches object-safe `BlockingOwner::finalize(self: Arc<Self>)`.
+The concrete private BudgetOwner implementation consumes `Arc::into_inner`:
+with no Weak references, the unique concurrent final consumer receives the inner
+value after Arc deallocation, then drops its reservation. Other consumers do not
+release the control debit. Pointer identity uses `Arc::ptr_eq`, not a registry.
+
+The existing owned task, charge, queue, worker and I/O handoffs now transport
+that handle. Public owned entry points accept `Into<OterynBlockingOwner>` so
+existing Arc-based accounting witnesses remain source compatible. The trait's
+default consuming finalizer preserves ordinary external owner destruction;
+it is not a control-finality guarantee for arbitrary owners retaining raw Arcs.
+SQLx's concrete owner has no such bypass. Ordinary owner-free APIs, worker
+naming callbacks, scheduling and configuration are unchanged. No new unsafe
+source, allocation registry, Weak owner, ledger or dependency is added.
+
+Focused evidence on Rust 1.94 x86_64 Linux:
+
+- A disposable exact-source harness imports candidate SQLx ResourceBudget and
+  resource_owner modules plus candidate Tokio. It reuses the existing Tokio
+  allocator observer verbatim. Parent50563 resource_owner against this same
+  Tokio graph deterministically fails at ResourceBudget::release because the
+  actual Arc is not yet deallocated. Candidate passes: the actual BudgetOwner
+  allocation is observed as 56 requested bytes, concurrent final wrapper clones
+  release exactly once after System.dealloc, and max-minus-one observes no
+  owner allocation. This is an active allocator witness, not an inferred zero.
+- The harness also executes three committed SQLx unit regressions: exact and
+  max-minus-one admission, stable-identity concurrent descendants after wrapper
+  drop, and wrapper drop with a surviving real blocking task/worker. Four total
+  harness tests pass. It is focused source qualification, not a full SQLx crate
+  test run or registered production-root proof. The standalone upstream SQLx
+  lock cannot resolve uncached async-global-executor offline in this environment.
+- Tokio owner integration executes 19 passing non-UDS cases, including the
+  existing allocator test extended with control-owner concurrent finalization;
+  two UDS cases are explicitly filtered because this environment's AF_UNIX is
+  denied. TCP connect and TCP stream targets each execute eight passing cases.
+  Hosted Linux must execute the unchanged UDS target/cases on the successor.
+- Strict Tokio full-feature library/owner-target Clippy passes. Root locked
+  Game compilation and strict all-target Game Clippy pass. Both preserved
+  queue-node unit tests pass with full,test-util; minimal net-without-rt and
+  rt-only builds pass. Governance and repository policy validators pass.
+  Full successor hosted Linux/Windows/PG17.6 and
+  independent exact-head review remain required; no local configured PG result
+  or terminal M01/WP3 qualification is claimed.

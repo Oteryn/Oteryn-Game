@@ -104,11 +104,12 @@ impl UnixStream {
     #[cfg(feature = "rt")]
     pub async fn connect_oteryn_owned<P>(
         path: P,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: impl Into<crate::task::OterynBlockingOwner>,
     ) -> io::Result<UnixStream>
     where
         P: AsRef<Path>,
     {
+        let owner = owner.into();
         // On linux, abstract socket paths need to be considered.
         #[cfg(any(target_os = "linux", target_os = "android"))]
         let addr = {
@@ -129,7 +130,7 @@ impl UnixStream {
     #[cfg(feature = "rt")]
     async fn connect_addr_oteryn_owned(
         socket_addr: &SocketAddr,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> io::Result<UnixStream> {
         let sys = mio::net::UnixStream::connect_addr(&socket_addr.0)?;
         Self::connect_mio_oteryn_owned(sys, owner).await
@@ -138,7 +139,7 @@ impl UnixStream {
     #[cfg(feature = "rt")]
     async fn connect_mio_oteryn_owned(
         sys: mio::net::UnixStream,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> io::Result<UnixStream> {
         let stream = Self::new_oteryn_owned(sys, owner)?;
         poll_fn(|cx| stream.io.registration().poll_write_ready(cx)).await?;
@@ -151,7 +152,7 @@ impl UnixStream {
     #[cfg(feature = "rt")]
     fn new_oteryn_owned(
         stream: mio::net::UnixStream,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> io::Result<UnixStream> {
         let io = PollEvented::new_oteryn_owned(stream, owner)?;
         Ok(UnixStream { io })

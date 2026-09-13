@@ -279,7 +279,7 @@ cfg_rt! {
 
     mod blocking;
     pub use blocking::{
-        spawn_blocking, spawn_blocking_owned, BlockingOwner, BlockingOwnerConfig, OwnedSpawnError,
+        spawn_blocking, spawn_blocking_owned, BlockingOwner, BlockingOwnerConfig, OterynBlockingOwner, OwnedSpawnError,
     };
 
     mod spawn;

@@ -56,7 +56,7 @@ impl RegistrationSet {
     pub(super) fn allocate(
         &self,
         synced: &mut Synced,
-        #[cfg(feature = "rt")] owner: Option<Arc<dyn crate::task::BlockingOwner>>,
+        #[cfg(feature = "rt")] owner: Option<crate::task::OterynBlockingOwner>,
     ) -> io::Result<RegistrationHandle> {
         if synced.is_shutdown {
             return Err(io::Error::new(

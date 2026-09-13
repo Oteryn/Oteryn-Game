@@ -6,8 +6,6 @@ use crate::runtime::scheduler;
 
 use mio::event::Source;
 use std::io;
-#[cfg(feature = "rt")]
-use std::sync::Arc;
 use std::task::{ready, Context, Poll};
 
 cfg_io_driver! {
@@ -91,7 +89,7 @@ impl Registration {
         io: &mut impl Source,
         interest: Interest,
         handle: scheduler::Handle,
-        owner: Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> io::Result<Registration> {
         let shared = handle.driver().io().add_source(io, interest, Some(owner))?;
         Ok(Registration { handle, shared })

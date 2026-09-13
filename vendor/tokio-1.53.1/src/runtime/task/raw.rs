@@ -236,7 +236,7 @@ impl RawTask {
         scheduler: S,
         id: Id,
         _spawned_at: super::SpawnLocation,
-        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        owner: crate::task::OterynBlockingOwner,
     ) -> std::result::Result<RawTask, crate::task::OwnedSpawnError>
     where
         T: Future,

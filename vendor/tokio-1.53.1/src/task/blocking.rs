@@ -9,10 +9,74 @@ pub trait BlockingOwner: Send + Sync + 'static {
     fn try_reserve(&self, bytes: usize) -> bool;
     fn release(&self, bytes: usize);
 
+    /// Consumes a runtime strong reference. Owners with a control-allocation
+    /// debit override this with `drop(Arc::into_inner(self))`; they must not
+    /// retain raw strong or weak references outside OterynBlockingOwner.
+    fn finalize(self: Arc<Self>) {
+        drop(self);
+    }
+
     /// Deterministic control used by the owned-blocking conformance tests.
     #[doc(hidden)]
     fn force_thread_spawn_failure(&self) -> bool {
         false
+    }
+}
+
+/// Nonallocating capability for Oteryn runtime owner custody.
+///
+/// Its Arc is private: clones preserve identity and every drop invokes the
+/// concrete owner's consuming finalizer. No Arc or Weak can be extracted.
+#[doc(hidden)]
+pub struct OterynBlockingOwner(Option<Arc<dyn BlockingOwner>>);
+
+impl fmt::Debug for OterynBlockingOwner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OterynBlockingOwner")
+            .finish_non_exhaustive()
+    }
+}
+
+impl<T: BlockingOwner> From<Arc<T>> for OterynBlockingOwner {
+    fn from(owner: Arc<T>) -> Self {
+        Self(Some(owner))
+    }
+}
+
+impl From<Arc<dyn BlockingOwner>> for OterynBlockingOwner {
+    fn from(owner: Arc<dyn BlockingOwner>) -> Self {
+        Self(Some(owner))
+    }
+}
+
+impl Clone for OterynBlockingOwner {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl OterynBlockingOwner {
+    /// Compares the concrete owner allocation without allocating.
+    pub fn same_owner(&self, other: &Self) -> bool {
+        Arc::ptr_eq(self.0.as_ref().unwrap(), other.0.as_ref().unwrap())
+    }
+
+    pub(crate) fn try_reserve(&self, bytes: usize) -> bool {
+        self.0.as_ref().unwrap().try_reserve(bytes)
+    }
+
+    pub(crate) fn release(&self, bytes: usize) {
+        self.0.as_ref().unwrap().release(bytes);
+    }
+
+    pub(crate) fn force_thread_spawn_failure(&self) -> bool {
+        self.0.as_ref().unwrap().force_thread_spawn_failure()
+    }
+}
+
+impl Drop for OterynBlockingOwner {
+    fn drop(&mut self) {
+        self.0.take().unwrap().finalize();
     }
 }
 
@@ -65,7 +129,7 @@ impl std::error::Error for OwnedSpawnError {}
 #[doc(hidden)]
 #[track_caller]
 pub fn spawn_blocking_owned<F, R>(
-    owner: Arc<dyn BlockingOwner>,
+    owner: impl Into<OterynBlockingOwner>,
     config: BlockingOwnerConfig,
     func: F,
 ) -> Result<JoinHandle<R>, OwnedSpawnError>
@@ -76,7 +140,7 @@ where
     let rt = crate::runtime::Handle::current();
     rt.inner
         .blocking_spawner()
-        .spawn_blocking_owned(&rt, owner, config, func)
+        .spawn_blocking_owned(&rt, owner.into(), config, func)
 }
 
 cfg_rt_multi_thread! {
