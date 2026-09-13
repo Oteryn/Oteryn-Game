@@ -42,7 +42,7 @@ def valid_path(value) -> bool:
 def neutral(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} or path.startswith("docs/migration/"):
         return False
-    return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md"} or (path.startswith("docs/") and path.endswith(".md"))
+    return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md", "docs/agents/PROMPT_LIFECYCLE.json"} or (path.startswith("docs/") and path.endswith(".md"))
 
 
 def graph(metadata: dict):
