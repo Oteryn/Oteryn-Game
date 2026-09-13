@@ -1,4 +1,4 @@
-use crate::durability::{DurabilityError, schema};
+use crate::durability::DurabilityError;
 use oteryn_game_server::foundation::{
     MAX_OUTSTANDING_COMMANDS, PendingCommandDispositionV1, ProtectionEntitlementV1,
     ReconnectCommitDispositionV1, ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
@@ -7,7 +7,7 @@ use oteryn_game_server::foundation::{
 };
 use serde_json::{Value, json};
 use sqlx::postgres::PgRow;
-use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 
 const PREPARED: i16 = 1;
 const COLLISION_TERMINAL: i16 = 2;
@@ -63,14 +63,18 @@ pub(super) async fn replacement_receipt_matches_record(
 
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
-    pool: PgPool,
+    backend: std::sync::Arc<super::db::RuntimeBackend>,
 }
 
 impl AdmissionReconnectJournal {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
-        Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
-        })
+        Ok(Self::from_backend(
+            super::db::backend_for_constructor(database_url).await?,
+        ))
+    }
+
+    pub(super) fn from_backend(backend: std::sync::Arc<super::db::RuntimeBackend>) -> Self {
+        Self { backend }
     }
 
     pub async fn prepare(
@@ -112,7 +116,27 @@ impl AdmissionReconnectJournal {
         let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
             scope_storage(record);
 
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
+        super::db::lock_admission_domain(&mut transaction, record).await?;
+        // Exclusion applies only to a new session for another character. Existing
+        // sessions must retain binding, replay and actor-budget classification;
+        // same-character session forks retain the continuity error below. The
+        // common relation fence protects both absence and incumbent observations.
+        let occupied: bool = sqlx::query_scalar(
+            "SELECT NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions \
+             WHERE game_session_id = encode($2, 'hex')::uuid) \
+             AND EXISTS (SELECT 1 FROM game_durability_reconnect_sessions \
+             WHERE account_id = $1::text::uuid AND session_state IN (1, 2) \
+               AND character_id <> encode($3, 'hex')::uuid)",
+        )
+        .bind(identity.account_id())
+        .bind(session_id.as_slice())
+        .bind(identity.character_id().as_bytes().as_slice())
+        .fetch_one(&mut *transaction)
+        .await?;
+        if occupied {
+            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+        }
         let inserted_session = sqlx::query(
             "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -154,6 +178,31 @@ impl AdmissionReconnectJournal {
         };
         if !session_binding_is_valid(&session, record)? {
             return Err(DurabilityError::InvalidStoredState);
+        }
+        // PREPARE is not owning evidence of unexpected controller loss.
+        // Initial fresh continuity remains absent until an independently
+        // authorized canonical loss operation installs it. Reject before any
+        // stale attempt/children can poison a future legitimate epoch.
+        if session
+            .try_get::<Option<String>, _>("control_loss_epoch")?
+            .is_none()
+        {
+            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+        }
+        // Owning-loss protection uses independent entitlement/rearm namespaces.
+        // Legacy records cannot safely translate those facts into candidate-
+        // connection protection flags; require the separately qualified bridge.
+        if super::fresh_admission::has_owning_loss_receipt(
+            &mut transaction,
+            &session_id,
+            session
+                .try_get::<String, _>("control_loss_epoch")?
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .await?
+        {
+            return Ok(ReconnectPrepareDispositionV1::Unavailable);
         }
         let receipt_backed = !receipt_authorized
             && replacement_receipt_matches_record(&mut transaction, record).await?;
@@ -445,7 +494,8 @@ impl AdmissionReconnectJournal {
             .get()
             .to_string();
 
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
+        super::db::lock_admission_domain(&mut transaction, record).await?;
         let Some(session) =
             load_session_for_update(&mut transaction, session_id.as_slice()).await?
         else {
@@ -624,7 +674,8 @@ impl AdmissionReconnectJournal {
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
+        super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =
             Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;
         transaction.commit().await?;

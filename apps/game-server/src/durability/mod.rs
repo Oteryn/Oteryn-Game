@@ -4,11 +4,14 @@
 //! constructs and revalidates reconnect authority; the runtime must submit the
 //! resulting request asynchronously and consume its completion as new input.
 
+pub mod admission_authority_guards;
 mod admission_journal;
 mod db;
+pub mod fresh_admission;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
+pub use db::QueuedCheckpoint;
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
 use oteryn_game_server::foundation::{
@@ -22,6 +25,12 @@ use oteryn_game_server::foundation::{
 use serde_json::json;
 use sqlx::{PgPool, Postgres, Row, Transaction};
 use std::fmt::{self, Display, Formatter};
+
+// Accepted fixed first-slice registry345 at c9890968ce4c71165bdd9cd1d6938f9af75eaa00.
+// Codec callers may test tighter byte bounds; runtime configuration is exact.
+pub const MAX_FRESH_OPERATION_BYTES: usize = 65_536;
+pub const MAX_ADMISSION_GUARD_BYTES: usize = 8_192;
+pub const MAX_ADMISSION_ROW_BYTES: i64 = 131_072;
 
 const V2_PREPARED: i16 = 1;
 const V2_COLLISION_TERMINAL: i16 = 2;
@@ -42,6 +51,7 @@ type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
 #[derive(Debug)]
 pub enum DurabilityError {
+    Unavailable,
     Database(sqlx::Error),
     Migration(sqlx::migrate::MigrateError),
     SchemaIncompatible(SchemaCompatibility),
@@ -51,6 +61,7 @@ pub enum DurabilityError {
 impl Display for DurabilityError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Unavailable => formatter.write_str("durability work is unavailable"),
             Self::Database(error) => {
                 write!(formatter, "PostgreSQL durability operation failed: {error}")
             }
@@ -89,16 +100,22 @@ impl From<sqlx::migrate::MigrateError> for DurabilityError {
 /// replay/reconciliation surface; ordinary V1 behavior is delegated unchanged.
 #[derive(Clone)]
 pub struct AdmissionReconnectJournalV2 {
-    pool: PgPool,
+    backend: std::sync::Arc<db::RuntimeBackend>,
     legacy: AdmissionReconnectJournal,
 }
 
 impl AdmissionReconnectJournalV2 {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
-        Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
-            legacy: AdmissionReconnectJournal::connect_runtime(database_url).await?,
-        })
+        Ok(Self::from_backend(
+            db::backend_for_constructor(database_url).await?,
+        ))
+    }
+
+    fn from_backend(backend: std::sync::Arc<db::RuntimeBackend>) -> Self {
+        Self {
+            legacy: AdmissionReconnectJournal::from_backend(backend.clone()),
+            backend,
+        }
     }
 
     #[must_use]
@@ -121,7 +138,8 @@ impl AdmissionReconnectJournalV2 {
 
         let candidate_session_id = record.identity().game_session_id().as_bytes().to_vec();
         let character_id = record.identity().character_id().as_bytes().to_vec();
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
+        db::lock_admission_domain(&mut transaction, record).await?;
 
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
@@ -167,6 +185,15 @@ impl AdmissionReconnectJournalV2 {
             }
             return Err(DurabilityError::InvalidStoredState);
         };
+        if let Some(epoch) = predecessor.try_get::<Option<String>, _>("control_loss_epoch")? {
+            let epoch = epoch
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let session: Vec<u8> = predecessor.try_get("game_session_id")?;
+            if fresh_admission::has_owning_loss_receipt(&mut transaction, &session, epoch).await? {
+                return Ok(ReconnectPrepareDispositionV2::Unavailable);
+            }
+        }
         if !replacement_predecessor_row_matches(&predecessor, authorization)? {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -322,7 +349,8 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
+        db::lock_admission_domain(&mut transaction, record).await?;
         if let Some(authorization) = request.terminal_replacement()
             && (!replacement_authorization_matches_record(authorization, record)
                 || !replacement_receipt_matches(&mut transaction, authorization, record).await?)
@@ -439,6 +467,8 @@ impl AdmissionReconnectJournalV2 {
         &self,
         record: &ReconnectDurabilityRecordV1,
     ) -> Result<i16, DurabilityError> {
+        let mut transaction = self.backend.begin().await?;
+        db::lock_admission_domain(&mut transaction, record).await?;
         let row = sqlx::query(
             "SELECT state, record_json FROM game_durability_reconnect_attempts \
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
@@ -451,7 +481,7 @@ impl AdmissionReconnectJournalV2 {
                 .to_be_bytes()
                 .as_slice(),
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut *transaction)
         .await?;
         let Some(row) = row else {
             return Err(DurabilityError::InvalidStoredState);
@@ -462,7 +492,9 @@ impl AdmissionReconnectJournalV2 {
         if stored_record != encode_record_v2(record) {
             return Err(DurabilityError::InvalidStoredState);
         }
-        row.try_get("state").map_err(DurabilityError::from)
+        let state = row.try_get("state")?;
+        transaction.commit().await?;
+        Ok(state)
     }
 }
 
@@ -2178,5 +2210,197 @@ mod terminal_replacement_foundation_red_tests {
                 allows_replacement
             );
         }
+    }
+}
+
+/// Stable database custody, not an owning source or a process resource budget.
+/// The final shared executor must use this fence for every backend transaction.
+/// Tokens do not clear pending work and cannot create a third durable slot.
+#[derive(Debug)]
+pub struct DurabilityCustody {
+    generation: u64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurablePendingCheckpoint {
+    pub slot: i16,
+    pub operation_kind: i16,
+    pub operation_json: String,
+}
+// Domain-separated fixed serialization identity, shared by predecessor/successor.
+const EXECUTOR_CUSTODY_LOCK: i64 = 0x4f54_4446_5243_3031;
+impl DurabilityCustody {
+    /// Exclusive takeover waits for every predecessor's shared transaction fence.
+    /// Reload both fixed slots before returning; never synthesize an empty queue.
+    /// This low-level I/O must remain charged through uncertain commit in executor.
+    pub async fn acquire(
+        pool: &PgPool,
+    ) -> Result<(Self, [Option<DurablePendingCheckpoint>; 2]), DurabilityError> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(EXECUTOR_CUSTODY_LOCK)
+            .execute(&mut *tx)
+            .await?;
+        // Custody precedes the common lexical relation fence everywhere.
+        db::lock_admission_relations(&mut tx).await?;
+        let old: Option<String> = sqlx::query_scalar("SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0 FOR UPDATE")
+            .fetch_optional(&mut *tx).await?;
+        let previous_generation = old
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .parse::<u64>()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let generation = previous_generation
+            .checked_add(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let pending = Self::read_pending(&mut tx, previous_generation).await?;
+        let changed = sqlx::query("UPDATE game_durability_executor_custody SET generation = $1::text::numeric(20,0) WHERE slot = 0")
+            .bind(generation.to_string()).execute(&mut *tx).await?;
+        if changed.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tx.commit().await?;
+        Ok((Self { generation }, pending))
+    }
+
+    /// Call before relations/rows and keep this transaction through COMMIT.
+    /// A superseded token can neither effect nor checkpoint a new operation.
+    pub async fn fence<'a>(
+        &self,
+        pool: &'a PgPool,
+    ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+            .bind(EXECUTOR_CUSTODY_LOCK)
+            .execute(&mut *tx)
+            .await?;
+        self.validate_generation(&mut tx).await?;
+        Ok(tx)
+    }
+
+    async fn validate_generation(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), DurabilityError> {
+        let current: Option<String> = sqlx::query_scalar(
+            "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
+        )
+        .fetch_optional(&mut **tx)
+        .await?;
+        if current.as_deref() != Some(self.generation.to_string().as_str()) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        Ok(())
+    }
+
+    async fn read_pending(
+        tx: &mut Transaction<'_, Postgres>,
+        previous_generation: u64,
+    ) -> Result<[Option<DurablePendingCheckpoint>; 2], DurabilityError> {
+        let rows = sqlx::query("SELECT slot, generation::text AS generation, operation_kind, CASE WHEN octet_length(operation_json) <= 65536 AND octet_length(to_jsonb(p)::text) <= 131072 THEN operation_json END AS payload, operation_json IS NOT NULL AS occupied FROM game_durability_executor_custody p WHERE slot IN (1,2) ORDER BY slot FOR UPDATE")
+            .fetch_all(&mut **tx).await?;
+        if rows.len() != 2 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let mut result = [None, None];
+        for (index, row) in rows.into_iter().enumerate() {
+            let slot: i16 = row.try_get("slot")?;
+            if usize::try_from(slot).ok() != Some(index + 1) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let occupied: bool = row.try_get("occupied")?;
+            let stored_generation = row
+                .try_get::<String, _>("generation")?
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if stored_generation > previous_generation || (occupied && stored_generation == 0) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let kind: Option<i16> = row.try_get("operation_kind")?;
+            let payload: Option<String> = row.try_get("payload")?;
+            result[index] = match (occupied, kind, payload) {
+                (false, None, None) => None,
+                (true, Some(operation_kind @ 1..=8), Some(operation_json)) => {
+                    Some(DurablePendingCheckpoint {
+                        slot,
+                        operation_kind,
+                        operation_json,
+                    })
+                }
+                _ => return Err(DurabilityError::InvalidStoredState),
+            };
+        }
+        Ok(result)
+    }
+
+    /// Establish/reconcile one original checkpoint. Different work cannot overwrite
+    /// an occupied slot. Clearing requires future definitive outcome + owner ack.
+    pub async fn checkpoint(
+        &self,
+        pool: &PgPool,
+        slot: i16,
+        operation_kind: i16,
+        operation_json: &str,
+    ) -> Result<(), DurabilityError> {
+        if !(1..=2).contains(&slot)
+            || !(1..=8).contains(&operation_kind)
+            || operation_json.is_empty()
+            || operation_json.len() > MAX_FRESH_OPERATION_BYTES
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let mut tx = self.fence(pool).await?;
+        db::lock_admission_relations(&mut tx).await?;
+        let changed = sqlx::query("UPDATE game_durability_executor_custody SET generation = $1::text::numeric(20,0), operation_kind = $2, operation_json = $3 WHERE slot = $4 AND (operation_json IS NULL OR (operation_kind = $2 AND operation_json = $3)) AND octet_length(jsonb_build_object('slot', $4::smallint, 'generation', $1::text, 'operation_kind', $2::smallint, 'operation_json', $3::text)::text) <= 131072")
+            .bind(self.generation.to_string()).bind(operation_kind).bind(operation_json).bind(slot)
+            .execute(&mut *tx).await?;
+        if changed.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+}
+
+/// Canonical shared process backend. Handles preserve the existing async APIs;
+/// bounded enqueue/completion integration remains the next executor layer.
+#[derive(Clone)]
+pub struct AdmissionRuntime {
+    backend: std::sync::Arc<db::RuntimeBackend>,
+}
+impl AdmissionRuntime {
+    /// Reserve bounded bookkeeping before copying an original operation envelope.
+    /// Existing semantic APIs are not yet routed through this queue. This neither
+    /// constructs live authority nor permits reuse of an unresolved active slot.
+    pub fn enqueue_checkpoint(
+        &self,
+        operation_kind: i16,
+        original: &str,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        self.backend.enqueue(operation_kind, original)
+    }
+
+    pub async fn connect(database_url: &str) -> Result<Self, DurabilityError> {
+        Ok(Self {
+            backend: db::registered_backend(database_url).await?,
+        })
+    }
+    #[must_use]
+    pub fn reconnect_v1(&self) -> AdmissionReconnectJournal {
+        AdmissionReconnectJournal::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn reconnect_v2(&self) -> AdmissionReconnectJournalV2 {
+        AdmissionReconnectJournalV2::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn fresh(&self) -> fresh_admission::FreshAdmissionStore {
+        fresh_admission::FreshAdmissionStore::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn guards(&self) -> admission_authority_guards::AdmissionGuardStore {
+        admission_authority_guards::AdmissionGuardStore::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn recovered_pending(&self) -> &[Option<DurablePendingCheckpoint>; 2] {
+        &self.backend.pending
     }
 }
