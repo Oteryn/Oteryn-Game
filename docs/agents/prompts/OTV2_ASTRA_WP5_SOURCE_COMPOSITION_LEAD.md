@@ -53,17 +53,20 @@ After protected dependencies are terminal, perform a fresh protected-main/source
 
 Handoff to A0/A7 must name exact protected Game revision, exact Platform revision used for interoperability evidence, source-owner revisions, DB/transport profiles, test evidence and any limitation.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
 End the final response with:
 
 ```text
-NEXT_AGENT: <exact alias>
-RUN_WHEN: <exact gate>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate>
 WHY: <one concise dependency reason>
 ```
 
-Default routing for this lane:
-- after `FRESH_G0_READY` is truthfully established, `NEXT_AGENT: Oteryn: sol server seam lead`;
-- if G0 is not yet terminal because a dependency or cross-repo condition remains, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator` and name the exact blocker;
-- never recommend A7 merely because local S1/S2/S3 checks are green; fresh composed G0 must actually be established first.
+Routing:
+- after `FRESH_G0_READY` is truthfully established, put any required #247 allocation/resume/readback action in `CONTROL_PLANE_ACTION` and use `NEXT_WORKER: Oteryn: sol server seam lead`;
+- if #247 is already freshly admitted for resume, use `CONTROL_PLANE_ACTION: NONE` and `NEXT_WORKER: Oteryn: sol server seam lead`;
+- if G0 is not terminal and no substantive worker is currently runnable, name the exact control-plane reconciliation/escalation and use `NEXT_WORKER: NONE`.
+
+Never place a control-plane-only alias in `NEXT_WORKER`, and never recommend A7 merely because local S1/S2/S3 checks are green; fresh composed G0 must actually be established first.
