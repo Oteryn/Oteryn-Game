@@ -72,19 +72,21 @@ Verify the selected no-ambient PostgreSQL profile: explicit bounded config only,
 
 Return concise tables usable by A1 and A4. Do not propose broad implementation unless evidence establishes the need. Do not call sampled memory, a skipped test, local PASS or one dependency edge a universal proof.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
 End the final response with:
 
 ```text
-NEXT_AGENT: <exact alias>
-RUN_WHEN: <exact gate>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate>
 WHY: <one concise dependency reason>
 ```
 
-Default routing:
-- when Revision-3 closure evidence is complete and acceptance still needs architecture handling, `NEXT_AGENT: Oteryn: astra wp3-v2 architecture lead`;
-- when live state proves architecture accepted plus A4 allocation/custody active, `NEXT_AGENT: Oteryn: astra wp3-v2 implementation lead`;
-- when evidence exposes a programme-level blocker or ownership conflict, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`.
+Routing:
+- when Revision-3 closure evidence is complete and architecture handling remains, use `NEXT_WORKER: Oteryn: astra wp3-v2 architecture lead`;
+- when architecture is accepted but active-control-plane allocation/activation is still required, put that in `CONTROL_PLANE_ACTION`, set `NEXT_WORKER: Oteryn: astra wp3-v2 implementation lead`, and gate A4 on fresh #162/#364 allocation/custody;
+- when live state already proves architecture accepted plus A4 allocation/custody active, use `CONTROL_PLANE_ACTION: NONE` and `NEXT_WORKER: Oteryn: astra wp3-v2 implementation lead`;
+- for a programme-level ownership conflict with no truthful worker choice yet, use the exact reconciliation action in `CONTROL_PLANE_ACTION` and `NEXT_WORKER: NONE`.
 
-Never recommend a mutating worker before its live start gate is true.
+Never place a control-plane-only alias in `NEXT_WORKER`, and never recommend a mutating worker before its live start gate is true.
