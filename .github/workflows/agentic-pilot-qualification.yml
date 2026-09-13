@@ -120,24 +120,29 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Bootstrap generated locks onto pilot branch
+      - name: Create detached bootstrap commit object
         if: >
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository &&
           github.head_ref == 'agent/otv2-agentic-openspec-pilot-01'
-        env:
-          PUSH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          git add -- \
-            .github/workflows/oteryn-agentic-pilot-worker.lock.yml \
-            .github/workflows/oteryn-agentic-pilot-router.lock.yml
-          if git diff --cached --quiet; then
-            echo 'Generated locks already committed; bootstrap no-op.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'ci(agentic): commit generated pilot locks'
-          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${GITHUB_HEAD_REF}"
+          worker_b64="$(base64 -w0 .github/workflows/oteryn-agentic-pilot-worker.lock.yml)"
+          router_b64="$(base64 -w0 .github/workflows/oteryn-agentic-pilot-router.lock.yml)"
+          worker_blob="$(jq -n --arg content "$worker_b64" '{content:$content,encoding:"base64"}' | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/blobs" --input - --jq .sha)"
+          router_blob="$(jq -n --arg content "$router_b64" '{content:$content,encoding:"base64"}' | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/blobs" --input - --jq .sha)"
+          base_tree="$(git rev-parse "${TARGET_SHA}^{tree}")"
+          tree_sha="$(jq -n \
+            --arg base_tree "$base_tree" \
+            --arg worker "$worker_blob" \
+            --arg router "$router_blob" \
+            '{base_tree:$base_tree,tree:[{path:".github/workflows/oteryn-agentic-pilot-worker.lock.yml",mode:"100644",type:"blob",sha:$worker},{path:".github/workflows/oteryn-agentic-pilot-router.lock.yml",mode:"100644",type:"blob",sha:$router}]}' \
+            | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/trees" --input - --jq .sha)"
+          commit_sha="$(jq -n \
+            --arg message 'ci(agentic): commit generated pilot locks' \
+            --arg tree "$tree_sha" \
+            --arg parent "$TARGET_SHA" \
+            '{message:$message,tree:$tree,parents:[$parent]}' \
+            | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/commits" --input - --jq .sha)"
+          echo "BOOTSTRAP_COMMIT_SHA:${commit_sha}"
