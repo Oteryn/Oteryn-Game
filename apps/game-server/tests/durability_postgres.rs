@@ -3,6 +3,7 @@
 extern crate self as oteryn_game_server;
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
+
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;
 #[path = "support/authority_recovery.rs"]
