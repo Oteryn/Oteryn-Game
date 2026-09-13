@@ -469,24 +469,22 @@ impl AdmissionReconnectJournalV2 {
     ) -> Result<i16, DurabilityError> {
         let mut transaction = self.backend.begin().await?;
         db::lock_admission_domain(&mut transaction, record).await?;
-        let row = sqlx::query(
-            "SELECT state, record_json FROM game_durability_reconnect_attempts \
-             WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
-        )
-        .bind(record.identity().game_session_id().as_bytes().as_slice())
-        .bind(
-            record
-                .identity()
-                .reconnect_attempt_ref()
-                .to_be_bytes()
-                .as_slice(),
-        )
-        .fetch_optional(&mut *transaction)
-        .await?;
+        let row = sqlx::query(admission_journal::RECONNECT_RECORD_STATE_SQL)
+            .bind(record.identity().game_session_id().as_bytes().as_slice())
+            .bind(
+                record
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes()
+                    .as_slice(),
+            )
+            .bind(MAX_ADMISSION_ROW_BYTES)
+            .fetch_optional(&mut *transaction)
+            .await?;
         let Some(row) = row else {
             return Err(DurabilityError::InvalidStoredState);
         };
-        let stored_record = row.try_get::<String, _>("record_json")?;
+        let stored_record = admission_journal::guarded_record_json(&row)?;
         let stored_record: serde_json::Value = serde_json::from_str(&stored_record)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         if stored_record != encode_record_v2(record) {

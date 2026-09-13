@@ -28,6 +28,18 @@ const PROTECTION_REARM_READY: i16 = 1;
 const PROTECTION_REARM_PENDING: i16 = 2;
 type ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
+// A component cannot exceed the accepted whole-row logical-byte bound. This
+// transfer guard measures the UTF-8 bytes delivered to SQLx and does not
+// replace accounting for the other row values.
+pub(super) const RECONNECT_RECORD_STATE_SQL: &str = "SELECT state, CASE WHEN octet_length(convert_to(record_json, 'UTF8')) <= $3 THEN record_json END AS record_json \
+     FROM game_durability_reconnect_attempts \
+     WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2";
+
+pub(super) fn guarded_record_json(row: &PgRow) -> Result<String, DurabilityError> {
+    row.try_get::<Option<String>, _>("record_json")?
+        .ok_or(DurabilityError::Unavailable)
+}
+
 pub(super) async fn replacement_receipt_matches_record(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
@@ -206,19 +218,17 @@ impl AdmissionReconnectJournal {
         }
         let receipt_backed = !receipt_authorized
             && replacement_receipt_matches_record(&mut transaction, record).await?;
-        let existing = sqlx::query(
-            "SELECT state, record_json FROM game_durability_reconnect_attempts \
-             WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
-        )
-        .bind(session_id.as_slice())
-        .bind(attempt_ref.as_slice())
-        .fetch_optional(&mut *transaction)
-        .await?;
+        let existing = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .bind(super::MAX_ADMISSION_ROW_BYTES)
+            .fetch_optional(&mut *transaction)
+            .await?;
         if let Some(existing) = existing {
             if receipt_backed {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            let stored_record: String = existing.try_get("record_json")?;
+            let stored_record = guarded_record_json(&existing)?;
             if stored_record != encoded_record {
                 return Ok(ReconnectPrepareDispositionV1::IdempotencyConflict);
             }
@@ -504,18 +514,16 @@ impl AdmissionReconnectJournal {
         if !session_binding_is_valid(&session, record)? {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let attempt = sqlx::query(
-            "SELECT state, record_json FROM game_durability_reconnect_attempts \
-             WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
-        )
-        .bind(session_id.as_slice())
-        .bind(attempt_ref.as_slice())
-        .fetch_optional(&mut *transaction)
-        .await?;
+        let attempt = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .bind(super::MAX_ADMISSION_ROW_BYTES)
+            .fetch_optional(&mut *transaction)
+            .await?;
         let Some(attempt) = attempt else {
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         };
-        if attempt.try_get::<String, _>("record_json")? != encoded_record {
+        if guarded_record_json(&attempt)? != encoded_record {
             return Ok(ReconnectCommitDispositionV1::IdempotencyConflict);
         }
         if !attempt_binding_is_valid(&mut transaction, record).await? {
@@ -713,18 +721,16 @@ impl AdmissionReconnectJournal {
         if !session_binding_is_valid(&session, record)? {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let attempt = sqlx::query(
-            "SELECT state, record_json FROM game_durability_reconnect_attempts \
-             WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
-        )
-        .bind(session_id.as_slice())
-        .bind(attempt_ref.as_slice())
-        .fetch_optional(&mut **transaction)
-        .await?;
+        let attempt = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .bind(super::MAX_ADMISSION_ROW_BYTES)
+            .fetch_optional(&mut **transaction)
+            .await?;
         let Some(attempt) = attempt else {
             return Err(DurabilityError::InvalidStoredState);
         };
-        if attempt.try_get::<String, _>("record_json")? != encoded_record
+        if guarded_record_json(&attempt)? != encoded_record
             || !attempt_binding_is_valid(transaction, record).await?
         {
             return Err(DurabilityError::InvalidStoredState);
@@ -1319,7 +1325,7 @@ const ACTIVE_COMMITTED_BINDING_SQL: &str = "SELECT reconnect_attempt_ref, contro
                 CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
                      ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
                 fnd02_next_command_id::text AS fnd02_next_command_id, \
-                record_json \
+                CASE WHEN octet_length(convert_to(record_json, 'UTF8')) <= $4 THEN record_json END AS record_json \
          FROM game_durability_reconnect_attempts \
          WHERE game_session_id = encode($1, 'hex')::uuid \
            AND state = $2 AND transport_ref = $3 LIMIT 2";
@@ -1337,6 +1343,7 @@ async fn active_committed_binding_is_valid(
         .bind(session_id)
         .bind(COMMITTED)
         .bind(current_ref.as_slice())
+        .bind(super::MAX_ADMISSION_ROW_BYTES)
         .fetch_all(&mut **transaction)
         .await?;
     if rows.len() != 1 {
@@ -1365,7 +1372,7 @@ async fn active_committed_binding_is_valid(
         return Ok(false);
     }
 
-    let stored_record: String = row.try_get("record_json")?;
+    let stored_record = guarded_record_json(row)?;
     let canonical: Value = serde_json::from_str(&stored_record)
         .map_err(|_error| DurabilityError::InvalidStoredState)?;
     let identity = &canonical["identity"];
@@ -1478,6 +1485,20 @@ async fn active_committed_binding_is_valid(
     }
 }
 
+const CURRENT_PREPARED_BINDING_SQL: &str = "SELECT control_loss_epoch::text AS control_loss_epoch, transport_ref, \
+                account_id::text AS account_id, uuid_send(character_id) AS character_id, \
+                uuid_send(world_id) AS world_id, runtime_scope_kind, \
+                uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
+                CASE WHEN runtime_scope_channel_id IS NULL THEN NULL \
+                     ELSE uuid_send(runtime_scope_channel_id) END AS runtime_scope_channel_id, \
+                CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
+                     ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
+                fnd02_next_command_id::text AS fnd02_next_command_id, \
+                CASE WHEN octet_length(convert_to(record_json, 'UTF8')) <= $4 THEN record_json END AS record_json \
+         FROM game_durability_reconnect_attempts \
+         WHERE game_session_id = encode($1, 'hex')::uuid \
+           AND reconnect_attempt_ref = $2 AND state = $3";
+
 async fn current_prepared_binding_is_valid(
     transaction: &mut Transaction<'_, Postgres>,
     session_id: &[u8],
@@ -1487,25 +1508,13 @@ async fn current_prepared_binding_is_valid(
     let Some(prepared_attempt_ref) = prepared_attempt_ref else {
         return Ok(false);
     };
-    let attempt = sqlx::query(
-        "SELECT control_loss_epoch::text AS control_loss_epoch, transport_ref, \
-                account_id::text AS account_id, uuid_send(character_id) AS character_id, \
-                uuid_send(world_id) AS world_id, runtime_scope_kind, \
-                uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
-                CASE WHEN runtime_scope_channel_id IS NULL THEN NULL \
-                     ELSE uuid_send(runtime_scope_channel_id) END AS runtime_scope_channel_id, \
-                CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
-                     ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
-                fnd02_next_command_id::text AS fnd02_next_command_id, record_json \
-         FROM game_durability_reconnect_attempts \
-         WHERE game_session_id = encode($1, 'hex')::uuid \
-           AND reconnect_attempt_ref = $2 AND state = $3",
-    )
-    .bind(session_id)
-    .bind(prepared_attempt_ref)
-    .bind(PREPARED)
-    .fetch_optional(&mut **transaction)
-    .await?;
+    let attempt = sqlx::query(CURRENT_PREPARED_BINDING_SQL)
+        .bind(session_id)
+        .bind(prepared_attempt_ref)
+        .bind(PREPARED)
+        .bind(super::MAX_ADMISSION_ROW_BYTES)
+        .fetch_optional(&mut **transaction)
+        .await?;
     let Some(attempt) = attempt else {
         return Ok(false);
     };
@@ -1538,7 +1547,7 @@ async fn current_prepared_binding_is_valid(
         return Ok(false);
     }
 
-    let stored_record: String = attempt.try_get("record_json")?;
+    let stored_record = guarded_record_json(&attempt)?;
     let canonical: Value = serde_json::from_str(&stored_record)
         .map_err(|_error| DurabilityError::InvalidStoredState)?;
     let identity = &canonical["identity"];
@@ -2276,7 +2285,7 @@ mod committed_binding_tests {
                             .bind(count).execute(&mut *tx).await?;
                         let rows = sqlx::query(ACTIVE_COMMITTED_BINDING_SQL)
                             .bind([0_u8; 16].as_slice()).bind(COMMITTED)
-                            .bind([2_u8].as_slice()).fetch_all(&mut *tx).await?;
+                            .bind([2_u8].as_slice()).bind(super::super::MAX_ADMISSION_ROW_BYTES).fetch_all(&mut *tx).await?;
                         assert_eq!(rows.len(), count.min(2) as usize);
                         let outcome = active_committed_binding_is_valid(&mut tx, &[0_u8; 16], &session).await;
                         if count == 1 {
@@ -2284,6 +2293,54 @@ mod committed_binding_tests {
                             // malformed persisted JSON cannot grant authority.
                             assert!(matches!(outcome, Err(DurabilityError::InvalidStoredState)));
                         } else {
+                            assert!(matches!(outcome, Ok(false)));
+                        }
+                    }
+                    sqlx::query("TRUNCATE game_durability_reconnect_attempts")
+                        .execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_durability_reconnect_attempts SELECT * FROM binding_seed")
+                        .execute(&mut *tx).await?;
+                    // These are field-transfer boundaries, not proof that a field
+                    // at the cap plus its mirrors fits the complete row budget.
+                    let cap = usize::try_from(super::super::MAX_ADMISSION_ROW_BYTES)?;
+                    for payload in [
+                        format!("\"{}\"", "a".repeat(cap - 2)),
+                        format!("\"{}\"", "a".repeat(cap - 1)),
+                        format!("\"{}\"", "é".repeat((cap - 2) / 2)),
+                        format!("\"{}a\"", "é".repeat((cap - 2) / 2)),
+                        "invalid json".to_owned(),
+                    ] {
+                        sqlx::query("UPDATE game_durability_reconnect_attempts SET record_json = $1")
+                            .bind(&payload).execute(&mut *tx).await?;
+                        let state_row = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+                            .bind([0_u8; 16].as_slice()).bind([1_u8].as_slice())
+                            .bind(super::super::MAX_ADMISSION_ROW_BYTES)
+                            .fetch_one(&mut *tx).await?;
+                        let binding_row = sqlx::query(ACTIVE_COMMITTED_BINDING_SQL)
+                            .bind([0_u8; 16].as_slice()).bind(COMMITTED)
+                            .bind([2_u8].as_slice()).bind(super::super::MAX_ADMISSION_ROW_BYTES)
+                            .fetch_one(&mut *tx).await?;
+                        let prepared_row = sqlx::query(CURRENT_PREPARED_BINDING_SQL)
+                            .bind([0_u8; 16].as_slice()).bind([1_u8].as_slice()).bind(COMMITTED)
+                            .bind(super::super::MAX_ADMISSION_ROW_BYTES)
+                            .fetch_one(&mut *tx).await?;
+                        for row in [&state_row, &binding_row, &prepared_row] {
+                            if payload.len() <= cap {
+                                assert_eq!(guarded_record_json(row)?, payload);
+                            } else {
+                                // SQL returned NULL, never the oversized text.
+                                assert!(row.try_get::<Option<String>, _>("record_json")?.is_none());
+                                assert!(matches!(guarded_record_json(row), Err(DurabilityError::Unavailable)));
+                            }
+                        }
+                        assert_eq!(state_row.try_get::<i16, _>("state")?, COMMITTED);
+                        let outcome = active_committed_binding_is_valid(&mut tx, &[0_u8; 16], &session).await;
+                        if payload.len() > cap {
+                            assert!(matches!(outcome, Err(DurabilityError::Unavailable)));
+                        } else if payload == "invalid json" {
+                            assert!(matches!(outcome, Err(DurabilityError::InvalidStoredState)));
+                        } else {
+                            // Valid JSON alone still cannot satisfy the binding.
                             assert!(matches!(outcome, Ok(false)));
                         }
                     }
