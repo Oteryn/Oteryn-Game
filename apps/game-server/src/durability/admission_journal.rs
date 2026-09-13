@@ -1696,6 +1696,86 @@ async fn canonical_precommit_protection_binding_is_valid(
     }
 }
 
+// The exact-attempt sentinel proves either the complete set (at most 64) or
+// overflow. Eligible input is materialized only after WHOLE-set count, scalar
+// validity and encoded-byte checks, so string_agg never builds a partial prefix.
+// A canonical u64 plus ':' plus disposition costs at most 22 bytes; with commas,
+// 64 pairs cost 1471 bytes. BIGINT count + BOOL validity add 9 logical bytes:
+// 1480 total, charged to the existing row/result/custody limits, not a new cap.
+const PENDING_COMMANDS_SQL: &str = "WITH pending AS MATERIALIZED (\
+        SELECT command_id, disposition FROM game_durability_reconnect_pending_commands \
+        WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2 \
+        ORDER BY command_id ASC LIMIT ($3::bigint + 1)\
+    ), stats AS MATERIALIZED (\
+        SELECT count(*) AS command_count, \
+            COALESCE(bool_and(COALESCE(command_id BETWEEN 1 AND 18446744073709551615 \
+                AND command_id::text ~ '^[1-9][0-9]{0,19}$' \
+                AND disposition IN ($5, $6), false)), true) AS all_valid, \
+            COALESCE(sum(octet_length(command_id::text) + 1 \
+                + octet_length(disposition::text)), 0) + GREATEST(count(*) - 1, 0) AS encoded_bytes \
+        FROM pending\
+    ), eligible AS MATERIALIZED (\
+        SELECT pending.* FROM pending CROSS JOIN stats \
+        WHERE stats.command_count <= $3 AND stats.all_valid AND stats.encoded_bytes + 9 <= $4\
+    ), encoded AS (\
+        SELECT COALESCE(string_agg(command_id::text || ':' || disposition::text, ',' \
+            ORDER BY command_id ASC), '') AS pairs FROM eligible\
+    ) SELECT stats.command_count, stats.all_valid, encoded.pairs \
+      FROM stats LEFT JOIN encoded ON stats.command_count <= $3 \
+        AND stats.all_valid AND stats.encoded_bytes + 9 <= $4";
+
+async fn pending_commands_row(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    attempt_ref: &[u8],
+) -> Result<PgRow, DurabilityError> {
+    sqlx::query(PENDING_COMMANDS_SQL)
+        .bind(session_id)
+        .bind(attempt_ref)
+        .bind(MAX_OUTSTANDING_COMMANDS as i64)
+        .bind(super::MAX_ADMISSION_ROW_BYTES)
+        .bind(PENDING_ORIGINAL)
+        .bind(TERMINAL_OUTCOME_RETAINED)
+        .fetch_one(&mut **transaction)
+        .await
+        .map_err(DurabilityError::from)
+}
+
+fn pending_commands_payload(row: &PgRow) -> Result<Option<(usize, &str)>, DurabilityError> {
+    let count: i64 = row.try_get("command_count")?;
+    if count > MAX_OUTSTANDING_COMMANDS as i64 {
+        return Err(DurabilityError::Unavailable);
+    }
+    if count < 0 || !row.try_get::<bool, _>("all_valid")? {
+        return Ok(None);
+    }
+    let pairs = row
+        .try_get::<Option<&str>, _>("pairs")?
+        .ok_or(DurabilityError::Unavailable)?;
+    Ok(Some((count as usize, pairs)))
+}
+
+fn pending_command_pairs(encoded: &str) -> impl Iterator<Item = Option<(u64, i16)>> + '_ {
+    // Only the complete empty payload has zero pairs. Empty interior/trailing
+    // components remain visible and fail parsing instead of being discarded.
+    encoded
+        .split(',')
+        .filter(|_| !encoded.is_empty())
+        .map(|pair| {
+            let (command, disposition) = pair.split_once(':')?;
+            if command.starts_with('0') || !command.bytes().all(|byte| byte.is_ascii_digit()) {
+                return None;
+            }
+            let command_id = command.parse::<u64>().ok().filter(|value| *value != 0)?;
+            let disposition = match disposition {
+                "1" => PENDING_ORIGINAL,
+                "2" => TERMINAL_OUTCOME_RETAINED,
+                _ => return None,
+            };
+            Some((command_id, disposition))
+        })
+}
+
 async fn canonical_fnd02_mirrors_are_valid(
     transaction: &mut Transaction<'_, Postgres>,
     session_id: &[u8],
@@ -1721,21 +1801,16 @@ async fn canonical_fnd02_mirrors_are_valid(
     {
         return Ok(false);
     }
-    let stored_pending = sqlx::query(
-        "SELECT command_id::text AS command_id, disposition \
-         FROM game_durability_reconnect_pending_commands \
-         WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2 \
-         ORDER BY command_id ASC",
-    )
-    .bind(session_id)
-    .bind(attempt_ref)
-    .fetch_all(&mut **transaction)
-    .await?;
-    if stored_pending.len() != canonical_pending.len() {
+    let stored_pending = pending_commands_row(transaction, session_id, attempt_ref).await?;
+    let Some((stored_count, encoded)) = pending_commands_payload(&stored_pending)? else {
+        return Ok(false);
+    };
+    if stored_count != canonical_pending.len() {
         return Ok(false);
     }
+    let mut stored_pairs = pending_command_pairs(encoded);
     let mut previous_command_id = None;
-    for (stored, expected) in stored_pending.iter().zip(canonical_pending) {
+    for expected in canonical_pending {
         let Some(expected_command_id) = expected["command_id"]
             .as_u64()
             .filter(|value| *value != 0 && *value < next_command_id)
@@ -1752,15 +1827,15 @@ async fn canonical_fnd02_mirrors_are_valid(
             Some("terminal_outcome_retained") => TERMINAL_OUTCOME_RETAINED,
             _ => return Ok(false),
         };
-        let stored_command_id: String = stored.try_get("command_id")?;
-        if expected_command_id.to_string() != stored_command_id
-            || stored.try_get::<i16, _>("disposition")? != expected_disposition
-        {
+        if stored_pairs.next() != Some(Some((expected_command_id, expected_disposition))) {
             return Ok(false);
         }
         previous_command_id = Some(expected_command_id);
     }
 
+    if stored_pairs.next().is_some() {
+        return Ok(false);
+    }
     let Some(canonical_domains) = canonical_fnd02["domain_revisions"].as_array() else {
         return Ok(false);
     };
@@ -1838,26 +1913,27 @@ async fn attempt_binding_is_valid(
         return Ok(false);
     }
 
-    let stored_pending = sqlx::query(
-        "SELECT command_id::text AS command_id, disposition \
-         FROM game_durability_reconnect_pending_commands \
-         WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2 \
-         ORDER BY command_id ASC",
-    )
-    .bind(session_id.as_slice())
-    .bind(attempt_ref.as_slice())
-    .fetch_all(&mut **transaction)
-    .await?;
-    if stored_pending.len() != record.fnd02().pending().len() {
+    let stored_pending =
+        pending_commands_row(transaction, session_id.as_slice(), attempt_ref.as_slice()).await?;
+    let Some((stored_count, encoded)) = pending_commands_payload(&stored_pending)? else {
+        return Ok(false);
+    };
+    if stored_count != record.fnd02().pending().len() {
         return Ok(false);
     }
-    for (stored, expected) in stored_pending.iter().zip(record.fnd02().pending()) {
-        if stored.try_get::<String, _>("command_id")? != expected.command_id().get().to_string()
-            || stored.try_get::<i16, _>("disposition")?
-                != pending_disposition(expected.disposition())
+    let mut stored_pairs = pending_command_pairs(encoded);
+    for expected in record.fnd02().pending() {
+        if stored_pairs.next()
+            != Some(Some((
+                expected.command_id().get(),
+                pending_disposition(expected.disposition()),
+            )))
         {
             return Ok(false);
         }
+    }
+    if stored_pairs.next().is_some() {
+        return Ok(false);
     }
     Ok(true)
 }
@@ -2228,6 +2304,278 @@ mod committed_binding_tests {
             assert!(local_test_options(url).is_err());
         }
         Ok(())
+    }
+
+    #[test]
+    fn pending_command_pairs_reject_noncanonical_and_malformed_values() {
+        assert_eq!(pending_command_pairs("").count(), 0);
+        assert_eq!(
+            pending_command_pairs("18446744073709551615:2").next(),
+            Some(Some((u64::MAX, TERMINAL_OUTCOME_RETAINED)))
+        );
+        for encoded in [
+            "0:1",
+            "01:1",
+            "+1:1",
+            "-1:1",
+            "1.0:1",
+            " 1:1",
+            "18446744073709551616:1",
+            "1:0",
+            "1:3",
+            "1:01",
+            "1:+1",
+            "1:1:2",
+            ":1",
+            "1:",
+            "1",
+            ",",
+            "1:1,",
+            "1:1,,2:2",
+        ] {
+            assert!(
+                pending_command_pairs(encoded).any(|pair| pair.is_none()),
+                "{encoded}"
+            );
+        }
+    }
+
+    #[test]
+    fn pending_commands_full_semantic_fixture_fits_existing_envelope()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let commands: Vec<_> = (u64::MAX - 64..u64::MAX).collect();
+        let record = pending_test_record(&commands)?;
+        assert_eq!(record.fnd02().pending().len(), MAX_OUTSTANDING_COMMANDS);
+        assert_eq!(
+            record.fnd02().domain_revisions().len(),
+            MAX_FND02_DOMAIN_REVISIONS
+        );
+        assert!(
+            serde_json::to_vec(&encode_record(&record))?.len()
+                < usize::try_from(super::super::MAX_ADMISSION_ROW_BYTES)?
+        );
+        Ok(())
+    }
+
+    fn pending_test_record(
+        commands: &[u64],
+    ) -> Result<ReconnectDurabilityRecordV1, Box<dyn std::error::Error>> {
+        use oteryn_game_server::foundation::*;
+        let uuid = [0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
+        let world = WorldId::decode(&uuid).map_err(|error| format!("{error:?}"))?;
+        let evidence = AuthorityEvidenceFenceV1::new(
+            "source",
+            "reconnect",
+            "account",
+            "revision",
+            "decision",
+            100,
+        )
+        .map_err(|error| format!("{error:?}"))?;
+        Ok(ReconnectDurabilityRecordV1::new(
+            ReconnectIdentityV1::new(
+                GameSessionId::decode(&uuid).map_err(|error| format!("{error:?}"))?,
+                ReconnectAttemptRef::new(1).map_err(|error| format!("{error:?}"))?,
+                "00000000-0001-7000-8000-000000000001",
+                CharacterId::decode(&uuid).map_err(|error| format!("{error:?}"))?,
+                world,
+                RuntimeScopeRefV1::channel(
+                    world,
+                    ChannelId::decode(&uuid).map_err(|error| format!("{error:?}"))?,
+                ),
+            )
+            .map_err(|error| format!("{error:?}"))?,
+            ReconnectConnectionFenceV1::new(
+                ConnectionGeneration::new(1).map_err(|error| format!("{error:?}"))?,
+                ConnectionGeneration::new(2).map_err(|error| format!("{error:?}"))?,
+                AuthenticatedTransportRefV1::decode(&[1; 16])
+                    .map_err(|error| format!("{error:?}"))?,
+            )
+            .map_err(|error| format!("{error:?}"))?,
+            ReconnectAuthorityFenceV1::new(
+                1,
+                ScopeOwnershipGeneration::new(1).map_err(|error| format!("{error:?}"))?,
+            )
+            .map_err(|error| format!("{error:?}"))?,
+            ReconnectContinuityV1::new(
+                ControlLossEpochRefV1::new(1).map_err(|error| format!("{error:?}"))?,
+                120,
+                115,
+                ProtectionEntitlementV1::unused(),
+            )
+            .map_err(|error| format!("{error:?}"))?,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [1; 32],
+            },
+            Fnd02ReconciliationFenceV1::new(
+                CommandId::new(u64::MAX).map_err(|error| format!("{error:?}"))?,
+                commands
+                    .iter()
+                    .enumerate()
+                    .map(|(index, command)| {
+                        Ok(PendingCommandReconciliationV1::new(
+                            CommandId::new(*command).map_err(|error| format!("{error:?}"))?,
+                            if index % 2 == 0 {
+                                PendingCommandDispositionV1::PendingOriginal
+                            } else {
+                                PendingCommandDispositionV1::TerminalOutcomeRetained
+                            },
+                        ))
+                    })
+                    .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()
+                    .map_err(|error| format!("{error:?}"))?,
+                u64::MAX,
+                (1..=256)
+                    .map(|id| StateDomainRevisionV1::new(id, u64::MAX))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|error| format!("{error:?}"))?,
+            )
+            .map_err(|error| format!("{error:?}"))?,
+            ReconnectCompatibilityEvidenceV1::new(
+                1,
+                1,
+                "rules",
+                "content",
+                "map",
+                "world",
+                1,
+                evidence.clone(),
+                evidence,
+                Some(110),
+            )
+            .map_err(|error| format!("{error:?}"))?,
+        )
+        .map_err(|error| format!("{error:?}"))?)
+    }
+
+    #[test]
+    fn pending_commands_transfer_preserves_complete_attempt_and_bounds()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let url = match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+            Ok(url) => url,
+            Err(std::env::VarError::NotPresent) => {
+                eprintln!(
+                    "PostgreSQL E2E NOT_APPLICABLE: pending-command assertions require configured harness"
+                );
+                return Ok(());
+            }
+            Err(_) => return Err("invalid PostgreSQL test-admin configuration".into()),
+        };
+        let options = local_test_options(&url)?;
+        tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+            let pool = sqlx::postgres::PgPoolOptions::new().max_connections(1)
+                .acquire_timeout(std::time::Duration::from_secs(5)).connect_with(options).await?;
+            let result: Result<(), Box<dyn std::error::Error>> = async {
+                let mut tx = pool.begin().await?;
+                // Transaction-local projections isolate the real PostgreSQL SQL/decoder
+                // tests and permit malformed persisted values without changing a schema.
+                sqlx::query("CREATE TEMP TABLE game_durability_reconnect_attempts (\
+                    game_session_id uuid, reconnect_attempt_ref bytea, control_loss_epoch numeric(20,0), \
+                    transport_ref bytea, account_id uuid, character_id uuid, world_id uuid, \
+                    runtime_scope_kind smallint, runtime_scope_world_id uuid, runtime_scope_channel_id uuid, \
+                    runtime_scope_instance_id uuid, fnd02_next_command_id numeric(20,0), record_json text, state smallint)")
+                    .execute(&mut *tx).await?;
+                sqlx::query("CREATE TEMP TABLE game_durability_reconnect_pending_commands (\
+                    game_session_id uuid, reconnect_attempt_ref bytea, command_id numeric(20,0), disposition smallint)")
+                    .execute(&mut *tx).await?;
+                for commands in [vec![], vec![2, 10], (u64::MAX - 64..u64::MAX).collect()] {
+                    sqlx::query("TRUNCATE game_durability_reconnect_attempts, game_durability_reconnect_pending_commands")
+                        .execute(&mut *tx).await?;
+                    let record = pending_test_record(&commands)?;
+                    let canonical = encode_record(&record);
+                    let encoded_record = serde_json::to_string(&canonical)?;
+                    assert!(encoded_record.len() < usize::try_from(super::super::MAX_ADMISSION_ROW_BYTES)?);
+                    assert_eq!(canonical["fnd02"]["domain_revisions"].as_array().ok_or("domains")?.len(), 256);
+                    insert_attempt(&mut tx, &record, &encoded_record, PREPARED).await?;
+                    let game_session_id = record.identity().game_session_id();
+                    let session_id = game_session_id.as_bytes();
+                    let attempt_ref = record.identity().reconnect_attempt_ref().to_be_bytes();
+                    // Reverse physical insertion must still produce numeric 2,10 order.
+                    sqlx::query("TRUNCATE game_durability_reconnect_pending_commands").execute(&mut *tx).await?;
+                    for pending in record.fnd02().pending().iter().rev() {
+                        sqlx::query("INSERT INTO game_durability_reconnect_pending_commands VALUES \
+                            (encode($1, 'hex')::uuid, $2, $3::text::numeric(20,0), $4)")
+                            .bind(session_id.as_slice()).bind(attempt_ref.as_slice())
+                            .bind(pending.command_id().get().to_string()).bind(pending_disposition(pending.disposition()))
+                            .execute(&mut *tx).await?;
+                    }
+                    // A different attempt's complete collection must not enter this aggregate.
+                    sqlx::query("INSERT INTO game_durability_reconnect_pending_commands \
+                        SELECT game_session_id, decode('ff', 'hex'), command_id, disposition \
+                        FROM game_durability_reconnect_pending_commands").execute(&mut *tx).await?;
+                    let attempt = sqlx::query("SELECT fnd02_next_command_id::text AS fnd02_next_command_id \
+                        FROM game_durability_reconnect_attempts").fetch_one(&mut *tx).await?;
+                    let row = pending_commands_row(&mut tx, session_id, &attempt_ref).await?;
+                    let (count, pairs) = pending_commands_payload(&row)?.ok_or("valid pending payload")?;
+                    assert_eq!(count, commands.len());
+                    if count == 0 { assert_eq!(pairs, ""); }
+                    if count == 2 { assert_eq!(pairs, "2:1,10:2"); }
+                    if count == 64 {
+                        assert_eq!(pairs.len(), 1471);
+                        for cap in [1480_i64, 1479] {
+                            let limited = sqlx::query(PENDING_COMMANDS_SQL).bind(session_id.as_slice()).bind(attempt_ref.as_slice())
+                                .bind(MAX_OUTSTANDING_COMMANDS as i64).bind(cap).bind(PENDING_ORIGINAL).bind(TERMINAL_OUTCOME_RETAINED)
+                                .fetch_one(&mut *tx).await?;
+                            assert_eq!(limited.try_get::<Option<&str>, _>("pairs")?.is_some(), cap == 1480);
+                            if cap == 1479 { assert!(matches!(pending_commands_payload(&limited), Err(DurabilityError::Unavailable))); }
+                        }
+                    }
+                    assert!(canonical_fnd02_mirrors_are_valid(&mut tx, session_id, &attempt_ref, &attempt, &canonical["fnd02"]).await?);
+                    assert!(attempt_binding_is_valid(&mut tx, &record).await?);
+                    if count == 0 { continue; }
+                    // Each savepoint changes one invariant, preserving all other facts.
+                    for mutation in [
+                        "DELETE FROM game_durability_reconnect_pending_commands WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET command_id = 1 WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET disposition = 3 - disposition WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET reconnect_attempt_ref = decode('fe', 'hex') WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET game_session_id = '00000000-0000-0000-0000-000000000000'::uuid WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET command_id = 0 WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET command_id = 18446744073709551616 WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                        "UPDATE game_durability_reconnect_pending_commands SET disposition = 3 WHERE reconnect_attempt_ref = $1 AND command_id = $2::text::numeric",
+                    ] {
+                        sqlx::query("SAVEPOINT pending_mutation").execute(&mut *tx).await?;
+                        sqlx::query(mutation).bind(attempt_ref.as_slice()).bind(commands[0].to_string()).execute(&mut *tx).await?;
+                        assert!(!canonical_fnd02_mirrors_are_valid(&mut tx, session_id, &attempt_ref, &attempt, &canonical["fnd02"]).await?, "{mutation}");
+                        assert!(!attempt_binding_is_valid(&mut tx, &record).await?, "{mutation}");
+                        sqlx::query("ROLLBACK TO SAVEPOINT pending_mutation").execute(&mut *tx).await?;
+                        sqlx::query("RELEASE SAVEPOINT pending_mutation").execute(&mut *tx).await?;
+                    }
+                    for change in ["next", "order", "server_sequence", "domain_id", "domain_revision", "domain_count"] {
+                        let mut changed = canonical["fnd02"].clone();
+                        match change {
+                            "next" => changed["next_command_id"] = json!(0),
+                            "order" => changed["pending"].as_array_mut().ok_or("pending")?.reverse(),
+                            "server_sequence" => changed["server_sequence"] = Value::Null,
+                            "domain_id" => changed["domain_revisions"][255]["domain_id"] = json!(255),
+                            "domain_revision" => changed["domain_revisions"][255]["revision"] = json!(-1),
+                            "domain_count" => changed["domain_revisions"].as_array_mut().ok_or("domains")?.push(json!({"domain_id": 257, "revision": 1})),
+                            _ => return Err("unknown mutation".into()),
+                        }
+                        assert!(!canonical_fnd02_mirrors_are_valid(&mut tx, session_id, &attempt_ref, &attempt, &changed).await?, "{change}");
+                    }
+                    sqlx::query("INSERT INTO game_durability_reconnect_pending_commands VALUES \
+                        (encode($1, 'hex')::uuid, $2, 1, 1)")
+                        .bind(session_id.as_slice()).bind(attempt_ref.as_slice()).execute(&mut *tx).await?;
+                    let canonical_result = canonical_fnd02_mirrors_are_valid(&mut tx, session_id, &attempt_ref, &attempt, &canonical["fnd02"]).await;
+                    let typed_result = attempt_binding_is_valid(&mut tx, &record).await;
+                    if count == 64 {
+                        let overflow = pending_commands_row(&mut tx, session_id, &attempt_ref).await?;
+                        assert_eq!(overflow.try_get::<i64, _>("command_count")?, 65);
+                        assert!(overflow.try_get::<Option<&str>, _>("pairs")?.is_none());
+                        assert!(matches!(canonical_result, Err(DurabilityError::Unavailable)));
+                        assert!(matches!(typed_result, Err(DurabilityError::Unavailable)));
+                    } else {
+                        assert!(matches!(canonical_result, Ok(false)));
+                        assert!(matches!(typed_result, Ok(false)));
+                    }
+                }
+                tx.rollback().await?;
+                Ok(())
+            }.await;
+            pool.close().await;
+            result
+        })
     }
 
     #[test]
