@@ -87,6 +87,16 @@ ARCHITECTURE_ESCALATION_REQUIRED
 SHARED_LEASE_REQUIRED
 ```
 
+These states are mutually exclusive:
+
+- `DONE` is allowed only for a non-mutating/evidence task with no repository integration obligation, or for a mutating lane **after** the coordinator has proven protected integration, protected-main readback, required task closeout and ownership/lease release. A worker with an unmerged mutating PR cannot return `DONE`.
+- `READY_FOR_INTEGRATION` is mandatory for a mutating worker whose exact candidate is implementation/test/review-ready but has not yet completed the coordinator-owned protected integration/readback/closeout lifecycle.
+- `LANE_BLOCKED` means the bounded task cannot legally progress under current live state; it does not block unrelated lanes.
+- `ARCHITECTURE_ESCALATION_REQUIRED` means a new/conflicting architecture decision is required before mutation can continue.
+- `SHARED_LEASE_REQUIRED` means progress needs an exact shared path/symbol custody grant that the worker may not seize itself.
+
+The dispatcher must never classify a mutating lane `DONE` solely from a worker return before protected integration/readback. A pre-integration `DONE` from a mutating worker is invalid and must be normalized to `READY_FOR_INTEGRATION` if the candidate is actually ready, or to the appropriate blocked/escalation state otherwise.
+
 Narrative-only completion is invalid. The return must name exact result/evidence refs, exact head/PR when applicable, changed paths, validation, and one blocker/integration condition. A blocked worker stops only its lane.
 
 ## Evidence cache
@@ -140,7 +150,7 @@ A blocker belongs to the smallest affected lane unless fresh evidence proves oth
 After every worker result, review result, integration result, blocker, capability failure or material live-state change:
 
 1. refresh only the live state needed to recompute programme readiness;
-2. classify every known lane `READY | ACTIVE | LANE_BLOCKED | DONE` with exact blocker and recheck trigger;
+2. classify every known lane `READY | ACTIVE | LANE_BLOCKED | DONE` with exact blocker and recheck trigger, applying the worker terminal-state rules above;
 3. recompute the complete live dependency DAG;
 4. enumerate all legal runnable work: path-disjoint mutation, independent review/evidence, and bounded read-only preparation that concretely reduces a future blocker;
 5. rank each candidate by:
@@ -191,7 +201,7 @@ For every integration candidate:
 7. treat HTTP `202` as acceptance only and require same-target/same-UUID later-sequence readback; reconcile documented `200/409` fail-closed;
 8. never substitute direct merge, generic auto-merge, bypass, force, default merge action, no-op/retrigger commits or ambiguous dequeue;
 9. if the native operation is unavailable, preserve the qualified candidate, mark only that integration lane `LANE_BLOCKED`, fingerprint it, and continue scheduling other work;
-10. after queue admission require real `merge_group` `game-gate` SUCCESS plus protected-main readback before archive/ownership release.
+10. after queue admission require real `merge_group` `game-gate` SUCCESS plus protected-main readback before archive/ownership release and only then allow a mutating lane to become `DONE`.
 
 Worker completion order never overrides dependency-aware integration order.
 
