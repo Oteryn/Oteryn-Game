@@ -10,6 +10,7 @@ use crate::{connection::LogSettings, net::tls::CertificateInput};
 use sqlx_core::net::resource_budget::ResourceBudget;
 
 mod connect;
+mod oteryn;
 mod parse;
 mod pgpass;
 mod ssl_mode;
@@ -48,6 +49,8 @@ pub struct PgConnectOptions {
     pub(crate) extra_float_digits: Option<Cow<'static, str>>,
     pub(crate) options: Option<String>,
     pub(crate) resource_budget: Option<PgResourceBudget>,
+    pub(crate) oteryn_root_profile: bool,
+    pub(crate) oteryn_tls_server_name: Option<String>,
 }
 
 impl Default for PgConnectOptions {
@@ -116,6 +119,8 @@ impl PgConnectOptions {
             log_settings: Default::default(),
             options: var("PGOPTIONS").ok(),
             resource_budget: None,
+            oteryn_root_profile: false,
+            oteryn_tls_server_name: None,
         }
     }
 
@@ -466,7 +471,7 @@ impl PgConnectOptions {
     /// ```rust
     /// # use sqlx_postgres::PgConnectOptions;
     /// let options = PgConnectOptions::new()
-    ///     .options([("geqo", "off"), ("statement_timeout", "5min")]);
+    ///     .options([("geqo", "off")]);
     /// ```
     pub fn options<K, V, I>(mut self, options: I) -> Self
     where
