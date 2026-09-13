@@ -1,11 +1,12 @@
 use crate::error::Error;
-use crate::net::tls::{self, TlsConfig};
+use crate::net::tls::{self, CertificateInput, TlsConfig};
 use crate::net::{Socket, SocketIntoBox, WithSocket};
 
 use crate::message::SslRequest;
 use crate::{PgConnectOptions, PgSslMode};
-use std::sync::Arc;
 use sqlx_core::net::resource_budget::ResourceBudget;
+use std::net::IpAddr;
+use std::sync::Arc;
 
 pub struct MaybeUpgradeTls<'a>(pub &'a PgConnectOptions);
 
@@ -67,6 +68,7 @@ async fn maybe_upgrade<S: Socket>(
         accept_invalid_certs,
         accept_invalid_hostnames,
         hostname: &options.host,
+        oteryn_root_profile: false,
         root_cert_path: options.ssl_root_cert.as_ref(),
         client_cert_path: options.ssl_client_cert.as_ref(),
         client_key_path: options.ssl_client_key.as_ref(),
@@ -75,11 +77,49 @@ async fn maybe_upgrade<S: Socket>(
     tls::handshake(socket, config, SocketIntoBox).await
 }
 
+fn validate_oteryn_root_profile(options: &PgConnectOptions) -> Result<(), Error> {
+    if !options.oteryn_root_profile() {
+        return Ok(());
+    }
+    if !matches!(options.ssl_mode, PgSslMode::VerifyFull) {
+        return Err(Error::Configuration(
+            "Oteryn PostgreSQL root profile requires VerifyFull".into(),
+        ));
+    }
+    if options.host.parse::<IpAddr>().is_err() || options.fetch_socket().is_some() {
+        return Err(Error::Configuration(
+            "Oteryn PostgreSQL root profile requires literal-IP TCP".into(),
+        ));
+    }
+    if options.tls_server_name().parse::<IpAddr>().is_ok() || options.tls_server_name().is_empty() {
+        return Err(Error::Configuration(
+            "Oteryn PostgreSQL root profile requires a separate DNS TLS identity".into(),
+        ));
+    }
+    if !matches!(options.ssl_root_cert, Some(CertificateInput::Inline(_))) {
+        return Err(Error::Configuration(
+            "Oteryn PostgreSQL root profile requires an inline root CA".into(),
+        ));
+    }
+    if options.ssl_client_cert.is_some() || options.ssl_client_key.is_some() {
+        return Err(Error::Configuration(
+            "Oteryn PostgreSQL root profile forbids client certificates".into(),
+        ));
+    }
+    if options.application_name.is_some() || options.options.is_some() || options.statement_cache_capacity != 100 {
+        return Err(Error::Configuration(
+            "Oteryn PostgreSQL root profile forbids ambient startup options".into(),
+        ));
+    }
+    Ok(())
+}
+
 async fn maybe_upgrade_owned<S: Socket>(
     mut socket: S,
     options: &PgConnectOptions,
     owner: Arc<dyn ResourceBudget>,
 ) -> Result<Box<dyn Socket>, Error> {
+    validate_oteryn_root_profile(options)?;
     match options.ssl_mode {
         PgSslMode::Allow | PgSslMode::Disable => return Ok(Box::new(socket)),
         PgSslMode::Prefer => {
@@ -97,7 +137,8 @@ async fn maybe_upgrade_owned<S: Socket>(
     let config = TlsConfig {
         accept_invalid_certs: !matches!(options.ssl_mode, PgSslMode::VerifyCa | PgSslMode::VerifyFull),
         accept_invalid_hostnames: !matches!(options.ssl_mode, PgSslMode::VerifyFull),
-        hostname: &options.host,
+        hostname: options.tls_server_name(),
+        oteryn_root_profile: options.oteryn_root_profile(),
         root_cert_path: options.ssl_root_cert.as_ref(),
         client_cert_path: options.ssl_client_cert.as_ref(),
         client_key_path: options.ssl_client_key.as_ref(),
@@ -130,7 +171,7 @@ async fn request_upgrade(
         }
 
         b'N' => {
-            // The server is _unwilling_ to perform SSL
+            // The server is _unwilling_ to perform an SSL connection
             Ok(false)
         }
 
