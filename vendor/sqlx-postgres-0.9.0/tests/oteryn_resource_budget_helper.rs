@@ -205,7 +205,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         "deny" => {
             let ledger = Arc::new(Ledger::new(0, 0));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let pool = holder_pool(options, owner);
+            let pool = runtime.block_on(async { holder_pool(options, owner) });
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err("lazy empty holder unexpectedly produced a ready-only transaction".into());
             }
@@ -257,7 +257,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         "positive" => {
             let ledger = Arc::new(Ledger::new(SLOT_LIMIT, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let pool = holder_pool(options, owner);
+            let pool = runtime.block_on(async { holder_pool(options, owner) });
 
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err("lazy empty holder unexpectedly manufactured an active connection".into());
