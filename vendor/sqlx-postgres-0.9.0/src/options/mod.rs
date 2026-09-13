@@ -2,15 +2,32 @@ use std::borrow::Cow;
 use std::env::var;
 use std::fmt::{self, Display, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 pub use ssl_mode::PgSslMode;
 
 use crate::{connection::LogSettings, net::tls::CertificateInput};
+use sqlx_core::net::resource_budget::ResourceBudget;
 
 mod connect;
 mod parse;
 mod pgpass;
 mod ssl_mode;
+
+#[derive(Clone)]
+pub(crate) struct PgResourceBudget(Arc<dyn ResourceBudget>);
+
+impl PgResourceBudget {
+    pub(crate) fn clone_budget(&self) -> Arc<dyn ResourceBudget> {
+        Arc::clone(&self.0)
+    }
+}
+
+impl fmt::Debug for PgResourceBudget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("PgResourceBudget(..)")
+    }
+}
 
 #[doc = include_str!("doc.md")]
 #[derive(Debug, Clone)]
@@ -30,6 +47,7 @@ pub struct PgConnectOptions {
     pub(crate) log_settings: LogSettings,
     pub(crate) extra_float_digits: Option<Cow<'static, str>>,
     pub(crate) options: Option<String>,
+    pub(crate) resource_budget: Option<PgResourceBudget>,
 }
 
 impl Default for PgConnectOptions {
@@ -97,6 +115,7 @@ impl PgConnectOptions {
             extra_float_digits: Some("2".into()),
             log_settings: Default::default(),
             options: var("PGOPTIONS").ok(),
+            resource_budget: None,
         }
     }
 
@@ -111,6 +130,22 @@ impl PgConnectOptions {
         }
 
         self
+    }
+
+    /// Carries the caller-supplied Oteryn root ledger through SQLx connection creation.
+    ///
+    /// This is intentionally hidden from ordinary SQLx documentation. It does not create a
+    /// driver-local budget or change any connection policy; clones retain the same Arc identity.
+    #[doc(hidden)]
+    pub fn with_resource_budget(mut self, resource_budget: Arc<dyn ResourceBudget>) -> Self {
+        self.resource_budget = Some(PgResourceBudget(resource_budget));
+        self
+    }
+
+    pub(crate) fn resource_budget(&self) -> Option<Arc<dyn ResourceBudget>> {
+        self.resource_budget
+            .as_ref()
+            .map(PgResourceBudget::clone_budget)
     }
 
     /// Sets the name of the host to connect to.
