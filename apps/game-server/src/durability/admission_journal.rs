@@ -2187,12 +2187,13 @@ mod committed_binding_tests {
     }
 
     #[test]
-    fn committed_binding_test_target_rejects_disguised_and_ambient_targets() {
+    fn committed_binding_test_target_rejects_disguised_and_ambient_targets()
+    -> Result<(), &'static str> {
         for url in [
             "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres",
             "postgresql://oteryn_test_admin:secret@localhost:5432/postgres",
         ] {
-            let options = local_test_options(url).expect("explicit local test endpoint");
+            let options = local_test_options(url)?;
             assert_eq!(options.get_host(), "127.0.0.1");
             assert_eq!(options.get_port(), 5432);
             assert_eq!(options.get_username(), "oteryn_test_admin");
@@ -2217,6 +2218,7 @@ mod committed_binding_tests {
         ] {
             assert!(local_test_options(url).is_err());
         }
+        Ok(())
     }
 
     #[test]
