@@ -53,16 +53,19 @@ A1 must therefore close/validate that exact successor, not author a second B-vs-
 
 Maintain one compact programme ledger with lane, live head, canonical owner, state, blocker, next action and evidence. Terminal success requires the criteria in the programme plan and existing repository controls. If blocked, name exactly one blocker with owner/capability, affected dependency, evidence, why it cannot be resolved under current authority and the smallest required action.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
-At the end of every completed or blocked response, tell the owner exactly which agent/session to launch next. Resolve this from fresh live programme state; do not blindly repeat a historical order.
+At the end of every completed or blocked response, separate control-plane/governance work from the next substantive worker.
 
 Use this exact footer:
 
 ```text
-NEXT_AGENT: <one exact alias, up to three independent aliases, or NONE>
-RUN_WHEN: <gate/state that makes the launch valid>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <one exact A0-A7 worker alias, up to three independent worker aliases, or NONE>
+RUN_WORKER_WHEN: <gate/state that makes the worker launch valid>
 WHY: <one concise dependency reason>
 ```
 
-When several independent lanes are simultaneously legal, list at most three aliases in launch order. When the programme is terminal, use `NEXT_AGENT: NONE`. When a material blocker prevents the next worker from starting, name the blocked alias in `NEXT_AGENT`, state the precise gate in `RUN_WHEN`, and do not fabricate readiness.
+`CONTROL_PLANE_ACTION` is for protected integration, protected-main readback, allocation activation, lease/custody reconciliation or other control-plane-only transitions. `NEXT_WORKER` is only the next substantive A0-A7 programme worker/session the owner should launch. Never put `Oteryn: work coordinator`, `Oteryn: implementation coordinator` or another control-plane-only alias in `NEXT_WORKER`.
+
+When a control-plane action must happen first, name that action separately, still name the intended worker in `NEXT_WORKER`, and put the missing gate in `RUN_WORKER_WHEN`. When several independent worker lanes are simultaneously legal, list at most three aliases in launch order. When the programme is terminal, use `NEXT_WORKER: NONE`. If live state does not yet determine any worker truthfully, use `NEXT_WORKER: NONE` and explain the unresolved routing gate rather than substituting a coordinator alias.
