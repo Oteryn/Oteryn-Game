@@ -1,10 +1,14 @@
-use sqlx::postgres::{BudgetError, PgConnectOptions, PgConnection, PgSslMode, ResourceBudget};
+use sqlx::postgres::{BudgetError, PgConnectOptions, PgPoolOptions, PgSslMode, ResourceBudget};
 use std::error::Error;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 const SLOT_LIMIT: usize = 4_194_304;
 const ROOT_LIMIT: usize = 12_582_912;
+const ROOT_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
 const DENIAL_MARKER: &str = "OTERYN_WP3_TLS_DENIAL_UNAVAILABLE";
 const POSITIVE_MARKER: &str = "OTERYN_WP3_PG17_TLS13_VERIFY_FULL_POSITIVE";
 const TRACE_LIMIT: usize = 64;
@@ -178,6 +182,16 @@ fn options(admin_url: &str, ca_path: &Path) -> Result<PgConnectOptions, Box<dyn 
         .ssl_root_cert(ca_path))
 }
 
+fn holder_pool(options: PgConnectOptions, owner: Arc<dyn ResourceBudget>) -> sqlx::PgPool {
+    PgPoolOptions::new()
+        .max_connections(1)
+        .min_connections(0)
+        .acquire_timeout(ROOT_CONNECT_TIMEOUT)
+        .idle_timeout(HOLDER_IDLE_TIMEOUT)
+        .max_lifetime(HOLDER_MAX_LIFETIME)
+        .connect_lazy_with(options.with_resource_budget(owner))
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let mode = std::env::var("OTERYN_WP3_MODE")?;
     let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
@@ -191,16 +205,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         "deny" => {
             let ledger = Arc::new(Ledger::new(0, 0));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let error = match runtime.block_on(PgConnection::establish_with_resource_budget(
-                &options, owner,
-            )) {
+            let pool = holder_pool(options, owner);
+            if runtime.block_on(pool.try_begin())?.is_some() {
+                return Err("lazy empty holder unexpectedly produced a ready-only transaction".into());
+            }
+            let error = match runtime.block_on(pool.acquire()) {
                 Ok(connection) => {
                     drop(connection);
-                    return Err("underfunded owner unexpectedly established TLS".into());
+                    runtime.block_on(pool.close());
+                    return Err("underfunded holder unexpectedly established TLS".into());
                 }
                 Err(error) => error,
             };
-            match error {
+            match &error {
+                sqlx::Error::PoolTimedOut => {}
                 sqlx::Error::Tls(source) => {
                     let Some(cause) = source.downcast_ref::<BudgetError>() else {
                         return Err(format!(
@@ -213,57 +231,86 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
                 other => {
-                    return Err(
-                        format!("resource denial escaped through wrong SQLx surface: {other}")
-                            .into(),
-                    );
+                    return Err(format!(
+                        "resource denial escaped through unexpected holder surface: {other}"
+                    )
+                    .into());
                 }
             }
+            runtime.block_on(pool.close());
+            drop(pool);
+            drop(runtime);
             let snapshot = ledger.snapshot();
+            if snapshot.denied_bytes == 0 {
+                return Err("holder denial did not reach the caller-supplied root ledger".into());
+            }
             if snapshot.ordinary != 0
                 || snapshot.root != 0
                 || snapshot.peak_ordinary != 0
                 || snapshot.peak_root != 0
                 || snapshot.provider_shared != 0
             {
-                return Err("denied owner retained or acquired resource debt".into());
+                return Err("denied holder retained or acquired resource debt".into());
             }
             println!("{DENIAL_MARKER}");
         }
         "positive" => {
             let ledger = Arc::new(Ledger::new(SLOT_LIMIT, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let mut connection = match runtime.block_on(
-                PgConnection::establish_with_resource_budget(&options, owner),
-            ) {
-                Ok(connection) => connection,
-                Err(error) => {
-                    let snapshot = ledger.snapshot();
-                    let trace = ledger.trace();
-                    return Err(format!(
-                        "funded owner-aware TLS failed: {error}; denied_bytes={}, denied_at_ordinary={}, denied_at_root={}, peak_ordinary={}, peak_root={}, provider_shared={}, trace=[{}]",
-                        snapshot.denied_bytes,
-                        snapshot.denied_ordinary,
-                        snapshot.denied_root,
-                        snapshot.peak_ordinary,
-                        snapshot.peak_root,
-                        snapshot.provider_shared,
-                        trace
-                    )
-                    .into());
+            let pool = holder_pool(options, owner);
+
+            if runtime.block_on(pool.try_begin())?.is_some() {
+                return Err("lazy empty holder unexpectedly manufactured an active connection".into());
+            }
+
+            let root_connection = runtime.block_on(async {
+                match tokio::time::timeout(ROOT_CONNECT_TIMEOUT, pool.acquire()).await {
+                    Ok(Ok(connection)) => Ok::<_, Box<dyn Error>>(connection),
+                    Ok(Err(error)) => {
+                        let snapshot = ledger.snapshot();
+                        let trace = ledger.trace();
+                        Err(format!(
+                            "funded root-maintenance acquire failed: {error}; denied_bytes={}, denied_at_ordinary={}, denied_at_root={}, peak_ordinary={}, peak_root={}, provider_shared={}, trace=[{}]",
+                            snapshot.denied_bytes,
+                            snapshot.denied_ordinary,
+                            snapshot.denied_root,
+                            snapshot.peak_ordinary,
+                            snapshot.peak_root,
+                            snapshot.provider_shared,
+                            trace
+                        )
+                        .into())
+                    }
+                    Err(_) => Err("funded root-maintenance acquire exceeded five seconds".into()),
                 }
-            };
+            })?;
+            drop(root_connection);
+
+            let mut transaction = runtime.block_on(async {
+                for _ in 0..100 {
+                    match pool.try_begin().await {
+                        Ok(Some(transaction)) => {
+                            return Ok::<_, Box<dyn Error>>(transaction);
+                        }
+                        Ok(None) => tokio::time::sleep(Duration::from_millis(10)).await,
+                        Err(error) => return Err(Box::new(error)),
+                    }
+                }
+                Err("established holder never became ready for try_begin()".into())
+            })?;
+
             let (server_version_num, ssl_enabled, ssl_version) = runtime.block_on(async {
                 let server_version_num: String = sqlx::query_scalar("SHOW server_version_num")
-                    .fetch_one(&mut connection)
+                    .fetch_one(&mut *transaction)
                     .await?;
                 let (ssl_enabled, ssl_version): (bool, Option<String>) = sqlx::query_as(
                     "SELECT ssl, version FROM pg_stat_ssl WHERE pid = pg_backend_pid()",
                 )
-                .fetch_one(&mut connection)
+                .fetch_one(&mut *transaction)
                 .await?;
                 Ok::<_, sqlx::Error>((server_version_num, ssl_enabled, ssl_version))
             })?;
+            runtime.block_on(transaction.rollback())?;
             if server_version_num != "170006" {
                 return Err(format!(
                     "qualification reached wrong PostgreSQL version: {server_version_num}"
@@ -276,7 +323,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )
                 .into());
             }
-            drop(connection);
+
+            runtime.block_on(pool.close());
+            drop(pool);
             drop(runtime);
 
             let snapshot = ledger.snapshot();
@@ -290,7 +339,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             if snapshot.ordinary != 0 || snapshot.root != snapshot.provider_shared {
                 return Err(format!(
-                    "connection teardown left invalid custody: ordinary={}, root={}, provider_shared={}",
+                    "holder teardown left invalid custody: ordinary={}, root={}, provider_shared={}",
                     snapshot.ordinary, snapshot.root, snapshot.provider_shared
                 )
                 .into());
