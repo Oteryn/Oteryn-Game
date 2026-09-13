@@ -98,7 +98,7 @@ A4 implements the accepted frozen architecture. Required proof areas include roo
 
 Before WP3 terminal delivery, qualify canonical Q01-Q75 on the exact composed consumer. Use independent review where required by risk policy. `Q01-Q75 green` means truthful terminal classification for every item, not merely text completion.
 
-No unresolved P0/P1 may remain. Integration proceeds only through current repository controls.
+Terminal WP3 release requires an exact-final-head whole-diff independent review with `PASS`, `P0=0`, `P1=0`, `P2=0`, and `BLOCKING_EVIDENCE_GAP=0`. Any weaker review wording or non-PASS disposition cannot authorize integration or release. Integration proceeds only through current repository controls.
 
 ### Wave 3 — A5 + A6 + A3 interop in parallel
 
