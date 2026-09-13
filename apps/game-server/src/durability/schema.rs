@@ -44,12 +44,40 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
     Ok(pool)
 }
 
+// SQLx's pinned migration constructor hashes every embedded migration with SHA-384.
+// Derive the length from that embedded ledger, not from database-controlled values.
+const INSPECT_LEDGER_SQL: &str = "SELECT version, CASE WHEN octet_length(checksum) = $2 THEN checksum ELSE NULL END \
+     AS checksum, success FROM _sqlx_migrations ORDER BY version ASC LIMIT $1";
+
+fn ledger_bounds() -> Result<(usize, i64, i32), DurabilityError> {
+    let count = GAME_MIGRATOR.iter().count();
+    let sentinel_limit = count
+        .checked_add(1)
+        .and_then(|limit| i64::try_from(limit).ok())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let checksum_length = GAME_MIGRATOR
+        .iter()
+        .next()
+        .map_or(0, |migration| migration.checksum.len());
+    // Fail closed if the pinned, uniform checksum profile ever changes.
+    if GAME_MIGRATOR
+        .iter()
+        .any(|migration| migration.checksum.len() != checksum_length)
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let checksum_length =
+        i32::try_from(checksum_length).map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok((count, sentinel_limit, checksum_length))
+}
+
 async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> {
-    let rows = match sqlx::query(
-        "SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version ASC",
-    )
-    .fetch_all(pool)
-    .await
+    let (expected_count, sentinel_limit, checksum_length) = ledger_bounds()?;
+    let rows = match sqlx::query(INSPECT_LEDGER_SQL)
+        .bind(sentinel_limit)
+        .bind(checksum_length)
+        .fetch_all(pool)
+        .await
     {
         Ok(rows) => rows,
         Err(error) if is_missing_table(&error) => {
@@ -58,18 +86,16 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
         Err(error) => return Err(DurabilityError::from(error)),
     };
 
-    let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
-    if rows.len() != expected.len() {
+    // The extra row distinguishes an exact ledger from any oversized ledger.
+    if rows.len() != expected_count {
         return Ok(SchemaCompatibility::Incompatible);
     }
 
-    for (row, migration) in rows.iter().zip(expected) {
+    for (row, migration) in rows.iter().zip(GAME_MIGRATOR.iter()) {
         let version: i64 = row.try_get("version")?;
-        let checksum: Vec<u8> = row.try_get("checksum")?;
+        let checksum: Option<&[u8]> = row.try_get("checksum")?;
         let success: bool = row.try_get("success")?;
-        if !success
-            || version != migration.version
-            || checksum.as_slice() != migration.checksum.as_ref()
+        if !success || version != migration.version || checksum != Some(migration.checksum.as_ref())
         {
             return Ok(SchemaCompatibility::Incompatible);
         }
@@ -457,6 +483,165 @@ mod terminal_replacement_postgres_red_tests {
         let executor = MigrationExecutor::connect_migration(&database_url).await?;
         executor.apply_embedded_ledger().await?;
         Ok((database, database_url))
+    }
+
+    #[test]
+    fn schema_ledger_bounds_follow_embedded_migrations() -> TestResult {
+        let (count, limit, checksum_length) = super::ledger_bounds()?;
+        assert_eq!(count, super::GAME_MIGRATOR.iter().count());
+        assert_eq!(usize::try_from(limit)?, count + 1);
+        for migration in super::GAME_MIGRATOR.iter() {
+            assert_eq!(usize::try_from(checksum_length)?, migration.checksum.len());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn schema_ledger_missing_inspection_does_not_create_ledger() -> TestResult {
+        run_postgres_test(async {
+            let database = IsolatedDatabase::create("ledger_missing").await?;
+            let executor = MigrationExecutor::connect_migration(&database.database_url()?).await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::MissingMigrationLedger
+            );
+            let absent: bool = sqlx::query_scalar("SELECT to_regclass('_sqlx_migrations') IS NULL")
+                .fetch_one(&executor.pool)
+                .await?;
+            assert!(absent);
+            executor.apply_embedded_ledger().await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            executor.pool.close().await;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn schema_ledger_checksum_guard_rejects_malformed_before_transfer() -> TestResult {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("ledger_checksum_guard").await?;
+            let executor = MigrationExecutor::connect_migration(&url).await?;
+            let migration = super::GAME_MIGRATOR
+                .iter()
+                .next()
+                .ok_or("empty embedded ledger")?;
+            let (_, limit, length) = super::ledger_bounds()?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            for malformed_length in [0, length - 1, length + 1, 1_048_576] {
+                sqlx::query("UPDATE _sqlx_migrations SET checksum = decode(repeat('00', $1), 'hex') WHERE version = $2")
+                    .bind(malformed_length).bind(migration.version).execute(&executor.pool).await?;
+                let rows = sqlx::query(super::INSPECT_LEDGER_SQL)
+                    .bind(limit)
+                    .bind(length)
+                    .fetch_all(&executor.pool)
+                    .await?;
+                let row = rows.first().ok_or("missing ledger row")?;
+                let transferred: Option<&[u8]> = sqlx::Row::try_get(row, "checksum")?;
+                assert_eq!(
+                    transferred, None,
+                    "malformed length {malformed_length} crossed projection"
+                );
+                assert_eq!(
+                    executor.inspect().await?,
+                    super::SchemaCompatibility::Incompatible
+                );
+            }
+            // An exact-length wrong digest must still fail full byte comparison.
+            let mut wrong = migration.checksum.to_vec();
+            wrong[0] ^= 1;
+            sqlx::query("UPDATE _sqlx_migrations SET checksum = $1 WHERE version = $2")
+                .bind(wrong)
+                .bind(migration.version)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            sqlx::query("UPDATE _sqlx_migrations SET checksum = $1 WHERE version = $2")
+                .bind(migration.checksum.as_ref())
+                .bind(migration.version)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            sqlx::query("UPDATE _sqlx_migrations SET success = false WHERE version = $1")
+                .bind(migration.version)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            executor.pool.close().await;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn schema_ledger_sentinel_rejects_extra_rows_and_preserves_missing_version_checks() -> TestResult
+    {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("ledger_sentinel").await?;
+            let executor = MigrationExecutor::connect_migration(&url).await?;
+            let (count, limit, length) = super::ledger_bounds()?;
+            let highest = super::GAME_MIGRATOR
+                .iter()
+                .map(|migration| migration.version)
+                .max()
+                .ok_or("empty embedded ledger")?;
+            for extra_count in [1_i64, 128] {
+                sqlx::query("INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time) SELECT $1 + n, '', true, decode(repeat('00', $3), 'hex'), 0 FROM generate_series(1::bigint, $2) AS n")
+                    .bind(highest).bind(extra_count).bind(length).execute(&executor.pool).await?;
+                let rows = sqlx::query(super::INSPECT_LEDGER_SQL)
+                    .bind(limit)
+                    .bind(length)
+                    .fetch_all(&executor.pool)
+                    .await?;
+                assert_eq!(rows.len(), count + 1, "must transfer exactly one sentinel");
+                assert_eq!(
+                    executor.inspect().await?,
+                    super::SchemaCompatibility::Incompatible
+                );
+                sqlx::query("DELETE FROM _sqlx_migrations WHERE version > $1")
+                    .bind(highest)
+                    .execute(&executor.pool)
+                    .await?;
+            }
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            sqlx::query("UPDATE _sqlx_migrations SET version = version + 1 WHERE version = $1")
+                .bind(highest)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            sqlx::query("DELETE FROM _sqlx_migrations WHERE version > $1")
+                .bind(highest)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            executor.pool.close().await;
+            database.cleanup().await?;
+            Ok(())
+        })
     }
 
     fn unix_now() -> Result<i64, ReconnectDurabilityErrorV1> {
