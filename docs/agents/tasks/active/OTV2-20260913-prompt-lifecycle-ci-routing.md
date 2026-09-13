@@ -9,7 +9,8 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/prompt-lifecycle-neutral-lane
 base_sha: bd35d7fd0ca5c13a32f59d011ec8b9571d69e897
-head_sha: cf51345b54ede9cad6024d57a1eb0a4b3fa71c26
+head_sha: null
+final_head_sha: null
 owner: chatgpt-session
 owned_paths:
   - tools/repository/classify_pr_test_lanes.py
