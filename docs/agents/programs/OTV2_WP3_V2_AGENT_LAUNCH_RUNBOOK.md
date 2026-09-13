@@ -91,25 +91,38 @@ A7 resumes `agent/otv2-gameplay-server-seam-01`; do not create a new Server Seam
 
 ## Mandatory owner-facing successor footer
 
-Every A0-A7 agent must end its completed or blocked final response with an explicit instruction telling the owner which agent to launch next. The recommendation must be resolved from live state and current gates, not copied mechanically from this runbook.
+Every A0-A7 agent must separate repository/control-plane work from the next real programme worker. A control-plane alias must never be placed in `NEXT_WORKER` merely because a merge, protected-main readback, allocation, lease reconciliation or integration action is still required.
 
 Required shape:
 
 ```text
-NEXT_AGENT: <one exact alias, up to three independent aliases, or NONE>
-RUN_WHEN: <exact gate/state making the launch valid>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <one exact A0-A7 worker alias, up to three independent worker aliases, or NONE>
+RUN_WORKER_WHEN: <exact gate/state making the worker launch valid>
 WHY: <one concise dependency reason>
 ```
 
 Rules:
 
-- use the exact aliases from this runbook;
+- `CONTROL_PLANE_ACTION` is for merge/integration, protected-main readback, allocation activation, lease/custody reconciliation or programme routing that must be performed by the currently active control plane;
+- `NEXT_WORKER` is only the next substantive A0-A7 programme worker/session the owner should launch;
+- never put `Oteryn: work coordinator`, `Oteryn: implementation coordinator`, or another control-plane-only alias in `NEXT_WORKER`;
+- if a control-plane action is required before the next worker can start, name that action in `CONTROL_PLANE_ACTION`, name the intended worker in `NEXT_WORKER`, and put the missing gate in `RUN_WORKER_WHEN`;
+- use exact aliases from this runbook for A0-A7 workers;
 - never recommend a mutating worker before its live start gate is true;
-- when several independent lanes are legal, list at most three in launch order;
-- when a blocker prevents launch, state the intended next alias plus the missing gate in `RUN_WHEN`;
-- after `FRESH_G0_READY`, A6 should normally point to `Oteryn: sol server seam lead`;
-- after `SERVER_SEAM_READY_FOR_INTEGRATION`, A7 must use `NEXT_AGENT: NONE` unless live programme state still requires coordinator action;
-- uncertain or cross-lane routing returns to `Oteryn: astra wp3-v2 programme coordinator` rather than guessing.
+- when several independent worker lanes are legal, list at most three in launch order;
+- after `FRESH_G0_READY`, A6 should normally set `NEXT_WORKER: Oteryn: sol server seam lead`;
+- after `SERVER_SEAM_READY_FOR_INTEGRATION`, A7 must use `NEXT_WORKER: NONE` unless another substantive programme worker is genuinely required;
+- uncertain cross-lane routing may use `CONTROL_PLANE_ACTION: Oteryn: astra wp3-v2 programme coordinator — reconcile live programme state`, while `NEXT_WORKER` still names the intended substantive worker or `NONE` if it cannot yet be determined truthfully.
+
+Example for a qualified #589 that still requires the active #162 control plane to integrate/activate A4:
+
+```text
+CONTROL_PLANE_ACTION: Oteryn: work coordinator — route #589 through the authorized protected integration path, read back protected main, reconcile #162/#364/#351/#356, and activate canonical A4 custody if all gates hold
+NEXT_WORKER: Oteryn: astra wp3-v2 implementation lead
+RUN_WORKER_WHEN: #589 is protected, protected-main readback is complete, and fresh #162/#364 state explicitly activates canonical #351/#356 A4 implementation authority/path custody
+WHY: the control plane performs the governance transition; A4 is the next substantive programme worker once that transition is complete
+```
 
 ## Concurrency ceiling
 
