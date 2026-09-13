@@ -8,6 +8,8 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/work-dispatcher-lane-blockers-20260913
+issue: 162
+pr: 596
 owner: OTV2_WORK_DELIVERY_COORDINATOR
 created_at: 2026-09-13
 updated_at: 2026-09-13
