@@ -96,6 +96,24 @@ recommended_control_plane_action: integrate | return_to_lane | wait | escalate
 next_action: <exactly one concrete action>
 ```
 
+## Mandatory owner-facing successor instruction
+
+After the handoff, end the final response with:
+
+```text
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate/state>
+WHY: <one concise dependency reason>
+```
+
+Routing for this terminal lane:
+- when the Server Seam is truthfully `READY_FOR_INTEGRATION`, put the required protected integration/readback action in `CONTROL_PLANE_ACTION` if one remains, and use `NEXT_WORKER: NONE` unless a genuinely new substantive programme worker is required;
+- when blocked on dependency/architecture/custody and no substantive A0-A7 worker is currently runnable, name the exact control-plane reconciliation/escalation and use `NEXT_WORKER: NONE`;
+- if a substantive worker really is required, name that A0-A7 alias in `NEXT_WORKER` and keep any coordinator/integration work separate in `CONTROL_PLANE_ACTION`.
+
+Never place a control-plane-only alias in `NEXT_WORKER`, and do not invent a successor worker after programme terminal success.
+
 ## Safety
 
 No production deployment/secret/certificate/port selection, live accounts/sessions/data, external-repository writes or Reference-parity claims.

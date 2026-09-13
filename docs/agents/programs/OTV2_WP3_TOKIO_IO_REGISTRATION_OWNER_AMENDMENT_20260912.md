@@ -53,11 +53,13 @@ Permitted existing symbols, only for owner propagation into the common registrat
 - `TcpStream::connect_mio`;
 - `TcpStream::new`.
 
-Permitted new private owner-aware counterparts if the implementation needs them:
+Permitted new owner-aware counterparts if the implementation needs them:
 
-- `TcpStream::connect_addr_oteryn_owned`;
+- `TcpStream::connect_addr_oteryn_owned` — a doc-hidden public async entrypoint accepting exactly a `std::net::SocketAddr` and the pre-established public runtime-owner capability; callable by SQLx and the focused external test target;
 - `TcpStream::connect_mio_oteryn_owned`;
 - `TcpStream::new_oteryn_owned`.
+
+Only `connect_addr_oteryn_owned` may be externally callable; the other two counterparts remain private. The entrypoint performs no `ToSocketAddrs` conversion or hostname lookup and propagates the supplied owner unchanged into the common registration constructor. It must not create a new owner/ledger, change the ordinary connect signature, or expose a generic networking extension. Its error/result type preserves the existing TCP connection failure semantics, including denial before charged allocation.
 
 `TcpStream::connect<A: ToSocketAddrs>` is **not writable by E2** because hostname resolution is E3. Ordinary public TCP connect behavior remains unchanged.
 
@@ -70,12 +72,14 @@ Permitted existing symbols, only for owner propagation into the same registratio
 - `UnixStream::connect_mio`;
 - `UnixStream::new`.
 
-Permitted new private owner-aware counterparts if required:
+Permitted new owner-aware counterparts if required:
 
-- `UnixStream::connect_oteryn_owned`;
+- `UnixStream::connect_oteryn_owned` — a doc-hidden public async entrypoint accepting the same Unix socket address/path input family as ordinary `UnixStream::connect` plus the pre-established public runtime-owner capability; callable by SQLx and the focused external test target;
 - `UnixStream::connect_addr_oteryn_owned`;
 - `UnixStream::connect_mio_oteryn_owned`;
 - `UnixStream::new_oteryn_owned`.
+
+Only `connect_oteryn_owned` may be externally callable; the other three counterparts remain private. It preserves ordinary Unix address validation, performs no DNS resolution, and propagates the supplied owner unchanged through the same registration core. This UDS accounting obligation does not admit UDS to the separately frozen Revision-3 production literal-IP TCP profile.
 
 No other Unix socket/listener/datagram symbol is allocated.
 
@@ -208,6 +212,7 @@ Before E2 can be GREEN, the SAME #351/#356 lineage must prove on one exact head:
 8. source/API census proves no alternate owner-aware uncharged registration allocation/finality path.
 9. focused Tokio tests, Rust 1.94 fmt/check/strict Clippy as applicable, root composition checks and repository governance pass.
 10. E2 success does not claim DNS E3 or std-thread `3993253957` closure.
+11. A caller in a separate crate can invoke each exact public owner-aware entrypoint with the existing public runtime-owner capability; private helper compilation alone is insufficient. The TCP entrypoint accepts literal `SocketAddr` only and does not enter hostname resolution. Existing owner-free API signatures remain unchanged.
 
 ## Explicit exclusions
 
