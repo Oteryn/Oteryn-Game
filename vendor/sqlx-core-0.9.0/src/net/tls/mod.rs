@@ -20,6 +20,10 @@ mod util;
 pub enum CertificateInput {
     /// PEM encoded certificate(s)
     Inline(Vec<u8>),
+    /// Bounded inline certificate material whose contents must never be rendered
+    /// into diagnostics. Reserved for the Oteryn root-owned PostgreSQL profile.
+    #[doc(hidden)]
+    OterynInline(Vec<u8>),
     /// Path to a file containing PEM encoded certificate(s)
     File(PathBuf),
 }
@@ -43,7 +47,7 @@ impl CertificateInput {
     async fn data(&self) -> Result<Vec<u8>, std::io::Error> {
         use crate::fs;
         match self {
-            CertificateInput::Inline(v) => Ok(v.clone()),
+            CertificateInput::Inline(v) | CertificateInput::OterynInline(v) => Ok(v.clone()),
             CertificateInput::File(path) => fs::read(path).await,
         }
     }
@@ -53,6 +57,7 @@ impl std::fmt::Display for CertificateInput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CertificateInput::Inline(v) => write!(f, "{}", String::from_utf8_lossy(v.as_slice())),
+            CertificateInput::OterynInline(_) => f.write_str("inline Oteryn root CA"),
             CertificateInput::File(path) => write!(f, "file: {}", path.display()),
         }
     }
@@ -266,7 +271,7 @@ pub(super) async fn read_certificate_input_owned(
 
     match input {
         CertificateInput::File(path) => read_certificate_file_owned(path, owner).await,
-        CertificateInput::Inline(bytes) => {
+        CertificateInput::Inline(bytes) | CertificateInput::OterynInline(bytes) => {
             let reservation = ResourceReservation::try_new(owner.budget(), bytes.len())?;
             let mut copy = Vec::with_capacity(bytes.len());
             copy.extend_from_slice(bytes);
