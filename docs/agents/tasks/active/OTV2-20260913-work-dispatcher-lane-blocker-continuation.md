@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260913-work-dispatcher-lane-blocker-continuation
-title: Keep Work dispatcher active across lane-local blockers
+title: Harden Work dispatcher continuation and context efficiency
 mode: COORDINATE
 status: validating
 repository: Oteryn/Oteryn-Game
@@ -26,21 +26,30 @@ blocks: []
 
 ## Outcome
 
-Refine the active Work coordinator dispatch semantics so a blocker on one lane does not terminate the whole programme while other legal useful work exists.
+Make the active Work coordinator a thin dispatcher: lane-local blockers do not terminate the programme, unchanged evidence is reused, and each worker receives only the bounded context required for one task.
 
 ## Required semantics
 
-- distinguish `LANE_BLOCKED` from `PROGRAMME_BLOCKED`;
-- after every worker result, blocker or capability failure, refresh live state and recompute the complete programme DAG;
-- continue the highest-value legally runnable independent task instead of self-routing the coordinator and stopping;
-- park blocked lanes with exact recheck triggers and avoid busy polling;
-- permit programme termination only when a fresh full-DAG pass proves zero runnable mutating work, zero useful independent evidence/review work, zero useful bounded read-only preparation and zero coordinator action that can advance a gate;
-- preserve all existing authority, path-ownership, Merge Queue, architecture and production restrictions.
+- `LANE_BLOCKED` is distinct from `PROGRAMME_BLOCKED`;
+- recompute the full live DAG after every terminal worker/blocker/integration result;
+- schedule other legal work instead of self-routing the coordinator and stopping;
+- use minimal worker context packets with optional `lazy_refs`;
+- cache evidence by exact main/head/review/check/allocation generation;
+- use anti-loop fingerprints for blocked/retryable actions;
+- allow at most two retries on an unchanged fingerprint unless new diagnostics appear;
+- rank work by critical-path value, blocker reduction, readiness, overlap risk and context cost;
+- require one machine-readable terminal state from every worker;
+- stop the programme only after a full-DAG scan proves no legal useful work remains;
+- preserve current authority, path ownership, review and protected integration rules.
+
+## Prompt-debt reduction
+
+The Work prompt is intentionally a compact execution profile over `OTV2_IMPLEMENTATION_COORDINATOR`. It does not restate historical wave sequencing; current programme/allocation records remain authoritative for live order.
 
 ## Scope
 
-Documentation/governance prompt semantics only. No runtime, Cargo, vendor, SQL/migration, workflow/ruleset, production, external-repository or merge mutation.
+Documentation/governance only. No product/runtime implementation or integration action is performed by this task.
 
 ## Validation
 
-Require repository-native exact-head governance/semantic checks on the final candidate. Existing live allocations and integration authority remain unchanged.
+Require exact-head Agent Governance, Architecture Semantic Audit and Merge Gate on the final candidate. Existing allocations and authority remain unchanged.
