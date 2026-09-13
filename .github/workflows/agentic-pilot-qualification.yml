@@ -110,15 +110,12 @@ jobs:
           done
           test "$stale" -eq 0
 
-      - name: Emit generated locks for bootstrap capture
-        shell: bash
-        run: |
-          set -euo pipefail
-          for lock in \
-            .github/workflows/oteryn-agentic-pilot-worker.lock.yml \
-            .github/workflows/oteryn-agentic-pilot-router.lock.yml; do
-            echo "GH_AW_LOCK_BASE64_BEGIN:$lock"
-            base64 -w0 "$lock"
-            echo
-            echo "GH_AW_LOCK_BASE64_END:$lock"
-          done
+      - name: Upload generated locks for bootstrap capture
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: agentic-pilot-generated-locks
+          path: |
+            .github/workflows/oteryn-agentic-pilot-worker.lock.yml
+            .github/workflows/oteryn-agentic-pilot-router.lock.yml
+          if-no-files-found: error
+          retention-days: 1
