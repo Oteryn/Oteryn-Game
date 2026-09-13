@@ -81,7 +81,7 @@ impl Value for PgValue {
     fn as_ref(&self) -> PgValueRef<'_> {
         PgValueRef {
             value: self.value.as_deref(),
-            row: None,
+            row: self.value.as_ref(),
             type_info: self.type_info.clone(),
             format: self.format,
         }
@@ -121,5 +121,54 @@ impl<'r> ValueRef<'r> for PgValueRef<'r> {
 
     fn is_null(&self) -> bool {
         self.value.is_none()
+    }
+}
+
+#[cfg(test)]
+mod repair1_tests {
+    use super::*;
+    use crate::statement::custody_test_support::Ledger;
+
+    #[test]
+    fn owned_public_roundtrips_preserve_backing_without_spare_balance() {
+        let budget = Ledger::new(usize::MAX);
+        let mut value = PgValue {
+            value: Some(Bytes::try_copy_from_slice(b"retained", budget.clone()).unwrap()),
+            type_info: PgTypeInfo::TEXT,
+            format: PgValueFormat::Text,
+        };
+        let charge = budget.held();
+        let pointer = value.as_ref().as_bytes().unwrap().as_ptr();
+        budget.limit(charge);
+        for _ in 0..32 {
+            let descendant = ValueRef::to_owned(&value.as_ref());
+            drop(value);
+            assert_eq!(budget.held(), charge);
+            assert_eq!(descendant.as_ref().as_bytes().unwrap().as_ptr(), pointer);
+            value = descendant;
+        }
+        drop(value);
+        assert_eq!(budget.held(), 0);
+    }
+
+    #[test]
+    fn null_empty_and_owner_free_public_roundtrips_remain_compatible() {
+        for bytes in [
+            None,
+            Some(Bytes::new()),
+            Some(Bytes::from_static(b"ordinary")),
+        ] {
+            let mut value = PgValue {
+                value: bytes,
+                type_info: PgTypeInfo::TEXT,
+                format: PgValueFormat::Text,
+            };
+            let expected = value.value.as_deref().map(<[u8]>::to_vec);
+            for _ in 0..8 {
+                value = ValueRef::to_owned(&value.as_ref());
+                assert_eq!(value.value.as_deref(), expected.as_deref());
+                assert_eq!(value.is_null(), expected.is_none());
+            }
+        }
     }
 }

@@ -568,3 +568,66 @@ Exact authored paths in this continuation (relative to this package):
 - `src/statement.rs`
 - `src/transaction.rs`
 - `src/value.rs`
+
+
+## M02/M04 repair 1: independent audit findings (2026-09-13)
+
+Authority: SAME frozen M02/M04/E02 batch and owner custody handoff; the work
+coordinator returned both findings in canonical PR #356 comment
+[5656534849](https://github.com/Oteryn/Oteryn-Game/pull/356#issuecomment-5656534849)
+for one coherent repair. Parent candidate is
+`a83af56e6269e288aade597e093eee086cf3ddcb`; this section supersedes any broader
+value-descendant or denial-composition claim contradicted by that audit.
+No new material cell or imported path is introduced.
+
+- **WORK-AUDIT-M02M04-1:** `PgValue::as_ref` now passes the existing `OwnedBytes`
+  backing to its reference. `ValueRef::to_owned` consequently slices the same
+  charged backing rather than copying into ordinary Bytes. Repeated public
+  round trips retain the original pointer and its single 88-byte test debit,
+  even with no spare budget and with each predecessor dropped. Final descendant
+  drop releases the debit; null, empty and ordinary owner-free values retain
+  their expected value behavior.
+- **WORK-AUDIT-M02M04-2:** a stack-only `PendingRequest` borrows the connection
+  across complete `run` preparation and flush, and across `get_or_prepare`
+  (including Parse/Describe, metadata resolution and cache eviction Close).
+  Every early error or cancelled preparation drops the guard and poisons an
+  owned stream. It neither clears queued bytes/pending ReadyForQuery count nor
+  closes the socket or releases its custody. Thus an abandoned request cannot
+  be flushed on reuse, while already submitted bytes retain their existing
+  ambiguous-operation semantics. Success disarms the guard and retains the
+  existing response handling; ordinary owner-free connections are not poisoned
+  by this new guard. Sync's existing poison behavior remains in force.
+
+Regression evidence was generated test-first, with unchanged parent production
+implementation: `cargo test --locked -p sqlx-postgres --lib repair1_tests`
+produced five failures and one compatibility pass. The value test observed its
+88-byte debit fall to zero despite a live descendant. Actual mock TCP peers
+received 15 abandoned Query bytes after metadata denial, and 8192 bytes each
+for Parse/Describe, Bind/Execute and Execute/Close denial. The identical six
+cases pass after repair; the peers receive no request bytes, failed reuse keeps
+the full connection allocation debit, and dropping the connection returns it
+to zero. These deterministic peers are protocol fixtures, not PostgreSQL
+qualification servers.
+
+Validation (runner `/tmp/a4-m01-run`, Rust/Cargo/Clippy/rustfmt 1.94.0;
+`CARGO_TARGET_DIR=/tmp/a4-provider-target`, repository root working directory):
+
+- Focused RED/GREEN logs: `/tmp/m02-m04-repair1-red.log` and
+  `/tmp/m02-m04-repair1-green.log`, command above (5 failures/1 pass then 6/0).
+- `/tmp/m02-m04-repair1-postgres.log`:
+  `cargo test --locked -p sqlx-postgres --lib` — **167 passed, 0 failed, 0 ignored**.
+- `/tmp/m02-m04-repair1-postgres-clippy.log`:
+  `cargo clippy --locked -p sqlx-postgres --lib --tests -- -D warnings` — PASS.
+- `/tmp/m02-m04-repair1-root-clippy.log`:
+  `cargo clippy --locked --manifest-path apps/game-server/Cargo.toml --all-targets -- -D warnings`
+  — PASS. Existing dependency rustls warnings remain separately recorded.
+- Changed Rust files pass rustfmt with `--edition 2021 --config skip_children=true`;
+  `git diff --check` passes. Tracked manifests/locks and core `src/error.rs` remain
+  byte-identical to the parent. The earlier core six-test/Clippy and Any/offline
+  evidence is retained without rerunning or claiming new exact-head execution.
+
+The legal subset still needs independent successor review and configured
+PostgreSQL 17.6/AWS-LC VerifyFull/TLS1.3 qualification on the eventual canonical
+successor. No local PostgreSQL executable was available. The separately held
+core Error custody boundary, baseline HRR/parallel KX evidence and remaining
+M03/M05/root qualification are unchanged and are not claimed complete here.

@@ -20,6 +20,50 @@ use sqlx_core::sql_str::SqlStr;
 use sqlx_core::Either;
 use std::pin::pin;
 
+// A failed or cancelled preparation may leave an executable prefix, or may
+// already have submitted bytes. Fence owned connections without discarding the
+// socket, pending response count, or backing debits. Successful submission hands
+// response handling back to the existing executor; poisoning is not a rollback.
+struct PendingRequest<'c>(Option<&'c mut PgConnection>);
+
+impl<'c> PendingRequest<'c> {
+    fn new(conn: &'c mut PgConnection) -> Self {
+        Self(Some(conn))
+    }
+
+    fn finish(mut self) -> &'c mut PgConnection {
+        self.0.take().expect("pending request owns its connection")
+    }
+}
+
+impl std::ops::Deref for PendingRequest<'_> {
+    type Target = PgConnection;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+            .as_deref()
+            .expect("pending request owns its connection")
+    }
+}
+
+impl std::ops::DerefMut for PendingRequest<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0
+            .as_deref_mut()
+            .expect("pending request owns its connection")
+    }
+}
+
+impl Drop for PendingRequest<'_> {
+    fn drop(&mut self) {
+        if let Some(conn) = self.0.as_deref_mut() {
+            if conn.inner.stream.resource_budget().is_some() {
+                conn.inner.stream.poison();
+            }
+        }
+    }
+}
+
 async fn prepare(
     conn: &mut PgConnection,
     sql: &str,
@@ -170,6 +214,22 @@ impl PgConnection {
         metadata: Option<Metadata>,
         resolve_column_origin: bool,
     ) -> Result<(StatementId, Metadata), Error> {
+        let mut request = PendingRequest::new(self);
+        let result = request
+            .get_or_prepare_inner(sql, parameters, persistent, metadata, resolve_column_origin)
+            .await?;
+        request.finish();
+        Ok(result)
+    }
+
+    async fn get_or_prepare_inner(
+        &mut self,
+        sql: &str,
+        parameters: &[PgTypeInfo],
+        persistent: bool,
+        metadata: Option<Metadata>,
+        resolve_column_origin: bool,
+    ) -> Result<(StatementId, Metadata), Error> {
         if let Some(statement) = self.inner.cache_statement.get_mut(sql) {
             return Ok((*statement).clone());
         }
@@ -216,8 +276,10 @@ impl PgConnection {
         let mut logger = QueryLogger::new(query, self.inner.log_settings.clone());
         let sql = logger.sql().as_str();
 
+        let mut request = PendingRequest::new(self);
+
         // before we continue, wait until we are "ready" to accept more queries
-        self.wait_until_ready().await?;
+        request.wait_until_ready().await?;
 
         let mut metadata: Metadata;
 
@@ -237,20 +299,22 @@ impl PgConnection {
 
             // prepare the statement if this our first time executing it
             // always return the statement ID here
-            let (statement, metadata_) = self
+            let (statement, metadata_) = request
                 .get_or_prepare(sql, &arguments.types, persistent, metadata_opt, false)
                 .await?;
 
             metadata = metadata_;
 
             // patch holes created during encoding
-            arguments.apply_patches(self, &metadata.parameters).await?;
+            arguments
+                .apply_patches(&mut request, &metadata.parameters)
+                .await?;
 
             // consume messages till `ReadyForQuery` before bind and execute
-            self.wait_until_ready().await?;
+            request.wait_until_ready().await?;
 
             // bind to attach the arguments to the statement and create a portal
-            self.inner.stream.write_msg(Bind {
+            request.inner.stream.write_msg(Bind {
                 portal: PortalId::UNNAMED,
                 statement,
                 formats: &[PgValueFormat::Binary],
@@ -261,7 +325,7 @@ impl PgConnection {
 
             // executes the portal up to the passed limit
             // the protocol-level limit acts nearly identically to the `LIMIT` in SQL
-            self.inner.stream.write_msg(message::Execute {
+            request.inner.stream.write_msg(message::Execute {
                 portal: PortalId::UNNAMED,
                 // Non-zero limits cause query plan pessimization by disabling parallel workers:
                 // https://github.com/launchbadge/sqlx/issues/3673
@@ -276,7 +340,8 @@ impl PgConnection {
 
             // we ask the database server to close the unnamed portal and free the associated resources
             // earlier - after the execution of the current query.
-            self.inner
+            request
+                .inner
                 .stream
                 .write_msg(Close::Portal(PortalId::UNNAMED))?;
 
@@ -285,26 +350,28 @@ impl PgConnection {
             // dozens of queries before a [Sync] and postgres can handle that. Execution on the server
             // is still serial but it would reduce round-trips. Some kind of builder pattern that is
             // termed batching might suit this.
-            self.write_sync();
+            request.write_sync();
 
             // prepared statements are binary
             PgValueFormat::Binary
         } else {
             // Query will trigger a ReadyForQuery
-            self.queue_simple_query(sql)?;
+            request.queue_simple_query(sql)?;
 
             // metadata starts out as "nothing"
-            metadata = Metadata::empty(self.inner.stream.resource_budget().cloned())?;
+            metadata = Metadata::empty(request.inner.stream.resource_budget().cloned())?;
 
             // and unprepared statements are text
             PgValueFormat::Text
         };
 
-        self.inner.stream.flush().await?;
+        request.inner.stream.flush().await?;
+
+        let connection = request.finish();
 
         Ok(try_stream! {
             loop {
-                let message = self.inner.stream.recv().await?;
+                let message = connection.inner.stream.recv().await?;
 
                 match message.format {
                     BackendMessageFormat::BindComplete
@@ -336,14 +403,14 @@ impl PgConnection {
                         // empty query string passed to an unprepared execute
                     }
 
-                    // Message::ErrorResponse is handled in self.stream.recv()
+                    // Message::ErrorResponse is handled in connection.stream.recv()
 
                     // incomplete query execution has finished
                     BackendMessageFormat::PortalSuspended => {}
 
                     // indicates that a *new* set of rows are about to be returned
                     BackendMessageFormat::RowDescription => {
-                        let new_metadata = self.resolve_statement_metadata::<false>(
+                        let new_metadata = connection.resolve_statement_metadata::<false>(
                             None,
                             Some(message.decode()?),
                             false,
@@ -374,7 +441,7 @@ impl PgConnection {
 
                     BackendMessageFormat::ReadyForQuery => {
                         // processing of the query string is complete
-                        self.handle_ready_for_query(message)?;
+                        connection.handle_ready_for_query(message)?;
                         break;
                     }
 
@@ -499,5 +566,122 @@ impl<'c> Executor<'c> for &'c mut PgConnection {
                 parameters: Some(Either::Left(metadata.parameters.clone())),
             })
         })
+    }
+}
+
+#[cfg(test)]
+mod repair1_tests {
+    use super::*;
+    use crate::statement::custody_test_support::Ledger;
+    use crate::{PgConnectOptions, PgSslMode};
+    use sqlx_core::sql_str::SqlSafeStr;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    fn abandoned_prefix_case(phase: u8) {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let server = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(std::time::Duration::from_secs(10)))
+                .unwrap();
+            let mut length = [0; 4];
+            socket.read_exact(&mut length).unwrap();
+            let size = u32::from_be_bytes(length) as usize;
+            assert!((4..1024).contains(&size));
+            socket.read_exact(&mut vec![0; size - 4]).unwrap();
+            for (tag, body) in [
+                (b'R', &[0, 0, 0, 0][..]),
+                (b'K', &[0, 0, 0, 1, 0, 0, 0, 2][..]),
+                (b'Z', &b"I"[..]),
+            ] {
+                socket.write_all(&[tag]).unwrap();
+                socket
+                    .write_all(&u32::try_from(body.len() + 4).unwrap().to_be_bytes())
+                    .unwrap();
+                socket.write_all(body).unwrap();
+            }
+            let mut received = Vec::new();
+            socket.read_to_end(&mut received).unwrap();
+            received
+        });
+        let budget = Ledger::new(usize::MAX);
+        let (flush_failed, queued) = sqlx_core::rt::test_block_on(async {
+            let options = PgConnectOptions::new_without_pgpass()
+                .host("127.0.0.1")
+                .port(port)
+                .username("test")
+                .ssl_mode(PgSslMode::Disable);
+            let mut conn = PgConnection::establish_with_resource_budget(&options, budget.clone())
+                .await
+                .unwrap();
+            if phase >= 2 {
+                let metadata = Metadata::empty(Some(budget.clone())).unwrap();
+                conn.inner
+                    .cache_statement
+                    .insert("SELECT $1", (StatementId::UNNAMED, metadata))
+                    .unwrap();
+            }
+            let retained = budget.held();
+            budget.limit(retained);
+            if phase == 1 {
+                let query = "x".repeat(8183); // Parse fills the 8192-byte owned write buffer.
+                assert!(conn
+                    .get_or_prepare(&query, &[], false, None, false)
+                    .await
+                    .is_err());
+            } else {
+                let arguments = if phase >= 2 {
+                    let mut arguments = PgArguments::default();
+                    // Bind fills the buffer, or leaves exactly one Execute's ten bytes.
+                    arguments
+                        .add("x".repeat(if phase == 2 { 8171 } else { 8161 }))
+                        .unwrap();
+                    Some(arguments)
+                } else {
+                    None
+                };
+                assert!(conn
+                    .run("SELECT $1".into_sql_str(), arguments, true, None)
+                    .await
+                    .is_err());
+            }
+            let queued = !conn.inner.stream.write_buffer().is_empty();
+            let flush_failed = conn.inner.stream.flush().await.is_err();
+            assert_eq!(
+                budget.held(),
+                retained,
+                "poison must retain allocation custody"
+            );
+            drop(conn);
+            (flush_failed, queued)
+        });
+        let received = server.join().unwrap();
+        assert_eq!(budget.held(), 0);
+        assert!(queued, "fixture must reach an intermediate append");
+        assert!(
+            flush_failed,
+            "reuse flushed an abandoned request: {} bytes",
+            received.len()
+        );
+        assert!(received.is_empty(), "abandoned protocol reached the peer");
+    }
+
+    #[test]
+    fn simple_metadata_denial_cannot_flush_abandoned_query() {
+        abandoned_prefix_case(0);
+    }
+    #[test]
+    fn describe_denial_cannot_flush_abandoned_parse() {
+        abandoned_prefix_case(1);
+    }
+    #[test]
+    fn execute_denial_cannot_flush_abandoned_bind() {
+        abandoned_prefix_case(2);
+    }
+    #[test]
+    fn close_denial_cannot_flush_abandoned_execute() {
+        abandoned_prefix_case(3);
     }
 }
