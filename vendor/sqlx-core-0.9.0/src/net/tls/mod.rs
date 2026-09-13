@@ -62,6 +62,7 @@ pub struct TlsConfig<'a> {
     pub accept_invalid_certs: bool,
     pub accept_invalid_hostnames: bool,
     pub hostname: &'a str,
+    pub oteryn_root_profile: bool,
     pub root_cert_path: Option<&'a CertificateInput>,
     pub client_cert_path: Option<&'a CertificateInput>,
     pub client_key_path: Option<&'a CertificateInput>,
