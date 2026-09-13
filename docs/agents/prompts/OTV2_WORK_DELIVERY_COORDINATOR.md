@@ -253,17 +253,55 @@ For every worker return:
 6. run focused/component/integration/E2E evidence appropriate to risk;
 7. require independent exact-head review where repository policy requires it;
 8. refresh to current integration `main` without discarding valid history;
-9. require exact-head repository CI and zero unresolved threads, then route integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"` after fresh repository/PR/`base=main`/head/auth/eligibility preflight. Treat HTTP `202` as acceptance only, bind its exact returned async UUID to an executor-owned receipt sequence, and require immediate same-target live readback carrying that UUID at a strictly greater executor sequence; wall-clock timestamps are freshness-only. Reconcile HTTP `200`/`409`. Direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue are forbidden substitutes. If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate;
+9. require exact-head repository CI and zero unresolved threads, then route integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"` after fresh repository/PR/`base=main`/head/auth/eligibility preflight. Treat HTTP `202` as acceptance only, bind its exact returned async UUID to an executor-owned receipt sequence, and require immediate same-target live readback carrying that UUID at a strictly greater executor sequence; wall-clock timestamps are freshness-only. Reconcile HTTP `200`/`409`. Direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue are forbidden substitutes. If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`, preserve the qualified candidate, mark only that integration lane blocked, and immediately continue through the dispatcher loop below;
 10. queue admission is not terminal proof: require real `merge_group` `game-gate` SUCCESS and protected-main readback confirming the accepted candidate is integrated, then archive the task and release ownership/lease;
-11. recompute dependent lane readiness.
+11. recompute dependent lane readiness and all independent runnable work.
 
 Worker completion order never overrides dependency-aware integration order.
+
+## Dispatcher continuation and blocker scope
+
+A blocker belongs to the **smallest affected lane by default**. Never convert one blocked integration, worker, capability or external dependency into whole-programme termination unless a fresh full-DAG reconciliation proves that no other legal useful work exists.
+
+Use these distinct states:
+
+```text
+LANE_BLOCKED
+PROGRAMME_BLOCKED
+```
+
+`BLOCKED_CAPABILITY_UNAVAILABLE`, `WAITING_EXTERNAL`, `WAITING_ARCHITECTURE`, unavailable Merge Queue integration and a blocked downstream dependency are `LANE_BLOCKED` unless they actually prevent every useful legal action in the programme.
+
+After **every** worker completion, review result, integration result, blocker, capability failure or material live-state change, execute this dispatcher loop before returning control to the owner:
+
+1. refresh protected `main`, governing Issues/PRs, exact heads/checks/reviews, active allocations and path/custody overlap relevant to the programme;
+2. classify every known lane as `READY`, `ACTIVE`, `LANE_BLOCKED` or `DONE`, preserving the exact blocker and its recheck trigger;
+3. recompute the complete dependency DAG rather than only the current critical-path edge;
+4. enumerate all legally runnable work, including path-disjoint mutating tasks, independent evidence/review tasks, and read-only preparation that materially reduces a future blocker;
+5. rank runnable work in this order: current critical-path work, independent work that removes/reduces a known future blocker, then bounded read-only preparation with concrete downstream value;
+6. dispatch the highest-value legal task immediately, subject to authority, path ownership and concurrency limits;
+7. after its terminal result, repeat this loop from step 1.
+
+Do **not** terminate merely because the currently preferred critical-path lane is blocked. Do **not** set `NEXT_LEGAL_AGENT` to this coordinator itself and stop as a substitute for full-DAG scheduling. The coordinator is the scheduler; a self-reference is a control-plane action/recheck trigger, not substantive next work.
+
+When a blocked lane requires a future external/capability event, park it with an exact recheck condition and do not busy-poll it. Recheck that parked lane after another task completes, after an observed relevant live-state change, or when the required capability is actually available.
+
+For the WP3-v2 / #589 programme specifically, unavailable native Merge Queue for #589 blocks only the Gate-1 integration lane. It does **not** authorize A4/A5/A7 early, but the dispatcher must still fresh-check whether A3 Platform hardening, A6 path-disjoint/read-only source preparation, A2 evidence work, or another independently authorized programme task can legally advance. If any such useful task is runnable, continue it rather than stopping the programme.
+
+`PROGRAMME_BLOCKED` may be reported only when a fresh full-DAG pass proves **all** of the following:
+
+- zero legally runnable mutating tasks;
+- zero useful independent review/evidence tasks;
+- zero useful bounded read-only preparation tasks that reduce a known downstream blocker;
+- zero coordinator actions within current authority that can advance or clarify any gate.
+
+When those conditions are all true, persist one durable programme checkpoint listing every blocked lane, blocker, owner/capability and exact recheck trigger. Only then may the dispatcher stop and surface the programme-level blocker to the owner.
 
 ## Waiting, retries and loops
 
 Never create empty/no-op/checkpoint/retrigger commits merely to wake CI/review/mergeability.
 
-When the central bounded-execution policy is canonical in Game, use its exact `WAITING_EXTERNAL` / `STALLED` semantics. Until that provider adoption is merged, still apply the conservative invariant: unchanged external waits do not justify Git mutation or unbounded polling; persist the exact blocker and stop/release the affected active worker.
+When the central bounded-execution policy is canonical in Game, use its exact `WAITING_EXTERNAL` / `STALLED` semantics. Until that provider adoption is merged, still apply the conservative invariant: unchanged external waits do not justify Git mutation or unbounded polling; persist the exact blocker and stop/release only the affected active worker, then execute the dispatcher continuation loop to find other legal useful work.
 
 Repairable findings and deterministic local failures remain active work. Repeated identical failures require diagnosis and bounded retries, not narration loops.
 
