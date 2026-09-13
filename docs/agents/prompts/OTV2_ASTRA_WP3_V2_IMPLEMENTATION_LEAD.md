@@ -56,19 +56,21 @@ Work test-first where a behavioral regression can be made deterministic. Run foc
 
 Require independent review for material architecture/resource/security/unsafe changes. A terminal WP3 implementation candidate requires an exact-final-head whole-diff independent review with `PASS`, `P0=0`, `P1=0`, `P2=0`, and `BLOCKING_EVIDENCE_GAP=0`; any weaker review wording or non-PASS disposition cannot authorize terminal handoff, integration, or release. Handoff must include exact candidate head, Q01-Q75 ledger, retained/superseded #356 map and any precise blocker.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
 End the final response with:
 
 ```text
-NEXT_AGENT: <exact alias>
-RUN_WHEN: <exact gate>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate>
 WHY: <one concise dependency reason>
 ```
 
-Default routing for this lane:
-- after producing a candidate that still requires coordinator/review/integration handling, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
-- only when live state already proves WP3 protected integration and Child B custody release, `NEXT_AGENT: Oteryn: astra child-b durability lead`;
-- if evidence is the remaining blocker, `NEXT_AGENT: Oteryn: sol wp3-v2 evidence auditor` and name the exact missing proof.
+Routing:
+- after producing a qualified candidate that still needs protected integration/readback/custody release, put that exact action in `CONTROL_PLANE_ACTION`, set `NEXT_WORKER: Oteryn: astra child-b durability lead`, and gate A5 on protected WP3 plus released Child B custody;
+- only when live state already proves protected WP3 integration and Child B custody release, use `CONTROL_PLANE_ACTION: NONE` and `NEXT_WORKER: Oteryn: astra child-b durability lead`;
+- if evidence is the remaining substantive task, use `NEXT_WORKER: Oteryn: sol wp3-v2 evidence auditor`;
+- if no substantive worker can yet be determined truthfully, use `NEXT_WORKER: NONE` and name the exact control-plane gate.
 
-Do not recommend A5 for mutation before protected WP3 and custody release are true.
+Never place a control-plane-only alias in `NEXT_WORKER`. Do not recommend A5 for mutation before protected WP3 and custody release are true.
