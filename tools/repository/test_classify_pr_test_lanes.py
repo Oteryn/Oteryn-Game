@@ -397,7 +397,7 @@ def main() -> int:
         "Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "apps/game-server/build.rs",
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
         "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
-        "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
+        "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
     )
     for path in full_paths:
         result = classify([path])
@@ -407,7 +407,8 @@ def main() -> int:
                   [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}]):
         result = classify(paths)
         assert result["rust"] and result["windows"], result
-    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"]):
+    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"],
+                  ["docs/agents/PROMPT_LIFECYCLE.json"]):
         result = classify(paths)
         assert result["rust"] is False and result["windows"] is False, result
         result = classify(paths, digest="unreviewed-document-consumer")
