@@ -181,15 +181,16 @@ Gate 2 --> A5 Child B -------------------------------> Gate 3 ------------------
 
 ## Mandatory owner-facing successor footer
 
-Every A0-A7 agent must end a completed or blocked final response with:
+Every A0-A7 agent must separate control-plane/governance transitions from the next substantive programme worker.
 
 ```text
-NEXT_AGENT: <one exact alias, up to three independent aliases, or NONE>
-RUN_WHEN: <exact live gate/state>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <one exact A0-A7 worker alias, up to three independent worker aliases, or NONE>
+RUN_WORKER_WHEN: <exact live gate/state>
 WHY: <one concise dependency reason>
 ```
 
-The recommendation must come from fresh programme state. Do not route a mutating worker through an unmet gate. Uncertain cross-lane routing returns to A0. After `FRESH_G0_READY`, A6 normally routes to A7. After true `SERVER_SEAM_READY_FOR_INTEGRATION`, A7 uses `NONE` unless a remaining coordinator action is proven.
+`CONTROL_PLANE_ACTION` is for integration, protected-main readback, allocation activation, lease/custody reconciliation or other control-plane-only transitions. `NEXT_WORKER` is only the next substantive A0-A7 worker/session. A control-plane-only alias such as `Oteryn: work coordinator` must never be placed in `NEXT_WORKER`. If the control plane must act first, still name the intended substantive worker and place the missing gate in `RUN_WORKER_WHEN`. After `FRESH_G0_READY`, A6 normally names A7 as `NEXT_WORKER`. After true `SERVER_SEAM_READY_FOR_INTEGRATION`, A7 uses `NEXT_WORKER: NONE` unless another substantive programme worker is actually required.
 
 ## Terminal programme criteria
 
