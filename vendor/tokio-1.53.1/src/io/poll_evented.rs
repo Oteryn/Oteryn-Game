@@ -124,6 +124,35 @@ impl<E: Source> PollEvented<E> {
         })
     }
 
+    #[cfg(all(feature = "net", feature = "rt"))]
+    pub(crate) fn new_oteryn_owned(
+        io: E,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<Self> {
+        Self::new_with_interest_and_handle_oteryn_owned(
+            io,
+            Interest::READABLE | Interest::WRITABLE,
+            scheduler::Handle::current(),
+            owner,
+        )
+    }
+
+    #[cfg(all(feature = "net", feature = "rt"))]
+    fn new_with_interest_and_handle_oteryn_owned(
+        mut io: E,
+        interest: Interest,
+        handle: scheduler::Handle,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<Self> {
+        let registration = Registration::new_with_interest_and_handle_oteryn_owned(
+            &mut io, interest, handle, owner,
+        )?;
+        Ok(Self {
+            io: Some(io),
+            registration,
+        })
+    }
+
     /// Returns a reference to the registration.
     #[cfg(any(feature = "net", all(feature = "process", target_os = "linux")))]
     pub(crate) fn registration(&self) -> &Registration {

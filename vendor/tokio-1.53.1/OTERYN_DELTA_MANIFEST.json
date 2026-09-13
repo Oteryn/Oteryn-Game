@@ -12,7 +12,13 @@
     "src/runtime/task/raw.rs",
     "src/task/blocking.rs",
     "src/task/mod.rs",
-    "tests/oteryn_resource_owner.rs"
+    "tests/oteryn_resource_owner.rs",
+    "src/net/tcp/stream.rs",
+    "src/net/unix/stream.rs",
+    "src/io/poll_evented.rs",
+    "src/runtime/io/registration.rs",
+    "src/runtime/io/registration_set.rs",
+    "src/runtime/io/driver.rs"
   ],
   "package": "tokio 1.53.1",
   "schema_version": 1,
@@ -23,7 +29,13 @@
     "src/runtime/task/mod.rs",
     "src/runtime/task/raw.rs",
     "src/runtime/task/core.rs",
-    "src/runtime/task/harness.rs"
+    "src/runtime/task/harness.rs",
+    "src/net/tcp/stream.rs",
+    "src/net/unix/stream.rs",
+    "src/io/poll_evented.rs",
+    "src/runtime/io/registration.rs",
+    "src/runtime/io/registration_set.rs",
+    "src/runtime/io/driver.rs"
   ],
   "upstream_commit": "75fef53d0a8590c2d1dbb63672aa7b7d1ef51155",
   "upstream_file_sha256": {
@@ -590,5 +602,43 @@
     "tests/uds_split.rs": "05179e22079b356a98d226f2d7742268d00285c00b3519445ad70ddbbb7ac751",
     "tests/uds_stream.rs": "8a5f7313202c1f8e46222c2e2e4667f5c61cc43e50a912fa39836578d567c968",
     "tests/unwindsafe.rs": "e833431d40708f39b8bf54b809b635d77d9895f46f3c42aa14d3e9108415279d"
+  },
+  "io_registration_owner_symbols": {
+    "src/net/tcp/stream.rs": [
+      "TcpStream::connect_addr_oteryn_owned",
+      "TcpStream::connect_mio_oteryn_owned",
+      "TcpStream::new_oteryn_owned"
+    ],
+    "src/net/unix/stream.rs": [
+      "UnixStream::connect_oteryn_owned",
+      "UnixStream::connect_addr_oteryn_owned",
+      "UnixStream::connect_mio_oteryn_owned",
+      "UnixStream::new_oteryn_owned"
+    ],
+    "src/io/poll_evented.rs": [
+      "PollEvented::new_oteryn_owned",
+      "PollEvented::new_with_interest_and_handle_oteryn_owned"
+    ],
+    "src/runtime/io/registration.rs": [
+      "Registration::shared",
+      "Registration::new_with_interest_and_handle",
+      "Registration::new_with_interest_and_handle_oteryn_owned"
+    ],
+    "src/runtime/io/registration_set.rs": [
+      "Synced::registrations",
+      "Synced::pending_release",
+      "RegistrationSet::allocate",
+      "RegistrationSet::deregister",
+      "RegistrationSet::shutdown",
+      "RegistrationSet::remove",
+      "RegistrationHandle",
+      "RegistrationBacking",
+      "RegistrationHandle linked_list::Link"
+    ],
+    "src/runtime/io/driver.rs": [
+      "Handle::add_source",
+      "Handle::deregister_source",
+      "Driver::turn (pointer-custody comment only)"
+    ]
   }
 }

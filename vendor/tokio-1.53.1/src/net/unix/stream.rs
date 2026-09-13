@@ -99,6 +99,64 @@ impl UnixStream {
         UnixStream::connect_addr(&addr).await
     }
 
+    /// Connects a Unix path using the supplied operation's registration owner.
+    #[doc(hidden)]
+    #[cfg(feature = "rt")]
+    pub async fn connect_oteryn_owned<P>(
+        path: P,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<UnixStream>
+    where
+        P: AsRef<Path>,
+    {
+        // On linux, abstract socket paths need to be considered.
+        #[cfg(any(target_os = "linux", target_os = "android"))]
+        let addr = {
+            let os_str_bytes = path.as_ref().as_os_str().as_bytes();
+            if os_str_bytes.starts_with(b"\0") {
+                StdSocketAddr::from_abstract_name(&os_str_bytes[1..])?
+            } else {
+                StdSocketAddr::from_pathname(path)?
+            }
+        };
+        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        let addr = StdSocketAddr::from_pathname(path)?;
+
+        let addr = SocketAddr::from(addr);
+        Self::connect_addr_oteryn_owned(&addr, owner).await
+    }
+
+    #[cfg(feature = "rt")]
+    async fn connect_addr_oteryn_owned(
+        socket_addr: &SocketAddr,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<UnixStream> {
+        let sys = mio::net::UnixStream::connect_addr(&socket_addr.0)?;
+        Self::connect_mio_oteryn_owned(sys, owner).await
+    }
+
+    #[cfg(feature = "rt")]
+    async fn connect_mio_oteryn_owned(
+        sys: mio::net::UnixStream,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<UnixStream> {
+        let stream = Self::new_oteryn_owned(sys, owner)?;
+        poll_fn(|cx| stream.io.registration().poll_write_ready(cx)).await?;
+        if let Some(e) = stream.io.take_error()? {
+            return Err(e);
+        }
+        Ok(stream)
+    }
+
+    #[cfg(feature = "rt")]
+    fn new_oteryn_owned(
+        stream: mio::net::UnixStream,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<UnixStream> {
+        let io = PollEvented::new_oteryn_owned(stream, owner)?;
+        Ok(UnixStream { io })
+    }
+
     /// Connects to the socket named by `socket_addr`.
     ///
     /// This function will create a new Unix socket and connect to the address

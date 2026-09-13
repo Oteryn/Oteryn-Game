@@ -647,3 +647,422 @@ fn owned_to_ordinary_handoff_retains_worker_charge_until_final_join() {
     drop(runtime);
     assert_eq!(owner.held.load(Ordering::SeqCst), 0);
 }
+
+#[cfg(feature = "net")]
+#[test]
+fn oteryn_io_registration_owner_tcp_custody_and_denial() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let owner = Arc::new(Witness::default());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let stream = tokio::net::TcpStream::connect_addr_oteryn_owned(addr, owner.clone())
+            .await
+            .unwrap();
+        assert_eq!(owner.reservations.load(Ordering::SeqCst), 1);
+        assert!(owner.held.load(Ordering::SeqCst) > 0);
+        drop(stream);
+        // Dropping the socket only enqueues driver cleanup.
+        assert!(owner.held.load(Ordering::SeqCst) > 0);
+        assert_eq!(owner.releases.load(Ordering::SeqCst), 0);
+        assert!(
+            tokio::net::TcpStream::connect_addr_oteryn_owned(addr, Arc::new(Deny))
+                .await
+                .is_err()
+        );
+    });
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+}
+
+#[cfg(all(feature = "net", unix))]
+#[test]
+fn oteryn_io_registration_owner_unix_custody_and_denial() {
+    let path = std::env::temp_dir().join(format!("oteryn-e2-{}", std::process::id()));
+    let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+    let owner = Arc::new(Witness::default());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let stream = tokio::net::UnixStream::connect_oteryn_owned(&path, owner.clone())
+            .await
+            .unwrap();
+        assert_eq!(owner.reservations.load(Ordering::SeqCst), 1);
+        drop(stream);
+        assert!(owner.held.load(Ordering::SeqCst) > 0);
+        assert_eq!(owner.releases.load(Ordering::SeqCst), 0);
+        assert!(
+            tokio::net::UnixStream::connect_oteryn_owned(&path, Arc::new(Deny))
+                .await
+                .is_err()
+        );
+    });
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+    drop(listener);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[cfg(feature = "net")]
+#[test]
+fn oteryn_io_registration_owner_tcp_exact_backing_finality() {
+    use std::alloc::{GlobalAlloc, Layout, System};
+    use std::cell::Cell;
+    use std::ptr;
+    use std::sync::atomic::{AtomicBool, AtomicPtr};
+
+    // Only this test arms tracking, on its own thread, from try_reserve.
+    // Other test allocations continue directly through System.
+    thread_local! { static ARMED: Cell<usize> = const { Cell::new(0) }; }
+    static BACKING: AtomicPtr<u8> = AtomicPtr::new(ptr::null_mut());
+    static DEALLOCATED: AtomicBool = AtomicBool::new(false);
+    static CONTENT_DROPPED: AtomicBool = AtomicBool::new(true);
+    static REQUESTED: AtomicUsize = AtomicUsize::new(0);
+    struct Allocator;
+    #[global_allocator]
+    static ALLOCATOR: Allocator = Allocator;
+    unsafe impl GlobalAlloc for Allocator {
+        unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+            let ptr = unsafe { System.alloc(layout) };
+            let track = ARMED
+                .try_with(|armed| {
+                    if armed.get() == layout.size() {
+                        armed.set(0);
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .unwrap_or(false);
+            if track && !ptr.is_null() {
+                REQUESTED.store(layout.size(), Ordering::SeqCst);
+                BACKING.store(ptr, Ordering::SeqCst);
+            }
+            ptr
+        }
+        unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+            let tracked = BACKING
+                .compare_exchange(ptr, ptr::null_mut(), Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok();
+            unsafe { System.dealloc(ptr, layout) };
+            if tracked {
+                DEALLOCATED.store(true, Ordering::SeqCst);
+            }
+        }
+    }
+    struct Owner {
+        limit: usize,
+        held: AtomicUsize,
+        requested: AtomicUsize,
+        releases: AtomicUsize,
+    }
+    impl Owner {
+        fn new(limit: usize) -> Arc<Self> {
+            assert!(BACKING.load(Ordering::SeqCst).is_null());
+            DEALLOCATED.store(false, Ordering::SeqCst);
+            REQUESTED.store(0, Ordering::SeqCst);
+            Arc::new(Self {
+                limit,
+                held: AtomicUsize::new(0),
+                requested: AtomicUsize::new(0),
+                releases: AtomicUsize::new(0),
+            })
+        }
+    }
+    impl BlockingOwner for Owner {
+        fn try_reserve(&self, bytes: usize) -> bool {
+            assert_eq!(self.requested.swap(bytes, Ordering::SeqCst), 0);
+            if bytes > self.limit {
+                return false;
+            }
+            self.held.store(bytes, Ordering::SeqCst);
+            ARMED.with(|armed| armed.set(bytes));
+            true
+        }
+        fn release(&self, bytes: usize) {
+            assert!(
+                DEALLOCATED.load(Ordering::SeqCst),
+                "debit released before allocator deallocation"
+            );
+            assert!(
+                CONTENT_DROPPED.load(Ordering::SeqCst),
+                "registration waker survives debit release"
+            );
+            assert_eq!(REQUESTED.load(Ordering::SeqCst), bytes);
+            assert_eq!(self.held.swap(0, Ordering::SeqCst), bytes);
+            assert_eq!(self.releases.fetch_add(1, Ordering::SeqCst), 0);
+        }
+    }
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let mut exact = 0;
+    for limit in [usize::MAX, 0, 1] {
+        let limit = match limit {
+            0 => exact,
+            1 => exact - 1,
+            other => other,
+        };
+        let owner = Owner::new(limit);
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let stream = runtime.block_on(tokio::net::TcpStream::connect_addr_oteryn_owned(
+            addr,
+            owner.clone(),
+        ));
+        let requested = owner.requested.load(Ordering::SeqCst);
+        if exact == 0 {
+            exact = requested;
+            eprintln!("E2 requested Arc registration backing: {exact} bytes");
+        }
+        assert_eq!(requested, exact);
+        if limit < exact {
+            assert!(stream.is_err());
+            assert_eq!(REQUESTED.load(Ordering::SeqCst), 0);
+            assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+            assert_eq!(owner.releases.load(Ordering::SeqCst), 0);
+            ARMED.with(|armed| assert_eq!(armed.get(), 0));
+        } else {
+            let stream = stream.unwrap();
+            struct Content;
+            impl std::task::Wake for Content {
+                fn wake(self: Arc<Self>) {}
+            }
+            impl Drop for Content {
+                fn drop(&mut self) {
+                    CONTENT_DROPPED.store(true, Ordering::SeqCst);
+                }
+            }
+            CONTENT_DROPPED.store(false, Ordering::SeqCst);
+            let waker = std::task::Waker::from(Arc::new(Content));
+            assert!(stream
+                .poll_read_ready(&mut std::task::Context::from_waker(&waker))
+                .is_pending());
+            drop(waker);
+            assert!(!CONTENT_DROPPED.load(Ordering::SeqCst));
+            assert_eq!(REQUESTED.load(Ordering::SeqCst), exact);
+            assert!(!BACKING.load(Ordering::SeqCst).is_null());
+            // Driver shutdown releases the list strong owner, but the socket
+            // still owns the registration; final socket teardown must debit last.
+            drop(runtime);
+            assert_eq!(owner.held.load(Ordering::SeqCst), exact);
+            assert!(!DEALLOCATED.load(Ordering::SeqCst));
+            drop(stream);
+            assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+            assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+            continue;
+        }
+        drop(runtime);
+    }
+    // Concurrent socket and runtime teardown both consume the private strong
+    // handle. Arc::into_inner supplies the universal exactly-one winner proof.
+    let owner = Owner::new(exact);
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let stream = runtime
+        .block_on(tokio::net::TcpStream::connect_addr_oteryn_owned(
+            addr,
+            owner.clone(),
+        ))
+        .unwrap();
+    let barrier = std::sync::Barrier::new(2);
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            barrier.wait();
+            drop(runtime);
+        });
+        scope.spawn(|| {
+            barrier.wait();
+            drop(stream);
+        });
+    });
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+}
+
+#[cfg(feature = "net")]
+#[test]
+fn oteryn_io_registration_owner_tcp_cancel_and_failed_connect() {
+    use std::future::Future;
+    use std::task::{Context, Poll, Waker};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let cancelled = Arc::new(Witness::default());
+    {
+        let _enter = runtime.enter();
+        let mut future = Box::pin(tokio::net::TcpStream::connect_addr_oteryn_owned(
+            addr,
+            cancelled.clone(),
+        ));
+        assert!(matches!(
+            future
+                .as_mut()
+                .poll(&mut Context::from_waker(Waker::noop())),
+            Poll::Pending
+        ));
+        assert!(cancelled.held.load(Ordering::SeqCst) > 0);
+        drop(future);
+        assert!(cancelled.held.load(Ordering::SeqCst) > 0);
+        assert_eq!(cancelled.releases.load(Ordering::SeqCst), 0);
+    }
+    drop(runtime);
+    assert_eq!(cancelled.held.load(Ordering::SeqCst), 0);
+    assert_eq!(cancelled.releases.load(Ordering::SeqCst), 1);
+
+    drop(listener);
+    let failed = Arc::new(Witness::default());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    assert!(runtime
+        .block_on(tokio::net::TcpStream::connect_addr_oteryn_owned(
+            addr,
+            failed.clone()
+        ))
+        .is_err());
+    drop(runtime);
+    assert_eq!(failed.held.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        failed.reservations.load(Ordering::SeqCst),
+        failed.releases.load(Ordering::SeqCst)
+    );
+}
+
+#[cfg(all(feature = "net", unix))]
+#[test]
+fn oteryn_io_registration_owner_unix_exact_and_max_minus_one() {
+    struct Limit {
+        max: usize,
+        requested: AtomicUsize,
+        held: AtomicUsize,
+        released: AtomicUsize,
+    }
+    impl BlockingOwner for Limit {
+        fn try_reserve(&self, bytes: usize) -> bool {
+            assert_eq!(self.requested.swap(bytes, Ordering::SeqCst), 0);
+            if bytes > self.max {
+                return false;
+            }
+            self.held.store(bytes, Ordering::SeqCst);
+            true
+        }
+        fn release(&self, bytes: usize) {
+            assert_eq!(self.held.swap(0, Ordering::SeqCst), bytes);
+            assert_eq!(self.released.fetch_add(1, Ordering::SeqCst), 0);
+        }
+    }
+    let path = std::env::temp_dir().join(format!("oteryn-e2-limit-{}", std::process::id()));
+    let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
+    let mut exact = 0;
+    for selector in 0..3 {
+        let max = match selector {
+            0 => usize::MAX,
+            1 => exact,
+            _ => exact - 1,
+        };
+        let owner = Arc::new(Limit {
+            max,
+            requested: AtomicUsize::new(0),
+            held: AtomicUsize::new(0),
+            released: AtomicUsize::new(0),
+        });
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            let result = tokio::net::UnixStream::connect_oteryn_owned(&path, owner.clone()).await;
+            if selector == 0 {
+                exact = owner.requested.load(Ordering::SeqCst);
+            }
+            assert!(exact > 0);
+            assert_eq!(owner.requested.load(Ordering::SeqCst), exact);
+            if selector == 2 {
+                assert!(result.is_err());
+                assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+            } else {
+                drop(result.unwrap());
+                assert_eq!(owner.held.load(Ordering::SeqCst), exact);
+                assert_eq!(owner.released.load(Ordering::SeqCst), 0);
+            }
+        });
+        drop(runtime);
+        assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+        assert_eq!(
+            owner.released.load(Ordering::SeqCst),
+            usize::from(selector != 2)
+        );
+    }
+    drop(listener);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[cfg(all(feature = "net", feature = "time"))]
+#[test]
+fn oteryn_io_registration_owner_tcp_driver_pending_release() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let owner = Arc::new(Witness::default());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    runtime.block_on(async {
+        let stream = tokio::net::TcpStream::connect_addr_oteryn_owned(addr, owner.clone())
+            .await
+            .unwrap();
+        drop(stream);
+        assert!(owner.held.load(Ordering::SeqCst) > 0);
+        tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+        assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+        assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+    });
+    drop(runtime);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 1);
+}
+
+#[cfg(feature = "net")]
+#[test]
+fn oteryn_io_registration_owner_tcp_registration_after_shutdown() {
+    use std::future::Future;
+    use std::task::{Context, Poll, Waker};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let owner = Arc::new(Witness::default());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let handle = runtime.handle().clone();
+    drop(runtime);
+    let _enter = handle.enter();
+    let mut future = Box::pin(tokio::net::TcpStream::connect_addr_oteryn_owned(
+        addr,
+        owner.clone(),
+    ));
+    assert!(matches!(
+        future
+            .as_mut()
+            .poll(&mut Context::from_waker(Waker::noop())),
+        Poll::Ready(Err(_))
+    ));
+    drop(future);
+    assert_eq!(owner.reservations.load(Ordering::SeqCst), 0);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 0);
+}

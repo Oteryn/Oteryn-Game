@@ -20,13 +20,13 @@ pub(super) struct Synced {
     is_shutdown: bool,
 
     // List of all registrations tracked by the set
-    registrations: LinkedList<Arc<ScheduledIo>>,
+    registrations: LinkedList<RegistrationHandle>,
 
     // Registrations that are pending drop. When a `Registration` is dropped, it
     // stores its `ScheduledIo` in this list. The I/O driver is responsible for
     // dropping it. This ensures the `ScheduledIo` is not freed while it can
     // still be included in an I/O event.
-    pending_release: Vec<Arc<ScheduledIo>>,
+    pending_release: Vec<RegistrationHandle>,
 }
 
 impl RegistrationSet {
@@ -53,7 +53,11 @@ impl RegistrationSet {
         self.num_pending_release.load(Acquire) != 0
     }
 
-    pub(super) fn allocate(&self, synced: &mut Synced) -> io::Result<Arc<ScheduledIo>> {
+    pub(super) fn allocate(
+        &self,
+        synced: &mut Synced,
+        #[cfg(feature = "rt")] owner: Option<Arc<dyn crate::task::BlockingOwner>>,
+    ) -> io::Result<RegistrationHandle> {
         if synced.is_shutdown {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -61,7 +65,26 @@ impl RegistrationSet {
             ));
         }
 
-        let ret = Arc::new(ScheduledIo::default());
+        #[cfg(feature = "rt")]
+        let charge = owner
+            .map(|owner| {
+                crate::runtime::task::OterynCharge::reserve(
+                    owner,
+                    RegistrationHandle::allocation_size(),
+                )
+            })
+            .transpose()
+            .map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::OutOfMemory,
+                    "insufficient registration owner balance",
+                )
+            })?;
+        let ret = RegistrationHandle(Some(Arc::new(RegistrationBacking {
+            io: ScheduledIo::default(),
+            #[cfg(feature = "rt")]
+            charge,
+        })));
 
         // Push a ref into the list of all resources.
         synced.registrations.push_front(ret.clone());
@@ -71,7 +94,11 @@ impl RegistrationSet {
 
     // Returns `true` if the caller should unblock the I/O driver to purge
     // registrations pending release.
-    pub(super) fn deregister(&self, synced: &mut Synced, registration: &Arc<ScheduledIo>) -> bool {
+    pub(super) fn deregister(
+        &self,
+        synced: &mut Synced,
+        registration: &RegistrationHandle,
+    ) -> bool {
         synced.pending_release.push(registration.clone());
 
         let len = synced.pending_release.len();
@@ -80,7 +107,7 @@ impl RegistrationSet {
         len == NOTIFY_AFTER
     }
 
-    pub(super) fn shutdown(&self, synced: &mut Synced) -> Vec<Arc<ScheduledIo>> {
+    pub(super) fn shutdown(&self, synced: &mut Synced) -> Vec<RegistrationHandle> {
         if synced.is_shutdown {
             return vec![];
         }
@@ -114,9 +141,9 @@ impl RegistrationSet {
 
     // This function is marked as unsafe, because the caller must make sure that
     // `io` is part of the registration set.
-    pub(super) unsafe fn remove(&self, synced: &mut Synced, io: &Arc<ScheduledIo>) {
+    pub(super) unsafe fn remove(&self, synced: &mut Synced, io: &RegistrationHandle) {
         // SAFETY: Pointers into an Arc are never null.
-        let io = unsafe { NonNull::new_unchecked(Arc::as_ptr(io).cast_mut()) };
+        let io = RegistrationHandle::as_raw(io);
 
         super::EXPOSE_IO.unexpose_provenance(io.as_ptr());
         // SAFETY: the caller guarantees that `io` is part of this list.
@@ -124,19 +151,99 @@ impl RegistrationSet {
     }
 }
 
-// Safety: `Arc` pins the inner data
-unsafe impl linked_list::Link for Arc<ScheduledIo> {
-    type Handle = Arc<ScheduledIo>;
+// Each handle owns one strong reference. The Arc never escapes this module;
+// every strong release runs into_inner, including list and pending-release owners.
+// No Weak is created, so into_inner frees the Arc backing before returning data.
+pub(super) struct RegistrationHandle(Option<Arc<RegistrationBacking>>);
+
+#[repr(C)]
+struct RegistrationBacking {
+    io: ScheduledIo,
+    #[cfg(feature = "rt")]
+    charge: Option<crate::runtime::task::OterynCharge>,
+}
+
+impl RegistrationHandle {
+    #[cfg(feature = "rt")]
+    fn allocation_size() -> usize {
+        // Rust 1.94.0 alloc::sync::ArcInner is repr(C, align(2)), with
+        // strong/weak AtomicUsize fields preceding T. Arc::new uses Box::new
+        // on this exact layout. This counts the requested backing, not Arc<T>.
+        #[repr(C, align(2))]
+        struct ArcLayout {
+            _strong: std::sync::atomic::AtomicUsize,
+            _weak: std::sync::atomic::AtomicUsize,
+            _data: RegistrationBacking,
+        }
+        std::mem::size_of::<ArcLayout>()
+    }
+
+    fn as_raw(&self) -> NonNull<ScheduledIo> {
+        let backing = Arc::as_ptr(self.0.as_ref().unwrap());
+        // SAFETY: the live Arc pins the backing; addr_of preserves provenance.
+        unsafe { NonNull::new_unchecked(std::ptr::addr_of!((*backing).io).cast_mut()) }
+    }
+}
+
+impl Clone for RegistrationHandle {
+    fn clone(&self) -> Self {
+        Self(Some(self.0.as_ref().unwrap().clone()))
+    }
+}
+
+impl std::ops::Deref for RegistrationHandle {
+    type Target = ScheduledIo;
+
+    fn deref(&self) -> &ScheduledIo {
+        &self.0.as_ref().unwrap().io
+    }
+}
+
+impl std::fmt::Debug for RegistrationHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(&**self, f)
+    }
+}
+
+impl Drop for RegistrationHandle {
+    fn drop(&mut self) {
+        if let Some(backing) = Arc::into_inner(self.0.take().unwrap()) {
+            // The Arc allocation is now deallocated (there are no Weak owners).
+            // Keep the charge alive while destroying all ScheduledIo contents.
+            let RegistrationBacking {
+                io,
+                #[cfg(feature = "rt")]
+                charge,
+            } = backing;
+            drop(io);
+            #[cfg(feature = "rt")]
+            drop(charge);
+        }
+    }
+}
+
+// Safety: the Arc pins ScheduledIo until the list releases its strong owner.
+unsafe impl linked_list::Link for RegistrationHandle {
+    type Handle = RegistrationHandle;
     type Target = ScheduledIo;
 
     fn as_raw(handle: &Self::Handle) -> NonNull<ScheduledIo> {
         // safety: Arc::as_ptr never returns null
-        unsafe { NonNull::new_unchecked(Arc::as_ptr(handle) as *mut _) }
+        handle.as_raw()
     }
 
-    unsafe fn from_raw(ptr: NonNull<Self::Target>) -> Arc<ScheduledIo> {
+    unsafe fn from_raw(ptr: NonNull<Self::Target>) -> RegistrationHandle {
         // safety: the linked list currently owns a ref count
-        unsafe { Arc::from_raw(ptr.as_ptr() as *const _) }
+        unsafe {
+            // The list raw pointer was obtained from this same backing's io
+            // field. offset_of handles the concrete repr(C) container layout.
+            let backing = ptr
+                .as_ptr()
+                .cast::<u8>()
+                .sub(std::mem::offset_of!(RegistrationBacking, io))
+                .cast::<RegistrationBacking>();
+            RegistrationHandle(Some(Arc::from_raw(backing)))
+        }
     }
 
     unsafe fn pointers(

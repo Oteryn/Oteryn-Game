@@ -18,6 +18,7 @@ use crate::runtime::io::{IoDriverMetrics, RegistrationSet, ScheduledIo};
 use mio::event::Source;
 use std::fmt;
 use std::io;
+#[cfg(feature = "rt")]
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -212,7 +213,7 @@ impl Driver {
                 // Safety: we ensure that the pointers used as tokens are not freed
                 // until they are both deregistered from mio **and** we know the I/O
                 // driver is not concurrently polling. The I/O driver holds ownership of
-                // an `Arc<ScheduledIo>` so we can safely cast this to a ref.
+                // an Arc-backed registration handle, so we can cast this to a ref.
                 let io: &ScheduledIo = unsafe { &*ptr };
 
                 io.set_readiness(Tick::Set, |curr| curr | ready);
@@ -279,8 +280,13 @@ impl Handle {
         &self,
         source: &mut impl mio::event::Source,
         interest: Interest,
-    ) -> io::Result<Arc<ScheduledIo>> {
-        let scheduled_io = self.registrations.allocate(&mut self.synced.lock())?;
+        #[cfg(feature = "rt")] owner: Option<Arc<dyn crate::task::BlockingOwner>>,
+    ) -> io::Result<super::registration_set::RegistrationHandle> {
+        let scheduled_io = self.registrations.allocate(
+            &mut self.synced.lock(),
+            #[cfg(feature = "rt")]
+            owner,
+        )?;
         let token = scheduled_io.token();
 
         // we should remove the `scheduled_io` from the `registrations` set if registering
@@ -304,7 +310,7 @@ impl Handle {
     /// Deregisters an I/O resource from the reactor.
     pub(super) fn deregister_source(
         &self,
-        registration: &Arc<ScheduledIo>,
+        registration: &super::registration_set::RegistrationHandle,
         source: &mut impl Source,
     ) -> io::Result<()> {
         // Deregister the source with the OS poller **first**

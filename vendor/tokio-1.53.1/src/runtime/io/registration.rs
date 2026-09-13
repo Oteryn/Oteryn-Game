@@ -1,11 +1,12 @@
 #![cfg_attr(not(feature = "net"), allow(dead_code))]
 
 use crate::io::interest::Interest;
-use crate::runtime::io::{Direction, Handle, ReadyEvent, ScheduledIo};
+use crate::runtime::io::{Direction, Handle, ReadyEvent};
 use crate::runtime::scheduler;
 
 use mio::event::Source;
 use std::io;
+#[cfg(feature = "rt")]
 use std::sync::Arc;
 use std::task::{ready, Context, Poll};
 
@@ -50,7 +51,7 @@ cfg_io_driver! {
         handle: scheduler::Handle,
 
         /// Reference to state stored by the driver.
-        shared: Arc<ScheduledIo>,
+        shared: super::registration_set::RegistrationHandle,
     }
 }
 
@@ -75,8 +76,24 @@ impl Registration {
         interest: Interest,
         handle: scheduler::Handle,
     ) -> io::Result<Registration> {
-        let shared = handle.driver().io().add_source(io, interest)?;
+        let shared = handle.driver().io().add_source(
+            io,
+            interest,
+            #[cfg(feature = "rt")]
+            None,
+        )?;
 
+        Ok(Registration { handle, shared })
+    }
+
+    #[cfg(feature = "rt")]
+    pub(crate) fn new_with_interest_and_handle_oteryn_owned(
+        io: &mut impl Source,
+        interest: Interest,
+        handle: scheduler::Handle,
+        owner: Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<Registration> {
+        let shared = handle.driver().io().add_source(io, interest, Some(owner))?;
         Ok(Registration { handle, shared })
     }
 

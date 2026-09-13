@@ -160,6 +160,39 @@ impl TcpStream {
         }
     }
 
+    /// Connects a literal address using the supplied operation's registration owner.
+    #[doc(hidden)]
+    #[cfg(all(feature = "rt", not(all(target_os = "wasi", target_env = "p1"))))]
+    pub async fn connect_addr_oteryn_owned(
+        addr: SocketAddr,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<TcpStream> {
+        let sys = mio::net::TcpStream::connect(addr)?;
+        Self::connect_mio_oteryn_owned(sys, owner).await
+    }
+
+    #[cfg(all(feature = "rt", not(all(target_os = "wasi", target_env = "p1"))))]
+    async fn connect_mio_oteryn_owned(
+        sys: mio::net::TcpStream,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<TcpStream> {
+        let stream = Self::new_oteryn_owned(sys, owner)?;
+        poll_fn(|cx| stream.io.registration().poll_write_ready(cx)).await?;
+        if let Some(e) = stream.io.take_error()? {
+            return Err(e);
+        }
+        Ok(stream)
+    }
+
+    #[cfg(all(feature = "rt", not(all(target_os = "wasi", target_env = "p1"))))]
+    fn new_oteryn_owned(
+        connected: mio::net::TcpStream,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> io::Result<TcpStream> {
+        let io = PollEvented::new_oteryn_owned(connected, owner)?;
+        Ok(TcpStream { io })
+    }
+
     pub(crate) fn new(connected: mio::net::TcpStream) -> io::Result<TcpStream> {
         let io = PollEvented::new(connected)?;
         Ok(TcpStream { io })
