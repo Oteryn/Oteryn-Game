@@ -88,9 +88,20 @@ jobs:
           done
           grep -A4 '^  add-comment:' .github/workflows/oteryn-agentic-pilot-worker.md | grep -q 'staged: true'
           grep -A4 '^  add-comment:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'staged: true'
-          grep -A4 '^  dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'workflows: \[oteryn-agentic-pilot-worker\]'
+          grep -A5 '^  dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'workflows: \[oteryn-agentic-pilot-worker\]'
+          grep -A5 '^  dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'allowed-refs: \[refs/heads/agent/otv2-agentic-openspec-pilot-01\]'
           ! grep -Eq 'merge-pull-request:|create-pull-request:|push-to-pull-request-branch:' .github/workflows/oteryn-agentic-pilot-router.md
           ! grep -Eq 'merge-pull-request:|create-pull-request:|push-to-pull-request-branch:|dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-worker.md
+
+      - name: Upload generated locks for bootstrap capture
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: agentic-pilot-generated-locks
+          path: |
+            .github/workflows/oteryn-agentic-pilot-worker.lock.yml
+            .github/workflows/oteryn-agentic-pilot-router.lock.yml
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Verify committed lock files when present
         shell: bash
@@ -109,13 +120,3 @@ jobs:
             fi
           done
           test "$stale" -eq 0
-
-      - name: Upload generated locks for bootstrap capture
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: agentic-pilot-generated-locks
-          path: |
-            .github/workflows/oteryn-agentic-pilot-worker.lock.yml
-            .github/workflows/oteryn-agentic-pilot-router.lock.yml
-          if-no-files-found: error
-          retention-days: 1
