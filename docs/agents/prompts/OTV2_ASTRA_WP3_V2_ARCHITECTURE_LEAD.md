@@ -60,19 +60,20 @@ This lane is complete only when live repository state proves either:
 
 Do not start A4 merely because #590 merged. A4 requires the architecture acceptance state plus fresh #162/#364 implementation allocation/path custody.
 
-## Mandatory next-agent instruction
+## Mandatory owner-facing successor instruction
 
 End the final response with:
 
 ```text
-NEXT_AGENT: <exact alias>
-RUN_WHEN: <exact gate>
+CONTROL_PLANE_ACTION: <exact control-plane alias + exact action, or NONE>
+NEXT_WORKER: <exact A0-A7 worker alias or NONE>
+RUN_WORKER_WHEN: <exact gate>
 WHY: <one concise dependency reason>
 ```
 
-Default routing:
-- if Revision 3 is clean but still needs coordinator acceptance/closeout, `NEXT_AGENT: Oteryn: astra wp3-v2 programme coordinator`;
-- if live state proves architecture accepted and A4 allocation/custody active, `NEXT_AGENT: Oteryn: astra wp3-v2 implementation lead`;
-- if exact-source evidence is still material, `NEXT_AGENT: Oteryn: sol wp3-v2 evidence auditor` and name the missing proof.
+Routing:
+- if Revision 3 is clean but acceptance/integration/activation still requires the active control plane, put that exact action in `CONTROL_PLANE_ACTION`, set `NEXT_WORKER: Oteryn: astra wp3-v2 implementation lead`, and gate it on accepted architecture plus fresh #162/#364 A4 allocation/custody;
+- if exact-source evidence is still material, use `NEXT_WORKER: Oteryn: sol wp3-v2 evidence auditor`;
+- if a substantive programme worker cannot yet be determined truthfully, use `NEXT_WORKER: NONE` and name the unresolved routing gate.
 
-Do not recommend A4 before both acceptance and allocation gates are true.
+Never place a control-plane-only alias in `NEXT_WORKER`, and never recommend A4 before both acceptance and allocation gates are true.
