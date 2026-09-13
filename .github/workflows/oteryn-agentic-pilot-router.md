@@ -49,6 +49,7 @@ safe-outputs:
   dispatch-workflow:
     workflows: [oteryn-agentic-pilot-worker]
     target-ref: agent/otv2-agentic-openspec-pilot-01
+    allowed-refs: [refs/heads/agent/otv2-agentic-openspec-pilot-01]
     max: 1
 ---
 
