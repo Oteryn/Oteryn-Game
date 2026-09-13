@@ -39,6 +39,8 @@ Make the active Work coordinator a thin dispatcher: lane-local blockers do not t
 - allow at most two retries on an unchanged fingerprint unless new diagnostics appear;
 - rank work by critical-path value, blocker reduction, readiness, overlap risk and context cost;
 - require one machine-readable terminal state from every worker;
+- reserve `DONE` for non-mutating terminal work or post-protected-integration/readback/closeout of a mutating lane;
+- require mutating pre-integration candidates to return `READY_FOR_INTEGRATION`, never `DONE`;
 - stop the programme only after a full-DAG scan proves no legal useful work remains;
 - preserve current authority, path ownership, review and protected integration rules.
 
@@ -52,4 +54,4 @@ Documentation/governance only. No product/runtime implementation or integration 
 
 ## Validation
 
-Require exact-head Agent Governance, Architecture Semantic Audit and Merge Gate on the final candidate. Existing allocations and authority remain unchanged.
+Require exact-head Agent Governance, Architecture Semantic Audit and Merge Gate plus one fresh independent review on the final material prompt head. Existing allocations and authority remain unchanged.
