@@ -85,6 +85,10 @@ jobs:
               exit 1
             fi
             grep -q 'copilot-requests: write' "$source"
+            grep -q '^  report-failure-as-issue: false$' "$source"
+            grep -A2 '^  missing-tool:' "$source" | grep -q '^    create-issue: false$'
+            grep -A2 '^  missing-data:' "$source" | grep -q '^    create-issue: false$'
+            grep -A2 '^  report-incomplete:' "$source" | grep -q '^    create-issue: false$'
           done
           grep -A4 '^  add-comment:' .github/workflows/oteryn-agentic-pilot-worker.md | grep -q 'staged: true'
           grep -A4 '^  add-comment:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'staged: true'
@@ -92,6 +96,18 @@ jobs:
           grep -A5 '^  dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-router.md | grep -q 'allowed-refs: \[refs/heads/agent/otv2-agentic-openspec-pilot-01\]'
           ! grep -Eq 'merge-pull-request:|create-pull-request:|push-to-pull-request-branch:' .github/workflows/oteryn-agentic-pilot-router.md
           ! grep -Eq 'merge-pull-request:|create-pull-request:|push-to-pull-request-branch:|dispatch-workflow:' .github/workflows/oteryn-agentic-pilot-worker.md
+
+          for lock in \
+            .github/workflows/oteryn-agentic-pilot-worker.lock.yml \
+            .github/workflows/oteryn-agentic-pilot-router.lock.yml; do
+            ! grep -Eq '^[[:space:]]+issues:[[:space:]]+write$' "$lock"
+            grep -q 'GH_AW_MISSING_TOOL_CREATE_ISSUE: "false"' "$lock"
+            grep -q 'GH_AW_REPORT_INCOMPLETE_CREATE_ISSUE: "false"' "$lock"
+            grep -q 'GH_AW_FAILURE_REPORT_AS_ISSUE: "false"' "$lock"
+            ! grep -q 'GH_AW_MISSING_TOOL_CREATE_ISSUE: "true"' "$lock"
+            ! grep -q 'GH_AW_REPORT_INCOMPLETE_CREATE_ISSUE: "true"' "$lock"
+            ! grep -q 'GH_AW_FAILURE_REPORT_AS_ISSUE: "true"' "$lock"
+          done
 
       - name: Upload generated locks for bootstrap capture
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

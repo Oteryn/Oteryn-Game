@@ -40,6 +40,13 @@ tools:
     toolsets: [default]
 safe-outputs:
   report-failed-jobs: false
+  report-failure-as-issue: false
+  missing-tool:
+    create-issue: false
+  missing-data:
+    create-issue: false
+  report-incomplete:
+    create-issue: false
   add-comment:
     staged: true
     max: 1
