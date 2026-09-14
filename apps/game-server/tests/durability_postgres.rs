@@ -20,6 +20,69 @@ mod postgres;
 /// result is inspectable from a downstream crate although `pool::connection`
 /// remains private and no new re-export exists.
 mod wp3_registered_root_qualification {
+    use std::net::IpAddr;
+    use std::str::FromStr;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    const ROOT_LIMIT: usize = 12_582_912;
+
+    #[derive(Debug)]
+    pub(super) struct RootBudget(pub(super) AtomicUsize);
+
+    impl sqlx::postgres::ResourceBudget for RootBudget {
+        fn try_reserve(&self, bytes: usize) -> Result<(), sqlx::postgres::BudgetError> {
+            self.0
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
+                    used.checked_add(bytes).filter(|next| *next <= ROOT_LIMIT)
+                })
+                .map(|_| ())
+                .map_err(|_| sqlx::postgres::BudgetError::Unavailable)
+        }
+
+        fn release(&self, bytes: usize) {
+            let previous = self.0.fetch_sub(bytes, Ordering::SeqCst);
+            assert!(previous >= bytes, "Durability root budget underflow");
+        }
+
+        fn try_reserve_provider_shared(
+            &self,
+            bytes: usize,
+        ) -> Result<(), sqlx::postgres::BudgetError> {
+            self.try_reserve(bytes)
+        }
+    }
+
+    pub(super) fn production_config(
+        database_url: &str,
+    ) -> Result<super::durability::AdmissionRuntimeConfig, Box<dyn std::error::Error>> {
+        let parsed = sqlx::postgres::PgConnectOptions::from_str(database_url)?;
+        let transport_ip: IpAddr = parsed.get_host().parse()?;
+        let authority = database_url
+            .split_once("://")
+            .and_then(|(_, rest)| rest.split_once('@').map(|(credentials, _)| credentials))
+            .ok_or("registered root requires explicit fixture credentials")?;
+        let (username, password) = authority
+            .split_once(':')
+            .ok_or("registered root requires an explicit fixture password")?;
+        if username.contains('%') || password.contains('%') || username != parsed.get_username() {
+            return Err("registered root fixture credentials must be literal".into());
+        }
+        let root_ca_pem = std::fs::read(std::env::var("OTERYN_WP3_CA_CERT")?)?;
+        Ok(super::durability::AdmissionRuntimeConfig::new(
+            transport_ip,
+            parsed.get_port(),
+            "localhost",
+            parsed
+                .get_database()
+                .ok_or("registered root database missing")?,
+            username,
+            password,
+            root_ca_pem,
+            Arc::new(RootBudget(AtomicUsize::new(0))),
+        ))
+    }
+
     fn require_pooled(
         connection: sqlx::pool::MaybePoolConnection<'static, sqlx::Postgres>,
     ) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, sqlx::Error> {
@@ -3280,7 +3343,10 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         if let Ok(url) = std::env::var(CHILD_URL) {
-            let runtime = AdmissionRuntime::connect(&url).await?;
+            let runtime = AdmissionRuntime::connect(
+                wp3_registered_root_qualification::production_config(&url)?,
+            )
+            .await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let fresh = runtime.fresh();
             if std::env::var(CHILD_MODE)?.starts_with("produce") {
@@ -3428,8 +3494,14 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 predecessor
                     .checkpoint(&pool, 2, 2, "retained guard original")
                     .await?;
-                let runtime = AdmissionRuntime::connect(&url).await?;
-                let repeated = AdmissionRuntime::connect(&url).await?;
+                let runtime = AdmissionRuntime::connect(
+                    wp3_registered_root_qualification::production_config(&url)?,
+                )
+                .await?;
+                let repeated = AdmissionRuntime::connect(
+                    wp3_registered_root_qualification::production_config(&url)?,
+                )
+                .await?;
                 let generation: String = sqlx::query_scalar(
                     "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
                 )
@@ -3490,13 +3562,28 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 // Registration cannot mint replacement capacity after its token is stale.
-                let stale = AdmissionRuntime::connect(&url).await?;
+                let stale = AdmissionRuntime::connect(
+                    wp3_registered_root_qualification::production_config(&url)?,
+                )
+                .await?;
                 assert!(matches!(
                     stale.guards().load(&[]).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 assert!(matches!(
-                    AdmissionRuntime::connect("postgres://different.invalid/other").await,
+                    AdmissionRuntime::connect(durability::AdmissionRuntimeConfig::new(
+                        "127.0.0.1".parse()?,
+                        5432,
+                        "different.invalid",
+                        "other",
+                        "different",
+                        "different",
+                        b"invalid ca".to_vec(),
+                        std::sync::Arc::new(wp3_registered_root_qualification::RootBudget(
+                            std::sync::atomic::AtomicUsize::new(0),
+                        ),),
+                    ))
+                    .await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 let attempts: i64 =

@@ -25,6 +25,8 @@ use oteryn_game_server::foundation::{
 use serde_json::json;
 use sqlx::{PgPool, Postgres, Row, Transaction};
 use std::fmt::{self, Display, Formatter};
+use std::net::IpAddr;
+use std::sync::Arc;
 
 // Accepted fixed first-slice registry345 at c9890968ce4c71165bdd9cd1d6938f9af75eaa00.
 // Codec callers may test tighter byte bounds; runtime configuration is exact.
@@ -52,20 +54,24 @@ type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 #[derive(Debug)]
 pub enum DurabilityError {
     Unavailable,
-    Database(sqlx::Error),
-    Migration(sqlx::migrate::MigrateError),
+    Database(BoundedDatabaseError),
+    Migration(BoundedMigrationError),
     SchemaIncompatible(SchemaCompatibility),
     InvalidStoredState,
 }
+
+#[derive(Debug)]
+pub struct BoundedDatabaseError;
+
+#[derive(Debug)]
+pub struct BoundedMigrationError;
 
 impl Display for DurabilityError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unavailable => formatter.write_str("durability work is unavailable"),
-            Self::Database(error) => {
-                write!(formatter, "PostgreSQL durability operation failed: {error}")
-            }
-            Self::Migration(error) => write!(formatter, "game migration operation failed: {error}"),
+            Self::Database(_) => formatter.write_str("PostgreSQL durability operation failed"),
+            Self::Migration(_) => formatter.write_str("game migration operation failed"),
             Self::SchemaIncompatible(state) => {
                 write!(
                     formatter,
@@ -83,13 +89,146 @@ impl std::error::Error for DurabilityError {}
 
 impl From<sqlx::Error> for DurabilityError {
     fn from(error: sqlx::Error) -> Self {
-        Self::Database(error)
+        drop(error);
+        Self::Database(BoundedDatabaseError)
     }
 }
 
 impl From<sqlx::migrate::MigrateError> for DurabilityError {
     fn from(error: sqlx::migrate::MigrateError) -> Self {
-        Self::Migration(error)
+        drop(error);
+        Self::Migration(BoundedMigrationError)
+    }
+}
+
+#[cfg(test)]
+mod wp3_error_custody_regressions {
+    use super::DurabilityError;
+    use std::fmt;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[derive(Clone, Default)]
+    struct Observations {
+        drops: Arc<AtomicUsize>,
+        formats: Arc<AtomicUsize>,
+    }
+
+    struct PayloadProbe(Observations);
+    impl Drop for PayloadProbe {
+        fn drop(&mut self) {
+            self.0.drops.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+    impl fmt::Display for PayloadProbe {
+        fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            self.0.formats.fetch_add(1, Ordering::SeqCst);
+            formatter.write_str("WP3_TEST_UNTRUSTED_PAYLOAD")
+        }
+    }
+    impl fmt::Debug for PayloadProbe {
+        fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fmt::Display::fmt(self, formatter)
+        }
+    }
+    impl std::error::Error for PayloadProbe {}
+
+    fn assert_consumed(error: DurabilityError, seen: &Observations) {
+        assert_eq!(seen.drops.load(Ordering::SeqCst), 1);
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+        assert!(!format!("{error}").contains("WP3_TEST_UNTRUSTED_PAYLOAD"));
+        assert!(!format!("{error:?}").contains("WP3_TEST_UNTRUSTED_PAYLOAD"));
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn sqlx_payload_is_destroyed_before_database_result_escapes() {
+        type Factory = fn(PayloadProbe) -> sqlx::Error;
+        for raw in [
+            |probe| sqlx::Error::Configuration(Box::new(probe)),
+            |probe| sqlx::Error::Tls(Box::new(probe)),
+            |probe| sqlx::Error::Encode(Box::new(probe)),
+            |probe| sqlx::Error::Decode(Box::new(probe)),
+            |probe| sqlx::Error::AnyDriverError(Box::new(probe)),
+        ] as [Factory; 5]
+        {
+            let seen = Observations::default();
+            let error = DurabilityError::from(raw(PayloadProbe(seen.clone())));
+            assert!(matches!(error, DurabilityError::Database(_)));
+            assert_consumed(error, &seen);
+        }
+
+        for raw in [
+            sqlx::Error::Io(std::io::Error::other(PayloadProbe(Observations::default()))),
+            sqlx::Error::ColumnDecode {
+                index: "probe-column".into(),
+                source: Box::new(PayloadProbe(Observations::default())),
+            },
+        ] {
+            let error = DurabilityError::from(raw);
+            assert!(matches!(error, DurabilityError::Database(_)));
+        }
+    }
+
+    #[test]
+    fn migration_payload_is_destroyed_before_migration_result_escapes() {
+        let seen = Observations::default();
+        let error = DurabilityError::from(sqlx::migrate::MigrateError::Source(Box::new(
+            PayloadProbe(seen.clone()),
+        )));
+        assert!(matches!(error, DurabilityError::Migration(_)));
+        assert_consumed(error, &seen);
+    }
+
+    #[test]
+    fn sqlx_migrate_wrapper_preserves_outer_database_category() {
+        let seen = Observations::default();
+        let raw = sqlx::Error::Migrate(Box::new(sqlx::migrate::MigrateError::Execute(
+            sqlx::Error::Tls(Box::new(PayloadProbe(seen.clone()))),
+        )));
+        let error = DurabilityError::from(raw);
+        assert!(matches!(error, DurabilityError::Database(_)));
+        assert_consumed(error, &seen);
+    }
+}
+
+/// Explicit, no-ambient configuration for the process Durability root.
+///
+/// The secret-bearing fields are consumed while the lazy holder is built and
+/// are never retained in the process registration identity.
+pub struct AdmissionRuntimeConfig {
+    transport_ip: IpAddr,
+    port: u16,
+    tls_server_name: Box<str>,
+    database: Box<str>,
+    username: Box<str>,
+    password: Box<str>,
+    root_ca_pem: Vec<u8>,
+    resource_budget: Arc<dyn sqlx::postgres::ResourceBudget>,
+}
+
+impl AdmissionRuntimeConfig {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        transport_ip: IpAddr,
+        port: u16,
+        tls_server_name: impl Into<Box<str>>,
+        database: impl Into<Box<str>>,
+        username: impl Into<Box<str>>,
+        password: impl Into<Box<str>>,
+        root_ca_pem: Vec<u8>,
+        resource_budget: Arc<dyn sqlx::postgres::ResourceBudget>,
+    ) -> Self {
+        Self {
+            transport_ip,
+            port,
+            tls_server_name: tls_server_name.into(),
+            database: database.into(),
+            username: username.into(),
+            password: password.into(),
+            root_ca_pem,
+            resource_budget,
+        }
     }
 }
 
@@ -2265,7 +2404,10 @@ impl DurabilityCustody {
         &self,
         pool: &'a PgPool,
     ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
-        let mut tx = pool.begin().await?;
+        let mut tx = pool
+            .try_begin()
+            .await?
+            .ok_or(DurabilityError::Unavailable)?;
         sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
             .bind(EXECUTOR_CUSTODY_LOCK)
             .execute(&mut *tx)
@@ -2376,9 +2518,9 @@ impl AdmissionRuntime {
         self.backend.enqueue(operation_kind, original)
     }
 
-    pub async fn connect(database_url: &str) -> Result<Self, DurabilityError> {
+    pub async fn connect(config: AdmissionRuntimeConfig) -> Result<Self, DurabilityError> {
         Ok(Self {
-            backend: db::registered_backend(database_url).await?,
+            backend: db::registered_backend(config).await?,
         })
     }
     #[must_use]

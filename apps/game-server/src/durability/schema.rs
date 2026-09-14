@@ -44,6 +44,25 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
     Ok(pool)
 }
 
+/// Establish the single production holder from an explicit no-ambient profile.
+/// Schema inspection is root maintenance; semantic passes never call this path.
+pub(crate) async fn connect_runtime_root(
+    options: sqlx::postgres::PgConnectOptions,
+) -> Result<PgPool, DurabilityError> {
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(1)
+        .min_connections(0)
+        .acquire_timeout(std::time::Duration::from_secs(5))
+        .idle_timeout(std::time::Duration::from_secs(10 * 60))
+        .max_lifetime(std::time::Duration::from_secs(30 * 60))
+        .connect_lazy_with(options);
+    let compatibility = inspect(&pool).await?;
+    if compatibility != SchemaCompatibility::Compatible {
+        return Err(DurabilityError::SchemaIncompatible(compatibility));
+    }
+    Ok(pool)
+}
+
 // SQLx's pinned migration constructor hashes every embedded migration with SHA-384.
 // Derive the length from that embedded ledger, not from database-controlled values.
 const INSPECT_LEDGER_SQL: &str = "SELECT version, CASE WHEN octet_length(checksum) = $2 THEN checksum ELSE NULL END \

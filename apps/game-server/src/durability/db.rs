@@ -261,12 +261,8 @@ impl QueuedCheckpoint {
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
             .promote(self.id, std::time::Instant::now())?;
-        #[cfg(not(test))]
-        let BackendCustody::Registered(custody) = &self.backend.custody;
-        #[cfg(test)]
         let custody = match &self.backend.custody {
             BackendCustody::Registered(custody) => custody,
-            #[cfg(test)]
             BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
         };
         // This bounds requested checkpoint-pass waiting only, not backend death,
@@ -296,7 +292,6 @@ pub(super) struct RuntimeBackend {
 }
 enum BackendCustody {
     Registered(super::DurabilityCustody),
-    #[cfg(test)]
     LegacyFixture,
 }
 impl RuntimeBackend {
@@ -318,7 +313,6 @@ impl RuntimeBackend {
     pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
         match &self.custody {
             BackendCustody::Registered(custody) => custody.fence(&self.pool).await,
-            #[cfg(test)]
             BackendCustody::LegacyFixture => self.pool.begin().await.map_err(DurabilityError::from),
         }
     }
@@ -327,32 +321,64 @@ enum RuntimeRegistration {
     Empty,
     Starting,
     Ready {
-        database_url: String,
+        identity: RuntimeIdentity,
         backend: std::sync::Arc<RuntimeBackend>,
     },
+}
+
+#[derive(Eq, PartialEq)]
+struct RuntimeIdentity {
+    transport_ip: std::net::IpAddr,
+    port: u16,
+    tls_server_name: Box<str>,
+    database: Box<str>,
+    username: Box<str>,
 }
 static RUNTIME_REGISTRATION: tokio::sync::Mutex<RuntimeRegistration> =
     tokio::sync::Mutex::const_new(RuntimeRegistration::Empty);
 
 pub(super) async fn registered_backend(
-    database_url: &str,
+    config: super::AdmissionRuntimeConfig,
 ) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
-    if database_url.is_empty() || database_url.len() > 4096 {
+    if config.port == 0
+        || config.tls_server_name.is_empty()
+        || config.database.is_empty()
+        || config.username.is_empty()
+        || config.password.is_empty()
+        || config.root_ca_pem.is_empty()
+    {
         return Err(DurabilityError::InvalidStoredState);
     }
+    let identity = RuntimeIdentity {
+        transport_ip: config.transport_ip,
+        port: config.port,
+        tls_server_name: config.tls_server_name.clone(),
+        database: config.database.clone(),
+        username: config.username.clone(),
+    };
     let mut registration = RUNTIME_REGISTRATION.lock().await;
     match &*registration {
         RuntimeRegistration::Ready {
-            database_url: expected,
+            identity: expected,
             backend,
-        } if expected == database_url => return Ok(backend.clone()),
+        } if expected == &identity => return Ok(backend.clone()),
         RuntimeRegistration::Empty => {}
         _ => return Err(DurabilityError::InvalidStoredState),
     }
     // Cancellation or uncertain initialization remains Starting. A fresh caller
     // cannot mint replacement capacity or silently retry an ambiguous takeover.
     *registration = RuntimeRegistration::Starting;
-    let pool = super::schema::connect_runtime(database_url).await?;
+    let options = sqlx::postgres::PgConnectOptions::new_oteryn_root_profile(
+        config.transport_ip,
+        config.port,
+        &config.tls_server_name,
+        &config.database,
+        &config.username,
+        &config.password,
+        config.root_ca_pem,
+        config.resource_budget,
+    );
+    let pool = super::schema::connect_runtime_root(options).await?;
     let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
     let backend = std::sync::Arc::new(RuntimeBackend {
         pool,
@@ -361,7 +387,7 @@ pub(super) async fn registered_backend(
         pending,
     });
     *registration = RuntimeRegistration::Ready {
-        database_url: database_url.to_owned(),
+        identity,
         backend: backend.clone(),
     };
     Ok(backend)
@@ -372,19 +398,12 @@ pub(super) async fn registered_backend(
 pub(super) async fn backend_for_constructor(
     database_url: &str,
 ) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
-    #[cfg(not(test))]
-    {
-        registered_backend(database_url).await
-    }
-    #[cfg(test)]
-    {
-        Ok(std::sync::Arc::new(RuntimeBackend {
-            pool: super::schema::connect_runtime(database_url).await?,
-            custody: BackendCustody::LegacyFixture,
-            pending: [None, None],
-            work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
-        }))
-    }
+    Ok(std::sync::Arc::new(RuntimeBackend {
+        pool: super::schema::connect_runtime(database_url).await?,
+        custody: BackendCustody::LegacyFixture,
+        pending: [None, None],
+        work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+    }))
 }
 
 #[cfg(test)]
