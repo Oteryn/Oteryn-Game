@@ -19,7 +19,7 @@ import sys
 
 AUDITED_INPUT_SHA256 = "2dbc1273b54b4f63653bc6c5a92ee10a1c095e3bd05dac232751efc4d358fa9d"
 AUDITED_DOC_INPUT_SHA256 = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
-AUDITED_DOC_CONSUMER_BASE_SHA = "1d0916c7476f37589524c7181b5857bcc6c141e1"
+AUDITED_DOC_CONSUMER_BASE_SHA = "8dfae3b9455673feff1745b9f124b786f93fcacc"
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
 REQUIRED = {
