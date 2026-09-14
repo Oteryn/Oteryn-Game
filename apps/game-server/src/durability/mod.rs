@@ -1141,12 +1141,45 @@ fn encode_v2_operation(
     record: &str,
     request: &ReconnectPrepareRequestV2,
 ) -> String {
+    let terminal_replacement = request.terminal_replacement().map(|authorization| {
+        let candidate_scope = match authorization.candidate_runtime_scope() {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => json!({
+                "kind": "channel",
+                "world_id": world_id.as_bytes(),
+                "channel_id": channel_id.as_bytes(),
+            }),
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => json!({
+                "kind": "instance",
+                "world_id": world_id.as_bytes(),
+                "instance_id": instance_id,
+            }),
+        };
+        json!({
+            "account_id": authorization.account_id(),
+            "character_id": authorization.character_id().as_bytes(),
+            "world_id": authorization.world_id().as_bytes(),
+            "predecessor_game_session_id": authorization.predecessor_game_session_id().as_bytes(),
+            "predecessor_connection_generation": authorization.predecessor_connection_generation().get(),
+            "predecessor_character_lease_generation": authorization.predecessor_character_lease_generation(),
+            "predecessor_current_scope_ownership_generation": authorization.predecessor_current_scope_ownership_generation().get(),
+            "predecessor_control_loss_epoch": authorization.predecessor_control_loss_epoch().get(),
+            "predecessor_original_grace_deadline": authorization.predecessor_original_grace_deadline(),
+            "candidate_game_session_id": authorization.candidate_game_session_id().as_bytes(),
+            "candidate_runtime_scope": candidate_scope,
+        })
+    });
     json!({
         "m05_operation": operation,
         "record": record,
         // The authorization is part of the immutable original, not merely a
         // check performed after active custody has already authorized SQL.
-        "terminal_replacement": request.terminal_replacement().map(|value| format!("{value:?}")),
+        "terminal_replacement": terminal_replacement,
     })
     .to_string()
 }
@@ -1381,6 +1414,7 @@ mod terminal_replacement_schema_red_tests {
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::too_many_arguments)]
 mod terminal_replacement_foundation_red_tests {
+    use super::encode_v2_operation;
     use oteryn_game_server::foundation::{
         AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
         CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId,
@@ -2172,6 +2206,43 @@ mod terminal_replacement_foundation_red_tests {
                 .get(),
             11
         );
+    }
+
+    #[test]
+    fn v2_original_canonically_encodes_every_terminal_replacement_field() {
+        let candidate_a = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 11, 1).expect("candidate A");
+        let candidate_b = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 12, 1).expect("candidate B");
+        let predecessor = game_session(10).expect("predecessor");
+        let candidate_id = game_session(20).expect("candidate session");
+        let authorization_a = authorize(
+            predecessor_snapshot(GameSessionState::Terminal, None, 11).expect("snapshot A"),
+            &candidate_a,
+            predecessor,
+            candidate_id,
+        )
+        .expect("authorization A");
+        let authorization_b = authorize(
+            predecessor_snapshot(GameSessionState::Terminal, None, 12).expect("snapshot B"),
+            &candidate_b,
+            predecessor,
+            candidate_id,
+        )
+        .expect("authorization B");
+        let (_, request_a) = ReconnectDurabilityFlowV2::begin(candidate_a, Some(authorization_a));
+        let (_, request_b) = ReconnectDurabilityFlowV2::begin(candidate_b, Some(authorization_b));
+
+        let original_a = encode_v2_operation("prepare", "same-record", &request_a);
+        assert_eq!(
+            original_a,
+            encode_v2_operation("prepare", "same-record", &request_a),
+            "the same typed authorization must have a byte-identical original"
+        );
+        assert_ne!(
+            original_a,
+            encode_v2_operation("prepare", "same-record", &request_b),
+            "a changed scope-generation authorization field must change the original"
+        );
+        assert!(!original_a.contains("TerminalGameSessionReplacementAuthorizationV1"));
     }
 
     #[test]

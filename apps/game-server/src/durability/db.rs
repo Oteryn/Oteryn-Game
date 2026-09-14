@@ -789,6 +789,7 @@ pub(super) async fn registered_backend(
         config.root_ca_pem,
         config.resource_budget,
     )
+    .map_err(|_| DurabilityError::Unavailable)?
     // PostgreSQL applies these startup parameters before a ready connection is
     // admitted to the holder. Consequently BEGIN and the first custody-lock SQL
     // are already protected; the transaction-local remaining value only
