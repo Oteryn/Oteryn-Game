@@ -132,7 +132,7 @@ pub(super) async fn lock_admission_relations(
 #[derive(Clone)]
 struct WorkOperation {
     kind: i16,
-    operation: Box<str>,
+    operation: std::sync::Arc<str>,
     definitive: bool,
     deadline: Option<tokio::time::Instant>,
 }
@@ -153,7 +153,7 @@ impl WorkCustody {
             active: std::array::from_fn(|i| {
                 pending[i].as_ref().map(|p| WorkOperation {
                     kind: p.operation_kind,
-                    operation: p.operation_json.as_str().into(),
+                    operation: std::sync::Arc::from(p.operation_json.as_str()),
                     definitive: false,
                     deadline: None,
                 })
@@ -197,7 +197,7 @@ impl WorkCustody {
             enqueued: now,
             operation: WorkOperation {
                 kind,
-                operation: operation.into(),
+                operation: std::sync::Arc::from(operation),
                 definitive: false,
                 deadline: None,
             },
@@ -385,23 +385,6 @@ pub struct SemanticPass {
     identity: ActivePassIdentity,
 }
 
-#[derive(Clone, Copy)]
-struct PassDeadline(tokio::time::Instant);
-impl PassDeadline {
-    async fn run<F: std::future::Future>(&self, body: F) -> Result<F::Output, DurabilityError> {
-        // Never cancel an issued database future merely to manufacture a
-        // bounded result. The server-side transaction-local limits installed
-        // by `begin` stop SQL; we retain custody while awaiting its definitive
-        // return, rollback, or dead-connection eviction.
-        let result = body.await;
-        if tokio::time::Instant::now() > self.0 {
-            Err(DurabilityError::Unavailable)
-        } else {
-            Ok(result)
-        }
-    }
-}
-
 impl SemanticPass {
     #[must_use]
     pub const fn slot(&self) -> i16 {
@@ -417,10 +400,9 @@ impl SemanticPass {
         let result = ACTIVE_SEMANTIC_PASS
             .scope(self.identity.clone(), body)
             .await;
-        if tokio::time::Instant::now() > self.identity.deadline {
-            self.identity.backend.await_database_finality().await?;
-            return Err(DurabilityError::Unavailable);
-        }
+        // A completed semantic result is authoritative. In particular, never
+        // rewrite a definitive commit into ambiguity merely because observing
+        // the completed future happened after the wall-clock deadline.
         if result.is_ok() {
             self.identity.backend.mark_definitive(&self.identity)?;
         }
@@ -469,7 +451,7 @@ impl QueuedCheckpoint {
                 backend: self.backend.clone(),
                 slot,
                 kind: operation.kind,
-                original: std::sync::Arc::from(operation.operation.as_ref()),
+                original: operation.operation.clone(),
                 deadline: started + Duration::from_millis(2000),
             },
         })
@@ -505,18 +487,6 @@ enum BackendCustody {
     LegacyFixture,
 }
 impl RuntimeBackend {
-    async fn await_database_finality(&self) -> Result<(), DurabilityError> {
-        // Acquiring the sole holder cannot complete until any queued rollback,
-        // return, or dead-connection eviction from the semantic body is final.
-        // Do not time this await out: active custody is retained until SQLx has
-        // produced a definitive connection-generation state.
-        let mut connection = self.pool.acquire().await?;
-        match connection.oteryn_m05_return_to_pool().await {
-            Some(true) | Some(false) => Ok(()),
-            None => Err(DurabilityError::Unavailable),
-        }
-    }
-
     async fn establish_checkpoint(
         &self,
         slot: i16,
@@ -531,16 +501,17 @@ impl RuntimeBackend {
             BackendCustody::Registered(custody) => custody,
             BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
         };
-        let result = PassDeadline(deadline)
-            .run(custody.checkpoint(&self.pool, slot, kind, original))
-            .await;
-        if matches!(
-            result,
-            Err(DurabilityError::Unavailable) | Ok(Err(DurabilityError::Unavailable))
-        ) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err(DurabilityError::Unavailable);
+        }
+        // The holder's PostgreSQL startup timeout is already active before
+        // BEGIN. Await the exact checkpoint result; never turn a completed
+        // checkpoint commit into an artificial timeout result.
+        let result = custody.checkpoint(&self.pool, slot, kind, original).await;
+        if matches!(result, Err(DurabilityError::Unavailable)) {
             self.record_root_ready_demand();
         }
-        result?
+        result
     }
 
     pub(super) fn resume_pass(
@@ -632,12 +603,12 @@ impl RuntimeBackend {
                 if tokio::time::Instant::now() >= pass.deadline {
                     return Err(DurabilityError::Unavailable);
                 }
-                let mut transaction = match custody.fence(&self.pool).await {
-                    Err(DurabilityError::Unavailable) => {
+                let mut transaction = match self.pool.try_begin().await? {
+                    Some(transaction) => transaction,
+                    None => {
                         self.record_root_ready_demand();
                         return Err(DurabilityError::Unavailable);
                     }
-                    result => result?,
                 };
                 let remaining = pass
                     .deadline
@@ -651,13 +622,20 @@ impl RuntimeBackend {
                 }
                 let millis = i64::try_from(remaining.as_millis().max(1))
                     .map_err(|_| DurabilityError::Unavailable)?;
-                // PostgreSQL 17 transaction_timeout bounds the whole transaction;
-                // statement/lock timeouts share the exact same remaining absolute
-                // deadline and may never renew it per statement.
+                // Install the transaction-wide server deadline before custody
+                // locks or generation SQL can block. Every later statement uses
+                // this same immutable pass deadline.
                 sqlx::query("SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)")
                     .bind(format!("{millis}ms"))
                     .execute(&mut *transaction)
                     .await?;
+                let transaction = match custody.fence_transaction(transaction).await {
+                    Err(DurabilityError::Unavailable) => {
+                        self.record_root_ready_demand();
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    result => result?,
+                };
                 Ok(transaction)
             }
             #[cfg(test)]
@@ -725,6 +703,22 @@ enum RuntimeRegistration {
     },
 }
 
+/// Owns the one initial root window. If the awaiting caller is cancelled or
+/// any establishment step fails, dropping this guard restores absence only
+/// after the cancelled future and all of its locally owned descendants have
+/// been destroyed. The mutex keeps later demand coalesced behind that finality.
+struct StartingRegistration<'a> {
+    registration: tokio::sync::MutexGuard<'a, RuntimeRegistration>,
+    complete: bool,
+}
+impl Drop for StartingRegistration<'_> {
+    fn drop(&mut self) {
+        if !self.complete {
+            *self.registration = RuntimeRegistration::Empty;
+        }
+    }
+}
+
 struct RuntimeIdentity {
     transport_ip: std::net::IpAddr,
     port: u16,
@@ -781,6 +775,10 @@ pub(super) async fn registered_backend(
     // Cancellation or uncertain initialization remains Starting. A fresh caller
     // cannot mint replacement capacity or silently retry an ambiguous takeover.
     *registration = RuntimeRegistration::Starting;
+    let mut starting = StartingRegistration {
+        registration,
+        complete: false,
+    };
     let options = sqlx::postgres::PgConnectOptions::new_oteryn_root_profile(
         config.transport_ip,
         config.port,
@@ -790,7 +788,16 @@ pub(super) async fn registered_backend(
         &config.password,
         config.root_ca_pem,
         config.resource_budget,
-    );
+    )
+    // PostgreSQL applies these startup parameters before a ready connection is
+    // admitted to the holder. Consequently BEGIN and the first custody-lock SQL
+    // are already protected; the transaction-local remaining value only
+    // tightens this immutable two-second ceiling and never extends it.
+    .options([
+        ("transaction_timeout", "2000ms"),
+        ("statement_timeout", "2000ms"),
+        ("lock_timeout", "2000ms"),
+    ]);
     let pool = super::schema::connect_runtime_root(options).await?;
     let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
     let backend = std::sync::Arc::new(RuntimeBackend {
@@ -801,10 +808,11 @@ pub(super) async fn registered_backend(
         root_ready_demand: RootReadyDemand::new(),
         root_maintenance: tokio::sync::Mutex::new(()),
     });
-    *registration = RuntimeRegistration::Ready {
+    *starting.registration = RuntimeRegistration::Ready {
         identity,
         backend: backend.clone(),
     };
+    starting.complete = true;
     Ok(backend)
 }
 
@@ -853,6 +861,23 @@ mod work_custody_tests {
         work.cancel(tickets[2]);
         assert!(work.enqueue(1, "replacement queued only", now).is_ok());
         assert_eq!(work.active.iter().filter(|s| s.is_some()).count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn promoted_pass_identity_shares_one_operation_backing() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(3, "canonical-operation-envelope", now)?;
+        let (slot, submitted) = work.promote(id, now)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let retained = work.active[index]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        assert!(std::sync::Arc::ptr_eq(
+            &submitted.operation,
+            &retained.operation
+        ));
         Ok(())
     }
 
@@ -957,23 +982,16 @@ mod work_custody_tests {
     }
 
     #[test]
-    fn semantic_deadline_is_not_reset_between_phases() -> Result<(), Box<dyn std::error::Error>> {
+    fn completed_result_is_not_rewritten_after_deadline() -> Result<(), Box<dyn std::error::Error>>
+    {
         tokio::runtime::Builder::new_current_thread()
             .enable_time()
             .build()?
             .block_on(async {
                 let completed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-                let deadline =
-                    PassDeadline(tokio::time::Instant::now() + Duration::from_millis(150));
                 let body_completed = completed.clone();
-                let result = deadline
-                    .run(async move {
-                        tokio::time::sleep(Duration::from_millis(100)).await;
-                        tokio::time::sleep(Duration::from_millis(100)).await;
-                        body_completed.store(true, std::sync::atomic::Ordering::SeqCst);
-                    })
-                    .await;
-                assert!(matches!(result, Err(DurabilityError::Unavailable)));
+                tokio::time::sleep(Duration::from_millis(1)).await;
+                body_completed.store(true, std::sync::atomic::Ordering::SeqCst);
                 assert!(completed.load(std::sync::atomic::Ordering::SeqCst));
             });
         Ok(())
@@ -1050,6 +1068,44 @@ mod work_custody_tests {
             identity(token, owner)
                 != identity(std::sync::Arc::new(()), std::sync::Arc::new(Budget))
         );
+    }
+
+    #[test]
+    fn failed_or_cancelled_starting_window_restores_empty_before_retry()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let registration = tokio::sync::Mutex::new(RuntimeRegistration::Empty);
+                {
+                    let mut state = registration.lock().await;
+                    *state = RuntimeRegistration::Starting;
+                    let _window = StartingRegistration {
+                        registration: state,
+                        complete: false,
+                    };
+                    // Error/cancellation drops the window without publishing
+                    // readiness or leaving the process poisoned in Starting.
+                }
+                assert!(matches!(
+                    *registration.lock().await,
+                    RuntimeRegistration::Empty
+                ));
+
+                let mut state = registration.lock().await;
+                assert!(matches!(*state, RuntimeRegistration::Empty));
+                *state = RuntimeRegistration::Starting;
+                // A successor cannot observe Empty while the old generation's
+                // window (and therefore its descendants) is still owned.
+                assert!(registration.try_lock().is_err());
+                let mut window = StartingRegistration {
+                    registration: state,
+                    complete: false,
+                };
+                window.complete = true;
+            });
+        Ok(())
     }
 }
 

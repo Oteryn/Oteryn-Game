@@ -126,7 +126,16 @@ impl AdmissionReconnectJournal {
         let original_grace_deadline = record.continuity().original_grace_deadline();
         let prepared_deadline = record.continuity().prepared_deadline();
         let encoded_record = encode_record(record).to_string();
-        self.backend.validate_semantic(3, &encoded_record)?;
+        let operation = encode_v1_operation(
+            if receipt_authorized {
+                "prepare_receipt_authorized"
+            } else {
+                "prepare"
+            },
+            &encoded_record,
+            None,
+        );
+        self.backend.validate_semantic(3, &operation)?;
         let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
             scope_storage(record);
 
@@ -495,7 +504,12 @@ impl AdmissionReconnectJournal {
         let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
         let recovery_grant_nonce = recovery_grant_nonce(record);
         let encoded_record = encode_record(record).to_string();
-        self.backend.validate_semantic(3, &encoded_record)?;
+        let operation = encode_v1_operation(
+            "commit",
+            &encoded_record,
+            Some(request.authorization().authorization_deadline()),
+        );
+        self.backend.validate_semantic(3, &operation)?;
         let predecessor = record.connection().predecessor().get().to_string();
         let candidate = record.connection().candidate().get().to_string();
         let epoch = record.continuity().control_loss_epoch().get().to_string();
@@ -686,7 +700,8 @@ impl AdmissionReconnectJournal {
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
         let encoded_record = encode_record(request.record()).to_string();
-        self.backend.validate_semantic(3, &encoded_record)?;
+        let operation = encode_v1_operation("reconcile", &encoded_record, None);
+        self.backend.validate_semantic(3, &operation)?;
         let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =
@@ -2129,7 +2144,40 @@ fn disposition_for_existing(state: i16) -> Result<ReconnectPrepareDispositionV1,
     }
 }
 
-fn encode_record(record: &ReconnectDurabilityRecordV1) -> serde_json::Value {
+pub(super) fn encode_v1_operation(
+    operation: &str,
+    record: &str,
+    authorization_deadline: Option<i64>,
+) -> String {
+    // This envelope, rather than the broad record alone, is the durable active
+    // identity. JSON construction gives enqueue/recovery and the semantic
+    // boundary one canonical byte representation.
+    json!({
+        "m05_operation": operation,
+        "record": record,
+        "authorization_deadline": authorization_deadline,
+    })
+    .to_string()
+}
+
+#[cfg(test)]
+mod m05_operation_envelope_tests {
+    use super::encode_v1_operation;
+
+    #[test]
+    fn operation_and_authorization_are_part_of_the_exact_original() {
+        let record = r#"{"record":"same"}"#;
+        let prepare = encode_v1_operation("prepare", record, None);
+        let reconcile = encode_v1_operation("reconcile", record, None);
+        let commit = encode_v1_operation("commit", record, Some(7));
+        assert_ne!(prepare, reconcile);
+        assert_ne!(prepare, commit);
+        assert_ne!(commit, encode_v1_operation("commit", record, Some(8)));
+        assert_eq!(commit, encode_v1_operation("commit", record, Some(7)));
+    }
+}
+
+pub(super) fn encode_record(record: &ReconnectDurabilityRecordV1) -> serde_json::Value {
     let identity = record.identity();
     let connection = record.connection();
     let authority = record.authority();
