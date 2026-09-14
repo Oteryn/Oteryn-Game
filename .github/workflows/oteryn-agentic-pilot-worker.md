@@ -21,7 +21,9 @@ on:
         description: Exact expected PR head SHA when one exists
         required: false
         type: string
-engine: copilot
+engine:
+  id: copilot
+  model: copilot/gpt-5.6
 permissions:
   contents: read
   issues: read

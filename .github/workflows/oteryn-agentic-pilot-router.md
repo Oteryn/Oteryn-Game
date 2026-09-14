@@ -25,7 +25,9 @@ on:
         required: false
         type: string
 if: github.event_name == 'workflow_dispatch' || github.head_ref == 'agent/otv2-agentic-openspec-pilot-01'
-engine: copilot
+engine:
+  id: copilot
+  model: copilot/gpt-5.6
 permissions:
   contents: read
   issues: read
