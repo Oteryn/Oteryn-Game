@@ -15,8 +15,8 @@ pub use db::{QueuedCheckpoint, SemanticPass};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
 use oteryn_game_server::foundation::{
-    PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectDurabilityFlowV1,
-    ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+    PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectCommitRequestV1,
+    ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
     ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
     ReconnectDurableTerminalDispositionV1, ReconnectPrepareDispositionV1,
     ReconnectPrepareDispositionV2, ReconnectPrepareRequestV2, ReconnectProofV1, RuntimeScopeRefV1,
@@ -289,7 +289,8 @@ impl AdmissionReconnectJournalV2 {
         };
         let record = request.record();
         let encoded_record = encode_record_v2(record).to_string();
-        self.backend.validate_semantic(4, &encoded_record)?;
+        let operation = encode_v2_operation("prepare", &encoded_record, request);
+        self.backend.validate_semantic(4, &operation)?;
         if !replacement_authorization_matches_record(authorization, record) {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -508,7 +509,8 @@ impl AdmissionReconnectJournalV2 {
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
         let encoded_record = encode_record_v2(record).to_string();
-        self.backend.validate_semantic(4, &encoded_record)?;
+        let operation = encode_v2_operation("reconcile", &encoded_record, request);
+        self.backend.validate_semantic(4, &operation)?;
         let mut transaction = self.backend.begin().await?;
         db::lock_admission_domain(&mut transaction, record).await?;
         if let Some(authorization) = request.terminal_replacement()
@@ -1132,6 +1134,21 @@ fn scope_storage_v2(record: &ReconnectDurabilityRecordV1) -> V2ScopeStorage {
             Some(instance_id.to_vec()),
         ),
     }
+}
+
+fn encode_v2_operation(
+    operation: &str,
+    record: &str,
+    request: &ReconnectPrepareRequestV2,
+) -> String {
+    json!({
+        "m05_operation": operation,
+        "record": record,
+        // The authorization is part of the immutable original, not merely a
+        // check performed after active custody has already authorized SQL.
+        "terminal_replacement": request.terminal_replacement().map(|value| format!("{value:?}")),
+    })
+    .to_string()
 }
 
 fn encode_record_v2(record: &ReconnectDurabilityRecordV1) -> serde_json::Value {
@@ -2437,6 +2454,21 @@ impl DurabilityCustody {
         Ok(tx)
     }
 
+    /// Apply executor-generation custody to an already-started transaction.
+    /// The caller may therefore install the immutable PostgreSQL pass deadline
+    /// before either custody SQL await can block.
+    pub(super) async fn fence_transaction<'a>(
+        &self,
+        mut tx: Transaction<'a, Postgres>,
+    ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+        sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+            .bind(EXECUTOR_CUSTODY_LOCK)
+            .execute(&mut *tx)
+            .await?;
+        self.validate_generation(&mut tx).await?;
+        Ok(tx)
+    }
+
     async fn validate_generation(
         &self,
         tx: &mut Transaction<'_, Postgres>,
@@ -2551,6 +2583,66 @@ pub struct AdmissionRuntime {
     backend: std::sync::Arc<db::RuntimeBackend>,
 }
 impl AdmissionRuntime {
+    #[allow(dead_code)]
+    pub fn enqueue_v1_prepare(
+        &self,
+        request: &oteryn_game_server::foundation::ReconnectPrepareRequestV1,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let record = admission_journal::encode_record(request.record()).to_string();
+        self.backend.enqueue(
+            3,
+            &admission_journal::encode_v1_operation("prepare", &record, None),
+        )
+    }
+
+    #[allow(dead_code)]
+    pub fn enqueue_v1_commit(
+        &self,
+        request: &ReconnectCommitRequestV1,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let record = admission_journal::encode_record(request.record()).to_string();
+        self.backend.enqueue(
+            3,
+            &admission_journal::encode_v1_operation(
+                "commit",
+                &record,
+                Some(request.authorization().authorization_deadline()),
+            ),
+        )
+    }
+
+    #[allow(dead_code)]
+    pub fn enqueue_v1_reconcile(
+        &self,
+        request: &oteryn_game_server::foundation::ReconnectPrepareRequestV1,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let record = admission_journal::encode_record(request.record()).to_string();
+        self.backend.enqueue(
+            3,
+            &admission_journal::encode_v1_operation("reconcile", &record, None),
+        )
+    }
+
+    #[allow(dead_code)]
+    pub fn enqueue_v2_prepare(
+        &self,
+        request: &ReconnectPrepareRequestV2,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let record = encode_record_v2(request.record()).to_string();
+        self.backend
+            .enqueue(4, &encode_v2_operation("prepare", &record, request))
+    }
+
+    #[allow(dead_code)]
+    pub fn enqueue_v2_reconcile(
+        &self,
+        request: &ReconnectPrepareRequestV2,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let record = encode_record_v2(request.record()).to_string();
+        self.backend
+            .enqueue(4, &encode_v2_operation("reconcile", &record, request))
+    }
+
     /// Reserve bounded bookkeeping before copying an original operation envelope.
     /// Establishment returns the sole token capable of authorizing registered
     /// semantic execution for the retained `(slot, kind, original)` identity.
