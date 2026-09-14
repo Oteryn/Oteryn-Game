@@ -15,6 +15,26 @@ mod oteryn_resource_budget;
 #[path = "support/postgres.rs"]
 mod postgres;
 
+/// Registered-root qualification support is intentionally private to this
+/// integration target. In particular, this call site proves the SQLx M05
+/// result is inspectable from a downstream crate although `pool::connection`
+/// remains private and no new re-export exists.
+mod wp3_registered_root_qualification {
+    pub(super) async fn inspect_completed_return(
+        connection: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    ) -> Result<bool, &'static str> {
+        match connection.oteryn_m05_return_to_pool().await {
+            Some(returned_to_idle) => Ok(returned_to_idle),
+            None => Err("pool return supplied no terminal evidence"),
+        }
+    }
+
+    #[test]
+    fn downstream_can_inspect_the_standard_terminal_shape() {
+        let _downstream_callable = inspect_completed_return;
+    }
+}
+
 #[test]
 fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
 -> Result<(), Box<dyn std::error::Error>> {

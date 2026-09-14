@@ -195,7 +195,7 @@ impl<DB: Database> PoolConnection<DB> {
     #[doc(hidden)]
     pub fn oteryn_m05_return_to_pool(
         &mut self,
-    ) -> impl Future<Output = Option<OterynM05ReturnDisposition>> + Send + 'static {
+    ) -> impl Future<Output = Option<bool>> + Send + 'static {
         let floating: Option<Floating<DB, Live<DB>>> =
             self.live.take().map(|live| live.float(self.pool.clone()));
 
@@ -204,7 +204,14 @@ impl<DB: Database> PoolConnection<DB> {
                 Some(floating) => Some(floating.return_to_pool().await),
                 None => None,
             };
-            oteryn_m05_completed_disposition(returned)
+            // The implementation keeps the exact internal disposition type, while
+            // the public signature deliberately uses a downstream-nameable shape:
+            // Some(true) is returned-to-idle, Some(false) is retired-and-closed,
+            // and None is no terminal evidence.
+            oteryn_m05_completed_disposition(returned).map(|disposition| {
+                debug_assert_ne!(disposition.returned_to_idle(), disposition.retired_closed());
+                disposition.returned_to_idle()
+            })
         }
     }
 

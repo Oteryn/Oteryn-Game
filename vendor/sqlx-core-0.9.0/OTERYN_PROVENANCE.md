@@ -1231,10 +1231,12 @@ registered production M05 root to PROVEN.
 
 The Oteryn-authored, doc-hidden
 `PoolConnection::oteryn_m05_return_to_pool` seam in `src/pool/connection.rs`
-exposes the pinned SQLx 0.9.0 private return path's completed boolean as exactly
-`ReturnedToIdle` or `RetiredClosed`. The former is emitted only after the
+keeps the pinned SQLx 0.9.0 private return path's exact internal
+`ReturnedToIdle`/`RetiredClosed` representation while exposing the completed
+result through the downstream-nameable `Option<bool>` shape. `Some(true)` is
+returned only after the
 existing synchronous idle publication path returns; the latter only after the
-existing close path returns. An absent live connection, including every
+existing close path returns as `Some(false)`. An absent live connection, including every
 repeated invocation, returns `None` and is not finality evidence. Ordinary
 `return_to_pool`, Drop, maintenance, pool policy, counters, permits, and
 `src/pool/inner.rs` are unchanged. The Game Durability root, not SQLx, retains
