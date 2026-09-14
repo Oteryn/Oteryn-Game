@@ -432,3 +432,12 @@ transport/metadata, ClientHello/transcript/record and verification reservations
 must coexist within that enclosure.  Provider residency remains a separate
 same-root debit.  No rustls source, TLS semantics, logical-slot/root limit or
 production allowance changes here.
+
+## Disabled-resumption owner-aware retrieval guard (2026-09-14)
+
+Owner-aware client-session retrieval now observes `Tls12Resumption::Disabled`
+before consulting the TLS 1.2 session-store extension. This prevents the selected
+TLS 1.3 profile's disabled store from producing a spurious resource-budget
+denial. Enabled owner-aware retrieval still dispatches to the configured store,
+including typed denial and the fail-closed default for unsupported custom stores.
+Ordinary owner-free retrieval and session-store semantics are unchanged.

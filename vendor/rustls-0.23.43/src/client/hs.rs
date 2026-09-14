@@ -10,6 +10,8 @@ use pki_types::ServerName;
 
 #[cfg(feature = "tls12")]
 use super::tls12;
+#[cfg(all(feature = "std", feature = "tls12"))]
+use super::Resumption;
 use super::{ResolvesClientCert, Tls12Resumption};
 use crate::SupportedCipherSuite;
 #[cfg(feature = "logging")]
@@ -1303,6 +1305,23 @@ pub(super) enum ClientSessionValue {
 }
 
 impl ClientSessionValue {
+    #[cfg(all(feature = "std", feature = "tls12"))]
+    fn retrieve_tls12_with_resource_owner(
+        server_name: &ServerName<'static>,
+        resumption: &Resumption,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Option<Self>, Error> {
+        if resumption.tls12_resumption == Tls12Resumption::Disabled {
+            return Ok(None);
+        }
+
+        resumption
+            .store
+            .tls12_session_with_resource_owner(server_name, owner)
+            .map_err(|_| Error::General("resource budget unavailable".into()))
+            .map(|session| session.map(Self::Tls12))
+    }
+
     fn retrieve(
         server_name: &ServerName<'static>,
         config: &ClientConfig,
@@ -1380,12 +1399,11 @@ impl ClientSessionValue {
             None => {
                 #[cfg(feature = "tls12")]
                 {
-                    config
-                        .resumption
-                        .store
-                        .tls12_session_with_resource_owner(server_name, owner)
-                        .map_err(|_| Error::General("resource budget unavailable".into()))?
-                        .map(ClientSessionValue::Tls12)
+                    Self::retrieve_tls12_with_resource_owner(
+                        server_name,
+                        &config.resumption,
+                        owner,
+                    )?
                 }
                 #[cfg(not(feature = "tls12"))]
                 None
@@ -1447,5 +1465,38 @@ impl Deref for ClientSessionValue {
 
     fn deref(&self) -> &Self::Target {
         self.common()
+    }
+}
+
+#[cfg(all(test, feature = "std", feature = "tls12"))]
+mod resource_owner_session_tests {
+    use super::*;
+    use crate::{DeframerBufferError, DeframerBufferOwner};
+
+    #[derive(Debug)]
+    struct Owner;
+
+    impl DeframerBufferOwner for Owner {
+        fn try_reserve(&self, _bytes: usize) -> Result<(), DeframerBufferError> {
+            Ok(())
+        }
+
+        fn release(&self, _bytes: usize) {}
+    }
+
+    #[test]
+    fn disabled_resumption_skips_owner_aware_tls12_store() {
+        let server_name = ServerName::try_from("example.com").unwrap();
+        let resumption = Resumption::disabled();
+
+        let result = ClientSessionValue::retrieve_tls12_with_resource_owner(
+            &server_name,
+            &resumption,
+            Arc::new(Owner),
+        );
+
+        // NoClientSessionStorage's owner-aware method deliberately fails closed.
+        // Success therefore proves disabled resumption bypassed store retrieval.
+        assert!(matches!(result, Ok(None)));
     }
 }
