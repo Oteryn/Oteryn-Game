@@ -663,6 +663,7 @@ fn key_predicate(query: &mut sqlx::QueryBuilder<sqlx::Postgres>, fields: Mirror)
 }
 
 impl AdmissionGuardStore {
+    #[cfg(test)]
     pub async fn connect_runtime(database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
         if maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES {
             return invalid();

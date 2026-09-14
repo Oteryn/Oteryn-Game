@@ -79,6 +79,7 @@ pub struct AdmissionReconnectJournal {
 }
 
 impl AdmissionReconnectJournal {
+    #[cfg(test)]
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self::from_backend(
             super::db::backend_for_constructor(database_url).await?,

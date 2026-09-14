@@ -158,26 +158,39 @@ mod wp3_error_custody_regressions {
             assert_consumed(error, &seen);
         }
 
-        for raw in [
-            sqlx::Error::Io(std::io::Error::other(PayloadProbe(Observations::default()))),
-            sqlx::Error::ColumnDecode {
-                index: "probe-column".into(),
-                source: Box::new(PayloadProbe(Observations::default())),
-            },
-        ] {
+        for variant in 0..2 {
+            let seen = Observations::default();
+            let raw = match variant {
+                0 => sqlx::Error::Io(std::io::Error::other(PayloadProbe(seen.clone()))),
+                _ => sqlx::Error::ColumnDecode {
+                    index: "probe-column".into(),
+                    source: Box::new(PayloadProbe(seen.clone())),
+                },
+            };
             let error = DurabilityError::from(raw);
             assert!(matches!(error, DurabilityError::Database(_)));
+            assert_consumed(error, &seen);
         }
     }
 
     #[test]
     fn migration_payload_is_destroyed_before_migration_result_escapes() {
-        let seen = Observations::default();
-        let error = DurabilityError::from(sqlx::migrate::MigrateError::Source(Box::new(
-            PayloadProbe(seen.clone()),
-        )));
-        assert!(matches!(error, DurabilityError::Migration(_)));
-        assert_consumed(error, &seen);
+        for variant in 0..3 {
+            let seen = Observations::default();
+            let raw = match variant {
+                0 => sqlx::migrate::MigrateError::Source(Box::new(PayloadProbe(seen.clone()))),
+                1 => sqlx::migrate::MigrateError::Execute(sqlx::Error::Io(std::io::Error::other(
+                    PayloadProbe(seen.clone()),
+                ))),
+                _ => sqlx::migrate::MigrateError::ExecuteMigration(
+                    sqlx::Error::Tls(Box::new(PayloadProbe(seen.clone()))),
+                    42,
+                ),
+            };
+            let error = DurabilityError::from(raw);
+            assert!(matches!(error, DurabilityError::Migration(_)));
+            assert_consumed(error, &seen);
+        }
     }
 
     #[test]
@@ -196,6 +209,7 @@ mod wp3_error_custody_regressions {
 ///
 /// The secret-bearing fields are consumed while the lazy holder is built and
 /// are never retained in the process registration identity.
+#[derive(Clone)]
 pub struct AdmissionRuntimeConfig {
     transport_ip: IpAddr,
     port: u16,
@@ -205,6 +219,7 @@ pub struct AdmissionRuntimeConfig {
     password: Box<str>,
     root_ca_pem: Vec<u8>,
     resource_budget: Arc<dyn sqlx::postgres::ResourceBudget>,
+    identity: Arc<()>,
 }
 
 impl AdmissionRuntimeConfig {
@@ -228,6 +243,7 @@ impl AdmissionRuntimeConfig {
             password: password.into(),
             root_ca_pem,
             resource_budget,
+            identity: Arc::new(()),
         }
     }
 }
@@ -244,6 +260,7 @@ pub struct AdmissionReconnectJournalV2 {
 }
 
 impl AdmissionReconnectJournalV2 {
+    #[cfg(test)]
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self::from_backend(
             db::backend_for_constructor(database_url).await?,
@@ -2498,6 +2515,29 @@ impl DurabilityCustody {
         tx.commit().await?;
         Ok(())
     }
+
+    #[allow(dead_code)]
+    async fn acknowledge(
+        &self,
+        pool: &PgPool,
+        slot: i16,
+        operation_kind: i16,
+        operation_json: &str,
+    ) -> Result<(), DurabilityError> {
+        if !(1..=2).contains(&slot) || !(1..=8).contains(&operation_kind) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let mut tx = self.fence(pool).await?;
+        db::lock_admission_relations(&mut tx).await?;
+        let changed = sqlx::query("UPDATE game_durability_executor_custody SET operation_kind = NULL, operation_json = NULL WHERE slot = $1 AND generation = $2::text::numeric(20,0) AND operation_kind = $3 AND operation_json = $4")
+            .bind(slot).bind(self.generation.to_string()).bind(operation_kind)
+            .bind(operation_json).execute(&mut *tx).await?;
+        if changed.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tx.commit().await?;
+        Ok(())
+    }
 }
 
 /// Canonical shared process backend. Handles preserve the existing async APIs;
@@ -2540,7 +2580,24 @@ impl AdmissionRuntime {
         admission_authority_guards::AdmissionGuardStore::from_backend(self.backend.clone())
     }
     #[must_use]
-    pub fn recovered_pending(&self) -> &[Option<DurablePendingCheckpoint>; 2] {
-        &self.backend.pending
+    pub fn recovered_pending(&self) -> [Option<DurablePendingCheckpoint>; 2] {
+        self.backend.pending_snapshot()
+    }
+
+    #[allow(dead_code)]
+    pub async fn maintain_root_ready(&self) -> Result<(), DurabilityError> {
+        self.backend.maintain_root_ready().await
+    }
+
+    #[allow(dead_code)]
+    pub async fn acknowledge_checkpoint(
+        &self,
+        slot: i16,
+        operation_kind: i16,
+        original: &str,
+    ) -> Result<(), DurabilityError> {
+        self.backend
+            .acknowledge(slot, operation_kind, original)
+            .await
     }
 }

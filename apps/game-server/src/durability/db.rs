@@ -236,6 +236,25 @@ impl WorkCustody {
             .clone();
         Ok((if active_index == 0 { 1 } else { 2 }, submission))
     }
+
+    fn acknowledge(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self
+            .active
+            .get(index)
+            .and_then(Option::as_ref)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.kind != kind || active.operation.as_ref() != operation {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        self.active[index] = None;
+        Ok(())
+    }
 }
 
 /// A never-submitted queue reservation. Drop releases only this queued identity.
@@ -253,6 +272,7 @@ impl Drop for QueuedCheckpoint {
     }
 }
 impl QueuedCheckpoint {
+    #[allow(clippy::infallible_destructuring_match)]
     pub async fn establish(self) -> Result<i16, DurabilityError> {
         let started = tokio::time::Instant::now();
         let (slot, operation) = self
@@ -263,6 +283,7 @@ impl QueuedCheckpoint {
             .promote(self.id, std::time::Instant::now())?;
         let custody = match &self.backend.custody {
             BackendCustody::Registered(custody) => custody,
+            #[cfg(test)]
             BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
         };
         // This bounds requested checkpoint-pass waiting only, not backend death,
@@ -287,14 +308,28 @@ impl QueuedCheckpoint {
 pub(super) struct RuntimeBackend {
     pub pool: PgPool,
     custody: BackendCustody,
-    pub pending: [Option<super::DurablePendingCheckpoint>; 2],
+    pub pending: std::sync::Mutex<[Option<super::DurablePendingCheckpoint>; 2]>,
     work: std::sync::Mutex<WorkCustody>,
+    root_ready_demand: std::sync::atomic::AtomicBool,
+    #[allow(dead_code)]
+    root_maintenance: tokio::sync::Mutex<()>,
 }
 enum BackendCustody {
     Registered(super::DurabilityCustody),
+    #[cfg(test)]
     LegacyFixture,
 }
 impl RuntimeBackend {
+    fn record_root_ready_demand(&self) {
+        self.root_ready_demand
+            .store(true, std::sync::atomic::Ordering::Release);
+    }
+
+    fn consume_root_ready_demand(&self) -> bool {
+        self.root_ready_demand
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+    }
+
     pub(super) fn enqueue(
         self: &std::sync::Arc<Self>,
         kind: i16,
@@ -312,9 +347,68 @@ impl RuntimeBackend {
     }
     pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
         match &self.custody {
-            BackendCustody::Registered(custody) => custody.fence(&self.pool).await,
+            BackendCustody::Registered(custody) => {
+                match tokio::time::timeout(Duration::from_secs(2), custody.fence(&self.pool))
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?
+                {
+                    Err(DurabilityError::Unavailable) => {
+                        self.record_root_ready_demand();
+                        Err(DurabilityError::Unavailable)
+                    }
+                    result => result,
+                }
+            }
+            #[cfg(test)]
             BackendCustody::LegacyFixture => self.pool.begin().await.map_err(DurabilityError::from),
         }
+    }
+
+    #[allow(dead_code)]
+    pub(super) async fn maintain_root_ready(&self) -> Result<(), DurabilityError> {
+        let _guard = self.root_maintenance.lock().await;
+        if !self.consume_root_ready_demand() {
+            return Ok(());
+        }
+        let mut connection = tokio::time::timeout(Duration::from_secs(5), self.pool.acquire())
+            .await
+            .map_err(|_| DurabilityError::Unavailable)??;
+        if connection.oteryn_m05_return_to_pool().await == Some(true) {
+            Ok(())
+        } else {
+            Err(DurabilityError::Unavailable)
+        }
+    }
+
+    #[allow(irrefutable_let_patterns)]
+    #[allow(dead_code)]
+    pub(super) async fn acknowledge(
+        &self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        let BackendCustody::Registered(custody) = &self.custody else {
+            return Err(DurabilityError::Unavailable);
+        };
+        custody
+            .acknowledge(&self.pool, slot, kind, operation)
+            .await?;
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .acknowledge(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        self.pending
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?[index] = None;
+        Ok(())
+    }
+
+    pub(super) fn pending_snapshot(&self) -> [Option<super::DurablePendingCheckpoint>; 2] {
+        self.pending
+            .lock()
+            .map_or([None, None], |pending| pending.clone())
     }
 }
 enum RuntimeRegistration {
@@ -326,13 +420,25 @@ enum RuntimeRegistration {
     },
 }
 
-#[derive(Eq, PartialEq)]
 struct RuntimeIdentity {
     transport_ip: std::net::IpAddr,
     port: u16,
     tls_server_name: Box<str>,
     database: Box<str>,
     username: Box<str>,
+    config_identity: std::sync::Arc<()>,
+    root_owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget>,
+}
+impl PartialEq for RuntimeIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        self.transport_ip == other.transport_ip
+            && self.port == other.port
+            && self.tls_server_name == other.tls_server_name
+            && self.database == other.database
+            && self.username == other.username
+            && std::sync::Arc::ptr_eq(&self.config_identity, &other.config_identity)
+            && std::sync::Arc::ptr_eq(&self.root_owner, &other.root_owner)
+    }
 }
 static RUNTIME_REGISTRATION: tokio::sync::Mutex<RuntimeRegistration> =
     tokio::sync::Mutex::const_new(RuntimeRegistration::Empty);
@@ -355,6 +461,8 @@ pub(super) async fn registered_backend(
         tls_server_name: config.tls_server_name.clone(),
         database: config.database.clone(),
         username: config.username.clone(),
+        config_identity: config.identity.clone(),
+        root_owner: config.resource_budget.clone(),
     };
     let mut registration = RUNTIME_REGISTRATION.lock().await;
     match &*registration {
@@ -384,7 +492,9 @@ pub(super) async fn registered_backend(
         pool,
         custody: BackendCustody::Registered(custody),
         work: std::sync::Mutex::new(WorkCustody::new(&pending)),
-        pending,
+        pending: std::sync::Mutex::new(pending),
+        root_ready_demand: std::sync::atomic::AtomicBool::new(false),
+        root_maintenance: tokio::sync::Mutex::new(()),
     });
     *registration = RuntimeRegistration::Ready {
         identity,
@@ -395,14 +505,17 @@ pub(super) async fn registered_backend(
 
 // Historical isolated PostgreSQL fixtures are not production executor proof.
 // Explicit AdmissionRuntime::connect always tests registered production wiring.
+#[cfg(test)]
 pub(super) async fn backend_for_constructor(
     database_url: &str,
 ) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
     Ok(std::sync::Arc::new(RuntimeBackend {
         pool: super::schema::connect_runtime(database_url).await?,
         custody: BackendCustody::LegacyFixture,
-        pending: [None, None],
+        pending: std::sync::Mutex::new([None, None]),
         work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+        root_ready_demand: std::sync::atomic::AtomicBool::new(false),
+        root_maintenance: tokio::sync::Mutex::new(()),
     }))
 }
 
@@ -500,6 +613,70 @@ mod work_custody_tests {
             "recovered original"
         );
         Ok(())
+    }
+
+    #[test]
+    fn exact_acknowledgement_releases_one_slot_and_wrong_identity_cannot()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first = work.enqueue(1, "first", now)?;
+        let second = work.enqueue(2, "second", now)?;
+        work.promote(first, now)?;
+        work.promote(second, now)?;
+        let third = work.enqueue(3, "third", now)?;
+        assert!(matches!(
+            work.promote(third, now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(matches!(
+            work.acknowledge(1, 1, "wrong"),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.acknowledge(1, 1, "first")?;
+        assert_eq!(work.promote(third, now)?.0, 1);
+        assert!(matches!(
+            work.acknowledge(1, 1, "first"),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn registration_identity_requires_same_generation_and_root_owner() {
+        #[derive(Debug)]
+        struct Budget;
+        impl sqlx::postgres::ResourceBudget for Budget {
+            fn try_reserve(&self, _: usize) -> Result<(), sqlx::postgres::BudgetError> {
+                Ok(())
+            }
+            fn release(&self, _: usize) {}
+        }
+        fn identity(
+            token: std::sync::Arc<()>,
+            owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget>,
+        ) -> RuntimeIdentity {
+            RuntimeIdentity {
+                transport_ip: std::net::IpAddr::from([127, 0, 0, 1]),
+                port: 5432,
+                tls_server_name: "localhost".into(),
+                database: "game".into(),
+                username: "game".into(),
+                config_identity: token,
+                root_owner: owner,
+            }
+        }
+        let token = std::sync::Arc::new(());
+        let owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget> = std::sync::Arc::new(Budget);
+        assert!(identity(token.clone(), owner.clone()) == identity(token.clone(), owner.clone()));
+        assert!(
+            identity(token.clone(), owner.clone())
+                != identity(std::sync::Arc::new(()), owner.clone())
+        );
+        assert!(
+            identity(token, owner)
+                != identity(std::sync::Arc::new(()), std::sync::Arc::new(Budget))
+        );
     }
 }
 

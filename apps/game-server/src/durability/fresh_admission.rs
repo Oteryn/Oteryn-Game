@@ -303,6 +303,7 @@ pub struct FreshAdmissionStore {
     maximum_operation_bytes: usize,
 }
 impl FreshAdmissionStore {
+    #[cfg(test)]
     pub async fn connect_runtime(
         url: &str,
         maximum_operation_bytes: usize,

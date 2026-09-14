@@ -35,6 +35,7 @@ impl MigrationExecutor {
     }
 }
 
+#[cfg(test)]
 pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, DurabilityError> {
     let pool = db::connect(database_url, 4).await?;
     let compatibility = inspect(&pool).await?;

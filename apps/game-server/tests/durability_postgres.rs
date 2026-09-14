@@ -3494,14 +3494,9 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 predecessor
                     .checkpoint(&pool, 2, 2, "retained guard original")
                     .await?;
-                let runtime = AdmissionRuntime::connect(
-                    wp3_registered_root_qualification::production_config(&url)?,
-                )
-                .await?;
-                let repeated = AdmissionRuntime::connect(
-                    wp3_registered_root_qualification::production_config(&url)?,
-                )
-                .await?;
+                let production_config = wp3_registered_root_qualification::production_config(&url)?;
+                let runtime = AdmissionRuntime::connect(production_config.clone()).await?;
+                let repeated = AdmissionRuntime::connect(production_config).await?;
                 let generation: String = sqlx::query_scalar(
                     "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
                 )
@@ -3544,7 +3539,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 let v2 = repeated.reconnect_v2();
                 // A real successor invalidates every previously issued handle.
                 let (_successor, retained) = DurabilityCustody::acquire(&pool).await?;
-                assert_eq!(&retained, runtime.recovered_pending());
+                assert_eq!(retained, runtime.recovered_pending());
                 assert!(matches!(
                     guards.load(&[]).await,
                     Err(DurabilityError::InvalidStoredState)
