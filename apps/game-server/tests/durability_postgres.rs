@@ -22,7 +22,7 @@ mod postgres;
 mod wp3_registered_root_qualification {
     pub(super) async fn finalize_owned_transaction(
         transaction: sqlx::Transaction<'static, sqlx::Postgres>,
-    ) -> Result<Option<bool>, sqlx::Error> {
+    ) -> Result<(Option<bool>, Result<(), sqlx::Error>), sqlx::Error> {
         let (connection, result) = transaction.oteryn_m05_commit().await;
         let mut connection = match connection {
             sqlx::pool::MaybePoolConnection::PoolConnection(connection) => connection,
@@ -32,8 +32,8 @@ mod wp3_registered_root_qualification {
                 ));
             }
         };
-        result?;
-        Ok(connection.oteryn_m05_return_to_pool().await)
+        let disposition = connection.oteryn_m05_return_to_pool().await;
+        Ok((disposition, result))
     }
 
     pub(super) async fn inspect_completed_return(
