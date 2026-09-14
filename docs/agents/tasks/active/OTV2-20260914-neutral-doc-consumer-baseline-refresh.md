@@ -4,24 +4,26 @@
 task_id: OTV2-20260914-neutral-doc-consumer-baseline-refresh
 title: Refresh audited neutral-document consumer baseline
 mode: REPAIR
-status: blocked
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
+issue: 162
 pr: null
 base_sha: 8dfae3b9455673feff1745b9f124b786f93fcacc
 head_sha: 6e2b82ae181e93ecd3373f49deafa62f7925f934
 final_head_sha: null
 final_head_frozen_at: null
-owner: null
+owner: chatgpt-session
 created_at: 2026-09-14T15:35:00+02:00
-updated_at: 2026-09-14T15:44:00+02:00
+updated_at: 2026-09-14T16:08:15+02:00
 execution_policy: continuous_progress
-owned_paths: []
+owned_paths:
+  - tools/repository/classify_pr_test_lanes.py
+  - docs/agents/tasks/active/OTV2-20260914-neutral-doc-consumer-baseline-refresh.md
 public_contracts: []
 depends_on: []
-blocks:
-  - tool_safety_gate: github_contents_update_denied
+blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -123,18 +125,18 @@ A direct repository-native contents update of `tools/repository/classify_pr_test
 
 ## PR and closeout
 
-- changed-file review: branch differs from admission only by this task record
-- unresolved review threads: none; no PR opened to avoid triggering known-wasteful FULL CI for a task-only handoff branch
+- changed-file review: PASS - exact two-file diff reviewed; classifier delta is one baseline SHA and task delta is governance-only
+- unresolved review threads: none; PR not yet opened
 - related/superseded PRs: #309/#310 and #580/#582 are historical evidence only; #612 is the triggering docs-only sample
 - protected auto-merge: not authorized by this task
 - merge commit/result: pending
-- ownership release: released while blocked
+- ownership release: active until candidate publication/handoff
 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact one-line repair and consumer audit are complete, but repository-native classifier write was denied by the tool safety layer
-status: blocked
+last_progress: owner-authorized isolated writer applied the one-line baseline refresh; Linux classifier, post-merge, repository-policy and governance validation passed; PG/SIM reached only a local missing-pwsh environment limitation
+status: validating
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
 head_sha: 6e2b82ae181e93ecd3373f49deafa62f7925f934
 pr: null
@@ -145,7 +147,7 @@ ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: not_started
+runner_assignment_state: pending_hosted_ci
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -153,7 +155,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: exact authorization for an allowed writer route that can modify tools/repository/classify_pr_test_lanes.py without bypassing the denied repository-native update
-blocker: OpenAI safety layer denied the contents update; Remote Desktop is not authorized for this exact invocation
-next_action: apply the one-line constant refresh through an explicitly authorized allowed writer route, then run focused and hosted validation
+owner_action_required: null
+blocker: null
+next_action: commit and push the exact candidate, open a draft PR, and verify hosted FULL CI including the canonical PG/SIM PowerShell canary
 ```
