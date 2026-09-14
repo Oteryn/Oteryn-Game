@@ -366,6 +366,88 @@ def test_bounded_document_consumer_drift(module):
     print("Bounded document consumer drift PASS: lexical ordinary comments allowed; strings, block/docs, scalar and uncertain drift FULL")
 
 
+def test_large_pr_git_fallback(module):
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+
+        def git(*args):
+            return subprocess.check_output(
+                ["git", "-C", directory, "-c", "user.name=Fixture",
+                 "-c", "user.email=fixture@example.invalid", *args]
+            ).decode().strip()
+
+        git("init", "-q")
+        git("commit", "--allow-empty", "-qm", "baseline")
+        baseline = git("rev-parse", "HEAD")
+        source = root / "apps/game-server/src/generated"
+        source.mkdir(parents=True)
+        for index in range(301):
+            (source / f"large_{index:03d}.rs").write_text(f"pub const ITEM_{index}: usize = {index};\n")
+        git("add", ".")
+        git("commit", "-qm", "large server-only change")
+        head = git("rev-parse", "HEAD")
+        git("checkout", "-q", baseline)
+
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            env = {
+                "ENUMERATION_COMPLETE": "false",
+                "CHANGED_FILE_RECORDS": "[]",
+                "CHANGED_FILE_COUNT": "301",
+                "EXPECTED_HEAD": head,
+            }
+            with patch.dict(os.environ, env, clear=False):
+                files, count, complete = module.pr_file_records()
+            assert complete is True and count == 301 and len(files) == 301
+            assert {item["status"] for item in files} == {"added"}
+            result = module.classify(
+                files, count, fixture(), module.AUDITED_INPUT_SHA256,
+                docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                candidate_modes_verified=True,
+            )
+            assert result["rust"] is True and result["windows"] is False, result
+
+            git("checkout", "-q", head)
+            client = root / "apps/client/src/large_pr_probe.rs"
+            client.parent.mkdir(parents=True, exist_ok=True)
+            client.write_text("pub const CLIENT_PROBE: bool = true;\n")
+            git("add", ".")
+            git("commit", "-qm", "add client impact")
+            client_head = git("rev-parse", "HEAD")
+            git("checkout", "-q", baseline)
+            with patch.dict(os.environ, env | {"EXPECTED_HEAD": client_head, "CHANGED_FILE_COUNT": "302"}, clear=False):
+                files, count, complete = module.pr_file_records()
+            assert complete is True and count == 302 and len(files) == 302
+            result = module.classify(
+                files, count, fixture(), module.AUDITED_INPUT_SHA256,
+                docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                candidate_modes_verified=True,
+            )
+            assert result["rust"] is True and result["windows"] is True, result
+        finally:
+            os.chdir(old_cwd)
+
+    with patch.object(module.subprocess, "check_output",
+                      return_value=b"T\0apps/game-server/src/lib.rs\0"):
+        try:
+            module.git_diff_records("a" * 40, "b" * 40)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("unsupported Git diff status accepted")
+
+    with patch.dict(os.environ, {"ENUMERATION_COMPLETE": "unknown"}, clear=False):
+        try:
+            module.pr_file_records()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid enumeration state accepted")
+
+    print("Large-PR Git fallback PASS: >300 server-only records recover reduced Windows lane; client impact and malformed evidence fail closed")
+
+
 def main() -> int:
     assert MODULE.is_file(), "dependency-aware trusted-base classifier is not implemented"
     spec = importlib.util.spec_from_file_location("risk_classifier", MODULE)
@@ -373,6 +455,7 @@ def main() -> int:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     test_candidate_modes(module)
+    test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
     test_bounded_document_consumer_drift(module)
 
