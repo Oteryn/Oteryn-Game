@@ -1,5 +1,22 @@
 # OTV2-20260906-sqlx-driver-budget-351
 
+## Prospective exact error-custody amendment — 2026-09-13
+
+Frozen M03/M04 boundary [#162/5656188739](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5656188739)
+is addressed by `docs/agents/programs/OTV2_WP3_ERROR_CUSTODY_AMENDMENT_20260913.md`
+and candidate decision `docs/architecture/reviews/OTERYN_GAME_WP3_ERROR_CUSTODY_DECISION_2026-09-13.md`.
+Both remain **NOT_ACTIVE / NO SOURCE AUTHORITY** pending their exact gates.
+Only after protection/readback, decision acceptance and explicit Work activation
+does their exact `vendor/sqlx-core-0.9.0/src/error.rs` symbol allowance supplement
+the historical imported-file list below. Existing grants remain unchanged.
+
+Owner handoff [#162/5656281533](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5656281533)
+resumes the SAME canonical #351/#356 frozen M02/M04 batch and preserves recovered
+WIP, immutable admission, history and proven cells. This is not a replacement
+task or another material item. Work exclusively prepares the four-document
+amendment package; the source worker retains its existing vendor/test scope.
+Live #162/#356 governs current status over historical metadata below.
+
 ## Current prospective351 hosted-test lease — Work162
 
 Work162 [comment5560691505](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5560691505) authorizes this five-document allocation package on `coord/sqlx-351-test-lease`, based on protected main `b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a`. The new test-target lease is **NOT_ACTIVE** until independent qualification, protected integration/readback and an explicit Work grant. Existing351 implementation admission continues; this is not a new worker admission or budget reset.

@@ -1,5 +1,25 @@
 # SQLx PostgreSQL driver budget351 implementation plan
 
+## Prospective exact error-custody supplement — 2026-09-13
+
+The SAME frozen M03/M04 error boundary from #162/5656188739 has a bounded
+candidate decision at
+`docs/architecture/reviews/OTERYN_GAME_WP3_ERROR_CUSTODY_DECISION_2026-09-13.md`
+and exact scope at `docs/agents/programs/OTV2_WP3_ERROR_CUSTODY_AMENDMENT_20260913.md`.
+They are **NOT_ACTIVE**. Only their protected integration/readback, decision
+acceptance and explicit exclusive Work activation may add the named
+`vendor/sqlx-core-0.9.0/src/error.rs` custody/consuming-API symbols to this plan's
+historical allowlist. Other imported files still require their own current
+grants. This is not a new implementation plan, batch or permission to modify
+error.rs now. Existing legal M02/M04 work and all proven cells continue.
+
+Preserve legacy owner-free construction and borrowed SQLSTATE/source queries;
+the proposed consuming extraction return-type change must be independently
+reviewed. No interior-only charge, naked charged extraction, hidden database
+classification loss or generic pool retry rewrite can substitute for the
+decision's complete finality proof. Preserve later task evidence during normal
+protected merge-forward; no rebase/reset/force or replacement lineage.
+
 ## TLS certificate destination checkpoint
 
 - [x] Reserve the TLS 1.3 owned certificate-chain outer backing, DER copies, and OCSP copy
