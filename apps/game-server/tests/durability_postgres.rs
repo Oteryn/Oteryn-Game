@@ -84,7 +84,9 @@ mod wp3_registered_root_qualification {
                         .max_connections(1)
                         .connect(&database.database_url()?)
                         .await?;
-                    let version: i32 = sqlx::query_scalar("SHOW server_version_num")
+                    let version: i32 = sqlx::query_scalar(
+                        "SELECT current_setting('server_version_num')::int",
+                    )
                         .fetch_one(&pool)
                         .await?;
                     assert_eq!(version, 170_006);
