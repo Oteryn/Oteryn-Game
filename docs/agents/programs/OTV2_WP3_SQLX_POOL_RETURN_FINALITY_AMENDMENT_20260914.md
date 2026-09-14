@@ -14,6 +14,8 @@ preparation_branch: coord/wp3-sqlx-pool-finality-351
 worker_branch: agent/sqlx-driver-budget-351
 source_wp3_head: f5b275cca1adb3404ee51a5b8f02f3ee000348ee
 source_checkpoint: 5663349424
+narrowing_evidence: 5663531035
+blocking_pre_pr_review: 5663595517
 superseded_preparation_note: 5656948788
 architecture: WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1_REVISION_3
 risk: HIGH
@@ -37,163 +39,157 @@ At canonical #356 head `f5b275cca1adb3404ee51a5b8f02f3ee000348ee`:
 - doc-hidden `PoolConnection::return_to_pool()` returns
   `Future<Output = ()>` even though its private path obtains a boolean that
   distinguishes successful return from retirement/close;
-- `Floating::return_to_pool()` returns `true` only after its viable path calls
-  `release()`, and returns `false` after pool-close, lifetime-expiry,
-  `after_release` rejection/error, ping failure, and the associated close or
-  hard-close awaits;
-- `PoolInner::release()` privately publishes the connection to the idle queue
-  before releasing the pool permit and updating the idle count;
-- `PoolConnection::drop()` spawns return or close cleanup and exposes no
-  completion/finality witness to an M05 owner; and
-- close-on-drop applies a timeout and then runs pool maintenance, so wrapper
-  destruction, task spawn, permit/counter observation, or timeout completion is
-  not proof that the connection returned to idle or reached terminal close.
+- `Floating<DB, Live<DB>>::return_to_pool()` returns `true` only after its
+  viable path synchronously calls `release()`;
+- `PoolInner::release()` then pushes the idle connection, releases the permit,
+  and updates `num_idle` synchronously before returning;
+- every `false` path awaits its existing graceful or hard close before the
+  boolean is returned; and
+- ordinary `PoolConnection::return_to_pool()` discards that completed boolean.
 
-Revision 3 requires successful maintenance to await final return/ping before the
-charged `T -> R` transfer and readiness publication. It also retains failed,
-reaped, closed, or cancelled connection generations in `R` or `T` until all
-connection-attributable descendants are final, and forbids a successor `T` while
-any prior retirement tail is non-final. The current public seam erases the
-return-versus-close disposition and the Drop seam does not expose tail
-completion. Polling `try_acquire`, reading pool counters/permits, assuming
-`return_to_pool().await` means ready, or treating spawned Drop work as complete
-cannot prove that contract.
+The exact missing M05 seam is therefore the erased completed disposition in
+`connection.rs`, not a missing transition or signal in `PoolInner::release`.
+Revision 3 requires the root to retain an explicit finality obligation until it
+is terminal before transferring charged `T -> R` custody or admitting a
+successor `T`. Pool counters, permits, wrapper destruction, and spawned Drop
+cleanup cannot replace that explicit result.
 
-Therefore the old preparation conclusion is reconciled as **stale after the
-newer M05 source proof**. The smallest lawful response is this protected
-allocation; no #356 source authority is active from the proof alone.
+The blocking pre-PR review `5663595517` is accepted. `inner.rs` is read-only
+evidence and receives no prospective mutation authority. The smallest lawful
+response is one Oteryn/M05-specific sibling/helper in `connection.rs` exposing
+the already-existing completed disposition. No #356 source authority is active
+from this allocation alone.
 
 ## Exact prospective source lease
 
-Paths are not blanket authority. Only the symbols and minimum inseparable wiring
-listed below become writable after explicit post-protection activation. Every
-other symbol remains read-only.
+The **only writable production dependency source** is:
 
-### `vendor/sqlx-core-0.9.0/src/pool/connection.rs`
+`vendor/sqlx-core-0.9.0/src/pool/connection.rs`
 
-Permitted existing symbols:
+Within that file, authority is limited to:
 
-- `PoolConnection::return_to_pool`;
-- `Floating<DB, Live<DB>>::return_to_pool`;
-- `PoolConnection::take_and_close` and `Drop for PoolConnection` only for the
-  minimum completion-witness plumbing that preserves their existing behavior;
-- existing `Floating::{close,close_hard,release}` call sites only to propagate
-  the exact already-completed terminal disposition; their ordinary close
-  semantics are not otherwise writable.
+- one private or doc-hidden Oteryn/M05-specific return-finality outcome with
+  exactly `RETURNED_TO_IDLE` and `RETIRED_CLOSED`;
+- one sibling/helper which follows the current private return path and returns
+  that completed outcome; and
+- a minimal refactor of the existing doc-hidden
+  `PoolConnection::return_to_pool() -> Future<Output = ()>` solely when needed
+  to share that helper while preserving its output and behavior exactly.
 
-Permitted minimum private or doc-hidden representation:
+`RETURNED_TO_IDLE` may be produced only after the existing
+`Floating<DB, Live<DB>>::return_to_pool()` has returned `true`. That boolean is
+already produced only after synchronous `Floating::release()` and
+`PoolInner::release()` return, including idle publication, permit release, and
+the `num_idle` update.
 
-- one exact return-finality outcome with only the states needed to prove
-  `RETURNED_TO_IDLE` versus `RETIRED_CLOSED` after the corresponding operation
-  actually completes; and
-- one bounded, non-blocking completion witness for an explicitly owner-aware M05
-  return/retirement path when finality must outlive the wrapper or calling
-  future.
+`RETIRED_CLOSED` may be produced only after the current `false` path has
+completed its existing graceful or hard close await. The helper must not infer
+retirement from an error, timeout, task-spawn acceptance, permit/counter change,
+or wrapper destruction before that existing close path completes.
 
-The exact helper/type name is implementation-local. The seam must not expose a
-new stable general-purpose SQLx pool API. Cancellation before first poll,
-cancellation during ping/return/close, and Drop-spawned cleanup must retain a
-truthful path to eventual disposition or remain explicitly non-final; they may
-not report success from spawn acceptance or wrapper destruction.
+Ordinary `PoolConnection::return_to_pool() -> Future<Output = ()>` and ordinary
+Drop behavior must remain behaviorally unchanged. The allocation does not
+authorize changing `take_and_close`, `Drop for PoolConnection`, close-on-drop,
+or the private `Floating::{close,close_hard,release}` semantics. It does not
+authorize turning the M05-specific outcome into a stable generic SQLx pool API.
 
-### `vendor/sqlx-core-0.9.0/src/pool/inner.rs`
+### Read-only evidence with no mutation authority
 
-Permitted existing symbol:
+`vendor/sqlx-core-0.9.0/src/pool/inner.rs`, including
+`PoolInner::release`, is read-only. It receives **no** write, signalling,
+observability, state, or call-plumbing grant. Its current synchronous ordering is
+the proof boundary consumed by the `connection.rs` disposition:
 
-- `PoolInner::release`, only to make successful idle publication observable at
-  the exact existing publication boundary.
+1. push the idle connection;
+2. release the permit; and
+3. increment `num_idle` before returning.
 
-Permitted minimum inseparable close/finality observability:
+Every other SQLx pool file and symbol is also read-only. If actual M05
+implementation proves another dependency path or symbol is required, the worker
+must stop before mutation with a new exact
+`SHARED_LEASE_REQUIRED = <path> :: <symbol/resource> :: <reason>` result.
 
-- only the private signalling/state needed to complete the corresponding
-  connection-level witness after actual idle publication or terminal
-  close/hard-close completion.
+### Focused proof and provenance
 
-No acquire, connect, reaper, maintenance, semaphore, queue, sizing, parent-pool,
-or policy behavior is writable except the minimum unchanged call plumbing
-strictly required by the two symbols above. If terminal close cannot be observed
-within these exact files/symbols without another path, the worker must stop with
-an exact `SHARED_LEASE_REQUIRED` result rather than infer finality.
+Focused proof may be added inside the same leased `connection.rs` file where
+feasible. `vendor/sqlx-core-0.9.0/OTERYN_PROVENANCE.md` may receive only the
+exact authored-symbol, pinned-source, and proof record for this amendment.
 
-### Focused tests and provenance
-
-Only the minimum focused SQLx-core tests required to prove this seam may be
-added or updated within the existing SQLx-core pool test surface. If a new test
-file is necessary, it must be under
-`vendor/sqlx-core-0.9.0/tests/` and named only for Oteryn pool-return finality.
-`vendor/sqlx-core-0.9.0/OTERYN_PROVENANCE.md` may receive only the exact authored
-symbol, source, and proof record for this amendment.
-
-No game-server test, workflow, helper manifest, Cargo, or lockfile path is added
-by this allocation.
+No new or modified `vendor/sqlx-core-0.9.0/tests/**` file is prospectively
+authorized. If the exact current manifest/source later proves that another test
+path is required and runnable, stop for a new exact shared lease rather than
+seizing it. Protected #606 separately owns the registered-root M05/E02
+integration-test authority in
+`apps/game-server/tests/durability_postgres.rs`; this allocation does not
+duplicate or transfer that custody.
 
 ## Required invariants
 
-1. `RETURNED_TO_IDLE` is observable only after the existing idle-queue
-   publication has succeeded at `PoolInner::release`; it must not be inferred
-   from ping success alone.
-2. `RETIRED_CLOSED` is observable only after the selected graceful or hard-close
-   future has completed. A timeout, task spawn, dropped wrapper, permit change,
-   maintenance call, or counter observation is not terminal close evidence.
-3. Every explicit M05 return/retirement attempt produces at most one terminal
-   outcome. Cancellation and Drop races cannot lose, duplicate, or reverse the
-   outcome.
-4. The existing connection is never simultaneously published idle and reported
-   retired/closed. The outcome makes that mutual exclusion testable.
-5. Ordinary `PoolConnection` Drop behavior, close-on-drop behavior, ping,
-   lifetime expiry, `after_release`, minimum-connection maintenance, permit
-   accounting, queue ordering, and pool policy remain behaviorally unchanged.
-6. No additional pool capacity, retry, reconnect, maintenance loop, timer poll,
+1. `RETURNED_TO_IDLE` is observable only after the current private return path
+   has returned `true`, which is already after synchronous idle publication,
+   permit release, and `num_idle` update.
+2. `RETIRED_CLOSED` is observable only after the current `false` path has
+   completed its existing graceful or hard close await.
+3. The two outcomes are mutually exclusive and describe only the completed
+   disposition of one explicit M05 return obligation.
+4. The Revision-3 M05 root owns and retains that explicit future/obligation
+   until terminal. Dropping or cancelling the explicit root-owned future cannot
+   be reinterpreted as success.
+5. No SQLx-owned cancellation-surviving waiter, history, completion channel,
+   registry, or signalling collection is pre-authorized. This allocation does
+   not move root finality ownership into SQLx.
+6. Ordinary `PoolConnection::return_to_pool()` and Drop behavior, ping,
+   lifetime expiry, `after_release`, close/hard-close, minimum-connection
+   maintenance, permit accounting, queue ordering, and pool policy remain
+   behaviorally unchanged.
+7. No additional pool capacity, retry, reconnect, maintenance loop, timer poll,
    numeric limit, or recovery generation is introduced. M05 remains the owner
-   of Revision-3 demand/recovery policy.
-7. The seam is allocation-bounded. Any completion representation must have
-   explicit finite ownership and must not create an unbounded waiter/history
-   collection or lose finality when the original future/handle is dropped.
-8. The returned outcome is observability, not permission to convert a retired
-   connection into ready state. M05 alone performs the accepted `T -> R`
-   transfer and gates successor generations.
+   of Revision-3 demand, recovery, and finality retention policy.
+8. The completed disposition is evidence, not permission to publish root
+   readiness or to convert a retired connection into ready state. M05 alone
+   performs the accepted custody transfer and gates successor generations.
 
 ## Required focused proof
 
 On one exact #356 successor, the SAME writer must prove at least:
 
-- viable ping followed by actual idle publication yields exactly
-  `RETURNED_TO_IDLE` and permits a ready checkout only after publication;
+- viable ping followed by the current synchronous release path yields exactly
+  `RETURNED_TO_IDLE`, and never yields it before `PoolInner::release()` returns;
 - pool-closed, max-lifetime, `after_release = false`, `after_release` error, and
-  ping-error paths yield exactly `RETIRED_CLOSED` after the applicable close or
-  hard-close completes;
-- cancellation before first poll, during ping, after ping/before publication,
-  and during close cannot fabricate a terminal outcome or lose the eventual
-  completion obligation;
-- ordinary Drop and close-on-drop keep their current spawning, timeout,
-  maintenance, and permit behavior while a separately instrumented finality
-  witness (where used by the explicit owner-aware path) resolves only at the
-  truthful boundary;
-- delayed return, delayed close, concurrent Drop/observer, and pool shutdown do
-  not publish both outcomes or release generation custody early;
-- idle-queue publication happens before permit release exactly as today;
-- ordinary owner-free SQLx pool tests and behavior remain unchanged; and
-- M05 configured PostgreSQL 17.6 tests subsequently demonstrate that no new
-  recovery generation begins until every prior `R`/`T` return/close witness is
-  terminal, including delayed-tail and cancellation cases.
+  ping-error paths yield exactly `RETIRED_CLOSED` only after their current close
+  or hard-close await completes;
+- the two outcomes are mutually exclusive and terminal for one explicitly
+  retained M05 finality future;
+- cancellation or dropping that explicit future is not reported as successful
+  return or close, and M05 retains the obligation rather than depending on an
+  SQLx-owned completion channel;
+- ordinary unit-returning `return_to_pool()` and ordinary Drop/close-on-drop
+  spawning, timeout, maintenance, and permit behavior remain unchanged;
+- `inner.rs`, pool policy, counters, permits, and queue implementation remain
+  byte-identical; and
+- the separately authorized #606 M05 PostgreSQL 17.6 tests subsequently show no
+  successor recovery generation begins while a prior explicit return/close
+  obligation is non-terminal.
 
-Focused unit tests qualify only this seam. They do not by themselves prove M05,
-the Revision-3 root equation, complete pool/root accounting, or WP3 completion.
+Focused proof qualifies only this seam. It does not by itself prove M05, the
+Revision-3 root equation, complete pool/root accounting, or WP3 completion.
 
 ## Explicit exclusions
 
-No generic pool redesign; no new public stable pool contract; no pool size,
-acquire timeout, idle timeout, max lifetime, min/max connection, reaper,
-maintenance, fairness, semaphore, permit, or queue policy change; no Cargo or
-lockfile mutation; no workflow/B01 or protected-control change; no PostgreSQL
-protocol/decoder/SASL/TLS/rustls/Tokio change; no #335/WP4, WP5, Server Seam
-#247, production, deployment, credential, live-data, or external-repository
-authority.
+No `inner.rs` mutation; no SQLx-owned cancellation-surviving waiter/history or
+completion channel; no generic pool redesign; no new stable pool contract; no
+pool size, acquire timeout, idle timeout, max lifetime, min/max connection,
+reaper, maintenance, fairness, semaphore, permit, counter, or queue-policy
+change; no numeric limit or retry/recovery policy; no new SQLx-core test file;
+no Cargo or lockfile mutation; no workflow/B01 or protected-control change; no
+PostgreSQL protocol/decoder/SASL/TLS/rustls/Tokio change; no #335/WP4, WP5,
+Server Seam #247, production, deployment, credential, live-data, or
+external-repository authority.
 
 This allocation does not reopen PROVEN frozen-inventory cells and does not claim
-M05 or WP3 complete. The existing six-file M05 Durability lease remains distinct
-and unchanged. It does not activate this pool seam until the lifecycle below is
-complete.
+M05 or WP3 complete. The existing six-file M05 Durability lease and protected
+#606 integration-test scope remain distinct and unchanged. Protected integration
+of this document does not activate the pool seam.
 
 ## Lifecycle
 
@@ -205,7 +201,7 @@ this one-document prospective allocation
 -> real merge_group game-gate SUCCESS
 -> protected-main readback
 -> fresh #162 main/head/open-PR/task/path-custody reconciliation
--> explicit SAME #351/#356 activation of this exact pool seam
+-> explicit SAME #351/#356 activation of this exact connection.rs seam
 -> focused RED/GREEN implementation and M05 composition qualification
 ```
 
