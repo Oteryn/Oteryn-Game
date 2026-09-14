@@ -1,5 +1,6 @@
 use sqlx::postgres::{BudgetError, PgConnectOptions, PgPoolOptions, PgSslMode, ResourceBudget};
 use std::error::Error;
+use std::net::IpAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -12,6 +13,12 @@ const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
 const TRANSPORT_DENIAL_MARKER: &str = "OTERYN_WP3_CONNECTION_OWNER_DENIAL_UNAVAILABLE";
 const DENIAL_MARKER: &str = "OTERYN_WP3_TLS_DENIAL_UNAVAILABLE";
 const POSITIVE_MARKER: &str = "OTERYN_WP3_PG17_TLS13_VERIFY_FULL_POSITIVE";
+const ORDINARY_CONTROL_MARKER: &str = "OTERYN_WP3_ORDINARY_PROFILE_CONTROL_POSITIVE";
+const SELECTED_PROFILE_MARKER: &str = "OTERYN_WP3_SELECTED_ROOT_PROFILE_COMPONENTS";
+// Frozen source-derived selected connection-generation enclosure: the configured
+// built-in-root verifier enclosure (4_475_170) plus fixed TLS state (27_485).
+// Provider residency is charged separately through try_reserve_provider_shared.
+const SELECTED_CONNECTION_GENERATION_ALLOWANCE: usize = 4_475_170 + 27_485;
 const TRACE_LIMIT: usize = 64;
 
 #[derive(Clone, Copy, Default)]
@@ -188,12 +195,48 @@ impl ResourceBudget for Ledger {
     }
 }
 
-fn options(admin_url: &str, ca_path: &Path) -> Result<PgConnectOptions, Box<dyn Error>> {
+fn ordinary_options(admin_url: &str, ca_path: &Path) -> Result<PgConnectOptions, Box<dyn Error>> {
     let options: PgConnectOptions = admin_url.parse()?;
     Ok(options
         .host("localhost")
         .ssl_mode(PgSslMode::VerifyFull)
         .ssl_root_cert(ca_path))
+}
+
+fn selected_options(
+    admin_url: &str,
+    ca_path: &Path,
+    owner: Arc<dyn ResourceBudget>,
+) -> Result<PgConnectOptions, Box<dyn Error>> {
+    let parsed: PgConnectOptions = admin_url.parse()?;
+    let transport_ip: IpAddr = parsed
+        .get_host()
+        .parse()
+        .map_err(|_| "selected qualification requires a literal-IP PostgreSQL transport address")?;
+    let authority = admin_url
+        .split_once("://")
+        .and_then(|(_, rest)| rest.split_once('@').map(|(userinfo, _)| userinfo))
+        .ok_or("selected qualification requires explicit URL credentials")?;
+    let (username, password) = authority
+        .split_once(':')
+        .ok_or("selected qualification requires an explicit password")?;
+    if username != parsed.get_username() || username.contains('%') || password.contains('%') {
+        return Err("selected qualification requires literal configured test credentials".into());
+    }
+    let database = parsed
+        .get_database()
+        .ok_or("selected qualification requires an explicit database")?;
+    let root_ca_pem = std::fs::read(ca_path)?;
+    Ok(PgConnectOptions::new_oteryn_root_profile(
+        transport_ip,
+        parsed.get_port(),
+        "localhost",
+        database,
+        username,
+        password,
+        root_ca_pem,
+        owner,
+    ))
 }
 
 fn holder_pool(options: PgConnectOptions, owner: Arc<dyn ResourceBudget>) -> sqlx::PgPool {
@@ -216,7 +259,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mode = std::env::var("OTERYN_WP3_MODE")?;
     let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
     let ca_path = std::env::var("OTERYN_WP3_CA_CERT")?;
-    let options = options(&admin_url, Path::new(&ca_path))?;
+    let ca_path = Path::new(&ca_path);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
@@ -230,6 +273,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ledger::new(0, 0)
             });
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
+            let options = selected_options(&admin_url, ca_path, owner.clone())?;
             let pool = runtime.block_on(async { holder_pool(options, owner) });
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err(
@@ -302,9 +346,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("{TRANSPORT_DENIAL_MARKER}");
             }
         }
-        "positive" => {
-            let ledger = Arc::new(Ledger::new(SLOT_LIMIT, ROOT_LIMIT));
+        "positive" | "ordinary-control" => {
+            let selected = mode == "positive";
+            let ordinary_limit = if selected {
+                SELECTED_CONNECTION_GENERATION_ALLOWANCE
+            } else {
+                SLOT_LIMIT
+            };
+            let ledger = Arc::new(Ledger::new(ordinary_limit, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
+            let options = if selected {
+                selected_options(&admin_url, ca_path, owner.clone())?
+            } else {
+                ordinary_options(&admin_url, ca_path)?
+            };
             let pool = runtime.block_on(async { holder_pool(options, owner) });
 
             if runtime.block_on(pool.try_begin())?.is_some() {
@@ -379,8 +434,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             drop(runtime);
 
             let snapshot = ledger.snapshot();
-            if snapshot.peak_ordinary == 0 || snapshot.peak_ordinary > SLOT_LIMIT {
-                return Err("ordinary TLS custody was not bounded by the slot ledger".into());
+            if snapshot.peak_ordinary == 0 || snapshot.peak_ordinary > ordinary_limit {
+                return Err("TLS custody exceeded its selected profile allowance".into());
             }
             if snapshot.provider_shared == 0 || snapshot.peak_root > ROOT_LIMIT {
                 return Err(
@@ -394,8 +449,19 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )
                 .into());
             }
+            let marker = if selected {
+                println!(
+                    "{SELECTED_PROFILE_MARKER} allowance={} transport=literal-ip tls_identity=localhost ca=inline fixed_and_verifier={} provider_shared={} postgres_backing=exercised",
+                    SELECTED_CONNECTION_GENERATION_ALLOWANCE,
+                    SELECTED_CONNECTION_GENERATION_ALLOWANCE,
+                    snapshot.provider_shared
+                );
+                POSITIVE_MARKER
+            } else {
+                ORDINARY_CONTROL_MARKER
+            };
             println!(
-                "{POSITIVE_MARKER} peak_ordinary={} peak_root={} provider_shared={} retained_root={}",
+                "{marker} peak_ordinary={} peak_root={} provider_shared={} retained_root={}",
                 snapshot.peak_ordinary, snapshot.peak_root, snapshot.provider_shared, snapshot.root
             );
         }

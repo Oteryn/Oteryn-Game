@@ -420,3 +420,15 @@ backing in `HandshakeHashBuffer::start_hash` and `HandshakeHash::into_hrr_buffer
 internal encodings behind conditional #493. Conditional #493 and #501 remain inactive and no
 source governed only by either was changed. These are carried as OPEN simultaneous-live cells;
 `complete_tls_accounting` remains NOT_PROVEN.
+
+## Selected configured E02/M03 witness correction (2026-09-14)
+
+The corrected PostgreSQL helper now reaches rustls through the explicit selected
+root profile (literal-IP transport, separate `localhost` TLS identity, inline
+CA), rather than treating an ordinary parsed-option `VerifyFull` run as selected
+profile evidence.  Its test connection-generation enclosure is the
+source-derived configured verifier `4_475_170` plus fixed TLS state `27_485`;
+transport/metadata, ClientHello/transcript/record and verification reservations
+must coexist within that enclosure.  Provider residency remains a separate
+same-root debit.  No rustls source, TLS semantics, logical-slot/root limit or
+production allowance changes here.

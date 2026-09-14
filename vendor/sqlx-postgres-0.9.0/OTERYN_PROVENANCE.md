@@ -701,3 +701,23 @@ Independent successor review and canonical configured PostgreSQL 17.6 CI remain
 required. Local PostgreSQL is unavailable. Prior accepted M02/M04 evidence and
 the separately held core Error, M03/M05 and quantitative root boundaries are
 retained without re-audit or expanded completion claims.
+
+## Selected configured E02/M03 qualification correction (2026-09-14)
+
+The earlier configured helper parsed the ordinary administration URL and then
+selected `VerifyFull` plus a file CA.  It did **not** call
+`PgConnectOptions::new_oteryn_root_profile`; consequently its successful run was
+an ordinary owner-aware TLS control and was not evidence for the selected M03
+configuration.  The qualification now labels that ordinary control separately
+and constructs the selected profile explicitly from the configured literal IP,
+DNS identity `localhost`, inline CA PEM and the same caller-supplied root owner.
+
+The selected test connection-generation enclosure is source-derived as
+`4_475_170` bytes for the configured built-in-root verifier plus `27_485` bytes
+of fixed TLS state (`4_502_655` total).  All source-reserved transport/metadata,
+ClientHello/transcript/record, verification and exercised PostgreSQL backing
+must fit simultaneously under that connection-generation test allowance;
+AWS-LC provider residency remains a distinct root-shared debit.  The helper
+fails rather than increasing the allowance.  This is not the logical
+`SLOT_LIMIT = 4_194_304`, does not alter production policy, and does not replace
+M05/E01 final root composition.

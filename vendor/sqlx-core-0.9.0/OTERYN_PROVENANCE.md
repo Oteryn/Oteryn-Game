@@ -1236,3 +1236,16 @@ Exact authored paths in this continuation (relative to this package):
 - `src/net/tls/resource_budget_tests.rs`
 - `src/net/tls/tls_rustls.rs`
 - `src/rt/resource_owner.rs`
+
+## Selected configured E02/M03 witness correction (2026-09-14)
+
+The PostgreSQL qualification's former positive path exercised ordinary parsed
+connect options, not `new_oteryn_root_profile`; no selected-profile conclusion
+is retained from that run.  The corrected test explicitly selects literal-IP
+transport, separate DNS verification identity and inline CA, and uses a
+source-derived `4_475_170 + 27_485 = 4_502_655` connection-generation enclosure.
+Existing source reservations for transport/metadata, ClientHello/transcript/
+record and verification share that enclosure simultaneously.  AWS-LC provider
+residency remains separately charged to the same root.  This test-only witness
+changes neither the 4 MiB logical slot nor the 12 MiB root policy and is not a
+measured-peak or complete M05/E01 claim.

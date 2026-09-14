@@ -293,3 +293,13 @@ Focused evidence on Rust 1.94 x86_64 Linux:
   Full successor hosted Linux/Windows/PG17.6 and
   independent exact-head review remain required; no local configured PG result
   or terminal M01/WP3 qualification is claimed.
+
+## Selected configured E02/M03 witness correction (2026-09-14)
+
+The configured PostgreSQL qualification now distinguishes its ordinary control
+from the selected `new_oteryn_root_profile` execution.  The selected run uses
+the existing current-thread runtime and same root owner while the complete
+connection-generation reservations execute under the source-derived
+`4_502_655` test enclosure; provider residency is retained separately.  This is
+execution evidence only: Tokio source/ordinary behavior and the production
+4 MiB logical-slot and 12 MiB root limits are unchanged.
