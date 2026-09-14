@@ -386,6 +386,9 @@ def pr_file_records() -> tuple[list[dict], int, bool]:
         return files, int(os.environ["CHANGED_FILE_COUNT"]), True
     if completeness != "false":
         raise ValueError("invalid-enumeration-state")
+    count_text = os.environ["CHANGED_FILE_COUNT"]
+    if re.fullmatch(r"[1-9][0-9]*", count_text) is None:
+        raise ValueError("invalid-transported-file-count")
     expected_head = os.environ["EXPECTED_HEAD"].strip().lower()
     base = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip().lower()
     files = git_diff_records(base, expected_head)
