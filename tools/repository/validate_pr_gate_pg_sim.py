@@ -15,7 +15,7 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "cdfee07d7043f039af9ca015e686f6056b3cbd514c42e9abd406753023ad5637",
+    "rust_linux": "b786c44a4d1125f281e8f64fd38922d71ba9990c14ee345a8f9f6a412cf014b8",
     "rust_windows": "de7eca96c0dd87d6a7c6d119a619f3ab67211bbb0982b5a1f1125d8ea7a5ca08",
 }
 

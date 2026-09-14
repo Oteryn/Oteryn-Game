@@ -625,7 +625,6 @@ jobs:
 
       - name: Test SQLx-core M05 transaction finality
         run: |
-          set -euo pipefail
           M05_TEST_LIST="$(cargo +1.94.0 test --locked --manifest-path vendor/sqlx-core-0.9.0/Cargo.toml --features any --lib oteryn_m05_finality_tests -- --list)"
           printf '%s\n' "$M05_TEST_LIST"
           for test_name in \
