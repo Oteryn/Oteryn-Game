@@ -1227,6 +1227,19 @@ finality remains separately held by Work162/5656188739. M02 cannot promote that
 boundary, DNS, selected TLS state, complete R/T retirement equations, or the
 registered production M05 root to PROVEN.
 
+### Oteryn M05 completed pool-return disposition
+
+The Oteryn-authored, doc-hidden
+`PoolConnection::oteryn_m05_return_to_pool` seam in `src/pool/connection.rs`
+exposes the pinned SQLx 0.9.0 private return path's completed boolean as exactly
+`ReturnedToIdle` or `RetiredClosed`. The former is emitted only after the
+existing synchronous idle publication path returns; the latter only after the
+existing close path returns. An absent live connection, including every
+repeated invocation, returns `None` and is not finality evidence. Ordinary
+`return_to_pool`, Drop, maintenance, pool policy, counters, permits, and
+`src/pool/inner.rs` are unchanged. The Game Durability root, not SQLx, retains
+the cancellation/finality obligation.
+
 Exact authored paths in this continuation (relative to this package):
 
 - `src/net/mod.rs`

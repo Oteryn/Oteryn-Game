@@ -10,7 +10,7 @@ use crate::connection::Connection;
 use crate::database::Database;
 use crate::error::Error;
 
-use super::inner::{is_beyond_max_lifetime, DecrementSizeGuard, PoolInner};
+use super::inner::{DecrementSizeGuard, PoolInner, is_beyond_max_lifetime};
 use crate::pool::options::PoolConnectionMetadata;
 
 const CLOSE_ON_DROP_TIMEOUT: Duration = Duration::from_secs(5);
@@ -22,6 +22,41 @@ pub struct PoolConnection<DB: Database> {
     live: Option<Live<DB>>,
     close_on_drop: bool,
     pub(crate) pool: Arc<PoolInner<DB>>,
+}
+
+/// Completed disposition of an explicit Oteryn M05 pool-return obligation.
+///
+/// This is a narrow, doc-hidden downstream seam. It is not a general pool
+/// lifecycle API: absence of a live connection yields no disposition at all.
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OterynM05ReturnDisposition {
+    /// The connection was synchronously published to the idle queue.
+    ReturnedToIdle,
+    /// The connection's graceful or hard-close path completed.
+    RetiredClosed,
+}
+
+impl OterynM05ReturnDisposition {
+    /// Whether the completed path synchronously published the connection idle.
+    pub fn returned_to_idle(self) -> bool {
+        matches!(self, Self::ReturnedToIdle)
+    }
+
+    /// Whether the completed path retired and closed the connection.
+    pub fn retired_closed(self) -> bool {
+        matches!(self, Self::RetiredClosed)
+    }
+}
+
+fn oteryn_m05_completed_disposition(returned: Option<bool>) -> Option<OterynM05ReturnDisposition> {
+    returned.map(|returned| {
+        if returned {
+            OterynM05ReturnDisposition::ReturnedToIdle
+        } else {
+            OterynM05ReturnDisposition::RetiredClosed
+        }
+    })
 }
 
 pub(super) struct Live<DB: Database> {
@@ -154,6 +189,25 @@ impl<DB: Database> PoolConnection<DB> {
         }
     }
 
+    /// Await the existing return/close path and expose only its completed M05
+    /// disposition. A missing live connection, including every repeated call,
+    /// is deliberately non-terminal and supplies no finality evidence.
+    #[doc(hidden)]
+    pub fn oteryn_m05_return_to_pool(
+        &mut self,
+    ) -> impl Future<Output = Option<OterynM05ReturnDisposition>> + Send + 'static {
+        let floating: Option<Floating<DB, Live<DB>>> =
+            self.live.take().map(|live| live.float(self.pool.clone()));
+
+        async move {
+            let returned = match floating {
+                Some(floating) => Some(floating.return_to_pool().await),
+                None => None,
+            };
+            oteryn_m05_completed_disposition(returned)
+        }
+    }
+
     fn take_and_close(&mut self) -> impl Future<Output = ()> + Send + 'static {
         // float the connection in the pool before we move into the task
         // in case the returned `Future` isn't executed, like if it's spawned into a dying runtime
@@ -173,6 +227,31 @@ impl<DB: Database> PoolConnection<DB> {
 
             pool.min_connections_maintenance(None).await;
         }
+    }
+}
+
+#[cfg(test)]
+mod oteryn_m05_return_disposition_tests {
+    use super::{OterynM05ReturnDisposition, oteryn_m05_completed_disposition};
+
+    #[test]
+    fn completed_private_outcome_maps_to_exact_terminal_disposition() {
+        assert_eq!(
+            oteryn_m05_completed_disposition(Some(true)),
+            Some(OterynM05ReturnDisposition::ReturnedToIdle)
+        );
+        assert_eq!(
+            oteryn_m05_completed_disposition(Some(false)),
+            Some(OterynM05ReturnDisposition::RetiredClosed)
+        );
+        assert!(OterynM05ReturnDisposition::ReturnedToIdle.returned_to_idle());
+        assert!(OterynM05ReturnDisposition::RetiredClosed.retired_closed());
+    }
+
+    #[test]
+    fn no_live_and_repeated_calls_cannot_fabricate_terminal_evidence() {
+        assert_eq!(oteryn_m05_completed_disposition(None), None);
+        assert_eq!(oteryn_m05_completed_disposition(None), None);
     }
 }
 
