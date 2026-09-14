@@ -379,7 +379,7 @@ impl SemanticPass {
 
 /// A never-submitted queue reservation. Drop releases only this queued identity.
 /// Establishment retains the original active slot on success, error or cancellation.
-/// This does not authorize an admission effect or provide a semantic completion.
+/// Only the returned pass authorizes an admission effect; it is not completion.
 pub struct QueuedCheckpoint {
     backend: std::sync::Arc<RuntimeBackend>,
     id: u64,
@@ -401,24 +401,14 @@ impl QueuedCheckpoint {
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
             .promote(self.id, std::time::Instant::now())?;
-        let custody = match &self.backend.custody {
-            BackendCustody::Registered(custody) => custody,
-            #[cfg(test)]
-            BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
-        };
-        // This bounds requested checkpoint-pass waiting only, not backend death,
-        // SQL-driver allocations or full semantic execution. Active custody stays.
-        tokio::time::timeout_at(
-            started + Duration::from_millis(2000),
-            custody.checkpoint(
-                &self.backend.pool,
+        self.backend
+            .establish_checkpoint(
                 slot,
                 operation.kind,
                 &operation.operation,
-            ),
-        )
-        .await
-        .map_err(|_| DurabilityError::Unavailable)??;
+                started + Duration::from_millis(2000),
+            )
+            .await?;
         Ok(SemanticPass {
             identity: ActivePassIdentity {
                 backend: self.backend.clone(),
@@ -460,6 +450,30 @@ enum BackendCustody {
     LegacyFixture,
 }
 impl RuntimeBackend {
+    async fn establish_checkpoint(
+        &self,
+        slot: i16,
+        kind: i16,
+        original: &str,
+        deadline: tokio::time::Instant,
+    ) -> Result<(), DurabilityError> {
+        let custody = match &self.custody {
+            BackendCustody::Registered(custody) => custody,
+            #[cfg(test)]
+            BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
+        };
+        let result = PassDeadline(deadline)
+            .run(custody.checkpoint(&self.pool, slot, kind, original))
+            .await;
+        if matches!(
+            result,
+            Err(DurabilityError::Unavailable) | Ok(Err(DurabilityError::Unavailable))
+        ) {
+            self.record_root_ready_demand();
+        }
+        result?
+    }
+
     pub(super) fn resume_pass(
         self: &std::sync::Arc<Self>,
         slot: i16,
