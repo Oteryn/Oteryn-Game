@@ -4,7 +4,7 @@
 task_id: OTV2-20260914-neutral-doc-consumer-baseline-refresh
 title: Refresh audited neutral-document consumer baseline
 mode: REPAIR
-status: implementing
+status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
@@ -13,13 +13,11 @@ base_sha: 8dfae3b9455673feff1745b9f124b786f93fcacc
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: chatgpt-session
+owner: null
 created_at: 2026-09-14T15:35:00+02:00
 updated_at: 2026-09-14T15:35:00+02:00
 execution_policy: continuous_progress
-owned_paths:
-  - tools/repository/classify_pr_test_lanes.py
-  - docs/agents/tasks/active/OTV2-20260914-neutral-doc-consumer-baseline-refresh.md
+owned_paths: []
 public_contracts: []
 depends_on: []
 blocks: []
@@ -61,21 +59,28 @@ No automatic baseline update, heuristic absence-of-marker approval, path-family 
 
 ## Implementation / findings
 
-The existing algorithm is intentionally conservative and is retained unchanged. The repair is a manual reviewed baseline refresh, matching the repository's prior snapshot-refresh discipline while preserving future fail-closed drift detection.
+The existing algorithm is intentionally conservative and is retained unchanged. The required implementation is exactly this one production-line replacement in `tools/repository/classify_pr_test_lanes.py`:
 
-The local sandbox cannot resolve `github.com`, so no local checkout/test claim is made. Mutation and validation use the repository-native GitHub connector and hosted CI; exact diff/readback remains mandatory before qualification.
+```diff
+-AUDITED_DOC_CONSUMER_BASE_SHA = "1d0916c7476f37589524c7181b5857bcc6c141e1"
++AUDITED_DOC_CONSUMER_BASE_SHA = "8dfae3b9455673feff1745b9f124b786f93fcacc"
+```
+
+No digest constant or classifier algorithm change is required: `document_consumers_safe()` will compare later candidates against this newly reviewed protected baseline, while any later added/deleted/type-changed workspace/build input again fails closed to FULL.
+
+The local sandbox cannot resolve `github.com`, so no local checkout/test claim is made. Repository-native reads established the exact source delta. The GitHub connector allowed creation of the dedicated branch and this task record, but its safety layer explicitly blocked the attempted write to `tools/repository/classify_pr_test_lanes.py`. No lower-level Git-data workaround was attempted because that would bypass the safety decision.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending hosted repository validation
-- result: pending
+- command/run: blocked before candidate creation
+- result: `NOT_RUN`
 
 ### Component/integration
 
-- command/run: pending hosted repository validation
-- result: pending
+- command/run: blocked before candidate creation
+- result: `NOT_RUN`
 
 ### E2E
 
@@ -85,18 +90,18 @@ The local sandbox cannot resolve `github.com`, so no local checkout/test claim i
 ### Exact-head CI
 
 - final head: pending
-- trigger source: pull_request
+- trigger source: pending
 - workflow/run/job: pending
-- runner assignment: GitHub Actions
-- classification: FULL expected because `tools/repository/**` is trusted control-plane input
+- runner assignment: pending
+- classification: FULL required for the eventual `tools/repository/**` control-plane candidate
 - result: pending
 
 ## Self-review
 
 - exact head: pending
 - method/reviewer: implementing ChatGPT session
-- material findings: pending
-- verdict: pending
+- material findings: no algorithm change required; exact one-line repair identified
+- verdict: implementation blocked before candidate exists
 
 ## Independent review
 
@@ -108,18 +113,18 @@ The local sandbox cannot resolve `github.com`, so no local checkout/test claim i
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: task record only; no implementation candidate exists
+- unresolved review threads: `NOT_APPLICABLE`
 - related/superseded PRs: #309/#310 and #580/#582 are historical evidence only; #612 is the triggering docs-only sample
-- protected auto-merge: not authorized by this task
+- protected auto-merge: not authorized
 - merge commit/result: pending
-- ownership release: pending
+- ownership release: released because mutation route is blocked
 
 ## Context checkpoint
 
 ```yaml
-last_progress: bounded consumer delta audited and repair branch created from exact protected main
-status: implementing
+last_progress: exact one-line repair identified after full bounded consumer re-audit; connector safety blocked the classifier write
+status: blocked
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
 head_sha: null
 pr: null
@@ -138,7 +143,8 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: update the reviewed document-consumer baseline constant, then publish and validate the exact candidate
+owner_action_required: apply the recorded one-line baseline refresh through an authorized repository editor, then run the repository-native validation and protected lifecycle
+blocker: CONNECTOR_WRITE_SAFETY_BLOCKED
+actionable_patch: tools/repository/classify_pr_test_lanes.py AUDITED_DOC_CONSUMER_BASE_SHA 1d0916c7476f37589524c7181b5857bcc6c141e1 -> 8dfae3b9455673feff1745b9f124b786f93fcacc
+next_action: create the exact one-line implementation candidate from the recorded protected base and run FULL CI
 ```
