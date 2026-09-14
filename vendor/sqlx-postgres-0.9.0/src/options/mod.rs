@@ -11,6 +11,8 @@ use sqlx_core::net::resource_budget::ResourceBudget;
 
 mod connect;
 mod oteryn;
+#[doc(hidden)]
+pub use oteryn::OterynRootProfile;
 mod parse;
 mod pgpass;
 mod ssl_mode;

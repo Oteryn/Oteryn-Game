@@ -48,7 +48,7 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
 /// Establish the single production holder from an explicit no-ambient profile.
 /// Schema inspection is root maintenance; semantic passes never call this path.
 pub(crate) async fn connect_runtime_root(
-    options: sqlx::postgres::PgConnectOptions,
+    options: sqlx::postgres::OterynRootProfile,
 ) -> Result<PgPool, DurabilityError> {
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(1)
@@ -56,7 +56,7 @@ pub(crate) async fn connect_runtime_root(
         .acquire_timeout(std::time::Duration::from_secs(5))
         .idle_timeout(std::time::Duration::from_secs(10 * 60))
         .max_lifetime(std::time::Duration::from_secs(30 * 60))
-        .connect_lazy_with(options);
+        .connect_lazy_with(options.into_connect_options());
     let compatibility = inspect(&pool).await?;
     if compatibility != SchemaCompatibility::Compatible {
         return Err(DurabilityError::SchemaIncompatible(compatibility));

@@ -7,6 +7,45 @@ use super::{PgConnectOptions, PgResourceBudget, PgSslMode};
 use crate::connection::LogSettings;
 use crate::net::tls::CertificateInput;
 
+/// Move-only selected Durability root profile.
+///
+/// The ordinary `PgConnectOptions` API remains cloneable. This wrapper prevents
+/// the selected, precharged profile from being deep-cloned without acquiring a
+/// reservation for the new physical backing.
+#[doc(hidden)]
+pub struct OterynRootProfile(PgConnectOptions);
+
+impl OterynRootProfile {
+    #[doc(hidden)]
+    pub fn options<I, K, V>(mut self, options: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: std::fmt::Display,
+        V: std::fmt::Display,
+    {
+        self.0 = self.0.options(options);
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn into_connect_options(self) -> PgConnectOptions {
+        self.0
+    }
+
+    #[doc(hidden)]
+    pub fn with_resource_budget(mut self, owner: Arc<dyn ResourceBudget>) -> Self {
+        self.0 = self.0.with_resource_budget(owner);
+        self
+    }
+}
+
+impl std::ops::Deref for OterynRootProfile {
+    type Target = PgConnectOptions;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Same-ledger custody for the retained backing owned by an Oteryn root profile.
 ///
 /// This wrapper is shared by option clones and physical connections, so the
@@ -64,7 +103,7 @@ impl PgConnectOptions {
         password: &str,
         root_ca_pem: Vec<u8>,
         resource_budget: Arc<dyn ResourceBudget>,
-    ) -> Result<Self, BudgetError> {
+    ) -> Result<OterynRootProfile, BudgetError> {
         // IPv6 text is at most 39 bytes; reserve that conservative prospective
         // capacity before formatting the transport address. Every other owned
         // value is built with exactly the capacity charged below. The Arc
@@ -97,7 +136,7 @@ impl PgConnectOptions {
         let mut log_settings = LogSettings::default();
         log_settings.statements_level = log::LevelFilter::Off;
         log_settings.slow_statements_level = log::LevelFilter::Off;
-        Ok(Self {
+        Ok(OterynRootProfile(Self {
             host,
             port,
             socket: None,
@@ -116,7 +155,7 @@ impl PgConnectOptions {
             resource_budget: Some(PgResourceBudget(profile_budget)),
             oteryn_root_profile: true,
             oteryn_tls_server_name: Some(copy_with_capacity(tls_server_name)),
-        })
+        }))
     }
 
     pub(crate) fn oteryn_root_profile(&self) -> bool {
@@ -184,7 +223,7 @@ mod tests {
         }
     }
 
-    fn profile(owner: Arc<dyn ResourceBudget>) -> Result<PgConnectOptions, BudgetError> {
+    fn profile(owner: Arc<dyn ResourceBudget>) -> Result<OterynRootProfile, BudgetError> {
         PgConnectOptions::new_oteryn_root_profile(
             IpAddr::V4(Ipv4Addr::LOCALHOST),
             5432,
@@ -231,16 +270,13 @@ mod tests {
     }
 
     #[test]
-    fn root_profile_clones_share_one_charge_until_last_drop() {
+    fn root_profile_is_move_only_and_releases_on_drop() {
         let ledger = Arc::new(Budget::new(usize::MAX));
         let owner: Arc<dyn ResourceBudget> = ledger.clone();
         let options = profile(owner).expect("funded root profile");
         let retained = ledger.retained();
-        let clone = options.clone();
-        assert_eq!(ledger.retained(), retained);
+        assert!(retained > 0);
         drop(options);
-        assert_eq!(ledger.retained(), retained);
-        drop(clone);
         assert_eq!(ledger.retained(), 0);
     }
 }

@@ -94,20 +94,31 @@ impl AdmissionReconnectJournal {
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
-        self.prepare_internal(request, false).await
+        self.prepare_internal(request, false, true).await
     }
 
+    #[allow(dead_code)]
     pub(crate) async fn prepare_receipt_authorized(
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
-        self.prepare_internal(request, true).await
+        self.prepare_internal(request, true, true).await
+    }
+
+    pub(super) async fn prepare_under_validated_v2(
+        &self,
+        request: &ReconnectPrepareRequestV1,
+        receipt_authorized: bool,
+    ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
+        self.prepare_internal(request, receipt_authorized, false)
+            .await
     }
 
     async fn prepare_internal(
         &self,
         request: &ReconnectPrepareRequestV1,
         receipt_authorized: bool,
+        validate_v1_authority: bool,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
         let record = request.record();
         let identity = record.identity();
@@ -135,7 +146,9 @@ impl AdmissionReconnectJournal {
             &encoded_record,
             None,
         );
-        self.backend.validate_semantic(3, &operation)?;
+        if validate_v1_authority {
+            self.backend.validate_semantic(3, &operation)?;
+        }
         let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
             scope_storage(record);
 
@@ -700,8 +713,16 @@ impl AdmissionReconnectJournal {
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
         let encoded_record = encode_record(request.record()).to_string();
-        let operation = encode_v1_operation("reconcile", &encoded_record, None);
-        self.backend.validate_semantic(3, &operation)?;
+        self.backend.validate_reconciliation(
+            3,
+            &encoded_record,
+            &[
+                "prepare",
+                "prepare_receipt_authorized",
+                "commit",
+                "reconcile",
+            ],
+        )?;
         let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =

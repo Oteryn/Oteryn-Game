@@ -81,9 +81,9 @@ mod wp3_registered_root_qualification {
                 .ok_or("registered root database missing")?,
             username,
             password,
-            root_ca_pem,
+            &root_ca_pem,
             Arc::new(RootBudget(AtomicUsize::new(0))),
-        ))
+        )?)
     }
 
     const POSTGRES_IMAGE: &str = "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3";
@@ -3811,11 +3811,11 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                         "other",
                         "different",
                         "different",
-                        b"invalid ca".to_vec(),
+                        b"invalid ca",
                         std::sync::Arc::new(wp3_registered_root_qualification::RootBudget(
                             std::sync::atomic::AtomicUsize::new(0),
                         ),),
-                    ))
+                    )?)
                     .await,
                     Err(DurabilityError::InvalidStoredState)
                 ));

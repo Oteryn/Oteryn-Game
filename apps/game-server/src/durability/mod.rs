@@ -213,13 +213,29 @@ mod wp3_error_custody_regressions {
 pub struct AdmissionRuntimeConfig {
     transport_ip: IpAddr,
     port: u16,
+    backing: Arc<AdmissionRuntimeConfigBacking>,
+    resource_budget: Arc<dyn sqlx::postgres::ResourceBudget>,
+    identity: Arc<()>,
+}
+
+struct AdmissionRuntimeConfigBacking {
     tls_server_name: Box<str>,
     database: Box<str>,
     username: Box<str>,
     password: Box<str>,
     root_ca_pem: Vec<u8>,
-    resource_budget: Arc<dyn sqlx::postgres::ResourceBudget>,
-    identity: Arc<()>,
+    _reservation: ConfigReservation,
+}
+
+struct ConfigReservation {
+    owner: Arc<dyn sqlx::postgres::ResourceBudget>,
+    bytes: usize,
+}
+
+impl Drop for ConfigReservation {
+    fn drop(&mut self) {
+        self.owner.release(self.bytes);
+    }
 }
 
 impl AdmissionRuntimeConfig {
@@ -227,24 +243,114 @@ impl AdmissionRuntimeConfig {
     pub fn new(
         transport_ip: IpAddr,
         port: u16,
-        tls_server_name: impl Into<Box<str>>,
-        database: impl Into<Box<str>>,
-        username: impl Into<Box<str>>,
-        password: impl Into<Box<str>>,
-        root_ca_pem: Vec<u8>,
+        tls_server_name: &str,
+        database: &str,
+        username: &str,
+        password: &str,
+        root_ca_pem: &[u8],
         resource_budget: Arc<dyn sqlx::postgres::ResourceBudget>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, sqlx::postgres::BudgetError> {
+        let bytes = tls_server_name
+            .len()
+            .checked_add(database.len())
+            .and_then(|value| value.checked_add(username.len()))
+            .and_then(|value| value.checked_add(password.len()))
+            .and_then(|value| value.checked_add(root_ca_pem.len()))
+            .and_then(|value| {
+                value.checked_add(std::mem::size_of::<AdmissionRuntimeConfigBacking>())
+            })
+            .and_then(|value| value.checked_add(2 * std::mem::size_of::<usize>()))
+            .ok_or(sqlx::postgres::BudgetError::Overflow)?;
+        resource_budget.try_reserve(bytes)?;
+        let reservation = ConfigReservation {
+            owner: resource_budget.clone(),
+            bytes,
+        };
+        Ok(Self {
             transport_ip,
             port,
-            tls_server_name: tls_server_name.into(),
-            database: database.into(),
-            username: username.into(),
-            password: password.into(),
-            root_ca_pem,
+            backing: Arc::new(AdmissionRuntimeConfigBacking {
+                tls_server_name: tls_server_name.into(),
+                database: database.into(),
+                username: username.into(),
+                password: password.into(),
+                root_ca_pem: root_ca_pem.to_vec(),
+                _reservation: reservation,
+            }),
             resource_budget,
             identity: Arc::new(()),
+        })
+    }
+}
+
+#[cfg(test)]
+mod m05_config_accounting_tests {
+    use super::AdmissionRuntimeConfig;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[derive(Debug)]
+    struct Budget {
+        limit: usize,
+        retained: AtomicUsize,
+    }
+    impl sqlx::postgres::ResourceBudget for Budget {
+        fn try_reserve(&self, bytes: usize) -> Result<(), sqlx::postgres::BudgetError> {
+            self.retained
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+                    current
+                        .checked_add(bytes)
+                        .filter(|next| *next <= self.limit)
+                })
+                .map(|_| ())
+                .map_err(|_| sqlx::postgres::BudgetError::Unavailable)
         }
+        fn release(&self, bytes: usize) {
+            self.retained.fetch_sub(bytes, Ordering::SeqCst);
+        }
+    }
+
+    fn build(owner: Arc<Budget>) -> Result<AdmissionRuntimeConfig, sqlx::postgres::BudgetError> {
+        AdmissionRuntimeConfig::new(
+            std::net::IpAddr::from([127, 0, 0, 1]),
+            5432,
+            "localhost",
+            "game",
+            "game",
+            "secret",
+            b"inline-ca",
+            owner,
+        )
+    }
+
+    #[test]
+    fn retained_config_denies_before_copy_and_shared_clones_do_not_copy_backing()
+    -> Result<(), sqlx::postgres::BudgetError> {
+        let denied = Arc::new(Budget {
+            limit: 0,
+            retained: AtomicUsize::new(0),
+        });
+        assert!(matches!(
+            build(denied.clone()),
+            Err(sqlx::postgres::BudgetError::Unavailable)
+        ));
+        assert_eq!(denied.retained.load(Ordering::SeqCst), 0);
+
+        let funded = Arc::new(Budget {
+            limit: usize::MAX,
+            retained: AtomicUsize::new(0),
+        });
+        let config = build(funded.clone())?;
+        let retained = funded.retained.load(Ordering::SeqCst);
+        assert!(retained > 0);
+        let clone = config.clone();
+        assert!(Arc::ptr_eq(&config.backing, &clone.backing));
+        assert_eq!(funded.retained.load(Ordering::SeqCst), retained);
+        drop(config);
+        assert_eq!(funded.retained.load(Ordering::SeqCst), retained);
+        drop(clone);
+        assert_eq!(funded.retained.load(Ordering::SeqCst), 0);
+        Ok(())
     }
 }
 
@@ -284,13 +390,13 @@ impl AdmissionReconnectJournalV2 {
         &self,
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        let encoded_record = encode_record_v2(request.record()).to_string();
+        let operation = encode_v2_operation("prepare", &encoded_record, request);
+        self.backend.validate_semantic(4, &operation)?;
         let Some(authorization) = request.terminal_replacement() else {
             return self.prepare_legacy_typed(request).await;
         };
         let record = request.record();
-        let encoded_record = encode_record_v2(record).to_string();
-        let operation = encode_v2_operation("prepare", &encoded_record, request);
-        self.backend.validate_semantic(4, &operation)?;
         if !replacement_authorization_matches_record(authorization, record) {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -509,8 +615,10 @@ impl AdmissionReconnectJournalV2 {
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
         let encoded_record = encode_record_v2(record).to_string();
-        let operation = encode_v2_operation("reconcile", &encoded_record, request);
-        self.backend.validate_semantic(4, &operation)?;
+        let prepare_original = encode_v2_operation("prepare", &encoded_record, request);
+        let reconcile_original = encode_v2_operation("reconcile", &encoded_record, request);
+        self.backend
+            .validate_semantic_any(4, &[prepare_original.as_str(), reconcile_original.as_str()])?;
         let mut transaction = self.backend.begin().await?;
         db::lock_admission_domain(&mut transaction, record).await?;
         if let Some(authorization) = request.terminal_replacement()
@@ -583,13 +691,10 @@ impl AdmissionReconnectJournalV2 {
     ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
         let record = request.record();
         let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
-        let disposition = if receipt_authorized {
-            self.legacy
-                .prepare_receipt_authorized(&legacy_request)
-                .await?
-        } else {
-            self.legacy.prepare(&legacy_request).await?
-        };
+        let disposition = self
+            .legacy
+            .prepare_under_validated_v2(&legacy_request, receipt_authorized)
+            .await?;
         match disposition {
             ReconnectPrepareDispositionV1::Prepared => Ok(ReconnectPrepareDispositionV2::Prepared),
             ReconnectPrepareDispositionV1::ExistingPrepared => {
@@ -2498,6 +2603,20 @@ impl DurabilityCustody {
             .checked_add(1)
             .ok_or(DurabilityError::InvalidStoredState)?;
         let pending = Self::read_pending(&mut tx, previous_generation).await?;
+        let occupied = pending.iter().flatten().count() as u64;
+        let adopted = sqlx::query(
+            "UPDATE game_durability_executor_custody \
+             SET generation = $1::text::numeric(20,0) \
+             WHERE slot IN (1,2) AND operation_json IS NOT NULL \
+               AND generation <= $2::text::numeric(20,0)",
+        )
+        .bind(generation.to_string())
+        .bind(previous_generation.to_string())
+        .execute(&mut *tx)
+        .await?;
+        if adopted.rows_affected() != occupied {
+            return Err(DurabilityError::InvalidStoredState);
+        }
         let changed = sqlx::query("UPDATE game_durability_executor_custody SET generation = $1::text::numeric(20,0) WHERE slot = 0")
             .bind(generation.to_string()).execute(&mut *tx).await?;
         if changed.rows_affected() != 1 {
@@ -2639,7 +2758,21 @@ impl DurabilityCustody {
         let changed = sqlx::query("UPDATE game_durability_executor_custody SET operation_kind = NULL, operation_json = NULL WHERE slot = $1 AND generation = $2::text::numeric(20,0) AND operation_kind = $3 AND operation_json = $4")
             .bind(slot).bind(self.generation.to_string()).bind(operation_kind)
             .bind(operation_json).execute(&mut *tx).await?;
-        if changed.rows_affected() != 1 {
+        if changed.rows_affected() == 0 {
+            let already_clear: bool = sqlx::query_scalar(
+                "SELECT operation_kind IS NULL AND operation_json IS NULL \
+                 FROM game_durability_executor_custody \
+                 WHERE slot = $1 AND generation = $2::text::numeric(20,0)",
+            )
+            .bind(slot)
+            .bind(self.generation.to_string())
+            .fetch_optional(&mut *tx)
+            .await?
+            .unwrap_or(false);
+            if !already_clear {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        } else if changed.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
         tx.commit().await?;
