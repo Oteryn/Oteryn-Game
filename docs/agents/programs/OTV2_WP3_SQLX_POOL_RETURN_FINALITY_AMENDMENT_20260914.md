@@ -16,6 +16,7 @@ source_wp3_head: f5b275cca1adb3404ee51a5b8f02f3ee000348ee
 source_checkpoint: 5663349424
 narrowing_evidence: 5663531035
 blocking_pre_pr_review: 5663595517
+independent_high_review_finding: 5663752252
 superseded_preparation_note: 5656948788
 architecture: WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1_REVISION_3
 risk: HIGH
@@ -68,13 +69,21 @@ The **only writable production dependency source** is:
 
 Within that file, authority is limited to:
 
-- one private or doc-hidden Oteryn/M05-specific return-finality outcome with
-  exactly `RETURNED_TO_IDLE` and `RETIRED_CLOSED`;
-- one sibling/helper which follows the current private return path and returns
-  that completed outcome; and
+- one Oteryn/M05-specific terminal-disposition type with exactly
+  `RETURNED_TO_IDLE` and `RETIRED_CLOSED`;
+- one explicitly **`#[doc(hidden)] pub`** sibling on `PoolConnection` which
+  follows the current private return path and returns a minimal fail-closed
+  shape such as `Option<terminal-disposition>` (or an equivalently unambiguous
+  typed `Result`); and
 - a minimal refactor of the existing doc-hidden
   `PoolConnection::return_to_pool() -> Future<Output = ()>` solely when needed
   to share that helper while preserving its output and behavior exactly.
+
+The callable visibility is mandatory: the M05 consumer is in the separate
+`game-server` crate, so a private SQLx sibling is insufficient. The exact
+`#[doc(hidden)] pub` visibility makes only this bounded seam
+downstream-callable; it does not establish a stable or general-purpose SQLx
+pool API.
 
 `RETURNED_TO_IDLE` may be produced only after the existing
 `Floating<DB, Live<DB>>::return_to_pool()` has returned `true`. That boolean is
@@ -86,6 +95,16 @@ the `num_idle` update.
 completed its existing graceful or hard close await. The helper must not infer
 retirement from an error, timeout, task-spawn acceptance, permit/counter change,
 or wrapper destruction before that existing close path completes.
+
+The existing `self.live == None` path is a third, **non-terminal/no-evidence**
+result. It must yield neither `RETURNED_TO_IDLE` nor `RETIRED_CLOSED`. This
+includes every repeated invocation after a prior call has taken the live
+connection. Absence of a live connection proves neither prior idle publication
+nor prior close completion, so the sibling must return `None` (or the exact
+equivalent typed fail-closed result) without fabricating a terminal
+disposition. M05 must retain or fail the root finality obligation on that
+result; it may not release `R`/`T` custody, publish readiness, or admit a
+successor `T`.
 
 Ordinary `PoolConnection::return_to_pool() -> Future<Output = ()>` and ordinary
 Drop behavior must remain behaviorally unchanged. The allocation does not
@@ -132,20 +151,25 @@ duplicate or transfer that custody.
    completed its existing graceful or hard close await.
 3. The two outcomes are mutually exclusive and describe only the completed
    disposition of one explicit M05 return obligation.
-4. The Revision-3 M05 root owns and retains that explicit future/obligation
+4. No-live and repeated invocation produce the third non-terminal/no-evidence
+   result and can never produce either terminal success disposition. M05
+   retains or fails the obligation and may not release `R`/`T` custody or admit
+   a successor `T` on that result.
+5. The Revision-3 M05 root owns and retains that explicit future/obligation
    until terminal. Dropping or cancelling the explicit root-owned future cannot
    be reinterpreted as success.
-5. No SQLx-owned cancellation-surviving waiter, history, completion channel,
+6. No SQLx-owned cancellation-surviving waiter, history, completion channel,
    registry, or signalling collection is pre-authorized. This allocation does
    not move root finality ownership into SQLx.
-6. Ordinary `PoolConnection::return_to_pool()` and Drop behavior, ping,
+7. Ordinary `PoolConnection::return_to_pool()` and Drop behavior, including its
+   existing no-live path and maintenance behavior, ping,
    lifetime expiry, `after_release`, close/hard-close, minimum-connection
    maintenance, permit accounting, queue ordering, and pool policy remain
    behaviorally unchanged.
-7. No additional pool capacity, retry, reconnect, maintenance loop, timer poll,
+8. No additional pool capacity, retry, reconnect, maintenance loop, timer poll,
    numeric limit, or recovery generation is introduced. M05 remains the owner
    of Revision-3 demand, recovery, and finality retention policy.
-8. The completed disposition is evidence, not permission to publish root
+9. The completed disposition is evidence, not permission to publish root
    readiness or to convert a retired connection into ready state. M05 alone
    performs the accepted custody transfer and gates successor generations.
 
@@ -160,11 +184,17 @@ On one exact #356 successor, the SAME writer must prove at least:
   or hard-close await completes;
 - the two outcomes are mutually exclusive and terminal for one explicitly
   retained M05 finality future;
+- a first no-live call and every repeated call after the live value has already
+  been taken yield the third non-terminal/no-evidence result and never either
+  terminal success disposition; M05 retains/fails the root obligation without
+  releasing `R`/`T` custody or admitting a successor `T`;
 - cancellation or dropping that explicit future is not reported as successful
   return or close, and M05 retains the obligation rather than depending on an
   SQLx-owned completion channel;
-- ordinary unit-returning `return_to_pool()` and ordinary Drop/close-on-drop
-  spawning, timeout, maintenance, and permit behavior remain unchanged;
+- ordinary unit-returning `return_to_pool()`, including its existing no-live
+  path and maintenance behavior, and ordinary Drop/close-on-drop spawning,
+  timeout, maintenance, and permit behavior remain unchanged; the new sibling
+  cannot reinterpret that ordinary no-live behavior as finality evidence;
 - `inner.rs`, pool policy, counters, permits, and queue implementation remain
   byte-identical; and
 - the separately authorized #606 M05 PostgreSQL 17.6 tests subsequently show no
