@@ -32,11 +32,6 @@ impl OterynRootProfile {
         self.0
     }
 
-    #[doc(hidden)]
-    pub fn with_resource_budget(mut self, owner: Arc<dyn ResourceBudget>) -> Self {
-        self.0 = self.0.with_resource_budget(owner);
-        self
-    }
 }
 
 impl std::ops::Deref for OterynRootProfile {

@@ -206,7 +206,7 @@ fn ordinary_options(admin_url: &str, ca_path: &Path) -> Result<PgConnectOptions,
 fn selected_options(
     admin_url: &str,
     ca_path: &Path,
-    owner: Arc<dyn ResourceBudget>,
+    _owner: Arc<dyn ResourceBudget>,
 ) -> Result<sqlx_postgres::OterynRootProfile, Box<dyn Error>> {
     let parsed: PgConnectOptions = admin_url.parse()?;
     let transport_ip: IpAddr = parsed
@@ -249,7 +249,7 @@ fn holder_pool(
         .acquire_timeout(ROOT_CONNECT_TIMEOUT)
         .idle_timeout(HOLDER_IDLE_TIMEOUT)
         .max_lifetime(HOLDER_MAX_LIFETIME)
-        .connect_lazy_with(options.with_resource_budget(owner).into_connect_options())
+        .connect_lazy_with(options.into_connect_options())
 }
 
 fn tls_denial_ledger() -> Ledger {
