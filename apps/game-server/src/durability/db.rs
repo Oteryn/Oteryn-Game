@@ -790,7 +790,8 @@ pub(super) async fn registered_backend(
         &config.password,
         config.root_ca_pem,
         config.resource_budget,
-    );
+    )
+    .map_err(|_| DurabilityError::Unavailable)?;
     let pool = super::schema::connect_runtime_root(options).await?;
     let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
     let backend = std::sync::Arc::new(RuntimeBackend {
