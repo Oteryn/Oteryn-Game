@@ -20,18 +20,22 @@ mod postgres;
 /// result is inspectable from a downstream crate although `pool::connection`
 /// remains private and no new re-export exists.
 mod wp3_registered_root_qualification {
+    fn require_pooled(
+        connection: sqlx::pool::MaybePoolConnection<'static, sqlx::Postgres>,
+    ) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, sqlx::Error> {
+        match connection {
+            sqlx::pool::MaybePoolConnection::PoolConnection(connection) => Ok(connection),
+            sqlx::pool::MaybePoolConnection::Connection(_) => Err(sqlx::Error::Protocol(
+                "M05 owned root did not retain pooled custody".into(),
+            )),
+        }
+    }
+
     pub(super) async fn finalize_owned_transaction(
         transaction: sqlx::Transaction<'static, sqlx::Postgres>,
     ) -> Result<(Option<bool>, Result<(), sqlx::Error>), sqlx::Error> {
         let (connection, result) = transaction.oteryn_m05_commit().await;
-        let mut connection = match connection {
-            sqlx::pool::MaybePoolConnection::PoolConnection(connection) => connection,
-            sqlx::pool::MaybePoolConnection::Connection(_) => {
-                return Err(sqlx::Error::Protocol(
-                    "M05 owned root did not retain pooled custody".into(),
-                ));
-            }
-        };
+        let mut connection = require_pooled(connection)?;
         let disposition = connection.oteryn_m05_return_to_pool().await;
         Ok((disposition, result))
     }
@@ -49,6 +53,90 @@ mod wp3_registered_root_qualification {
     fn downstream_can_inspect_the_standard_terminal_shape() {
         let _downstream_callable = inspect_completed_return;
         let _transaction_finalizer = finalize_owned_transaction;
+    }
+
+    #[test]
+    fn pooled_commit_rollback_and_return_finality_execute_on_postgres_17_6()
+    -> Result<(), Box<dyn std::error::Error>> {
+        if !super::postgres_e2e_is_configured()? {
+            return Ok(());
+        }
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                use sqlx::Connection;
+
+                let database = super::postgres::IsolatedPostgres::create("m05_transaction_finality").await?;
+                let result = async {
+                    let borrowed = Box::leak(Box::new(
+                        sqlx::PgConnection::connect(&database.database_url()?).await?,
+                    ));
+                    let Err(error) = require_pooled(
+                        sqlx::pool::MaybePoolConnection::Connection(borrowed),
+                    ) else {
+                        return Err("borrowed connection was accepted".into());
+                    };
+                    assert!(matches!(error, sqlx::Error::Protocol(message) if message.contains("pooled custody")));
+
+                    let pool = sqlx::postgres::PgPoolOptions::new()
+                        .min_connections(0)
+                        .max_connections(1)
+                        .connect(&database.database_url()?)
+                        .await?;
+                    let version: i32 = sqlx::query_scalar("SHOW server_version_num")
+                        .fetch_one(&pool)
+                        .await?;
+                    assert_eq!(version, 170_006);
+
+                    for commit in [true, false] {
+                        let mut transaction = pool.begin().await?;
+                        let identity: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                            .fetch_one(&mut *transaction)
+                            .await?;
+                        let (connection, finalization) = if commit {
+                            transaction.oteryn_m05_commit().await
+                        } else {
+                            transaction.oteryn_m05_rollback().await
+                        };
+                        assert!(finalization.is_ok());
+                        let mut connection = require_pooled(connection)?;
+                        let retained_identity: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                            .fetch_one(&mut *connection)
+                            .await?;
+                        assert_eq!(retained_identity, identity);
+                        assert_eq!(connection.oteryn_m05_return_to_pool().await, Some(true));
+                        assert_eq!(connection.oteryn_m05_return_to_pool().await, None);
+
+                        let mut reacquired = pool.acquire().await?;
+                        let returned_identity: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                            .fetch_one(&mut *reacquired)
+                            .await?;
+                        assert_eq!(returned_identity, identity);
+                        drop(reacquired);
+                    }
+                    pool.close().await;
+
+                    let retiring_pool = sqlx::postgres::PgPoolOptions::new()
+                        .min_connections(0)
+                        .max_connections(1)
+                        .max_lifetime(std::time::Duration::from_millis(1))
+                        .connect(&database.database_url()?)
+                        .await?;
+                    let transaction = retiring_pool.begin().await?;
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    let (connection, result) = transaction.oteryn_m05_commit().await;
+                    assert!(result.is_ok());
+                    let mut connection = require_pooled(connection)?;
+                    assert_eq!(connection.oteryn_m05_return_to_pool().await, Some(false));
+                    assert_eq!(connection.oteryn_m05_return_to_pool().await, None);
+                    retiring_pool.close().await;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }
+                .await;
+                database.cleanup().await?;
+                result
+            })
     }
 }
 

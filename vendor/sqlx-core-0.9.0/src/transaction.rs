@@ -370,3 +370,252 @@ pub fn rollback_ansi_transaction_sql(depth: usize) -> SqlStr {
         .into_sql_str()
     }
 }
+
+#[cfg(all(test, feature = "any"))]
+mod oteryn_m05_finality_tests {
+    use super::*;
+    use crate::any::{
+        Any, AnyArguments, AnyConnection, AnyConnectionBackend, AnyQueryResult, AnyRow,
+        AnyStatement, AnyTypeInfo,
+    };
+    use crate::pool::MaybePoolConnection;
+    use crate::sql_str::SqlStr;
+    use either::Either;
+    use futures_core::future::BoxFuture;
+    use futures_core::stream::BoxStream;
+    use futures_util::stream;
+    use std::fmt;
+    use std::pin::pin;
+    use std::sync::{Arc, Mutex};
+    use std::task::{Context, Poll, Waker};
+
+    #[derive(Clone, Copy, Debug)]
+    enum Finish {
+        Ok,
+        Error(&'static str),
+        Pending,
+    }
+
+    #[derive(Debug)]
+    struct State {
+        identity: usize,
+        commit: Finish,
+        rollback: Finish,
+        commit_calls: usize,
+        rollback_calls: usize,
+        start_rollback_calls: usize,
+        waiter: Option<Waker>,
+    }
+
+    #[derive(Clone)]
+    struct Backend(Arc<Mutex<State>>);
+
+    impl fmt::Debug for Backend {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("Backend").finish_non_exhaustive()
+        }
+    }
+
+    fn finish<'a>(
+        state: &'a Arc<Mutex<State>>,
+        operation: bool,
+    ) -> BoxFuture<'a, Result<(), Error>> {
+        Box::pin(std::future::poll_fn(move |cx| {
+            let mut state = state.lock().unwrap();
+            let finish = if operation {
+                state.commit_calls += 1;
+                state.commit
+            } else {
+                state.rollback_calls += 1;
+                state.rollback
+            };
+            match finish {
+                Finish::Ok => Poll::Ready(Ok(())),
+                Finish::Error(message) => Poll::Ready(Err(Error::Protocol(message.into()))),
+                Finish::Pending => {
+                    state.waiter = Some(cx.waker().clone());
+                    Poll::Pending
+                }
+            }
+        }))
+    }
+
+    impl AnyConnectionBackend for Backend {
+        fn name(&self) -> &str {
+            "oteryn-m05-test"
+        }
+        fn close(self: Box<Self>) -> BoxFuture<'static, crate::Result<()>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn close_hard(self: Box<Self>) -> BoxFuture<'static, crate::Result<()>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn ping(&mut self) -> BoxFuture<'_, crate::Result<()>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn begin(&mut self, _: Option<SqlStr>) -> BoxFuture<'_, crate::Result<()>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn commit(&mut self) -> BoxFuture<'_, crate::Result<()>> {
+            finish(&self.0, true)
+        }
+        fn rollback(&mut self) -> BoxFuture<'_, crate::Result<()>> {
+            finish(&self.0, false)
+        }
+        fn start_rollback(&mut self) {
+            self.0.lock().unwrap().start_rollback_calls += 1;
+        }
+        fn get_transaction_depth(&self) -> usize {
+            1
+        }
+        fn shrink_buffers(&mut self) {}
+        fn flush(&mut self) -> BoxFuture<'_, crate::Result<()>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn should_flush(&self) -> bool {
+            false
+        }
+        fn fetch_many(
+            &mut self,
+            _: SqlStr,
+            _: bool,
+            _: Option<AnyArguments>,
+        ) -> BoxStream<'_, crate::Result<Either<AnyQueryResult, AnyRow>>> {
+            Box::pin(stream::empty())
+        }
+        fn fetch_optional(
+            &mut self,
+            _: SqlStr,
+            _: bool,
+            _: Option<AnyArguments>,
+        ) -> BoxFuture<'_, crate::Result<Option<AnyRow>>> {
+            Box::pin(async { Ok(None) })
+        }
+        fn prepare_with<'c, 'q: 'c>(
+            &'c mut self,
+            _: SqlStr,
+            _: &[AnyTypeInfo],
+        ) -> BoxFuture<'c, crate::Result<AnyStatement>> {
+            Box::pin(async { Err(Error::Protocol("unused test prepare".into())) })
+        }
+    }
+
+    fn transaction(
+        commit: Finish,
+        rollback: Finish,
+    ) -> (Transaction<'static, Any>, Arc<Mutex<State>>) {
+        let state = Arc::new(Mutex::new(State {
+            identity: 0,
+            commit,
+            rollback,
+            commit_calls: 0,
+            rollback_calls: 0,
+            start_rollback_calls: 0,
+            waiter: None,
+        }));
+        let connection = Box::leak(Box::new(AnyConnection {
+            backend: Box::new(Backend(state.clone())),
+        }));
+        state.lock().unwrap().identity = connection as *const AnyConnection as usize;
+        (
+            Transaction {
+                connection: Some(MaybePoolConnection::Connection(connection)),
+                open: true,
+            },
+            state,
+        )
+    }
+
+    fn assert_connection_identity(
+        connection: &MaybePoolConnection<'static, Any>,
+        state: &Arc<Mutex<State>>,
+    ) {
+        match connection {
+            MaybePoolConnection::Connection(connection) => {
+                assert_eq!(
+                    *connection as *const AnyConnection as usize,
+                    state.lock().unwrap().identity
+                );
+            }
+            MaybePoolConnection::PoolConnection(_) => {
+                panic!("instrumented connection changed custody variant")
+            }
+        }
+    }
+
+    fn run_ready<F: Future>(future: F) -> F::Output {
+        let mut future = pin!(future);
+        let waker = futures_util::task::noop_waker();
+        let mut context = Context::from_waker(&waker);
+        match future.as_mut().poll(&mut context) {
+            Poll::Ready(output) => output,
+            Poll::Pending => panic!("instrumented operation unexpectedly remained pending"),
+        }
+    }
+
+    #[test]
+    fn commit_and_rollback_success_retain_exact_connection_without_drop_rollback() {
+        let (tx, commit_state) = transaction(Finish::Ok, Finish::Ok);
+        let (connection, result) = run_ready(tx.oteryn_m05_commit());
+        assert!(result.is_ok());
+        assert_connection_identity(&connection, &commit_state);
+        assert_eq!(commit_state.lock().unwrap().start_rollback_calls, 0);
+
+        let (tx, rollback_state) = transaction(Finish::Ok, Finish::Ok);
+        let (connection, result) = run_ready(tx.oteryn_m05_rollback());
+        assert!(result.is_ok());
+        assert_connection_identity(&connection, &rollback_state);
+        assert_eq!(rollback_state.lock().unwrap().start_rollback_calls, 0);
+    }
+
+    #[test]
+    fn finalization_errors_preserve_original_error_and_start_rollback_once() {
+        for commit in [true, false] {
+            let (tx, state) = transaction(
+                Finish::Error("commit-original"),
+                Finish::Error("rollback-original"),
+            );
+            let (connection, result) = if commit {
+                run_ready(tx.oteryn_m05_commit())
+            } else {
+                run_ready(tx.oteryn_m05_rollback())
+            };
+            let expected = if commit {
+                "commit-original"
+            } else {
+                "rollback-original"
+            };
+            assert!(matches!(result, Err(Error::Protocol(message)) if message == expected));
+            assert_connection_identity(&connection, &state);
+            drop(connection);
+            let state = state.lock().unwrap();
+            assert_eq!(state.start_rollback_calls, 1);
+            assert_eq!(
+                (state.commit_calls, state.rollback_calls),
+                if commit { (1, 0) } else { (0, 1) }
+            );
+        }
+    }
+
+    #[test]
+    fn cancelling_pending_finalization_has_no_success_and_uses_ordinary_drop_rollback() {
+        for commit in [true, false] {
+            let (tx, state) = transaction(Finish::Pending, Finish::Pending);
+            let mut future: std::pin::Pin<Box<dyn Future<Output = _>>> = if commit {
+                Box::pin(tx.oteryn_m05_commit())
+            } else {
+                Box::pin(tx.oteryn_m05_rollback())
+            };
+            let waker = futures_util::task::noop_waker();
+            let mut context = Context::from_waker(&waker);
+            assert!(matches!(future.as_mut().poll(&mut context), Poll::Pending));
+            drop(future);
+            let state = state.lock().unwrap();
+            assert_eq!(state.start_rollback_calls, 1);
+            assert_eq!(
+                (state.commit_calls, state.rollback_calls),
+                if commit { (1, 0) } else { (0, 1) }
+            );
+        }
+    }
+}

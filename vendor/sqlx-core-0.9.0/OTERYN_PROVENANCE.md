@@ -1276,6 +1276,18 @@ exact SQLx result and feeds the recovered `PoolConnection` into
 `oteryn_m05_return_to_pool`. This custody seam alone does not prove M05, SQL
 semantics, rollback completion, PostgreSQL qualification or WP3 completion.
 
+Focused in-file executable tests use SQLx's real `AnyTransactionManager`
+dispatch with an instrumented backend. They execute both M05 methods and prove
+exact connection identity on success and error, unchanged error payloads,
+zero success-path rollback starts, exactly one error-path rollback start after
+the returned connection is dropped, and ordinary rollback start when a
+pending finalization future is cancelled. The registered PostgreSQL test
+executes commit and rollback on a max-one pool, compares `pg_backend_pid()`
+before and after custody extraction, then observes `Some(true)` returned-idle,
+`Some(false)` retired-closed and repeated-call `None` through the real #610
+seam. It also executes rejection of the borrowed `Connection` variant. These
+tests are proof of the narrow finality seam, not complete M05 or WP3 evidence.
+
 The PostgreSQL qualification's former positive path exercised ordinary parsed
 connect options, not `new_oteryn_root_profile`; no selected-profile conclusion
 is retained from that run.  The corrected test explicitly selects literal-IP
