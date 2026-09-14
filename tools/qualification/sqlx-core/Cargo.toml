@@ -334,3 +334,5 @@ cast_possible_truncation = "deny"
 cast_possible_wrap = "deny"
 cast_sign_loss = "deny"
 disallowed_methods = "deny"
+
+[workspace]
