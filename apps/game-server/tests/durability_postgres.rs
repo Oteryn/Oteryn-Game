@@ -21,6 +21,8 @@ mod postgres;
 /// remains private and no new re-export exists.
 mod wp3_registered_root_qualification {
     use std::net::IpAddr;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, Output};
     use std::str::FromStr;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -55,6 +57,7 @@ mod wp3_registered_root_qualification {
 
     pub(super) fn production_config(
         database_url: &str,
+        ca_cert: &Path,
     ) -> Result<super::durability::AdmissionRuntimeConfig, Box<dyn std::error::Error>> {
         let parsed = sqlx::postgres::PgConnectOptions::from_str(database_url)?;
         let transport_ip: IpAddr = parsed.get_host().parse()?;
@@ -68,7 +71,7 @@ mod wp3_registered_root_qualification {
         if username.contains('%') || password.contains('%') || username != parsed.get_username() {
             return Err("registered root fixture credentials must be literal".into());
         }
-        let root_ca_pem = std::fs::read(std::env::var("OTERYN_WP3_CA_CERT")?)?;
+        let root_ca_pem = std::fs::read(ca_cert)?;
         Ok(super::durability::AdmissionRuntimeConfig::new(
             transport_ip,
             parsed.get_port(),
@@ -81,6 +84,176 @@ mod wp3_registered_root_qualification {
             root_ca_pem,
             Arc::new(RootBudget(AtomicUsize::new(0))),
         ))
+    }
+
+    const POSTGRES_IMAGE: &str = "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3";
+
+    pub(super) async fn configure_tls_fixture(
+        admin_url: &str,
+        label: &str,
+    ) -> Result<PathBuf, Box<dyn std::error::Error>> {
+        let directory = std::env::temp_dir().join(format!(
+            "oteryn-wp3-registered-{label}-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory)?;
+        let ca_key = directory.join("ca.key");
+        let ca_cert = directory.join("ca.crt");
+        let server_key = directory.join("server.key");
+        let server_csr = directory.join("server.csr");
+        let server_cert = directory.join("server.crt");
+        let extensions = directory.join("server.ext");
+        std::fs::write(
+            &extensions,
+            "[server_ext]\nsubjectAltName=DNS:localhost\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n",
+        )?;
+        run(
+            Command::new("openssl")
+                .args([
+                    "req", "-x509", "-newkey", "rsa:2048", "-sha256", "-nodes", "-days", "1",
+                    "-keyout",
+                ])
+                .arg(&ca_key)
+                .arg("-out")
+                .arg(&ca_cert)
+                .args([
+                    "-subj",
+                    "/CN=Oteryn-WP3-Registered-CA",
+                    "-addext",
+                    "basicConstraints=critical,CA:TRUE",
+                    "-addext",
+                    "keyUsage=critical,keyCertSign,cRLSign",
+                ]),
+            "generate registered-root CA",
+        )?;
+        run(
+            Command::new("openssl")
+                .args([
+                    "req", "-new", "-newkey", "rsa:2048", "-sha256", "-nodes", "-keyout",
+                ])
+                .arg(&server_key)
+                .arg("-out")
+                .arg(&server_csr)
+                .args(["-subj", "/CN=localhost"]),
+            "generate registered-root CSR",
+        )?;
+        run(
+            Command::new("openssl")
+                .args(["x509", "-req", "-in"])
+                .arg(&server_csr)
+                .arg("-CA")
+                .arg(&ca_cert)
+                .arg("-CAkey")
+                .arg(&ca_key)
+                .args(["-CAcreateserial", "-out"])
+                .arg(&server_cert)
+                .args(["-days", "1", "-sha256", "-extfile"])
+                .arg(&extensions)
+                .args(["-extensions", "server_ext"]),
+            "sign registered-root certificate",
+        )?;
+        let container = postgres_container()?;
+        copy_owned(&container, &server_cert, "/tmp/oteryn-wp3-registered.crt")?;
+        copy_owned(&container, &server_key, "/tmp/oteryn-wp3-registered.key")?;
+        let pool = sqlx::PgPool::connect(admin_url).await?;
+        let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
+            .fetch_one(&pool)
+            .await?;
+        if version != 170006 {
+            return Err(format!("expected PostgreSQL 170006, got {version}").into());
+        }
+        for statement in [
+            "ALTER SYSTEM SET ssl='on'",
+            "ALTER SYSTEM SET ssl_cert_file='/tmp/oteryn-wp3-registered.crt'",
+            "ALTER SYSTEM SET ssl_key_file='/tmp/oteryn-wp3-registered.key'",
+            "ALTER SYSTEM SET ssl_min_protocol_version='TLSv1.3'",
+            "ALTER SYSTEM SET ssl_max_protocol_version='TLSv1.3'",
+        ] {
+            sqlx::query(statement).execute(&pool).await?;
+        }
+        if !sqlx::query_scalar::<_, bool>("SELECT pg_reload_conf()")
+            .fetch_one(&pool)
+            .await?
+        {
+            return Err("PostgreSQL rejected TLS reload".into());
+        }
+        pool.close().await;
+        Ok(ca_cert)
+    }
+
+    fn postgres_container() -> Result<String, Box<dyn std::error::Error>> {
+        let output = Command::new("docker")
+            .args(["ps", "--filter", "publish=5432", "--format", "{{.ID}}"])
+            .output()?;
+        success(&output, "locate PostgreSQL service")?;
+        let mut found = Vec::new();
+        for id in String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .filter(|id| !id.is_empty())
+        {
+            let inspect = Command::new("docker")
+                .args(["inspect", "--format", "{{.Config.Image}}", id])
+                .output()?;
+            success(&inspect, "inspect PostgreSQL service")?;
+            if String::from_utf8_lossy(&inspect.stdout).trim() == POSTGRES_IMAGE {
+                found.push(id.to_owned());
+            }
+        }
+        if found.len() != 1 {
+            return Err(format!(
+                "expected one canonical PostgreSQL service, found {}",
+                found.len()
+            )
+            .into());
+        }
+        Ok(found.remove(0))
+    }
+    fn copy_owned(
+        container: &str,
+        source: &Path,
+        destination: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        run(
+            Command::new("docker")
+                .arg("cp")
+                .arg(source)
+                .arg(format!("{container}:{destination}")),
+            "copy TLS fixture",
+        )?;
+        run(
+            Command::new("docker").args([
+                "exec",
+                "--user",
+                "root",
+                container,
+                "chown",
+                "postgres:postgres",
+                destination,
+            ]),
+            "own TLS fixture",
+        )?;
+        run(
+            Command::new("docker").args([
+                "exec",
+                "--user",
+                "root",
+                container,
+                "chmod",
+                "600",
+                destination,
+            ]),
+            "protect TLS fixture",
+        )
+    }
+    fn run(command: &mut Command, context: &str) -> Result<(), Box<dyn std::error::Error>> {
+        success(&command.output()?, context)
+    }
+    fn success(output: &Output, context: &str) -> Result<(), Box<dyn std::error::Error>> {
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(format!("{context}: {}", String::from_utf8_lossy(&output.stderr)).into())
+        }
     }
 
     fn require_pooled(
@@ -3325,6 +3498,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
     use foundation::*;
     const CHILD_URL: &str = "OTERYN_ORIGINAL_RESTART_TEST_DATABASE";
     const CHILD_MODE: &str = "OTERYN_ORIGINAL_RESTART_TEST_MODE";
+    const CHILD_CA: &str = "OTERYN_ORIGINAL_RESTART_TEST_CA";
     const TEST: &str =
         "registered_process_restart_reconciles_real_originals_without_releasing_custody";
     struct LossSource(ControlLossObservationV1);
@@ -3344,7 +3518,10 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         if let Ok(url) = std::env::var(CHILD_URL) {
             let runtime = AdmissionRuntime::connect(
-                wp3_registered_root_qualification::production_config(&url)?,
+                wp3_registered_root_qualification::production_config(
+                    &url,
+                    std::path::Path::new(&std::env::var(CHILD_CA)?),
+                )?,
             )
             .await?;
             let pool = sqlx::PgPool::connect(&url).await?;
@@ -3357,11 +3534,27 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 let publication = authority_matrix::checked(
                     AdmissionAuthorityPublicationV1::prepare(&owner, now),
                 )?;
+                let guard_original = durability::admission_authority_guards::encode_publication_operation(
+                    &publication,
+                    65536,
+                )?;
+                let guard_pass = runtime
+                    .enqueue_checkpoint(6, &guard_original)?
+                    .establish()
+                    .await?;
+                guard_pass.run(runtime.guards().publish(&publication)).await?;
+                runtime
+                    .acknowledge_checkpoint(guard_pass.slot(), 6, &guard_original)
+                    .await?;
                 let original = encode_operation(request.operation(), 65536)?;
                 let fresh_pass = runtime.enqueue_checkpoint(1, &original)?.establish().await?;
                 assert_eq!(fresh_pass.slot(), 1);
+                let mismatched_request = postgres::fresh::Source::new(now + 1)?.request()?;
+                assert!(matches!(
+                    fresh_pass.run(fresh.commit(&mismatched_request)).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
                 let initial = fresh_pass.run(async {
-                    runtime.guards().publish(&publication).await?;
                     assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
                     let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err(DurabilityError::InvalidStoredState); };
                     Ok(initial)
@@ -3450,11 +3643,16 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
         let database = postgres::IsolatedPostgres::create("real_original_restart").await?;
         let result = async {
             let url = database.database_url()?;
+            let ca_cert = wp3_registered_root_qualification::configure_tls_fixture(
+                &url,
+                "restart",
+            )
+            .await?;
             MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let run = |mode: &str| -> Result<(), Box<dyn std::error::Error>> {
                 let status = std::process::Command::new(std::env::current_exe()?).args(["--exact", TEST, "--nocapture"])
-                    .env(CHILD_URL, &url).env(CHILD_MODE, mode).status()?;
+                    .env(CHILD_URL, &url).env(CHILD_MODE, mode).env(CHILD_CA, &ca_cert).status()?;
                 if !status.success() { return Err(format!("restart child failed: {mode}").into()); }
                 Ok(())
             };
@@ -3496,19 +3694,29 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
             let database = postgres::IsolatedPostgres::create("registered_runtime").await?;
             let result = async {
                 let url = database.database_url()?;
+                let ca_cert = wp3_registered_root_qualification::configure_tls_fixture(
+                    &url,
+                    "shared-runtime",
+                )
+                .await?;
                 MigrationExecutor::connect_migration(&url)
                     .await?
                     .apply_embedded_ledger()
                     .await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
+                let guard_original =
+                    durability::admission_authority_guards::encode_load_operation(&[], 65536)?;
+                let owner = postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
+                let fresh_request = owner.request()?;
+                let fresh_original = durability::fresh_admission::encode_operation(
+                    fresh_request.operation(),
+                    65536,
+                )?;
                 let (predecessor, _) = DurabilityCustody::acquire(&pool).await?;
-                predecessor
-                    .checkpoint(&pool, 1, 1, "retained fresh original")
-                    .await?;
-                predecessor
-                    .checkpoint(&pool, 2, 2, "retained guard original")
-                    .await?;
-                let production_config = wp3_registered_root_qualification::production_config(&url)?;
+                predecessor.checkpoint(&pool, 1, 5, &guard_original).await?;
+                predecessor.checkpoint(&pool, 2, 1, &fresh_original).await?;
+                let production_config =
+                    wp3_registered_root_qualification::production_config(&url, &ca_cert)?;
                 let runtime = AdmissionRuntime::connect(production_config.clone()).await?;
                 let repeated = AdmissionRuntime::connect(production_config).await?;
                 let generation: String = sqlx::query_scalar(
@@ -3521,10 +3729,8 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     "same process registration must not take custody twice"
                 );
                 assert_eq!(runtime.recovered_pending(), repeated.recovered_pending());
-                for (slot, expected) in [
-                    (0, "retained fresh original"),
-                    (1, "retained guard original"),
-                ] {
+                for (slot, expected) in [(0, guard_original.as_str()), (1, fresh_original.as_str())]
+                {
                     assert_eq!(
                         runtime.recovered_pending()[slot]
                             .as_ref()
@@ -3556,8 +3762,6 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 let guards = runtime.guards();
                 assert!(first_pass.run(guards.load(&[])).await?.is_empty());
                 let fresh = repeated.fresh();
-                let owner = postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
-                let fresh_request = owner.request()?;
                 assert!(matches!(
                     second_pass
                         .run(fresh.reconcile(fresh_request.operation()))
@@ -3592,7 +3796,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 ));
                 // Registration cannot mint replacement capacity after its token is stale.
                 let stale = AdmissionRuntime::connect(
-                    wp3_registered_root_qualification::production_config(&url)?,
+                    wp3_registered_root_qualification::production_config(&url, &ca_cert)?,
                 )
                 .await?;
                 assert!(matches!(

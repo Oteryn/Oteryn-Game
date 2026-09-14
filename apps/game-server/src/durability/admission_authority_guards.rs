@@ -687,6 +687,8 @@ impl AdmissionGuardStore {
         if keys.len() > 4 {
             return invalid();
         }
+        let original = encode_load_operation(keys, self.maximum_guard_bytes)?;
+        self.backend.validate_semantic(5, &original)?;
         let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_relations(&mut transaction).await?;
         let mut rows = Vec::with_capacity(keys.len());
@@ -784,6 +786,8 @@ impl AdmissionGuardStore {
         if request.changes().len() > 4 {
             return invalid();
         }
+        let original = encode_publication_operation(request, self.maximum_guard_bytes)?;
+        self.backend.validate_semantic(6, &original)?;
         // Encode/validate explicit per-record allocation before transaction work.
         let encoded: Vec<_> = request
             .changes()
@@ -898,4 +902,35 @@ impl AdmissionGuardStore {
         }
         Ok(())
     }
+}
+
+/// Canonical active-pass identity for a guard read batch.
+pub fn encode_load_operation(
+    keys: &[AdmissionAuthorityGuardKeyV1],
+    maximum_guard_bytes: usize,
+) -> Result<String> {
+    if keys.len() > 4 {
+        return invalid();
+    }
+    let keys = keys
+        .iter()
+        .map(|key| key_storage(key, maximum_guard_bytes).map(|(_, _, encoded)| encoded))
+        .collect::<Result<Vec<_>>>()?;
+    checked(serde_json::to_string(&keys))
+}
+
+/// Canonical active-pass identity for a complete guard publication batch.
+pub fn encode_publication_operation(
+    request: &AdmissionAuthorityPublicationV1,
+    maximum_guard_bytes: usize,
+) -> Result<String> {
+    if request.changes().len() > 4 {
+        return invalid();
+    }
+    let changes = request
+        .changes()
+        .iter()
+        .map(|change| encode_guard(change, maximum_guard_bytes))
+        .collect::<Result<Vec<_>>>()?;
+    checked(serde_json::to_string(&changes))
 }

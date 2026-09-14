@@ -134,6 +134,7 @@ struct WorkOperation {
     kind: i16,
     operation: Box<str>,
     definitive: bool,
+    deadline: Option<tokio::time::Instant>,
 }
 struct QueuedWork {
     id: u64,
@@ -154,6 +155,7 @@ impl WorkCustody {
                     kind: p.operation_kind,
                     operation: p.operation_json.as_str().into(),
                     definitive: false,
+                    deadline: None,
                 })
             }),
             next_id: 1,
@@ -197,6 +199,7 @@ impl WorkCustody {
                 kind,
                 operation: operation.into(),
                 definitive: false,
+                deadline: None,
             },
         });
         self.next_id = next;
@@ -215,10 +218,11 @@ impl WorkCustody {
         // caller is neither definitive outcome nor owner acknowledgement.
     }
 
-    fn promote(
+    fn promote_with_deadline(
         &mut self,
         id: u64,
         now: std::time::Instant,
+        deadline: tokio::time::Instant,
     ) -> Result<(i16, WorkOperation), DurabilityError> {
         let index = self
             .queued
@@ -248,11 +252,47 @@ impl WorkCustody {
         // The original moves into active custody before the bounded submission
         // copy or any await. Cancellation can never put this identity back in queue.
         self.active[active_index] = Some(queued.operation);
+        self.active[active_index]
+            .as_mut()
+            .ok_or(DurabilityError::Unavailable)?
+            .deadline = Some(deadline);
         let submission = self.active[active_index]
             .as_ref()
             .ok_or(DurabilityError::Unavailable)?
             .clone();
         Ok((if active_index == 0 { 1 } else { 2 }, submission))
+    }
+
+    #[cfg(test)]
+    fn promote(
+        &mut self,
+        id: u64,
+        now: std::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        self.promote_with_deadline(
+            id,
+            now,
+            tokio::time::Instant::now() + Duration::from_millis(2000),
+        )
+    }
+
+    fn resume_deadline(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<tokio::time::Instant, DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        // A live attempt always retains its original absolute deadline. Only a
+        // checkpoint recovered from the prior process has no monotonic instant;
+        // it receives one bounded reconciliation deadline, retained thereafter.
+        Ok(*active
+            .deadline
+            .get_or_insert_with(|| tokio::time::Instant::now() + Duration::from_millis(2000)))
     }
 
     fn acknowledge(
@@ -349,9 +389,16 @@ pub struct SemanticPass {
 struct PassDeadline(tokio::time::Instant);
 impl PassDeadline {
     async fn run<F: std::future::Future>(&self, body: F) -> Result<F::Output, DurabilityError> {
-        tokio::time::timeout_at(self.0, body)
-            .await
-            .map_err(|_| DurabilityError::Unavailable)
+        // Never cancel an issued database future merely to manufacture a
+        // bounded result. The server-side transaction-local limits installed
+        // by `begin` stop SQL; we retain custody while awaiting its definitive
+        // return, rollback, or dead-connection eviction.
+        let result = body.await;
+        if tokio::time::Instant::now() > self.0 {
+            Err(DurabilityError::Unavailable)
+        } else {
+            Ok(result)
+        }
     }
 }
 
@@ -367,9 +414,13 @@ impl SemanticPass {
         F: std::future::Future<Output = Result<T, DurabilityError>>,
     {
         self.identity.backend.validate_pass(&self.identity)?;
-        let result = PassDeadline(self.identity.deadline)
-            .run(ACTIVE_SEMANTIC_PASS.scope(self.identity.clone(), body))
-            .await?;
+        let result = ACTIVE_SEMANTIC_PASS
+            .scope(self.identity.clone(), body)
+            .await;
+        if tokio::time::Instant::now() > self.identity.deadline {
+            self.identity.backend.await_database_finality().await?;
+            return Err(DurabilityError::Unavailable);
+        }
         if result.is_ok() {
             self.identity.backend.mark_definitive(&self.identity)?;
         }
@@ -400,7 +451,11 @@ impl QueuedCheckpoint {
             .work
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
-            .promote(self.id, std::time::Instant::now())?;
+            .promote_with_deadline(
+                self.id,
+                std::time::Instant::now(),
+                started + Duration::from_millis(2000),
+            )?;
         self.backend
             .establish_checkpoint(
                 slot,
@@ -450,6 +505,18 @@ enum BackendCustody {
     LegacyFixture,
 }
 impl RuntimeBackend {
+    async fn await_database_finality(&self) -> Result<(), DurabilityError> {
+        // Acquiring the sole holder cannot complete until any queued rollback,
+        // return, or dead-connection eviction from the semantic body is final.
+        // Do not time this await out: active custody is retained until SQLx has
+        // produced a definitive connection-generation state.
+        let mut connection = self.pool.acquire().await?;
+        match connection.oteryn_m05_return_to_pool().await {
+            Some(true) | Some(false) => Ok(()),
+            None => Err(DurabilityError::Unavailable),
+        }
+    }
+
     async fn establish_checkpoint(
         &self,
         slot: i16,
@@ -457,9 +524,11 @@ impl RuntimeBackend {
         original: &str,
         deadline: tokio::time::Instant,
     ) -> Result<(), DurabilityError> {
+        #[cfg(not(test))]
+        let BackendCustody::Registered(custody) = &self.custody;
+        #[cfg(test)]
         let custody = match &self.custody {
             BackendCustody::Registered(custody) => custody,
-            #[cfg(test)]
             BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
         };
         let result = PassDeadline(deadline)
@@ -480,17 +549,18 @@ impl RuntimeBackend {
         kind: i16,
         original: &str,
     ) -> Result<SemanticPass, DurabilityError> {
-        self.work
+        let deadline = self
+            .work
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
-            .validate(slot, kind, original)?;
+            .resume_deadline(slot, kind, original)?;
         Ok(SemanticPass {
             identity: ActivePassIdentity {
                 backend: self.clone(),
                 slot,
                 kind,
                 original: std::sync::Arc::from(original),
-                deadline: tokio::time::Instant::now() + Duration::from_millis(2000),
+                deadline,
             },
         })
     }
@@ -528,6 +598,22 @@ impl RuntimeBackend {
             .validate(pass.slot, pass.kind, &pass.original)
     }
 
+    pub(super) fn validate_semantic(
+        &self,
+        kind: i16,
+        canonical_original: &str,
+    ) -> Result<(), DurabilityError> {
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind == kind && pass.original.as_ref() == canonical_original {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
     fn mark_definitive(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
         self.validate_pass(pass)?;
         self.work
@@ -543,16 +629,36 @@ impl RuntimeBackend {
                     .try_with(Clone::clone)
                     .map_err(|_| DurabilityError::Unavailable)?;
                 self.validate_pass(&pass)?;
-                match tokio::time::timeout_at(pass.deadline, custody.fence(&self.pool))
-                    .await
-                    .map_err(|_| DurabilityError::Unavailable)?
-                {
+                if tokio::time::Instant::now() >= pass.deadline {
+                    return Err(DurabilityError::Unavailable);
+                }
+                let mut transaction = match custody.fence(&self.pool).await {
                     Err(DurabilityError::Unavailable) => {
                         self.record_root_ready_demand();
-                        Err(DurabilityError::Unavailable)
+                        return Err(DurabilityError::Unavailable);
                     }
-                    result => result,
+                    result => result?,
+                };
+                let remaining = pass
+                    .deadline
+                    .saturating_duration_since(tokio::time::Instant::now());
+                if remaining.is_zero() {
+                    transaction
+                        .rollback()
+                        .await
+                        .map_err(DurabilityError::from)?;
+                    return Err(DurabilityError::Unavailable);
                 }
+                let millis = i64::try_from(remaining.as_millis().max(1))
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                // PostgreSQL 17 transaction_timeout bounds the whole transaction;
+                // statement/lock timeouts share the exact same remaining absolute
+                // deadline and may never renew it per statement.
+                sqlx::query("SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)")
+                    .bind(format!("{millis}ms"))
+                    .execute(&mut *transaction)
+                    .await?;
+                Ok(transaction)
             }
             #[cfg(test)]
             BackendCustody::LegacyFixture => self.pool.begin().await.map_err(DurabilityError::from),
@@ -856,16 +962,45 @@ mod work_custody_tests {
             .enable_time()
             .build()?
             .block_on(async {
+                let completed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
                 let deadline =
                     PassDeadline(tokio::time::Instant::now() + Duration::from_millis(150));
+                let body_completed = completed.clone();
                 let result = deadline
-                    .run(async {
+                    .run(async move {
                         tokio::time::sleep(Duration::from_millis(100)).await;
                         tokio::time::sleep(Duration::from_millis(100)).await;
+                        body_completed.store(true, std::sync::atomic::Ordering::SeqCst);
                     })
                     .await;
                 assert!(matches!(result, Err(DurabilityError::Unavailable)));
+                assert!(completed.load(std::sync::atomic::Ordering::SeqCst));
             });
+        Ok(())
+    }
+
+    #[test]
+    fn live_and_recovered_attempts_each_retain_one_absolute_deadline() -> Result<(), DurabilityError>
+    {
+        let now = std::time::Instant::now();
+        let mut live = WorkCustody::new(&[None, None]);
+        let id = live.enqueue(1, "live", now)?;
+        let expected = tokio::time::Instant::now() + Duration::from_secs(1);
+        live.promote_with_deadline(id, now, expected)?;
+        assert_eq!(live.resume_deadline(1, 1, "live")?, expected);
+        assert_eq!(live.resume_deadline(1, 1, "live")?, expected);
+
+        let recovered = [
+            Some(super::super::DurablePendingCheckpoint {
+                slot: 1,
+                operation_kind: 2,
+                operation_json: "recovered".into(),
+            }),
+            None,
+        ];
+        let mut recovered = WorkCustody::new(&recovered);
+        let first = recovered.resume_deadline(1, 2, "recovered")?;
+        assert_eq!(recovered.resume_deadline(1, 2, "recovered")?, first);
         Ok(())
     }
 

@@ -377,6 +377,7 @@ impl FreshAdmissionStore {
         let operation = request.operation();
         let b = &operation.authorization;
         let encoded = encode_operation(operation, self.maximum_operation_bytes)?;
+        self.guards.backend.validate_semantic(1, &encoded)?;
         let encoded_successors: Vec<_> = operation
             .transition
             .successors
@@ -470,6 +471,7 @@ impl FreshAdmissionStore {
         use sqlx::Row;
         let operation = request.operation();
         let encoded = encode_fresh_loss(operation)?;
+        self.guards.backend.validate_semantic(2, &encoded)?;
         let observation = &operation.observation;
         let session_id = observation.session.commit().game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
@@ -599,6 +601,7 @@ impl FreshAdmissionStore {
     ) -> Result<FreshLossReconciliation> {
         use sqlx::Row;
         let encoded = encode_fresh_loss(original)?;
+        self.guards.backend.validate_semantic(2, &encoded)?;
         let session_id = original.observation.session.commit().game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
@@ -701,6 +704,8 @@ impl FreshAdmissionStore {
         &self,
         original: &FreshAdmissionOperationV1,
     ) -> Result<FreshReconciliation> {
+        let encoded = encode_operation(original, self.maximum_operation_bytes)?;
+        self.guards.backend.validate_semantic(1, &encoded)?;
         let mut tx = self.guards.backend.begin().await?;
         super::db::lock_admission_relations(&mut tx).await?;
         let result = self.reconcile_locked(&mut tx, original).await?;

@@ -126,6 +126,7 @@ impl AdmissionReconnectJournal {
         let original_grace_deadline = record.continuity().original_grace_deadline();
         let prepared_deadline = record.continuity().prepared_deadline();
         let encoded_record = encode_record(record).to_string();
+        self.backend.validate_semantic(3, &encoded_record)?;
         let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
             scope_storage(record);
 
@@ -494,6 +495,7 @@ impl AdmissionReconnectJournal {
         let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
         let recovery_grant_nonce = recovery_grant_nonce(record);
         let encoded_record = encode_record(record).to_string();
+        self.backend.validate_semantic(3, &encoded_record)?;
         let predecessor = record.connection().predecessor().get().to_string();
         let candidate = record.connection().candidate().get().to_string();
         let epoch = record.continuity().control_loss_epoch().get().to_string();
@@ -683,6 +685,8 @@ impl AdmissionReconnectJournal {
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
+        let encoded_record = encode_record(request.record()).to_string();
+        self.backend.validate_semantic(3, &encoded_record)?;
         let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =

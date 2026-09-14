@@ -288,6 +288,8 @@ impl AdmissionReconnectJournalV2 {
             return self.prepare_legacy_typed(request).await;
         };
         let record = request.record();
+        let encoded_record = encode_record_v2(record).to_string();
+        self.backend.validate_semantic(4, &encoded_record)?;
         if !replacement_authorization_matches_record(authorization, record) {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -505,6 +507,8 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
+        let encoded_record = encode_record_v2(record).to_string();
+        self.backend.validate_semantic(4, &encoded_record)?;
         let mut transaction = self.backend.begin().await?;
         db::lock_admission_domain(&mut transaction, record).await?;
         if let Some(authorization) = request.terminal_replacement()
