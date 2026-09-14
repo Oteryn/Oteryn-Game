@@ -445,6 +445,21 @@ def test_large_pr_git_fallback(module):
         else:
             raise AssertionError("invalid enumeration state accepted")
 
+    for invalid_count in ("True", "0", "-1", "01", ""):
+        with patch.dict(os.environ, {
+            "ENUMERATION_COMPLETE": "false",
+            "CHANGED_FILE_RECORDS": "[]",
+            "CHANGED_FILE_COUNT": invalid_count,
+            "EXPECTED_HEAD": "b" * 40,
+        }, clear=False), patch.object(module.subprocess, "check_output") as check_output:
+            try:
+                module.pr_file_records()
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(("invalid transported file count accepted", invalid_count))
+            check_output.assert_not_called()
+
     print("Large-PR Git fallback PASS: >300 server-only records recover reduced Windows lane; client impact and malformed evidence fail closed")
 
 
