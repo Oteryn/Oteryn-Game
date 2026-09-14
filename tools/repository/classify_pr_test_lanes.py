@@ -355,6 +355,43 @@ def candidate_modes_safe(sha: str) -> bool:
     return bool(entries) and all(row.split(b"\t", 1)[0].split()[0] in {b"100644", b"100755"} for row in entries)
 
 
+def git_diff_records(before: str, after: str) -> list[dict]:
+    """Enumerate the complete immutable tree delta for two exact commits."""
+    if any(re.fullmatch(r"[0-9a-f]{40}", sha or "") is None for sha in (before, after)) or before == after:
+        raise ValueError("invalid-or-empty-git-range")
+    raw = subprocess.check_output(
+        ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
+         "--name-status", "-z", before, after, "--"]
+    )
+    if not raw or not raw.endswith(b"\0"):
+        raise ValueError("empty-or-incomplete-git-diff")
+    fields = raw[:-1].split(b"\0")
+    if len(fields) % 2:
+        raise ValueError("malformed-git-diff")
+    statuses = {b"A": "added", b"M": "modified", b"D": "removed"}
+    files = []
+    for index in range(0, len(fields), 2):
+        status = statuses.get(fields[index])
+        if status is None:
+            raise ValueError("unsupported-git-diff-status")
+        files.append({"filename": fields[index + 1].decode("utf-8"), "status": status})
+    return files
+
+
+def pr_file_records() -> tuple[list[dict], int, bool]:
+    """Use transported records when complete, otherwise recover from exact Git trees."""
+    completeness = os.environ["ENUMERATION_COMPLETE"]
+    if completeness == "true":
+        files = json.loads(os.environ["CHANGED_FILE_RECORDS"])
+        return files, int(os.environ["CHANGED_FILE_COUNT"]), True
+    if completeness != "false":
+        raise ValueError("invalid-enumeration-state")
+    expected_head = os.environ["EXPECTED_HEAD"].strip().lower()
+    base = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip().lower()
+    files = git_diff_records(base, expected_head)
+    return files, len(files), True
+
+
 def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None,
              candidate_modes_verified=False, docs_consumers_verified=None) -> dict:
     try:
@@ -466,7 +503,7 @@ def main() -> int:
         if post_merge:
             result = classify_post_merge(json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")), metadata)
         else:
-            files = json.loads(os.environ["CHANGED_FILE_RECORDS"])
+            files, changed_count, complete = pr_file_records()
             digest = input_digest(metadata)
             docs_candidate = (
                 isinstance(files, list) and bool(files)
@@ -476,8 +513,8 @@ def main() -> int:
                              (isinstance(item.get("previous_filename"), str) and neutral(item["previous_filename"])))
                         for item in files)
             )
-            result = classify(files, int(os.environ["CHANGED_FILE_COUNT"]), metadata, digest,
-                              complete=os.environ["ENUMERATION_COMPLETE"] == "true",
+            result = classify(files, changed_count, metadata, digest,
+                              complete=complete,
                               docs_digest=input_digest(metadata, include_server=True),
                               candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]),
                               docs_consumers_verified=document_consumers_safe(metadata) if docs_candidate else None)
