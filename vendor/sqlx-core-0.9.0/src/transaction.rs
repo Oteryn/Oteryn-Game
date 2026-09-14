@@ -87,7 +87,9 @@ pub struct Transaction<'c, DB>
 where
     DB: Database,
 {
-    connection: MaybePoolConnection<'c, DB>,
+    // Kept takeable so the M05 owned-root finalizer can transfer custody out of
+    // this `Drop` type without unsafe field moves.
+    connection: Option<MaybePoolConnection<'c, DB>>,
     open: bool,
 }
 
@@ -104,13 +106,13 @@ where
 
         Box::pin(async move {
             let mut tx = Self {
-                connection: conn,
+                connection: Some(conn),
 
                 // If the call to `begin` fails or doesn't complete we want to attempt a rollback in case the transaction was started.
                 open: true,
             };
 
-            DB::TransactionManager::begin(&mut tx.connection, statement).await?;
+            DB::TransactionManager::begin(tx.connection_mut(), statement).await?;
 
             Ok(tx)
         })
@@ -118,7 +120,7 @@ where
 
     /// Commits this transaction or savepoint.
     pub async fn commit(mut self) -> Result<(), Error> {
-        DB::TransactionManager::commit(&mut self.connection).await?;
+        DB::TransactionManager::commit(self.connection_mut()).await?;
         self.open = false;
 
         Ok(())
@@ -126,10 +128,70 @@ where
 
     /// Aborts this transaction or savepoint.
     pub async fn rollback(mut self) -> Result<(), Error> {
-        DB::TransactionManager::rollback(&mut self.connection).await?;
+        DB::TransactionManager::rollback(self.connection_mut()).await?;
         self.open = false;
 
         Ok(())
+    }
+
+    #[inline]
+    fn connection(&self) -> &MaybePoolConnection<'c, DB> {
+        // The connection is absent only after the consuming M05 seam has made
+        // the transaction inert; safe callers cannot observe that value again.
+        self.connection
+            .as_ref()
+            .expect("transaction connection is present while transaction is observable")
+    }
+
+    #[inline]
+    fn connection_mut(&mut self) -> &mut MaybePoolConnection<'c, DB> {
+        self.connection
+            .as_mut()
+            .expect("transaction connection is present while transaction is observable")
+    }
+}
+
+impl<DB> Transaction<'static, DB>
+where
+    DB: Database,
+{
+    /// Finalizes an owned M05 root transaction and returns its exact connection.
+    ///
+    /// This is an Oteryn-internal custody seam, not a stable SQLx API.
+    #[doc(hidden)]
+    pub async fn oteryn_m05_commit(
+        mut self,
+    ) -> (MaybePoolConnection<'static, DB>, Result<(), Error>) {
+        let result = DB::TransactionManager::commit(self.connection_mut()).await;
+        self.finish_oteryn_m05(result)
+    }
+
+    /// Rolls back an owned M05 root transaction and returns its exact connection.
+    ///
+    /// This is an Oteryn-internal custody seam, not a stable SQLx API.
+    #[doc(hidden)]
+    pub async fn oteryn_m05_rollback(
+        mut self,
+    ) -> (MaybePoolConnection<'static, DB>, Result<(), Error>) {
+        let result = DB::TransactionManager::rollback(self.connection_mut()).await;
+        self.finish_oteryn_m05(result)
+    }
+
+    fn finish_oteryn_m05(
+        mut self,
+        result: Result<(), Error>,
+    ) -> (MaybePoolConnection<'static, DB>, Result<(), Error>) {
+        if result.is_err() {
+            // Match ordinary Transaction Drop exactly once before transferring
+            // custody; making the wrapper inert prevents a second invocation.
+            DB::TransactionManager::start_rollback(self.connection_mut());
+        }
+        self.open = false;
+        let connection = self
+            .connection
+            .take()
+            .expect("owned M05 transaction retains its connection until finalization");
+        (connection, result)
     }
 }
 
@@ -222,7 +284,7 @@ where
 
     #[inline]
     fn deref(&self) -> &Self::Target {
-        &self.connection
+        self.connection()
     }
 }
 
@@ -232,7 +294,7 @@ where
 {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.connection
+        self.connection_mut()
     }
 }
 
@@ -242,7 +304,7 @@ where
 // See: https://github.com/launchbadge/sqlx/issues/2520
 impl<DB: Database> AsMut<DB::Connection> for Transaction<'_, DB> {
     fn as_mut(&mut self) -> &mut DB::Connection {
-        &mut self.connection
+        self.connection_mut()
     }
 }
 
@@ -274,7 +336,9 @@ where
             // operation that will happen on the next asynchronous invocation of the underlying
             // connection (including if the connection is returned to a pool)
 
-            DB::TransactionManager::start_rollback(&mut self.connection);
+            if let Some(connection) = self.connection.as_mut() {
+                DB::TransactionManager::start_rollback(connection);
+            }
         }
     }
 }

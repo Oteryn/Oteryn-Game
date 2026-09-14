@@ -20,6 +20,22 @@ mod postgres;
 /// result is inspectable from a downstream crate although `pool::connection`
 /// remains private and no new re-export exists.
 mod wp3_registered_root_qualification {
+    pub(super) async fn finalize_owned_transaction(
+        transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<Option<bool>, sqlx::Error> {
+        let (connection, result) = transaction.oteryn_m05_commit().await;
+        let mut connection = match connection {
+            sqlx::pool::MaybePoolConnection::PoolConnection(connection) => connection,
+            sqlx::pool::MaybePoolConnection::Connection(_) => {
+                return Err(sqlx::Error::Protocol(
+                    "M05 owned root did not retain pooled custody".into(),
+                ));
+            }
+        };
+        result?;
+        Ok(connection.oteryn_m05_return_to_pool().await)
+    }
+
     pub(super) async fn inspect_completed_return(
         connection: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
     ) -> Result<bool, &'static str> {
@@ -32,6 +48,7 @@ mod wp3_registered_root_qualification {
     #[test]
     fn downstream_can_inspect_the_standard_terminal_shape() {
         let _downstream_callable = inspect_completed_return;
+        let _transaction_finalizer = finalize_owned_transaction;
     }
 }
 

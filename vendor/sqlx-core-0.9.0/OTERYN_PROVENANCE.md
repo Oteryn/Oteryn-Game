@@ -1254,6 +1254,28 @@ Exact authored paths in this continuation (relative to this package):
 
 ## Selected configured E02/M03 witness correction (2026-09-14)
 
+### Oteryn M05 owned transaction-finality custody
+
+The Oteryn-authored, doc-hidden `Transaction<'static, DB>` methods
+`oteryn_m05_commit` and `oteryn_m05_rollback` in `src/transaction.rs` consume
+only an owned/top-level transaction and return its exact
+`MaybePoolConnection<'static, DB>` together with the unchanged finalization
+`Result<(), Error>`. The private connection storage is takeable solely to move
+custody safely out of this `Drop` type. Success makes the wrapper inert before
+extraction. Error invokes the same `TransactionManager::start_rollback`
+operation that ordinary Drop would invoke, then makes the wrapper inert so the
+operation occurs exactly once while the original error and connection are both
+returned. Dropping a pending finalization future still follows ordinary Drop
+and is not success or finality evidence. Ordinary borrowed transactions,
+nested savepoints, commit, rollback, dereference and Drop behavior remain on
+their existing generic implementation.
+
+The downstream registered-root compile witness matches the returned
+`MaybePoolConnection` variant, rejects a non-pooled connection, preserves the
+exact SQLx result and feeds the recovered `PoolConnection` into
+`oteryn_m05_return_to_pool`. This custody seam alone does not prove M05, SQL
+semantics, rollback completion, PostgreSQL qualification or WP3 completion.
+
 The PostgreSQL qualification's former positive path exercised ordinary parsed
 connect options, not `new_oteryn_root_profile`; no selected-profile conclusion
 is retained from that run.  The corrected test explicitly selects literal-IP
