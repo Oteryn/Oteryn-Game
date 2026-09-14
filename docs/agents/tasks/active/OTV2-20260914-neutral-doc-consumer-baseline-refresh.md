@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
-issue: 162
+issue: 615
 pr: null
 base_sha: 8dfae3b9455673feff1745b9f124b786f93fcacc
 head_sha: 6e2b82ae181e93ecd3373f49deafa62f7925f934
