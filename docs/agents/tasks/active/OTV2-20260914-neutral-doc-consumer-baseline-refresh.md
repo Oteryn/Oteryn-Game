@@ -10,17 +10,18 @@ base_branch: main
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
 pr: null
 base_sha: 8dfae3b9455673feff1745b9f124b786f93fcacc
-head_sha: null
+head_sha: 6e2b82ae181e93ecd3373f49deafa62f7925f934
 final_head_sha: null
 final_head_frozen_at: null
 owner: null
 created_at: 2026-09-14T15:35:00+02:00
-updated_at: 2026-09-14T15:35:00+02:00
+updated_at: 2026-09-14T15:44:00+02:00
 execution_policy: continuous_progress
 owned_paths: []
 public_contracts: []
 depends_on: []
-blocks: []
+blocks:
+  - tool_safety_gate: github_contents_update_denied
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -40,6 +41,17 @@ Restore the already-designed neutral-document PR optimization after a reviewed s
 
 Historical #309/#580/#582 remain evidence. This repair does not reactivate their archived/closed lifecycle.
 
+## Exact implementation handoff
+
+The required material change is exactly one constant replacement in `tools/repository/classify_pr_test_lanes.py`:
+
+```diff
+-AUDITED_DOC_CONSUMER_BASE_SHA = "1d0916c7476f37589524c7181b5857bcc6c141e1"
++AUDITED_DOC_CONSUMER_BASE_SHA = "8dfae3b9455673feff1745b9f124b786f93fcacc"
+```
+
+No classifier algorithm, digest constants, workflow, ruleset, required-status or Merge Queue behavior should otherwise change.
+
 ## High-risk authority/recovery qualification
 
 `NOT_APPLICABLE`: this task changes trusted CI lane selection evidence only. It performs no runtime/production mutation, session/lease/generation authority action, persisted recovery interpretation, credential change or external-repository write.
@@ -49,7 +61,10 @@ Historical #309/#580/#582 remain evidence. This repair does not reactivate their
 - [ ] Update only the reviewed document-consumer baseline identity required to adopt `main@8dfae3b9455673feff1745b9f124b786f93fcacc`.
 - [ ] Do not weaken added/deleted/type-changed, executable-source, malformed, unknown, special-mode or other fail-closed cases.
 - [ ] Do not change workflows, rulesets, required statuses, Merge Queue, Cargo, runtime or product behavior.
-- [ ] Repository classifier regressions, post-merge classifier regressions, repository policy and governance pass.
+- [ ] `python tools/repository/test_classify_pr_test_lanes.py` passes.
+- [ ] `python tools/repository/test_classify_post_merge_lanes.py` passes.
+- [ ] `python tools/repository/validate_repository_policy.py` passes.
+- [ ] `python tools/agents/validate_governance.py` passes.
 - [ ] Exact-head hosted CI is FULL for this control-plane candidate.
 - [ ] Whole-diff self-review finds no material unintended change.
 
@@ -59,28 +74,23 @@ No automatic baseline update, heuristic absence-of-marker approval, path-family 
 
 ## Implementation / findings
 
-The existing algorithm is intentionally conservative and is retained unchanged. The required implementation is exactly this one production-line replacement in `tools/repository/classify_pr_test_lanes.py`:
+The existing algorithm is intentionally conservative and is retained unchanged. The repair is a manual reviewed baseline refresh, matching the repository's prior snapshot-refresh discipline while preserving future fail-closed drift detection.
 
-```diff
--AUDITED_DOC_CONSUMER_BASE_SHA = "1d0916c7476f37589524c7181b5857bcc6c141e1"
-+AUDITED_DOC_CONSUMER_BASE_SHA = "8dfae3b9455673feff1745b9f124b786f93fcacc"
-```
+The local sandbox cannot resolve `github.com`, so no local checkout/test claim is made. Mutation and validation use repository-native GitHub tooling where allowed.
 
-No digest constant or classifier algorithm change is required: `document_consumers_safe()` will compare later candidates against this newly reviewed protected baseline, while any later added/deleted/type-changed workspace/build input again fails closed to FULL.
-
-The local sandbox cannot resolve `github.com`, so no local checkout/test claim is made. Repository-native reads established the exact source delta. The GitHub connector allowed creation of the dedicated branch and this task record, but its safety layer explicitly blocked the attempted write to `tools/repository/classify_pr_test_lanes.py`. No lower-level Git-data workaround was attempted because that would bypass the safety decision.
+A direct repository-native contents update of `tools/repository/classify_pr_test_lanes.py` was attempted and rejected by the OpenAI safety layer before GitHub mutation. No lower-level blob/tree write or Remote Desktop fallback was used because either would bypass that safety denial or violate the repository's exact Remote Desktop authorization requirement.
 
 ## Validation
 
 ### Focused
 
-- command/run: blocked before candidate creation
-- result: `NOT_RUN`
+- command/run: not run
+- result: blocked before material classifier mutation
 
 ### Component/integration
 
-- command/run: blocked before candidate creation
-- result: `NOT_RUN`
+- command/run: not run
+- result: blocked before material classifier mutation
 
 ### E2E
 
@@ -93,15 +103,15 @@ The local sandbox cannot resolve `github.com`, so no local checkout/test claim i
 - trigger source: pending
 - workflow/run/job: pending
 - runner assignment: pending
-- classification: FULL required for the eventual `tools/repository/**` control-plane candidate
+- classification: FULL expected because `tools/repository/**` is trusted control-plane input
 - result: pending
 
 ## Self-review
 
-- exact head: pending
+- exact head: `6e2b82ae181e93ecd3373f49deafa62f7925f934`
 - method/reviewer: implementing ChatGPT session
-- material findings: no algorithm change required; exact one-line repair identified
-- verdict: implementation blocked before candidate exists
+- material findings: branch currently contains only this task record; material classifier fix is not present
+- verdict: NOT_COMPLETE
 
 ## Independent review
 
@@ -113,20 +123,20 @@ The local sandbox cannot resolve `github.com`, so no local checkout/test claim i
 
 ## PR and closeout
 
-- changed-file review: task record only; no implementation candidate exists
-- unresolved review threads: `NOT_APPLICABLE`
+- changed-file review: branch differs from admission only by this task record
+- unresolved review threads: none; no PR opened to avoid triggering known-wasteful FULL CI for a task-only handoff branch
 - related/superseded PRs: #309/#310 and #580/#582 are historical evidence only; #612 is the triggering docs-only sample
-- protected auto-merge: not authorized
+- protected auto-merge: not authorized by this task
 - merge commit/result: pending
-- ownership release: released because mutation route is blocked
+- ownership release: released while blocked
 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact one-line repair identified after full bounded consumer re-audit; connector safety blocked the classifier write
+last_progress: exact one-line repair and consumer audit are complete, but repository-native classifier write was denied by the tool safety layer
 status: blocked
 branch: ci/neutral-doc-consumer-baseline-refresh-20260914
-head_sha: null
+head_sha: 6e2b82ae181e93ecd3373f49deafa62f7925f934
 pr: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -135,7 +145,7 @@ ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: not_started
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -143,8 +153,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: apply the recorded one-line baseline refresh through an authorized repository editor, then run the repository-native validation and protected lifecycle
-blocker: CONNECTOR_WRITE_SAFETY_BLOCKED
-actionable_patch: tools/repository/classify_pr_test_lanes.py AUDITED_DOC_CONSUMER_BASE_SHA 1d0916c7476f37589524c7181b5857bcc6c141e1 -> 8dfae3b9455673feff1745b9f124b786f93fcacc
-next_action: create the exact one-line implementation candidate from the recorded protected base and run FULL CI
+owner_action_required: exact authorization for an allowed writer route that can modify tools/repository/classify_pr_test_lanes.py without bypassing the denied repository-native update
+blocker: OpenAI safety layer denied the contents update; Remote Desktop is not authorized for this exact invocation
+next_action: apply the one-line constant refresh through an explicitly authorized allowed writer route, then run focused and hosted validation
 ```
