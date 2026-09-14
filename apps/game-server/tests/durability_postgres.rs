@@ -3353,12 +3353,19 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 assert!(runtime.recovered_pending().iter().all(Option::is_none));
                 let now = postgres_clock(&pool).await?;
                 let owner = postgres::fresh::Source::new(now)?;
-                runtime.guards().publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?).await?;
                 let request = owner.request()?;
+                let publication = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&owner, now),
+                )?;
                 let original = encode_operation(request.operation(), 65536)?;
-                assert_eq!(runtime.enqueue_checkpoint(1, &original)?.establish().await?, 1);
-                assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
-                let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err("producer fresh receipt absent".into()); };
+                let fresh_pass = runtime.enqueue_checkpoint(1, &original)?.establish().await?;
+                assert_eq!(fresh_pass.slot(), 1);
+                let initial = fresh_pass.run(async {
+                    runtime.guards().publish(&publication).await?;
+                    assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
+                    let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err(DurabilityError::InvalidStoredState); };
+                    Ok(initial)
+                }).await?;
                 let session = initial.current_session;
                 let source = LossSource(ControlLossObservationV1 {
                     source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
@@ -3374,9 +3381,14 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(&source, session.commit().game_session_id(), now))?;
                 let mut flow = ControlLossFlowV1::begin(authorization);
                 let request = authority_matrix::checked(flow.take_request())?;
-                assert_eq!(runtime.enqueue_checkpoint(2, &encode_fresh_loss(request.operation())?)?.establish().await?, 2);
+                let loss_original = encode_fresh_loss(request.operation())?;
+                let loss_pass = runtime.enqueue_checkpoint(2, &loss_original)?.establish().await?;
+                assert_eq!(loss_pass.slot(), 2);
                 if std::env::var(CHILD_MODE)? == "produce_absent" { std::process::exit(0); }
-                assert!(matches!(fresh.commit_fresh_loss(&request, &source).await?, ControlLossOutcomeV1::Committed { .. }));
+                loss_pass.run(async {
+                    assert!(matches!(fresh.commit_fresh_loss(&request, &source).await?, ControlLossOutcomeV1::Committed { .. }));
+                    Ok(())
+                }).await?;
                 // Terminate this actual producer process with unresolved originals;
                 // neither destructors nor an acknowledgement release active slots.
                 std::process::exit(0);
@@ -3386,15 +3398,17 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
             let second = pending[1].as_ref().ok_or("lost second pending original")?;
             assert_eq!((first.slot, first.operation_kind), (1,1));
             assert_eq!((second.slot, second.operation_kind), (2,2));
+            let fresh_pass = runtime.resume_checkpoint(first.slot, first.operation_kind, &first.operation_json)?;
+            let loss_pass = runtime.resume_checkpoint(second.slot, second.operation_kind, &second.operation_json)?;
             let original = decode_operation(&first.operation_json, 65536)?;
-            let FreshReconciliation::Committed(current) = fresh.reconcile(&original).await? else { return Err("restart fresh receipt absent".into()); };
+            let FreshReconciliation::Committed(current) = fresh_pass.run(fresh.reconcile(&original)).await? else { return Err("restart fresh receipt absent".into()); };
             let loss = decode_fresh_loss(&second.operation_json, current.receipt.binding().initial_commit().map_err(|_| "invalid initial receipt")?)?;
             if std::env::var(CHILD_MODE)? == "recover_absent" {
-                assert_eq!(fresh.reconcile_fresh_loss(&loss).await?, FreshLossReconciliation::Absent);
+                assert_eq!(loss_pass.run(fresh.reconcile_fresh_loss(&loss)).await?, FreshLossReconciliation::Absent);
                 assert_eq!(current.current_session.session_state(), GameSessionState::Active);
                 assert_eq!(current.current_session.current_transport(), Some(current.receipt.binding().transport));
             } else {
-                let FreshLossReconciliation::Committed { completion, current: loss_current } = fresh.reconcile_fresh_loss(&loss).await? else { return Err("restart loss receipt absent".into()); };
+                let FreshLossReconciliation::Committed { completion, current: loss_current } = loss_pass.run(fresh.reconcile_fresh_loss(&loss)).await? else { return Err("restart loss receipt absent".into()); };
                 assert_eq!(completion.operation, loss);
                 assert_eq!(loss_current, current);
                 assert_eq!(current.current_session.session_state(), GameSessionState::Reconnectable);
@@ -3403,7 +3417,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
             }
             let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss.clone()))?;
             assert!(history.take_request().is_err());
-            let delivery = fresh.loss_completion_source(&loss).await?;
+            let delivery = loss_pass.run(fresh.loss_completion_source(&loss)).await?;
             if std::env::var(CHILD_MODE)? == "recover_absent" {
                 assert!(delivery.is_none(), "absence is not a definitive rejection completion");
                 assert_eq!(history.phase(), ControlLossPhaseV1::ReconciliationRequired);
@@ -3424,7 +3438,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 authority_matrix::checked(history.accept_completion(&mut delivery))?;
                 assert_eq!(history.receipt(), Some(&receipt));
                 assert!(history.take_request().is_err());
-                assert!(fresh.loss_completion_source(&wrong).await?.is_none(), "conflicting original cannot acquire completion authority");
+                assert!(loss_pass.run(fresh.loss_completion_source(&wrong)).await?.is_none(), "conflicting original cannot acquire completion authority");
             }
             assert!(matches!(runtime.enqueue_checkpoint(1, "different third work")?.establish().await, Err(DurabilityError::Unavailable)));
             let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
@@ -3523,13 +3537,31 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     predecessor.fence(&pool).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
+                let first_pending = runtime.recovered_pending()[0]
+                    .clone()
+                    .ok_or("missing first registered original")?;
+                let second_pending = runtime.recovered_pending()[1]
+                    .clone()
+                    .ok_or("missing second registered original")?;
+                let first_pass = runtime.resume_checkpoint(
+                    first_pending.slot,
+                    first_pending.operation_kind,
+                    &first_pending.operation_json,
+                )?;
+                let second_pass = runtime.resume_checkpoint(
+                    second_pending.slot,
+                    second_pending.operation_kind,
+                    &second_pending.operation_json,
+                )?;
                 let guards = runtime.guards();
-                assert!(guards.load(&[]).await?.is_empty());
+                assert!(first_pass.run(guards.load(&[])).await?.is_empty());
                 let fresh = repeated.fresh();
                 let owner = postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
                 let fresh_request = owner.request()?;
                 assert!(matches!(
-                    fresh.reconcile(fresh_request.operation()).await?,
+                    second_pass
+                        .run(fresh.reconcile(fresh_request.operation()))
+                        .await?,
                     durability::fresh_admission::FreshReconciliation::Absent
                 ));
                 let record = authority_matrix::prepared_record(authority_matrix::Seed::fixed())?;
@@ -3541,19 +3573,21 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 let (_successor, retained) = DurabilityCustody::acquire(&pool).await?;
                 assert_eq!(retained, runtime.recovered_pending());
                 assert!(matches!(
-                    guards.load(&[]).await,
+                    first_pass.run(guards.load(&[])).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 assert!(matches!(
-                    fresh.reconcile(fresh_request.operation()).await,
+                    second_pass
+                        .run(fresh.reconcile(fresh_request.operation()))
+                        .await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 assert!(matches!(
-                    v1.prepare(&v1_request).await,
+                    first_pass.run(v1.prepare(&v1_request)).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 assert!(matches!(
-                    v2.prepare(&v2_request).await,
+                    second_pass.run(v2.prepare(&v2_request)).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 // Registration cannot mint replacement capacity after its token is stale.
@@ -3562,7 +3596,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 )
                 .await?;
                 assert!(matches!(
-                    stale.guards().load(&[]).await,
+                    first_pass.run(stale.guards().load(&[])).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 assert!(matches!(

@@ -133,6 +133,7 @@ pub(super) async fn lock_admission_relations(
 struct WorkOperation {
     kind: i16,
     operation: Box<str>,
+    definitive: bool,
 }
 struct QueuedWork {
     id: u64,
@@ -152,6 +153,7 @@ impl WorkCustody {
                 pending[i].as_ref().map(|p| WorkOperation {
                     kind: p.operation_kind,
                     operation: p.operation_json.as_str().into(),
+                    definitive: false,
                 })
             }),
             next_id: 1,
@@ -170,6 +172,16 @@ impl WorkCustody {
         {
             return Err(DurabilityError::Unavailable);
         }
+        // A retry cannot mint a second active identity for an original already
+        // retained for reconciliation. It must use `resume_checkpoint`.
+        if self
+            .active
+            .iter()
+            .flatten()
+            .any(|active| active.kind == kind && active.operation.as_ref() == operation)
+        {
+            return Err(DurabilityError::Unavailable);
+        }
         let target = self
             .queued
             .iter_mut()
@@ -184,6 +196,7 @@ impl WorkCustody {
             operation: WorkOperation {
                 kind,
                 operation: operation.into(),
+                definitive: false,
             },
         });
         self.next_id = next;
@@ -219,6 +232,11 @@ impl WorkCustody {
             self.queued[index] = None;
             return Err(DurabilityError::Unavailable);
         }
+        if self.active.iter().flatten().any(|active| {
+            active.kind == queued.operation.kind && active.operation == queued.operation.operation
+        }) {
+            return Err(DurabilityError::Unavailable);
+        }
         let active_index = self
             .active
             .iter()
@@ -252,8 +270,110 @@ impl WorkCustody {
         if active.kind != kind || active.operation.as_ref() != operation {
             return Err(DurabilityError::InvalidStoredState);
         }
+        if !active.definitive {
+            return Err(DurabilityError::Unavailable);
+        }
         self.active[index] = None;
         Ok(())
+    }
+
+    fn can_acknowledge(
+        &self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if self.active[index]
+            .as_ref()
+            .is_some_and(|active| active.definitive)
+        {
+            Ok(())
+        } else {
+            Err(DurabilityError::Unavailable)
+        }
+    }
+
+    fn validate(&self, slot: i16, kind: i16, operation: &str) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self
+            .active
+            .get(index)
+            .and_then(Option::as_ref)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.kind == kind && active.operation.as_ref() == operation {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn mark_definitive(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .definitive = true;
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+struct ActivePassIdentity {
+    backend: std::sync::Arc<RuntimeBackend>,
+    slot: i16,
+    kind: i16,
+    original: std::sync::Arc<str>,
+    deadline: tokio::time::Instant,
+}
+
+tokio::task_local! {
+    static ACTIVE_SEMANTIC_PASS: ActivePassIdentity;
+}
+
+/// Exact active-slot custody for one bounded semantic attempt.
+///
+/// Dropping or timing out this value never acknowledges or releases its slot.
+pub struct SemanticPass {
+    identity: ActivePassIdentity,
+}
+
+#[derive(Clone, Copy)]
+struct PassDeadline(tokio::time::Instant);
+impl PassDeadline {
+    async fn run<F: std::future::Future>(&self, body: F) -> Result<F::Output, DurabilityError> {
+        tokio::time::timeout_at(self.0, body)
+            .await
+            .map_err(|_| DurabilityError::Unavailable)
+    }
+}
+
+impl SemanticPass {
+    #[must_use]
+    pub const fn slot(&self) -> i16 {
+        self.identity.slot
+    }
+
+    /// Run the complete semantic body under the original, unchanged pass deadline.
+    pub async fn run<F, T>(&self, body: F) -> Result<T, DurabilityError>
+    where
+        F: std::future::Future<Output = Result<T, DurabilityError>>,
+    {
+        self.identity.backend.validate_pass(&self.identity)?;
+        let result = PassDeadline(self.identity.deadline)
+            .run(ACTIVE_SEMANTIC_PASS.scope(self.identity.clone(), body))
+            .await?;
+        if result.is_ok() {
+            self.identity.backend.mark_definitive(&self.identity)?;
+        }
+        result
     }
 }
 
@@ -273,7 +393,7 @@ impl Drop for QueuedCheckpoint {
 }
 impl QueuedCheckpoint {
     #[allow(clippy::infallible_destructuring_match)]
-    pub async fn establish(self) -> Result<i16, DurabilityError> {
+    pub async fn establish(self) -> Result<SemanticPass, DurabilityError> {
         let started = tokio::time::Instant::now();
         let (slot, operation) = self
             .backend
@@ -299,7 +419,15 @@ impl QueuedCheckpoint {
         )
         .await
         .map_err(|_| DurabilityError::Unavailable)??;
-        Ok(slot)
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.backend.clone(),
+                slot,
+                kind: operation.kind,
+                original: std::sync::Arc::from(operation.operation.as_ref()),
+                deadline: started + Duration::from_millis(2000),
+            },
+        })
     }
 }
 
@@ -310,9 +438,21 @@ pub(super) struct RuntimeBackend {
     custody: BackendCustody,
     pub pending: std::sync::Mutex<[Option<super::DurablePendingCheckpoint>; 2]>,
     work: std::sync::Mutex<WorkCustody>,
-    root_ready_demand: std::sync::atomic::AtomicBool,
+    root_ready_demand: RootReadyDemand,
     #[allow(dead_code)]
     root_maintenance: tokio::sync::Mutex<()>,
+}
+struct RootReadyDemand(std::sync::atomic::AtomicBool);
+impl RootReadyDemand {
+    const fn new() -> Self {
+        Self(std::sync::atomic::AtomicBool::new(false))
+    }
+    fn record(&self) {
+        self.0.store(true, std::sync::atomic::Ordering::Release);
+    }
+    fn consume(&self) -> bool {
+        self.0.swap(false, std::sync::atomic::Ordering::AcqRel)
+    }
 }
 enum BackendCustody {
     Registered(super::DurabilityCustody),
@@ -320,14 +460,33 @@ enum BackendCustody {
     LegacyFixture,
 }
 impl RuntimeBackend {
+    pub(super) fn resume_pass(
+        self: &std::sync::Arc<Self>,
+        slot: i16,
+        kind: i16,
+        original: &str,
+    ) -> Result<SemanticPass, DurabilityError> {
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .validate(slot, kind, original)?;
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.clone(),
+                slot,
+                kind,
+                original: std::sync::Arc::from(original),
+                deadline: tokio::time::Instant::now() + Duration::from_millis(2000),
+            },
+        })
+    }
+
     fn record_root_ready_demand(&self) {
-        self.root_ready_demand
-            .store(true, std::sync::atomic::Ordering::Release);
+        self.root_ready_demand.record();
     }
 
     fn consume_root_ready_demand(&self) -> bool {
-        self.root_ready_demand
-            .swap(false, std::sync::atomic::Ordering::AcqRel)
+        self.root_ready_demand.consume()
     }
 
     pub(super) fn enqueue(
@@ -345,10 +504,32 @@ impl RuntimeBackend {
             id,
         })
     }
+    fn validate_pass(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
+        if !std::ptr::eq(self, std::sync::Arc::as_ptr(&pass.backend)) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .validate(pass.slot, pass.kind, &pass.original)
+    }
+
+    fn mark_definitive(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
+        self.validate_pass(pass)?;
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .mark_definitive(pass.slot, pass.kind, &pass.original)
+    }
+
     pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
         match &self.custody {
             BackendCustody::Registered(custody) => {
-                match tokio::time::timeout(Duration::from_secs(2), custody.fence(&self.pool))
+                let pass = ACTIVE_SEMANTIC_PASS
+                    .try_with(Clone::clone)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                self.validate_pass(&pass)?;
+                match tokio::time::timeout_at(pass.deadline, custody.fence(&self.pool))
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?
                 {
@@ -391,6 +572,10 @@ impl RuntimeBackend {
         let BackendCustody::Registered(custody) = &self.custody else {
             return Err(DurabilityError::Unavailable);
         };
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .can_acknowledge(slot, kind, operation)?;
         custody
             .acknowledge(&self.pool, slot, kind, operation)
             .await?;
@@ -493,7 +678,7 @@ pub(super) async fn registered_backend(
         custody: BackendCustody::Registered(custody),
         work: std::sync::Mutex::new(WorkCustody::new(&pending)),
         pending: std::sync::Mutex::new(pending),
-        root_ready_demand: std::sync::atomic::AtomicBool::new(false),
+        root_ready_demand: RootReadyDemand::new(),
         root_maintenance: tokio::sync::Mutex::new(()),
     });
     *registration = RuntimeRegistration::Ready {
@@ -514,7 +699,7 @@ pub(super) async fn backend_for_constructor(
         custody: BackendCustody::LegacyFixture,
         pending: std::sync::Mutex::new([None, None]),
         work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
-        root_ready_demand: std::sync::atomic::AtomicBool::new(false),
+        root_ready_demand: RootReadyDemand::new(),
         root_maintenance: tokio::sync::Mutex::new(()),
     }))
 }
@@ -529,18 +714,18 @@ mod work_custody_tests {
         let mut work = WorkCustody::new(&[None, None]);
         let now = std::time::Instant::now();
         let mut tickets = Vec::new();
-        for _ in 0..8 {
-            tickets.push(work.enqueue(1, "original", now)?);
+        for index in 0..8 {
+            tickets.push(work.enqueue(1, &format!("original-{index}"), now)?);
         }
         assert!(matches!(
             work.enqueue(1, "ninth", now),
             Err(DurabilityError::Unavailable)
         ));
         let (slot, first) = work.promote(tickets[0], now)?;
-        assert_eq!((slot, first.operation.as_ref()), (1, "original"));
+        assert_eq!((slot, first.operation.as_ref()), (1, "original-0"));
         work.cancel(tickets[0]);
         let (_, second) = work.promote(tickets[1], now)?;
-        assert_eq!(second.operation.as_ref(), "original");
+        assert_eq!(second.operation.as_ref(), "original-1");
         assert!(matches!(
             work.promote(tickets[2], now),
             Err(DurabilityError::Unavailable)
@@ -624,6 +809,10 @@ mod work_custody_tests {
         let second = work.enqueue(2, "second", now)?;
         work.promote(first, now)?;
         work.promote(second, now)?;
+        assert!(matches!(
+            work.enqueue(1, "first", now),
+            Err(DurabilityError::Unavailable)
+        ));
         let third = work.enqueue(3, "third", now)?;
         assert!(matches!(
             work.promote(third, now),
@@ -633,6 +822,11 @@ mod work_custody_tests {
             work.acknowledge(1, 1, "wrong"),
             Err(DurabilityError::InvalidStoredState)
         ));
+        assert!(matches!(
+            work.acknowledge(1, 1, "first"),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.mark_definitive(1, 1, "first")?;
         work.acknowledge(1, 1, "first")?;
         assert_eq!(work.promote(third, now)?.0, 1);
         assert!(matches!(
@@ -640,6 +834,36 @@ mod work_custody_tests {
             Err(DurabilityError::InvalidStoredState)
         ));
         Ok(())
+    }
+
+    #[test]
+    fn semantic_deadline_is_not_reset_between_phases() -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let deadline =
+                    PassDeadline(tokio::time::Instant::now() + Duration::from_millis(150));
+                let result = deadline
+                    .run(async {
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                    })
+                    .await;
+                assert!(matches!(result, Err(DurabilityError::Unavailable)));
+            });
+        Ok(())
+    }
+
+    #[test]
+    fn root_ready_demand_is_coalesced_and_consumed_once() {
+        let demand = RootReadyDemand::new();
+        demand.record();
+        demand.record();
+        assert!(demand.consume());
+        assert!(!demand.consume());
+        demand.record();
+        assert!(demand.consume());
     }
 
     #[test]

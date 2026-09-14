@@ -11,7 +11,7 @@ pub mod fresh_admission;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
-pub use db::QueuedCheckpoint;
+pub use db::{QueuedCheckpoint, SemanticPass};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
 use oteryn_game_server::foundation::{
@@ -2548,14 +2548,24 @@ pub struct AdmissionRuntime {
 }
 impl AdmissionRuntime {
     /// Reserve bounded bookkeeping before copying an original operation envelope.
-    /// Existing semantic APIs are not yet routed through this queue. This neither
-    /// constructs live authority nor permits reuse of an unresolved active slot.
+    /// Establishment returns the sole token capable of authorizing registered
+    /// semantic execution for the retained `(slot, kind, original)` identity.
     pub fn enqueue_checkpoint(
         &self,
         operation_kind: i16,
         original: &str,
     ) -> Result<QueuedCheckpoint, DurabilityError> {
         self.backend.enqueue(operation_kind, original)
+    }
+
+    /// Resume reconciliation using the exact retained active original.
+    pub fn resume_checkpoint(
+        &self,
+        slot: i16,
+        operation_kind: i16,
+        original: &str,
+    ) -> Result<SemanticPass, DurabilityError> {
+        self.backend.resume_pass(slot, operation_kind, original)
     }
 
     pub async fn connect(config: AdmissionRuntimeConfig) -> Result<Self, DurabilityError> {
