@@ -270,8 +270,29 @@ where
     let owner: Arc<dyn rustls::DeframerBufferOwner> =
         Arc::new(DeframerBudgetOwner(resource_budget.clone()));
     #[cfg(feature = "_tls-rustls-aws-lc-rs")]
-    let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner.clone())
+    let provider = {
+        // Provider initialization is process-root custody, not connection
+        // custody.  Passing `owner` here would allow provider registration to
+        // retain the selected-profile release owner beyond the backing whose
+        // 1,288-byte debit it releases.  The provider-only adapter is weak: it
+        // can debit the same live root during this call but can never extend
+        // the lifetime of the per-connection owner.
+        let provider_owner_allocation = ResourceReservation::try_new(
+            resource_budget.clone(),
+            arc_allocation_size::<ProviderBudgetOwner>().map_err(Error::tls)?,
+        )
         .map_err(Error::tls)?;
+        let provider_owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(
+            ProviderBudgetOwner(Arc::downgrade(&resource_budget)),
+        );
+        let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(
+            provider_owner.clone(),
+        )
+        .map_err(Error::tls)?;
+        drop(provider_owner);
+        drop(provider_owner_allocation);
+        provider
+    };
     #[cfg(not(feature = "_tls-rustls-aws-lc-rs"))]
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     if cfg!(not(feature = "_tls-rustls-aws-lc-rs")) {
@@ -817,6 +838,35 @@ impl HandshakeInputBound {
 pub(super) struct DeframerBudgetOwner(
     pub(super) Arc<dyn crate::net::resource_budget::ResourceBudget>,
 );
+
+/// Non-owning adapter used only while registering process-shared provider
+/// residency.  A cached provider must never keep a connection/profile owner
+/// alive; absence of the live process root therefore fails closed.
+pub(super) struct ProviderBudgetOwner(
+    pub(super) std::sync::Weak<dyn crate::net::resource_budget::ResourceBudget>,
+);
+
+impl std::fmt::Debug for ProviderBudgetOwner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ProviderBudgetOwner")
+    }
+}
+
+impl rustls::DeframerBufferOwner for ProviderBudgetOwner {
+    fn try_reserve(&self, _bytes: usize) -> Result<(), rustls::DeframerBufferError> {
+        Err(rustls::DeframerBufferError)
+    }
+
+    fn release(&self, _bytes: usize) {}
+
+    fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), rustls::DeframerBufferError> {
+        self.0
+            .upgrade()
+            .ok_or(rustls::DeframerBufferError)?
+            .try_reserve_provider_shared(bytes)
+            .map_err(|_| rustls::DeframerBufferError)
+    }
+}
 
 impl std::fmt::Debug for DeframerBudgetOwner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

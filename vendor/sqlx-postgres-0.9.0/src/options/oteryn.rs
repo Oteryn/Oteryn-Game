@@ -13,23 +13,52 @@ use crate::net::tls::CertificateInput;
 /// the selected, precharged profile from being deep-cloned without acquiring a
 /// reservation for the new physical backing.
 #[doc(hidden)]
-pub struct OterynRootProfile(PgConnectOptions);
+pub struct OterynRootProfile {
+    inner: PgConnectOptions,
+    budget: Arc<OterynProfileBudget>,
+}
 
 impl OterynRootProfile {
     #[doc(hidden)]
-    pub fn options<I, K, V>(mut self, options: I) -> Self
-    where
-        I: IntoIterator<Item = (K, V)>,
-        K: std::fmt::Display,
-        V: std::fmt::Display,
-    {
-        self.0 = self.0.options(options);
-        self
+    pub fn options<const N: usize>(mut self, options: [(&str, &str); N]) -> Result<Self, BudgetError> {
+        fn escaped_len(value: &str) -> Result<usize, BudgetError> {
+            value.bytes().try_fold(0usize, |len, byte| {
+                len.checked_add(if matches!(byte, b' ' | b'\\') { 2 } else { 1 })
+                    .ok_or(BudgetError::Overflow)
+            })
+        }
+
+        let encoded_len = options.iter().enumerate().try_fold(0usize, |len, (index, (key, value))| {
+            len.checked_add(usize::from(index != 0))
+                .and_then(|n| n.checked_add(3))
+                .and_then(|n| n.checked_add(escaped_len(key).ok()?))
+                .and_then(|n| n.checked_add(1))
+                .and_then(|n| n.checked_add(escaped_len(value).ok()?))
+                .ok_or(BudgetError::Overflow)
+        })?;
+        let budget = self.budget.root.clone();
+        budget.try_reserve(encoded_len)?;
+        let mut encoded = String::with_capacity(encoded_len);
+        for (index, (key, value)) in options.into_iter().enumerate() {
+            if index != 0 { encoded.push(' '); }
+            encoded.push_str("-c ");
+            for byte in key.bytes().chain(std::iter::once(b'=')).chain(value.bytes()) {
+                if matches!(byte, b' ' | b'\\') { encoded.push('\\'); }
+                encoded.push(char::from(byte));
+            }
+        }
+        debug_assert_eq!(encoded.capacity(), encoded_len);
+        self.inner.options = Some(encoded);
+        self.budget.retained_bytes.fetch_add(
+            encoded_len,
+            std::sync::atomic::Ordering::AcqRel,
+        );
+        Ok(self)
     }
 
     #[doc(hidden)]
     pub fn into_connect_options(self) -> PgConnectOptions {
-        self.0
+        self.inner
     }
 
 }
@@ -37,7 +66,7 @@ impl OterynRootProfile {
 impl std::ops::Deref for OterynRootProfile {
     type Target = PgConnectOptions;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
@@ -48,7 +77,7 @@ impl std::ops::Deref for OterynRootProfile {
 /// corresponding profile backing.
 struct OterynProfileBudget {
     root: Arc<dyn ResourceBudget>,
-    retained_bytes: usize,
+    retained_bytes: std::sync::atomic::AtomicUsize,
 }
 
 impl ResourceBudget for OterynProfileBudget {
@@ -67,7 +96,7 @@ impl ResourceBudget for OterynProfileBudget {
 
 impl Drop for OterynProfileBudget {
     fn drop(&mut self) {
-        self.root.release(self.retained_bytes);
+        self.root.release(self.retained_bytes.load(std::sync::atomic::Ordering::Acquire));
     }
 }
 
@@ -96,7 +125,7 @@ impl PgConnectOptions {
         database: &str,
         username: &str,
         password: &str,
-        root_ca_pem: Vec<u8>,
+        root_ca_pem: &[u8],
         resource_budget: Arc<dyn ResourceBudget>,
     ) -> Result<OterynRootProfile, BudgetError> {
         // IPv6 text is at most 39 bytes; reserve that conservative prospective
@@ -109,14 +138,14 @@ impl PgConnectOptions {
             .and_then(|n| n.checked_add(database.len()))
             .and_then(|n| n.checked_add(username.len()))
             .and_then(|n| n.checked_add(password.len()))
-            .and_then(|n| n.checked_add(root_ca_pem.capacity()))
+            .and_then(|n| n.checked_add(root_ca_pem.len()))
             .and_then(|n| n.checked_add(std::mem::size_of::<OterynProfileBudget>()))
             .and_then(|n| n.checked_add(2 * std::mem::size_of::<usize>()))
             .ok_or(BudgetError::Overflow)?;
         resource_budget.try_reserve(retained_bytes)?;
-        let profile_budget: Arc<dyn ResourceBudget> = Arc::new(OterynProfileBudget {
+        let profile_budget = Arc::new(OterynProfileBudget {
             root: resource_budget,
-            retained_bytes,
+            retained_bytes: std::sync::atomic::AtomicUsize::new(retained_bytes),
         });
 
         fn copy_with_capacity(value: &str) -> String {
@@ -131,7 +160,8 @@ impl PgConnectOptions {
         let mut log_settings = LogSettings::default();
         log_settings.statements_level = log::LevelFilter::Off;
         log_settings.slow_statements_level = log::LevelFilter::Off;
-        Ok(OterynRootProfile(Self {
+        Ok(OterynRootProfile {
+            inner: Self {
             host,
             port,
             socket: None,
@@ -139,7 +169,7 @@ impl PgConnectOptions {
             password: Some(copy_with_capacity(password)),
             database: Some(copy_with_capacity(database)),
             ssl_mode: PgSslMode::VerifyFull,
-            ssl_root_cert: Some(CertificateInput::OterynInline(root_ca_pem)),
+            ssl_root_cert: Some(CertificateInput::OterynInline(root_ca_pem.to_vec())),
             ssl_client_cert: None,
             ssl_client_key: None,
             statement_cache_capacity: 100,
@@ -147,10 +177,12 @@ impl PgConnectOptions {
             log_settings,
             extra_float_digits: Some("2".into()),
             options: None,
-            resource_budget: Some(PgResourceBudget(profile_budget)),
+            resource_budget: Some(PgResourceBudget(profile_budget.clone())),
             oteryn_root_profile: true,
             oteryn_tls_server_name: Some(copy_with_capacity(tls_server_name)),
-        }))
+            },
+            budget: profile_budget,
+        })
     }
 
     pub(crate) fn oteryn_root_profile(&self) -> bool {
@@ -226,7 +258,7 @@ mod tests {
             "oteryn",
             "oteryn_runtime",
             "secret",
-            b"-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n".to_vec(),
+            b"-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n",
             owner,
         )
     }
@@ -273,5 +305,30 @@ mod tests {
         assert!(retained > 0);
         drop(options);
         assert_eq!(ledger.retained(), 0);
+    }
+
+    #[test]
+    fn production_startup_options_are_reserved_before_retention() {
+        const OPTIONS: [(&str, &str); 3] = [
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ];
+        let sizing = Arc::new(Budget::new(usize::MAX));
+        let sizing_profile = profile(sizing.clone()).unwrap();
+        let base = sizing.retained();
+        let configured = sizing_profile.options(OPTIONS).unwrap();
+        let complete = sizing.retained();
+        assert!(complete > base);
+        assert_eq!(configured.get_options().map(str::len), Some(complete - base));
+        drop(configured);
+        assert_eq!(sizing.retained(), 0);
+
+        let denied = Arc::new(Budget::new(complete - 1));
+        let owner: Arc<dyn ResourceBudget> = denied.clone();
+        let profile = profile(owner).unwrap();
+        assert_eq!(denied.retained(), base);
+        assert!(matches!(profile.options(OPTIONS), Err(BudgetError::Unavailable)));
+        assert_eq!(denied.retained(), 0);
     }
 }

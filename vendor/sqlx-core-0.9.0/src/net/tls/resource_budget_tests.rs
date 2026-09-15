@@ -70,6 +70,21 @@ fn provider_shared_default_denies_and_adapter_delegates_to_same_root() {
     assert!(rustls::DeframerBufferOwner::try_reserve_provider_shared(&owner, 1).is_err());
 }
 
+#[test]
+fn provider_registration_owner_does_not_retain_the_connection_budget() {
+    use super::tls_rustls::ProviderBudgetOwner;
+
+    let budget = ledger(10);
+    let erased: Arc<dyn ResourceBudget> = budget.clone();
+    let weak = Arc::downgrade(&erased);
+    let owner = ProviderBudgetOwner(weak);
+    rustls::DeframerBufferOwner::try_reserve_provider_shared(&owner, 10).unwrap();
+    assert_eq!(budget.used.load(Ordering::Acquire), 10);
+    drop(erased);
+    drop(budget);
+    assert!(rustls::DeframerBufferOwner::try_reserve_provider_shared(&owner, 1).is_err());
+}
+
 #[cfg(feature = "_tls-rustls-aws-lc-rs")]
 #[test]
 fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {

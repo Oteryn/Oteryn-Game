@@ -135,6 +135,7 @@ struct WorkOperation {
     kind: i16,
     operation: std::sync::Arc<str>,
     definitive: bool,
+    in_flight: usize,
     persisted: bool,
     deadline: Option<tokio::time::Instant>,
 }
@@ -158,6 +159,7 @@ impl WorkCustody {
                     kind: p.operation_kind,
                     operation: std::sync::Arc::from(p.operation_json.as_str()),
                     definitive: false,
+                    in_flight: 0,
                     persisted: true,
                     deadline: None,
                 })
@@ -204,6 +206,7 @@ impl WorkCustody {
                 kind,
                 operation: std::sync::Arc::from(operation),
                 definitive: false,
+                in_flight: 0,
                 persisted: false,
                 deadline: None,
             },
@@ -319,7 +322,7 @@ impl WorkCustody {
         if active.kind != kind || active.operation.as_ref() != operation {
             return Err(DurabilityError::InvalidStoredState);
         }
-        if !active.definitive {
+        if !active.definitive || active.in_flight != 0 {
             return Err(DurabilityError::Unavailable);
         }
         self.active[index] = None;
@@ -336,7 +339,7 @@ impl WorkCustody {
         let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
         if self.active[index]
             .as_ref()
-            .is_some_and(|active| active.definitive)
+            .is_some_and(|active| active.definitive && active.in_flight == 0)
         {
             Ok(())
         } else {
@@ -377,18 +380,43 @@ impl WorkCustody {
         }
     }
 
-    fn mark_definitive(
+    fn begin_run(
         &mut self,
         slot: i16,
         kind: i16,
         operation: &str,
+        incarnation: u64,
     ) -> Result<(), DurabilityError> {
-        self.validate(slot, kind, operation)?;
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
         let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
-        self.active[index]
+        let active = self.active[index]
             .as_mut()
-            .ok_or(DurabilityError::InvalidStoredState)?
-            .definitive = true;
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.in_flight = active
+            .in_flight
+            .checked_add(1)
+            .ok_or(DurabilityError::Unavailable)?;
+        Ok(())
+    }
+
+    fn finish_run(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+        definitive: bool,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.in_flight = active
+            .in_flight
+            .checked_sub(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.definitive |= definitive;
         Ok(())
     }
 
@@ -426,6 +454,19 @@ pub struct SemanticPass {
     identity: ActivePassIdentity,
 }
 
+struct ActiveRunGuard {
+    identity: ActivePassIdentity,
+    finished: bool,
+}
+
+impl Drop for ActiveRunGuard {
+    fn drop(&mut self) {
+        if !self.finished {
+            let _ = self.identity.backend.finish_run(&self.identity, false);
+        }
+    }
+}
+
 impl SemanticPass {
     #[must_use]
     pub const fn slot(&self) -> i16 {
@@ -437,17 +478,52 @@ impl SemanticPass {
     where
         F: std::future::Future<Output = Result<T, DurabilityError>>,
     {
-        self.identity.backend.validate_pass(&self.identity)?;
+        self.identity.backend.begin_run(&self.identity)?;
+        let mut guard = ActiveRunGuard {
+            identity: self.identity.clone(),
+            finished: false,
+        };
         let result = ACTIVE_SEMANTIC_PASS
             .scope(self.identity.clone(), body)
             .await;
         // A completed semantic result is authoritative. In particular, never
         // rewrite a definitive commit into ambiguity merely because observing
         // the completed future happened after the wall-clock deadline.
-        if result.is_ok() {
-            self.identity.backend.mark_definitive(&self.identity)?;
-        }
+        self.identity
+            .backend
+            .finish_run(&self.identity, result.is_ok())?;
+        guard.finished = true;
         result
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct V1ReconciliationOriginal {
+    m05_operation: String,
+    record: String,
+    authorization_deadline: Option<i64>,
+}
+
+fn validate_v1_reconciliation_original(
+    original: &str,
+    encoded_record: &str,
+    allowed_origins: &[&str],
+) -> Result<(), DurabilityError> {
+    let original: V1ReconciliationOriginal =
+        serde_json::from_str(original).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let deadline_shape_valid = if original.m05_operation == "commit" {
+        original.authorization_deadline.is_some()
+    } else {
+        original.authorization_deadline.is_none()
+    };
+    if allowed_origins.contains(&original.m05_operation.as_str())
+        && original.record == encoded_record
+        && deadline_shape_valid
+    {
+        Ok(())
+    } else {
+        Err(DurabilityError::InvalidStoredState)
     }
 }
 
@@ -659,21 +735,7 @@ impl RuntimeBackend {
         if pass.kind != kind {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let original: serde_json::Value = serde_json::from_str(&pass.original)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let operation = original
-            .get("m05_operation")
-            .and_then(serde_json::Value::as_str)
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        let record = original
-            .get("record")
-            .and_then(serde_json::Value::as_str)
-            .ok_or(DurabilityError::InvalidStoredState)?;
-        if allowed_origins.contains(&operation) && record == encoded_record {
-            Ok(())
-        } else {
-            Err(DurabilityError::InvalidStoredState)
-        }
+        validate_v1_reconciliation_original(&pass.original, encoded_record, allowed_origins)
     }
 
     pub(super) fn validate_semantic_any(
@@ -700,12 +762,28 @@ impl RuntimeBackend {
         }
     }
 
-    fn mark_definitive(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
-        self.validate_pass(pass)?;
+    fn begin_run(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
         self.work
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
-            .mark_definitive(pass.slot, pass.kind, &pass.original)
+            .begin_run(pass.slot, pass.kind, &pass.original, pass.incarnation)
+    }
+
+    fn finish_run(
+        &self,
+        pass: &ActivePassIdentity,
+        definitive: bool,
+    ) -> Result<(), DurabilityError> {
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .finish_run(
+                pass.slot,
+                pass.kind,
+                &pass.original,
+                pass.incarnation,
+                definitive,
+            )
     }
 
     pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
@@ -892,7 +970,7 @@ pub(super) async fn registered_backend(
         &config.backing.database,
         &config.backing.username,
         &config.backing.password,
-        config.backing.root_ca_pem.clone(),
+        &config.backing.root_ca_pem,
         config.resource_budget.clone(),
     )
     .map_err(|_| DurabilityError::Unavailable)?
@@ -904,7 +982,8 @@ pub(super) async fn registered_backend(
         ("transaction_timeout", "2000ms"),
         ("statement_timeout", "2000ms"),
         ("lock_timeout", "2000ms"),
-    ]);
+    ])
+    .map_err(|_| DurabilityError::Unavailable)?;
     let pool = super::schema::connect_runtime_root(options).await?;
     let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
     let backend = std::sync::Arc::new(RuntimeBackend {
@@ -995,7 +1074,8 @@ mod work_custody_tests {
         let first_id = work.enqueue(3, "same-original", now)?;
         let (slot, first) = work.promote(first_id, now)?;
         work.mark_persisted(slot, first.incarnation)?;
-        work.mark_definitive(slot, 3, "same-original")?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
         work.acknowledge(slot, 3, "same-original")?;
 
         let second_id = work.enqueue(3, "same-original", now)?;
@@ -1006,6 +1086,85 @@ mod work_custody_tests {
             Err(DurabilityError::InvalidStoredState)
         ));
         work.validate_incarnation(slot, 3, "same-original", second.incarnation)?;
+        Ok(())
+    }
+
+    #[test]
+    fn completion_and_acknowledgement_are_atomic_for_the_exact_incarnation()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first_id = work.enqueue(3, "same-original", now)?;
+        let (slot, first) = work.promote(first_id, now)?;
+        work.mark_persisted(slot, first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        assert!(matches!(
+            work.acknowledge(slot, 3, "same-original"),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        work.acknowledge(slot, 3, "same-original")?;
+
+        let successor_id = work.enqueue(3, "same-original", now)?;
+        let (_, successor) = work.promote(successor_id, now)?;
+        assert!(matches!(
+            work.finish_run(slot, 3, "same-original", first.incarnation, true),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        assert!(
+            !work.active[0]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .definitive
+        );
+        assert_ne!(first.incarnation, successor.incarnation);
+        Ok(())
+    }
+
+    #[test]
+    fn v1_recovery_requires_the_complete_canonical_envelope() -> Result<(), DurabilityError> {
+        let record = r#"{"record":"same"}"#;
+        let allowed = ["prepare", "commit"];
+        for valid in [
+            serde_json::json!({
+                "m05_operation": "prepare",
+                "record": record,
+                "authorization_deadline": null,
+            })
+            .to_string(),
+            serde_json::json!({
+                "m05_operation": "commit",
+                "record": record,
+                "authorization_deadline": 17,
+            })
+            .to_string(),
+        ] {
+            validate_v1_reconciliation_original(&valid, record, &allowed)?;
+        }
+        for invalid in [
+            serde_json::json!({
+                "m05_operation": "commit",
+                "record": record,
+                "authorization_deadline": null,
+            })
+            .to_string(),
+            serde_json::json!({
+                "m05_operation": "prepare",
+                "record": record,
+                "authorization_deadline": 17,
+            })
+            .to_string(),
+            format!(
+                r#"{{"authorization_deadline":17,"m05_operation":"commit","record":{record:?},"unknown":true}}"#
+            ),
+        ] {
+            assert!(matches!(
+                validate_v1_reconciliation_original(&invalid, record, &allowed),
+                Err(DurabilityError::InvalidStoredState)
+            ));
+        }
         Ok(())
     }
 
@@ -1122,7 +1281,12 @@ mod work_custody_tests {
             work.acknowledge(1, 1, "first"),
             Err(DurabilityError::Unavailable)
         ));
-        work.mark_definitive(1, 1, "first")?;
+        let incarnation = work.active[0]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .incarnation;
+        work.begin_run(1, 1, "first", incarnation)?;
+        work.finish_run(1, 1, "first", incarnation, true)?;
         work.acknowledge(1, 1, "first")?;
         assert_eq!(work.promote(third, now)?.0, 1);
         assert!(matches!(
