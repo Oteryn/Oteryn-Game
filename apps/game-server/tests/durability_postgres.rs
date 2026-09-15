@@ -30,6 +30,10 @@ mod wp3_registered_root_qualification {
 
     const ROOT_LIMIT: usize = 12_582_912;
 
+    pub(super) fn stage_failure(stage: &'static str) -> Box<dyn std::error::Error> {
+        Box::new(std::io::Error::other(stage))
+    }
+
     pub(super) struct TlsFixtureLease(PathBuf);
 
     impl Drop for TlsFixtureLease {
@@ -3558,8 +3562,11 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                     std::path::Path::new(&std::env::var(CHILD_CA)?),
                 )?,
             )
-            .await?;
-            let pool = sqlx::PgPool::connect(&url).await?;
+            .await
+            .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_admission_runtime_connect"))?;
+            let pool = sqlx::PgPool::connect(&url)
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fixture_pool_connect"))?;
             let fresh = runtime.fresh();
             if std::env::var(CHILD_MODE)?.starts_with("produce") {
                 assert!(runtime.recovered_pending().iter().all(Option::is_none));
@@ -3576,13 +3583,22 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 let guard_pass = runtime
                     .enqueue_checkpoint(6, &guard_original)?
                     .establish()
-                    .await?;
-                guard_pass.run(runtime.guards().publish(&publication)).await?;
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_guard_checkpoint"))?;
+                guard_pass
+                    .run(runtime.guards().publish(&publication))
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_first_guard_publish"))?;
                 runtime
                     .acknowledge_checkpoint(&guard_pass)
-                    .await?;
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_guard_ack_finality"))?;
                 let original = encode_operation(request.operation(), 65536)?;
-                let fresh_pass = runtime.enqueue_checkpoint(1, &original)?.establish().await?;
+                let fresh_pass = runtime
+                    .enqueue_checkpoint(1, &original)?
+                    .establish()
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_fresh_checkpoint"))?;
                 assert_eq!(fresh_pass.slot(), 1);
                 let mismatched_request = postgres::fresh::Source::new(now + 1)?.request()?;
                 assert!(matches!(
@@ -3593,7 +3609,9 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                     assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
                     let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err(DurabilityError::InvalidStoredState); };
                     Ok(initial)
-                }).await?;
+                })
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_first_fresh_semantic_sql"))?;
                 let session = initial.current_session;
                 let source = LossSource(ControlLossObservationV1 {
                     source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
@@ -3610,13 +3628,19 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 let mut flow = ControlLossFlowV1::begin(authorization);
                 let request = authority_matrix::checked(flow.take_request())?;
                 let loss_original = encode_fresh_loss(request.operation())?;
-                let loss_pass = runtime.enqueue_checkpoint(2, &loss_original)?.establish().await?;
+                let loss_pass = runtime
+                    .enqueue_checkpoint(2, &loss_original)?
+                    .establish()
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_loss_checkpoint"))?;
                 assert_eq!(loss_pass.slot(), 2);
                 if std::env::var(CHILD_MODE)? == "produce_absent" { std::process::exit(0); }
                 loss_pass.run(async {
                     assert!(matches!(fresh.commit_fresh_loss(&request, &source).await?, ControlLossOutcomeV1::Committed { .. }));
                     Ok(())
-                }).await?;
+                })
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_loss_semantic_sql"))?;
                 // Terminate this actual producer process with unresolved originals;
                 // neither destructors nor an acknowledgement release active slots.
                 std::process::exit(0);
@@ -3629,7 +3653,11 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
             let fresh_pass = runtime.resume_checkpoint(first.slot, first.operation_kind, &first.operation_json)?;
             let loss_pass = runtime.resume_checkpoint(second.slot, second.operation_kind, &second.operation_json)?;
             let original = decode_operation(&first.operation_json, 65536)?;
-            let FreshReconciliation::Committed(current) = fresh_pass.run(fresh.reconcile(&original)).await? else { return Err("restart fresh receipt absent".into()); };
+            let FreshReconciliation::Committed(current) = fresh_pass
+                .run(fresh.reconcile(&original))
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fresh_reconciliation"))?
+            else { return Err("restart fresh receipt absent".into()); };
             let loss = decode_fresh_loss(&second.operation_json, current.receipt.binding().initial_commit().map_err(|_| "invalid initial receipt")?)?;
             if std::env::var(CHILD_MODE)? == "recover_absent" {
                 assert_eq!(loss_pass.run(fresh.reconcile_fresh_loss(&loss)).await?, FreshLossReconciliation::Absent);
@@ -3682,8 +3710,14 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 &url,
                 "restart",
             )
-            .await?;
-            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            .await
+            .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=restart_tls_fixture_activation"))?;
+            MigrationExecutor::connect_migration(&url)
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=restart_migration_connect"))?
+                .apply_embedded_ledger()
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=restart_schema_apply"))?;
             let pool = sqlx::PgPool::connect(&url).await?;
             let run = |mode: &str| -> Result<(), Box<dyn std::error::Error>> {
                 let status = std::process::Command::new(std::env::current_exe()?).args(["--exact", TEST, "--nocapture"])
@@ -3734,11 +3768,26 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     &url,
                     "shared-runtime",
                 )
-                .await?;
+                .await
+                .map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=shared_tls_fixture_activation",
+                    )
+                })?;
                 MigrationExecutor::connect_migration(&url)
-                    .await?
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_migration_connect",
+                        )
+                    })?
                     .apply_embedded_ledger()
-                    .await?;
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_schema_apply",
+                        )
+                    })?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let guard_original =
                     durability::admission_authority_guards::encode_load_operation(&[], 65536)?;
@@ -3748,13 +3797,44 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     fresh_request.operation(),
                     65536,
                 )?;
-                let (predecessor, _) = DurabilityCustody::acquire(&pool).await?;
-                predecessor.checkpoint(&pool, 1, 5, &guard_original).await?;
-                predecessor.checkpoint(&pool, 2, 1, &fresh_original).await?;
+                let (predecessor, _) = DurabilityCustody::acquire(&pool).await.map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=shared_predecessor_custody_acquire",
+                    )
+                })?;
+                predecessor
+                    .checkpoint(&pool, 1, 5, &guard_original)
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_guard_checkpoint_seed",
+                        )
+                    })?;
+                predecessor
+                    .checkpoint(&pool, 2, 1, &fresh_original)
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_fresh_checkpoint_seed",
+                        )
+                    })?;
                 let production_config =
                     wp3_registered_root_qualification::production_config(&url, &ca_cert)?;
-                let runtime = AdmissionRuntime::connect(production_config.clone()).await?;
-                let repeated = AdmissionRuntime::connect(production_config).await?;
+                let runtime = AdmissionRuntime::connect(production_config.clone())
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_admission_runtime_connect",
+                        )
+                    })?;
+                let repeated =
+                    AdmissionRuntime::connect(production_config)
+                        .await
+                        .map_err(|_| {
+                            wp3_registered_root_qualification::stage_failure(
+                                "WP3_STAGE=shared_repeated_identity_connect",
+                            )
+                        })?;
                 let generation: String = sqlx::query_scalar(
                     "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
                 )
@@ -3796,12 +3876,23 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     &second_pending.operation_json,
                 )?;
                 let guards = runtime.guards();
-                assert!(first_pass.run(guards.load(&[])).await?.is_empty());
+                assert!(
+                    first_pass
+                        .run(guards.load(&[]))
+                        .await
+                        .map_err(|_| wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_first_guard_load"
+                        ))?
+                        .is_empty()
+                );
                 let fresh = repeated.fresh();
                 assert!(matches!(
                     second_pass
                         .run(fresh.reconcile(fresh_request.operation()))
-                        .await?,
+                        .await
+                        .map_err(|_| wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_first_fresh_reconciliation"
+                        ))?,
                     durability::fresh_admission::FreshReconciliation::Absent
                 ));
                 let record = authority_matrix::prepared_record(authority_matrix::Seed::fixed())?;

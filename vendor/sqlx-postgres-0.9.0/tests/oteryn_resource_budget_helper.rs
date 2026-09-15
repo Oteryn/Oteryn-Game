@@ -409,6 +409,20 @@ fn main() -> Result<(), Box<dyn Error>> {
                         && denial_snapshot.root == transport_profile_bytes
                         && denial_snapshot.provider_shared == 0
                         && !denial_snapshot.denied_tls_phase => {}
+                sqlx::Error::Io(_)
+                    if tls_phase
+                        && source_chain_has_io_kind(
+                            &error,
+                            std::io::ErrorKind::OutOfMemory,
+                        )
+                        && denial_snapshot.denial_count == 1
+                        && denial_snapshot.denied_bytes == 56
+                        && denial_snapshot.denied_ordinary == denial_snapshot.ordinary
+                        && denial_snapshot.denied_root == denial_snapshot.root
+                        && denial_snapshot.provider_shared != 0
+                        && denial_snapshot.denied_tls_phase
+                        && denial_snapshot.peak_ordinary <= SLOT_LIMIT
+                        && denial_snapshot.peak_root <= ROOT_LIMIT => {}
                 sqlx::Error::Tls(source) if tls_phase => {
                     let Some(cause) = source.downcast_ref::<BudgetError>() else {
                         return Err(format!(
