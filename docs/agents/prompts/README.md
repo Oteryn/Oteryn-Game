@@ -132,6 +132,19 @@ Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A
 - `OTV2_IMPL_GAME_CHANNEL.md` — `Oteryn: impl channel` (later multichannel product lane; not a first bootstrap dependency).
 - `OTV2_IMPL_ANALYTICS.md` — `Oteryn: impl analytics` (later; requires concrete producer event families).
 
+## Defect Discovery
+
+The Defect Discovery prompt family extends the existing QA architecture without creating a second E2E platform or control plane.
+
+- `OTV2_DEFECT_DISCOVERY_SUPERVISOR.md` — read-only technical supervisor. **`Oteryn: defect discovery supervisor`.**
+- `OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md` — first P0-P3 proof-package implementation lead; writes require a current merged exact allocation. **`Oteryn: defect discovery p0-p3`.**
+- `OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER.md` — bounded optional-tool PoC/qualification role after protected P0-P3. **`Oteryn: defect discovery tools`.**
+- `OTV2_DEFECT_DISCOVERY_MODULE_LEAD.md` — parameterized one-module implementation role after protected core proof. **`Oteryn: defect discovery <module>`.**
+
+Initial module values are `simulation`, `protocol`, `ability`, `interaction`, `ai`, `foundation`, `durability`, `postgres`, `content`, and `client`.
+
+Alias resolution grants no write authority. The launch order and manual-execution contract horizon are defined by `../programs/OTERYN_DEFECT_DISCOVERY_OPERATOR_RUNBOOK.md`. Heavy randomized/deep/soak campaigns are not ordinary required PR gates unless a later reviewed change explicitly promotes a deterministic regression.
+
 ## Historical one-shot prompts — do not dispatch
 
 The following files are retained only for provenance. Their lifecycle entries are `retired`; future work must resolve the current coordinator, DAG and live allocation instead of invoking these aliases:
