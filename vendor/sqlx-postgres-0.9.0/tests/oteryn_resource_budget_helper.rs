@@ -235,7 +235,7 @@ fn selected_options(
         database,
         username,
         password,
-        root_ca_pem,
+        &root_ca_pem,
         owner,
     )?)
 }
