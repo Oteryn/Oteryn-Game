@@ -3542,7 +3542,14 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
-    let _tls_fixture_lease = wp3_registered_root_qualification::acquire_tls_fixture_lease()?;
+    // The outer test owns the service-wide fixture while its restart children
+    // consume that exact identity; children must not reacquire their parent's
+    // cross-process lease.
+    let _tls_fixture_lease = if std::env::var_os(CHILD_URL).is_none() {
+        Some(wp3_registered_root_qualification::acquire_tls_fixture_lease()?)
+    } else {
+        None
+    };
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         if let Ok(url) = std::env::var(CHILD_URL) {
             let runtime = AdmissionRuntime::connect(
