@@ -99,7 +99,7 @@ accepted_decisions:
       audit_mode: FINAL_CANDIDATE_REVIEW
       frozen_root_cause_inventory:
         inventory_generation: <positive integer>
-        evidence_locator: <editable GitHub evidence-note ref>
+        evidence_locator: <generation-specific GitHub evidence-note ref>
         sweep_target:
           repository: Oteryn/Oteryn-Game
           issue: <governing issue>
@@ -116,7 +116,7 @@ accepted_decisions:
       qualified_head: <exact qualified candidate sha>
 ```
 
-Before dispatch, the control plane must require the descriptor's `sweep_target` to exact-match the corresponding immutable fields of the Phase 1 `closure_head` record and require `audit_main_sha == base_main_sha`. The final reviewer must retrieve the active inventory through `evidence_locator`, canonicalize the complete inventory envelope using the declared serialization, recompute the digest, and require an exact match with `content_identity`. The reviewer must also require the envelope's `inventory_generation` and `sweep_target` to exact-match the descriptor and the Phase 1 closure generation. A missing identity, unavailable content, unsupported serialization, digest mismatch, inventory-generation mismatch or sweep-target mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed, cross-lane, cross-task or wrong-generation inventory content.
+Before dispatch, the control plane must require the descriptor's `sweep_target` to exact-match the corresponding immutable fields of the Phase 1 `closure_head` record and require `audit_main_sha == base_main_sha`. The final reviewer must retrieve the active inventory through its generation-specific `evidence_locator`, canonicalize the complete inventory envelope using the declared serialization, recompute the digest, and require an exact match with `content_identity`. The reviewer must also require the envelope's `inventory_generation` and `sweep_target` to exact-match the descriptor and the Phase 1 closure generation. A missing identity, unavailable content, unsupported serialization, digest mismatch, inventory-generation mismatch or sweep-target mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed, cross-lane, cross-task or wrong-generation inventory content.
 
 Independently of the inventory checks, the control plane immediately before dispatch and the reviewer immediately before review must resolve the live PR/branch target and require its exact current head to equal `qualified_head`. A live-target mismatch returns a fail-closed `STALE_QUALIFIED_HEAD` (or repository-defined equivalent) disposition. Never review a newer live head under qualification evidence for an older candidate.
 
@@ -202,22 +202,24 @@ The sweep ends with one frozen initial `FINAL_ROOT_CAUSE_INVENTORY` and no sourc
     "tree_sha": "<Phase 1 tree_sha>"
   },
   "reconciliation_refs": [],
-  "inventory": "<complete FINAL_ROOT_CAUSE_INVENTORY structured value>"
+  "inventory": {
+    "...": "<complete FINAL_ROOT_CAUSE_INVENTORY structured value>"
+  }
 }
 ```
 
-The `inventory` value above denotes the complete structured inventory value, not a string serialization. Serialize this entire envelope as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The `sweep_target` fields must exact-match the Phase 1 closure record, and `audit_main_sha` must exact-match `base_main_sha`, before the identity is accepted. The resulting immutable `content_identity` therefore proves the exact inventory and exact sweep generation. The auditor's normal editable GitHub evidence note remains only an `evidence_locator` and must never be treated as inventory or generation identity by itself.
+The `inventory` member above is a structured JSON value, not a string serialization; the placeholder object only illustrates that requirement and does not prescribe a different root-cause schema. Serialize this entire envelope as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The `sweep_target` fields must exact-match the Phase 1 closure record, and `audit_main_sha` must exact-match `base_main_sha`, before the identity is accepted. The resulting immutable `content_identity` therefore proves the exact inventory and exact sweep generation. The auditor's normal GitHub evidence note remains only a locator; the digest and generation binding define inventory identity.
 
 ## Phase 3 — freeze inventory, reconcile evidence, and prepare authority once
 
 The active control plane consumes the sweep and freezes the material root-cause set before repair.
 
-The freeze record must carry the immutable sweep target, active inventory generation, editable evidence locator and immutable content identity:
+The freeze record must carry the immutable sweep target, active inventory generation, generation-specific evidence locator and immutable content identity:
 
 ```yaml
 final_root_cause_inventory:
   inventory_generation: <positive integer>
-  evidence_locator: <editable GitHub evidence-note ref>
+  evidence_locator: <generation-specific GitHub evidence-note ref>
   sweep_target:
     repository: Oteryn/Oteryn-Game
     issue: <governing issue>
@@ -233,7 +235,9 @@ final_root_cause_inventory:
     sha256: <lowercase hex digest of the canonical serialized inventory envelope>
 ```
 
-Immediately before any repair dispatch, retrieve the active inventory through the locator, canonicalize the complete envelope using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Independently exact-match the envelope's `inventory_generation` and `sweep_target` against the freeze record and the Phase 1 `closure_head` record, including `base_main_sha`, and require `audit_main_sha == base_main_sha`. Missing/unavailable identity material, an unsupported serialization, digest mismatch/drift, inventory-generation mismatch or target-generation mismatch fails closed and returns the inventory for reconciliation; valid inventory from another repository, task, PR, branch, protected-main generation or closure generation cannot silently qualify for this repair generation.
+Immediately before any evidence reconciliation that interprets governing contracts, and again immediately before any mutating repair dispatch, independently resolve current protected `main` as `live_main_sha`. If `live_main_sha != base_main_sha`, inspect the exact protected-main delta relevant to current accepted contracts/policy before proceeding. Material current-gate movement returns fail-closed `STALE_SWEEP_BASE`; do not mutate, and freeze a new Phase 1 closure generation plus discovery sweep. Proven immaterial movement may continue only with exact external drift evidence explaining why the frozen current-gate requirements remain unchanged. Do not mutate the frozen inventory merely to record an immaterial main movement; if the movement changes any preserved finding field, use the successor mechanism below.
+
+Immediately before any repair dispatch, retrieve the active inventory through its generation-specific locator, canonicalize the complete envelope using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Independently exact-match the envelope's `inventory_generation` and `sweep_target` against the freeze record and the Phase 1 `closure_head` record, including `base_main_sha`, and require `audit_main_sha == base_main_sha`. Missing/unavailable identity material, an unsupported serialization, digest mismatch/drift, inventory-generation mismatch or target-generation mismatch fails closed and returns the inventory for reconciliation; valid inventory from another repository, task, PR, branch, protected-main generation or closure generation cannot silently qualify for this repair generation.
 
 Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its evidence classification:
 
@@ -252,11 +256,18 @@ The successor must:
 3. set `predecessor_content_identity` to the predecessor's exact SHA-256 identity;
 4. set `transition_reason: EVIDENCE_RECONCILIATION`;
 5. list exact immutable `reconciliation_refs` proving every changed finding field;
-6. preserve every unaffected root cause byte-for-byte at the structured-value level;
+6. preserve every unaffected root cause unchanged at the structured-value level;
 7. add no newly discovered root cause under the guise of reconciliation — a genuinely new material root cause follows the Phase 6 novelty rules;
-8. be canonicalized and hashed as a new complete RFC 8785 envelope before it can become active.
+8. be canonicalized and hashed as a new complete RFC 8785 envelope before it can become active;
+9. be persisted at a **new generation-specific `evidence_locator`**. Never edit, overwrite or repurpose the predecessor generation's locator to store successor content.
 
-Create successors per **coherent reconciliation generation**, not one successor per individual finding. The predecessor remains immutable audit evidence and is never overwritten. After the successor is frozen, atomically advance the control-plane pointer `active_inventory_generation` to the successor identity; all later repair dispatch, qualification reconciliation and final review must bind to that exact active generation/digest. A partially written successor or ambiguous active-generation pointer fails closed.
+Create successors per **coherent reconciliation generation**, not one successor per individual finding. The predecessor envelope, digest and locator remain preserved audit evidence. After the successor is fully persisted and its identity verified, atomically advance the control-plane active-inventory pointer as one tuple:
+
+```text
+(inventory_generation, evidence_locator, content_identity)
+```
+
+All later repair dispatch, qualification reconciliation and final review must bind to that exact active tuple. A partially written successor, reused predecessor locator, digest mismatch or ambiguous active-generation pointer fails closed.
 
 If unresolved `EVIDENCE_RECONCILIATION_REQUIRED` items remain, they stay outside mutating repair scope. A material blocker that remains unresolved at final qualification prevents closure; it cannot be silently dropped from the active inventory.
 
@@ -349,7 +360,7 @@ closure_generation:
   tree_sha: <Phase 1 tree sha or null>
 final_root_cause_inventory:
   active_inventory_generation: <positive integer or null>
-  evidence_locator: <editable evidence ref or null>
+  evidence_locator: <active generation-specific evidence ref or null>
   sweep_target:
     repository: <repo or null>
     issue: <issue or null>
