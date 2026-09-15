@@ -608,15 +608,13 @@ impl SemanticPass {
         // unrelated successful future that reuses the same pass handle.
         let mut run_identity = self.identity.clone();
         run_identity.terminal = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let result = match tokio::time::timeout_at(
-            self.identity.deadline,
-            ACTIVE_SEMANTIC_PASS.scope(run_identity.clone(), body),
-        )
-        .await
-        {
-            Ok(result) => result,
-            Err(_) => Err(DurabilityError::Unavailable),
-        };
+        // Once semantic work has been issued, retain custody of its future
+        // until the PostgreSQL timeout/finality path reaches a real outcome.
+        // Dropping this future at the client deadline could abandon rollback,
+        // pool return, or dead-connection eviction while fabricating terminal
+        // unavailability. The unchanged absolute deadline is enforced by the
+        // transaction-local PostgreSQL timeout settings installed by `begin`.
+        let result = ACTIVE_SEMANTIC_PASS.scope(run_identity.clone(), body).await;
         // Only Game-owned storage finalization can set this run-local token.
         // Outer `Ok` alone is deliberately not terminal authority.
         self.identity.backend.finish_run(
@@ -1705,8 +1703,8 @@ mod work_custody_tests {
     }
 
     #[test]
-    fn semantic_body_cannot_outlive_the_absolute_deadline() -> Result<(), Box<dyn std::error::Error>>
-    {
+    fn cancelling_semantic_body_releases_in_flight_without_becoming_definitive()
+    -> Result<(), Box<dyn std::error::Error>> {
         tokio::runtime::Builder::new_current_thread()
             .enable_time()
             .build()?
@@ -1740,10 +1738,24 @@ mod work_custody_tests {
                     .mark_persisted(slot, operation.incarnation)?;
                 let pass = backend.resume_pass(slot, 1, "deadline")?;
 
-                let result = pass
-                    .run(std::future::pending::<Result<(), DurabilityError>>())
-                    .await;
-                assert!(matches!(result, Err(DurabilityError::Unavailable)));
+                let task = tokio::spawn(async move {
+                    pass.run(std::future::pending::<Result<(), DurabilityError>>())
+                        .await
+                });
+                tokio::task::yield_now().await;
+                assert_eq!(
+                    backend
+                        .work
+                        .lock()
+                        .map_err(|_| DurabilityError::Unavailable)?
+                        .active[0]
+                        .as_ref()
+                        .ok_or(DurabilityError::InvalidStoredState)?
+                        .in_flight,
+                    1
+                );
+                task.abort();
+                assert!(task.await.is_err());
                 let work = backend
                     .work
                     .lock()
@@ -1870,12 +1882,53 @@ mod work_custody_tests {
             .enable_time()
             .build()?
             .block_on(async {
-                let completed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-                let body_completed = completed.clone();
-                tokio::time::sleep(Duration::from_millis(1)).await;
-                body_completed.store(true, std::sync::atomic::Ordering::SeqCst);
-                assert!(completed.load(std::sync::atomic::Ordering::SeqCst));
-            });
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .connect_lazy("postgres://localhost/test")
+                    .map_err(DurabilityError::from)?;
+                let backend = std::sync::Arc::new(RuntimeBackend {
+                    pool,
+                    custody: BackendCustody::LegacyFixture,
+                    pending: std::sync::Mutex::new([None, None]),
+                    work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                    root_ready_demand: RootReadyDemand::new(),
+                    root_maintenance: tokio::sync::Mutex::new(()),
+                });
+                let now = std::time::Instant::now();
+                let id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(1, "completed-after-deadline", now)?;
+                let (slot, operation) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote_with_deadline(id, now, tokio::time::Instant::now())?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(slot, operation.incarnation)?;
+                let pass = backend.resume_pass(slot, 1, "completed-after-deadline")?;
+
+                let result = pass
+                    .run(async {
+                        mark_current_semantic_terminal()?;
+                        Ok::<_, DurabilityError>("definitive")
+                    })
+                    .await?;
+                assert_eq!(result, "definitive");
+                let work = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                let active = work.active[0]
+                    .as_ref()
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                assert_eq!(active.in_flight, 0);
+                assert!(active.definitive);
+                Ok::<(), DurabilityError>(())
+            })?;
         Ok(())
     }
 
