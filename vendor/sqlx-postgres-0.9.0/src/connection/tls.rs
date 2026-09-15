@@ -192,6 +192,65 @@ mod oteryn_root_startup_options_tests {
             Err(Error::Configuration(_))
         ));
     }
+
+    #[test]
+    fn ordinary_options_builder_cannot_forge_precharged_startup_options() {
+        let options = PgConnectOptions::new_oteryn_root_profile(
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            5432,
+            "localhost",
+            "oteryn",
+            "oteryn_runtime",
+            "fixture-password",
+            b"-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n",
+            Arc::new(UnlimitedBudget),
+        )
+        .expect("root profile")
+        .into_connect_options()
+        .options([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+
+        assert!(matches!(
+            validate_oteryn_root_profile(&options),
+            Err(Error::Configuration(_))
+        ));
+    }
+
+    #[test]
+    fn ordinary_options_clone_cannot_copy_precharge_proof() {
+        let options = root_profile([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+        let cloned = options.clone();
+
+        assert!(validate_oteryn_root_profile(&options).is_ok());
+        assert!(matches!(
+            validate_oteryn_root_profile(&cloned),
+            Err(Error::Configuration(_))
+        ));
+    }
+
+    #[test]
+    fn ordinary_options_builder_invalidates_an_existing_precharge_proof() {
+        let options = root_profile([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+        let original = options.get_options().unwrap().to_owned();
+        let mutated = options.options(std::iter::empty::<(&str, &str)>());
+
+        assert_eq!(mutated.get_options(), Some(original.as_str()));
+        assert!(matches!(
+            validate_oteryn_root_profile(&mutated),
+            Err(Error::Configuration(_))
+        ));
+    }
 }
 
 async fn maybe_upgrade_owned<S: Socket>(

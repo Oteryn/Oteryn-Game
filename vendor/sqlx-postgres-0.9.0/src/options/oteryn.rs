@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use sqlx_core::net::resource_budget::{BudgetError, ResourceBudget};
 
-use super::{PgConnectOptions, PgResourceBudget, PgSslMode};
+use super::{
+    OterynRootStartupOptionsState, PgConnectOptions, PgResourceBudget, PgSslMode,
+};
 use crate::connection::LogSettings;
 use crate::net::tls::CertificateInput;
 
@@ -31,6 +33,12 @@ impl OterynRootProfile {
             })
         }
 
+        let sanctioned = options.as_slice()
+            == [
+                ("transaction_timeout", "2000ms"),
+                ("statement_timeout", "2000ms"),
+                ("lock_timeout", "2000ms"),
+            ];
         let encoded_len = options.iter().enumerate().try_fold(0usize, |len, (index, (key, value))| {
             len.checked_add(usize::from(index != 0))
                 .and_then(|n| n.checked_add(3))
@@ -56,6 +64,11 @@ impl OterynRootProfile {
             encoded_len,
             std::sync::atomic::Ordering::AcqRel,
         );
+        self.inner.oteryn_root_startup_options = if sanctioned {
+            OterynRootStartupOptionsState::Precharged
+        } else {
+            OterynRootStartupOptionsState::Absent
+        };
         Ok(self)
     }
 
@@ -187,6 +200,7 @@ impl PgConnectOptions {
             resource_budget: Some(PgResourceBudget(profile_budget.clone())),
             oteryn_root_profile: true,
             oteryn_tls_server_name: Some(copy_with_capacity(tls_server_name)),
+            oteryn_root_startup_options: OterynRootStartupOptionsState::Absent,
             },
             budget: profile_budget,
         })
@@ -198,6 +212,10 @@ impl PgConnectOptions {
 
     pub(crate) fn has_oteryn_root_startup_options(&self) -> bool {
         self.options.as_deref() == Some(OTERYN_ROOT_STARTUP_OPTIONS)
+            && matches!(
+                &self.oteryn_root_startup_options,
+                OterynRootStartupOptionsState::Precharged
+            )
     }
 
     pub(crate) fn tls_server_name(&self) -> &str {

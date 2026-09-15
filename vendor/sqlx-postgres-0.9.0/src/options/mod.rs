@@ -17,6 +17,21 @@ mod parse;
 mod pgpass;
 mod ssl_mode;
 
+#[derive(Debug)]
+pub(crate) enum OterynRootStartupOptionsState {
+    Absent,
+    Precharged,
+}
+
+// A generic `PgConnectOptions` clone duplicates the retained options string
+// without going through the Oteryn precharge path.  It must therefore lose the
+// private proof even though all ordinary option values remain cloneable.
+impl Clone for OterynRootStartupOptionsState {
+    fn clone(&self) -> Self {
+        Self::Absent
+    }
+}
+
 #[derive(Clone)]
 pub(crate) struct PgResourceBudget(Arc<dyn ResourceBudget>);
 
@@ -53,6 +68,7 @@ pub struct PgConnectOptions {
     pub(crate) resource_budget: Option<PgResourceBudget>,
     pub(crate) oteryn_root_profile: bool,
     pub(crate) oteryn_tls_server_name: Option<String>,
+    pub(crate) oteryn_root_startup_options: OterynRootStartupOptionsState,
 }
 
 impl Default for PgConnectOptions {
@@ -123,6 +139,7 @@ impl PgConnectOptions {
             resource_budget: None,
             oteryn_root_profile: false,
             oteryn_tls_server_name: None,
+            oteryn_root_startup_options: OterynRootStartupOptionsState::Absent,
         }
     }
 
@@ -481,6 +498,9 @@ impl PgConnectOptions {
         V: Display,
         I: IntoIterator<Item = (K, V)>,
     {
+        // Only `OterynRootProfile::options` can install the private proof that
+        // the retained canonical bytes were reserved before allocation.
+        self.oteryn_root_startup_options = OterynRootStartupOptionsState::Absent;
         // Do this in here so `options_str` is only set if we have an option to insert
         let options_str = self.options.get_or_insert_with(String::new);
         for (k, v) in options {

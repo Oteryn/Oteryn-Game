@@ -708,6 +708,11 @@ fixed at `2000ms`.  Missing, reordered, additional, or mutated startup options
 remain configuration errors.  The selected PostgreSQL qualification helper now
 installs that same fixed profile before constructing its lazy holder, so its
 configured positive and denial runs exercise the production validator path.
+Acceptance also requires a private precharge proof installed only after the
+Oteryn wrapper has reserved and built that exact retained string.  The ordinary
+`PgConnectOptions::options` builder clears the proof before mutation, and an
+ordinary options clone cannot copy it, so matching public-builder bytes cannot
+forge sanctioned root-profile provenance.
 
 ## Selected configured E02/M03 qualification correction (2026-09-14)
 
