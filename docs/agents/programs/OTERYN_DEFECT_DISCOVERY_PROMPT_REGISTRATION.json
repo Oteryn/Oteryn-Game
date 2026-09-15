@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "programme": "OTERYN_DEFECT_DISCOVERY_V1",
+  "target_registry": "docs/agents/PROMPT_LIFECYCLE.json",
+  "status": "PENDING_CANONICAL_REGISTRATION",
+  "prompts": [
+    {
+      "prompt_id": "OTV2_DEFECT_DISCOVERY_SUPERVISOR",
+      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_SUPERVISOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "defect-discovery-programme",
+      "scope": "Read-only technical supervision and exact next-allocation proposal for OTERYN_DEFECT_DISCOVERY_V1; no second control plane or implementation authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in the lifecycle registry may supersede this prompt."
+    },
+    {
+      "prompt_id": "OTV2_DEFECT_DISCOVERY_P0_P3_LEAD",
+      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "First Defect Discovery proof-package implementation lead for P0-P3; writes require a current merged exact allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in the lifecycle registry may supersede this prompt."
+    },
+    {
+      "prompt_id": "OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER",
+      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "defect-discovery-programme",
+      "scope": "Bounded Oteryn-specific qualification of optional Defect Discovery tooling after protected P0-P3 proof; no broad adoption without exact allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in the lifecycle registry may supersede this prompt."
+    },
+    {
+      "prompt_id": "OTV2_DEFECT_DISCOVERY_MODULE_LEAD",
+      "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_MODULE_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "Parameterized Defect Discovery implementation lead for one exact allocated product module after the protected core proof.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in the lifecycle registry may supersede this prompt."
+    }
+  ],
+  "aliases": {
+    "Oteryn: defect discovery supervisor": "OTV2_DEFECT_DISCOVERY_SUPERVISOR",
+    "Oteryn: defect discovery p0-p3": "OTV2_DEFECT_DISCOVERY_P0_P3_LEAD",
+    "Oteryn: defect discovery tools": "OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER",
+    "Oteryn: defect discovery <module>": "OTV2_DEFECT_DISCOVERY_MODULE_LEAD"
+  }
+}
