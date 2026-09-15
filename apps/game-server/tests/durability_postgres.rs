@@ -20,6 +20,7 @@ mod postgres;
 /// result is inspectable from a downstream crate although `pool::connection`
 /// remains private and no new re-export exists.
 mod wp3_registered_root_qualification {
+    use std::fs::OpenOptions;
     use std::net::IpAddr;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Output};
@@ -28,6 +29,32 @@ mod wp3_registered_root_qualification {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     const ROOT_LIMIT: usize = 12_582_912;
+
+    pub(super) struct TlsFixtureLease(PathBuf);
+
+    impl Drop for TlsFixtureLease {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    pub(super) fn acquire_tls_fixture_lease() -> Result<TlsFixtureLease, Box<dyn std::error::Error>>
+    {
+        let path = std::env::temp_dir().join("oteryn-wp3-postgres-tls-fixture.lock");
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(300);
+        loop {
+            match OpenOptions::new().write(true).create_new(true).open(&path) {
+                Ok(_) => return Ok(TlsFixtureLease(path)),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    if std::time::Instant::now() >= deadline {
+                        return Err("timed out waiting for the PostgreSQL TLS fixture lease".into());
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(25));
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
+    }
 
     #[derive(Debug)]
     pub(super) struct RootBudget(pub(super) AtomicUsize);
@@ -3515,6 +3542,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
+    let _tls_fixture_lease = wp3_registered_root_qualification::acquire_tls_fixture_lease()?;
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
         if let Ok(url) = std::env::var(CHILD_URL) {
             let runtime = AdmissionRuntime::connect(
@@ -3687,6 +3715,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
+    let _tls_fixture_lease = wp3_registered_root_qualification::acquire_tls_fixture_lease()?;
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?

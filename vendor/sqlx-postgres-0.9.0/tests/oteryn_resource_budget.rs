@@ -47,6 +47,7 @@ fn owner_aware_aws_lc_tls_positive_and_denial_qualification() -> Result<(), Box<
         }
         Err(error) => return Err(error.into()),
     };
+    let _tls_fixture_lease = super::wp3_registered_root_qualification::acquire_tls_fixture_lease()?;
 
     let root = repository_root()?;
     let helper = prepare_helper(&root)?;

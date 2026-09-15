@@ -274,7 +274,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             });
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
             let options = selected_options(&admin_url, ca_path, owner.clone())?;
-            let pool = selected_holder_pool(options);
+            let pool = runtime.block_on(async { selected_holder_pool(options) });
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err(
                     "lazy empty holder unexpectedly produced a ready-only transaction".into(),
@@ -355,17 +355,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
             let ledger = Arc::new(Ledger::new(ordinary_limit, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let pool = if selected {
-                selected_holder_pool(selected_options(&admin_url, ca_path, owner.clone())?)
-            } else {
-                PgPoolOptions::new()
-                    .max_connections(1)
-                    .min_connections(0)
-                    .acquire_timeout(ROOT_CONNECT_TIMEOUT)
-                    .idle_timeout(HOLDER_IDLE_TIMEOUT)
-                    .max_lifetime(HOLDER_MAX_LIFETIME)
-                    .connect_lazy_with(ordinary_options(&admin_url, ca_path)?)
-            };
+            let pool = runtime.block_on(async {
+                Ok::<_, Box<dyn Error>>(if selected {
+                    selected_holder_pool(selected_options(&admin_url, ca_path, owner.clone())?)
+                } else {
+                    PgPoolOptions::new()
+                        .max_connections(1)
+                        .min_connections(0)
+                        .acquire_timeout(ROOT_CONNECT_TIMEOUT)
+                        .idle_timeout(HOLDER_IDLE_TIMEOUT)
+                        .max_lifetime(HOLDER_MAX_LIFETIME)
+                        .connect_lazy_with(ordinary_options(&admin_url, ca_path)?)
+                })
+            })?;
 
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err(
