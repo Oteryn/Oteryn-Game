@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T13:50:00Z
+updated_at: 2026-09-15T14:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
@@ -57,15 +57,18 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 - [x] Add one routed closure convergence protocol with explicit activation, one-shot sweep, finding classification, root-cause collapse, frozen inventory, coherent repair generation, final qualification/review and anti-drip novelty triggers.
 - [x] Bind discovery sweeps to the exact frozen closure head and exact protected-`main` generation; mixed-generation sweep evidence fails closed.
 - [x] Re-resolve protected `main` before contract-sensitive evidence reconciliation and immediately before mutating repair dispatch; material movement invalidates the sweep base before mutation.
+- [x] Exact-match the live PR/branch head to `sweep_target.closure_head` immediately before the first mutating worker of a new repair generation; stale repair bases fail closed before mutation.
 - [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled.
 - [x] Preserve every frozen root-cause inventory as immutable; evidence reconciliation creates one hashed successor inventory per coherent reconciliation generation.
 - [x] Admit a genuinely new late current-gate root cause only through a hashed `LATE_BLOCKER_ADMISSION` successor; material protected-main movement instead requires a fresh Phase 1 + discovery sweep.
-- [x] Make any late-blocker successor invalidate prior integration-readiness qualification/review and require fresh repair, exact-head qualification and final review against the new active inventory generation.
+- [x] Permit late-blocker admission for qualifying discoveries during evidence reconciliation or an active repair generation; in-repair admission pauses at an exact head and resumes only with unchanged head/custody/generation identity.
+- [x] Make any late-blocker successor invalidate prior integration-readiness qualification/review and require fresh exact-head qualification and final review against the new active inventory generation.
 - [x] Give every inventory generation its own evidence locator; never overwrite or repurpose the predecessor locator for successor content.
 - [x] Represent the hashed `inventory` envelope member as a structured JSON value rather than a string placeholder, matching the RFC 8785 canonicalization contract.
 - [x] Bind each active inventory generation to RFC 8785 + SHA-256 identity including repository/Issue/task/PR/branch, protected-main/audit-main generation, Phase-1 closure head/tree, inventory generation and predecessor identity.
 - [x] Bind the active-inventory pointer as `(inventory_generation, evidence_locator, content_identity)` and fail closed on ambiguous/partial transition.
 - [x] Require final-candidate review to exact-match the live target to `qualified_head` and independently reconcile protected-`main` movement since the sweep.
+- [x] Map convergence stale/drift conditions to subordinate reason codes while preserving the independent auditor's registered overall-disposition vocabulary; stale/drift review evidence uses `INSUFFICIENT_EVIDENCE` plus the exact convergence reason.
 - [x] Preserve `MATERIAL_BLOCKER` when recording `FINAL_SWEEP_MISS`, and route a genuinely new missed root cause through late-blocker admission rather than mutating the frozen inventory.
 - [x] Add publication-safety fail-closed behavior for unavailable normal Git publication; no direct low-level Git-object fallback on canonical material branches.
 - [x] Keep coordinator packet compatibility by routing convergence data inside existing `accepted_decisions` rather than new top-level keys.
@@ -143,21 +146,38 @@ While exact-head qualification of the post-self-review candidate was starting, C
 - the successor must use a new locator, increment generation, link predecessor digest and preserve the sweep target;
 - activating a late-blocker successor makes prior qualification/review historical and forces return through authority checks, coherent repair, fresh exact-head qualification and fresh final review.
 
-This canonical task-record commit is part of the same coherent late-blocker review-repair generation.
+### Independent review generation 8 / repair-base, in-repair admission and auditor-disposition repair
+
+On exact head `142745b65ab35cf85eec50ccb58bf8eca8d030aa`, Codex reported three P1 findings:
+
+1. `4016314724` — repair dispatch did not exact-match the live starting head to the swept `closure_head`.
+2. `4016370922` — `LATE_BLOCKER_ADMISSION` was not available for a repair-caused dependency discovered during Phase 4.
+3. `4016370939` — convergence stale codes such as `STALE_SWEEP_BASE` were not values in the independent auditor's closed overall-disposition vocabulary.
+
+`ACCEPTED_AND_REPAIRED` together in `f153c3cd9a59a8b2c8503c53cfe948d8183d8195`:
+
+- control plane and writer now exact-match the live repair start to `sweep_target.closure_head` before the first mutation of a new repair generation;
+- late-blocker admission now applies to qualifying discoveries during Phase 3 evidence reconciliation and Phase 4 repair as well as Phase 5/6;
+- a late root proven after repair mutation starts pauses at exact `paused_repair_head`, returns custody, activates the immutable successor, and may resume only with exact unchanged head/custody/repair-generation identity; otherwise it refreezes/resweeps;
+- convergence stale/drift values are subordinate `convergence_reason_code` values and the registered auditor uses overall `INSUFFICIENT_EVIDENCE` when stale/drift evidence prevents a reliable verdict.
+
+All three generation-8 review threads were answered with exact repair evidence and resolved before this task-record update.
+
+This canonical task-record commit is part of the same coherent generation-8 review-repair closure.
 
 ## Validation
 
 ### Focused
 
 - changed-file inventory vs `main`: PASS — only task-owned documentation/prompt/task/lifecycle paths.
-- prompt semantic self-review: PASS after late-blocker repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
+- prompt semantic self-review: PASS after generation-8 repair — repair-base binding, in-repair successor admission and auditor disposition mapping are now mutually consistent; no authority expansion, review weakening, Merge Queue semantic change or product/runtime mutation.
 - META 3.1 prompting-standard reconciliation: PASS — one routed shared protocol with prompt-specific deltas; no full global procedure copied into every prompt.
 - lifecycle integrity self-review: PASS — intentionally revised prompt versions and embedded metadata are consistent.
 - #356 isolation: PASS — no #356 material path is in this task's changed-file set.
 
 ### Component/integration
 
-- all qualification evidence on earlier heads is historical after this late-blocker repair.
+- all qualification evidence on earlier heads is historical after the generation-8 repair.
 - fresh exact-head repository checks: required on the final candidate produced by this task-record commit.
 
 ### E2E
@@ -177,8 +197,8 @@ This canonical task-record commit is part of the same coherent late-blocker revi
 ## Self-review
 
 - exact head: record from PR readback after this task-record commit
-- method/reviewer: implementing agent bounded review against #624 + all accepted review findings + late-blocker successor state machine
-- material findings: 0 open in the implementing-agent pass after `77561601a5ddd5557e697dc593fa5959ac9aac5c`
+- method/reviewer: implementing agent bounded review against #624 + all accepted review findings through generation 8
+- material findings: 0 open in the implementing-agent pass after `f153c3cd9a59a8b2c8503c53cfe948d8183d8195`
 - verdict: PASS_PENDING_FRESH_EXACT_HEAD_CI_AND_FINAL_INDEPENDENT_REVIEW
 
 ## Independent review
@@ -188,6 +208,7 @@ This canonical task-record commit is part of the same coherent late-blocker revi
 - historical generation 5: `5210336765` / head `a3de0bcd...` / 2 P1 + follow-up P2, dispositioned
 - historical generation 6: `5210541937` / head `dae61ae0...` / 2 P1, dispositioned
 - historical generation 7 finding: inline `4016247113` / head `58d6b2bb...` / 1 P1, repaired in `77561601...`
+- historical generation 8 findings: inline `4016314724`, `4016370922`, `4016370939` / head `142745b...` / 3 P1, repaired in `f153c3cd...`
 - exact final head: record after this task-record commit
 - method/auditor: one fresh Codex deep review after deterministic validation
 - material findings: pending
@@ -197,7 +218,7 @@ This canonical task-record commit is part of the same coherent late-blocker revi
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: generation-7 P1 must be replied/resolved with exact repair evidence before final review
+- unresolved review threads: 0 through generation 8 before final candidate freeze
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -206,7 +227,7 @@ This canonical task-record commit is part of the same coherent late-blocker revi
 ## Context checkpoint
 
 ```yaml
-last_progress: Added formal immutable late-blocker successor transition and reconciled canonical task record for generation-7 P1.
+last_progress: Repaired and resolved generation-8 repair-base, in-repair late-admission and auditor-disposition P1 findings as one coherent batch.
 status: validating
 branch: agent/closure-convergence-protocol
 head_sha: record_after_this_commit
@@ -223,10 +244,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 6
+repair_cycles_for_current_gate: 7
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Reply/resolve generation-7 review thread with exact repair evidence, freeze exact PR head, update PR body once with required metadata headings, run fresh exact-head CI, then obtain one fresh independent deep review without moving code or metadata.
+next_action: Freeze the exact PR head from readback, update PR body with the generation-8 repair evidence, run fresh exact-head Agent Governance + Architecture Semantic Audit + Merge Gate, then obtain one fresh independent deep review without moving code or tracked metadata.
 ```
