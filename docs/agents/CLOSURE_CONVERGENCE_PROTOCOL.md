@@ -16,10 +16,11 @@ The target sequence is:
 
 ```text
 finish current generation
--> freeze one exact closure head
+-> freeze one exact closure head and protected-main generation
 -> one read-only final defect sweep
 -> freeze a root-cause inventory
--> prepare repair authority for the whole generation
+-> reconcile unresolved evidence through immutable successor inventory when required
+-> prepare repair authority for the whole compatible generation
 -> one coherent repair generation
 -> one complete exact-head qualification
 -> one final whole-diff review
@@ -42,7 +43,7 @@ Record the transition durably with the exact repository, governing Issue/task, b
 
 If a material writer or diagnostic generation is already active, finish only that already-authorized generation first. Do not start the sweep concurrently with a mutating writer. Obtain one stable canonical exact head and return custody before freezing closure state.
 
-## Phase 1 — freeze the closure head
+## Phase 1 — freeze the closure generation
 
 Record:
 
@@ -53,12 +54,14 @@ closure_head:
   task_id: <task id>
   pr: <pr>
   branch: <branch>
-  base_main_sha: <sha>
+  base_main_sha: <protected main sha>
   head_sha: <sha>
   tree_sha: <sha>
   custody: RELEASED_TO_CONTROL_PLANE
   state: FROZEN_FOR_SWEEP
 ```
+
+`base_main_sha` and `head_sha` are jointly part of the closure generation. Do not silently combine a candidate head frozen against one protected-main generation with contracts/evidence resolved from another.
 
 Do not move this head merely to refresh prose, trigger CI, manufacture review evidence or copy status into tracked files.
 
@@ -73,12 +76,21 @@ accepted_decisions:
   - convergence:
       protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
       audit_mode: DISCOVERY_SWEEP
-      closure_head: <exact frozen sha>
+      base_main_sha: <Phase 1 protected main sha>
+      closure_head: <Phase 1 head sha>
 ```
 
-The auditor must resolve the live target and require its exact head to equal `closure_head` before using source/check/review evidence for the sweep. If the branch or PR head differs, return a stale-target/insufficient-evidence disposition and do not silently audit the newer generation under the frozen sweep.
+Immediately before the sweep, the auditor must independently resolve both the live protected `main` and the live PR/branch target. Require:
 
-For final review the same existing field carries the frozen sweep-generation identity, immutable inventory identity and exact qualified candidate:
+```text
+live protected main == base_main_sha
+auditor audit_main_sha == base_main_sha
+live target head == closure_head
+```
+
+If protected `main` differs, return fail-closed `STALE_SWEEP_BASE` (or the repository-defined equivalent) and do not run the discovery sweep against mixed-generation contracts/evidence. The control plane must reconcile the changed protected-main contracts/policy and freeze a new Phase 1 closure generation before retrying. If the branch or PR head differs, return a stale-target/insufficient-evidence disposition and do not silently audit the newer generation under the frozen sweep.
+
+For final review the same existing field carries the active immutable inventory generation and exact qualified candidate:
 
 ```yaml
 accepted_decisions:
@@ -86,6 +98,7 @@ accepted_decisions:
       protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
       audit_mode: FINAL_CANDIDATE_REVIEW
       frozen_root_cause_inventory:
+        inventory_generation: <positive integer>
         evidence_locator: <editable GitHub evidence-note ref>
         sweep_target:
           repository: Oteryn/Oteryn-Game
@@ -93,6 +106,8 @@ accepted_decisions:
           task_id: <task id>
           pr: <pr>
           branch: <branch>
+          base_main_sha: <Phase 1 protected main sha>
+          audit_main_sha: <DISCOVERY_SWEEP audit main sha>
           closure_head: <Phase 1 head_sha>
           tree_sha: <Phase 1 tree_sha>
         content_identity:
@@ -101,15 +116,17 @@ accepted_decisions:
       qualified_head: <exact qualified candidate sha>
 ```
 
-Before dispatch, the control plane must require the descriptor's `sweep_target` to exact-match the corresponding immutable fields of the Phase 1 `closure_head` record. The final reviewer must retrieve the inventory through `evidence_locator`, canonicalize the complete inventory envelope using the declared serialization, recompute the digest, and require an exact match with `content_identity`. The reviewer must also require the envelope's `sweep_target` to exact-match the descriptor and the Phase 1 closure generation. A missing identity, unavailable content, unsupported serialization, digest mismatch or sweep-target mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed, cross-lane, cross-task or wrong-generation inventory content.
+Before dispatch, the control plane must require the descriptor's `sweep_target` to exact-match the corresponding immutable fields of the Phase 1 `closure_head` record and require `audit_main_sha == base_main_sha`. The final reviewer must retrieve the active inventory through `evidence_locator`, canonicalize the complete inventory envelope using the declared serialization, recompute the digest, and require an exact match with `content_identity`. The reviewer must also require the envelope's `inventory_generation` and `sweep_target` to exact-match the descriptor and the Phase 1 closure generation. A missing identity, unavailable content, unsupported serialization, digest mismatch, inventory-generation mismatch or sweep-target mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed, cross-lane, cross-task or wrong-generation inventory content.
 
 Independently of the inventory checks, the control plane immediately before dispatch and the reviewer immediately before review must resolve the live PR/branch target and require its exact current head to equal `qualified_head`. A live-target mismatch returns a fail-closed `STALE_QUALIFIED_HEAD` (or repository-defined equivalent) disposition. Never review a newer live head under qualification evidence for an older candidate.
+
+The final reviewer must also independently resolve current protected `main` as `review_main_sha`. If `review_main_sha != audit_main_sha`, evaluate the protected-main/policy/accepted-contract movement under the novelty rule in Phase 6 before qualifying the candidate. Material movement returns `STALE_SWEEP_BASE` and requires a new Phase 1 + discovery sweep; proven immaterial movement may continue only with exact evidence recording why the frozen current-gate requirements remain unchanged. Never rewrite the frozen inventory merely to track a newer main SHA.
 
 These descriptors narrow how the requested audit is performed. They do not add authority and do not replace the normal `objective`, `relevant_findings`, `required_validation` or `lazy_refs` packet fields.
 
 ## Phase 2 — one final defect sweep
 
-Run one comprehensive read-only sweep over the complete remaining closure surface that is material to the current gate. Prefer the existing independent auditor when current review policy permits it; dispatch it through the convergence descriptor above with `audit_mode: DISCOVERY_SWEEP` and the exact frozen `closure_head`.
+Run one comprehensive read-only sweep over the complete remaining closure surface that is material to the current gate. Prefer the existing independent auditor when current review policy permits it; dispatch it through the convergence descriptor above with `audit_mode: DISCOVERY_SWEEP`, the exact frozen `base_main_sha`, and the exact frozen `closure_head`.
 
 The sweep must inspect the full currently reachable ownership/finality/resource/authority/production-path surface required by the accepted contracts and acceptance cells, not only the latest diff or latest review comment.
 
@@ -165,34 +182,41 @@ evidence_refs: []
 
 If the selected auditor emits its canonical `classification` field rather than duplicating it as `evidence_classification`, the control plane may copy that exact value into the root-cause inventory. Never reinterpret `UNKNOWN` or `CONFLICT` as `PROVEN` merely to complete the inventory.
 
-The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation. The immutable object whose identity is bound must be a complete inventory envelope, not the root-cause payload alone:
+The sweep ends with one frozen initial `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation. The immutable object whose identity is bound must be a complete inventory envelope, not the root-cause payload alone:
 
 ```json
 {
   "schema": "OTV2_FINAL_ROOT_CAUSE_INVENTORY_V1",
+  "inventory_generation": 1,
+  "predecessor_content_identity": null,
+  "transition_reason": "DISCOVERY_SWEEP",
   "sweep_target": {
     "repository": "Oteryn/Oteryn-Game",
     "issue": "<governing issue>",
     "task_id": "<task id>",
     "pr": "<pr>",
     "branch": "<branch>",
+    "base_main_sha": "<Phase 1 protected main sha>",
+    "audit_main_sha": "<DISCOVERY_SWEEP audit main sha>",
     "closure_head": "<Phase 1 head_sha>",
     "tree_sha": "<Phase 1 tree_sha>"
   },
-  "inventory": "<complete FINAL_ROOT_CAUSE_INVENTORY content>"
+  "reconciliation_refs": [],
+  "inventory": "<complete FINAL_ROOT_CAUSE_INVENTORY structured value>"
 }
 ```
 
-The `inventory` value above denotes the complete structured inventory value, not a string serialization. Serialize this entire envelope as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The `sweep_target` fields must exact-match the Phase 1 closure record before the identity is accepted. The resulting immutable `content_identity` therefore proves both the exact inventory and the exact sweep generation; the auditor's normal editable GitHub evidence note remains only an `evidence_locator` and must never be treated as inventory or generation identity by itself.
+The `inventory` value above denotes the complete structured inventory value, not a string serialization. Serialize this entire envelope as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The `sweep_target` fields must exact-match the Phase 1 closure record, and `audit_main_sha` must exact-match `base_main_sha`, before the identity is accepted. The resulting immutable `content_identity` therefore proves the exact inventory and exact sweep generation. The auditor's normal editable GitHub evidence note remains only an `evidence_locator` and must never be treated as inventory or generation identity by itself.
 
-## Phase 3 — freeze inventory and prepare authority once
+## Phase 3 — freeze inventory, reconcile evidence, and prepare authority once
 
 The active control plane consumes the sweep and freezes the material root-cause set before repair.
 
-The freeze record must carry the immutable sweep target, editable evidence locator and immutable content identity:
+The freeze record must carry the immutable sweep target, active inventory generation, editable evidence locator and immutable content identity:
 
 ```yaml
 final_root_cause_inventory:
+  inventory_generation: <positive integer>
   evidence_locator: <editable GitHub evidence-note ref>
   sweep_target:
     repository: Oteryn/Oteryn-Game
@@ -200,6 +224,8 @@ final_root_cause_inventory:
     task_id: <task id>
     pr: <pr>
     branch: <branch>
+    base_main_sha: <Phase 1 protected main sha>
+    audit_main_sha: <DISCOVERY_SWEEP audit main sha>
     closure_head: <Phase 1 head_sha>
     tree_sha: <Phase 1 tree_sha>
   content_identity:
@@ -207,13 +233,32 @@ final_root_cause_inventory:
     sha256: <lowercase hex digest of the canonical serialized inventory envelope>
 ```
 
-Immediately before any repair dispatch, retrieve the inventory through the locator, canonicalize the complete envelope using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Independently exact-match the envelope's `sweep_target` and the freeze record's `sweep_target` against the Phase 1 `closure_head` record. Missing/unavailable identity material, an unsupported serialization, digest mismatch/drift or target-generation mismatch fails closed and returns the inventory for reconciliation; valid inventory from another repository, task, PR, branch or closure generation cannot silently qualify for this repair generation.
+Immediately before any repair dispatch, retrieve the active inventory through the locator, canonicalize the complete envelope using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Independently exact-match the envelope's `inventory_generation` and `sweep_target` against the freeze record and the Phase 1 `closure_head` record, including `base_main_sha`, and require `audit_main_sha == base_main_sha`. Missing/unavailable identity material, an unsupported serialization, digest mismatch/drift, inventory-generation mismatch or target-generation mismatch fails closed and returns the inventory for reconciliation; valid inventory from another repository, task, PR, branch, protected-main generation or closure generation cannot silently qualify for this repair generation.
 
 Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its evidence classification:
 
 - `PROVEN` may be `repair_eligibility: ELIGIBLE` when authority is otherwise sufficient;
 - `DERIVED` may be eligible only when the derivation is explicit and the governing contract/control plane accepts that inference as sufficient mutation evidence; otherwise hold it for evidence reconciliation;
 - `UNKNOWN` or `CONFLICT` is never repair-eligible. Resolve the missing/conflicting evidence first, or hold/escalate the affected claim under existing evidence/architecture/authority rules. Do not dispatch production-code repair merely because the gate classification says `MATERIAL_BLOCKER`.
+
+### Immutable successor inventory after evidence reconciliation
+
+A frozen inventory is never edited in place. If evidence reconciliation changes any preserved finding field — including `evidence_classification`, `repair_eligibility`, evidence refs, gate applicability, required repair or required validation — create one immutable **successor inventory** for the whole completed reconciliation batch.
+
+The successor must:
+
+1. preserve the exact same `sweep_target` as its predecessor;
+2. increment `inventory_generation` by exactly one;
+3. set `predecessor_content_identity` to the predecessor's exact SHA-256 identity;
+4. set `transition_reason: EVIDENCE_RECONCILIATION`;
+5. list exact immutable `reconciliation_refs` proving every changed finding field;
+6. preserve every unaffected root cause byte-for-byte at the structured-value level;
+7. add no newly discovered root cause under the guise of reconciliation — a genuinely new material root cause follows the Phase 6 novelty rules;
+8. be canonicalized and hashed as a new complete RFC 8785 envelope before it can become active.
+
+Create successors per **coherent reconciliation generation**, not one successor per individual finding. The predecessor remains immutable audit evidence and is never overwritten. After the successor is frozen, atomically advance the control-plane pointer `active_inventory_generation` to the successor identity; all later repair dispatch, qualification reconciliation and final review must bind to that exact active generation/digest. A partially written successor or ambiguous active-generation pointer fails closed.
+
+If unresolved `EVIDENCE_RECONCILIATION_REQUIRED` items remain, they stay outside mutating repair scope. A material blocker that remains unresolved at final qualification prevents closure; it cannot be silently dropped from the active inventory.
 
 Prepare the smallest authority set that can close the entire compatible **repair-eligible** material generation. Do not stop at the first missing file/symbol lease when the sweep already proves additional required paths in the same root-cause generation.
 
@@ -230,7 +275,7 @@ Do not split merely by file, review comment, test name or historical finding ID.
 
 During convergence mode, the normal bounded-worker rule means **one bounded coherent repair generation**, not one finding per worker return.
 
-The writer receives the frozen root-cause inventory and repairs all compatible, repair-eligible `MATERIAL_BLOCKER` items authorized for that generation before handoff. Items still marked `EVIDENCE_RECONCILIATION_REQUIRED` remain outside the mutating batch until their evidence state is resolved.
+The writer receives the exact active frozen root-cause inventory generation and repairs all compatible, repair-eligible `MATERIAL_BLOCKER` items authorized for that generation before handoff. Items still marked `EVIDENCE_RECONCILIATION_REQUIRED` remain outside the mutating batch until their evidence state is resolved through the immutable successor mechanism above.
 
 The writer must not:
 
@@ -238,7 +283,8 @@ The writer must not:
 - broaden discovery into unrelated future systems;
 - add speculative hardening while a frozen blocker batch is active;
 - silently widen paths or authority;
-- turn an `EVIDENCE_GAP` into production-code mutation without evidence that a defect exists.
+- turn an `EVIDENCE_GAP` into production-code mutation without evidence that a defect exists;
+- mutate or replace the active inventory in place.
 
 Focused tests may run while iterating. Do not run a full hosted qualification after every individual edit when one coherent generation is still in progress unless a governing gate specifically requires it.
 
@@ -248,17 +294,21 @@ A diagnostic-only generation is not a repair generation. When authority says dia
 
 After the coherent repair generation is complete, freeze the candidate and run one complete qualification generation required by the changed paths and accepted gate. Reuse still-valid immutable evidence only within its proven generation; do not rerun unchanged heavy evidence merely for narration.
 
+Before treating qualification as closure evidence, confirm that every active-inventory `MATERIAL_BLOCKER` is either closed by the candidate or explicitly remains open and blocking. An unresolved evidence-reconciliation item cannot disappear merely because deterministic CI is green.
+
 A qualification failure may create a new concrete repair trigger. Diagnose the failure before mutating again.
 
 ## Phase 6 — final whole-diff review
 
-Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the frozen root-cause inventory locator, immutable sweep-target identity, immutable content identity, and the exact qualified head. Before dispatch, the control plane must (1) exact-match the recomputed inventory envelope identity, (2) exact-match the envelope and descriptor `sweep_target` to the Phase 1 closure record, and (3) resolve the live candidate and require its current exact head to equal `qualified_head`.
+Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the active frozen root-cause inventory generation/locator, immutable sweep-target identity, immutable content identity, and the exact qualified head. Before dispatch, the control plane must (1) exact-match the recomputed active inventory envelope identity and generation, (2) exact-match the envelope and descriptor `sweep_target` to the Phase 1 closure record including `base_main_sha`, (3) require `audit_main_sha == base_main_sha`, and (4) resolve the live candidate and require its current exact head to equal `qualified_head`.
 
-The reviewer must repeat all three checks against independently resolved evidence immediately before review. Inventory mismatch/drift or sweep-target mismatch fails closed. If the live PR/branch head does not equal `qualified_head`, return `STALE_QUALIFIED_HEAD` and do not attach review conclusions to the newer generation. The pre-repair `closure_head` and post-repair `qualified_head` may legitimately differ; the required invariant is that the inventory remains bound to the exact Phase 1 sweep generation while the review itself remains bound to the exact qualified candidate.
+The reviewer must repeat these checks against independently resolved evidence immediately before review. Inventory mismatch/drift, active-generation mismatch or sweep-target mismatch fails closed. If the live PR/branch head does not equal `qualified_head`, return `STALE_QUALIFIED_HEAD` and do not attach review conclusions to the newer generation. The pre-repair `closure_head` and post-repair `qualified_head` may legitimately differ; the required invariant is that the active inventory remains bound to the exact Phase 1 sweep generation while the review itself remains bound to the exact qualified candidate.
+
+Resolve current protected `main` as `review_main_sha`. If it differs from the frozen `audit_main_sha`, inspect the delta relevant to current accepted contracts/policy before applying the novelty rule below. Material movement invalidates the sweep base and requires a fresh Phase 1 + discovery sweep; proven immaterial movement must be recorded as exact evidence and does not mutate the active inventory.
 
 The final review asks primarily:
 
-> Does this exact candidate close the frozen root-cause inventory and every still-binding current-gate acceptance requirement?
+> Does this exact candidate close the exact active immutable root-cause inventory generation and every still-binding current-gate acceptance requirement?
 
 It is not a new open-ended architecture expedition.
 
@@ -293,8 +343,12 @@ The control plane keeps one compact checkpoint:
 
 ```yaml
 convergence_mode: ACTIVE | COMPLETE
-closure_head: <sha or null>
+closure_generation:
+  base_main_sha: <Phase 1 protected main sha or null>
+  head_sha: <Phase 1 candidate sha or null>
+  tree_sha: <Phase 1 tree sha or null>
 final_root_cause_inventory:
+  active_inventory_generation: <positive integer or null>
   evidence_locator: <editable evidence ref or null>
   sweep_target:
     repository: <repo or null>
@@ -302,8 +356,11 @@ final_root_cause_inventory:
     task_id: <task id or null>
     pr: <pr or null>
     branch: <branch or null>
+    base_main_sha: <Phase 1 protected main sha or null>
+    audit_main_sha: <DISCOVERY_SWEEP audit main sha or null>
     closure_head: <Phase 1 sha or null>
     tree_sha: <Phase 1 tree or null>
+  predecessor_content_identity: <sha256 or null>
   content_identity:
     serialization: RFC8785_JSON
     sha256: <lowercase hex digest or null>
