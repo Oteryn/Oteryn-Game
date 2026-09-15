@@ -56,6 +56,7 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 - [x] Add one routed closure convergence protocol with explicit activation, one-shot sweep, finding classification, root-cause collapse, frozen inventory, coherent repair generation, final qualification/review and anti-drip novelty triggers.
 - [x] Bind discovery sweeps to the exact frozen closure head and fail closed if the live target moved.
 - [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled; only repair-eligible material blockers enter the batch.
+- [x] Bind every frozen root-cause inventory to an RFC 8785 canonical JSON SHA-256 identity, carry the locator and identity through the checkpoint/final-review descriptor, and fail closed on missing identity or content drift before repair dispatch or final review.
 - [x] Add publication-safety fail-closed behavior for unavailable normal Git publication; no direct low-level Git-object fallback on canonical material branches.
 - [x] Work coordinator routes convergence-mode workers and auditors through the protocol and treats a bounded task as a bounded coherent repair generation during closure.
 - [x] Convergence audit dispatch fits the coordinator's existing minimal packet by using an `accepted_decisions` convergence descriptor rather than new top-level keys.
@@ -100,6 +101,10 @@ This complete material review-repair generation requires fresh exact-head determ
 ### Independent review generation 3
 
 Final Codex review on exact head `bdd67024fc3aaea880e66864fb8aa92547625e0d` reported one P2: the convergence-aware independent auditor contract remained lifecycle `1.2`. `ACCEPTED_AND_REPAIRED`: `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` advances `1.2 -> 1.3`; its prompt ID, owner, status, scope and supersession metadata remain unchanged. No prompt, runtime, workflow, ruleset or integration semantics change in this bounded repair.
+
+### Independent review generation 4
+
+Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` reported one P1: the frozen inventory's editable GitHub evidence-note locator did not prove immutable inventory content. `ACCEPTED_AND_REPAIRED`: each `FINAL_ROOT_CAUSE_INVENTORY` now carries an RFC 8785 canonical JSON SHA-256 content identity alongside the editable evidence locator; the checkpoint and final-review descriptor preserve both, and exact-match verification fails closed before repair dispatch and final review. The evidence note remains a locator/evidence surface only.
 
 ## Validation
 
@@ -161,7 +166,7 @@ Final Codex review on exact head `bdd67024fc3aaea880e66864fb8aa92547625e0d` repo
 ## Context checkpoint
 
 ```yaml
-last_progress: Prepared the bounded final-review P2 repair by versioning the convergence-aware independent auditor contract and reconciling task bookkeeping.
+last_progress: Repaired final-review P1 by binding frozen inventories to canonical immutable content identities and requiring fail-closed exact-match verification.
 status: validating
 branch: agent/closure-convergence-protocol
 head_sha: record_after_commit

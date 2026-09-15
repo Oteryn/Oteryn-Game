@@ -84,9 +84,15 @@ accepted_decisions:
   - convergence:
       protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
       audit_mode: FINAL_CANDIDATE_REVIEW
-      frozen_root_cause_inventory: <ref>
+      frozen_root_cause_inventory:
+        evidence_locator: <editable GitHub evidence-note ref>
+        content_identity:
+          serialization: RFC8785_JSON
+          sha256: <lowercase hex digest of the canonical serialized inventory>
       qualified_head: <exact sha>
 ```
+
+The final reviewer must retrieve the inventory through `evidence_locator`, canonicalize its inventory content using the declared serialization, recompute the digest, and require an exact match with `content_identity` before review. A missing identity, unavailable content, unsupported serialization or digest mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed or unverified inventory content.
 
 These descriptors narrow how the requested audit is performed. They do not add authority and do not replace the normal `objective`, `relevant_findings`, `required_validation` or `lazy_refs` packet fields.
 
@@ -148,11 +154,23 @@ evidence_refs: []
 
 If the selected auditor emits its canonical `classification` field rather than duplicating it as `evidence_classification`, the control plane may copy that exact value into the root-cause inventory. Never reinterpret `UNKNOWN` or `CONFLICT` as `PROVEN` merely to complete the inventory.
 
-The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation.
+The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation. Serialize the complete inventory content as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The resulting immutable `content_identity` proves the exact inventory; the auditor's normal editable GitHub evidence note remains only an `evidence_locator` and must never be treated as the inventory identity by itself.
 
 ## Phase 3 — freeze inventory and prepare authority once
 
 The active control plane consumes the sweep and freezes the material root-cause set before repair.
+
+The freeze record must carry both the editable evidence locator and the immutable content identity:
+
+```yaml
+final_root_cause_inventory:
+  evidence_locator: <editable GitHub evidence-note ref>
+  content_identity:
+    serialization: RFC8785_JSON
+    sha256: <lowercase hex digest of the canonical serialized inventory>
+```
+
+Immediately before any repair dispatch, retrieve the inventory through the locator, canonicalize the complete inventory content using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Missing/unavailable identity material, an unsupported serialization, or any digest mismatch/drift fails closed and returns the inventory for reconciliation; changed content behind the same editable locator cannot silently qualify for the frozen repair generation.
 
 Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its evidence classification:
 
@@ -197,7 +215,7 @@ A qualification failure may create a new concrete repair trigger. Diagnose the f
 
 ## Phase 6 — final whole-diff review
 
-Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the frozen root-cause inventory ref and the exact qualified head.
+Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the frozen root-cause inventory locator and immutable content identity, and the exact qualified head. The control plane and reviewer must exact-match the recomputed inventory identity before dispatch and before review respectively; mismatch or drift fails closed.
 
 The final review asks primarily:
 
@@ -237,7 +255,11 @@ The control plane keeps one compact checkpoint:
 ```yaml
 convergence_mode: ACTIVE | COMPLETE
 closure_head: <sha or null>
-final_root_cause_inventory: <ref or null>
+final_root_cause_inventory:
+  evidence_locator: <editable evidence ref or null>
+  content_identity:
+    serialization: RFC8785_JSON
+    sha256: <lowercase hex digest or null>
 material_root_causes_open: <count>
 evidence_gaps_open: <count>
 hardening_deferred: <count>
