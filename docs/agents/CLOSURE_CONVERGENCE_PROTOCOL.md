@@ -61,25 +61,52 @@ closure_head:
 
 Do not move this head merely to refresh prose, trigger CI, manufacture review evidence or copy status into tracked files.
 
-## Phase 2 — one final defect sweep
+## Convergence dispatch descriptor
 
-Run one comprehensive read-only sweep over the complete remaining closure surface that is material to the current gate. Prefer the existing independent auditor when current review policy permits it; the dispatch packet must set:
+The Work coordinator's mandatory minimal context packet remains authoritative. Convergence mode does **not** add unregistered top-level packet keys.
+
+When a convergence audit is dispatched, encode the mode inside the existing `accepted_decisions` field as one bounded descriptor, for example:
 
 ```yaml
-audit_mode: DISCOVERY_SWEEP
-protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
+accepted_decisions:
+  - convergence:
+      protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
+      audit_mode: DISCOVERY_SWEEP
 ```
+
+For final review the same existing field carries the additional frozen locators:
+
+```yaml
+accepted_decisions:
+  - convergence:
+      protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
+      audit_mode: FINAL_CANDIDATE_REVIEW
+      frozen_root_cause_inventory: <ref>
+      qualified_head: <exact sha>
+```
+
+These descriptors narrow how the requested audit is performed. They do not add authority and do not replace the normal `objective`, `relevant_findings`, `required_validation` or `lazy_refs` packet fields.
+
+## Phase 2 — one final defect sweep
+
+Run one comprehensive read-only sweep over the complete remaining closure surface that is material to the current gate. Prefer the existing independent auditor when current review policy permits it; dispatch it through the convergence descriptor above with `audit_mode: DISCOVERY_SWEEP`.
 
 The sweep must inspect the full currently reachable ownership/finality/resource/authority/production-path surface required by the accepted contracts and acceptance cells, not only the latest diff or latest review comment.
 
-Every finding must be classified as exactly one of:
+The independent auditor's existing evidence field remains unchanged:
 
-- `MATERIAL_BLOCKER` — a concrete current/next-gate correctness, authority, ownership, lifetime, finality, bounded-resource, recovery, security or production-path defect that can invalidate delivery;
-- `EVIDENCE_GAP` — code may be correct, but required proof is absent or stale; obtain evidence before assuming a production-code repair is needed;
-- `HARDENING` — worthwhile robustness/clarity/diagnostic improvement that is not required for the current accepted gate;
-- `OUT_OF_SCOPE` — belongs to a later programme, deferred capability or unrelated architecture surface and does not block the current gate.
+```text
+classification: PROVEN | DERIVED | UNKNOWN | CONFLICT
+```
 
-Severity and finding classification are independent. A future-only concern is not a current blocker merely because it is interesting or high impact in another programme.
+Convergence adds a separate gate-disposition field. Every finding must set exactly one:
+
+- `gate_classification: MATERIAL_BLOCKER` — a concrete current/next-gate correctness, authority, ownership, lifetime, finality, bounded-resource, recovery, security or production-path defect that can invalidate delivery;
+- `gate_classification: EVIDENCE_GAP` — code may be correct, but required proof is absent or stale; obtain evidence before assuming a production-code repair is needed;
+- `gate_classification: HARDENING` — worthwhile robustness/clarity/diagnostic improvement that is not required for the current accepted gate;
+- `gate_classification: OUT_OF_SCOPE` — belongs to a later programme, deferred capability or unrelated architecture surface and does not block the current gate.
+
+Evidence classification, severity and gate classification are independent. A future-only concern is not a current blocker merely because it is interesting or high impact in another programme.
 
 ### Root-cause collapse
 
@@ -100,7 +127,8 @@ For each material root cause record at least:
 
 ```yaml
 root_cause_id: <stable id>
-classification: MATERIAL_BLOCKER
+gate_classification: MATERIAL_BLOCKER
+evidence_classification: PROVEN | DERIVED | UNKNOWN | CONFLICT
 requirement_source: <contract/review/acceptance ref>
 production_entry_points: []
 exact_paths_or_symbols: []
@@ -113,6 +141,8 @@ required_validation: []
 required_independent_review: <yes/no + reason>
 evidence_refs: []
 ```
+
+If the selected auditor emits its canonical `classification` field rather than duplicating it as `evidence_classification`, the control plane may copy that exact value into the root-cause inventory. Never reinterpret `UNKNOWN` or `CONFLICT` as `PROVEN` merely to complete the inventory.
 
 The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation.
 
@@ -157,14 +187,7 @@ A qualification failure may create a new concrete repair trigger. Diagnose the f
 
 ## Phase 6 — final whole-diff review
 
-Dispatch the independent auditor with:
-
-```yaml
-audit_mode: FINAL_CANDIDATE_REVIEW
-protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
-frozen_root_cause_inventory: <ref>
-qualified_head: <exact sha>
-```
+Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the frozen root-cause inventory ref and the exact qualified head.
 
 The final review asks primarily:
 
@@ -179,7 +202,7 @@ The reviewer may still report a new material blocker, but after inventory freeze
 3. an independent review finding whose material fact could not reasonably have been established from the frozen source/evidence;
 4. material protected-`main`, policy or accepted-contract movement.
 
-If a later material finding was reasonably knowable during the sweep, classify it `FINAL_SWEEP_MISS`. A real current-gate defect still must be handled safely, but the coordinator must record why the sweep missed it, add it once to the existing root-cause model, and avoid reopening unrestricted discovery.
+If a later material finding was reasonably knowable during the sweep, set `gate_classification: MATERIAL_BLOCKER` if it is a real current-gate defect and additionally mark it `FINAL_SWEEP_MISS`. The defect still must be handled safely, but the coordinator must record why the sweep missed it, add it once to the existing root-cause model, and avoid reopening unrestricted discovery.
 
 `HARDENING` and `OUT_OF_SCOPE` findings do not block integration unless current accepted authority explicitly makes them acceptance requirements.
 
