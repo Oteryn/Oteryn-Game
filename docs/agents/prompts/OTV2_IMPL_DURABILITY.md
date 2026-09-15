@@ -49,7 +49,8 @@ In convergence mode:
 - do not broaden discovery into unrelated future systems while implementing the frozen batch;
 - do not turn an `EVIDENCE_GAP` into production-code mutation unless new evidence proves a concrete defect;
 - classify newly observed concerns against the frozen inventory and only expand the generation for a protocol-defined novelty trigger;
-- otherwise return the concern as `HARDENING`, `OUT_OF_SCOPE`, or `FINAL_SWEEP_MISS` as applicable;
+- if an already-knowable current-gate defect is discovered after the frozen sweep, keep `gate_classification: MATERIAL_BLOCKER` and additionally record `sweep_disposition: FINAL_SWEEP_MISS`; a sweep miss never downgrades or replaces blocker classification;
+- concerns that are genuinely non-blocking may be returned as `HARDENING` or `OUT_OF_SCOPE` as applicable;
 - use focused validation while iterating and defer the complete hosted qualification until the coherent repair generation is complete unless a governing gate specifically requires an earlier full run.
 
 A diagnostic-only allocation remains diagnostic-only. If the allocation authorizes observability but not causal repair, return the exact failing stage/evidence and do not opportunistically change production semantics.
