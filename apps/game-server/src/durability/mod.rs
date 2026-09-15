@@ -2923,6 +2923,11 @@ pub(crate) fn registered_connect_diagnostic_substage() -> &'static str {
 }
 
 #[cfg(test)]
+pub(crate) fn registered_connect_schema_failure_class() -> &'static str {
+    schema::schema_failure_class()
+}
+
+#[cfg(test)]
 #[test]
 fn registered_connect_diagnostic_is_available_to_qualification_callers() {
     assert!(matches!(
@@ -2932,5 +2937,18 @@ fn registered_connect_diagnostic_is_available_to_qualification_callers() {
             | "root_custody_acquire"
             | "root_holder_return"
             | "ready"
+    ));
+    assert!(matches!(
+        registered_connect_schema_failure_class(),
+        "none"
+            | "missing_ledger"
+            | "incompatible"
+            | "sqlx_io"
+            | "sqlx_tls"
+            | "sqlx_protocol"
+            | "pool_timeout"
+            | "database"
+            | "decode"
+            | "other"
     ));
 }

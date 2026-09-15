@@ -1,6 +1,65 @@
 use crate::durability::{DurabilityError, db};
 use sqlx::{PgPool, Row};
 
+#[cfg(test)]
+#[derive(Clone, Copy)]
+enum SchemaFailureClass {
+    None,
+    MissingLedger,
+    Incompatible,
+    SqlxIo,
+    SqlxTls,
+    SqlxProtocol,
+    PoolTimeout,
+    Database,
+    Decode,
+    Other,
+}
+
+#[cfg(test)]
+thread_local! {
+    static SCHEMA_FAILURE_CLASS: std::cell::Cell<SchemaFailureClass> =
+        const { std::cell::Cell::new(SchemaFailureClass::None) };
+}
+
+#[cfg(test)]
+fn record_schema_failure(class: SchemaFailureClass) {
+    SCHEMA_FAILURE_CLASS.set(class);
+}
+
+#[cfg(test)]
+pub(crate) fn schema_failure_class() -> &'static str {
+    SCHEMA_FAILURE_CLASS.with(|class| match class.get() {
+        SchemaFailureClass::None => "none",
+        SchemaFailureClass::MissingLedger => "missing_ledger",
+        SchemaFailureClass::Incompatible => "incompatible",
+        SchemaFailureClass::SqlxIo => "sqlx_io",
+        SchemaFailureClass::SqlxTls => "sqlx_tls",
+        SchemaFailureClass::SqlxProtocol => "sqlx_protocol",
+        SchemaFailureClass::PoolTimeout => "pool_timeout",
+        SchemaFailureClass::Database => "database",
+        SchemaFailureClass::Decode => "decode",
+        SchemaFailureClass::Other => "other",
+    })
+}
+
+#[cfg(test)]
+fn classify_sqlx_error(error: &sqlx::Error) -> SchemaFailureClass {
+    match error {
+        sqlx::Error::Io(_) => SchemaFailureClass::SqlxIo,
+        sqlx::Error::Tls(_) => SchemaFailureClass::SqlxTls,
+        sqlx::Error::Protocol(_) => SchemaFailureClass::SqlxProtocol,
+        sqlx::Error::PoolTimedOut => SchemaFailureClass::PoolTimeout,
+        sqlx::Error::Database(_) => SchemaFailureClass::Database,
+        sqlx::Error::ColumnDecode { .. }
+        | sqlx::Error::Decode(_)
+        | sqlx::Error::ColumnIndexOutOfBounds { .. }
+        | sqlx::Error::ColumnNotFound(_)
+        | sqlx::Error::TypeNotFound { .. } => SchemaFailureClass::Decode,
+        _ => SchemaFailureClass::Other,
+    }
+}
+
 pub(crate) static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,6 +109,8 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
 pub(crate) async fn connect_runtime_root(
     options: sqlx::postgres::OterynRootProfile,
 ) -> Result<PgPool, DurabilityError> {
+    #[cfg(test)]
+    record_schema_failure(SchemaFailureClass::None);
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
@@ -59,6 +120,12 @@ pub(crate) async fn connect_runtime_root(
         .connect_lazy_with(options.into_connect_options());
     let compatibility = inspect(&pool).await?;
     if compatibility != SchemaCompatibility::Compatible {
+        #[cfg(test)]
+        record_schema_failure(match compatibility {
+            SchemaCompatibility::MissingMigrationLedger => SchemaFailureClass::MissingLedger,
+            SchemaCompatibility::Incompatible => SchemaFailureClass::Incompatible,
+            SchemaCompatibility::Compatible => SchemaFailureClass::None,
+        });
         return Err(DurabilityError::SchemaIncompatible(compatibility));
     }
     Ok(pool)
@@ -101,9 +168,15 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
     {
         Ok(rows) => rows,
         Err(error) if is_missing_table(&error) => {
+            #[cfg(test)]
+            record_schema_failure(SchemaFailureClass::MissingLedger);
             return Ok(SchemaCompatibility::MissingMigrationLedger);
         }
-        Err(error) => return Err(DurabilityError::from(error)),
+        Err(error) => {
+            #[cfg(test)]
+            record_schema_failure(classify_sqlx_error(&error));
+            return Err(DurabilityError::from(error));
+        }
     };
 
     // The extra row distinguishes an exact ledger from any oversized ledger.
@@ -112,9 +185,9 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
     }
 
     for (row, migration) in rows.iter().zip(GAME_MIGRATOR.iter()) {
-        let version: i64 = row.try_get("version")?;
-        let checksum: Option<&[u8]> = row.try_get("checksum")?;
-        let success: bool = row.try_get("success")?;
+        let version: i64 = row.try_get("version").map_err(record_decode_failure)?;
+        let checksum: Option<&[u8]> = row.try_get("checksum").map_err(record_decode_failure)?;
+        let success: bool = row.try_get("success").map_err(record_decode_failure)?;
         if !success || version != migration.version || checksum != Some(migration.checksum.as_ref())
         {
             return Ok(SchemaCompatibility::Incompatible);
@@ -122,6 +195,12 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
     }
 
     Ok(SchemaCompatibility::Compatible)
+}
+
+fn record_decode_failure(error: sqlx::Error) -> DurabilityError {
+    #[cfg(test)]
+    record_schema_failure(classify_sqlx_error(&error));
+    DurabilityError::from(error)
 }
 
 fn is_missing_table(error: &sqlx::Error) -> bool {
@@ -133,6 +212,7 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
 
 #[cfg(test)]
 mod contract_tests {
+    use super::{SchemaFailureClass, classify_sqlx_error};
     const MIGRATION: &str = include_str!("../../migrations/0001_admission_reconnect_journal.sql");
     const ADMISSION_RECOVERY: &str = include_str!("../foundation/admission_recovery_inner.rs");
 
@@ -140,6 +220,26 @@ mod contract_tests {
         MIGRATION
             .split_once("CREATE TABLE game_durability_transport_ref_reservations")
             .map(|(session, _rest)| session)
+    }
+
+    #[test]
+    fn schema_error_diagnostics_are_closed_static_classes() {
+        assert!(matches!(
+            classify_sqlx_error(&sqlx::Error::Io(std::io::Error::other("private"))),
+            SchemaFailureClass::SqlxIo
+        ));
+        assert!(matches!(
+            classify_sqlx_error(&sqlx::Error::Protocol("private".to_owned())),
+            SchemaFailureClass::SqlxProtocol
+        ));
+        assert!(matches!(
+            classify_sqlx_error(&sqlx::Error::PoolTimedOut),
+            SchemaFailureClass::PoolTimeout
+        ));
+        assert!(matches!(
+            classify_sqlx_error(&sqlx::Error::Decode("private".into())),
+            SchemaFailureClass::Decode
+        ));
     }
 
     #[test]

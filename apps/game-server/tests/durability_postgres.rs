@@ -20,13 +20,14 @@ mod postgres;
 /// result is inspectable from a downstream crate although `pool::connection`
 /// remains private and no new re-export exists.
 mod wp3_registered_root_qualification {
+    use std::cell::RefCell;
     use std::fs::OpenOptions;
     use std::net::IpAddr;
     use std::path::{Path, PathBuf};
     use std::process::{Command, Output};
     use std::str::FromStr;
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::time::Duration;
 
     const ROOT_LIMIT: usize = 12_582_912;
@@ -39,8 +40,10 @@ mod wp3_registered_root_qualification {
         stage: &'static str,
     ) -> Box<dyn std::error::Error> {
         Box::new(std::io::Error::other(format!(
-            "{stage};REGISTERED_CONNECT_FIRST_SUBSTAGE={}",
-            super::durability::registered_connect_diagnostic_substage()
+            "{stage};REGISTERED_CONNECT_FIRST_SUBSTAGE={};SCHEMA_FAILURE_CLASS={};{}",
+            super::durability::registered_connect_diagnostic_substage(),
+            super::durability::registered_connect_schema_failure_class(),
+            root_budget_failure_witness(),
         )))
     }
 
@@ -70,21 +73,75 @@ mod wp3_registered_root_qualification {
         }
     }
 
+    thread_local! {
+        static ROOT_BUDGET_DIAGNOSTIC: RefCell<Option<Arc<RootBudgetWitness>>> = const { RefCell::new(None) };
+    }
+
     #[derive(Debug)]
-    pub(super) struct RootBudget(pub(super) AtomicUsize);
+    struct RootBudgetWitness {
+        used: AtomicUsize,
+        peak: AtomicUsize,
+        denied: AtomicBool,
+        requested_at_denial: AtomicUsize,
+        used_at_denial: AtomicUsize,
+    }
+
+    #[derive(Debug)]
+    pub(super) struct RootBudget(Arc<RootBudgetWitness>);
+
+    impl RootBudget {
+        pub(super) fn new() -> Self {
+            Self(Arc::new(RootBudgetWitness {
+                used: AtomicUsize::new(0),
+                peak: AtomicUsize::new(0),
+                denied: AtomicBool::new(false),
+                requested_at_denial: AtomicUsize::new(0),
+                used_at_denial: AtomicUsize::new(0),
+            }))
+        }
+    }
+
+    fn root_budget_failure_witness() -> String {
+        ROOT_BUDGET_DIAGNOSTIC.with(|diagnostic| {
+            let diagnostic = diagnostic.borrow();
+            let Some(budget) = diagnostic.as_ref() else {
+                return "ROOT_BUDGET=unavailable".to_owned();
+            };
+            format!(
+                "ROOT_BUDGET_DENIED={};REQUESTED={};USED_AT_DENIAL={};PEAK={};CURRENT={}",
+                budget.denied.load(Ordering::SeqCst),
+                budget.requested_at_denial.load(Ordering::SeqCst),
+                budget.used_at_denial.load(Ordering::SeqCst),
+                budget.peak.load(Ordering::SeqCst),
+                budget.used.load(Ordering::SeqCst),
+            )
+        })
+    }
 
     impl sqlx::postgres::ResourceBudget for RootBudget {
         fn try_reserve(&self, bytes: usize) -> Result<(), sqlx::postgres::BudgetError> {
-            self.0
+            let result = self
+                .0
+                .used
                 .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
                     used.checked_add(bytes).filter(|next| *next <= ROOT_LIMIT)
-                })
-                .map(|_| ())
-                .map_err(|_| sqlx::postgres::BudgetError::Unavailable)
+                });
+            match result {
+                Ok(previous) => {
+                    self.0.peak.fetch_max(previous + bytes, Ordering::SeqCst);
+                    Ok(())
+                }
+                Err(used) => {
+                    self.0.denied.store(true, Ordering::SeqCst);
+                    self.0.requested_at_denial.store(bytes, Ordering::SeqCst);
+                    self.0.used_at_denial.store(used, Ordering::SeqCst);
+                    Err(sqlx::postgres::BudgetError::Unavailable)
+                }
+            }
         }
 
         fn release(&self, bytes: usize) {
-            let previous = self.0.fetch_sub(bytes, Ordering::SeqCst);
+            let previous = self.0.used.fetch_sub(bytes, Ordering::SeqCst);
             assert!(previous >= bytes, "Durability root budget underflow");
         }
 
@@ -94,6 +151,29 @@ mod wp3_registered_root_qualification {
         ) -> Result<(), sqlx::postgres::BudgetError> {
             self.try_reserve(bytes)
         }
+    }
+
+    #[test]
+    fn root_budget_records_bounded_denial_evidence_without_changing_the_limit() {
+        use sqlx::postgres::ResourceBudget;
+
+        let budget = Arc::new(RootBudget::new());
+        ROOT_BUDGET_DIAGNOSTIC.with(|diagnostic| {
+            *diagnostic.borrow_mut() = Some(budget.0.clone());
+        });
+        assert_eq!(budget.try_reserve(ROOT_LIMIT), Ok(()));
+        assert_eq!(
+            budget.try_reserve(1),
+            Err(sqlx::postgres::BudgetError::Unavailable)
+        );
+        assert_eq!(
+            root_budget_failure_witness(),
+            format!(
+                "ROOT_BUDGET_DENIED=true;REQUESTED=1;USED_AT_DENIAL={ROOT_LIMIT};PEAK={ROOT_LIMIT};CURRENT={ROOT_LIMIT}"
+            )
+        );
+        budget.release(ROOT_LIMIT);
+        assert_eq!(budget.0.used.load(Ordering::SeqCst), 0);
     }
 
     pub(super) fn production_config(
@@ -113,6 +193,10 @@ mod wp3_registered_root_qualification {
             return Err("registered root fixture credentials must be literal".into());
         }
         let root_ca_pem = std::fs::read(ca_cert)?;
+        let budget = Arc::new(RootBudget::new());
+        ROOT_BUDGET_DIAGNOSTIC.with(|diagnostic| {
+            *diagnostic.borrow_mut() = Some(budget.0.clone());
+        });
         Ok(super::durability::AdmissionRuntimeConfig::new(
             transport_ip,
             parsed.get_port(),
@@ -123,7 +207,7 @@ mod wp3_registered_root_qualification {
             username,
             password,
             &root_ca_pem,
-            Arc::new(RootBudget(AtomicUsize::new(0))),
+            budget,
         )?)
     }
 
@@ -4021,9 +4105,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                         "different",
                         "different",
                         b"invalid ca",
-                        std::sync::Arc::new(wp3_registered_root_qualification::RootBudget(
-                            std::sync::atomic::AtomicUsize::new(0),
-                        ),),
+                        std::sync::Arc::new(wp3_registered_root_qualification::RootBudget::new(),),
                     )?)
                     .await,
                     Err(DurabilityError::InvalidStoredState)
