@@ -295,7 +295,12 @@ fn selected_options(
         password,
         &root_ca_pem,
         owner,
-    )?)
+    )?
+    .options([
+        ("transaction_timeout", "2000ms"),
+        ("statement_timeout", "2000ms"),
+        ("lock_timeout", "2000ms"),
+    ])?)
 }
 
 fn selected_holder_pool(options: sqlx::postgres::OterynRootProfile) -> sqlx::PgPool {

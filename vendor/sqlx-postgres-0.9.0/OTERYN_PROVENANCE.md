@@ -702,6 +702,13 @@ required. Local PostgreSQL is unavailable. Prior accepted M02/M04 evidence and
 the separately held core Error, M03/M05 and quantitative root boundaries are
 retained without re-audit or expanded completion claims.
 
+The root-profile validator permits only the exact precharged production startup
+string for `transaction_timeout`, `statement_timeout`, and `lock_timeout`, each
+fixed at `2000ms`.  Missing, reordered, additional, or mutated startup options
+remain configuration errors.  The selected PostgreSQL qualification helper now
+installs that same fixed profile before constructing its lazy holder, so its
+configured positive and denial runs exercise the production validator path.
+
 ## Selected configured E02/M03 qualification correction (2026-09-14)
 
 The earlier configured helper parsed the ordinary administration URL and then

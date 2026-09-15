@@ -7,6 +7,9 @@ use super::{PgConnectOptions, PgResourceBudget, PgSslMode};
 use crate::connection::LogSettings;
 use crate::net::tls::CertificateInput;
 
+const OTERYN_ROOT_STARTUP_OPTIONS: &str =
+    "-c transaction_timeout=2000ms -c statement_timeout=2000ms -c lock_timeout=2000ms";
+
 /// Move-only selected Durability root profile.
 ///
 /// The ordinary `PgConnectOptions` API remains cloneable. This wrapper prevents
@@ -191,6 +194,10 @@ impl PgConnectOptions {
 
     pub(crate) fn oteryn_root_profile(&self) -> bool {
         self.oteryn_root_profile
+    }
+
+    pub(crate) fn has_oteryn_root_startup_options(&self) -> bool {
+        self.options.as_deref() == Some(OTERYN_ROOT_STARTUP_OPTIONS)
     }
 
     pub(crate) fn tls_server_name(&self) -> &str {

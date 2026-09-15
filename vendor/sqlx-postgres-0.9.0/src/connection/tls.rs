@@ -109,7 +109,7 @@ fn validate_oteryn_root_profile(options: &PgConnectOptions) -> Result<(), Error>
         ));
     }
     if options.application_name.is_some()
-        || options.options.is_some()
+        || !options.has_oteryn_root_startup_options()
         || options.statement_cache_capacity != 100
     {
         return Err(Error::Configuration(
@@ -117,6 +117,81 @@ fn validate_oteryn_root_profile(options: &PgConnectOptions) -> Result<(), Error>
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod oteryn_root_startup_options_tests {
+    use std::net::{IpAddr, Ipv4Addr};
+    use std::sync::Arc;
+
+    use sqlx_core::net::resource_budget::{BudgetError, ResourceBudget};
+
+    use super::*;
+
+    #[derive(Debug)]
+    struct UnlimitedBudget;
+
+    impl ResourceBudget for UnlimitedBudget {
+        fn try_reserve(&self, _bytes: usize) -> Result<(), BudgetError> {
+            Ok(())
+        }
+
+        fn release(&self, _bytes: usize) {}
+    }
+
+    fn root_profile(options: [(&str, &str); 3]) -> PgConnectOptions {
+        PgConnectOptions::new_oteryn_root_profile(
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            5432,
+            "localhost",
+            "oteryn",
+            "oteryn_runtime",
+            "fixture-password",
+            b"-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n",
+            Arc::new(UnlimitedBudget),
+        )
+        .expect("root profile")
+        .options(options)
+        .expect("funded startup options")
+        .into_connect_options()
+    }
+
+    #[test]
+    fn exact_sanctioned_startup_options_are_accepted() {
+        let options = root_profile([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+        assert!(validate_oteryn_root_profile(&options).is_ok());
+    }
+
+    #[test]
+    fn extra_ambient_startup_option_is_rejected() {
+        let mut options = root_profile([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+        options.options.as_mut().unwrap().push_str(" -c search_path=public");
+        assert!(matches!(
+            validate_oteryn_root_profile(&options),
+            Err(Error::Configuration(_))
+        ));
+    }
+
+    #[test]
+    fn mutated_sanctioned_startup_option_is_rejected() {
+        let options = root_profile([
+            ("transaction_timeout", "2001ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+        assert!(matches!(
+            validate_oteryn_root_profile(&options),
+            Err(Error::Configuration(_))
+        ));
+    }
 }
 
 async fn maybe_upgrade_owned<S: Socket>(
