@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T13:37:25Z
+updated_at: 2026-09-15T13:45:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
@@ -43,7 +43,7 @@ Introduce a reusable late-stage convergence protocol so delivery can perform one
 - `PROVEN`: current Work coordinator already owns evidence caching and anti-loop retry control, but its ordinary `one bounded task per worker` model had no explicit late-stage coherent-repair-generation override.
 - `PROVEN`: current Durability prompt required one next handoff action but had no convergence-mode batch semantics or explicit low-level Git-object publication fallback prohibition.
 - `PROVEN`: the independent auditor already must read the nearest `docs/agents/AGENTS.md`; convergence-specific audit semantics can therefore be routed through that canonical instruction surface plus `CLOSURE_CONVERGENCE_PROTOCOL.md` without widening auditor authority.
-- `PROVEN`: the convergence changes materially revise three reusable prompt contracts, so `PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from `1.2` to `1.3`, `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` from `1.2` to `1.3`, and `OTV2_IMPL_DURABILITY` from `1.1` to `1.2` while preserving all IDs, owners, statuses, scopes and supersession relations. The auditor prompt's embedded `prompt_version` matches registry version `1.3`.
+- `PROVEN`: lifecycle versions are coordinator `1.3`, independent auditor `1.3`, durability `1.2`; the auditor prompt's embedded `prompt_version` also equals `1.3`.
 
 ## High-risk authority/recovery qualification
 
@@ -55,21 +55,20 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 ## Acceptance criteria
 
 - [x] Add one routed closure convergence protocol with explicit activation, one-shot sweep, finding classification, root-cause collapse, frozen inventory, coherent repair generation, final qualification/review and anti-drip novelty triggers.
-- [x] Bind discovery sweeps to the exact frozen closure head and fail closed if the live target moved.
-- [x] Bind discovery sweeps to the exact frozen protected-`main` generation: `base_main_sha` and auditor `audit_main_sha` must exact-match before the sweep; mixed-main evidence fails closed.
-- [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled; only repair-eligible material blockers enter the batch.
-- [x] Preserve every frozen root-cause inventory as immutable; evidence reconciliation creates one hashed successor inventory per coherent reconciliation generation, linked to its predecessor, rather than mutating the frozen digest in place.
-- [x] Bind every active root-cause inventory generation to an RFC 8785 canonical JSON SHA-256 identity, including repository/Issue/task/PR/branch, protected-main/audit-main generation, Phase-1 closure head/tree, inventory generation and predecessor identity.
-- [x] Require final-candidate review to resolve the live PR/branch and exact-match its current head to the qualified head; target movement fails closed rather than attaching review evidence to an unqualified generation.
-- [x] Require final review to detect protected-`main` movement since the sweep; material current-gate movement invalidates the sweep base, while only proven immaterial movement may continue with exact evidence.
+- [x] Bind discovery sweeps to the exact frozen closure head and exact protected-`main` generation; mixed-generation sweep evidence fails closed.
+- [x] Re-resolve protected `main` before contract-sensitive evidence reconciliation and before mutating repair dispatch; material movement invalidates the sweep base before mutation.
+- [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled.
+- [x] Preserve every frozen root-cause inventory as immutable; evidence reconciliation creates one hashed successor inventory per coherent reconciliation generation.
+- [x] Give every inventory generation its own evidence locator; never overwrite or repurpose the predecessor locator for successor content.
+- [x] Represent the hashed `inventory` envelope member as a structured JSON value rather than a string placeholder, matching the RFC 8785 canonicalization contract.
+- [x] Bind each active inventory generation to RFC 8785 + SHA-256 identity including repository/Issue/task/PR/branch, protected-main/audit-main generation, Phase-1 closure head/tree, inventory generation and predecessor identity.
+- [x] Bind the active-inventory pointer as `(inventory_generation, evidence_locator, content_identity)` and fail closed on ambiguous/partial transition.
+- [x] Require final-candidate review to exact-match the live target to `qualified_head` and independently reconcile protected-`main` movement since the sweep.
+- [x] Preserve `MATERIAL_BLOCKER` when recording `FINAL_SWEEP_MISS`.
 - [x] Add publication-safety fail-closed behavior for unavailable normal Git publication; no direct low-level Git-object fallback on canonical material branches.
-- [x] Work coordinator routes convergence-mode workers and auditors through the protocol and treats a bounded task as a bounded coherent repair generation during closure.
-- [x] Convergence audit dispatch fits the coordinator's existing minimal packet by using an `accepted_decisions` convergence descriptor rather than new top-level keys.
-- [x] Durability implementer consumes frozen root-cause batches and does not stop after the first compatible blocker.
-- [x] Independent auditor supports `DISCOVERY_SWEEP` and `FINAL_CANDIDATE_REVIEW` through nearest `docs/agents/AGENTS.md` + the routed protocol, without gaining implementation authority.
-- [x] Auditor evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT` remains separate from convergence `gate_classification: MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE`.
-- [x] A late `FINAL_SWEEP_MISS` is an additional sweep disposition and never replaces/downgrades `gate_classification: MATERIAL_BLOCKER` for a real current-gate defect.
-- [x] Lifecycle registry versions advance for the three reusable prompt contracts whose behavior changed, and each prompt's embedded version matches the registry.
+- [x] Keep coordinator packet compatibility by routing convergence data inside existing `accepted_decisions` rather than new top-level keys.
+- [x] Preserve auditor evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT` separately from convergence gate classification.
+- [x] Lifecycle versions advance for the three materially revised reusable prompt contracts and embedded prompt metadata matches registry state.
 - [x] No change to #356 material source, runtime/product behavior, workflows, rulesets, Merge Queue semantics, Platform/Atlas/META or production state.
 
 ## Excluded scope
@@ -79,65 +78,71 @@ No WP3 product repair, no #356 mutation, no Cargo/runtime source, no workflow/ru
 ## Implementation / findings
 
 - Added `docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md` as the single reusable closure procedure rather than duplicating the full flow in every prompt.
-- Routed convergence activation/audit modes through `docs/agents/AGENTS.md` so the existing independent auditor consumes the modes through its mandatory nearest-instruction startup path.
+- Routed convergence activation/audit modes through `docs/agents/AGENTS.md`.
 - Added a compact convergence-mode delta to `OTV2_WORK_DELIVERY_COORDINATOR.md`.
 - Added consolidated-repair and publication-safety deltas to `OTV2_IMPL_DURABILITY.md`.
 - Advanced lifecycle metadata only for the three changed reusable prompt contracts and aligned the independent auditor's embedded version.
 
-### Independent review generation 1
+### Independent review generations 1–4
 
-Codex review `5209285222` was bound to historical head `7abaa1fa2ad779e821435888549fcd61e686890c` and reported three P1 findings:
+Historical exact-head reviews found and the same lineage repaired:
 
-1. `4014990995` — task custody omitted `docs/agents/AGENTS.md`. `STALE_ON_CURRENT_LINEAGE`: already repaired before review publication by task-packet commit `b9ae8016583d4712cad5817dc8d7a274ed611d09`.
-2. `4014991004` — convergence audit parameters conflicted with the coordinator's mandatory minimal context packet. `ACCEPTED_AND_REPAIRED`: convergence dispatch uses a structured descriptor inside existing `accepted_decisions`.
-3. `4014991011` — convergence reused `classification` for gate disposition and conflicted with auditor evidence classification. `ACCEPTED_AND_REPAIRED`: evidence and gate classification are separate fields.
+- task custody omitted `docs/agents/AGENTS.md`;
+- convergence audit parameters conflicted with the coordinator minimal packet;
+- convergence/evidence classifications collided;
+- `FINAL_SWEEP_MISS` could replace blocker classification;
+- lifecycle versions did not advance for revised prompt contracts;
+- discovery sweep was not bound to exact frozen closure head;
+- `UNKNOWN`/`CONFLICT` evidence could drive mutation;
+- auditor lifecycle version required advancement;
+- editable evidence locator did not prove immutable inventory content.
 
-### Independent review generations 2–4
-
-Subsequent exact-head reviews found and the same lineage repaired:
-
-- `4015090632` — preserve `MATERIAL_BLOCKER` when marking `FINAL_SWEEP_MISS`;
-- `4015090638` — advance lifecycle versions for materially revised reusable prompt contracts;
-- `4015189472` — bind `DISCOVERY_SWEEP` to the exact frozen closure SHA;
-- `4015189486` — prevent `UNKNOWN`/`CONFLICT` evidence from driving mutation;
-- historical auditor lifecycle mismatch at head `bdd67024...` — auditor lifecycle advanced to `1.3`;
-- generation-4 P1 on `bf0a44b...` — bind frozen inventory to immutable RFC 8785 + SHA-256 content identity.
-
-All were accepted/repaired before the later exact-head qualification generations.
+All were dispositioned and resolved before later qualification generations.
 
 ### Independent review generation 5
 
-Codex review `5210336765` plus follow-up on exact head `a3de0bcd14b2adc02f7df9d614b2f6491084546e` reported two P1 findings and one related P2:
+Codex review `5210336765` plus follow-up on exact head `a3de0bcd14b2adc02f7df9d614b2f6491084546e` reported:
 
-1. `4015903503` — final review could attach to a newer live head after qualification. `ACCEPTED_AND_REPAIRED`: final-review dispatch and reviewer resolve the live target and require exact equality with `qualified_head`; mismatch fails closed as stale qualified head.
-2. `4015903521` — inventory digest did not bind repository/task/PR/closure generation. `ACCEPTED_AND_REPAIRED`: the RFC 8785 envelope binds repository, Issue, task, PR, branch, Phase-1 closure head and tree.
-3. `4015996290` — lifecycle registry `1.3` did not match auditor embedded `prompt_version: "1.2"`. `ACCEPTED_AND_REPAIRED`: task custody was extended first, then the embedded version was aligned to `1.3` without authority/behavior change.
+1. `4015903503` P1 — final review could attach to a newer live head after qualification. Repaired by exact live-target equality with `qualified_head`.
+2. `4015903521` P1 — inventory digest did not bind repository/task/PR/closure generation. Repaired by immutable sweep-target identity inside the canonical envelope.
+3. `4015996290` P2 — lifecycle registry `1.3` did not match auditor embedded `prompt_version: "1.2"`. Repaired after custody extension by aligning the embedded version to `1.3`.
 
-The resulting exact head `dae61ae0ff8b806dc66283c6de947aa76f670103` passed Agent Governance `34974838822`, Architecture Semantic Audit `34974435113`, and Merge Gate `34974838856` before the next final review.
+The resulting exact head `dae61ae0ff8b806dc66283c6de947aa76f670103` passed Agent Governance `34974838822`, Architecture Semantic Audit `34974435113`, and Merge Gate `34974838856` before the next review.
 
 ### Independent review generation 6
 
-Fresh Codex review `5210541937` on exact qualified head `dae61ae0ff8b806dc66283c6de947aa76f670103` reported two P1 findings:
+Fresh Codex review `5210541937` on exact qualified head `dae61ae0ff8b806dc66283c6de947aa76f670103` reported:
 
-1. `4016077633` — discovery sweep identity omitted the frozen protected-`main` generation, allowing the same PR head to be swept against a newer set of contracts. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`: Phase 1 + discovery descriptor now bind `base_main_sha`; the auditor must independently resolve `audit_main_sha` and require equality before sweep; the immutable inventory sweep target carries both; final review detects later protected-main movement and fails closed on material drift.
-2. `4016077641` — frozen inventory had no conforming transition after successful evidence reconciliation because changing `evidence_classification`/`repair_eligibility` would invalidate its digest. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`: frozen inventories are never edited in place; one immutable RFC 8785/SHA-256 successor is created per coherent reconciliation generation, links its predecessor identity, preserves the exact sweep target, and becomes the exact active generation for repair/qualification/final review.
+1. `4016077633` P1 — discovery sweep identity omitted the frozen protected-`main` generation. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`: Phase 1/sweep now bind `base_main_sha`, independently resolved `audit_main_sha`, and the inventory sweep target.
+2. `4016077641` P1 — frozen inventory had no conforming transition after successful evidence reconciliation. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`: frozen inventories are never edited in place; coherent evidence reconciliation creates a linked immutable successor generation.
 
-This task-record update is part of the same coherent review-repair generation and introduces no new protocol behavior beyond recording the accepted repairs.
+Both review threads were answered with exact repair evidence and resolved.
+
+### Implementing-agent bounded self-review after generation 6
+
+Before treating the generation-6 repair as final, a bounded review of only the protected-main binding and successor-inventory state machine found three handoff gaps and repaired them together in `4db3390ac65bf3902fb59e2716716c3cd4f125a7`:
+
+1. the JSON envelope example rendered the structured `inventory` member as a quoted string despite prose requiring a structured value;
+2. protected `main` was rechecked at sweep/final-review boundaries but not immediately before contract-sensitive reconciliation or a mutating repair dispatch;
+3. successor inventory semantics required immutable predecessors but did not explicitly require a new generation-specific evidence locator, allowing accidental predecessor-note reuse/overwrite.
+
+The repair makes the envelope example structurally consistent, adds fail-closed live-main reconciliation before mutation, requires a new locator per successor generation, and binds the active inventory as the exact generation/locator/digest tuple. No authority was added and no product/runtime surface changed.
 
 ## Validation
 
 ### Focused
 
 - changed-file inventory vs `main`: PASS — only task-owned documentation/prompt/task/lifecycle paths.
-- prompt semantic self-review: PASS after review repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
+- prompt semantic self-review: PASS after bounded handoff repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
 - META 3.1 prompting-standard reconciliation: PASS — one routed shared protocol with prompt-specific deltas; no full global procedure copied into every prompt.
-- lifecycle integrity self-review: PASS — the three intentionally revised prompt versions and self-declared metadata are consistent; all other lifecycle identity/status/scope/supersession metadata is preserved.
-- generation-6 repair scope: PASS — protocol semantic repair plus canonical task-record reconciliation only; #356 remains outside changed paths.
+- lifecycle integrity self-review: PASS — intentionally revised prompt versions and embedded metadata are consistent.
+- #356 isolation: PASS — no #356 material path is in this task's changed-file set.
 
 ### Component/integration
 
-- prior exact-head qualification on `dae61ae0ff8b806dc66283c6de947aa76f670103`: Agent Governance `34974838822` SUCCESS; Architecture Semantic Audit `34974435113` SUCCESS; Merge Gate `34974838856` SUCCESS. This evidence became historical after generation-6 repair.
-- fresh exact-head repository checks: required on the final repair head.
+- prior exact-head qualification on `dae61ae0ff8b806dc66283c6de947aa76f670103`: Agent Governance `34974838822` SUCCESS; Architecture Semantic Audit `34974435113` SUCCESS; Merge Gate `34974838856` SUCCESS. Historical after later repairs.
+- later exact-head qualification evidence is historical whenever the candidate moves.
+- fresh exact-head repository checks: required on the final candidate produced by this task-record commit.
 
 ### E2E
 
@@ -146,7 +151,7 @@ This task-record update is part of the same coherent review-repair generation an
 
 ### Exact-head CI
 
-- final head: record from PR readback after this repair-generation task record commit
+- final head: record from PR readback after this task-record commit
 - trigger source: pull_request
 - workflow/run/job: pending fresh exact-head generation
 - runner assignment: pending
@@ -155,18 +160,18 @@ This task-record update is part of the same coherent review-repair generation an
 
 ## Self-review
 
-- exact head: record from PR readback after this repair-generation task record commit
-- method/reviewer: implementing agent whole-diff review against #624 + bound META 3.1 + all accepted review findings
-- material findings: 0 open from the implementing-agent pass after generation-6 repair
+- exact head: record from PR readback after this task-record commit
+- method/reviewer: implementing agent bounded review against #624 + generation-6 findings + bound META 3.1
+- material findings: 0 open in the bounded pass after `4db3390ac65bf3902fb59e2716716c3cd4f125a7`
 - verdict: PASS_PENDING_FRESH_EXACT_HEAD_CI_AND_FINAL_INDEPENDENT_REVIEW
 
 ## Independent review
 
 - required: YES — material control-plane/governance behavior under bound META AI review policy
-- historical generation 1: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned above
-- historical generation 5: `5210336765` / head `a3de0bcd...` / 2 P1 + follow-up P2, dispositioned above
-- historical generation 6: `5210541937` / head `dae61ae0...` / 2 P1, dispositioned above
-- exact final head: record after this repair-generation task record commit
+- historical generation 1: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned
+- historical generation 5: `5210336765` / head `a3de0bcd...` / 2 P1 + follow-up P2, dispositioned
+- historical generation 6: `5210541937` / head `dae61ae0...` / 2 P1, dispositioned
+- exact final head: record after this task-record commit
 - method/auditor: one fresh Codex deep review after deterministic validation
 - material findings: pending
 - verdict: pending
@@ -175,7 +180,7 @@ This task-record update is part of the same coherent review-repair generation an
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: generation-6 findings must be replied/resolved against exact repair evidence before final independent review
+- unresolved review threads: 0 before this self-review repair; must remain 0 before final integration readiness
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -184,7 +189,7 @@ This task-record update is part of the same coherent review-repair generation an
 ## Context checkpoint
 
 ```yaml
-last_progress: Repaired generation-6 protected-main binding and immutable successor-inventory findings; reconciled canonical task record.
+last_progress: Closed generation-6 handoff gaps for structured envelope identity, live-main mutation preflight and generation-specific successor locators; reconciled canonical task record.
 status: validating
 branch: agent/closure-convergence-protocol
 head_sha: record_after_this_commit
@@ -201,10 +206,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 4
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Resolve generation-6 review threads with exact commit evidence, freeze the resulting exact head, run fresh exact-head CI, then obtain one fresh independent deep review without moving code or metadata.
+next_action: Freeze exact PR head, update PR body once with required metadata headings, run fresh exact-head CI, then obtain one fresh independent deep review without moving code or metadata.
 ```
