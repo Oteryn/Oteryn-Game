@@ -4129,12 +4129,11 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 // Registration cannot mint replacement capacity after its token is stale.
-                let stale = AdmissionRuntime::connect(
-                    wp3_registered_root_qualification::production_config(&url, &ca_cert)?,
-                )
-                .await?;
                 assert!(matches!(
-                    first_pass.run(stale.guards().load(&[])).await,
+                    AdmissionRuntime::connect(
+                        wp3_registered_root_qualification::production_config(&url, &ca_cert)?,
+                    )
+                    .await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 assert!(matches!(
