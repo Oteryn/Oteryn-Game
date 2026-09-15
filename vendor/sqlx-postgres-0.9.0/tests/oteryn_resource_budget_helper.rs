@@ -2,6 +2,7 @@ use sqlx::postgres::{BudgetError, PgConnectOptions, PgPoolOptions, PgSslMode, Re
 use std::error::Error;
 use std::net::IpAddr;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -80,7 +81,7 @@ struct Ledger {
     ordinary_limit: usize,
     root_limit: usize,
     state: Mutex<State>,
-    deny_after_provider: bool,
+    deny_after_provider: AtomicBool,
 }
 
 impl Ledger {
@@ -89,7 +90,7 @@ impl Ledger {
             ordinary_limit,
             root_limit,
             state: Mutex::new(State::default()),
-            deny_after_provider: false,
+            deny_after_provider: AtomicBool::new(false),
         }
     }
 
@@ -133,7 +134,7 @@ impl ResourceBudget for Ledger {
         // The observed provider-shared reservation is the TLS phase boundary.
         // Fund the same bounded transport prefix as the positive profile, then
         // deny its next ordinary TLS allocation, independently of byte sizes.
-        if self.deny_after_provider && state.provider_shared != 0 {
+        if self.deny_after_provider.load(Ordering::Acquire) && state.provider_shared != 0 {
             state.denied_tls_phase = true;
             state.record_denial(bytes);
             return Err(BudgetError::Unavailable);
@@ -250,9 +251,28 @@ fn selected_holder_pool(options: sqlx::postgres::OterynRootProfile) -> sqlx::PgP
 }
 
 fn tls_denial_ledger() -> Ledger {
-    let mut ledger = Ledger::new(SLOT_LIMIT, ROOT_LIMIT);
-    ledger.deny_after_provider = true;
-    ledger
+    Ledger::new(SLOT_LIMIT, ROOT_LIMIT)
+}
+
+fn prime_provider_residency(
+    runtime: &tokio::runtime::Runtime,
+    admin_url: &str,
+    ca_path: &Path,
+    owner: Arc<dyn ResourceBudget>,
+) -> Result<(), Box<dyn Error>> {
+    runtime.block_on(async {
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .min_connections(0)
+            .acquire_timeout(ROOT_CONNECT_TIMEOUT)
+            .connect_lazy_with(
+                ordinary_options(admin_url, ca_path)?.with_resource_budget(owner),
+            );
+        let mut connection = pool.acquire().await?;
+        connection.return_to_pool().await;
+        pool.close().await;
+        Ok::<_, Box<dyn Error>>(())
+    })
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -274,6 +294,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             });
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
             let options = selected_options(&admin_url, ca_path, owner.clone())?;
+            if tls_phase {
+                prime_provider_residency(&runtime, &admin_url, ca_path, owner.clone())?;
+                ledger.deny_after_provider.store(true, Ordering::Release);
+            }
             let pool = runtime.block_on(async { selected_holder_pool(options) });
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err(
@@ -355,9 +379,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
             let ledger = Arc::new(Ledger::new(ordinary_limit, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
+            let selected_options = if selected {
+                let options = selected_options(&admin_url, ca_path, owner.clone())?;
+                prime_provider_residency(&runtime, &admin_url, ca_path, owner.clone())?;
+                Some(options)
+            } else {
+                None
+            };
             let pool = runtime.block_on(async {
                 Ok::<_, Box<dyn Error>>(if selected {
-                    selected_holder_pool(selected_options(&admin_url, ca_path, owner.clone())?)
+                    selected_holder_pool(selected_options.ok_or("selected profile missing")?)
                 } else {
                     PgPoolOptions::new()
                         .max_connections(1)
