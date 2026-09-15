@@ -1042,13 +1042,26 @@ impl RuntimeBackend {
                     .bind(format!("{millis}ms"))
                     .execute(&mut *transaction)
                     .await?;
-                let transaction = match custody.fence_transaction(transaction).await {
-                    Err(DurabilityError::Unavailable) => {
+                // Keep ownership of the already-started transaction while the
+                // custody fence runs. A rejected fence is a no-mutation path,
+                // but dropping the transaction would only enqueue rollback and
+                // leave the max-one holder temporarily unavailable.
+                let fence_result = async {
+                    sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+                        .bind(super::EXECUTOR_CUSTODY_LOCK)
+                        .execute(&mut *transaction)
+                        .await?;
+                    custody.validate_generation(&mut transaction).await
+                }
+                .await;
+                if let Err(error) = fence_result {
+                    let unavailable = matches!(error, DurabilityError::Unavailable);
+                    let _ = rollback_semantic(transaction).await;
+                    if unavailable {
                         self.record_root_ready_demand();
-                        return Err(DurabilityError::Unavailable);
                     }
-                    result => result?,
-                };
+                    return Err(error);
+                }
                 Ok(transaction)
             }
             #[cfg(test)]

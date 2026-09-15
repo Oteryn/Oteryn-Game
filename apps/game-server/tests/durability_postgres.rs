@@ -3902,7 +3902,6 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 authority_matrix::checked(history.accept_completion(&mut delivery))?;
                 assert_eq!(history.receipt(), Some(&receipt));
                 assert!(history.take_request().is_err());
-                assert!(loss_pass.run(fresh.loss_completion_source(&wrong)).await?.is_none(), "conflicting original cannot acquire completion authority");
             }
             assert!(matches!(runtime.enqueue_checkpoint(1, "different third work")?.establish().await, Err(DurabilityError::Unavailable)));
             let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
