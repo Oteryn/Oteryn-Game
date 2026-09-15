@@ -13,7 +13,47 @@ enum SchemaFailureClass {
     PoolTimeout,
     Database,
     Decode,
-    Other,
+    Configuration,
+    InvalidArgument,
+    Encode,
+    RowNotFound,
+    AnyDriver,
+    PoolClosed,
+    WorkerCrashed,
+    Migrate,
+    InvalidSavepoint,
+    BeginFailed,
+    ConfigFile,
+    OtherUnclassified,
+}
+
+#[cfg(test)]
+impl SchemaFailureClass {
+    const fn label(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::MissingLedger => "missing_ledger",
+            Self::Incompatible => "incompatible",
+            Self::SqlxIo => "sqlx_io",
+            Self::SqlxTls => "sqlx_tls",
+            Self::SqlxProtocol => "sqlx_protocol",
+            Self::PoolTimeout => "pool_timeout",
+            Self::Database => "database",
+            Self::Decode => "decode",
+            Self::Configuration => "configuration",
+            Self::InvalidArgument => "invalid_argument",
+            Self::Encode => "encode",
+            Self::RowNotFound => "row_not_found",
+            Self::AnyDriver => "any_driver",
+            Self::PoolClosed => "pool_closed",
+            Self::WorkerCrashed => "worker_crashed",
+            Self::Migrate => "migrate",
+            Self::InvalidSavepoint => "invalid_savepoint",
+            Self::BeginFailed => "begin_failed",
+            Self::ConfigFile => "config_file",
+            Self::OtherUnclassified => "other_unclassified",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -29,18 +69,7 @@ fn record_schema_failure(class: SchemaFailureClass) {
 
 #[cfg(test)]
 pub(crate) fn schema_failure_class() -> &'static str {
-    SCHEMA_FAILURE_CLASS.with(|class| match class.get() {
-        SchemaFailureClass::None => "none",
-        SchemaFailureClass::MissingLedger => "missing_ledger",
-        SchemaFailureClass::Incompatible => "incompatible",
-        SchemaFailureClass::SqlxIo => "sqlx_io",
-        SchemaFailureClass::SqlxTls => "sqlx_tls",
-        SchemaFailureClass::SqlxProtocol => "sqlx_protocol",
-        SchemaFailureClass::PoolTimeout => "pool_timeout",
-        SchemaFailureClass::Database => "database",
-        SchemaFailureClass::Decode => "decode",
-        SchemaFailureClass::Other => "other",
-    })
+    SCHEMA_FAILURE_CLASS.with(|class| class.get().label())
 }
 
 #[cfg(test)]
@@ -51,12 +80,23 @@ fn classify_sqlx_error(error: &sqlx::Error) -> SchemaFailureClass {
         sqlx::Error::Protocol(_) => SchemaFailureClass::SqlxProtocol,
         sqlx::Error::PoolTimedOut => SchemaFailureClass::PoolTimeout,
         sqlx::Error::Database(_) => SchemaFailureClass::Database,
+        sqlx::Error::Configuration(_) => SchemaFailureClass::Configuration,
+        sqlx::Error::InvalidArgument(_) => SchemaFailureClass::InvalidArgument,
+        sqlx::Error::Encode(_) => SchemaFailureClass::Encode,
+        sqlx::Error::RowNotFound => SchemaFailureClass::RowNotFound,
+        sqlx::Error::AnyDriverError(_) => SchemaFailureClass::AnyDriver,
+        sqlx::Error::PoolClosed => SchemaFailureClass::PoolClosed,
+        sqlx::Error::WorkerCrashed => SchemaFailureClass::WorkerCrashed,
+        sqlx::Error::Migrate(_) => SchemaFailureClass::Migrate,
+        sqlx::Error::InvalidSavePointStatement => SchemaFailureClass::InvalidSavepoint,
+        sqlx::Error::BeginFailed => SchemaFailureClass::BeginFailed,
+        sqlx::Error::ConfigFile(_) => SchemaFailureClass::ConfigFile,
         sqlx::Error::ColumnDecode { .. }
         | sqlx::Error::Decode(_)
         | sqlx::Error::ColumnIndexOutOfBounds { .. }
         | sqlx::Error::ColumnNotFound(_)
         | sqlx::Error::TypeNotFound { .. } => SchemaFailureClass::Decode,
-        _ => SchemaFailureClass::Other,
+        _ => SchemaFailureClass::OtherUnclassified,
     }
 }
 
@@ -224,22 +264,50 @@ mod contract_tests {
 
     #[test]
     fn schema_error_diagnostics_are_closed_static_classes() {
-        assert!(matches!(
-            classify_sqlx_error(&sqlx::Error::Io(std::io::Error::other("private"))),
-            SchemaFailureClass::SqlxIo
-        ));
-        assert!(matches!(
-            classify_sqlx_error(&sqlx::Error::Protocol("private".to_owned())),
-            SchemaFailureClass::SqlxProtocol
-        ));
-        assert!(matches!(
-            classify_sqlx_error(&sqlx::Error::PoolTimedOut),
-            SchemaFailureClass::PoolTimeout
-        ));
-        assert!(matches!(
-            classify_sqlx_error(&sqlx::Error::Decode("private".into())),
-            SchemaFailureClass::Decode
-        ));
+        let private = "private-payload-must-not-escape";
+        let cases = [
+            (sqlx::Error::Io(std::io::Error::other(private)), "sqlx_io"),
+            (sqlx::Error::Protocol(private.to_owned()), "sqlx_protocol"),
+            (sqlx::Error::PoolTimedOut, "pool_timeout"),
+            (sqlx::Error::Decode(private.into()), "decode"),
+            (
+                sqlx::Error::config(std::io::Error::other(private)),
+                "configuration",
+            ),
+            (
+                sqlx::Error::InvalidArgument(private.to_owned()),
+                "invalid_argument",
+            ),
+            (sqlx::Error::Encode(private.into()), "encode"),
+            (sqlx::Error::RowNotFound, "row_not_found"),
+            (sqlx::Error::AnyDriverError(private.into()), "any_driver"),
+            (sqlx::Error::PoolClosed, "pool_closed"),
+            (sqlx::Error::WorkerCrashed, "worker_crashed"),
+            (
+                sqlx::Error::Migrate(Box::new(sqlx::migrate::MigrateError::Source(
+                    private.into(),
+                ))),
+                "migrate",
+            ),
+            (sqlx::Error::InvalidSavePointStatement, "invalid_savepoint"),
+            (sqlx::Error::BeginFailed, "begin_failed"),
+        ];
+
+        for (error, expected) in cases {
+            let class = classify_sqlx_error(&error);
+            let label = class.label();
+            assert_eq!(label, expected);
+            assert!(!label.contains(private));
+        }
+
+        for class in [
+            SchemaFailureClass::SqlxTls,
+            SchemaFailureClass::Database,
+            SchemaFailureClass::ConfigFile,
+            SchemaFailureClass::OtherUnclassified,
+        ] {
+            assert!(!class.label().contains(private));
+        }
     }
 
     #[test]
