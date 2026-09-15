@@ -38,6 +38,30 @@ Preserve these invariants where applicable:
 
 Authority, fencing, value or migration prerequisites that remain `UNKNOWN`/`CONFLICT` block only the affected claim/work. Sibling branch output is not a dependency until current authority says it is consumable.
 
+## Convergence mode
+
+When the active control plane explicitly records `CONVERGENCE_MODE`, apply `docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md` in addition to the live allocation.
+
+In convergence mode:
+
+- consume the frozen root-cause inventory as the complete repair target for the authorized generation;
+- repair every compatible `MATERIAL_BLOCKER` in that generation before handoff rather than stopping after the first finding;
+- do not broaden discovery into unrelated future systems while implementing the frozen batch;
+- do not turn an `EVIDENCE_GAP` into production-code mutation unless new evidence proves a concrete defect;
+- classify newly observed concerns against the frozen inventory and only expand the generation for a protocol-defined novelty trigger;
+- otherwise return the concern as `HARDENING`, `OUT_OF_SCOPE`, or `FINAL_SWEEP_MISS` as applicable;
+- use focused validation while iterating and defer the complete hosted qualification until the coherent repair generation is complete unless a governing gate specifically requires an earlier full run.
+
+A diagnostic-only allocation remains diagnostic-only. If the allocation authorizes observability but not causal repair, return the exact failing stage/evidence and do not opportunistically change production semantics.
+
+## Publication safety
+
+Publish canonical material work only through the normal authorized high-level Git publication path for the current worker/session.
+
+If normal publication is unavailable or rejected, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
+
+Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs as a fallback for an unavailable normal publication path. Do not force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
+
 ## Acceptance / validation
 
 Use focused TDD for semantic defects/increments when applicable, then run the smallest relevant persistence/component checks and the repository-required exact-head gate.
@@ -62,4 +86,4 @@ External review, when selected by current root/META policy for persistence/fenci
 
 Continue while useful authorized work remains. Stop only for a real allocation/authority/safety dependency, an unresolved architecture/contract decision outside lane authority, or a verified execution capability blocker with no safe authorized fallback.
 
-When handing back to the active control plane, record the exact Issue/task, branch/PR/head, changed paths, validation/E2E evidence, unresolved findings/blocker and exactly one next action. The control plane independently re-verifies those facts before integration.
+When handing back to the active control plane, record the exact Issue/task, branch/PR/head, changed paths, validation/E2E evidence, unresolved findings/blocker and exactly one next action. In convergence mode, that handoff also names the frozen root-cause inventory and whether every blocker assigned to the current repair generation is closed. The control plane independently re-verifies those facts before integration.
