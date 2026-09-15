@@ -256,6 +256,7 @@ impl AdmissionReconnectJournal {
             }
             let stored_record = guarded_record_json(&existing)?;
             if stored_record != encoded_record {
+                super::db::rollback_semantic(transaction).await?;
                 return Ok(ReconnectPrepareDispositionV1::IdempotencyConflict);
             }
             if !attempt_binding_is_valid(&mut transaction, record).await? {
@@ -333,6 +334,7 @@ impl AdmissionReconnectJournal {
             lock_actor_epoch_attempt_budget(&mut transaction, record).await?
             && retained_for_actor_epoch >= MAX_ATTEMPTS_PER_EPOCH
         {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
         }
         let current_epoch: String = session.try_get("control_loss_epoch")?;
@@ -359,6 +361,7 @@ impl AdmissionReconnectJournal {
                 .fetch_one(&mut *transaction)
                 .await?;
                 if retained_for_epoch >= i64::from(MAX_ATTEMPTS_PER_EPOCH) {
+                    super::db::rollback_semantic(transaction).await?;
                     return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
                 }
                 insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
@@ -432,6 +435,7 @@ impl AdmissionReconnectJournal {
 
         let count: i16 = session.try_get("attempt_count")?;
         if count >= MAX_ATTEMPTS_PER_EPOCH {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
         }
 
@@ -558,6 +562,7 @@ impl AdmissionReconnectJournal {
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         };
         if guarded_record_json(&attempt)? != encoded_record {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectCommitDispositionV1::IdempotencyConflict);
         }
         if !attempt_binding_is_valid(&mut transaction, record).await? {

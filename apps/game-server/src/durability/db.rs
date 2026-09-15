@@ -1484,6 +1484,103 @@ mod work_custody_tests {
     }
 
     #[test]
+    fn terminal_no_mutation_signal_releases_slot_but_unavailable_does_not()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .connect_lazy("postgres://localhost/test")
+                    .map_err(DurabilityError::from)?;
+                let backend = std::sync::Arc::new(RuntimeBackend {
+                    pool,
+                    custody: BackendCustody::LegacyFixture,
+                    pending: std::sync::Mutex::new([None, None]),
+                    work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                    root_ready_demand: RootReadyDemand::new(),
+                    root_maintenance: tokio::sync::Mutex::new(()),
+                });
+                let now = std::time::Instant::now();
+                let id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(3, "terminal-no-mutation", now)?;
+                let (slot, operation) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote(id, now)?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(slot, operation.incarnation)?;
+                let pass = backend.resume_pass(slot, 3, "terminal-no-mutation")?;
+                pass.run(async {
+                    mark_current_semantic_terminal()?;
+                    Ok(())
+                })
+                .await?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .begin_acknowledgement(
+                        slot,
+                        3,
+                        "terminal-no-mutation",
+                        operation.incarnation,
+                    )?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .finish_acknowledgement(
+                        slot,
+                        3,
+                        "terminal-no-mutation",
+                        operation.incarnation,
+                    )?;
+
+                let retry_id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(3, "retryable", now)?;
+                let (retry_slot, retry) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote(retry_id, now)?;
+                assert_eq!(retry_slot, slot);
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(retry_slot, retry.incarnation)?;
+                let retry_pass = backend.resume_pass(retry_slot, 3, "retryable")?;
+                assert!(matches!(
+                    retry_pass
+                        .run(async { Err::<(), _>(DurabilityError::Unavailable) })
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                assert!(matches!(
+                    backend
+                        .work
+                        .lock()
+                        .map_err(|_| DurabilityError::Unavailable)?
+                        .begin_acknowledgement(retry_slot, 3, "retryable", retry.incarnation,),
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), DurabilityError>(())
+            })?;
+        Ok(())
+    }
+
+    #[test]
     fn only_the_exact_definitely_unsubmitted_incarnation_can_be_released()
     -> Result<(), DurabilityError> {
         let mut work = WorkCustody::new(&[None, None]);

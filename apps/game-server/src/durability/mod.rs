@@ -477,6 +477,7 @@ impl AdmissionReconnectJournalV2 {
         let retained_attempt_count =
             retained_actor_epoch_attempt_count_v2(&mut transaction, record).await?;
         if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
+            db::rollback_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
         }
         ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;

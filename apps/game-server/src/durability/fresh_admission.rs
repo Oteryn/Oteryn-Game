@@ -496,6 +496,7 @@ impl FreshAdmissionStore {
         let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
             .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
         let Some(row) = row else {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         };
         let original_json: Option<String> = row.try_get("operation_json")?;
@@ -506,6 +507,7 @@ impl FreshAdmissionStore {
         let FreshReconciliation::Committed(current) =
             self.reconcile_locked(&mut tx, &original).await?
         else {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         };
         let expected_claims = &original.transition.successors;
@@ -523,6 +525,7 @@ impl FreshAdmissionStore {
             )
             .is_err()
         {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         }
         // The sealed observation does not supersede the independently published
@@ -540,6 +543,7 @@ impl FreshAdmissionStore {
             Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
             if *ownership_generation == observation.session.current_scope_generation().get())
         {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         }
         let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
@@ -547,6 +551,7 @@ impl FreshAdmissionStore {
         let epoch_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_control_loss_continuity WHERE character_id = encode($1,'hex')::uuid AND control_loss_epoch = $2::text::numeric(20,0))")
             .bind(observation.session.commit().character_id().as_bytes().as_slice()).bind(observation.loss_epoch.get().to_string()).fetch_one(&mut *tx).await?;
         if !reservation || epoch_exists {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         }
         // Strong common relation fencing excludes every sibling semantic writer
@@ -556,9 +561,11 @@ impl FreshAdmissionStore {
                 .fetch_one(&mut *tx)
                 .await?;
         let Ok(effect) = request.validate_final(source, decided_at) else {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         };
         if effect.predecessor() != current.current_session {
+            super::db::rollback_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Rejected);
         }
         let successor = effect.successor();

@@ -801,11 +801,13 @@ impl AdmissionGuardStore {
             current.push(self.load_locked(&mut transaction, &change.key).await?);
         }
         if let Err(error) = request.validate_locked(&current) {
-            return Ok(if error == AdmissionAuthorityPublicationErrorV1::Stale {
+            let disposition = if error == AdmissionAuthorityPublicationErrorV1::Stale {
                 GuardPublicationDisposition::Stale
             } else {
                 GuardPublicationDisposition::Conflict
-            });
+            };
+            super::db::rollback_semantic(transaction).await?;
+            return Ok(disposition);
         }
         if current
             .iter()
@@ -819,6 +821,7 @@ impl AdmissionGuardStore {
             .successor_history_available(&mut transaction, request.changes(), &current)
             .await?
         {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(GuardPublicationDisposition::Conflict);
         }
         self.persist_locked(&mut transaction, request.changes(), &current, &encoded)
