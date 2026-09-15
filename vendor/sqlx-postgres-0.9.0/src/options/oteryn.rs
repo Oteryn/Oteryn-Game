@@ -26,6 +26,16 @@ pub struct OterynRootProfile {
 impl OterynRootProfile {
     #[doc(hidden)]
     pub fn options<const N: usize>(mut self, options: [(&str, &str); N]) -> Result<Self, BudgetError> {
+        if options.as_slice()
+            != [
+                ("transaction_timeout", "2000ms"),
+                ("statement_timeout", "2000ms"),
+                ("lock_timeout", "2000ms"),
+            ]
+        {
+            return Err(BudgetError::Unavailable);
+        }
+
         fn escaped_len(value: &str) -> Result<usize, BudgetError> {
             value.bytes().try_fold(0usize, |len, byte| {
                 len.checked_add(if matches!(byte, b' ' | b'\\') { 2 } else { 1 })
@@ -33,12 +43,6 @@ impl OterynRootProfile {
             })
         }
 
-        let sanctioned = options.as_slice()
-            == [
-                ("transaction_timeout", "2000ms"),
-                ("statement_timeout", "2000ms"),
-                ("lock_timeout", "2000ms"),
-            ];
         let encoded_len = options.iter().enumerate().try_fold(0usize, |len, (index, (key, value))| {
             len.checked_add(usize::from(index != 0))
                 .and_then(|n| n.checked_add(3))
@@ -64,11 +68,7 @@ impl OterynRootProfile {
             encoded_len,
             std::sync::atomic::Ordering::AcqRel,
         );
-        self.inner.oteryn_root_startup_options = if sanctioned {
-            OterynRootStartupOptionsState::Precharged
-        } else {
-            OterynRootStartupOptionsState::Absent
-        };
+        self.inner.oteryn_root_startup_options = OterynRootStartupOptionsState::Precharged;
         Ok(self)
     }
 
@@ -359,5 +359,35 @@ mod tests {
         assert_eq!(denied.retained(), base);
         assert!(matches!(profile.options(OPTIONS), Err(BudgetError::Unavailable)));
         assert_eq!(denied.retained(), 0);
+    }
+
+    #[test]
+    fn non_sanctioned_startup_options_fail_before_additional_charge() {
+        fn assert_rejected_before_charge<const N: usize>(options: [(&str, &str); N]) {
+            let ledger = Arc::new(Budget::new(usize::MAX));
+            let owner: Arc<dyn ResourceBudget> = ledger.clone();
+            let profile = profile(owner).expect("funded root profile");
+            let acquired_before = ledger.acquired.load(Ordering::SeqCst);
+
+            assert!(matches!(profile.options(options), Err(BudgetError::Unavailable)));
+            assert_eq!(ledger.acquired.load(Ordering::SeqCst), acquired_before);
+            assert_eq!(ledger.retained(), 0);
+        }
+
+        assert_rejected_before_charge([
+            ("transaction_timeout", "2001ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+        ]);
+        assert_rejected_before_charge([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+        ]);
+        assert_rejected_before_charge([
+            ("transaction_timeout", "2000ms"),
+            ("statement_timeout", "2000ms"),
+            ("lock_timeout", "2000ms"),
+            ("application_name", "forged"),
+        ]);
     }
 }
