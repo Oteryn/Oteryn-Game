@@ -2918,6 +2918,7 @@ impl AdmissionRuntime {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn registered_connect_diagnostic_substage() -> &'static str {
     db::registered_connect_diagnostic_substage()
 }

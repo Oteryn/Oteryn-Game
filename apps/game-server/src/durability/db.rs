@@ -1097,6 +1097,7 @@ fn set_registered_connect_diagnostic_substage(stage: RegisteredConnectDiagnostic
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 pub(super) fn registered_connect_diagnostic_substage() -> &'static str {
     REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE.with(|stage| match stage.get() {
         RegisteredConnectDiagnosticSubstage::RootProfileConstruct => "root_profile_construct",
