@@ -892,7 +892,9 @@ enum RuntimeRegistration {
     Starting,
     Ready {
         identity: RuntimeIdentity,
-        backend: std::sync::Arc<RuntimeBackend>,
+        // Registration must not itself keep a retired holder generation alive.
+        // Live AdmissionRuntime/semantic handles own the strong references.
+        backend: std::sync::Weak<RuntimeBackend>,
     },
 }
 
@@ -952,7 +954,12 @@ pub(super) async fn registered_backend(
         RuntimeRegistration::Ready {
             identity: expected,
             backend,
-        } if expected == &identity => return Ok(backend.clone()),
+        } if expected == &identity => {
+            if let Some(backend) = backend.upgrade() {
+                return Ok(backend);
+            }
+        }
+        RuntimeRegistration::Ready { backend, .. } if backend.strong_count() == 0 => {}
         RuntimeRegistration::Empty => {}
         _ => return Err(DurabilityError::InvalidStoredState),
     }
@@ -996,7 +1003,7 @@ pub(super) async fn registered_backend(
     });
     *starting.registration = RuntimeRegistration::Ready {
         identity,
-        backend: backend.clone(),
+        backend: std::sync::Arc::downgrade(&backend),
     };
     starting.complete = true;
     Ok(backend)

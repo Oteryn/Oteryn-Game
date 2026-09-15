@@ -431,6 +431,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             })?;
             runtime.block_on(root_connection.return_to_pool());
+            // `PoolConnection::return_to_pool()` removes the live connection,
+            // but the emptied wrapper still owns a `Pool` clone. Destroy that
+            // clone before closing the holder so the selected connect options
+            // (and their profile reservation) can reach their real final drop.
+            drop(root_connection);
 
             let mut transaction = runtime.block_on(async {
                 for _ in 0..100 {
