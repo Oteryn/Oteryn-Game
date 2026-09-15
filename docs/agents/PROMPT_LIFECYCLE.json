@@ -87,7 +87,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Independent high-effort forensic audit of OTV2_WORK_DELIVERY_COORDINATOR or a uniquely identified requested Game delivery target, with bounded non-dispositive GitHub audit-evidence COMMENT write authority only; no tracked-file, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, architecture, production or cross-repository write authority.",

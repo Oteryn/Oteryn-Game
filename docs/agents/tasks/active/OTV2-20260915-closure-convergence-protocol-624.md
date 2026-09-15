@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T12:00:00Z
+updated_at: 2026-09-15T12:15:11Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
@@ -42,7 +42,7 @@ Introduce a reusable late-stage convergence protocol so delivery can perform one
 - `PROVEN`: current Work coordinator already owns evidence caching and anti-loop retry control, but its ordinary `one bounded task per worker` model had no explicit late-stage coherent-repair-generation override.
 - `PROVEN`: current Durability prompt required one next handoff action but had no convergence-mode batch semantics or explicit low-level Git-object publication fallback prohibition.
 - `PROVEN`: the independent auditor already must read the nearest `docs/agents/AGENTS.md`; convergence-specific audit semantics can therefore be routed through that canonical instruction surface plus `CLOSURE_CONVERGENCE_PROTOCOL.md` without widening auditor authority.
-- `PROVEN`: the convergence changes materially revise two reusable prompt contracts, so `PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from `1.2` to `1.3` and `OTV2_IMPL_DURABILITY` from `1.1` to `1.2` while preserving all IDs, owners, statuses, scopes and supersession relations.
+- `PROVEN`: the convergence changes materially revise three reusable prompt contracts, so `PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from `1.2` to `1.3`, `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` from `1.2` to `1.3`, and `OTV2_IMPL_DURABILITY` from `1.1` to `1.2` while preserving all IDs, owners, statuses, scopes and supersession relations.
 
 ## High-risk authority/recovery qualification
 
@@ -63,7 +63,7 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 - [x] Independent auditor supports `DISCOVERY_SWEEP` and `FINAL_CANDIDATE_REVIEW` through nearest `docs/agents/AGENTS.md` + the routed protocol, without gaining implementation authority.
 - [x] Auditor evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT` remains separate from convergence `gate_classification: MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE`.
 - [x] A late `FINAL_SWEEP_MISS` is an additional sweep disposition and never replaces/downgrades `gate_classification: MATERIAL_BLOCKER` for a real current-gate defect.
-- [x] Lifecycle registry versions advance for the two reusable prompt contracts whose behavior changed.
+- [x] Lifecycle registry versions advance for the three reusable prompt contracts whose behavior changed.
 - [x] No change to #356 material source, runtime/product behavior, workflows, rulesets, Merge Queue semantics, Platform/Atlas/META or production state.
 
 ## Excluded scope
@@ -76,7 +76,7 @@ No WP3 product repair, no #356 mutation, no Cargo/runtime source, no workflow/ru
 - Routed convergence activation/audit modes through `docs/agents/AGENTS.md` so the existing independent auditor consumes the modes through its mandatory nearest-instruction startup path.
 - Added a compact convergence-mode delta to `OTV2_WORK_DELIVERY_COORDINATOR.md`.
 - Added consolidated-repair and publication-safety deltas to `OTV2_IMPL_DURABILITY.md`.
-- Advanced lifecycle metadata only for the two changed reusable prompt contracts.
+- Advanced lifecycle metadata only for the three changed reusable prompt contracts.
 
 ### Independent review generation 1
 
@@ -97,6 +97,10 @@ Fresh Codex review sequence on exact head `b8e54b146dda34459aa8725ab2d9553c5968f
 
 This complete material review-repair generation requires fresh exact-head deterministic validation and one final independent review on the resulting stable head.
 
+### Independent review generation 3
+
+Final Codex review on exact head `bdd67024fc3aaea880e66864fb8aa92547625e0d` reported one P2: the convergence-aware independent auditor contract remained lifecycle `1.2`. `ACCEPTED_AND_REPAIRED`: `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` advances `1.2 -> 1.3`; its prompt ID, owner, status, scope and supersession metadata remain unchanged. No prompt, runtime, workflow, ruleset or integration semantics change in this bounded repair.
+
 ## Validation
 
 ### Focused
@@ -104,7 +108,7 @@ This complete material review-repair generation requires fresh exact-head determ
 - changed-file inventory vs `main`: PASS — only the six owned documentation/prompt/task paths above.
 - prompt semantic self-review: PASS after review repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
 - META 3.1 prompting-standard reconciliation: PASS — one routed shared protocol with prompt-specific deltas; no full global procedure copied into every prompt.
-- lifecycle integrity self-review: PASS — only the two intentionally revised prompt versions changed; all other lifecycle identity/status/scope/supersession metadata is preserved.
+- lifecycle integrity self-review: PASS — only the three intentionally revised prompt versions changed; all other lifecycle identity/status/scope/supersession metadata is preserved.
 
 ### Component/integration
 
@@ -148,7 +152,7 @@ This complete material review-repair generation requires fresh exact-head determ
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: generation-2 threads to be replied/resolved against the final published head
+- unresolved review threads: final-review auditor lifecycle P2 to be replied/resolved against the published repair head
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -157,7 +161,7 @@ This complete material review-repair generation requires fresh exact-head determ
 ## Context checkpoint
 
 ```yaml
-last_progress: Reconciled all currently known review findings into one coherent generation-2 repair batch, including exact sweep-head binding and evidence-gated repair eligibility.
+last_progress: Prepared the bounded final-review P2 repair by versioning the convergence-aware independent auditor contract and reconciling task bookkeeping.
 status: validating
 branch: agent/closure-convergence-protocol
 head_sha: record_after_commit
