@@ -27,6 +27,7 @@ mod wp3_registered_root_qualification {
     use std::str::FromStr;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
 
     const ROOT_LIMIT: usize = 12_582_912;
 
@@ -208,8 +209,42 @@ mod wp3_registered_root_qualification {
         {
             return Err("PostgreSQL rejected TLS reload".into());
         }
-        pool.close().await;
-        Ok(ca_cert)
+
+        // `pg_reload_conf()` only requests a reload.  Do not let the registered
+        // runtime race the postmaster while it is still serving the previous
+        // certificate: witness the exact intended TLS state with a bounded
+        // deadline before returning the fixture to its first consumer.
+        let activation_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let settings: (String, String, String, String, String) = sqlx::query_as(
+                "SELECT current_setting('ssl'), current_setting('ssl_cert_file'), \
+                        current_setting('ssl_key_file'), \
+                        current_setting('ssl_min_protocol_version'), \
+                        current_setting('ssl_max_protocol_version')",
+            )
+            .fetch_one(&pool)
+            .await?;
+            if settings
+                == (
+                    "on".to_owned(),
+                    "/tmp/oteryn-wp3-registered.crt".to_owned(),
+                    "/tmp/oteryn-wp3-registered.key".to_owned(),
+                    "TLSv1.3".to_owned(),
+                    "TLSv1.3".to_owned(),
+                )
+            {
+                pool.close().await;
+                return Ok(ca_cert);
+            }
+            if tokio::time::Instant::now() >= activation_deadline {
+                pool.close().await;
+                return Err(
+                    "PostgreSQL 17.6 did not activate the registered-root TLS1.3 configuration"
+                        .into(),
+                );
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
     }
 
     fn postgres_container() -> Result<String, Box<dyn std::error::Error>> {
