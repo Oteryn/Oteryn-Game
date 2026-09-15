@@ -1,0 +1,134 @@
+{
+  "schema_version": 3,
+  "kind": "OTV2_WP3_AUDIT_EVIDENCE_INDEX",
+  "date": "2026-09-12",
+  "repository": "Oteryn/Oteryn-Game",
+  "scope": "retained architecture/source audit evidence; no implementation or integration authority",
+  "canonical_report": {
+    "path": "docs/agents/evidence/OTV2_WP3_ARCHITECTURE_COMPLEXITY_AUDIT_20260912.md",
+    "revision": 3,
+    "branch_head_before_index": "8e818b7701431957bf97fcf14a178f03c74ae232",
+    "blob_sha": "763e357bb234bc49ccd3d02b22ee928af5496879",
+    "verdict": "RED",
+    "recommended_path": "REDESIGN_BOUNDARY",
+    "terminal_marker": "WP3_BOUNDARY_REDESIGN_REQUIRED",
+    "section_24_scope": "Q47-Q70 Revision-3 refinements only; do not treat section 24 as the complete qualification matrix",
+    "post_report_closure_refinements": "Q71-Q75 are retained in the canonical qualification matrix without retroactively changing Revision-3 report claims"
+  },
+  "qualification_matrix": {
+    "path": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q75_20260912.md",
+    "range": "WP3-Q01..WP3-Q75",
+    "count": 75,
+    "self_contained": true,
+    "q01_q46_source": "original complete audit verification matrix; wording preserved except Q32 clarified to make the complete PostgreSQL startup/authentication lifecycle explicit without narrowing the original SASL obligation",
+    "q47_q70_source": "Revision-3 consumer/pool/source refinements",
+    "q71_q75_source": "post-consolidation independent closure review: exact SQL corpus, lock footprint, producer-to-completion custody, executor restart/takeover, and retained credential/configuration lifetime",
+    "status": "REQUIRES_EXACT_HEAD_EVIDENCE_UNLESS_PROVEN_OTHERWISE",
+    "new_native_tests_executed_by_documentation_repair": false,
+    "purpose": "prevent reconstruction of mandatory qualification obligations from Git history and keep all known closure classes explicit"
+  },
+  "verified_revisions": {
+    "protected_main": "489e3e390a1bce1ce3439c66521ab75f8a826cd8",
+    "wp3_issue": 351,
+    "wp3_pr": 356,
+    "wp3_head": "fe7891989b1247012e32c89c10cff6a10bacb943",
+    "child_b_pr": 335,
+    "child_b_head": "834db1d7118d751e31287715d3eaac7780a0c7b9",
+    "audit_pr": 588
+  },
+  "round3_history": {
+    "original_round3_commit": "c6dedc5fa61c9dccc35a79b723b8d7f72d45c6e1",
+    "original_round3_blob": "ca1d05311741ff50e4d254f5cd63d55ce3282b4b",
+    "original_round3_path": "docs/agents/evidence/OTV2_WP3_AUDIT_ROUND3_20260912.md",
+    "folded_into_canonical_report": true,
+    "fold_commit": "8e818b7701431957bf97fcf14a178f03c74ae232",
+    "standalone_round3_file_present_after_fold": false,
+    "reason": "Round-3 findings were consolidated into the canonical Revision-3 report to avoid duplicate retained evidence documents."
+  },
+  "round3_observations": [
+    {"id":"WP3-R3-01","severity":"HIGH","title":"schema bootstrap transfers before validating the ledger"},
+    {"id":"WP3-R3-02","severity":"HIGH","title":"the proposed bounded configuration profile still has ambient inputs"},
+    {"id":"WP3-R3-03","severity":"HIGH","title":"sequential maintenance loops do not imply one handshake at a time"},
+    {"id":"WP3-R3-04","severity":"HIGH","title":"awaiting return does not prove pool quiescence"},
+    {"id":"WP3-R3-05","severity":"HIGH","title":"the residual-state hook is before the final ping"},
+    {"id":"WP3-R3-06","severity":"HIGH","title":"hard close is still an asynchronous TLS shutdown path"},
+    {"id":"WP3-R3-07","severity":"HIGH","title":"production custody and repeatable slot release remain incomplete"},
+    {"id":"WP3-R3-08","severity":"HIGH","title":"current test successes have narrower finality boundaries"},
+    {"id":"WP3-R3-09","severity":"HIGH","title":"shared residency has no automatically available extra allowance"},
+    {"id":"WP3-R3-10","severity":"MEDIUM","title":"feature absence needs a resolved production graph"},
+    {"id":"WP3-R3-11","severity":"HIGH","title":"a measured peak is not a complete phase-bound proof"},
+    {"id":"WP3-R3-12","severity":"HIGH","title":"provider debt depends on thread lifetime history"}
+  ],
+  "verification_refinements": {
+    "revision3_range": "WP3-Q47..WP3-Q70",
+    "revision3_count": 24,
+    "closure_range": "WP3-Q71..WP3-Q75",
+    "closure_count": 5,
+    "status": "REQUIRES_EXACT_HEAD_EVIDENCE",
+    "new_native_tests_executed_by_audit": false,
+    "report_location": "Revision-3 report section 24 contains Q47-Q70",
+    "complete_matrix_location": "docs/agents/evidence/OTV2_WP3_QUALIFICATION_MATRIX_Q01_Q75_20260912.md"
+  },
+  "coverage": {
+    "tracked_areas": 35,
+    "complete_executable_qualification": false,
+    "explicit_remaining_classes": [
+      "complete authored/imported delta and unsafe/FFI qualification",
+      "exact production feature/target/build graph",
+      "ambient configuration and credential bounds",
+      "complete PostgreSQL startup/authentication profile and retained credential lifetime",
+      "bootstrap/pool/connection/transient joint fit",
+      "socket/reactor/DNS/TLS finality where reachable",
+      "complete production SQL corpus classification",
+      "exact 64-key/16-relation lock-footprint and sibling-writer fencing proof",
+      "producer-to-queue-to-active-to-SQL-to-completion ownership transfer proof",
+      "executor initialization/restart/takeover and predecessor fencing",
+      "production custody and repeated slot recovery",
+      "independent allocation and release-order observation",
+      "long-run scheduler/latency/churn measurement",
+      "exact consumer review and protected integration"
+    ]
+  },
+  "quantitative_notes": {
+    "queue_ceiling_bytes": 4194304,
+    "two_active_ceilings_bytes": 8388608,
+    "root_limit_bytes": 12582912,
+    "nominal_sum_bytes": 12582912,
+    "actual_production_joint_fit": "UNKNOWN",
+    "revision2_partial_connect_terms_bytes": [3276650, 327680],
+    "revision2_partial_connect_sum_bytes": 3604330,
+    "remaining_from_4MiB_bytes": 589974,
+    "remaining_from_4MiB_KiB": 576.146484375,
+    "component_composition_independently_qualified": false
+  },
+  "retained_ci": {
+    "wp3_head": "fe7891989b1247012e32c89c10cff6a10bacb943",
+    "runs": [34699293933, 34699293903, 34699293887],
+    "new_wp3_run_triggered_by_round3_audit": false,
+    "meaning": "Existing successful CI is retained as narrow evidence and is not complete WP3 production qualification."
+  },
+  "concurrent_review": {
+    "audit_pr_comment_id": 5647198023,
+    "comment_url": "https://github.com/Oteryn/Oteryn-Game/pull/588#issuecomment-5647198023",
+    "main_corrections": [
+      "connect-transient arithmetic requires either global serialization proof or concurrent-connect states including 2T",
+      "after_release and awaited pool return are not final allocation/finality boundaries",
+      "literal transport address and preloaded certificates do not close ambient PG configuration inputs",
+      "DFR 32 variable-length SQL columns is not automatically a total protocol-column cap",
+      "source-derived phase terms are not complete measured AWS-LC production peaks"
+    ]
+  },
+  "documentation_integrity": {
+    "known_section24_gap_detected": true,
+    "gap": "Revision-3 report section 24 listed Q47-Q70 while referring to retained Q01-Q46; later closure review additionally made Q71-Q75 explicit",
+    "repair": "complete Q01-Q75 matrix retained in a dedicated canonical qualification artifact and indexed here",
+    "git_history_reconstruction_required_for_q01_q75": false
+  },
+  "authority": {
+    "accepted_architecture": false,
+    "implementation_authority": false,
+    "merge_authority": false,
+    "production_authority": false,
+    "purpose": "machine-readable retained evidence index for the canonical audit package"
+  }
+}
