@@ -15,11 +15,12 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T11:24:00Z
+updated_at: 2026-09-15T11:55:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
   - docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
+  - docs/agents/PROMPT_LIFECYCLE.json
   - docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md
   - docs/agents/prompts/OTV2_IMPL_DURABILITY.md
   - docs/agents/tasks/active/OTV2-20260915-closure-convergence-protocol-624.md
@@ -41,7 +42,7 @@ Introduce a reusable late-stage convergence protocol so delivery can perform one
 - `PROVEN`: current Work coordinator already owns evidence caching and anti-loop retry control, but its ordinary `one bounded task per worker` model had no explicit late-stage coherent-repair-generation override.
 - `PROVEN`: current Durability prompt required one next handoff action but had no convergence-mode batch semantics or explicit low-level Git-object publication fallback prohibition.
 - `PROVEN`: the independent auditor already must read the nearest `docs/agents/AGENTS.md`; convergence-specific audit semantics can therefore be routed through that canonical instruction surface plus `CLOSURE_CONVERGENCE_PROTOCOL.md` without widening auditor authority.
-- `PROVEN`: `PROMPT_LIFECYCLE.json` needs no mutation because this change creates no new prompt ID and changes no prompt owner, reusable/retired status, supersession relation or registered lifecycle scope identity.
+- `PROVEN`: the convergence changes materially revise two reusable prompt contracts, so `PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from `1.2` to `1.3` and `OTV2_IMPL_DURABILITY` from `1.1` to `1.2` while preserving all IDs, owners, statuses, scopes and supersession relations.
 
 ## High-risk authority/recovery qualification
 
@@ -59,7 +60,8 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 - [x] Durability implementer consumes frozen root-cause batches and does not stop after the first compatible blocker.
 - [x] Independent auditor supports `DISCOVERY_SWEEP` and `FINAL_CANDIDATE_REVIEW` through nearest `docs/agents/AGENTS.md` + the routed protocol, without gaining implementation authority.
 - [x] Auditor evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT` remains separate from convergence `gate_classification: MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE`.
-- [x] No prompt lifecycle identity/status/supersession field changes; no lifecycle registry mutation required.
+- [x] A late `FINAL_SWEEP_MISS` is an additional sweep disposition and never replaces/downgrades `gate_classification: MATERIAL_BLOCKER` for a real current-gate defect.
+- [x] Lifecycle registry versions advance for the two reusable prompt contracts whose behavior changed.
 - [x] No change to #356 material source, runtime/product behavior, workflows, rulesets, Merge Queue semantics, Platform/Atlas/META or production state.
 
 ## Excluded scope
@@ -72,7 +74,7 @@ No WP3 product repair, no #356 mutation, no Cargo/runtime source, no workflow/ru
 - Routed convergence activation/audit modes through `docs/agents/AGENTS.md` so the existing independent auditor consumes the modes through its mandatory nearest-instruction startup path.
 - Added a compact convergence-mode delta to `OTV2_WORK_DELIVERY_COORDINATOR.md`.
 - Added consolidated-repair and publication-safety deltas to `OTV2_IMPL_DURABILITY.md`.
-- Kept `PROMPT_LIFECYCLE.json` unchanged because lifecycle metadata is unchanged.
+- Advanced lifecycle metadata only for the two changed reusable prompt contracts.
 
 ### Independent review generation 1
 
@@ -82,22 +84,30 @@ Codex review `5209285222` was bound to historical head `7abaa1fa2ad779e821435888
 2. `4014991004` — convergence audit parameters conflicted with the coordinator's mandatory minimal context packet. `ACCEPTED_AND_REPAIRED`: convergence dispatch now uses one structured descriptor inside the existing `accepted_decisions` field; no new top-level packet keys.
 3. `4014991011` — convergence reused `classification` for gate disposition and conflicted with auditor evidence classification. `ACCEPTED_AND_REPAIRED`: evidence classification remains `PROVEN | DERIVED | UNKNOWN | CONFLICT`; convergence now uses separate `gate_classification`.
 
-The material repair invalidates generation-1 review as final qualification. Fresh exact-head deterministic validation and one fresh independent deep review are required.
+### Independent review generation 2
+
+Fresh Codex review on exact head `b8e54b146dda34459aa8725ab2d9553c5968f64a` reported:
+
+1. `4015090632` — P1: Durability prompt presented `FINAL_SWEEP_MISS` as an alternative classification. `ACCEPTED_AND_REPAIRED`: a real current-gate defect remains `gate_classification: MATERIAL_BLOCKER`; `sweep_disposition: FINAL_SWEEP_MISS` is additional metadata only.
+2. `4015090638` — P2: lifecycle versions did not advance for materially revised reusable prompt contracts. `ACCEPTED_AND_REPAIRED`: coordinator `1.2 -> 1.3`, durability `1.1 -> 1.2`, and lifecycle path added to task custody.
+
+This material review-repair generation requires fresh exact-head deterministic validation and one final independent review on the resulting stable head.
 
 ## Validation
 
 ### Focused
 
-- changed-file inventory vs `main`: PASS — only the five owned documentation/prompt/task paths above.
+- changed-file inventory vs `main`: PASS — only the six owned documentation/prompt/task paths above.
 - prompt semantic self-review: PASS after review repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
 - META 3.1 prompting-standard reconciliation: PASS — one routed shared protocol with prompt-specific deltas; no full global procedure copied into every prompt.
+- lifecycle integrity self-review: PASS — only the two intentionally revised prompt versions changed; all other lifecycle identity/status/scope/supersession metadata is preserved.
 
 ### Component/integration
 
-- prior exact-head Agent Governance generation on `b9ae801...`: SUCCESS after PR metadata repair.
-- prior Architecture Semantic Audit generation on `b9ae801...`: SUCCESS.
-- prior Merge Gate generation on `b9ae801...`: SUCCESS.
-- fresh exact-head repository checks: required after this material review repair.
+- exact-head Agent Governance on `b8e54b...`: SUCCESS before generation-2 repair.
+- exact-head Architecture Semantic Audit on `b8e54b...`: SUCCESS before generation-2 repair.
+- exact-head Merge Gate on `b8e54b...`: SUCCESS before generation-2 repair.
+- fresh exact-head repository checks: required after this generation-2 repair.
 
 ### E2E
 
@@ -118,13 +128,14 @@ The material repair invalidates generation-1 review as final qualification. Fres
 - exact head: pending after this task-record commit
 - method/reviewer: implementing agent whole-diff review against #624 + bound META 3.1 + accepted review findings
 - material findings: 0 open in producer self-review
-- verdict: PASS_PENDING_EXACT_HEAD_CI_AND_FRESH_INDEPENDENT_REVIEW
+- verdict: PASS_PENDING_EXACT_HEAD_CI_AND_FINAL_INDEPENDENT_REVIEW
 
 ## Independent review
 
 - required: YES — material high-risk/control-plane governance behavior under bound META AI review policy
-- historical review: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned above
-- exact head: pending final head
+- historical generation 1: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned above
+- historical generation 2: head `b8e54b...` / 1 P1 + 1 P2, dispositioned above
+- exact final head: pending
 - method/auditor: one fresh Codex deep review after deterministic validation
 - material findings: pending
 - verdict: pending
@@ -133,7 +144,7 @@ The material repair invalidates generation-1 review as final qualification. Fres
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: 3 historical threads pending reply/resolution after repaired exact head is published
+- unresolved review threads: generation-2 threads pending reply/resolution after repaired exact head is published
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -142,7 +153,7 @@ The material repair invalidates generation-1 review as final qualification. Fres
 ## Context checkpoint
 
 ```yaml
-last_progress: Reconciled first independent review as one coherent repair batch; separated evidence/gate classification and fit convergence dispatch into the existing minimal packet contract.
+last_progress: Reconciled second independent review as one coherent repair batch; preserved blocker class for sweep misses and advanced lifecycle versions for revised reusable prompt contracts.
 status: validating
 branch: agent/closure-convergence-protocol
 head_sha: pending_final_commit
@@ -159,10 +170,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze the new exact head, run fresh exact-head CI, reply/resolve historical review threads, then obtain one fresh independent deep review.
+next_action: Freeze the new exact head, run fresh exact-head CI, reply/resolve generation-2 review threads, then obtain one final independent deep review.
 ```
