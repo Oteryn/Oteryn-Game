@@ -1,0 +1,321 @@
+#!/usr/bin/env python3
+"""Apply the retained GitHub repository policy through the REST API."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
+POLICY = json.loads((ROOT / ".github/repository-policy.json").read_text(encoding="utf-8"))
+REPOSITORY = os.environ["GITHUB_REPOSITORY"]
+TOKEN = os.environ.get("GH_TOKEN", "")
+API = f"https://api.github.com/repos/{REPOSITORY}"
+API_VERSION = "2026-03-10"
+LEGACY_ADMINISTRATION_ENVIRONMENT = "repository-administration"
+
+
+class ApiError(RuntimeError):
+    pass
+
+
+def request(method: str, path: str, payload: Any | None = None, expected: tuple[int, ...] = (200,)) -> Any:
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        f"{API}{path}",
+        data=body,
+        method=method,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {TOKEN}",
+            "X-GitHub-Api-Version": API_VERSION,
+            "User-Agent": "Oteryn-v2-repository-policy",
+            **({"Content-Type": "application/json"} if body is not None else {}),
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            status = response.status
+            data = response.read()
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise ApiError(f"{method} {path} failed with {exc.code}: {detail}") from exc
+    if status not in expected:
+        raise ApiError(f"{method} {path} returned unexpected status {status}")
+    if not data:
+        return None
+    return json.loads(data)
+
+
+def remove_legacy_administration_environment() -> None:
+    environments = request("GET", "/environments?per_page=100", expected=(200,))
+    names = {item.get("name") for item in environments.get("environments", [])}
+    if LEGACY_ADMINISTRATION_ENVIRONMENT in names:
+        encoded = urllib.parse.quote(LEGACY_ADMINISTRATION_ENVIRONMENT, safe="")
+        request("DELETE", f"/environments/{encoded}", expected=(204,))
+
+
+def configure_repository() -> None:
+    repository = dict(POLICY["repository"])
+    security = POLICY["security"]
+    repository["security_and_analysis"] = {
+        "secret_scanning": {"status": security["secret_scanning"]},
+        "secret_scanning_push_protection": {
+            "status": security["secret_scanning_push_protection"]
+        },
+    }
+    request("PATCH", "", repository, expected=(200,))
+    request("PUT", "/topics", {"names": POLICY["topics"]}, expected=(200,))
+    request("PUT", "/actions/permissions/workflow", POLICY["actions"], expected=(204,))
+
+
+def configure_labels() -> None:
+    current = request("GET", "/labels?per_page=100", expected=(200,))
+    existing = {label["name"] for label in current}
+    for label in POLICY["labels"]:
+        if label["name"] in existing:
+            encoded = urllib.parse.quote(label["name"], safe="")
+            request("PATCH", f"/labels/{encoded}", label, expected=(200,))
+        else:
+            request("POST", "/labels", label, expected=(201,))
+
+
+def configure_security() -> None:
+    security = POLICY["security"]
+    if security["vulnerability_alerts"]:
+        request("PUT", "/vulnerability-alerts", expected=(204,))
+    if security["automated_security_fixes"]:
+        request("PUT", "/automated-security-fixes", expected=(204,))
+    if security["private_vulnerability_reporting"]:
+        request("PUT", "/private-vulnerability-reporting", expected=(204,))
+
+
+def list_rulesets() -> list[dict[str, Any]]:
+    rulesets = request("GET", "/rulesets", expected=(200,))
+    if not isinstance(rulesets, list):
+        raise ApiError("GitHub rulesets response is not a list")
+    return rulesets
+
+
+def configure_named_ruleset(expected_ruleset: dict[str, Any]) -> None:
+    existing = next(
+        (item for item in list_rulesets() if item.get("name") == expected_ruleset["name"]),
+        None,
+    )
+    if existing is None:
+        request("POST", "/rulesets", expected_ruleset, expected=(201,))
+    else:
+        request("PUT", f"/rulesets/{existing['id']}", expected_ruleset, expected=(200,))
+
+
+def remove_named_ruleset_if_present(name: str) -> None:
+    existing = next((item for item in list_rulesets() if item.get("name") == name), None)
+    if existing is not None:
+        request("DELETE", f"/rulesets/{existing['id']}", expected=(204,))
+
+
+def repository_supports_push_ruleset(repo: dict[str, Any]) -> bool:
+    """GitHub push rulesets are supported only for private/internal repositories."""
+    return repo.get("visibility") in {"private", "internal"}
+
+
+def configure_rulesets() -> None:
+    configure_named_ruleset(POLICY["ruleset"])
+    repo = request("GET", "", expected=(200,))
+    push_name = POLICY["push_ruleset"]["name"]
+    if repository_supports_push_ruleset(repo):
+        configure_named_ruleset(POLICY["push_ruleset"])
+    else:
+        # Public repositories cannot host push rulesets. Protect main through
+        # the native Code Owner fallback encoded in the branch ruleset instead.
+        remove_named_ruleset_if_present(push_name)
+
+
+def repository_setting_matches(repo: dict[str, Any], key: str, expected: Any) -> bool:
+    actual = repo.get(key)
+    if actual == expected:
+        return True
+    if key == "use_squash_pr_title_as_default" and actual is None:
+        return repo.get("squash_merge_commit_title") == "PR_TITLE"
+    return False
+
+
+def required_status_contexts(ruleset: dict[str, Any]) -> list[str]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "required_status_checks":
+            checks = rule.get("parameters", {}).get("required_status_checks", [])
+            if not isinstance(checks, list):
+                return []
+            return [
+                check.get("context")
+                for check in checks
+                if isinstance(check, dict) and isinstance(check.get("context"), str)
+            ]
+    return []
+
+
+def pull_request_parameters(ruleset: dict[str, Any]) -> dict[str, Any]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "pull_request":
+            parameters = rule.get("parameters", {})
+            return parameters if isinstance(parameters, dict) else {}
+    return {}
+
+
+def restricted_file_paths(ruleset: dict[str, Any]) -> list[str]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "file_path_restriction":
+            paths = rule.get("parameters", {}).get("restricted_file_paths", [])
+            if isinstance(paths, list) and all(isinstance(path, str) for path in paths):
+                return paths
+            return []
+    return []
+
+
+def fetch_ruleset_by_name(name: str) -> dict[str, Any]:
+    match = next((item for item in list_rulesets() if item.get("name") == name), None)
+    if match is None:
+        raise ApiError(f"ruleset {name!r} was not created")
+    return request("GET", f"/rulesets/{match['id']}", expected=(200,))
+
+
+def verify_ruleset_common(full: dict[str, Any], expected: dict[str, Any]) -> None:
+    name = expected["name"]
+    if full.get("enforcement") != "active":
+        raise ApiError(f"ruleset {name!r} is not active")
+    if full.get("bypass_actors") != []:
+        raise ApiError(f"ruleset {name!r} must not have bypass actors")
+    if full.get("target") != expected.get("target"):
+        raise ApiError(
+            f"ruleset {name!r} target mismatch: expected {expected.get('target')!r}, got {full.get('target')!r}"
+        )
+
+
+def verify_codeowners_fallback() -> None:
+    codeowners = (ROOT / ".github/CODEOWNERS").read_text(encoding="utf-8")
+    entries = {
+        line.strip()
+        for line in codeowners.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    expected = {
+        "/.github/CODEOWNERS @blakinio",
+        "/.github/workflows/ @blakinio",
+        "/.github/repository-policy.json @blakinio",
+        "/tools/repository/ @blakinio",
+    }
+    if entries != expected:
+        raise ApiError(f"CODEOWNERS control-plane fallback mismatch: expected {sorted(expected)!r}, got {sorted(entries)!r}")
+
+
+def verify() -> None:
+    repo = request("GET", "", expected=(200,))
+    for key, expected in POLICY["repository"].items():
+        if not repository_setting_matches(repo, key, expected):
+            raise ApiError(
+                f"repository setting {key} mismatch: expected {expected!r}, got {repo.get(key)!r}"
+            )
+
+    topics = request("GET", "/topics", expected=(200,))
+    if sorted(topics.get("names", [])) != sorted(POLICY["topics"]):
+        raise ApiError("repository topics do not match policy")
+
+    current_labels = request("GET", "/labels?per_page=100", expected=(200,))
+    current_names = {label["name"] for label in current_labels}
+    missing_labels = [
+        label["name"] for label in POLICY["labels"] if label["name"] not in current_names
+    ]
+    if missing_labels:
+        raise ApiError(f"repository labels missing after apply: {missing_labels}")
+
+    permissions = request("GET", "/actions/permissions/workflow", expected=(200,))
+    for key, expected in POLICY["actions"].items():
+        if permissions.get(key) != expected:
+            raise ApiError(
+                f"Actions setting {key} mismatch: expected {expected!r}, got {permissions.get(key)!r}"
+            )
+
+    branch_ruleset = fetch_ruleset_by_name(POLICY["ruleset"]["name"])
+    verify_ruleset_common(branch_ruleset, POLICY["ruleset"])
+    expected_contexts = required_status_contexts(POLICY["ruleset"])
+    actual_contexts = required_status_contexts(branch_ruleset)
+    if actual_contexts != expected_contexts:
+        raise ApiError(
+            "Protect main required-status mismatch: "
+            f"expected {expected_contexts!r}, got {actual_contexts!r}"
+        )
+    if expected_contexts != [POLICY["required_status_check"]]:
+        raise ApiError("repository policy required_status_check disagrees with branch ruleset")
+
+    expected_pr = pull_request_parameters(POLICY["ruleset"])
+    actual_pr = pull_request_parameters(branch_ruleset)
+    for key in (
+        "dismiss_stale_reviews_on_push",
+        "require_code_owner_review",
+        "require_last_push_approval",
+        "required_approving_review_count",
+        "required_review_thread_resolution",
+    ):
+        if actual_pr.get(key) != expected_pr.get(key):
+            raise ApiError(
+                f"Protect main pull-request parameter {key} mismatch: "
+                f"expected {expected_pr.get(key)!r}, got {actual_pr.get(key)!r}"
+            )
+
+    push_name = POLICY["push_ruleset"]["name"]
+    if repository_supports_push_ruleset(repo):
+        push_ruleset = fetch_ruleset_by_name(push_name)
+        verify_ruleset_common(push_ruleset, POLICY["push_ruleset"])
+        expected_paths = restricted_file_paths(POLICY["push_ruleset"])
+        actual_paths = restricted_file_paths(push_ruleset)
+        if actual_paths != expected_paths:
+            raise ApiError(
+                "control-plane push ruleset restricted-path mismatch: "
+                f"expected {expected_paths!r}, got {actual_paths!r}"
+            )
+    elif any(item.get("name") == push_name for item in list_rulesets()):
+        raise ApiError("public repository must not retain unsupported control-plane push ruleset")
+
+    verify_codeowners_fallback()
+
+    private_reporting = request("GET", "/private-vulnerability-reporting", expected=(200,))
+    if private_reporting.get("enabled") is not True:
+        raise ApiError("private vulnerability reporting is not enabled")
+
+    environments = request("GET", "/environments?per_page=100", expected=(200,))
+    names = {item.get("name") for item in environments.get("environments", [])}
+    if LEGACY_ADMINISTRATION_ENVIRONMENT in names:
+        raise ApiError("legacy blocking administration environment still exists")
+
+    mode = "push-ruleset" if repository_supports_push_ruleset(repo) else "Code Owner fallback"
+    print(
+        "Repository settings, metadata, labels, Actions permissions, security features, "
+        f"branch protection and control-plane protection ({mode}) applied and verified."
+    )
+
+
+def main() -> int:
+    if not TOKEN:
+        print("REPO_ADMIN_TOKEN is unavailable.", file=sys.stderr)
+        return 2
+    try:
+        remove_legacy_administration_environment()
+        configure_repository()
+        configure_labels()
+        configure_security()
+        configure_rulesets()
+        verify()
+    except ApiError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

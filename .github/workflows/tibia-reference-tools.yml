@@ -1,0 +1,52 @@
+name: Tibia Reference Tooling
+
+on:
+  pull_request:
+    paths:
+      - tools/tibia-worldmap-reconstruction/**
+      - .github/workflows/tibia-reference-tools.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worldmap-reconstruction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Validate proprietary-data-free worldmap tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m compileall -q tools/tibia-worldmap-reconstruction
+          PYTHONPATH=tools/tibia-worldmap-reconstruction \
+            python3 -m unittest discover -s tools/tibia-worldmap-reconstruction/tests -v
+          PYTHONPATH=tools/tibia-worldmap-reconstruction \
+            python3 tools/tibia-worldmap-reconstruction/run.py validate \
+              tools/tibia-worldmap-reconstruction/examples/synthetic-capture.json
+
+      - name: Verify no generated or proprietary evidence entered the checkout
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --short --untracked-files=all)"
+          ! find tools/tibia-worldmap-reconstruction -type f \
+            \( -name '*.pcap' -o -name '*.png' -o -name '*.bin' -o -name '*.tar.gz' \) \
+            -print -quit | grep -q .

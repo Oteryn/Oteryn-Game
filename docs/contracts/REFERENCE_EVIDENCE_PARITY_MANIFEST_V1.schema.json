@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Oteryn/Oteryn-Game/blob/main/docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json",
+  "title": "Oteryn Reference Evidence Parity Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_revision",
+    "canonical_digest",
+    "status",
+    "reference_target",
+    "evidence_classes",
+    "implementation_states",
+    "parity_statuses",
+    "source_types",
+    "provenance_states",
+    "domains",
+    "cases",
+    "policy",
+    "canonicalization",
+    "normative_contracts",
+    "change_history"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "manifest_revision": { "type": "integer", "minimum": 1 },
+    "canonical_digest": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "status": {
+      "enum": ["CANDIDATE_NOT_ACCEPTED", "ACCEPTED", "SUPERSEDED"]
+    },
+    "reference_target": { "$ref": "#/$defs/referenceTarget" },
+    "evidence_classes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/evidenceClass" }
+    },
+    "implementation_states": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/implementationState" }
+    },
+    "parity_statuses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/parityStatus" }
+    },
+    "source_types": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/sourceType" }
+    },
+    "provenance_states": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/provenanceState" }
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/domainInventory" }
+    },
+    "cases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/case" }
+    },
+    "policy": { "$ref": "#/$defs/policy" },
+    "canonicalization": { "$ref": "#/$defs/canonicalization" },
+    "normative_contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "change_history": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/changeHistoryEntry" }
+    }
+  },
+  "$defs": {
+    "evidenceClass": {
+      "enum": ["PROVEN", "OBSERVED", "DERIVED", "UNKNOWN", "CONFLICT", "DECLARED_DIFFERENCE"]
+    },
+    "implementationState": {
+      "enum": ["NOT_STARTED", "PARTIAL", "IMPLEMENTED", "NOT_APPLICABLE"]
+    },
+    "parityStatus": {
+      "enum": ["PARITY_CONFIRMED", "PARITY_PENDING_EVIDENCE", "PARITY_CONFLICT", "DECLARED_DIFFERENCE", "OUT_OF_SCOPE"]
+    },
+    "sourceType": {
+      "enum": ["OFFICIAL_PUBLIC", "OWNER_PRIMARY_CAPTURE", "CONTROLLED_BLACK_BOX_OBSERVATION", "COMMUNITY_CORROBORATION", "OTS_HYPOTHESIS_ONLY", "OTERYN_ACCEPTED_CONTRACT", "OTERYN_FIXTURE_OR_TEST"]
+    },
+    "provenanceState": {
+      "enum": ["CLEARED", "PENDING", "REJECTED"]
+    },
+    "domain": {
+      "enum": ["CHARACTER", "ITEM", "CHANNEL", "CONTENT_WORLD", "SIMULATION", "ABILITY_COMBAT", "AI_SPAWN", "WORLD_INTERACTION", "ECONOMY"]
+    },
+    "referenceTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "effective_boundary_date", "boundary_time_precision", "immutable", "accepted_by", "later_upstream_changes_policy"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "effective_boundary_date": { "type": "string", "format": "date" },
+        "boundary_time_precision": { "type": "string", "minLength": 1 },
+        "immutable": { "const": true },
+        "accepted_by": { "type": "string", "minLength": 1 },
+        "later_upstream_changes_policy": { "type": "string", "minLength": 1 }
+      }
+    },
+    "domainInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "coverage_status"],
+      "properties": {
+        "domain": { "$ref": "#/$defs/domain" },
+        "coverage_status": { "enum": ["NO_MECHANIC_CASES_REGISTERED", "MECHANIC_CASES_REGISTERED"] }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "profiles", "world_assumptions"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "profiles": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "world_assumptions": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "precondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_type", "locator", "artifact_id", "effective_date", "observed_at", "retrieved_at", "provenance_state", "uncertainty_notes"],
+      "properties": {
+        "source_type": { "$ref": "#/$defs/sourceType" },
+        "locator": { "type": ["string", "null"] },
+        "artifact_id": { "type": ["string", "null"] },
+        "effective_date": { "type": ["string", "null"], "format": "date" },
+        "observed_at": { "type": ["string", "null"], "format": "date-time" },
+        "retrieved_at": { "type": ["string", "null"], "format": "date-time" },
+        "provenance_state": { "$ref": "#/$defs/provenanceState" },
+        "uncertainty_notes": { "type": "string" }
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side", "description", "resolution_state", "resolution_reference"],
+      "properties": {
+        "side": { "enum": ["TARGET", "OTERYN", "CROSS_DOMAIN", "PROVENANCE"] },
+        "description": { "type": "string", "minLength": 1 },
+        "resolution_state": { "enum": ["OPEN", "RESOLVED", "ACCEPTED_DIFFERENCE"] },
+        "resolution_reference": { "type": ["string", "null"] }
+      }
+    },
+    "testLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "result", "exact_revision"],
+      "properties": {
+        "kind": { "enum": ["FIXTURE", "TEST", "MANUAL_VALIDATION"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "result": { "enum": ["PASS", "FAIL", "PENDING"] },
+        "exact_revision": { "type": "string", "minLength": 1 }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "domain", "title", "scope", "preconditions", "target", "oteryn", "parity", "provenance", "history"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "domain": { "$ref": "#/$defs/domain" },
+        "title": { "type": "string", "minLength": 1 },
+        "scope": { "$ref": "#/$defs/scope" },
+        "preconditions": { "type": "array", "items": { "$ref": "#/$defs/precondition" } },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expected_observable_behavior", "evidence_class", "sources", "confidence_notes", "uncertainty_notes", "conflicts"],
+          "properties": {
+            "expected_observable_behavior": { "type": "string", "minLength": 1 },
+            "evidence_class": { "$ref": "#/$defs/evidenceClass" },
+            "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+            "confidence_notes": { "type": "string" },
+            "uncertainty_notes": { "type": "string" },
+            "conflicts": { "type": "array", "items": { "$ref": "#/$defs/conflict" } }
+          }
+        },
+        "oteryn": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["implementation_state", "exact_revision", "fixture_or_test_links", "conflicts"],
+          "properties": {
+            "implementation_state": { "$ref": "#/$defs/implementationState" },
+            "exact_revision": { "type": ["string", "null"] },
+            "fixture_or_test_links": { "type": "array", "items": { "$ref": "#/$defs/testLink" } },
+            "conflicts": { "type": "array", "items": { "$ref": "#/$defs/conflict" } }
+          }
+        },
+        "parity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "accepted_difference_reference"],
+          "properties": {
+            "status": { "$ref": "#/$defs/parityStatus" },
+            "accepted_difference_reference": { "type": ["string", "null"] }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "legal_review_state", "notes"],
+          "properties": {
+            "state": { "$ref": "#/$defs/provenanceState" },
+            "legal_review_state": { "$ref": "#/$defs/provenanceState" },
+            "notes": { "type": "string" }
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/historyEntry" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "target": { "properties": { "evidence_class": { "const": "UNKNOWN" } }, "required": ["evidence_class"] } } },
+          "then": { "properties": { "parity": { "properties": { "status": { "const": "PARITY_PENDING_EVIDENCE" } }, "required": ["status"] } } }
+        },
+        {
+          "if": { "properties": { "target": { "properties": { "evidence_class": { "const": "CONFLICT" } }, "required": ["evidence_class"] } } },
+          "then": { "properties": { "parity": { "properties": { "status": { "const": "PARITY_CONFLICT" } }, "required": ["status"] } } }
+        },
+        {
+          "if": { "properties": { "parity": { "properties": { "status": { "const": "DECLARED_DIFFERENCE" } }, "required": ["status"] } } },
+          "then": { "properties": { "parity": { "properties": { "accepted_difference_reference": { "type": "string", "minLength": 1 } }, "required": ["accepted_difference_reference"] } } }
+        },
+        {
+          "if": { "properties": { "parity": { "properties": { "status": { "const": "PARITY_CONFIRMED" } }, "required": ["status"] } } },
+          "then": {
+            "properties": {
+              "target": {
+                "properties": {
+                  "evidence_class": { "enum": ["PROVEN", "OBSERVED", "DERIVED"] },
+                  "sources": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "allOf": [
+                        { "$ref": "#/$defs/source" },
+                        { "properties": { "provenance_state": { "const": "CLEARED" } }, "required": ["provenance_state"] }
+                      ]
+                    }
+                  }
+                },
+                "required": ["evidence_class", "sources"]
+              },
+              "oteryn": {
+                "properties": {
+                  "exact_revision": { "type": "string", "minLength": 1 },
+                  "fixture_or_test_links": {
+                    "type": "array",
+                    "minItems": 1,
+                    "contains": {
+                      "allOf": [
+                        { "$ref": "#/$defs/testLink" },
+                        { "properties": { "result": { "const": "PASS" } }, "required": ["result"] }
+                      ]
+                    }
+                  }
+                },
+                "required": ["exact_revision", "fixture_or_test_links"]
+              },
+              "provenance": {
+                "properties": {
+                  "state": { "const": "CLEARED" },
+                  "legal_review_state": { "const": "CLEARED" }
+                },
+                "required": ["state", "legal_review_state"]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "historyEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "summary", "reason"],
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "summary": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ots_can_prove_global_behavior", "patch_note_absence_proves_no_change", "parity_confirmed_requires_target_evidence", "parity_confirmed_requires_oteryn_exact_revision", "parity_confirmed_requires_passing_fixture_or_test", "unknown_fails_closed", "conflict_fails_closed", "uncleared_provenance_blocks_promotion", "security_integrity_legal_overrides_reference_fidelity"],
+      "properties": {
+        "ots_can_prove_global_behavior": { "const": false },
+        "patch_note_absence_proves_no_change": { "const": false },
+        "parity_confirmed_requires_target_evidence": { "const": true },
+        "parity_confirmed_requires_oteryn_exact_revision": { "const": true },
+        "parity_confirmed_requires_passing_fixture_or_test": { "const": true },
+        "unknown_fails_closed": { "const": true },
+        "conflict_fails_closed": { "const": true },
+        "uncleared_provenance_blocks_promotion": { "const": true },
+        "security_integrity_legal_overrides_reference_fidelity": { "const": true }
+      }
+    },
+    "canonicalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "digest", "digest_member_excluded", "null_digest_meaning"],
+      "properties": {
+        "algorithm": { "const": "RFC8785_JCS" },
+        "digest": { "const": "SHA-256" },
+        "digest_member_excluded": { "const": "canonical_digest" },
+        "null_digest_meaning": { "type": "string", "minLength": 1 }
+      }
+    },
+    "changeHistoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest_revision", "date", "summary", "issue"],
+      "properties": {
+        "manifest_revision": { "type": "integer", "minimum": 1 },
+        "date": { "type": "string", "format": "date" },
+        "summary": { "type": "string", "minLength": 1 },
+        "issue": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

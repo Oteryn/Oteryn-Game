@@ -1,0 +1,97 @@
+name: Synology Game Runner Acceptance
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/synology-game-runner-acceptance.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: synology-game-runner-acceptance
+  cancel-in-progress: false
+
+jobs:
+  qualify-game-runner:
+    name: Qualify Game runner and local Canary boundary
+    timeout-minutes: 10
+    runs-on:
+      group: game-runners
+      labels: oteryn-game
+    env:
+      EXPECTED_RUNNER_NAME: oteryn-synology-game
+      EXPECTED_RUNNER_UID: "1001"
+      EXPECTED_ORG_URL: https://github.com/Oteryn
+      CANARY_HOST: 192.168.1.2
+      CANARY_LOGIN_PORT: "7171"
+      CANARY_GAME_PORT: "7172"
+    steps:
+      - name: Verify exact Game runner identity and least privilege
+        env:
+          ACTUAL_RUNNER_NAME: ${{ runner.name }}
+          ACTUAL_RUNNER_OS: ${{ runner.os }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
+          test "$ACTUAL_RUNNER_OS" = "Linux"
+          test "$(id -u)" = "$EXPECTED_RUNNER_UID"
+          test "$(id -g)" = "$EXPECTED_RUNNER_UID"
+          test -d /runner
+          test -d /work
+          test -w /runner
+          test -w /work
+          test ! -e /var/run/docker.sock
+          if command -v docker >/dev/null 2>&1; then
+            if docker info >/dev/null 2>&1; then
+              echo 'Game runner unexpectedly has working Docker-host control' >&2
+              exit 1
+            fi
+          fi
+
+      - name: Verify persistent organization registration identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          state="$(tr -d '[:space:]' < /runner/.runner)"
+          case "$state" in
+            *'"agentName":"oteryn-synology-game"'*) ;;
+            *) echo 'unexpected persistent runner agentName' >&2; exit 1 ;;
+          esac
+          case "$state" in
+            *'"gitHubUrl":"https://github.com/Oteryn"'*) ;;
+            *) echo 'unexpected persistent runner organization URL' >&2; exit 1 ;;
+          esac
+          case "$state" in
+            *'"workFolder":"/work"'*|*'"workFolder":"_work"'*) ;;
+            *) echo 'unexpected persistent runner workFolder' >&2; exit 1 ;;
+          esac
+
+      - name: Verify existing local Canary integration reachability
+        shell: bash
+        run: |
+          set -euo pipefail
+          for port in "$CANARY_LOGIN_PORT" "$CANARY_GAME_PORT"; do
+            timeout 5 bash -c "exec 3<>/dev/tcp/$CANARY_HOST/$port; exec 3>&-; exec 3<&-"
+          done
+
+      - name: Record sanitized acceptance evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo 'GAME_RUNNER_ACCEPTANCE=PASS'
+            echo "RUNNER_NAME=${{ runner.name }}"
+            echo 'RUNNER_ROUTE=game-runners/oteryn-game'
+            echo 'RUNNER_SCOPE=organization'
+            echo 'RUNNER_UID_GID=1001:1001'
+            echo 'DOCKER_HOST_CONTROL=ABSENT'
+            echo 'CANARY_LOGIN_REACHABILITY=PASS'
+            echo 'CANARY_GAME_REACHABILITY=PASS'
+            echo 'RUNTIME_MUTATION=NONE'
+            echo 'ENVIRONMENT_VALUES_EXPOSED=NONE'
+          } >> "$GITHUB_STEP_SUMMARY"

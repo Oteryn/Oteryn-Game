@@ -1,0 +1,2743 @@
+use crate::durability::DurabilityError;
+use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
+
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+
+pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool, DurabilityError> {
+    PgPoolOptions::new()
+        .max_connections(max_connections)
+        .acquire_timeout(CONNECT_TIMEOUT)
+        .connect(database_url)
+        .await
+        .map_err(DurabilityError::from)
+}
+
+/// Conservative first implementation: all journal writers and row-locking
+/// readers serialize before any semantic clock sample. EXCLUSIVE still permits
+/// ordinary snapshot readers. This intentionally makes no concurrency claim.
+pub(super) async fn lock_admission_domain(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &oteryn_game_server::foundation::ReconnectDurabilityRecordV1,
+) -> Result<(), DurabilityError> {
+    lock_admission_relations(transaction).await?;
+    let identity = record.identity();
+    let mut keys = vec![
+        (
+            b"account".as_slice(),
+            identity.account_id().as_bytes().to_vec(),
+        ),
+        (
+            b"character".as_slice(),
+            identity.character_id().as_bytes().to_vec(),
+        ),
+        (
+            b"session".as_slice(),
+            identity.game_session_id().as_bytes().to_vec(),
+        ),
+        (
+            b"transport".as_slice(),
+            record.connection().transport_ref().to_bytes().to_vec(),
+        ),
+        (
+            b"attempt".as_slice(),
+            [
+                identity.game_session_id().as_bytes().as_slice(),
+                &identity.reconnect_attempt_ref().to_be_bytes(),
+            ]
+            .concat(),
+        ),
+        (
+            b"epoch".as_slice(),
+            [
+                identity.character_id().as_bytes().as_slice(),
+                &record.continuity().control_loss_epoch().get().to_be_bytes(),
+            ]
+            .concat(),
+        ),
+    ];
+    let mut scope = super::admission_authority_guards::Writer::new(33);
+    super::admission_authority_guards::write_scope(&mut scope, identity.runtime_scope())?;
+    keys.push((b"runtime".as_slice(), scope.bytes));
+    if let oteryn_game_server::foundation::ReconnectProofV1::ReauthenticatedRecovery {
+        recovery_grant_nonce,
+        ..
+    } = record.proof()
+    {
+        keys.push((b"recovery-nonce".as_slice(), recovery_grant_nonce.to_vec()));
+    }
+    // Stable FNV-1a only chooses serialization buckets. Hash collisions may
+    // over-serialize; complete typed identities remain mandatory SQL predicates.
+    let mut physical: Vec<i64> = keys
+        .into_iter()
+        .map(|(domain, key)| {
+            let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+            for byte in b"oteryn-admission-v1"
+                .iter()
+                .chain(domain)
+                .chain([0].iter())
+                .chain(&key)
+            {
+                hash ^= u64::from(*byte);
+                hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+            i64::from_be_bytes(hash.to_be_bytes())
+        })
+        .collect();
+    physical.sort_unstable();
+    physical.dedup();
+    for key in physical {
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(key)
+            .execute(&mut **transaction)
+            .await?;
+    }
+    Ok(())
+}
+
+const ADMISSION_RELATION_FENCE: &str = "LOCK TABLE
+    game_durability_admission_account_guards,
+    game_durability_admission_character_guards,
+    game_durability_admission_guard_history,
+    game_durability_admission_lifecycle_receipts,
+    game_durability_admission_runtime_guards,
+    game_durability_admission_signing_trust_guards,
+    game_durability_control_loss_continuity,
+    game_durability_executor_custody,
+    game_durability_fresh_admission_receipts,
+    game_durability_reconnect_attempts,
+    game_durability_reconnect_pending_commands,
+    game_durability_reconnect_sessions,
+    game_durability_recovery_grant_consumptions,
+    game_durability_session_replacements,
+    game_durability_transport_ref_reservations
+    IN EXCLUSIVE MODE";
+
+/// Shared strongest relation fence, acquired before domain keys and semantic time.
+pub(super) async fn lock_admission_relations(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), DurabilityError> {
+    // One statement preserves the complete lexical relation order and strongest
+    // mode while avoiding fifteen prepared statement shapes and await points.
+    sqlx::query(ADMISSION_RELATION_FENCE)
+        .execute(&mut **transaction)
+        .await?;
+    Ok(())
+}
+
+// Fixed bookkeeping arrays, not a complete SQL-driver/resident-work proof.
+// Box<str> retains no caller-selected spare capacity. At most eight queued and
+// two active complete envelopes plus two bounded submission copies exist here.
+#[derive(Clone)]
+struct WorkOperation {
+    incarnation: u64,
+    kind: i16,
+    operation: std::sync::Arc<str>,
+    definitive: bool,
+    in_flight: usize,
+    persisted: bool,
+    deadline: Option<tokio::time::Instant>,
+}
+struct QueuedWork {
+    id: u64,
+    enqueued: std::time::Instant,
+    operation: WorkOperation,
+}
+struct WorkCustody {
+    queued: [Option<QueuedWork>; 8],
+    active: [Option<WorkOperation>; 2],
+    next_id: u64,
+}
+impl WorkCustody {
+    fn new(pending: &[Option<super::DurablePendingCheckpoint>; 2]) -> Self {
+        Self {
+            queued: std::array::from_fn(|_| None),
+            active: std::array::from_fn(|i| {
+                pending[i].as_ref().map(|p| WorkOperation {
+                    incarnation: (i as u64) + 1,
+                    kind: p.operation_kind,
+                    operation: std::sync::Arc::from(p.operation_json.as_str()),
+                    definitive: false,
+                    in_flight: 0,
+                    persisted: true,
+                    deadline: None,
+                })
+            }),
+            next_id: 3,
+        }
+    }
+
+    fn enqueue(
+        &mut self,
+        kind: i16,
+        operation: &str,
+        now: std::time::Instant,
+    ) -> Result<u64, DurabilityError> {
+        if !(1..=8).contains(&kind)
+            || operation.is_empty()
+            || operation.len() > super::MAX_FRESH_OPERATION_BYTES
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        // A retry cannot mint a second active identity for an original already
+        // retained for reconciliation. It must use `resume_checkpoint`.
+        if self
+            .active
+            .iter()
+            .flatten()
+            .any(|active| active.kind == kind && active.operation.as_ref() == operation)
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        let target = self
+            .queued
+            .iter_mut()
+            .find(|slot| slot.is_none())
+            .ok_or(DurabilityError::Unavailable)?;
+        let id = self.next_id;
+        let next = id.checked_add(1).ok_or(DurabilityError::Unavailable)?;
+        // All reservation, length and counter checks precede the only input copy.
+        *target = Some(QueuedWork {
+            id,
+            enqueued: now,
+            operation: WorkOperation {
+                incarnation: id,
+                kind,
+                operation: std::sync::Arc::from(operation),
+                definitive: false,
+                in_flight: 0,
+                persisted: false,
+                deadline: None,
+            },
+        });
+        self.next_id = next;
+        Ok(id)
+    }
+
+    fn cancel(&mut self, id: u64) {
+        if let Some(slot) = self
+            .queued
+            .iter_mut()
+            .find(|slot| slot.as_ref().is_some_and(|work| work.id == id))
+        {
+            *slot = None;
+        }
+        // There is deliberately no active-slot clear: dropping a submitted
+        // caller is neither definitive outcome nor owner acknowledgement.
+    }
+
+    fn promote_with_deadline(
+        &mut self,
+        id: u64,
+        now: std::time::Instant,
+        deadline: tokio::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        let index = self
+            .queued
+            .iter()
+            .position(|slot| slot.as_ref().is_some_and(|work| work.id == id))
+            .ok_or(DurabilityError::Unavailable)?;
+        let queued = self.queued[index]
+            .as_ref()
+            .ok_or(DurabilityError::Unavailable)?;
+        if now.saturating_duration_since(queued.enqueued) > Duration::from_millis(1000) {
+            self.queued[index] = None;
+            return Err(DurabilityError::Unavailable);
+        }
+        if self.active.iter().flatten().any(|active| {
+            active.kind == queued.operation.kind && active.operation == queued.operation.operation
+        }) {
+            return Err(DurabilityError::Unavailable);
+        }
+        let active_index = self
+            .active
+            .iter()
+            .position(Option::is_none)
+            .ok_or(DurabilityError::Unavailable)?;
+        let queued = self.queued[index]
+            .take()
+            .ok_or(DurabilityError::Unavailable)?;
+        // The original moves into active custody before the bounded submission
+        // copy or any await. Cancellation can never put this identity back in queue.
+        self.active[active_index] = Some(queued.operation);
+        self.active[active_index]
+            .as_mut()
+            .ok_or(DurabilityError::Unavailable)?
+            .deadline = Some(deadline);
+        let submission = self.active[active_index]
+            .as_ref()
+            .ok_or(DurabilityError::Unavailable)?
+            .clone();
+        Ok((if active_index == 0 { 1 } else { 2 }, submission))
+    }
+
+    #[cfg(test)]
+    fn promote(
+        &mut self,
+        id: u64,
+        now: std::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        self.promote_with_deadline(
+            id,
+            now,
+            tokio::time::Instant::now() + Duration::from_millis(2000),
+        )
+    }
+
+    fn resume_deadline(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<tokio::time::Instant, DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if !active.persisted {
+            return Err(DurabilityError::Unavailable);
+        }
+        // A live attempt always retains its original absolute deadline. Only a
+        // checkpoint recovered from the prior process has no monotonic instant;
+        // it receives one bounded reconciliation deadline, retained thereafter.
+        Ok(*active
+            .deadline
+            .get_or_insert_with(|| tokio::time::Instant::now() + Duration::from_millis(2000)))
+    }
+
+    fn acknowledge(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self
+            .active
+            .get(index)
+            .and_then(Option::as_ref)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.kind != kind || active.operation.as_ref() != operation {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        if !active.definitive || active.in_flight != 0 {
+            return Err(DurabilityError::Unavailable);
+        }
+        self.active[index] = None;
+        Ok(())
+    }
+
+    fn can_acknowledge(
+        &self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if self.active[index]
+            .as_ref()
+            .is_some_and(|active| active.definitive && active.in_flight == 0)
+        {
+            Ok(())
+        } else {
+            Err(DurabilityError::Unavailable)
+        }
+    }
+
+    fn validate(&self, slot: i16, kind: i16, operation: &str) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self
+            .active
+            .get(index)
+            .and_then(Option::as_ref)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.kind == kind && active.operation.as_ref() == operation {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn validate_incarnation(
+        &self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if self.active[index]
+            .as_ref()
+            .is_some_and(|active| active.incarnation == incarnation)
+        {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn begin_run(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.in_flight = active
+            .in_flight
+            .checked_add(1)
+            .ok_or(DurabilityError::Unavailable)?;
+        Ok(())
+    }
+
+    fn finish_run(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+        definitive: bool,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.in_flight = active
+            .in_flight
+            .checked_sub(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.definitive |= definitive;
+        Ok(())
+    }
+
+    fn mark_persisted(&mut self, slot: i16, incarnation: u64) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.incarnation != incarnation {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        active.persisted = true;
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+struct ActivePassIdentity {
+    backend: std::sync::Arc<RuntimeBackend>,
+    slot: i16,
+    kind: i16,
+    original: std::sync::Arc<str>,
+    deadline: tokio::time::Instant,
+    incarnation: u64,
+}
+
+tokio::task_local! {
+    static ACTIVE_SEMANTIC_PASS: ActivePassIdentity;
+}
+
+/// Exact active-slot custody for one bounded semantic attempt.
+///
+/// Dropping or timing out this value never acknowledges or releases its slot.
+pub struct SemanticPass {
+    identity: ActivePassIdentity,
+}
+
+struct ActiveRunGuard {
+    identity: ActivePassIdentity,
+    finished: bool,
+}
+
+impl Drop for ActiveRunGuard {
+    fn drop(&mut self) {
+        if !self.finished {
+            let _ = self.identity.backend.finish_run(&self.identity, false);
+        }
+    }
+}
+
+impl SemanticPass {
+    #[must_use]
+    pub const fn slot(&self) -> i16 {
+        self.identity.slot
+    }
+
+    /// Run the complete semantic body under the original, unchanged pass deadline.
+    pub async fn run<F, T>(&self, body: F) -> Result<T, DurabilityError>
+    where
+        F: std::future::Future<Output = Result<T, DurabilityError>>,
+    {
+        self.identity.backend.begin_run(&self.identity)?;
+        let mut guard = ActiveRunGuard {
+            identity: self.identity.clone(),
+            finished: false,
+        };
+        let result = ACTIVE_SEMANTIC_PASS
+            .scope(self.identity.clone(), body)
+            .await;
+        // A completed semantic result is authoritative. In particular, never
+        // rewrite a definitive commit into ambiguity merely because observing
+        // the completed future happened after the wall-clock deadline.
+        self.identity
+            .backend
+            .finish_run(&self.identity, result.is_ok())?;
+        guard.finished = true;
+        result
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct V1ReconciliationOriginal {
+    m05_operation: String,
+    record: String,
+    authorization_deadline: Option<i64>,
+}
+
+fn validate_v1_reconciliation_original(
+    original: &str,
+    encoded_record: &str,
+    allowed_origins: &[&str],
+) -> Result<(), DurabilityError> {
+    let original: V1ReconciliationOriginal =
+        serde_json::from_str(original).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let deadline_shape_valid = if original.m05_operation == "commit" {
+        original.authorization_deadline.is_some()
+    } else {
+        original.authorization_deadline.is_none()
+    };
+    if allowed_origins.contains(&original.m05_operation.as_str())
+        && original.record == encoded_record
+        && deadline_shape_valid
+    {
+        Ok(())
+    } else {
+        Err(DurabilityError::InvalidStoredState)
+    }
+}
+
+/// A never-submitted queue reservation. Drop releases only this queued identity.
+/// Establishment retains the original active slot on success, error or cancellation.
+/// Only the returned pass authorizes an admission effect; it is not completion.
+pub struct QueuedCheckpoint {
+    backend: std::sync::Arc<RuntimeBackend>,
+    id: u64,
+}
+impl Drop for QueuedCheckpoint {
+    fn drop(&mut self) {
+        if let Ok(mut work) = self.backend.work.lock() {
+            work.cancel(self.id);
+        }
+    }
+}
+impl QueuedCheckpoint {
+    #[allow(clippy::infallible_destructuring_match)]
+    pub async fn establish(self) -> Result<SemanticPass, DurabilityError> {
+        let started = tokio::time::Instant::now();
+        let (slot, operation) = self
+            .backend
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .promote_with_deadline(
+                self.id,
+                std::time::Instant::now(),
+                started + Duration::from_millis(2000),
+            )?;
+        self.backend
+            .establish_checkpoint(
+                slot,
+                operation.kind,
+                &operation.operation,
+                started + Duration::from_millis(2000),
+            )
+            .await?;
+        self.backend
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .mark_persisted(slot, operation.incarnation)?;
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.backend.clone(),
+                slot,
+                kind: operation.kind,
+                original: operation.operation.clone(),
+                deadline: started + Duration::from_millis(2000),
+                incarnation: operation.incarnation,
+            },
+        })
+    }
+}
+
+/// One shared production backend, including the recovered fixed-slot custody.
+/// This is not yet the executor's queue/active-operation budget.
+pub(super) struct RuntimeBackend {
+    pub pool: PgPool,
+    custody: BackendCustody,
+    pub pending: std::sync::Mutex<[Option<super::DurablePendingCheckpoint>; 2]>,
+    work: std::sync::Mutex<WorkCustody>,
+    root_ready_demand: RootReadyDemand,
+    #[allow(dead_code)]
+    root_maintenance: tokio::sync::Mutex<()>,
+}
+struct RootReadyDemand(std::sync::atomic::AtomicBool);
+impl RootReadyDemand {
+    const fn new() -> Self {
+        Self(std::sync::atomic::AtomicBool::new(false))
+    }
+    fn record(&self) {
+        self.0.store(true, std::sync::atomic::Ordering::Release);
+    }
+    fn consume(&self) -> bool {
+        self.0.swap(false, std::sync::atomic::Ordering::AcqRel)
+    }
+}
+enum BackendCustody {
+    Registered(super::DurabilityCustody),
+    #[cfg(test)]
+    LegacyFixture,
+}
+impl RuntimeBackend {
+    async fn establish_checkpoint(
+        &self,
+        slot: i16,
+        kind: i16,
+        original: &str,
+        deadline: tokio::time::Instant,
+    ) -> Result<(), DurabilityError> {
+        #[cfg(not(test))]
+        let BackendCustody::Registered(custody) = &self.custody;
+        #[cfg(test)]
+        let custody = match &self.custody {
+            BackendCustody::Registered(custody) => custody,
+            BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
+        };
+        if tokio::time::Instant::now() >= deadline {
+            return Err(DurabilityError::Unavailable);
+        }
+        // The holder's PostgreSQL startup timeout is already active before
+        // BEGIN. Await the exact checkpoint result; never turn a completed
+        // checkpoint commit into an artificial timeout result.
+        let result = custody.checkpoint(&self.pool, slot, kind, original).await;
+        if matches!(result, Err(DurabilityError::Unavailable)) {
+            self.record_root_ready_demand();
+        }
+        result
+    }
+
+    pub(super) fn resume_pass(
+        self: &std::sync::Arc<Self>,
+        slot: i16,
+        kind: i16,
+        original: &str,
+    ) -> Result<SemanticPass, DurabilityError> {
+        let (deadline, retained_original, incarnation) = {
+            let mut work = self.work.lock().map_err(|_| DurabilityError::Unavailable)?;
+            let deadline = work.resume_deadline(slot, kind, original)?;
+            let index =
+                usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let active = work.active[index]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            (deadline, active.operation.clone(), active.incarnation)
+        };
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.clone(),
+                slot,
+                kind,
+                original: retained_original,
+                deadline,
+                incarnation,
+            },
+        })
+    }
+
+    fn record_root_ready_demand(&self) {
+        self.root_ready_demand.record();
+    }
+
+    fn consume_root_ready_demand(&self) -> bool {
+        self.root_ready_demand.consume()
+    }
+
+    pub(super) fn enqueue(
+        self: &std::sync::Arc<Self>,
+        kind: i16,
+        original: &str,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let id = self
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .enqueue(kind, original, std::time::Instant::now())?;
+        Ok(QueuedCheckpoint {
+            backend: self.clone(),
+            id,
+        })
+    }
+    fn validate_pass(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
+        if !std::ptr::eq(self, std::sync::Arc::as_ptr(&pass.backend)) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .validate_incarnation(pass.slot, pass.kind, &pass.original, pass.incarnation)
+    }
+
+    pub(super) fn validate_semantic(
+        &self,
+        kind: i16,
+        canonical_original: &str,
+    ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind == kind && pass.original.as_ref() == canonical_original {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    pub(super) fn validate_reconciliation(
+        &self,
+        kind: i16,
+        encoded_record: &str,
+        allowed_origins: &[&str],
+    ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind != kind {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        validate_v1_reconciliation_original(&pass.original, encoded_record, allowed_origins)
+    }
+
+    pub(super) fn validate_semantic_any(
+        &self,
+        kind: i16,
+        canonical_originals: &[&str],
+    ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind == kind
+            && canonical_originals
+                .iter()
+                .any(|candidate| pass.original.as_ref() == *candidate)
+        {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn begin_run(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .begin_run(pass.slot, pass.kind, &pass.original, pass.incarnation)
+    }
+
+    fn finish_run(
+        &self,
+        pass: &ActivePassIdentity,
+        definitive: bool,
+    ) -> Result<(), DurabilityError> {
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .finish_run(
+                pass.slot,
+                pass.kind,
+                &pass.original,
+                pass.incarnation,
+                definitive,
+            )
+    }
+
+    pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
+        match &self.custody {
+            BackendCustody::Registered(custody) => {
+                let pass = ACTIVE_SEMANTIC_PASS
+                    .try_with(Clone::clone)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                self.validate_pass(&pass)?;
+                if tokio::time::Instant::now() >= pass.deadline {
+                    return Err(DurabilityError::Unavailable);
+                }
+                let mut transaction = match self.pool.try_begin().await? {
+                    Some(transaction) => transaction,
+                    None => {
+                        self.record_root_ready_demand();
+                        return Err(DurabilityError::Unavailable);
+                    }
+                };
+                let remaining = pass
+                    .deadline
+                    .saturating_duration_since(tokio::time::Instant::now());
+                if remaining.is_zero() {
+                    transaction
+                        .rollback()
+                        .await
+                        .map_err(DurabilityError::from)?;
+                    return Err(DurabilityError::Unavailable);
+                }
+                let millis = i64::try_from(remaining.as_millis().max(1))
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                // Install the transaction-wide server deadline before custody
+                // locks or generation SQL can block. Every later statement uses
+                // this same immutable pass deadline.
+                sqlx::query("SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)")
+                    .bind(format!("{millis}ms"))
+                    .execute(&mut *transaction)
+                    .await?;
+                let transaction = match custody.fence_transaction(transaction).await {
+                    Err(DurabilityError::Unavailable) => {
+                        self.record_root_ready_demand();
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    result => result?,
+                };
+                Ok(transaction)
+            }
+            #[cfg(test)]
+            BackendCustody::LegacyFixture => self.pool.begin().await.map_err(DurabilityError::from),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(super) async fn maintain_root_ready(&self) -> Result<(), DurabilityError> {
+        let _guard = self.root_maintenance.lock().await;
+        if !self.consume_root_ready_demand() {
+            return Ok(());
+        }
+        let mut connection = tokio::time::timeout(Duration::from_secs(5), self.pool.acquire())
+            .await
+            .map_err(|_| DurabilityError::Unavailable)??;
+        if connection.oteryn_m05_return_to_pool().await == Some(true) {
+            Ok(())
+        } else {
+            Err(DurabilityError::Unavailable)
+        }
+    }
+
+    #[allow(irrefutable_let_patterns)]
+    #[allow(dead_code)]
+    pub(super) async fn acknowledge(
+        &self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        let BackendCustody::Registered(custody) = &self.custody else {
+            return Err(DurabilityError::Unavailable);
+        };
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .can_acknowledge(slot, kind, operation)?;
+        custody
+            .acknowledge(&self.pool, slot, kind, operation)
+            .await?;
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .acknowledge(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        self.pending
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?[index] = None;
+        Ok(())
+    }
+
+    pub(super) fn pending_snapshot(&self) -> [Option<super::DurablePendingCheckpoint>; 2] {
+        self.pending
+            .lock()
+            .map_or([None, None], |pending| pending.clone())
+    }
+}
+enum RuntimeRegistration {
+    Empty,
+    Starting,
+    Ready {
+        identity: RuntimeIdentity,
+        // Registration must not itself keep a retired holder generation alive.
+        // Live AdmissionRuntime/semantic handles own the strong references.
+        backend: std::sync::Weak<RuntimeBackend>,
+    },
+}
+
+/// Owns the one initial root window. If the awaiting caller is cancelled or
+/// any establishment step fails, dropping this guard restores absence only
+/// after the cancelled future and all of its locally owned descendants have
+/// been destroyed. The mutex keeps later demand coalesced behind that finality.
+struct StartingRegistration<'a> {
+    registration: tokio::sync::MutexGuard<'a, RuntimeRegistration>,
+    complete: bool,
+}
+impl Drop for StartingRegistration<'_> {
+    fn drop(&mut self) {
+        if !self.complete {
+            *self.registration = RuntimeRegistration::Empty;
+        }
+    }
+}
+
+struct RuntimeIdentity {
+    transport_ip: std::net::IpAddr,
+    port: u16,
+    config_identity: std::sync::Arc<()>,
+    root_owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget>,
+}
+impl PartialEq for RuntimeIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        self.transport_ip == other.transport_ip
+            && self.port == other.port
+            && std::sync::Arc::ptr_eq(&self.config_identity, &other.config_identity)
+            && std::sync::Arc::ptr_eq(&self.root_owner, &other.root_owner)
+    }
+}
+static RUNTIME_REGISTRATION: tokio::sync::Mutex<RuntimeRegistration> =
+    tokio::sync::Mutex::const_new(RuntimeRegistration::Empty);
+
+pub(super) async fn registered_backend(
+    config: super::AdmissionRuntimeConfig,
+) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    if config.port == 0
+        || config.backing.tls_server_name.is_empty()
+        || config.backing.database.is_empty()
+        || config.backing.username.is_empty()
+        || config.backing.password.is_empty()
+        || config.backing.root_ca_pem.is_empty()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let identity = RuntimeIdentity {
+        transport_ip: config.transport_ip,
+        port: config.port,
+        config_identity: config.identity.clone(),
+        root_owner: config.resource_budget.clone(),
+    };
+    let mut registration = RUNTIME_REGISTRATION.lock().await;
+    match &*registration {
+        RuntimeRegistration::Ready {
+            identity: expected,
+            backend,
+        } if expected == &identity => {
+            if let Some(backend) = backend.upgrade() {
+                return Ok(backend);
+            }
+        }
+        RuntimeRegistration::Ready { backend, .. } if backend.strong_count() == 0 => {}
+        RuntimeRegistration::Empty => {}
+        _ => return Err(DurabilityError::InvalidStoredState),
+    }
+    // Cancellation or uncertain initialization remains Starting. A fresh caller
+    // cannot mint replacement capacity or silently retry an ambiguous takeover.
+    *registration = RuntimeRegistration::Starting;
+    let mut starting = StartingRegistration {
+        registration,
+        complete: false,
+    };
+    let options = sqlx::postgres::PgConnectOptions::new_oteryn_root_profile(
+        config.transport_ip,
+        config.port,
+        &config.backing.tls_server_name,
+        &config.backing.database,
+        &config.backing.username,
+        &config.backing.password,
+        &config.backing.root_ca_pem,
+        config.resource_budget.clone(),
+    )
+    .map_err(|_| DurabilityError::Unavailable)?
+    // PostgreSQL applies these startup parameters before a ready connection is
+    // admitted to the holder. Consequently BEGIN and the first custody-lock SQL
+    // are already protected; the transaction-local remaining value only
+    // tightens this immutable two-second ceiling and never extends it.
+    .options([
+        ("transaction_timeout", "2000ms"),
+        ("statement_timeout", "2000ms"),
+        ("lock_timeout", "2000ms"),
+    ])
+    .map_err(|_| DurabilityError::Unavailable)?;
+    let pool = super::schema::connect_runtime_root(options).await?;
+    let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
+    let backend = std::sync::Arc::new(RuntimeBackend {
+        pool,
+        custody: BackendCustody::Registered(custody),
+        work: std::sync::Mutex::new(WorkCustody::new(&pending)),
+        pending: std::sync::Mutex::new(pending),
+        root_ready_demand: RootReadyDemand::new(),
+        root_maintenance: tokio::sync::Mutex::new(()),
+    });
+    *starting.registration = RuntimeRegistration::Ready {
+        identity,
+        backend: std::sync::Arc::downgrade(&backend),
+    };
+    starting.complete = true;
+    Ok(backend)
+}
+
+// Historical isolated PostgreSQL fixtures are not production executor proof.
+// Explicit AdmissionRuntime::connect always tests registered production wiring.
+#[cfg(test)]
+pub(super) async fn backend_for_constructor(
+    database_url: &str,
+) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    Ok(std::sync::Arc::new(RuntimeBackend {
+        pool: super::schema::connect_runtime(database_url).await?,
+        custody: BackendCustody::LegacyFixture,
+        pending: std::sync::Mutex::new([None, None]),
+        work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+        root_ready_demand: RootReadyDemand::new(),
+        root_maintenance: tokio::sync::Mutex::new(()),
+    }))
+}
+
+#[cfg(test)]
+mod work_custody_tests {
+    use super::*;
+
+    #[test]
+    fn queue_capacity_is_reserved_before_copy_and_cancel_releases_only_queued()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let mut tickets = Vec::new();
+        for index in 0..8 {
+            tickets.push(work.enqueue(1, &format!("original-{index}"), now)?);
+        }
+        assert!(matches!(
+            work.enqueue(1, "ninth", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        let (slot, first) = work.promote(tickets[0], now)?;
+        assert_eq!((slot, first.operation.as_ref()), (1, "original-0"));
+        work.cancel(tickets[0]);
+        let (_, second) = work.promote(tickets[1], now)?;
+        assert_eq!(second.operation.as_ref(), "original-1");
+        assert!(matches!(
+            work.promote(tickets[2], now),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.cancel(tickets[2]);
+        assert!(work.enqueue(1, "replacement queued only", now).is_ok());
+        assert_eq!(work.active.iter().filter(|s| s.is_some()).count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn promoted_pass_identity_shares_one_operation_backing() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(3, "canonical-operation-envelope", now)?;
+        let (slot, submitted) = work.promote(id, now)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let retained = work.active[index]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        assert!(std::sync::Arc::ptr_eq(
+            &submitted.operation,
+            &retained.operation
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn slot_reuse_rejects_the_previous_incarnation() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first_id = work.enqueue(3, "same-original", now)?;
+        let (slot, first) = work.promote(first_id, now)?;
+        work.mark_persisted(slot, first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        work.acknowledge(slot, 3, "same-original")?;
+
+        let second_id = work.enqueue(3, "same-original", now)?;
+        let (_, second) = work.promote(second_id, now)?;
+        assert_ne!(first.incarnation, second.incarnation);
+        assert!(matches!(
+            work.validate_incarnation(slot, 3, "same-original", first.incarnation),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.validate_incarnation(slot, 3, "same-original", second.incarnation)?;
+        Ok(())
+    }
+
+    #[test]
+    fn completion_and_acknowledgement_are_atomic_for_the_exact_incarnation()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first_id = work.enqueue(3, "same-original", now)?;
+        let (slot, first) = work.promote(first_id, now)?;
+        work.mark_persisted(slot, first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        assert!(matches!(
+            work.acknowledge(slot, 3, "same-original"),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        work.acknowledge(slot, 3, "same-original")?;
+
+        let successor_id = work.enqueue(3, "same-original", now)?;
+        let (_, successor) = work.promote(successor_id, now)?;
+        assert!(matches!(
+            work.finish_run(slot, 3, "same-original", first.incarnation, true),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        assert!(
+            !work.active[0]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .definitive
+        );
+        assert_ne!(first.incarnation, successor.incarnation);
+        Ok(())
+    }
+
+    #[test]
+    fn v1_recovery_requires_the_complete_canonical_envelope() -> Result<(), DurabilityError> {
+        let record = r#"{"record":"same"}"#;
+        let allowed = ["prepare", "commit"];
+        for valid in [
+            serde_json::json!({
+                "m05_operation": "prepare",
+                "record": record,
+                "authorization_deadline": null,
+            })
+            .to_string(),
+            serde_json::json!({
+                "m05_operation": "commit",
+                "record": record,
+                "authorization_deadline": 17,
+            })
+            .to_string(),
+        ] {
+            validate_v1_reconciliation_original(&valid, record, &allowed)?;
+        }
+        for invalid in [
+            serde_json::json!({
+                "m05_operation": "commit",
+                "record": record,
+                "authorization_deadline": null,
+            })
+            .to_string(),
+            serde_json::json!({
+                "m05_operation": "prepare",
+                "record": record,
+                "authorization_deadline": 17,
+            })
+            .to_string(),
+            format!(
+                r#"{{"authorization_deadline":17,"m05_operation":"commit","record":{record:?},"unknown":true}}"#
+            ),
+        ] {
+            assert!(matches!(
+                validate_v1_reconciliation_original(&invalid, record, &allowed),
+                Err(DurabilityError::InvalidStoredState)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn resume_requires_persistence_and_reuses_the_retained_backing() -> Result<(), DurabilityError>
+    {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(3, "persist-me", now)?;
+        let (slot, promoted) = work.promote(id, now)?;
+        assert!(matches!(
+            work.resume_deadline(slot, 3, "persist-me"),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.mark_persisted(slot, promoted.incarnation)?;
+        assert!(work.resume_deadline(slot, 3, "persist-me").is_ok());
+        let retained = work.active[0]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        assert!(std::sync::Arc::ptr_eq(
+            &promoted.operation,
+            &retained.operation
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn envelope_and_ticket_limits_fail_before_retention() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let maximum = "x".repeat(super::super::MAX_FRESH_OPERATION_BYTES);
+        let id = work.enqueue(1, &maximum, now)?;
+        assert!(matches!(
+            work.enqueue(1, &(maximum.clone() + "x"), now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert_eq!(work.queued.iter().filter(|s| s.is_some()).count(), 1);
+        assert_eq!(
+            work.promote(id, now + Duration::from_millis(1000))?
+                .1
+                .operation
+                .len(),
+            maximum.len()
+        );
+        work.next_id = u64::MAX;
+        assert!(matches!(
+            work.enqueue(1, "overflow", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(work.queued.iter().all(Option::is_none));
+        Ok(())
+    }
+
+    #[test]
+    fn queue_expiry_and_recovered_slots_never_create_active_capacity() -> Result<(), DurabilityError>
+    {
+        let recovered = [
+            Some(super::super::DurablePendingCheckpoint {
+                slot: 1,
+                operation_kind: 1,
+                operation_json: "recovered original".into(),
+            }),
+            None,
+        ];
+        let mut work = WorkCustody::new(&recovered);
+        let now = std::time::Instant::now();
+        let expired = work.enqueue(2, "never submitted", now)?;
+        assert!(matches!(
+            work.promote(expired, now + Duration::from_millis(1001)),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(work.queued.iter().all(Option::is_none));
+        let next = work.enqueue(2, "second original", now)?;
+        assert_eq!(work.promote(next, now)?.0, 2);
+        let blocked = work.enqueue(2, "third original", now)?;
+        assert!(matches!(
+            work.promote(blocked, now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert_eq!(
+            work.active[0]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .operation
+                .as_ref(),
+            "recovered original"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn exact_acknowledgement_releases_one_slot_and_wrong_identity_cannot()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first = work.enqueue(1, "first", now)?;
+        let second = work.enqueue(2, "second", now)?;
+        work.promote(first, now)?;
+        work.promote(second, now)?;
+        assert!(matches!(
+            work.enqueue(1, "first", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        let third = work.enqueue(3, "third", now)?;
+        assert!(matches!(
+            work.promote(third, now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(matches!(
+            work.acknowledge(1, 1, "wrong"),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        assert!(matches!(
+            work.acknowledge(1, 1, "first"),
+            Err(DurabilityError::Unavailable)
+        ));
+        let incarnation = work.active[0]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .incarnation;
+        work.begin_run(1, 1, "first", incarnation)?;
+        work.finish_run(1, 1, "first", incarnation, true)?;
+        work.acknowledge(1, 1, "first")?;
+        assert_eq!(work.promote(third, now)?.0, 1);
+        assert!(matches!(
+            work.acknowledge(1, 1, "first"),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn completed_result_is_not_rewritten_after_deadline() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let completed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let body_completed = completed.clone();
+                tokio::time::sleep(Duration::from_millis(1)).await;
+                body_completed.store(true, std::sync::atomic::Ordering::SeqCst);
+                assert!(completed.load(std::sync::atomic::Ordering::SeqCst));
+            });
+        Ok(())
+    }
+
+    #[test]
+    fn live_and_recovered_attempts_each_retain_one_absolute_deadline() -> Result<(), DurabilityError>
+    {
+        let now = std::time::Instant::now();
+        let mut live = WorkCustody::new(&[None, None]);
+        let id = live.enqueue(1, "live", now)?;
+        let expected = tokio::time::Instant::now() + Duration::from_secs(1);
+        let (slot, operation) = live.promote_with_deadline(id, now, expected)?;
+        live.mark_persisted(slot, operation.incarnation)?;
+        assert_eq!(live.resume_deadline(1, 1, "live")?, expected);
+        assert_eq!(live.resume_deadline(1, 1, "live")?, expected);
+
+        let recovered = [
+            Some(super::super::DurablePendingCheckpoint {
+                slot: 1,
+                operation_kind: 2,
+                operation_json: "recovered".into(),
+            }),
+            None,
+        ];
+        let mut recovered = WorkCustody::new(&recovered);
+        let first = recovered.resume_deadline(1, 2, "recovered")?;
+        assert_eq!(recovered.resume_deadline(1, 2, "recovered")?, first);
+        Ok(())
+    }
+
+    #[test]
+    fn root_ready_demand_is_coalesced_and_consumed_once() {
+        let demand = RootReadyDemand::new();
+        demand.record();
+        demand.record();
+        assert!(demand.consume());
+        assert!(!demand.consume());
+        demand.record();
+        assert!(demand.consume());
+    }
+
+    #[test]
+    fn registration_identity_requires_same_generation_and_root_owner() {
+        #[derive(Debug)]
+        struct Budget;
+        impl sqlx::postgres::ResourceBudget for Budget {
+            fn try_reserve(&self, _: usize) -> Result<(), sqlx::postgres::BudgetError> {
+                Ok(())
+            }
+            fn release(&self, _: usize) {}
+        }
+        fn identity(
+            token: std::sync::Arc<()>,
+            owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget>,
+        ) -> RuntimeIdentity {
+            RuntimeIdentity {
+                transport_ip: std::net::IpAddr::from([127, 0, 0, 1]),
+                port: 5432,
+                config_identity: token,
+                root_owner: owner,
+            }
+        }
+        let token = std::sync::Arc::new(());
+        let owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget> = std::sync::Arc::new(Budget);
+        assert!(identity(token.clone(), owner.clone()) == identity(token.clone(), owner.clone()));
+        assert!(
+            identity(token.clone(), owner.clone())
+                != identity(std::sync::Arc::new(()), owner.clone())
+        );
+        assert!(
+            identity(token, owner)
+                != identity(std::sync::Arc::new(()), std::sync::Arc::new(Budget))
+        );
+    }
+
+    #[test]
+    fn failed_or_cancelled_starting_window_restores_empty_before_retry()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let registration = tokio::sync::Mutex::new(RuntimeRegistration::Empty);
+                {
+                    let mut state = registration.lock().await;
+                    *state = RuntimeRegistration::Starting;
+                    let _window = StartingRegistration {
+                        registration: state,
+                        complete: false,
+                    };
+                    // Error/cancellation drops the window without publishing
+                    // readiness or leaving the process poisoned in Starting.
+                }
+                assert!(matches!(
+                    *registration.lock().await,
+                    RuntimeRegistration::Empty
+                ));
+
+                let mut state = registration.lock().await;
+                assert!(matches!(*state, RuntimeRegistration::Empty));
+                *state = RuntimeRegistration::Starting;
+                // A successor cannot observe Empty while the old generation's
+                // window (and therefore its descendants) is still owned.
+                assert!(registration.try_lock().is_err());
+                let mut window = StartingRegistration {
+                    registration: state,
+                    complete: false,
+                };
+                window.complete = true;
+            });
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod runtime_scope_identity_red_tests {
+    use crate::durability::{AdmissionReconnectJournalV2, MigrationExecutor};
+    use oteryn_game_server::foundation::{
+        AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
+        CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId,
+        ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1,
+        FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
+        ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1, ReconnectCommitDispositionV1,
+        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
+        ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
+        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, TerminalGameSessionReplacementAuthorizationV1, WorldId,
+    };
+    use sqlx::{Connection, Executor, PgConnection};
+    use std::error::Error;
+    use std::future::Future;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
+    static DB_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    type TestResult = Result<(), Box<dyn Error>>;
+
+    fn exact_current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
+            )),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
+    }
+
+    struct IsolatedDatabase {
+        admin_url: String,
+        database_name: String,
+    }
+
+    impl IsolatedDatabase {
+        async fn create(test_name: &str) -> Result<Self, Box<dyn Error>> {
+            let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+            if !(admin_url.starts_with("postgresql://oteryn_test_admin:")
+                && (admin_url.contains("@127.0.0.1:5432/")
+                    || admin_url.contains("@localhost:5432/"))
+                && admin_url.ends_with("/postgres")
+                && !admin_url.contains(['?', '#', '\n', '\r']))
+            {
+                return Err("unsafe PostgreSQL test-admin URL".into());
+            }
+            let ordinal = DB_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+            let normalized: String = test_name
+                .bytes()
+                .map(|byte| {
+                    if byte.is_ascii_alphanumeric() {
+                        char::from(byte.to_ascii_lowercase())
+                    } else {
+                        '_'
+                    }
+                })
+                .collect();
+            let database_name = format!(
+                "oteryn_game_review_{}_{}_{}",
+                std::process::id(),
+                ordinal,
+                normalized
+            );
+            let mut admin = PgConnection::connect(&admin_url).await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {database_name}"
+                ))))
+                .await?;
+            Ok(Self {
+                admin_url,
+                database_name,
+            })
+        }
+
+        fn database_url(&self) -> Result<String, Box<dyn Error>> {
+            let prefix = self
+                .admin_url
+                .strip_suffix("/postgres")
+                .ok_or("invalid PostgreSQL test-admin URL")?;
+            Ok(format!("{prefix}/{}", self.database_name))
+        }
+
+        async fn cleanup(self) -> Result<(), Box<dyn Error>> {
+            let mut admin = PgConnection::connect(&self.admin_url).await?;
+            sqlx::query(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+                 WHERE datname = $1 AND pid <> pg_backend_pid()",
+            )
+            .bind(&self.database_name)
+            .execute(&mut admin)
+            .await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "DROP DATABASE IF EXISTS {}",
+                    self.database_name
+                ))))
+                .await?;
+            Ok(())
+        }
+    }
+
+    fn run_postgres_test<F>(future: F) -> TestResult
+    where
+        F: Future<Output = TestResult>,
+    {
+        if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+            return Ok(());
+        }
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(future)
+    }
+
+    async fn migrated_database(
+        test_name: &str,
+    ) -> Result<(IsolatedDatabase, String), Box<dyn Error>> {
+        let database = IsolatedDatabase::create(test_name).await?;
+        let database_url = database.database_url()?;
+        let executor = MigrationExecutor::connect_migration(&database_url).await?;
+        executor.apply_embedded_ledger().await?;
+        Ok((database, database_url))
+    }
+
+    fn unix_now() -> Result<i64, Box<dyn Error>> {
+        Ok(SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_secs()
+            .try_into()?)
+    }
+
+    fn uuid_v7(raw: u64) -> [u8; 16] {
+        let mut value = [0_u8; 16];
+        value[8..].copy_from_slice(&raw.to_be_bytes());
+        value[6] = 0x70;
+        value[8] = (value[8] & 0x3f) | 0x80;
+        value
+    }
+
+    fn game_session(raw: u64) -> Result<GameSessionId, ReconnectDurabilityErrorV1> {
+        GameSessionId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn character(raw: u64) -> Result<CharacterId, ReconnectDurabilityErrorV1> {
+        CharacterId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn world(raw: u64) -> Result<WorldId, ReconnectDurabilityErrorV1> {
+        WorldId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn channel(raw: u64) -> Result<ChannelId, ReconnectDurabilityErrorV1> {
+        ChannelId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn candidate_record() -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        candidate_record_for_channel(13)
+    }
+
+    fn candidate_record_for_channel(
+        channel_raw: u64,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let world_id = world(12)?;
+        let identity = ReconnectIdentityV1::new(
+            game_session(20)?,
+            ReconnectAttemptRef::new(1).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ACCOUNT,
+            character(11)?,
+            world_id,
+            RuntimeScopeRefV1::channel(world_id, channel(channel_raw)?),
+        )?;
+        let connection = ReconnectConnectionFenceV1::new(
+            ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ConnectionGeneration::new(8).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            AuthenticatedTransportRefV1::decode(&[0x71; 16])
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let authority = ReconnectAuthorityFenceV1::new(
+            9,
+            ScopeOwnershipGeneration::new(10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(3)?,
+            120,
+            115,
+            ProtectionEntitlementV1::unused(),
+        )?;
+        let fnd02 = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(3).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            vec![],
+            41,
+            vec![],
+        )?;
+        let platform = AuthorityEvidenceFenceV1::new(
+            "platform-security",
+            "reconnect",
+            "account",
+            "sec:17",
+            "decision:sec:17",
+            100,
+        )?;
+        let trust = AuthorityEvidenceFenceV1::new(
+            "proof-trust",
+            "reconnect",
+            "recovery-key",
+            "trust:21",
+            "decision:trust:21",
+            101,
+        )?;
+        let compatibility = ReconnectCompatibilityEvidenceV1::new(
+            1,
+            1,
+            "rules:1",
+            "content:2",
+            "map:3",
+            "world:4",
+            12,
+            platform,
+            trust,
+            Some(110),
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            identity,
+            connection,
+            authority,
+            continuity,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [0x55; 32],
+            },
+            fnd02,
+            compatibility,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn postgres_record(
+        now: i64,
+        session_raw: u64,
+        attempt_raw: u64,
+        transport_byte: u8,
+        predecessor_generation: u64,
+        protection_entitlement: ProtectionEntitlementV1,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let world_id = world(12)?;
+        let identity = ReconnectIdentityV1::new(
+            game_session(session_raw)?,
+            ReconnectAttemptRef::new(attempt_raw)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ACCOUNT,
+            character(11)?,
+            world_id,
+            RuntimeScopeRefV1::channel(world_id, channel(13)?),
+        )?;
+        let connection = ReconnectConnectionFenceV1::new(
+            ConnectionGeneration::new(predecessor_generation)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ConnectionGeneration::new(predecessor_generation + 1)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            AuthenticatedTransportRefV1::decode(&[transport_byte; 16])
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let authority = ReconnectAuthorityFenceV1::new(
+            9,
+            ScopeOwnershipGeneration::new(10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(3)?,
+            now + 120,
+            now + 115,
+            protection_entitlement,
+        )?;
+        let fnd02 = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(3).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            vec![],
+            41,
+            vec![],
+        )?;
+        let platform = AuthorityEvidenceFenceV1::new(
+            "platform-security",
+            "reconnect",
+            "account",
+            "sec:17",
+            "decision:sec:17",
+            now,
+        )?;
+        let trust = AuthorityEvidenceFenceV1::new(
+            "proof-trust",
+            "reconnect",
+            "recovery-key",
+            "trust:21",
+            "decision:trust:21",
+            now,
+        )?;
+        let compatibility = ReconnectCompatibilityEvidenceV1::new(
+            1,
+            1,
+            "rules:1",
+            "content:2",
+            "map:3",
+            "world:4",
+            12,
+            platform,
+            trust,
+            Some(now + 110),
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            identity,
+            connection,
+            authority,
+            continuity,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [transport_byte; 32],
+            },
+            fnd02,
+            compatibility,
+        )
+    }
+
+    fn replacement_authorization(
+        candidate: &ReconnectDurabilityRecordV1,
+        predecessor_raw: u64,
+        current_connection_generation: u64,
+    ) -> Result<TerminalGameSessionReplacementAuthorizationV1, ReconnectDurabilityErrorV1> {
+        let facts =
+            FreshAdmissionFacts::new([0x44; 32], character(11)?, world(12)?, channel(13)?, 9, 10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let initial_transport = AuthenticatedTransportRefV1::decode(&[0x70; 16])
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let predecessor = game_session(predecessor_raw)?;
+        let commit = FreshAdmissionCommit::from_facts(predecessor, facts, initial_transport)
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let snapshot = GameSessionAuthoritySnapshot::from_current_facts(
+            commit,
+            GameSessionState::Terminal,
+            ConnectionGeneration::new(current_connection_generation)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            None,
+            CharacterLease::new(character(11)?, 9)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character(11)?,
+                world(12)?,
+            )),
+            RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
+            ScopeOwnershipGeneration::new(10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?
+        .with_control_loss_continuity(
+            candidate.continuity().control_loss_epoch(),
+            candidate.continuity().original_grace_deadline(),
+        )?;
+        TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            ACCOUNT,
+            Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
+            predecessor,
+            candidate.identity().game_session_id(),
+            snapshot,
+            candidate,
+        )
+    }
+
+    async fn seed_current_actor_anchor(
+        database_url: &str,
+        session_raw: u64,
+        now: i64,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut connection = PgConnection::connect(database_url).await?;
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions (\
+                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                character_lease_generation, scope_ownership_generation, current_generation, \
+                session_state\
+             ) VALUES (\
+                encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
+                encode($4, 'hex')::uuid, 1, encode($4, 'hex')::uuid, \
+                encode($5, 'hex')::uuid, NULL, 3, $6, 7, 9, 10, 7, 1\
+             )",
+        )
+        .bind(uuid_v7(session_raw).as_slice())
+        .bind(ACCOUNT)
+        .bind(uuid_v7(11).as_slice())
+        .bind(uuid_v7(12).as_slice())
+        .bind(uuid_v7(13).as_slice())
+        .bind(now + 120)
+        .execute(&mut connection)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_control_loss_continuity (\
+                character_id, control_loss_epoch, account_id, world_id, context_game_session_id, \
+                original_grace_deadline, protection_entitlement_state, protection_rearm_state\
+             ) VALUES (encode($1, 'hex')::uuid, 3, $2::text::uuid, encode($3, 'hex')::uuid, \
+                       encode($4, 'hex')::uuid, $5, 1, 1)",
+        )
+        .bind(uuid_v7(11).as_slice())
+        .bind(ACCOUNT)
+        .bind(uuid_v7(12).as_slice())
+        .bind(uuid_v7(session_raw).as_slice())
+        .bind(now + 120)
+        .execute(&mut connection)
+        .await?;
+        connection.close().await?;
+        Ok(())
+    }
+
+    fn predecessor_snapshot(
+        current_channel_raw: u64,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
+    {
+        predecessor_snapshot_with_world_eligibility(
+            current_channel_raw,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character(11)?,
+                world(12)?,
+            )),
+        )
+    }
+
+    fn predecessor_snapshot_with_world_eligibility(
+        current_channel_raw: u64,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
+    {
+        let facts =
+            FreshAdmissionFacts::new([0x44; 32], character(11)?, world(12)?, channel(13)?, 9, 10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let initial_transport = AuthenticatedTransportRefV1::decode(&[0x70; 16])
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let commit = FreshAdmissionCommit::from_facts(game_session(10)?, facts, initial_transport)
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        GameSessionAuthoritySnapshot::from_current_facts(
+            commit,
+            GameSessionState::Terminal,
+            ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            None,
+            CharacterLease::new(character(11)?, 9)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            current_character_world_eligibility,
+            RuntimeScopeRefV1::channel(world(12)?, channel(current_channel_raw)?),
+            ScopeOwnershipGeneration::new(10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?
+        .with_control_loss_continuity(ControlLossEpochRefV1::new(3)?, 120)
+    }
+
+    fn prepared_flow(
+        record: &ReconnectDurabilityRecordV1,
+    ) -> Result<ReconnectDurabilityFlowV2, ReconnectDurabilityErrorV1> {
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        flow.accept_prepare_completion(
+            ReconnectPrepareCompletionV2::for_request(
+                &request,
+                ReconnectPrepareDispositionV2::Prepared,
+            ),
+            &mut budget,
+        )?;
+        Ok(flow)
+    }
+
+    fn current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        runtime_scope: RuntimeScopeRefV1,
+        connection_generation: ConnectionGeneration,
+        control_loss_epoch: ControlLossEpochRefV1,
+        proof: ReconnectProofV1,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        current_authority_with_bindings(
+            record,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
+            )),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
+            runtime_scope,
+            connection_generation,
+            control_loss_epoch,
+            proof,
+            105,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn current_authority_with_bindings(
+        record: &ReconnectDurabilityRecordV1,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_candidate: Option<ReconnectCandidateBindingV1>,
+        runtime_scope: RuntimeScopeRefV1,
+        connection_generation: ConnectionGeneration,
+        control_loss_epoch: ControlLossEpochRefV1,
+        proof: ReconnectProofV1,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            current_character_world_eligibility,
+            current_candidate,
+            runtime_scope,
+            connection_generation,
+            record.authority(),
+            control_loss_epoch,
+            record.continuity().original_grace_deadline(),
+            proof,
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
+    }
+
+    #[test]
+    fn terminal_replacement_requires_independent_current_character_world_eligibility()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        assert!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                ACCOUNT,
+                Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
+                game_session(10)?,
+                game_session(20)?,
+                predecessor_snapshot_with_world_eligibility(
+                    13,
+                    Some(CharacterWorldEligibilityClaimV1::new(
+                        character(11)?,
+                        world(12)?,
+                    )),
+                )?,
+                &candidate,
+            )
+            .is_ok()
+        );
+
+        for current_eligibility in [
+            None,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character(11)?,
+                world(99)?,
+            )),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character(99)?,
+                world(12)?,
+            )),
+        ] {
+            assert_eq!(
+                TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                    ACCOUNT,
+                    Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
+                    game_session(10)?,
+                    game_session(20)?,
+                    predecessor_snapshot_with_world_eligibility(13, current_eligibility)?,
+                    &candidate,
+                ),
+                Err(ReconnectDurabilityErrorV1::StaleAuthority)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn terminal_replacement_authorization_requires_current_account_presence_at_prepare()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        let exact_presence = AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?;
+        let reassigned_presence = AccountPresenceClaimV1::new(ACCOUNT, character(99)?)?;
+
+        assert!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                ACCOUNT,
+                Some(&exact_presence),
+                game_session(10)?,
+                game_session(20)?,
+                predecessor_snapshot(13)?,
+                &candidate,
+            )
+            .is_ok()
+        );
+
+        for current_presence in [None, Some(&reassigned_presence)] {
+            assert_eq!(
+                TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                    ACCOUNT,
+                    current_presence,
+                    game_session(10)?,
+                    game_session(20)?,
+                    predecessor_snapshot(13)?,
+                    &candidate,
+                ),
+                Err(ReconnectDurabilityErrorV1::StaleAuthority)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn v2_final_revalidation_requires_current_world_and_live_candidate_binding()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let exact_world = Some(CharacterWorldEligibilityClaimV1::new(
+            record.identity().character_id(),
+            record.identity().world_id(),
+        ));
+        let exact_candidate = ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?;
+        let exact_scope = record.identity().runtime_scope();
+        let exact_connection = record.connection().predecessor();
+        let exact_epoch = record.continuity().control_loss_epoch();
+        let exact_proof = record.proof().clone();
+
+        let mut exact_flow = prepared_flow(&record)?;
+        assert!(
+            exact_flow
+                .authorize_commit(
+                    current_authority_with_bindings(
+                        &record,
+                        exact_world,
+                        Some(exact_candidate),
+                        exact_scope,
+                        exact_connection,
+                        exact_epoch,
+                        exact_proof.clone(),
+                        105,
+                    )?,
+                    104,
+                )
+                .is_ok()
+        );
+
+        let mut missing_world_flow = prepared_flow(&record)?;
+        assert_eq!(
+            missing_world_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    None,
+                    Some(exact_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut reassigned_world_flow = prepared_flow(&record)?;
+        assert_eq!(
+            reassigned_world_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    Some(CharacterWorldEligibilityClaimV1::new(
+                        character(11)?,
+                        world(99)?,
+                    )),
+                    Some(exact_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut missing_candidate_flow = prepared_flow(&record)?;
+        assert_eq!(
+            missing_candidate_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    None,
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let rebound_candidate = ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            AuthenticatedTransportRefV1::decode(&[0x72; 16])
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            record.continuity().prepared_deadline(),
+        )?;
+        let mut rebound_candidate_flow = prepared_flow(&record)?;
+        assert_eq!(
+            rebound_candidate_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    Some(rebound_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let changed_attempt_candidate = ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            ReconnectAttemptRef::new(2).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?;
+        let mut changed_attempt_flow = prepared_flow(&record)?;
+        assert_eq!(
+            changed_attempt_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    Some(changed_attempt_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof,
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v2_committed_reconciliation_requires_current_world_and_live_candidate_binding()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let reconcile =
+            |current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+             current_candidate: Option<ReconnectCandidateBindingV1>| {
+                let mut budget =
+                    ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+                budget.reserve(
+                    record.identity().reconnect_attempt_ref(),
+                    record.connection().transport_ref(),
+                )?;
+                let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+                flow.accept_prepare_completion(
+                    ReconnectPrepareCompletionV2::for_request(
+                        &request,
+                        ReconnectPrepareDispositionV2::Ambiguous,
+                    ),
+                    &mut budget,
+                )?;
+                flow.accept_reconciliation(
+                    snapshot.clone(),
+                    current_authority_with_bindings(
+                        &record,
+                        current_character_world_eligibility,
+                        current_candidate,
+                        record.identity().runtime_scope(),
+                        record.connection().predecessor(),
+                        record.continuity().control_loss_epoch(),
+                        record.proof().clone(),
+                        105,
+                    )?,
+                    &mut budget,
+                )
+            };
+
+        let exact_world = Some(CharacterWorldEligibilityClaimV1::new(
+            record.identity().character_id(),
+            record.identity().world_id(),
+        ));
+        let exact_candidate = Some(ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?);
+        assert!(matches!(
+            reconcile(exact_world, exact_candidate)?,
+            ReconnectProjectionDecisionV2::InstallController { .. }
+        ));
+        assert_eq!(
+            reconcile(None, exact_candidate),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        assert_eq!(
+            reconcile(exact_world, None),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v2_terminal_reconciliation_survives_scope_advance_but_committed_stays_fenced()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let advanced_authority = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
+            )),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            ReconnectAuthorityFenceV1::new(
+                record.authority().character_lease_generation(),
+                ScopeOwnershipGeneration::new(11)
+                    .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            )?,
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            105,
+        )?;
+
+        let reconciliation_flow = || {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget.reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )?;
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )?;
+            Ok::<_, ReconnectDurabilityErrorV1>((flow, budget))
+        };
+
+        let (mut terminal_flow, mut terminal_budget) = reconciliation_flow()?;
+        let terminal_snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Terminal {
+                disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+            },
+        );
+        assert_eq!(
+            terminal_flow.accept_reconciliation(
+                terminal_snapshot,
+                advanced_authority.clone(),
+                &mut terminal_budget,
+            )?,
+            ReconnectProjectionDecisionV2::Terminal {
+                disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+            }
+        );
+        assert!(
+            terminal_budget
+                .replacement_allowed_after_collision(record.identity().reconnect_attempt_ref())
+        );
+
+        let (mut committed_flow, mut committed_budget) = reconciliation_flow()?;
+        let committed_snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        assert_eq!(
+            committed_flow.accept_reconciliation(
+                committed_snapshot,
+                advanced_authority,
+                &mut committed_budget,
+            ),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn terminal_replacement_rejects_same_world_generation_different_current_runtime_scope()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        let result = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            ACCOUNT,
+            Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
+            game_session(10)?,
+            game_session(20)?,
+            predecessor_snapshot(14)?,
+            &candidate,
+        );
+        assert_eq!(result, Err(ReconnectDurabilityErrorV1::StaleAuthority));
+        Ok(())
+    }
+
+    #[test]
+    fn final_revalidation_requires_complete_current_authority_facts()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let exact_scope = record.identity().runtime_scope();
+        let exact_connection = record.connection().predecessor();
+        let exact_epoch = record.continuity().control_loss_epoch();
+        let exact_proof = record.proof().clone();
+
+        let mut exact_flow = prepared_flow(&record)?;
+        let exact = current_authority(
+            &record,
+            exact_scope,
+            exact_connection,
+            exact_epoch,
+            exact_proof.clone(),
+        )?;
+        assert!(exact_flow.authorize_commit(exact, 104).is_ok());
+
+        let mut scope_flow = prepared_flow(&record)?;
+        let changed_scope = current_authority(
+            &record,
+            RuntimeScopeRefV1::channel(record.identity().world_id(), channel(14)?),
+            exact_connection,
+            exact_epoch,
+            exact_proof.clone(),
+        )?;
+        assert_eq!(
+            scope_flow.authorize_commit(changed_scope, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut connection_flow = prepared_flow(&record)?;
+        let changed_connection = current_authority(
+            &record,
+            exact_scope,
+            ConnectionGeneration::new(9).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            exact_epoch,
+            exact_proof.clone(),
+        )?;
+        assert_eq!(
+            connection_flow.authorize_commit(changed_connection, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut epoch_flow = prepared_flow(&record)?;
+        let changed_epoch = current_authority(
+            &record,
+            exact_scope,
+            exact_connection,
+            ControlLossEpochRefV1::new(4)?,
+            exact_proof,
+        )?;
+        assert_eq!(
+            epoch_flow.authorize_commit(changed_epoch, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut proof_flow = prepared_flow(&record)?;
+        let changed_proof = current_authority(
+            &record,
+            exact_scope,
+            exact_connection,
+            exact_epoch,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [0x56; 32],
+            },
+        )?;
+        assert_eq!(
+            proof_flow.authorize_commit(changed_proof, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn final_revalidation_requires_current_original_grace_deadline()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let current = |original_grace_deadline: i64| {
+            ReconnectCurrentAuthorityV1::from_current_facts(
+                &record,
+                Some(AccountPresenceClaimV1::new(
+                    record.identity().account_id(),
+                    record.identity().character_id(),
+                )?),
+                Some(CharacterWorldEligibilityClaimV1::new(
+                    record.identity().character_id(),
+                    record.identity().world_id(),
+                )),
+                Some(ReconnectCandidateBindingV1::new(
+                    record.identity().game_session_id(),
+                    record.identity().reconnect_attempt_ref(),
+                    record.connection().candidate(),
+                    record.connection().transport_ref(),
+                    record.continuity().prepared_deadline(),
+                )?),
+                record.identity().runtime_scope(),
+                record.connection().predecessor(),
+                record.authority(),
+                record.continuity().control_loss_epoch(),
+                original_grace_deadline,
+                record.proof().clone(),
+                record.fnd02().clone(),
+                record.compatibility().clone(),
+                GameSessionState::Reconnectable,
+                false,
+                105,
+            )
+        };
+
+        let exact_deadline = record.continuity().original_grace_deadline();
+        let mut exact_flow = prepared_flow(&record)?;
+        assert!(
+            exact_flow
+                .authorize_commit(current(exact_deadline)?, 104)
+                .is_ok()
+        );
+
+        let mut shortened_flow = prepared_flow(&record)?;
+        assert_eq!(
+            shortened_flow.authorize_commit(current(exact_deadline - 1)?, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut reconciliation_flow, request) =
+            ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        reconciliation_flow.accept_prepare_completion(
+            ReconnectPrepareCompletionV2::for_request(
+                &request,
+                ReconnectPrepareDispositionV2::Ambiguous,
+            ),
+            &mut budget,
+        )?;
+        assert!(matches!(
+            reconciliation_flow.accept_reconciliation(
+                snapshot,
+                current(exact_deadline)?,
+                &mut budget,
+            )?,
+            ReconnectProjectionDecisionV2::InstallController { .. }
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn replacement_authorization_rejects_runtime_scope_record_substitution()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        let authorization = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            ACCOUNT,
+            Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
+            game_session(10)?,
+            game_session(20)?,
+            predecessor_snapshot(13)?,
+            &candidate,
+        )?;
+        let substituted = candidate_record_for_channel(14)?;
+
+        assert!(
+            !crate::durability::replacement_authorization_matches_record(
+                &authorization,
+                &substituted,
+            )
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn replacement_reconciliation_requires_receipt_authorization_when_request_omits_it()
+    -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("unsigned_replacement_reconcile").await?;
+            let now = unix_now()?;
+            seed_current_actor_anchor(&database_url, 10, now).await?;
+            let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
+            let candidate = postgres_record(now, 20, 1, 0xa1, 7, ProtectionEntitlementV1::unused())
+                .map_err(|_| "candidate record")?;
+            let authorization = replacement_authorization(&candidate, 10, 7)
+                .map_err(|_| "replacement authorization")?;
+            let signed_request =
+                ReconnectDurabilityFlowV2::begin(candidate.clone(), Some(authorization)).1;
+            assert_eq!(
+                journal.prepare(&signed_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let unsigned_request = ReconnectDurabilityFlowV2::begin(candidate, None).1;
+            assert!(matches!(
+                journal.reconcile(&unsigned_request).await,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ));
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn replacement_prepare_requires_receipt_authorization_when_request_omits_it() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("unsigned_replacement_prepare").await?;
+            let now = unix_now()?;
+            seed_current_actor_anchor(&database_url, 10, now).await?;
+            let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
+            let candidate = postgres_record(now, 20, 1, 0xa2, 7, ProtectionEntitlementV1::unused())
+                .map_err(|_| "candidate record")?;
+            let authorization = replacement_authorization(&candidate, 10, 7)
+                .map_err(|_| "replacement authorization")?;
+            let signed_request =
+                ReconnectDurabilityFlowV2::begin(candidate.clone(), Some(authorization)).1;
+            assert_eq!(
+                journal.prepare(&signed_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let unsigned_request = ReconnectDurabilityFlowV2::begin(candidate, None).1;
+            assert!(matches!(
+                journal.prepare(&unsigned_request).await,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ));
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn legacy_prepare_rejects_receipt_backed_replacement_candidate() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("legacy_replacement_prepare").await?;
+            let now = unix_now()?;
+            seed_current_actor_anchor(&database_url, 10, now).await?;
+            let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
+            let candidate = postgres_record(now, 20, 1, 0xa3, 7, ProtectionEntitlementV1::unused())
+                .map_err(|_| "candidate record")?;
+            let authorization = replacement_authorization(&candidate, 10, 7)
+                .map_err(|_| "replacement authorization")?;
+            let signed_request =
+                ReconnectDurabilityFlowV2::begin(candidate.clone(), Some(authorization)).1;
+            assert_eq!(
+                journal.prepare(&signed_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(candidate);
+            assert!(matches!(
+                journal.legacy().prepare(&legacy_request).await,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ));
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn terminal_replacement_preserves_committed_predecessor_reconciliation() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("committed_predecessor_reconcile").await?;
+            let now = unix_now()?;
+            let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
+            let fenced = ProtectionEntitlementV1::fenced(42).map_err(|_| "fenced protection")?;
+            let predecessor_record =
+                postgres_record(now, 10, 1, 0xb1, 7, fenced).map_err(|_| "predecessor record")?;
+            let (mut predecessor_flow, predecessor_prepare) =
+                ReconnectDurabilityFlowV1::begin(predecessor_record.clone());
+            assert_eq!(
+                journal.legacy().prepare(&predecessor_prepare).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            predecessor_flow
+                .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &predecessor_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(|_| "predecessor prepare completion")?;
+            let current = exact_current_authority(&predecessor_record, now)
+                .map_err(|_| "predecessor current authority")?;
+            let predecessor_commit = predecessor_flow
+                .authorize_commit(current, now)
+                .map_err(|_| "predecessor commit authorization")?;
+            assert_eq!(
+                journal.legacy().commit(&predecessor_commit).await?,
+                ReconnectCommitDispositionV1::Committed
+            );
+
+            let candidate = postgres_record(
+                now,
+                20,
+                2,
+                0xb2,
+                8,
+                ProtectionEntitlementV1::fenced(42).map_err(|_| "candidate protection")?,
+            )
+            .map_err(|_| "candidate record")?;
+            let authorization = replacement_authorization(&candidate, 10, 8)
+                .map_err(|_| "replacement authorization")?;
+            let replacement_request =
+                ReconnectDurabilityFlowV2::begin(candidate, Some(authorization)).1;
+            assert_eq!(
+                journal.prepare(&replacement_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            assert_eq!(
+                journal.legacy().reconcile(&predecessor_prepare).await?,
+                ReconnectDurableReconciliationSnapshotV1::terminal(predecessor_record)
+            );
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+}

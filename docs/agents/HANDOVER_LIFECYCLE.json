@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "repository": "Oteryn/Oteryn-Game",
+  "authority_rule": "Retained handovers are historical continuation evidence only. They never authorize writes and never outrank live GitHub state, current repository governance, accepted architecture/contracts, or current main.",
+  "handovers": [
+    {
+      "handover_id": "OTV2-20260805-foundation-original-handoff",
+      "path": "docs/agents/evidence/OTV2-20260805-foundation-original-handoff.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Expired for current-state authority as soon as any recorded branch, PR, head, ownership, blocker, or accepted programme state changes; always re-resolve from live GitHub and current main before continuation.",
+      "superseded_by": [
+        "docs/agents/reports/OTV2-20260812-foundation-handover.md",
+        "docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md",
+        "live GitHub Issue/PR/CI state"
+      ]
+    },
+    {
+      "handover_id": "OTV2-20260812-foundation-handover",
+      "path": "docs/agents/reports/OTV2-20260812-foundation-handover.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Expired for current-state authority as soon as any recorded branch, PR, head, ownership, blocker, or accepted programme state changes; always re-resolve from live GitHub and current main before continuation.",
+      "superseded_by": [
+        "docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md",
+        "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md",
+        "live GitHub Issue/PR/CI state"
+      ]
+    }
+  ]
+}

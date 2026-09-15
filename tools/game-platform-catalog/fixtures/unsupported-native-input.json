@@ -1,0 +1,30 @@
+{
+  "authority_epoch": "preproduction-unallocated",
+  "source_revision": "a2a5da955dd8f580c9e768c8ac6a741db388cb22",
+  "generated_at": "2026-08-22T17:55:00Z",
+  "ruleset_id": "oteryn:ruleset.unbound",
+  "content_profile_id": "oteryn:profile.unbound",
+  "required_capabilities": [],
+  "capability_manifest": [
+    {"capability_id": "achievement", "support": "unsupported"},
+    {"capability_id": "creature", "support": "unsupported"},
+    {"capability_id": "creature_loot", "support": "unsupported"},
+    {"capability_id": "item", "support": "unsupported"},
+    {"capability_id": "npc", "support": "unsupported"},
+    {"capability_id": "npc_shop", "support": "unsupported"},
+    {"capability_id": "quest", "support": "unsupported"},
+    {"capability_id": "spell", "support": "unsupported"}
+  ],  "completeness_manifest": [
+    {"capability_id": "achievement", "state": "unknown"},
+    {"capability_id": "creature", "state": "unknown"},
+    {"capability_id": "creature_loot", "state": "unknown"},
+    {"capability_id": "item", "state": "unknown"},
+    {"capability_id": "npc", "state": "unknown"},
+    {"capability_id": "npc_shop", "state": "unknown"},
+    {"capability_id": "quest", "state": "unknown"},
+    {"capability_id": "spell", "state": "unknown"}
+  ],
+  "entities": [],
+  "relations": [],
+  "tombstones": []
+}

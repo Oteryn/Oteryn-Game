@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "coordination_id": "OTV2-RUST-CLIENT-CUTOVER-20260806",
+  "rust": {
+    "toolchain": "1.94.0",
+    "edition": "2024",
+    "resolver": "3",
+    "lockfile_policy": "root Cargo.lock committed and all CI uses --locked"
+  },
+  "retained_exact": [
+    {
+      "crate": "tokio",
+      "version": "1.51.4",
+      "default_features": false,
+      "workspace_features": ["io-util", "net", "rt-multi-thread", "sync", "time"],
+      "reason": "retain reviewed LTS application runtime during cutover"
+    },
+    {
+      "crate": "pollster",
+      "version": "1.0.1",
+      "default_features": false,
+      "reason": "retained Windows renderer adapter/device bootstrap"
+    },
+    {
+      "crate": "serde_json",
+      "version": "1.0.145",
+      "reason": "bounded Platform and synthetic manifest parsing"
+    },
+    {
+      "crate": "sha2",
+      "version": "0.11.0",
+      "default_features": false,
+      "reason": "PKCE challenge and synthetic fixture digest"
+    },
+    {
+      "crate": "wgpu",
+      "version": "30.0.0",
+      "default_features": false,
+      "features": ["std", "dx12"],
+      "reason": "retained Windows DX12 renderer"
+    },
+    {
+      "crate": "winit",
+      "version": "0.30.13",
+      "default_features": false,
+      "features": ["rwh_06"],
+      "reason": "retained Windows shell and physical input adapter"
+    }
+  ],
+  "added_exact": [
+    {
+      "crate": "reqwest",
+      "version": "0.13.4",
+      "default_features": false,
+      "features": ["form", "json", "rustls", "stream"],
+      "forbidden_features": ["blocking", "cookies", "gzip", "brotli", "zstd", "deflate", "multipart", "socks", "system-proxy", "native-tls", "native-tls-vendored", "http2", "http3"],
+      "runtime_controls": ["redirect policy none", "no proxy discovery", "HTTPS except loopback HTTP", "connect and request deadlines", "bounded chunk reads", "application-owned cancellation"]
+    }
+  ],
+  "removed_direct": [
+    {
+      "crate": "ureq",
+      "reason": "source blocking HTTP client is reference-only"
+    },
+    {
+      "crate": "native-tls",
+      "reason": "no direct dependency; selected Platform client uses reqwest rustls backend"
+    }
+  ],
+  "omitted_packages": ["protocol-canary", "protocol-core", "transport", "game-session"],
+  "release_closure": {
+    "production_root": "oteryn-client",
+    "forbidden_internal_reachability": ["oteryn-client-domain", "oteryn-client-simulation", "oteryn-synthetic-assets", "oteryn-test-support", "oteryn-synthetic-client-harness"],
+    "verification": "cargo tree --locked -p oteryn-client --edges normal,build plus machine workspace policy"
+  }
+}

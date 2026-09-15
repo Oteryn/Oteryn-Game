@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible defect in Oteryn v2
+title: "fix(scope): "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not include secrets, credentials, private data, proprietary assets, or production dumps.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the defect and its user-visible or system-visible impact.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest deterministic sequence that reproduces the problem.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include sanitized logs, exact commit SHA, platform, configuration, and test results.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Security handling
+      options:
+        - label: This report does not disclose a vulnerability or secret. Security issues must use private vulnerability reporting.
+          required: true

@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "manifest_revision": 3,
+  "canonical_digest": null,
+  "status": "ACCEPTED",
+  "reference_target": {
+    "id": "global-tibia-observable-2026-07-28-post-server-save",
+    "title": "Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary",
+    "effective_boundary_date": "2026-07-28",
+    "boundary_time_precision": "DATE_ONLY_SERVER_SAVE_TIME_NOT_FROZEN",
+    "immutable": true,
+    "accepted_by": "GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md",
+    "later_upstream_changes_policy": "CANDIDATE_FOR_LATER_REFERENCE_REVISION_ONLY"
+  },
+  "evidence_classes": [
+    "PROVEN",
+    "OBSERVED",
+    "DERIVED",
+    "UNKNOWN",
+    "CONFLICT",
+    "DECLARED_DIFFERENCE"
+  ],
+  "implementation_states": [
+    "NOT_STARTED",
+    "PARTIAL",
+    "IMPLEMENTED",
+    "NOT_APPLICABLE"
+  ],
+  "parity_statuses": [
+    "PARITY_CONFIRMED",
+    "PARITY_PENDING_EVIDENCE",
+    "PARITY_CONFLICT",
+    "DECLARED_DIFFERENCE",
+    "OUT_OF_SCOPE"
+  ],
+  "source_types": [
+    "OFFICIAL_PUBLIC",
+    "OWNER_PRIMARY_CAPTURE",
+    "CONTROLLED_BLACK_BOX_OBSERVATION",
+    "COMMUNITY_CORROBORATION",
+    "OTS_HYPOTHESIS_ONLY",
+    "OTERYN_ACCEPTED_CONTRACT",
+    "OTERYN_FIXTURE_OR_TEST"
+  ],
+  "provenance_states": [
+    "CLEARED",
+    "PENDING",
+    "REJECTED"
+  ],
+  "domains": [
+    {
+      "domain": "CHARACTER",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "ITEM",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "CHANNEL",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "CONTENT_WORLD",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "SIMULATION",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "ABILITY_COMBAT",
+      "coverage_status": "MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "AI_SPAWN",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "WORLD_INTERACTION",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "ECONOMY",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "ability_combat.light_healing.cast_metadata.v1",
+      "domain": "ABILITY_COMBAT",
+      "title": "Light Healing cast metadata",
+      "scope": {
+        "summary": "Target-cut Light Healing spell metadata; indexed official metadata is retained only as a continuity hypothesis and exact quantitative heal semantics are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": ["No world-specific variance is asserted by this case."]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "A later validation may apply indexed vocation/level/mana conditions only after target continuity evidence and source provenance establish them."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) reports: Light Healing; formula exura; vocations Druid, Monk, Paladin and Sorcerer; Healing group; Instant type; Healing magic type; 1 second spell cooldown and 1 second group cooldown; experience level 8; mana 20; Premium not required.",
+        "evidence_class": "UNKNOWN",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/library/?spell=lighthealing&subtopic=spells",
+            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#light-healing",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": "2026-08-14T11:01:22Z",
+            "provenance_state": "PENDING",
+            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+          }
+        ],
+        "confidence_notes": "The indexed result for the exact official locator surfaced the stated fields. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
+        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, mana/cooldown commit anchors, legality precedence and failure behavior are also not evidenced.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "PENDING",
+        "legal_review_state": "PENDING",
+        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+      },
+      "history": [
+        {
+          "date": "2026-08-14",
+          "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
+          "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        }
+      ]
+    },
+    {
+      "case_id": "ability_combat.light_healing.self_heal_semantics.v1",
+      "domain": "ABILITY_COMBAT",
+      "title": "Light Healing qualitative self-heal semantics",
+      "scope": {
+        "summary": "Target-cut qualitative healing direction; indexed official description is retained only as a continuity hypothesis and exact magnitude/scaling/rounding are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": ["No world-specific variance is asserted by this case."]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "A later bounded validation may use an injured caster only after target continuity evidence and source provenance establish the self-heal semantics."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) characterizes Light Healing as healing the caster's own wounds/injuries and describes the effect as limited.",
+        "evidence_class": "UNKNOWN",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/library/?spell=lighthealing&subtopic=spells",
+            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#light-healing",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": "2026-08-14T11:01:22Z",
+            "provenance_state": "PENDING",
+            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+          }
+        ],
+        "confidence_notes": "The indexed result for the exact official locator surfaced the qualitative self-healing description. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
+        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, heal formula, magnitude range, scaling, rounding and complete target legality are unproven.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "PENDING",
+        "legal_review_state": "PENDING",
+        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+      },
+      "history": [
+        {
+          "date": "2026-08-14",
+          "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
+          "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        }
+      ]
+    },
+    {
+      "case_id": "ability_combat.ice_strike.cast_metadata.v1",
+      "domain": "ABILITY_COMBAT",
+      "title": "Ice Strike cast metadata",
+      "scope": {
+        "summary": "Target-cut Ice Strike spell metadata; indexed official metadata is retained only as a continuity hypothesis and exact damage/range/legality semantics are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": ["No world-specific variance is asserted by this case."]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "A later validation may apply indexed vocation/level/mana conditions only after target continuity evidence and source provenance establish them."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) reports: Ice Strike; formula exori frigo; vocations Druid and Sorcerer; Attack group; Instant type; Ice magic type; 2 second spell cooldown and 2 second group cooldown; experience level 8; mana 20; Premium not required.",
+        "evidence_class": "UNKNOWN",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/library/?spell=icestrike&subtopic=spells",
+            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#ice-strike",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": "2026-08-14T11:01:22Z",
+            "provenance_state": "PENDING",
+            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+          }
+        ],
+        "confidence_notes": "The indexed result for the exact official locator surfaced the stated fields. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
+        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, cost/cooldown commit anchors and failure behavior are also not evidenced.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "PENDING",
+        "legal_review_state": "PENDING",
+        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+      },
+      "history": [
+        {
+          "date": "2026-08-14",
+          "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
+          "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        }
+      ]
+    },
+    {
+      "case_id": "ability_combat.ice_strike.targeted_ice_damage_semantics.v1",
+      "domain": "ABILITY_COMBAT",
+      "title": "Ice Strike qualitative targeted ice-damage semantics",
+      "scope": {
+        "summary": "Target-cut qualitative targeted attack/damage semantics; indexed official description is retained only as a continuity hypothesis and exact range/formula/legality/mitigation/RNG are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": ["No world-specific variance is asserted by this case."]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "A later bounded validation may provide one candidate opponent only after target continuity, source provenance and the relevant legality configuration are separately evidenced."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. Official Tibia Library content surfaced through search on 2026-08-14 (search index reported an approximately two-week-old crawl) characterizes Ice Strike as hitting an aimed opponent in close range with ice and says damage is determined by the caster's magical abilities.",
+        "evidence_class": "UNKNOWN",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/library/?spell=icestrike&subtopic=spells",
+            "artifact_id": "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md#ice-strike",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": "2026-08-14T11:01:22Z",
+            "provenance_state": "PENDING",
+            "uncertainty_notes": "Exact official locator/source identity is known, but Library content was surfaced through search; the index reported an approximately two-week-old crawl and direct page open from the research environment returned HTTP 403. Exact crawl time, live-page equality and target continuity are unknown, so source provenance remains PENDING for promotion."
+          }
+        ],
+        "confidence_notes": "The indexed result for the exact official locator surfaced aimed-opponent, close-range, ice-damage and magic-ability-scaling concepts. Direct live-page verification was unavailable because the research environment received HTTP 403; the content is retained only as discovery evidence.",
+        "uncertainty_notes": "Continuity from the 2026-07-28 target boundary is not evidenced. Exact crawl time/live-page equality, source provenance clearance, tile/range metric, cardinality/ordering, LoS/floor/PvP/PZ legality, damage formula/scaling/rounding, mitigation/resistance and crit/block/dodge/RNG remain unproven.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "PENDING",
+        "legal_review_state": "PENDING",
+        "notes": "Exact official locator identity is known, but indexed content could not be directly revalidated against the official page. Source provenance and legal review remain PENDING; missing target continuity independently keeps target evidence UNKNOWN."
+      },
+      "history": [
+        {
+          "date": "2026-08-14",
+          "summary": "Registered as a fail-closed UNKNOWN target case from indexed post-boundary official Library content with provenance pending.",
+          "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
+        }
+      ]
+    }
+  ],
+  "policy": {
+    "ots_can_prove_global_behavior": false,
+    "patch_note_absence_proves_no_change": false,
+    "parity_confirmed_requires_target_evidence": true,
+    "parity_confirmed_requires_oteryn_exact_revision": true,
+    "parity_confirmed_requires_passing_fixture_or_test": true,
+    "unknown_fails_closed": true,
+    "conflict_fails_closed": true,
+    "uncleared_provenance_blocks_promotion": true,
+    "security_integrity_legal_overrides_reference_fidelity": true
+  },
+  "canonicalization": {
+    "algorithm": "RFC8785_JCS",
+    "digest": "SHA-256",
+    "digest_member_excluded": "canonical_digest",
+    "null_digest_meaning": "TOOLING_NOT_YET_ACCEPTED_OR_EXECUTED"
+  },
+  "normative_contracts": [
+    "docs/architecture/GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md",
+    "docs/architecture/GAME-VISION-01_MINIMUM_OWNER_BASELINE.md",
+    "docs/architecture/GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md",
+    "docs/architecture/GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md",
+    "docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md",
+    "docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_CONTRACT.md",
+    "docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md",
+    "docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json"
+  ],
+  "change_history": [
+    {
+      "manifest_revision": 1,
+      "date": "2026-08-13",
+      "summary": "Register immutable first Reference target, evidence/parity vocabulary, fail-closed policy and empty domain coverage inventory including Economy.",
+      "issue": "#219"
+    },
+    {
+      "manifest_revision": 2,
+      "date": "2026-08-14",
+      "summary": "Accept and pin schema v1 plus manifest revision 2 for the immutable first Reference target without adding mechanic cases or parity promotion; canonical digest remains null until accepted tooling exists.",
+      "issue": "#251"
+    },
+    {
+      "manifest_revision": 3,
+      "date": "2026-08-14",
+      "summary": "Register first representative ABILITY_COMBAT cases for Light Healing and Ice Strike as UNKNOWN with provenance pending because indexed official post-boundary content lacks direct live-page verification and accepted target continuity; implementation remains not started and parity pending.",
+      "issue": "#254"
+    }
+  ]
+}

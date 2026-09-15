@@ -1,0 +1,13 @@
+# Enforced merge-authority ownership
+#
+# Keep this file deliberately narrow. `Protect main` requires Code Owner
+# approval only when one of these control-plane paths changes; ordinary
+# architecture/runtime PRs therefore remain approval-count 0.
+#
+# GitHub resolves CODEOWNERS from the PR base branch, so a pull request cannot
+# replace this ownership mapping in the same change to authorize itself.
+
+/.github/CODEOWNERS @blakinio
+/.github/workflows/ @blakinio
+/.github/repository-policy.json @blakinio
+/tools/repository/ @blakinio

@@ -1,0 +1,293 @@
+{
+  "accepted_production_maximum_selected": false,
+  "activation_comment_id": 5619094154,
+  "admission_main_sha": "951f98746e2fb8b93be0a4f04518b74e266df188",
+  "blocker": "RUNTIME-ACTOR-RL-03 requires an accepted actor-local identity retirement/reuse and generation-retention/exhaustion disposition before a production carrier can classify the history as the same finite resource or a separately bounded resource. RUNTIME-ACTOR-RL-01 additionally remains PERF-01 gated for a production total-actor ceiling.",
+  "candidate_measurements": [
+    {
+      "exact_lookup_probe": {
+        "active_ceiling": 2,
+        "bucket_count": 4,
+        "lookup_count": 2,
+        "observed_max_probes": 1,
+        "observed_min_probes": 1,
+        "observed_total_probes": 2,
+        "structural_probe_upper_bound": 4,
+        "variable_candidate_collection_materialized": false
+      },
+      "fused": {
+        "active_ceiling": 2,
+        "bucket_count": 4,
+        "bucket_logical_bytes": 64,
+        "retained_logical_bytes": 256
+      },
+      "m_plus_one": {
+        "active_ceiling": 2,
+        "m_plus_one_rejected": true,
+        "state_unchanged_after_rejection": true
+      },
+      "split": {
+        "active_ceiling": 2,
+        "generation_history_entry_logical_bytes": 16,
+        "index_bucket_count": 4,
+        "index_entry_logical_bytes_each": 24,
+        "index_logical_bytes": 96,
+        "record_count": 2,
+        "record_logical_bytes": 112,
+        "record_logical_bytes_each": 56,
+        "retained_logical_bytes_without_generation_history": 208
+      },
+      "tested_active_ceiling": 2
+    },
+    {
+      "exact_lookup_probe": {
+        "active_ceiling": 3,
+        "bucket_count": 8,
+        "lookup_count": 3,
+        "observed_max_probes": 1,
+        "observed_min_probes": 1,
+        "observed_total_probes": 3,
+        "structural_probe_upper_bound": 8,
+        "variable_candidate_collection_materialized": false
+      },
+      "fused": {
+        "active_ceiling": 3,
+        "bucket_count": 8,
+        "bucket_logical_bytes": 64,
+        "retained_logical_bytes": 512
+      },
+      "m_plus_one": {
+        "active_ceiling": 3,
+        "m_plus_one_rejected": true,
+        "state_unchanged_after_rejection": true
+      },
+      "split": {
+        "active_ceiling": 3,
+        "generation_history_entry_logical_bytes": 16,
+        "index_bucket_count": 8,
+        "index_entry_logical_bytes_each": 24,
+        "index_logical_bytes": 192,
+        "record_count": 3,
+        "record_logical_bytes": 168,
+        "record_logical_bytes_each": 56,
+        "retained_logical_bytes_without_generation_history": 360
+      },
+      "tested_active_ceiling": 3
+    },
+    {
+      "exact_lookup_probe": {
+        "active_ceiling": 8,
+        "bucket_count": 16,
+        "lookup_count": 8,
+        "observed_max_probes": 2,
+        "observed_min_probes": 1,
+        "observed_total_probes": 9,
+        "structural_probe_upper_bound": 16,
+        "variable_candidate_collection_materialized": false
+      },
+      "fused": {
+        "active_ceiling": 8,
+        "bucket_count": 16,
+        "bucket_logical_bytes": 64,
+        "retained_logical_bytes": 1024
+      },
+      "m_plus_one": {
+        "active_ceiling": 8,
+        "m_plus_one_rejected": true,
+        "state_unchanged_after_rejection": true
+      },
+      "split": {
+        "active_ceiling": 8,
+        "generation_history_entry_logical_bytes": 16,
+        "index_bucket_count": 16,
+        "index_entry_logical_bytes_each": 24,
+        "index_logical_bytes": 384,
+        "record_count": 8,
+        "record_logical_bytes": 448,
+        "record_logical_bytes_each": 56,
+        "retained_logical_bytes_without_generation_history": 832
+      },
+      "tested_active_ceiling": 8
+    },
+    {
+      "exact_lookup_probe": {
+        "active_ceiling": 64,
+        "bucket_count": 128,
+        "lookup_count": 64,
+        "observed_max_probes": 7,
+        "observed_min_probes": 1,
+        "observed_total_probes": 99,
+        "structural_probe_upper_bound": 128,
+        "variable_candidate_collection_materialized": false
+      },
+      "fused": {
+        "active_ceiling": 64,
+        "bucket_count": 128,
+        "bucket_logical_bytes": 64,
+        "retained_logical_bytes": 8192
+      },
+      "m_plus_one": {
+        "active_ceiling": 64,
+        "m_plus_one_rejected": true,
+        "state_unchanged_after_rejection": true
+      },
+      "split": {
+        "active_ceiling": 64,
+        "generation_history_entry_logical_bytes": 16,
+        "index_bucket_count": 128,
+        "index_entry_logical_bytes_each": 24,
+        "index_logical_bytes": 3072,
+        "record_count": 64,
+        "record_logical_bytes": 3584,
+        "record_logical_bytes_each": 56,
+        "retained_logical_bytes_without_generation_history": 6656
+      },
+      "tested_active_ceiling": 64
+    },
+    {
+      "exact_lookup_probe": {
+        "active_ceiling": 256,
+        "bucket_count": 512,
+        "lookup_count": 256,
+        "observed_max_probes": 10,
+        "observed_min_probes": 1,
+        "observed_total_probes": 373,
+        "structural_probe_upper_bound": 512,
+        "variable_candidate_collection_materialized": false
+      },
+      "fused": {
+        "active_ceiling": 256,
+        "bucket_count": 512,
+        "bucket_logical_bytes": 64,
+        "retained_logical_bytes": 32768
+      },
+      "m_plus_one": {
+        "active_ceiling": 256,
+        "m_plus_one_rejected": true,
+        "state_unchanged_after_rejection": true
+      },
+      "split": {
+        "active_ceiling": 256,
+        "generation_history_entry_logical_bytes": 16,
+        "index_bucket_count": 512,
+        "index_entry_logical_bytes_each": 24,
+        "index_logical_bytes": 12288,
+        "record_count": 256,
+        "record_logical_bytes": 14336,
+        "record_logical_bytes_each": 56,
+        "retained_logical_bytes_without_generation_history": 26624
+      },
+      "tested_active_ceiling": 256
+    }
+  ],
+  "classification": "NON_PRODUCTION_RESOURCE_EVIDENCE",
+  "first_reference_functional_lower_bound": {
+    "exact_target_active_actors": 2,
+    "local_step_active_actors": 1,
+    "mixed_kind_measurement_minimum": 3,
+    "production_capacity_claim": false
+  },
+  "issue": 530,
+  "logical_layout_bytes": {
+    "actor_ref": 40,
+    "fused_bucket": 64,
+    "split_actor_record": 56,
+    "split_generation_entry": 16,
+    "split_index_entry": 24
+  },
+  "measurement_semantics": {
+    "candidate_container_is_production_decision": false,
+    "logical_bytes_only": true,
+    "python_object_size_or_rss": false,
+    "rust_abi_size_claim": false,
+    "tested_active_ceilings_are_production_maxima": false,
+    "wall_time_capacity_claim": false
+  },
+  "merge_group_run_id": 34478991801,
+  "opaque_identity_history_probes": [
+    {
+      "active_ceiling": 1,
+      "active_count_at_history_exhaustion": 0,
+      "bucket_count": 2,
+      "retired_count_at_history_exhaustion": 2,
+      "unique_retirements_before_history_exhaustion": 2
+    },
+    {
+      "active_ceiling": 2,
+      "active_count_at_history_exhaustion": 0,
+      "bucket_count": 4,
+      "retired_count_at_history_exhaustion": 4,
+      "unique_retirements_before_history_exhaustion": 4
+    },
+    {
+      "active_ceiling": 3,
+      "active_count_at_history_exhaustion": 0,
+      "bucket_count": 8,
+      "retired_count_at_history_exhaustion": 8,
+      "unique_retirements_before_history_exhaustion": 8
+    },
+    {
+      "active_ceiling": 8,
+      "active_count_at_history_exhaustion": 0,
+      "bucket_count": 16,
+      "retired_count_at_history_exhaustion": 16,
+      "unique_retirements_before_history_exhaustion": 16
+    }
+  ],
+  "perf_reference_cell_required": true,
+  "production_authority": "NONE",
+  "programme": 486,
+  "protected_allocation_blob_sha": "0b81a498f1553e61fca89eebd85a23df080e428b",
+  "recommended_530_disposition": "Keep #139 and #508 unactivated. Resolve the narrow actor-local identity retirement/reuse plus generation-retention/exhaustion rule without selecting a generic ECS/container; then obtain the representative PERF-01 capacity cell required by ADR-0009 before registry serialization and shared carrier implementation allocation.",
+  "related": [
+    139,
+    508
+  ],
+  "required_negative_results": {
+    "capacity_rejection_preserves_existing_state": "PASS",
+    "checked_u64_overflow_rejects": "PASS",
+    "cross_channel_rejects": "PASS",
+    "geometry_range_los_pathfinding_visibility_not_modeled": "PASS",
+    "lookup_result_independent_of_insertion_order": "PASS",
+    "m_plus_one_rejects_before_partial_state": "PASS",
+    "matching_world_channel_scope_generation_and_actor_generation_resolves": "PASS",
+    "missing_actor_rejects": "PASS",
+    "recycled_local_identity_rejects_old_reference": "PASS",
+    "same_channel_different_world_rejects": "PASS",
+    "same_identity_churn_has_fixed_retained_storage": "PASS",
+    "stale_actor_generation_rejects": "PASS",
+    "stale_scope_ownership_generation_rejects_without_mutation": "PASS",
+    "unique_identity_churn_exposes_independent_history_exhaustion": "PASS",
+    "untyped_ai_client_protocol_like_handle_rejects": "PASS"
+  },
+  "resource_registry_mutation_authority": "NONE",
+  "resource_rows": {
+    "RUNTIME-ACTOR-RL-01": {
+      "classification": "PERF_REFERENCE_CELL_REQUIRED",
+      "evidence": "candidate retained logical bytes, exact lookup work and M/M+1 rejection are reproducible, but ADR-0009 defers production Channel capacity to representative PERF-01 evidence",
+      "production_maximum": null
+    },
+    "RUNTIME-ACTOR-RL-02": {
+      "classification": "MEASURED_CANDIDATE_EVIDENCE_AVAILABLE",
+      "evidence": "fused candidate stores lookup and actor/generation state in one fixed table; split candidate retains a physically separate fixed index, so universal same-resource identity is not established before physical carrier selection",
+      "production_maximum": null
+    },
+    "RUNTIME-ACTOR-RL-03": {
+      "classification": "ARCHITECTURE_ESCALATION_REQUIRED",
+      "evidence": "opaque unique local identities can retire until the fixed table is exhausted while active_count returns to zero; current protected semantics do not yet select retirement/reuse/history retention or its finite exhaustion disposition",
+      "production_maximum": null
+    },
+    "RUNTIME-ACTOR-RL-04": {
+      "classification": "NOT_EXERCISED_BY_FIRST_CARRIER",
+      "evidence": "exact lookup performs bounded probing inside the fixed candidate table and materializes no variable target collection, world scan, nearest-N search, spatial query or retained async lookup",
+      "production_maximum": null
+    },
+    "RUNTIME-ACTOR-RL-05": {
+      "classification": "NOT_EXERCISED_BY_FIRST_CARRIER",
+      "evidence": "candidate actor state is fixed-shape and retains no AI memory, combat state, inventory, loot, dialogue or behavior graph payload",
+      "production_maximum": null
+    }
+  },
+  "schema_version": 1,
+  "worker_task_id": "OTV2-20260910-runtime-actor-carrier-resource-evidence-530"
+}

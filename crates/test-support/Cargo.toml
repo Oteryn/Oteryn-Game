@@ -1,0 +1,21 @@
+[package]
+name = "oteryn-test-support"
+version.workspace = true
+description = "Deterministic test-owned support for Oteryn technical contracts"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "test-support"
+release-role = "test-only"
+source-disposition = "MIGRATE_AS_IS_WITH_PROVISIONAL_GENERATION_RENAME"
+
+[dependencies]
+oteryn-diagnostics = { version = "=0.1.0", path = "../diagnostics" }
+oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
+
+[lints]
+workspace = true

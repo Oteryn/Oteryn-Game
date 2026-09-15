@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-22T22:29:50+02:00",
+  "policy": {
+    "canonical_revisions_must_be_merged": true,
+    "mutable_pr_heads_are_canonical": false,
+    "locked_status_means_immutable_external_revision_not_fnd02_acceptance": true,
+    "required_fields_when_locked": [
+      "coordination_id",
+      "contract_name",
+      "canonical_repository",
+      "canonical_commit",
+      "schema_revision",
+      "schema_sha256",
+      "producers",
+      "consumers",
+      "rollout_order"
+    ]
+  },
+  "contracts": [
+    {
+      "coordination_id": "OTS-20260804-native-protocol-selection",
+      "contract_name": "oteryn-native-gameplay-v1",
+      "status": "LOCKED",
+      "canonical_repository": "Oteryn/Oteryn-Platform",
+      "canonical_commit": "c0b8703d326a04b43ae8e06f6192b0cb91c859b7",
+      "canonical_contract_revision": 2,
+      "schema_revision": 2,
+      "schema_sha256": "9c67f19525400fb9890d2a3541ceb6d02eb955061540ad39ca1c1d891c06eba9",
+      "source_pull_request": 540,
+      "merged_at": "2026-08-05T11:35:48Z",
+      "previous_merged_revision": "9035ae987db67c062a8778721a2c8e686ce76750",
+      "previous_revision_status": "SUPERSEDED_TRANSITIONAL_PROFILE_BASED_CONTRACT",
+      "oteryn_v2_disposition": "RECONCILIATION_INPUT_ONLY",
+      "reconciliation_required": true,
+      "reconciliation_baseline": "docs/architecture/FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md",
+      "conflict_classification": "CONFLICT_WITH_CURRENT_OTERYN_V2_ARCHITECTURE",
+      "final_protocol_authority": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "platform_side_reconciliation": "PENDING_SEPARATE_EXPLICIT_AUTHORIZATION",
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "EXTERNAL_MERGED_REVISION_RUNTIME_PRODUCER_DISABLED_RECONCILIATION_REQUIRED"
+        },
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "HISTORICAL_RECORD_ONLY_NOT_IMPLEMENTED_FROM_THIS_EXTERNAL_REVISION"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "RECONCILIATION_INPUT_ONLY_NOT_IMPLEMENTED_FROM_THIS_EXTERNAL_REVISION"
+        }
+      ],
+      "rollout_order": [
+        "complete and accept Oteryn-v2 FND-ID-01",
+        "complete and accept Oteryn-v2 FND-02 using this external revision only as reconciliation input",
+        "perform separately authorized Platform-side contract reconciliation or supersession",
+        "lock the later coordinated canonical cross-repository contract revision",
+        "implement and migrate disabled Platform producer plus Rust server and client consumers",
+        "run cross-repository admission/gameplay/rollback E2E",
+        "enable only through a separately authorized rollout"
+      ],
+      "accepted_for_fnd02": false
+    },
+    {
+      "coordination_id": "OTV2-NATIVE-FOUNDATION",
+      "contract_name": "protocol-oteryn-v1-foundation",
+      "status": "LOCKED",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_commit": "769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202",
+      "canonical_contract_revision": 1,
+      "canonical_contract_path": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "schema_path": "docs/contracts/protocol-oteryn/v1/foundation.proto",
+      "schema_revision": 1,
+      "schema_sha256": "6e1c614661e72daac529be9d0ec06317201b916cd47ae17ff1590da5c7205ebe",
+      "registry_path": "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json",
+      "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+      "source_pull_request": 94,
+      "source_exact_head": "91809204fcdf984a5a9d7b8c276ef9fb2f9cab9f",
+      "merged_at": "2026-08-07T22:54:33Z",
+      "exact_head_validation": {
+        "agent_governance_run": 31225287340,
+        "dependency_review_run": 31225287332,
+        "codeql_run": 31225287334,
+        "architecture_audit_review": 4887157361,
+        "open_material_findings": 0,
+        "unresolved_review_threads": 0
+      },
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANONICAL_CONTRACT_ACCEPTED_RUNTIME_NOT_IMPLEMENTED"
+        },
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "PENDING_SEPARATELY_AUTHORIZED_RECONCILIATION"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANONICAL_CONTRACT_ACCEPTED_CLIENT_SERVER_RUNTIME_NOT_IMPLEMENTED"
+        }
+      ],
+      "rollout_order": [
+        "complete FND-03 runtime execution contract",
+        "complete FND-04 identity Game Session admission reconnect and lease contract",
+        "perform separately authorized Platform-side protocol contract reconciliation",
+        "implement native Rust protocol client/server consumers under explicit implementation authorization",
+        "prove independent byte malformed property fuzz cross-version pipelining and snapshot-barrier evidence",
+        "run cross-repository admission gameplay rollback E2E",
+        "enable only through a separately authorized production rollout"
+      ],
+      "accepted_for_fnd02": true,
+      "runtime_implemented": false,
+      "production_enabled": false
+    },
+    {
+      "coordination_id": "OTERYN-GAME-PLATFORM-CATALOG-V1",
+      "contract_name": "oteryn.game-platform-catalog",
+      "status": "LOCKED",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_commit": "96ea673839f1d93190a40c17ae8036ac82096ded",
+      "canonical_contract_path": "docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "schema_version": "1.0.0",
+      "schema_revision": 1,
+      "schema_sha256": "9bc87fba5b565e5c7d4d3f6ca7a9bd75d45d8110de64a2a50f8f74d9ba181cad",
+      "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+      "source_issue": 52,
+      "accepted_for_fnd02": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANONICAL_CONTRACT_MERGED_REFERENCE_PRODUCER_AVAILABLE_NATIVE_CAPABILITIES_UNSUPPORTED_UNTIL_ADAPTERS"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "NOT_IMPLEMENTED_INACTIVE_CONSUMER_PENDING"
+        }
+      ],
+      "rollout_order": [
+        "implement Platform inactive consumer for schema 1.0.0",
+        "prove cross-repository fixture validation and rejection compatibility",
+        "add native capability adapters only from canonical Game content evidence",
+        "activate only through a separately authorized Platform production gate"
+      ],
+      "production_enabled": false,
+      "notes": "Canonical Game contract and bounded reference producer merged through PR #57. Current native capability fixture remains unsupported/unknown and grants no content completeness, absence, publication or production activation authority.",
+      "canonical_contract_revision": 1,
+      "source_pull_request": 57,
+      "merged_at": "2026-08-22T20:27:22Z"
+    }
+  ]
+}

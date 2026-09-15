@@ -1,0 +1,19 @@
+[package]
+name = "oteryn-synthetic-asset-compiler"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "tool"
+release-role = "tool-only"
+
+[dependencies]
+oteryn-synthetic-assets = { version = "=0.1.0", path = "../../crates/synthetic-assets" }
+serde_json.workspace = true
+
+[lints]
+workspace = true
