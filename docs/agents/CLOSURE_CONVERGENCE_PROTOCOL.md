@@ -202,6 +202,7 @@ The sweep ends with one frozen initial `FINAL_ROOT_CAUSE_INVENTORY` and no sourc
     "tree_sha": "<Phase 1 tree_sha>"
   },
   "reconciliation_refs": [],
+  "late_blocker_refs": [],
   "inventory": {
     "...": "<complete FINAL_ROOT_CAUSE_INVENTORY structured value>"
   }
@@ -249,19 +250,47 @@ Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its
 
 A frozen inventory is never edited in place. If evidence reconciliation changes any preserved finding field — including `evidence_classification`, `repair_eligibility`, evidence refs, gate applicability, required repair or required validation — create one immutable **successor inventory** for the whole completed reconciliation batch.
 
-The successor must:
+The evidence-reconciliation successor must:
 
 1. preserve the exact same `sweep_target` as its predecessor;
 2. increment `inventory_generation` by exactly one;
 3. set `predecessor_content_identity` to the predecessor's exact SHA-256 identity;
 4. set `transition_reason: EVIDENCE_RECONCILIATION`;
-5. list exact immutable `reconciliation_refs` proving every changed finding field;
+5. list exact immutable `reconciliation_refs` proving every changed finding field while preserving `late_blocker_refs` from its predecessor;
 6. preserve every unaffected root cause unchanged at the structured-value level;
-7. add no newly discovered root cause under the guise of reconciliation — a genuinely new material root cause follows the Phase 6 novelty rules;
+7. add no newly discovered root cause under the guise of evidence reconciliation;
 8. be canonicalized and hashed as a new complete RFC 8785 envelope before it can become active;
 9. be persisted at a **new generation-specific `evidence_locator`**. Never edit, overwrite or repurpose the predecessor generation's locator to store successor content.
 
-Create successors per **coherent reconciliation generation**, not one successor per individual finding. The predecessor envelope, digest and locator remain preserved audit evidence. After the successor is fully persisted and its identity verified, atomically advance the control-plane active-inventory pointer as one tuple:
+Create successors per **coherent reconciliation generation**, not one successor per individual finding.
+
+### Immutable successor inventory for a late current-gate blocker
+
+A new material root cause discovered after the initial sweep may enter the frozen model only through this transition. Use it when Phase 5 qualification or Phase 6 final review proves either:
+
+- a new current-gate blocker satisfying novelty trigger 1, 2 or 3 in Phase 6; or
+- a real current-gate defect that was reasonably knowable during the sweep and is therefore marked `sweep_disposition: FINAL_SWEEP_MISS`.
+
+Do **not** use this transition for material protected-`main`/policy/accepted-contract movement under novelty trigger 4. That movement invalidates the sweep base and requires a new Phase 1 closure generation plus discovery sweep.
+
+The late-blocker successor must:
+
+1. preserve the predecessor's exact `sweep_target`;
+2. increment `inventory_generation` by exactly one;
+3. set `predecessor_content_identity` to the predecessor's exact SHA-256 identity;
+4. set `transition_reason: LATE_BLOCKER_ADMISSION`;
+5. preserve all prior `reconciliation_refs` and append exact immutable `late_blocker_refs` for every newly admitted root cause, including the qualifying CI/runtime/review evidence and the proven novelty trigger or `FINAL_SWEEP_MISS` disposition;
+6. add only the newly proven current-gate root cause(s) from that coherent late-finding generation, using the same root-cause schema and evidence/repair-eligibility rules as the original inventory;
+7. preserve all pre-existing root causes unchanged at the structured-value level unless a separate evidence-reconciliation transition is also required; do not silently combine unrelated state changes into late admission;
+8. be canonicalized and hashed as a new complete RFC 8785 envelope and persisted at a new generation-specific locator before becoming active.
+
+Create one late-blocker successor for the coherent late-finding generation, not one per review comment. If the late finding maps to an already-recorded root cause rather than a genuinely new root cause, do not add a duplicate; reconcile the existing root through the evidence-reconciliation successor only when one of its preserved fields must change.
+
+After any late-blocker successor becomes active, the previous qualification/review evidence is historical for integration readiness. Return to the Phase 3 authority/evidence checks, perform the required coherent repair generation, run a fresh complete Phase 5 exact-head qualification, and obtain a fresh Phase 6 final review bound to the new active inventory generation. A late current-gate blocker can never be admitted and then bypass requalification/re-review.
+
+### Activating any successor
+
+The predecessor envelope, digest and locator remain preserved audit evidence. After a successor is fully persisted and its identity verified, atomically advance the control-plane active-inventory pointer as one tuple:
 
 ```text
 (inventory_generation, evidence_locator, content_identity)
@@ -307,7 +336,7 @@ After the coherent repair generation is complete, freeze the candidate and run o
 
 Before treating qualification as closure evidence, confirm that every active-inventory `MATERIAL_BLOCKER` is either closed by the candidate or explicitly remains open and blocking. An unresolved evidence-reconciliation item cannot disappear merely because deterministic CI is green.
 
-A qualification failure may create a new concrete repair trigger. Diagnose the failure before mutating again.
+A qualification failure may create a new concrete repair trigger. Diagnose the failure before mutating again. If diagnosis proves a genuinely new current-gate root cause satisfying the Phase 6 novelty rules, admit it through the late-blocker successor transition above before any repair mutation.
 
 ## Phase 6 — final whole-diff review
 
@@ -330,7 +359,11 @@ The reviewer may still report a new material blocker, but after inventory freeze
 3. an independent review finding whose material fact could not reasonably have been established from the frozen source/evidence;
 4. material protected-`main`, policy or accepted-contract movement.
 
-If a later material finding was reasonably knowable during the sweep, set `gate_classification: MATERIAL_BLOCKER` if it is a real current-gate defect and additionally set `sweep_disposition: FINAL_SWEEP_MISS`. The defect still must be handled safely, but the coordinator must record why the sweep missed it, add it once to the existing root-cause model, and avoid reopening unrestricted discovery.
+If trigger 1, 2 or 3 proves a genuinely new current-gate root cause, admit it through one immutable `LATE_BLOCKER_ADMISSION` successor before repair. Trigger 4 does not use a successor; it invalidates the sweep base and requires fresh Phase 1 + discovery.
+
+If a later material finding was reasonably knowable during the sweep, set `gate_classification: MATERIAL_BLOCKER` if it is a real current-gate defect and additionally set `sweep_disposition: FINAL_SWEEP_MISS`. The defect still must be handled safely: record why the sweep missed it, admit it once through the immutable late-blocker successor when it is a new root cause, and avoid reopening unrestricted discovery. If it maps to an existing root cause, update that root only through the evidence-reconciliation successor when preserved fields change.
+
+Any material late blocker makes the current qualification/final-review generation non-terminal for integration readiness. After its successor/repair path, fresh exact-head qualification and a fresh final review are mandatory.
 
 `HARDENING` and `OUT_OF_SCOPE` findings do not block integration unless current accepted authority explicitly makes them acceptance requirements.
 
@@ -375,6 +408,7 @@ final_root_cause_inventory:
   content_identity:
     serialization: RFC8785_JSON
     sha256: <lowercase hex digest or null>
+  transition_reason: DISCOVERY_SWEEP | EVIDENCE_RECONCILIATION | LATE_BLOCKER_ADMISSION | null
 material_root_causes_open: <count>
 evidence_gaps_open: <count>
 hardening_deferred: <count>
