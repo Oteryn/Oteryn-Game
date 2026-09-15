@@ -618,12 +618,14 @@ impl FreshAdmissionStore {
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&original.observation.loss_epoch.get().to_be_bytes());
-        let mut tx = self.guards.backend.begin().await?;
-        super::db::lock_admission_relations(&mut tx).await?;
+        let store = self.clone();
+        let original = original.clone();
+        super::db::run_semantic_transaction(&self.guards.backend, move |tx| {
+            Box::pin(async move {
+        super::db::lock_admission_relations(tx).await?;
         let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
-            .bind(&key).fetch_optional(&mut *tx).await? else {
-                super::db::commit_semantic(tx).await?;
-                return Ok(FreshLossReconciliation::Absent);
+            .bind(&key).fetch_optional(&mut **tx).await? else {
+                return Ok(super::db::SemanticTransactionOutcome::Commit(FreshLossReconciliation::Absent));
             };
         let stored: Option<String> = row.try_get("operation_json")?;
         let stored = stored.ok_or(DurabilityError::InvalidStoredState)?;
@@ -631,12 +633,12 @@ impl FreshAdmissionStore {
         // The canonical fresh receipt supplies the initial commit; inventing a
         // replay key merely to deserialize the loss DTO would lose provenance.
         let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
             .ok_or(DurabilityError::InvalidStoredState)?;
         let fresh_json: Option<String> = row.try_get("operation_json")?;
         let fresh = decode_operation(
             &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
-            self.maximum_operation_bytes,
+                    store.maximum_operation_bytes,
         )?;
         let operation = decode_fresh_loss(&stored, checked(fresh.authorization.initial_commit())?)?;
         if operation.observation.session.commit().game_session_id() != session_id
@@ -647,11 +649,10 @@ impl FreshAdmissionStore {
             return Err(DurabilityError::InvalidStoredState);
         }
         if stored != encoded {
-            super::db::commit_semantic(tx).await?;
-            return Ok(FreshLossReconciliation::Conflict);
+            return Ok(super::db::SemanticTransactionOutcome::Commit(FreshLossReconciliation::Conflict));
         }
         let FreshReconciliation::Committed(current) =
-            self.reconcile_locked(&mut tx, &fresh).await?
+                    store.reconcile_locked(tx, &fresh).await?
         else {
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -659,7 +660,7 @@ impl FreshAdmissionStore {
         // mirror. Read it under the same fence rather than silently dropping its
         // relationship to the immutable original loss.
         let predecessor: Option<String> = sqlx::query_scalar("SELECT predecessor_generation::text FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            .bind(session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
         let predecessor: u64 = checked(
             predecessor
                 .ok_or(DurabilityError::InvalidStoredState)?
@@ -702,14 +703,15 @@ impl FreshAdmissionStore {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        super::db::commit_semantic(tx).await?;
-        Ok(FreshLossReconciliation::Committed {
+        Ok(super::db::SemanticTransactionOutcome::Commit(FreshLossReconciliation::Committed {
             completion: Box::new(ControlLossCompletionV1 {
                 operation,
                 outcome: ControlLossOutcomeV1::Committed { decided_at },
             }),
             current,
-        })
+        }))
+            })
+        }).await
     }
 
     pub async fn reconcile(
@@ -718,11 +720,16 @@ impl FreshAdmissionStore {
     ) -> Result<FreshReconciliation> {
         let encoded = encode_operation(original, self.maximum_operation_bytes)?;
         self.guards.backend.validate_semantic(1, &encoded)?;
-        let mut tx = self.guards.backend.begin().await?;
-        super::db::lock_admission_relations(&mut tx).await?;
-        let result = self.reconcile_locked(&mut tx, original).await?;
-        super::db::commit_semantic(tx).await?;
-        Ok(result)
+        let store = self.clone();
+        let original = original.clone();
+        super::db::run_semantic_transaction(&self.guards.backend, move |tx| {
+            Box::pin(async move {
+                super::db::lock_admission_relations(tx).await?;
+                let result = store.reconcile_locked(tx, &original).await?;
+                Ok(super::db::SemanticTransactionOutcome::Commit(result))
+            })
+        })
+        .await
     }
 
     async fn reconcile_locked(

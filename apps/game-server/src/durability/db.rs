@@ -174,6 +174,18 @@ pub(super) async fn rollback_semantic(
     }
 }
 
+/// Preserve an operation error only after rollback and holder finality are
+/// observed.  If finality is uncertain, that error wins fail-closed.
+pub(super) async fn rollback_semantic_error<T>(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    operation_error: DurabilityError,
+) -> Result<T, DurabilityError> {
+    match rollback_semantic(transaction).await {
+        Ok(()) => Err(operation_error),
+        Err(finality_error) => Err(DurabilityError::from(finality_error)),
+    }
+}
+
 /// The only two intentional outcomes of a registered semantic transaction.
 ///
 /// Keeping this decision outside the transaction-owning future makes every
@@ -194,11 +206,35 @@ where
     ) -> std::pin::Pin<
         Box<
             dyn std::future::Future<Output = Result<SemanticTransactionOutcome<T>, DurabilityError>>
+                + Send
                 + 'transaction,
         >,
     >,
 {
-    let mut transaction = backend.begin().await?;
+    let transaction = backend.begin().await?;
+    run_started_semantic_transaction(transaction, body).await
+}
+
+/// Apply the semantic finality contract to a transaction acquired by a caller.
+///
+/// Custody bootstrap uses `try_begin` and therefore cannot use
+/// [`run_semantic_transaction`].  Taking ownership here ensures that its error
+/// paths receive the identical observed rollback and holder disposition.
+pub(super) async fn run_started_semantic_transaction<T, F>(
+    mut transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    body: F,
+) -> Result<T, DurabilityError>
+where
+    F: for<'transaction> FnOnce(
+        &'transaction mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<SemanticTransactionOutcome<T>, DurabilityError>>
+                + Send
+                + 'transaction,
+        >,
+    >,
+{
     let outcome = body(&mut transaction).await;
     match outcome {
         Ok(SemanticTransactionOutcome::Commit(value)) => {

@@ -732,12 +732,16 @@ impl AdmissionReconnectJournal {
                 "reconcile",
             ],
         )?;
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_domain(&mut transaction, request.record()).await?;
-        let (snapshot, _state) =
-            Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;
-        super::db::commit_semantic(transaction).await?;
-        Ok(snapshot)
+        let request = request.clone();
+        super::db::run_semantic_transaction(&self.backend, move |transaction| {
+            Box::pin(async move {
+                super::db::lock_admission_domain(transaction, request.record()).await?;
+                let (snapshot, _state) =
+                    Self::reconcile_record_in_transaction(transaction, request.record()).await?;
+                Ok(super::db::SemanticTransactionOutcome::Commit(snapshot))
+            })
+        })
+        .await
     }
 
     pub(super) async fn reconcile_record_in_transaction(
