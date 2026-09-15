@@ -4,18 +4,18 @@
 task_id: OTV2-20260915-defect-discovery-prompts
 title: Register Defect Discovery prompts and operator runbook
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs-defect-discovery-prompts
-pr: null
+pr: 627
 base_sha: b65f7bbaf61268e542fbd0c6008c5e1187cb1493
-head_sha: null
+head_sha: pending exact readback
 final_head_sha: null
 final_head_frozen_at: null
 owner: owner-requested prompt-package publication
 created_at: 2026-09-15T19:00:00+02:00
-updated_at: 2026-09-15T19:00:00+02:00
+updated_at: 2026-09-15T19:50:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_DEFECT_DISCOVERY_SUPERVISOR.md
@@ -23,7 +23,8 @@ owned_paths:
   - docs/agents/prompts/OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER.md
   - docs/agents/prompts/OTV2_DEFECT_DISCOVERY_MODULE_LEAD.md
   - docs/agents/programs/OTERYN_DEFECT_DISCOVERY_OPERATOR_RUNBOOK.md
-  - docs/agents/programs/OTERYN_DEFECT_DISCOVERY_PROMPT_REGISTRATION.json
+  - docs/agents/PROMPT_LIFECYCLE.json
+  - docs/agents/prompts/README.md
   - docs/agents/tasks/active/OTV2-20260915-defect-discovery-prompts.md
 public_contracts: []
 depends_on:
@@ -47,25 +48,47 @@ Persist the owner-approved `OTERYN_DEFECT_DISCOVERY_V1` reusable prompt family, 
 
 - [x] Four prompt files exist on one docs-only branch.
 - [x] Operator runbook documents launch order and intended manual execution.
-- [x] Pending registration manifest records all four lifecycle entries and aliases.
-- [ ] Canonical `PROMPT_LIFECYCLE.json` imports the four entries.
-- [ ] `prompts/README.md` indexes the aliases.
+- [x] Canonical `PROMPT_LIFECYCLE.json` registers all four prompts as reusable version `1.0`.
+- [x] `prompts/README.md` indexes all four aliases and module alias pattern.
+- [x] Draft PR #627 is open to `main`.
 - [ ] Governance validation passes on the exact candidate.
-- [ ] PR is opened to `main` and remains unmerged until normal checks/review qualify it.
+- [ ] Applicable prompt/lifecycle semantic validation passes on the exact candidate.
+- [ ] Final changed-file review confirms documentation/governance-only scope.
+- [ ] PR remains unmerged until normal checks/review qualify it.
 
 ## Excluded scope
 
 No Defect Discovery implementation, workflow creation, product fix, Cargo/runtime changes, production mutation or Merge Queue change.
 
+## Validation
+
+### Focused
+
+- `python tools/agents/validate_governance.py` — pending hosted exact-head result.
+
+### Component/integration
+
+- `NOT_APPLICABLE`: prompt/governance documentation only.
+
+### E2E
+
+- `NOT_APPLICABLE`: no runtime behavior changes.
+
+### Exact-head CI
+
+- final head: pending live readback
+- trigger source: PR push
+- result: pending
+
 ## Context checkpoint
 
 ```yaml
-last_progress: prompt files, runbook and pending lifecycle registration published to docs-defect-discovery-prompts
-status: implementing
+last_progress: canonical lifecycle and prompt index updated; staging manifest removed
+status: validating
 branch: docs-defect-discovery-prompts
 head_sha: pending live readback
-pr: null
+pr: 627
 owner_action_required: null
-blocker: canonical lifecycle/README registration and validation still pending
-next_action: update canonical prompt index/lifecycle or route that bounded registration through the current governance owner
+blocker: exact-head governance and semantic validation not yet terminal
+next_action: read exact PR head and current checks, then repair only proven prompt/governance findings
 ```
