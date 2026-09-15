@@ -15,13 +15,14 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T12:15:11Z
+updated_at: 2026-09-15T13:18:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
   - docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
   - docs/agents/PROMPT_LIFECYCLE.json
   - docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md
+  - docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md
   - docs/agents/prompts/OTV2_IMPL_DURABILITY.md
   - docs/agents/tasks/active/OTV2-20260915-closure-convergence-protocol-624.md
 public_contracts: []
@@ -42,7 +43,7 @@ Introduce a reusable late-stage convergence protocol so delivery can perform one
 - `PROVEN`: current Work coordinator already owns evidence caching and anti-loop retry control, but its ordinary `one bounded task per worker` model had no explicit late-stage coherent-repair-generation override.
 - `PROVEN`: current Durability prompt required one next handoff action but had no convergence-mode batch semantics or explicit low-level Git-object publication fallback prohibition.
 - `PROVEN`: the independent auditor already must read the nearest `docs/agents/AGENTS.md`; convergence-specific audit semantics can therefore be routed through that canonical instruction surface plus `CLOSURE_CONVERGENCE_PROTOCOL.md` without widening auditor authority.
-- `PROVEN`: the convergence changes materially revise three reusable prompt contracts, so `PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from `1.2` to `1.3`, `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` from `1.2` to `1.3`, and `OTV2_IMPL_DURABILITY` from `1.1` to `1.2` while preserving all IDs, owners, statuses, scopes and supersession relations.
+- `PROVEN`: the convergence changes materially revise three reusable prompt contracts, so `PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from `1.2` to `1.3`, `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` from `1.2` to `1.3`, and `OTV2_IMPL_DURABILITY` from `1.1` to `1.2` while preserving all IDs, owners, statuses, scopes and supersession relations. The auditor prompt's embedded `prompt_version` must match registry version `1.3`.
 
 ## High-risk authority/recovery qualification
 
@@ -56,7 +57,8 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 - [x] Add one routed closure convergence protocol with explicit activation, one-shot sweep, finding classification, root-cause collapse, frozen inventory, coherent repair generation, final qualification/review and anti-drip novelty triggers.
 - [x] Bind discovery sweeps to the exact frozen closure head and fail closed if the live target moved.
 - [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled; only repair-eligible material blockers enter the batch.
-- [x] Bind every frozen root-cause inventory to an RFC 8785 canonical JSON SHA-256 identity, carry the locator and identity through the checkpoint/final-review descriptor, and fail closed on missing identity or content drift before repair dispatch or final review.
+- [x] Bind every frozen root-cause inventory to an RFC 8785 canonical JSON SHA-256 identity, including its immutable repository/Issue/task/PR/branch/closure-head/tree sweep target, and fail closed on missing identity, content drift or wrong-generation target before repair dispatch or final review.
+- [x] Require final-candidate review to resolve the live PR/branch and exact-match its current head to the qualified head; target movement fails closed rather than attaching review evidence to an unqualified generation.
 - [x] Add publication-safety fail-closed behavior for unavailable normal Git publication; no direct low-level Git-object fallback on canonical material branches.
 - [x] Work coordinator routes convergence-mode workers and auditors through the protocol and treats a bounded task as a bounded coherent repair generation during closure.
 - [x] Convergence audit dispatch fits the coordinator's existing minimal packet by using an `accepted_decisions` convergence descriptor rather than new top-level keys.
@@ -64,7 +66,7 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 - [x] Independent auditor supports `DISCOVERY_SWEEP` and `FINAL_CANDIDATE_REVIEW` through nearest `docs/agents/AGENTS.md` + the routed protocol, without gaining implementation authority.
 - [x] Auditor evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT` remains separate from convergence `gate_classification: MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE`.
 - [x] A late `FINAL_SWEEP_MISS` is an additional sweep disposition and never replaces/downgrades `gate_classification: MATERIAL_BLOCKER` for a real current-gate defect.
-- [x] Lifecycle registry versions advance for the three reusable prompt contracts whose behavior changed.
+- [x] Lifecycle registry versions advance for the three reusable prompt contracts whose behavior changed, and each prompt's embedded version matches the registry.
 - [x] No change to #356 material source, runtime/product behavior, workflows, rulesets, Merge Queue semantics, Platform/Atlas/META or production state.
 
 ## Excluded scope
@@ -100,27 +102,33 @@ This complete material review-repair generation requires fresh exact-head determ
 
 ### Independent review generation 3
 
-Final Codex review on exact head `bdd67024fc3aaea880e66864fb8aa92547625e0d` reported one P2: the convergence-aware independent auditor contract remained lifecycle `1.2`. `ACCEPTED_AND_REPAIRED`: `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` advances `1.2 -> 1.3`; its prompt ID, owner, status, scope and supersession metadata remain unchanged. No prompt, runtime, workflow, ruleset or integration semantics change in this bounded repair.
+Final Codex review on exact head `bdd67024fc3aaea880e66864fb8aa92547625e0d` reported one P2: the convergence-aware independent auditor contract remained lifecycle `1.2`. `ACCEPTED_AND_REPAIRED`: `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR` advances `1.2 -> 1.3`; its prompt ID, owner, status, scope and supersession metadata remain unchanged.
 
 ### Independent review generation 4
 
 Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` reported one P1: the frozen inventory's editable GitHub evidence-note locator did not prove immutable inventory content. `ACCEPTED_AND_REPAIRED`: each `FINAL_ROOT_CAUSE_INVENTORY` now carries an RFC 8785 canonical JSON SHA-256 content identity alongside the editable evidence locator; the checkpoint and final-review descriptor preserve both, and exact-match verification fails closed before repair dispatch and final review. The evidence note remains a locator/evidence surface only.
 
+### Independent review generation 5
+
+Fresh Codex review `5210336765` on exact head `a3de0bcd14b2adc02f7df9d614b2f6491084546e` reported two P1 findings, and the follow-up review request exposed one related lifecycle P2:
+
+1. `4015903503` — P1: final review could attach to a newer live head after qualification. `ACCEPTED_AND_REPAIRED`: final-review dispatch and reviewer must resolve the live PR/branch and require exact equality with `qualified_head`; mismatch returns fail-closed `STALE_QUALIFIED_HEAD`.
+2. `4015903521` — P1: the inventory digest did not bind repository/task/PR/closure generation. `ACCEPTED_AND_REPAIRED`: the RFC 8785 envelope now binds repository, Issue, task, PR, branch, Phase-1 closure head and tree; both repair dispatch and final review exact-match that sweep target to the Phase-1 closure record.
+3. `4015996290` — P2: registry version `1.3` for the independent auditor did not match its embedded `prompt_version: "1.2"`. `ACCEPTED_FOR_REPAIR`: task custody now includes the auditor prompt solely to align the embedded version to `1.3`; no auditor authority or behavior is widened by this metadata repair.
+
 ## Validation
 
 ### Focused
 
-- changed-file inventory vs `main`: PASS — only the six owned documentation/prompt/task paths above.
+- changed-file inventory vs `main`: PASS — only owned documentation/prompt/task paths above.
 - prompt semantic self-review: PASS after review repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
 - META 3.1 prompting-standard reconciliation: PASS — one routed shared protocol with prompt-specific deltas; no full global procedure copied into every prompt.
-- lifecycle integrity self-review: PASS — only the three intentionally revised prompt versions changed; all other lifecycle identity/status/scope/supersession metadata is preserved.
+- lifecycle integrity self-review: PASS after embedded-version repair — the three intentionally revised prompt versions and their self-declared metadata are consistent; all other lifecycle identity/status/scope/supersession metadata is preserved.
 
 ### Component/integration
 
-- exact-head Agent Governance on `b8e54b...`: SUCCESS before generation-2 repair.
-- exact-head Architecture Semantic Audit on `b8e54b...`: SUCCESS before generation-2 repair.
-- exact-head Merge Gate on `b8e54b...`: SUCCESS before generation-2 repair.
-- fresh exact-head repository checks: required after the complete generation-2 repair.
+- prior exact-head qualification generations are historical only after each repair commit.
+- fresh exact-head repository checks: required on the final repair head.
 
 ### E2E
 
@@ -129,7 +137,7 @@ Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` repo
 
 ### Exact-head CI
 
-- final head: record in immutable PR/check evidence after this commit
+- final head: record in immutable PR/check evidence after the final repair commit
 - trigger source: pull_request
 - workflow/run/job: pending
 - runner assignment: pending
@@ -138,9 +146,9 @@ Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` repo
 
 ## Self-review
 
-- exact head: record in immutable PR evidence after this commit
+- exact head: record in immutable PR evidence after the final repair commit
 - method/reviewer: implementing agent whole-diff review against #624 + bound META 3.1 + all accepted review findings
-- material findings: 0 open in producer self-review
+- material findings: 0 open after embedded-version repair
 - verdict: PASS_PENDING_EXACT_HEAD_CI_AND_FINAL_INDEPENDENT_REVIEW
 
 ## Independent review
@@ -148,7 +156,8 @@ Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` repo
 - required: YES — material high-risk/control-plane governance behavior under bound META AI review policy
 - historical generation 1: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned above
 - historical generation 2: head `b8e54b...` / 3 P1 + 1 P2, dispositioned above
-- exact final head: record in immutable PR evidence after this commit
+- historical generation 5: `5210336765` / head `a3de0bcd...` / 2 P1 + follow-up P2, dispositioned above
+- exact final head: record in immutable PR evidence after the final repair commit
 - method/auditor: one fresh Codex deep review after deterministic validation
 - material findings: pending
 - verdict: pending
@@ -157,7 +166,7 @@ Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` repo
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: final-review auditor lifecycle P2 to be replied/resolved against the published repair head
+- unresolved review threads: generation-5 findings to resolve against the published final repair head
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -166,13 +175,13 @@ Final Codex review on exact head `bf0a44bcef08900e7754683ba572c6057df06aa1` repo
 ## Context checkpoint
 
 ```yaml
-last_progress: Repaired final-review P1 by binding frozen inventories to canonical immutable content identities and requiring fail-closed exact-match verification.
+last_progress: Repaired generation-5 target/inventory identity findings and extended custody for the auditor embedded-version alignment.
 status: validating
 branch: agent/closure-convergence-protocol
-head_sha: record_after_commit
+head_sha: record_after_final_repair_commit
 pr: 625
 final_head_sha: record_in_pr_evidence
-final_head_frozen_at: after_this_commit
+final_head_frozen_at: after_final_repair_commit
 ci_trigger_source: pull_request
 ci_check_generation: pending
 ci_checks_for_current_head: 0
@@ -183,10 +192,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze this exact head, resolve all historical review threads with exact evidence, run fresh exact-head CI, then obtain one final independent deep review without moving the head.
+next_action: Align the auditor embedded prompt version to 1.3, freeze that exact head, resolve generation-5 review threads with exact evidence, run fresh exact-head CI, then obtain one final independent deep review without moving the head.
 ```
