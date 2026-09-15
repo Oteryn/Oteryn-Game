@@ -13,6 +13,16 @@ The root bootstrap and `docs/agents/META_AGENT_POLICY_BINDING.json` supply organ
 
 Use `tasks/TASK_TEMPLATE.md` for substantial task records. For architecture or contract work, load `ARCHITECTURE_DECISION_DISCIPLINE.md` and the current domain authority. For execution and validation, load only the applicable build matrix, task allocation and nearest path instructions. Multi-agent architecture programmes additionally use `MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md` when a live allocation invokes it.
 
+When the active control plane explicitly records `CONVERGENCE_MODE`, load `CLOSURE_CONVERGENCE_PROTOCOL.md`. That routed protocol changes closure batching and audit shape only; it grants no new mutation, review, architecture or integration authority.
+
+For an independent audit dispatched under convergence mode:
+
+- `audit_mode: DISCOVERY_SWEEP` means one comprehensive read-only search for all currently knowable current/next-gate defects before the final repair generation, with mandatory `MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE` classification and root-cause collapse;
+- `audit_mode: FINAL_CANDIDATE_REVIEW` means review the exact qualified candidate against the frozen root-cause inventory and still-binding current-gate requirements rather than starting a new open-ended architecture expedition;
+- after the inventory freeze, a newly proposed blocker must satisfy a novelty trigger from `CLOSURE_CONVERGENCE_PROTOCOL.md`; otherwise record `FINAL_SWEEP_MISS` and keep discovery bounded.
+
+Canonical material workers must also obey the convergence protocol's publication-safety rule: if the normal authorized high-level publication path is unavailable or rejected, fail closed and return custody. Do not improvise low-level Git commit/tree/blob/ref construction as a publication fallback.
+
 Classify evidence as `PROVEN`, `DERIVED`, `UNKNOWN` or `CONFLICT`. An unmerged task document cannot authorize architecture, production access or cross-repository writes. Preserve history when later decisions supersede only part of an older contract.
 
 ## Integration routing precedence
