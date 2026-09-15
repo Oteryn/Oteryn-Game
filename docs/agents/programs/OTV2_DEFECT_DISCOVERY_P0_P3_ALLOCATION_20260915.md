@@ -213,6 +213,29 @@ The heavy workflow must be read-only with respect to repository and product stat
 permissions must not include repository contents write, Issues write, pull-request write, deployment,
 package publication, environment mutation or cross-repository authority.
 
+For this first P0-P3 proof, the target repository is fixed to exactly `Oteryn/Oteryn-Game`. External
+repositories and fork repositories are not accepted targets and must fail closed as
+`BLOCKED_CAPABILITY` before target execution.
+
+The workflow definition, controller and discovery harness are trusted execution code and must come
+only from one immutable commit that is already present on the protected default branch. A manually
+selected `target_ref` is data under test; it must never select, replace, source, or execute the
+workflow/controller/harness identity. Even a same-repository non-protected target branch is treated as
+untrusted target code.
+
+Untrusted target bytes and every build script/test/fuzz process derived from them must execute in a
+separate credential-free and secret-free execution compartment from the trusted controller/harness.
+The target checkout must use `persist-credentials: false`; no repository write credential,
+`GITHUB_TOKEN`, Actions secret, deployment credential, package credential, cloud credential, or other
+privileged environment value may be made available to target-controlled processes. The untrusted
+compartment must not have a writable controller/harness checkout or a path by which target bytes can
+replace trusted harness executables. Any data crossing from the target compartment back to the
+controller must use an explicit bounded evidence/artifact contract and be treated as untrusted data.
+
+If the platform/harness cannot prove the immutable trusted controller identity or the credential/secret
+and filesystem separation above, the attempt is `BLOCKED_CAPABILITY`; it must not fall back to
+executing target-controlled code in the trusted job context.
+
 The discovery workflow may publish GitHub Actions artifacts required by P3. Those artifacts are
 evidence only; they do not mutate target source and do not grant reporter authority.
 
@@ -222,8 +245,9 @@ P0 must resolve the user-selected `target_ref` once to an immutable commit SHA a
 run to it. The retained run identity must distinguish at least:
 
 - requested repository/ref and resolved tested commit SHA/tree identity;
-- controller workflow commit/path identity;
-- discovery harness commit/tree identity;
+- immutable protected-default-branch controller workflow commit/path identity;
+- immutable protected-default-branch discovery harness commit/tree identity;
+- trusted-controller compartment identity and untrusted-target compartment identity;
 - selected module/profile/method/environment;
 - Rust toolchain and compilation target;
 - effective Cargo workspace root and lockfile identity where applicable;
@@ -232,8 +256,9 @@ run to it. The retained run identity must distinguish at least:
 - exact replay selector and artifact hashes.
 
 A ref that cannot be resolved, a moved/mismatched checkout, incomplete dependency enumeration, an
-incompatible harness/target pair, or unprovable patch/source fidelity must fail closed before a product
-finding can be emitted.
+external/fork target, an incompatible harness/target pair, unprovable patch/source fidelity, or an
+unprovable trusted/untrusted execution boundary must fail closed before a product finding can be
+emitted.
 
 ### No second product oracle
 
@@ -257,13 +282,21 @@ P0 is `PROVEN` only when one exact qualification packet demonstrates all of the 
   discovery-only heavy dependencies;
 - a normal PR/Merge Queue control provides concrete evidence that the heavy campaign did not run or
   impose its build step;
-- manual dispatch accepts an explicit target ref/SHA and resolves it to one immutable tested SHA
-  without mutating the target branch/ref;
+- manual dispatch accepts an explicit same-repository target ref/SHA and resolves it to one immutable
+  tested SHA without mutating the target branch/ref; external/fork repositories are rejected before
+  execution;
+- the workflow/controller/harness used for the run are read from one immutable protected-default-branch
+  commit and cannot be replaced or sourced from `target_ref`;
+- target checkout/execution is in a separate credential-free, secret-free compartment with checkout
+  credential persistence disabled and no writable trusted harness/controller surface;
+- a controlled hostile-target negative proves that target-controlled code cannot read privileged
+  credentials/secrets, replace the trusted harness/controller, or publish a product finding without
+  passing the bounded evidence/replay contract;
 - scheduled execution uses an explicitly selected default target policy and remains separate from PR/MQ;
-- target, workflow, harness, dependency source/patch, feature, target-triple and toolchain identities
-  are retained and machine-checkable;
-- a deliberately incompatible/unsupported target fails closed as `BLOCKED_CAPABILITY` or
-  `INCOMPLETE_CAMPAIGN`, not PASS;
+- target, workflow, harness, compartment, dependency source/patch, feature, target-triple and toolchain
+  identities are retained and machine-checkable;
+- a deliberately incompatible/unsupported target or unprovable isolation boundary fails closed as
+  `BLOCKED_CAPABILITY` or `INCOMPLETE_CAMPAIGN`, not PASS;
 - no hidden retry converts a failed attempt into an apparently green attempt; every attempt retains its
   own result identity.
 
@@ -381,6 +414,8 @@ are forbidden substitutes.
 On one unchanged exact final head the worker must provide:
 
 - focused unit/schema/CLI tests for exact-ref resolution, identity validation, classification and replay;
+- P0 hostile-target isolation regression proving the trusted controller/harness cannot be replaced and
+  no credential/secret is exposed to target-controlled code;
 - P1 bounded positive + controlled-negative proof and deterministic replay;
 - P2 bounded raw + structured fuzz proof, controlled-negative detection and replay;
 - static/semantic trigger test proving the discovery workflow excludes PR/push/Merge Queue events;
