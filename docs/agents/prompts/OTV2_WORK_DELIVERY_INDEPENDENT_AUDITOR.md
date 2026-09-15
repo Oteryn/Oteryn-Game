@@ -8,7 +8,7 @@ Oteryn: work auditor
 
 ```yaml
 prompt_id: OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR
-prompt_version: "1.2"
+prompt_version: "1.3"
 prompt_mode: AUDIT
 working_mode: INDEPENDENT_HIGH_EFFORT_AUDIT_WITH_BOUNDED_EVIDENCE_WRITE
 target_repository: Oteryn/Oteryn-Game
