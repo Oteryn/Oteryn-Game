@@ -365,7 +365,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                         .acquire_timeout(ROOT_CONNECT_TIMEOUT)
                         .idle_timeout(HOLDER_IDLE_TIMEOUT)
                         .max_lifetime(HOLDER_MAX_LIFETIME)
-                        .connect_lazy_with(ordinary_options(&admin_url, ca_path)?)
+                        .connect_lazy_with(
+                            ordinary_options(&admin_url, ca_path)?
+                                .with_resource_budget(owner.clone()),
+                        )
                 })
             })?;
 
