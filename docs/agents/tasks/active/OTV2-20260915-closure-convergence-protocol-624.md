@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T11:55:00Z
+updated_at: 2026-09-15T12:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
@@ -54,6 +54,8 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 ## Acceptance criteria
 
 - [x] Add one routed closure convergence protocol with explicit activation, one-shot sweep, finding classification, root-cause collapse, frozen inventory, coherent repair generation, final qualification/review and anti-drip novelty triggers.
+- [x] Bind discovery sweeps to the exact frozen closure head and fail closed if the live target moved.
+- [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled; only repair-eligible material blockers enter the batch.
 - [x] Add publication-safety fail-closed behavior for unavailable normal Git publication; no direct low-level Git-object fallback on canonical material branches.
 - [x] Work coordinator routes convergence-mode workers and auditors through the protocol and treats a bounded task as a bounded coherent repair generation during closure.
 - [x] Convergence audit dispatch fits the coordinator's existing minimal packet by using an `accepted_decisions` convergence descriptor rather than new top-level keys.
@@ -86,12 +88,14 @@ Codex review `5209285222` was bound to historical head `7abaa1fa2ad779e821435888
 
 ### Independent review generation 2
 
-Fresh Codex review on exact head `b8e54b146dda34459aa8725ab2d9553c5968f64a` reported:
+Fresh Codex review sequence on exact head `b8e54b146dda34459aa8725ab2d9553c5968f64a` reported four findings, all consumed into one coherent review-repair generation before final freeze:
 
 1. `4015090632` — P1: Durability prompt presented `FINAL_SWEEP_MISS` as an alternative classification. `ACCEPTED_AND_REPAIRED`: a real current-gate defect remains `gate_classification: MATERIAL_BLOCKER`; `sweep_disposition: FINAL_SWEEP_MISS` is additional metadata only.
 2. `4015090638` — P2: lifecycle versions did not advance for materially revised reusable prompt contracts. `ACCEPTED_AND_REPAIRED`: coordinator `1.2 -> 1.3`, durability `1.1 -> 1.2`, and lifecycle path added to task custody.
+3. `4015189472` — P1: discovery sweep descriptor was not bound to the frozen closure SHA. `ACCEPTED_AND_REPAIRED`: `DISCOVERY_SWEEP` now carries exact `closure_head`, and the auditor must fail closed if the live target differs.
+4. `4015189486` — P1: `UNKNOWN`/`CONFLICT` evidence could still drive mutation merely because gate classification was `MATERIAL_BLOCKER`. `ACCEPTED_AND_REPAIRED`: root causes now carry repair eligibility; unresolved evidence cannot enter a mutating repair generation until reconciled.
 
-This material review-repair generation requires fresh exact-head deterministic validation and one final independent review on the resulting stable head.
+This complete material review-repair generation requires fresh exact-head deterministic validation and one final independent review on the resulting stable head.
 
 ## Validation
 
@@ -107,7 +111,7 @@ This material review-repair generation requires fresh exact-head deterministic v
 - exact-head Agent Governance on `b8e54b...`: SUCCESS before generation-2 repair.
 - exact-head Architecture Semantic Audit on `b8e54b...`: SUCCESS before generation-2 repair.
 - exact-head Merge Gate on `b8e54b...`: SUCCESS before generation-2 repair.
-- fresh exact-head repository checks: required after this generation-2 repair.
+- fresh exact-head repository checks: required after the complete generation-2 repair.
 
 ### E2E
 
@@ -116,7 +120,7 @@ This material review-repair generation requires fresh exact-head deterministic v
 
 ### Exact-head CI
 
-- final head: pending after this task-record commit
+- final head: record in immutable PR/check evidence after this commit
 - trigger source: pull_request
 - workflow/run/job: pending
 - runner assignment: pending
@@ -125,8 +129,8 @@ This material review-repair generation requires fresh exact-head deterministic v
 
 ## Self-review
 
-- exact head: pending after this task-record commit
-- method/reviewer: implementing agent whole-diff review against #624 + bound META 3.1 + accepted review findings
+- exact head: record in immutable PR evidence after this commit
+- method/reviewer: implementing agent whole-diff review against #624 + bound META 3.1 + all accepted review findings
 - material findings: 0 open in producer self-review
 - verdict: PASS_PENDING_EXACT_HEAD_CI_AND_FINAL_INDEPENDENT_REVIEW
 
@@ -134,8 +138,8 @@ This material review-repair generation requires fresh exact-head deterministic v
 
 - required: YES — material high-risk/control-plane governance behavior under bound META AI review policy
 - historical generation 1: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned above
-- historical generation 2: head `b8e54b...` / 1 P1 + 1 P2, dispositioned above
-- exact final head: pending
+- historical generation 2: head `b8e54b...` / 3 P1 + 1 P2, dispositioned above
+- exact final head: record in immutable PR evidence after this commit
 - method/auditor: one fresh Codex deep review after deterministic validation
 - material findings: pending
 - verdict: pending
@@ -144,7 +148,7 @@ This material review-repair generation requires fresh exact-head deterministic v
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: generation-2 threads pending reply/resolution after repaired exact head is published
+- unresolved review threads: generation-2 threads to be replied/resolved against the final published head
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -153,13 +157,13 @@ This material review-repair generation requires fresh exact-head deterministic v
 ## Context checkpoint
 
 ```yaml
-last_progress: Reconciled second independent review as one coherent repair batch; preserved blocker class for sweep misses and advanced lifecycle versions for revised reusable prompt contracts.
+last_progress: Reconciled all currently known review findings into one coherent generation-2 repair batch, including exact sweep-head binding and evidence-gated repair eligibility.
 status: validating
 branch: agent/closure-convergence-protocol
-head_sha: pending_final_commit
+head_sha: record_after_commit
 pr: 625
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: record_in_pr_evidence
+final_head_frozen_at: after_this_commit
 ci_trigger_source: pull_request
 ci_check_generation: pending
 ci_checks_for_current_head: 0
@@ -175,5 +179,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze the new exact head, run fresh exact-head CI, reply/resolve generation-2 review threads, then obtain one final independent deep review.
+next_action: Freeze this exact head, resolve all historical review threads with exact evidence, run fresh exact-head CI, then obtain one final independent deep review without moving the head.
 ```
