@@ -65,14 +65,17 @@ Do not move this head merely to refresh prose, trigger CI, manufacture review ev
 
 The Work coordinator's mandatory minimal context packet remains authoritative. Convergence mode does **not** add unregistered top-level packet keys.
 
-When a convergence audit is dispatched, encode the mode inside the existing `accepted_decisions` field as one bounded descriptor, for example:
+When a convergence discovery audit is dispatched, encode the mode and frozen closure generation inside the existing `accepted_decisions` field as one bounded descriptor:
 
 ```yaml
 accepted_decisions:
   - convergence:
       protocol: docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
       audit_mode: DISCOVERY_SWEEP
+      closure_head: <exact frozen sha>
 ```
+
+The auditor must resolve the live target and require its exact head to equal `closure_head` before using source/check/review evidence for the sweep. If the branch or PR head differs, return a stale-target/insufficient-evidence disposition and do not silently audit the newer generation under the frozen sweep.
 
 For final review the same existing field carries the additional frozen locators:
 
@@ -89,7 +92,7 @@ These descriptors narrow how the requested audit is performed. They do not add a
 
 ## Phase 2 — one final defect sweep
 
-Run one comprehensive read-only sweep over the complete remaining closure surface that is material to the current gate. Prefer the existing independent auditor when current review policy permits it; dispatch it through the convergence descriptor above with `audit_mode: DISCOVERY_SWEEP`.
+Run one comprehensive read-only sweep over the complete remaining closure surface that is material to the current gate. Prefer the existing independent auditor when current review policy permits it; dispatch it through the convergence descriptor above with `audit_mode: DISCOVERY_SWEEP` and the exact frozen `closure_head`.
 
 The sweep must inspect the full currently reachable ownership/finality/resource/authority/production-path surface required by the accepted contracts and acceptance cells, not only the latest diff or latest review comment.
 
@@ -129,6 +132,7 @@ For each material root cause record at least:
 root_cause_id: <stable id>
 gate_classification: MATERIAL_BLOCKER
 evidence_classification: PROVEN | DERIVED | UNKNOWN | CONFLICT
+repair_eligibility: ELIGIBLE | EVIDENCE_RECONCILIATION_REQUIRED
 requirement_source: <contract/review/acceptance ref>
 production_entry_points: []
 exact_paths_or_symbols: []
@@ -150,7 +154,13 @@ The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutati
 
 The active control plane consumes the sweep and freezes the material root-cause set before repair.
 
-Prepare the smallest authority set that can close the entire compatible repair generation. Do not stop at the first missing file/symbol lease when the sweep already proves additional required paths in the same root-cause generation.
+Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its evidence classification:
+
+- `PROVEN` may be `repair_eligibility: ELIGIBLE` when authority is otherwise sufficient;
+- `DERIVED` may be eligible only when the derivation is explicit and the governing contract/control plane accepts that inference as sufficient mutation evidence; otherwise hold it for evidence reconciliation;
+- `UNKNOWN` or `CONFLICT` is never repair-eligible. Resolve the missing/conflicting evidence first, or hold/escalate the affected claim under existing evidence/architecture/authority rules. Do not dispatch production-code repair merely because the gate classification says `MATERIAL_BLOCKER`.
+
+Prepare the smallest authority set that can close the entire compatible **repair-eligible** material generation. Do not stop at the first missing file/symbol lease when the sweep already proves additional required paths in the same root-cause generation.
 
 Split repair generations only for a real boundary:
 
@@ -165,7 +175,7 @@ Do not split merely by file, review comment, test name or historical finding ID.
 
 During convergence mode, the normal bounded-worker rule means **one bounded coherent repair generation**, not one finding per worker return.
 
-The writer receives the frozen root-cause inventory and repairs all compatible `MATERIAL_BLOCKER` items authorized for that generation before handoff.
+The writer receives the frozen root-cause inventory and repairs all compatible, repair-eligible `MATERIAL_BLOCKER` items authorized for that generation before handoff. Items still marked `EVIDENCE_RECONCILIATION_REQUIRED` remain outside the mutating batch until their evidence state is resolved.
 
 The writer must not:
 
@@ -202,7 +212,7 @@ The reviewer may still report a new material blocker, but after inventory freeze
 3. an independent review finding whose material fact could not reasonably have been established from the frozen source/evidence;
 4. material protected-`main`, policy or accepted-contract movement.
 
-If a later material finding was reasonably knowable during the sweep, set `gate_classification: MATERIAL_BLOCKER` if it is a real current-gate defect and additionally mark it `FINAL_SWEEP_MISS`. The defect still must be handled safely, but the coordinator must record why the sweep missed it, add it once to the existing root-cause model, and avoid reopening unrestricted discovery.
+If a later material finding was reasonably knowable during the sweep, set `gate_classification: MATERIAL_BLOCKER` if it is a real current-gate defect and additionally set `sweep_disposition: FINAL_SWEEP_MISS`. The defect still must be handled safely, but the coordinator must record why the sweep missed it, add it once to the existing root-cause model, and avoid reopening unrestricted discovery.
 
 `HARDENING` and `OUT_OF_SCOPE` findings do not block integration unless current accepted authority explicitly makes them acceptance requirements.
 
