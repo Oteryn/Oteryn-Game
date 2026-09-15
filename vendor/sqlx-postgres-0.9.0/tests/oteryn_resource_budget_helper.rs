@@ -206,8 +206,8 @@ fn ordinary_options(admin_url: &str, ca_path: &Path) -> Result<PgConnectOptions,
 fn selected_options(
     admin_url: &str,
     ca_path: &Path,
-    _owner: Arc<dyn ResourceBudget>,
-) -> Result<sqlx_postgres::OterynRootProfile, Box<dyn Error>> {
+    owner: Arc<dyn ResourceBudget>,
+) -> Result<sqlx::postgres::OterynRootProfile, Box<dyn Error>> {
     let parsed: PgConnectOptions = admin_url.parse()?;
     let transport_ip: IpAddr = parsed
         .get_host()
@@ -239,10 +239,7 @@ fn selected_options(
     )?)
 }
 
-fn holder_pool(
-    options: sqlx_postgres::OterynRootProfile,
-    owner: Arc<dyn ResourceBudget>,
-) -> sqlx::PgPool {
+fn selected_holder_pool(options: sqlx::postgres::OterynRootProfile) -> sqlx::PgPool {
     PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
@@ -277,7 +274,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             });
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
             let options = selected_options(&admin_url, ca_path, owner.clone())?;
-            let pool = runtime.block_on(async { holder_pool(options, owner) });
+            let pool = selected_holder_pool(options);
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err(
                     "lazy empty holder unexpectedly produced a ready-only transaction".into(),
@@ -358,12 +355,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
             let ledger = Arc::new(Ledger::new(ordinary_limit, ROOT_LIMIT));
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
-            let options = if selected {
-                selected_options(&admin_url, ca_path, owner.clone())?
+            let pool = if selected {
+                selected_holder_pool(selected_options(&admin_url, ca_path, owner.clone())?)
             } else {
-                ordinary_options(&admin_url, ca_path)?
+                PgPoolOptions::new()
+                    .max_connections(1)
+                    .min_connections(0)
+                    .acquire_timeout(ROOT_CONNECT_TIMEOUT)
+                    .idle_timeout(HOLDER_IDLE_TIMEOUT)
+                    .max_lifetime(HOLDER_MAX_LIFETIME)
+                    .connect_lazy_with(ordinary_options(&admin_url, ca_path)?)
             };
-            let pool = runtime.block_on(async { holder_pool(options, owner) });
 
             if runtime.block_on(pool.try_begin())?.is_some() {
                 return Err(

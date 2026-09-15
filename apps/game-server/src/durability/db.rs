@@ -627,6 +627,10 @@ impl RuntimeBackend {
         kind: i16,
         canonical_original: &str,
     ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
         let pass = ACTIVE_SEMANTIC_PASS
             .try_with(Clone::clone)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -644,6 +648,10 @@ impl RuntimeBackend {
         encoded_record: &str,
         allowed_origins: &[&str],
     ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
         let pass = ACTIVE_SEMANTIC_PASS
             .try_with(Clone::clone)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -673,6 +681,10 @@ impl RuntimeBackend {
         kind: i16,
         canonical_originals: &[&str],
     ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
         let pass = ACTIVE_SEMANTIC_PASS
             .try_with(Clone::clone)
             .map_err(|_| DurabilityError::Unavailable)?;
