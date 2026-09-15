@@ -1,11 +1,579 @@
+// Include the unchanged Foundation source in this test crate so privately sealed
+// fixture owners and Durability use one type universe, without a production seal.
+extern crate self as oteryn_game_server;
+#[path = "../src/foundation/mod.rs"]
+pub mod foundation;
+
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;
 #[path = "support/authority_recovery.rs"]
 mod authority_recovery;
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[path = "../../../vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs"]
+mod oteryn_resource_budget;
 #[path = "support/postgres.rs"]
 mod postgres;
+
+/// Registered-root qualification support is intentionally private to this
+/// integration target. In particular, this call site proves the SQLx M05
+/// result is inspectable from a downstream crate although `pool::connection`
+/// remains private and no new re-export exists.
+mod wp3_registered_root_qualification {
+    use std::cell::RefCell;
+    use std::fs::OpenOptions;
+    use std::net::IpAddr;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, Output};
+    use std::str::FromStr;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    const ROOT_LIMIT: usize = 12_582_912;
+
+    pub(super) fn stage_failure(stage: &'static str) -> Box<dyn std::error::Error> {
+        Box::new(std::io::Error::other(stage))
+    }
+
+    pub(super) fn registered_connect_stage_failure(
+        stage: &'static str,
+    ) -> Box<dyn std::error::Error> {
+        Box::new(std::io::Error::other(format!(
+            "{stage};REGISTERED_CONNECT_FIRST_SUBSTAGE={};SCHEMA_FAILURE_CLASS={};{}",
+            super::durability::registered_connect_diagnostic_substage(),
+            super::durability::registered_connect_schema_failure_class(),
+            root_budget_failure_witness(),
+        )))
+    }
+
+    pub(super) struct TlsFixtureLease(PathBuf);
+
+    impl Drop for TlsFixtureLease {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+
+    pub(super) fn acquire_tls_fixture_lease() -> Result<TlsFixtureLease, Box<dyn std::error::Error>>
+    {
+        let path = std::env::temp_dir().join("oteryn-wp3-postgres-tls-fixture.lock");
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(300);
+        loop {
+            match OpenOptions::new().write(true).create_new(true).open(&path) {
+                Ok(_) => return Ok(TlsFixtureLease(path)),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    if std::time::Instant::now() >= deadline {
+                        return Err("timed out waiting for the PostgreSQL TLS fixture lease".into());
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(25));
+                }
+                Err(error) => return Err(error.into()),
+            }
+        }
+    }
+
+    thread_local! {
+        static ROOT_BUDGET_DIAGNOSTIC: RefCell<Option<Arc<RootBudgetWitness>>> = const { RefCell::new(None) };
+    }
+
+    #[derive(Debug)]
+    struct RootBudgetWitness {
+        used: AtomicUsize,
+        peak: AtomicUsize,
+        denied: AtomicBool,
+        requested_at_denial: AtomicUsize,
+        used_at_denial: AtomicUsize,
+    }
+
+    #[derive(Debug)]
+    pub(super) struct RootBudget(Arc<RootBudgetWitness>);
+
+    impl RootBudget {
+        pub(super) fn new() -> Self {
+            Self(Arc::new(RootBudgetWitness {
+                used: AtomicUsize::new(0),
+                peak: AtomicUsize::new(0),
+                denied: AtomicBool::new(false),
+                requested_at_denial: AtomicUsize::new(0),
+                used_at_denial: AtomicUsize::new(0),
+            }))
+        }
+    }
+
+    fn root_budget_failure_witness() -> String {
+        ROOT_BUDGET_DIAGNOSTIC.with(|diagnostic| {
+            let diagnostic = diagnostic.borrow();
+            let Some(budget) = diagnostic.as_ref() else {
+                return "ROOT_BUDGET=unavailable".to_owned();
+            };
+            format!(
+                "ROOT_BUDGET_DENIED={};REQUESTED={};USED_AT_DENIAL={};PEAK={};CURRENT={}",
+                budget.denied.load(Ordering::SeqCst),
+                budget.requested_at_denial.load(Ordering::SeqCst),
+                budget.used_at_denial.load(Ordering::SeqCst),
+                budget.peak.load(Ordering::SeqCst),
+                budget.used.load(Ordering::SeqCst),
+            )
+        })
+    }
+
+    impl sqlx::postgres::ResourceBudget for RootBudget {
+        fn try_reserve(&self, bytes: usize) -> Result<(), sqlx::postgres::BudgetError> {
+            let result = self
+                .0
+                .used
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
+                    used.checked_add(bytes).filter(|next| *next <= ROOT_LIMIT)
+                });
+            match result {
+                Ok(previous) => {
+                    self.0.peak.fetch_max(previous + bytes, Ordering::SeqCst);
+                    Ok(())
+                }
+                Err(used) => {
+                    self.0.denied.store(true, Ordering::SeqCst);
+                    self.0.requested_at_denial.store(bytes, Ordering::SeqCst);
+                    self.0.used_at_denial.store(used, Ordering::SeqCst);
+                    Err(sqlx::postgres::BudgetError::Unavailable)
+                }
+            }
+        }
+
+        fn release(&self, bytes: usize) {
+            let previous = self.0.used.fetch_sub(bytes, Ordering::SeqCst);
+            assert!(previous >= bytes, "Durability root budget underflow");
+        }
+
+        fn try_reserve_provider_shared(
+            &self,
+            bytes: usize,
+        ) -> Result<(), sqlx::postgres::BudgetError> {
+            self.try_reserve(bytes)
+        }
+    }
+
+    #[test]
+    fn root_budget_records_bounded_denial_evidence_without_changing_the_limit() {
+        use sqlx::postgres::ResourceBudget;
+
+        let budget = Arc::new(RootBudget::new());
+        ROOT_BUDGET_DIAGNOSTIC.with(|diagnostic| {
+            *diagnostic.borrow_mut() = Some(budget.0.clone());
+        });
+        assert_eq!(budget.try_reserve(ROOT_LIMIT), Ok(()));
+        assert_eq!(
+            budget.try_reserve(1),
+            Err(sqlx::postgres::BudgetError::Unavailable)
+        );
+        assert_eq!(
+            root_budget_failure_witness(),
+            format!(
+                "ROOT_BUDGET_DENIED=true;REQUESTED=1;USED_AT_DENIAL={ROOT_LIMIT};PEAK={ROOT_LIMIT};CURRENT={ROOT_LIMIT}"
+            )
+        );
+        budget.release(ROOT_LIMIT);
+        assert_eq!(budget.0.used.load(Ordering::SeqCst), 0);
+    }
+
+    pub(super) fn production_config(
+        database_url: &str,
+        ca_cert: &Path,
+    ) -> Result<super::durability::AdmissionRuntimeConfig, Box<dyn std::error::Error>> {
+        let parsed = sqlx::postgres::PgConnectOptions::from_str(database_url)?;
+        let transport_ip: IpAddr = parsed.get_host().parse()?;
+        let authority = database_url
+            .split_once("://")
+            .and_then(|(_, rest)| rest.split_once('@').map(|(credentials, _)| credentials))
+            .ok_or("registered root requires explicit fixture credentials")?;
+        let (username, password) = authority
+            .split_once(':')
+            .ok_or("registered root requires an explicit fixture password")?;
+        if username.contains('%') || password.contains('%') || username != parsed.get_username() {
+            return Err("registered root fixture credentials must be literal".into());
+        }
+        let root_ca_pem = std::fs::read(ca_cert)?;
+        let budget = Arc::new(RootBudget::new());
+        ROOT_BUDGET_DIAGNOSTIC.with(|diagnostic| {
+            *diagnostic.borrow_mut() = Some(budget.0.clone());
+        });
+        Ok(super::durability::AdmissionRuntimeConfig::new(
+            transport_ip,
+            parsed.get_port(),
+            "localhost",
+            parsed
+                .get_database()
+                .ok_or("registered root database missing")?,
+            username,
+            password,
+            &root_ca_pem,
+            budget,
+        )?)
+    }
+
+    const POSTGRES_IMAGE: &str = "postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3";
+
+    pub(super) async fn configure_tls_fixture(
+        admin_url: &str,
+        label: &str,
+    ) -> Result<PathBuf, Box<dyn std::error::Error>> {
+        let directory = std::env::temp_dir().join(format!(
+            "oteryn-wp3-registered-{label}-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&directory)?;
+        let ca_key = directory.join("ca.key");
+        let ca_cert = directory.join("ca.crt");
+        let server_key = directory.join("server.key");
+        let server_csr = directory.join("server.csr");
+        let server_cert = directory.join("server.crt");
+        let extensions = directory.join("server.ext");
+        std::fs::write(
+            &extensions,
+            "[server_ext]\nsubjectAltName=DNS:localhost\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n",
+        )?;
+        run(
+            Command::new("openssl")
+                .args([
+                    "req", "-x509", "-newkey", "rsa:2048", "-sha256", "-nodes", "-days", "1",
+                    "-keyout",
+                ])
+                .arg(&ca_key)
+                .arg("-out")
+                .arg(&ca_cert)
+                .args([
+                    "-subj",
+                    "/CN=Oteryn-WP3-Registered-CA",
+                    "-addext",
+                    "basicConstraints=critical,CA:TRUE",
+                    "-addext",
+                    "keyUsage=critical,keyCertSign,cRLSign",
+                ]),
+            "generate registered-root CA",
+        )?;
+        run(
+            Command::new("openssl")
+                .args([
+                    "req", "-new", "-newkey", "rsa:2048", "-sha256", "-nodes", "-keyout",
+                ])
+                .arg(&server_key)
+                .arg("-out")
+                .arg(&server_csr)
+                .args(["-subj", "/CN=localhost"]),
+            "generate registered-root CSR",
+        )?;
+        run(
+            Command::new("openssl")
+                .args(["x509", "-req", "-in"])
+                .arg(&server_csr)
+                .arg("-CA")
+                .arg(&ca_cert)
+                .arg("-CAkey")
+                .arg(&ca_key)
+                .args(["-CAcreateserial", "-out"])
+                .arg(&server_cert)
+                .args(["-days", "1", "-sha256", "-extfile"])
+                .arg(&extensions)
+                .args(["-extensions", "server_ext"]),
+            "sign registered-root certificate",
+        )?;
+        let container = postgres_container()?;
+        copy_owned(&container, &server_cert, "/tmp/oteryn-wp3-registered.crt")?;
+        copy_owned(&container, &server_key, "/tmp/oteryn-wp3-registered.key")?;
+        let pool = sqlx::PgPool::connect(admin_url).await?;
+        let version: i32 = sqlx::query_scalar("SELECT current_setting('server_version_num')::int")
+            .fetch_one(&pool)
+            .await?;
+        if version != 170006 {
+            return Err(format!("expected PostgreSQL 170006, got {version}").into());
+        }
+        for statement in [
+            "ALTER SYSTEM SET ssl='on'",
+            "ALTER SYSTEM SET ssl_cert_file='/tmp/oteryn-wp3-registered.crt'",
+            "ALTER SYSTEM SET ssl_key_file='/tmp/oteryn-wp3-registered.key'",
+            "ALTER SYSTEM SET ssl_min_protocol_version='TLSv1.3'",
+            "ALTER SYSTEM SET ssl_max_protocol_version='TLSv1.3'",
+        ] {
+            sqlx::query(statement).execute(&pool).await?;
+        }
+        if !sqlx::query_scalar::<_, bool>("SELECT pg_reload_conf()")
+            .fetch_one(&pool)
+            .await?
+        {
+            return Err("PostgreSQL rejected TLS reload".into());
+        }
+
+        // `pg_reload_conf()` only requests a reload.  Do not let the registered
+        // runtime race the postmaster while it is still serving the previous
+        // certificate: witness the exact intended TLS state with a bounded
+        // deadline before returning the fixture to its first consumer.
+        let activation_deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let settings: (String, String, String, String, String) = sqlx::query_as(
+                "SELECT current_setting('ssl'), current_setting('ssl_cert_file'), \
+                        current_setting('ssl_key_file'), \
+                        current_setting('ssl_min_protocol_version'), \
+                        current_setting('ssl_max_protocol_version')",
+            )
+            .fetch_one(&pool)
+            .await?;
+            if settings
+                == (
+                    "on".to_owned(),
+                    "/tmp/oteryn-wp3-registered.crt".to_owned(),
+                    "/tmp/oteryn-wp3-registered.key".to_owned(),
+                    "TLSv1.3".to_owned(),
+                    "TLSv1.3".to_owned(),
+                )
+            {
+                pool.close().await;
+
+                // A setting read on the pre-existing administrator connection
+                // does not prove that the postmaster can serve the newly
+                // installed certificate.  Require a new TLS client, rooted in
+                // this fixture's CA, to authenticate `localhost` before the
+                // registered runtime is allowed to consume the fixture.
+                let mut verify_full_options =
+                    sqlx::postgres::PgConnectOptions::from_str(admin_url)?;
+                verify_full_options = verify_full_options
+                    .host("localhost")
+                    .ssl_mode(sqlx::postgres::PgSslMode::VerifyFull)
+                    .ssl_root_cert(&ca_cert);
+                let witness = tokio::time::timeout(Duration::from_secs(5), async {
+                    use sqlx::Connection;
+
+                    let mut connection =
+                        sqlx::PgConnection::connect_with(&verify_full_options)
+                            .await
+                            .map_err(|_| "registered-root VerifyFull connection failed")?;
+                    let (ssl, protocol, server_version): (bool, String, i32) = sqlx::query_as(
+                        "SELECT ssl, version, current_setting('server_version_num')::int \
+                         FROM pg_stat_ssl WHERE pid = pg_backend_pid()",
+                    )
+                    .fetch_one(&mut connection)
+                    .await
+                    .map_err(|_| "registered-root VerifyFull witness query failed")?;
+                    if !ssl || protocol != "TLSv1.3" || server_version != 170006 {
+                        return Err("registered-root VerifyFull witness did not use PostgreSQL 17.6 over TLS1.3");
+                    }
+                    connection
+                        .close()
+                        .await
+                        .map_err(|_| "registered-root VerifyFull witness close failed")?;
+                    Ok::<(), &'static str>(())
+                })
+                .await
+                .map_err(|_| "registered-root VerifyFull witness timed out")?;
+                witness?;
+                return Ok(ca_cert);
+            }
+            if tokio::time::Instant::now() >= activation_deadline {
+                pool.close().await;
+                return Err(
+                    "PostgreSQL 17.6 did not activate the registered-root TLS1.3 configuration"
+                        .into(),
+                );
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+
+    fn postgres_container() -> Result<String, Box<dyn std::error::Error>> {
+        let output = Command::new("docker")
+            .args(["ps", "--filter", "publish=5432", "--format", "{{.ID}}"])
+            .output()?;
+        success(&output, "locate PostgreSQL service")?;
+        let mut found = Vec::new();
+        for id in String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .filter(|id| !id.is_empty())
+        {
+            let inspect = Command::new("docker")
+                .args(["inspect", "--format", "{{.Config.Image}}", id])
+                .output()?;
+            success(&inspect, "inspect PostgreSQL service")?;
+            if String::from_utf8_lossy(&inspect.stdout).trim() == POSTGRES_IMAGE {
+                found.push(id.to_owned());
+            }
+        }
+        if found.len() != 1 {
+            return Err(format!(
+                "expected one canonical PostgreSQL service, found {}",
+                found.len()
+            )
+            .into());
+        }
+        Ok(found.remove(0))
+    }
+    fn copy_owned(
+        container: &str,
+        source: &Path,
+        destination: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        run(
+            Command::new("docker")
+                .arg("cp")
+                .arg(source)
+                .arg(format!("{container}:{destination}")),
+            "copy TLS fixture",
+        )?;
+        run(
+            Command::new("docker").args([
+                "exec",
+                "--user",
+                "root",
+                container,
+                "chown",
+                "postgres:postgres",
+                destination,
+            ]),
+            "own TLS fixture",
+        )?;
+        run(
+            Command::new("docker").args([
+                "exec",
+                "--user",
+                "root",
+                container,
+                "chmod",
+                "600",
+                destination,
+            ]),
+            "protect TLS fixture",
+        )
+    }
+    fn run(command: &mut Command, context: &str) -> Result<(), Box<dyn std::error::Error>> {
+        success(&command.output()?, context)
+    }
+    fn success(output: &Output, context: &str) -> Result<(), Box<dyn std::error::Error>> {
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(format!("{context}: {}", String::from_utf8_lossy(&output.stderr)).into())
+        }
+    }
+
+    fn require_pooled(
+        connection: sqlx::pool::MaybePoolConnection<'static, sqlx::Postgres>,
+    ) -> Result<sqlx::pool::PoolConnection<sqlx::Postgres>, sqlx::Error> {
+        match connection {
+            sqlx::pool::MaybePoolConnection::PoolConnection(connection) => Ok(connection),
+            sqlx::pool::MaybePoolConnection::Connection(_) => Err(sqlx::Error::Protocol(
+                "M05 owned root did not retain pooled custody".into(),
+            )),
+        }
+    }
+
+    pub(super) async fn finalize_owned_transaction(
+        transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> Result<(Option<bool>, Result<(), sqlx::Error>), sqlx::Error> {
+        let (connection, result) = transaction.oteryn_m05_commit().await;
+        let mut connection = require_pooled(connection)?;
+        let disposition = connection.oteryn_m05_return_to_pool().await;
+        Ok((disposition, result))
+    }
+
+    pub(super) async fn inspect_completed_return(
+        connection: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
+    ) -> Result<bool, &'static str> {
+        match connection.oteryn_m05_return_to_pool().await {
+            Some(returned_to_idle) => Ok(returned_to_idle),
+            None => Err("pool return supplied no terminal evidence"),
+        }
+    }
+
+    #[test]
+    fn downstream_can_inspect_the_standard_terminal_shape() {
+        let _downstream_callable = inspect_completed_return;
+        let _transaction_finalizer = finalize_owned_transaction;
+    }
+
+    #[test]
+    fn pooled_commit_rollback_and_return_finality_execute_on_postgres_17_6()
+    -> Result<(), Box<dyn std::error::Error>> {
+        if !super::postgres_e2e_is_configured()? {
+            return Ok(());
+        }
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                use sqlx::Connection;
+
+                let database = super::postgres::IsolatedPostgres::create("m05_transaction_finality").await?;
+                let result = async {
+                    let borrowed = Box::leak(Box::new(
+                        sqlx::PgConnection::connect(&database.database_url()?).await?,
+                    ));
+                    let Err(error) = require_pooled(
+                        sqlx::pool::MaybePoolConnection::Connection(borrowed),
+                    ) else {
+                        return Err("borrowed connection was accepted".into());
+                    };
+                    assert!(matches!(error, sqlx::Error::Protocol(message) if message.contains("pooled custody")));
+
+                    let pool = sqlx::postgres::PgPoolOptions::new()
+                        .min_connections(0)
+                        .max_connections(1)
+                        .connect(&database.database_url()?)
+                        .await?;
+                    let version: i32 = sqlx::query_scalar(
+                        "SELECT current_setting('server_version_num')::int",
+                    )
+                        .fetch_one(&pool)
+                        .await?;
+                    assert_eq!(version, 170_006);
+
+                    for commit in [true, false] {
+                        let mut transaction = pool.begin().await?;
+                        let identity: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                            .fetch_one(&mut *transaction)
+                            .await?;
+                        let (connection, finalization) = if commit {
+                            transaction.oteryn_m05_commit().await
+                        } else {
+                            transaction.oteryn_m05_rollback().await
+                        };
+                        assert!(finalization.is_ok());
+                        let mut connection = require_pooled(connection)?;
+                        let retained_identity: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                            .fetch_one(&mut *connection)
+                            .await?;
+                        assert_eq!(retained_identity, identity);
+                        assert_eq!(connection.oteryn_m05_return_to_pool().await, Some(true));
+                        assert_eq!(connection.oteryn_m05_return_to_pool().await, None);
+
+                        let mut reacquired = pool.acquire().await?;
+                        let returned_identity: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                            .fetch_one(&mut *reacquired)
+                            .await?;
+                        assert_eq!(returned_identity, identity);
+                        drop(reacquired);
+                    }
+                    pool.close().await;
+
+                    let retiring_pool = sqlx::postgres::PgPoolOptions::new()
+                        .min_connections(0)
+                        .max_connections(1)
+                        .max_lifetime(std::time::Duration::from_millis(1))
+                        .connect(&database.database_url()?)
+                        .await?;
+                    let transaction = retiring_pool.begin().await?;
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    let (connection, result) = transaction.oteryn_m05_commit().await;
+                    assert!(result.is_ok());
+                    let mut connection = require_pooled(connection)?;
+                    assert_eq!(connection.oteryn_m05_return_to_pool().await, Some(false));
+                    assert_eq!(connection.oteryn_m05_return_to_pool().await, None);
+                    retiring_pool.close().await;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }
+                .await;
+                database.cleanup().await?;
+                result
+            })
+    }
+}
 
 #[test]
 fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
@@ -269,7 +837,7 @@ fn record_for_actor_epoch_with_protection(
         game_session_id,
         ReconnectAttemptRef::new(attempt_raw)
             .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        "123e4567-e89b-12d3-a456-426614174000",
+        &postgres::fixture_account_for_character(character_raw),
         character_id,
         world_id,
         RuntimeScopeRefV1::channel(world_id, channel_id),
@@ -1121,6 +1689,7 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 );
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
+                let mut corruption = postgres::begin_transport_corruption(&pool).await?;
                 let corrupted = sqlx::query(
                     "UPDATE game_durability_transport_ref_reservations \
                      SET game_session_id = encode($2, 'hex')::uuid, reconnect_attempt_ref = $3 \
@@ -1136,8 +1705,9 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 )
                 .bind(uuid_v7(0x9a))
                 .bind([0xfe_u8; 8].as_slice())
-                .execute(&pool)
+                .execute(&mut *corruption)
                 .await?;
+                postgres::finish_transport_corruption(corruption).await?;
                 assert_eq!(corrupted.rows_affected(), 1);
                 assert!(matches!(
                     journal.commit(&commit).await,
@@ -1281,6 +1851,7 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                     .map_err(foundation_error)?;
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
+                let mut corruption = postgres::begin_transport_corruption(&pool).await?;
                 let deleted = sqlx::query(
                     "DELETE FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
                 )
@@ -1292,8 +1863,9 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                         .to_bytes()
                         .as_slice(),
                 )
-                .execute(&pool)
+                .execute(&mut *corruption)
                 .await?;
+                postgres::finish_transport_corruption(corruption).await?;
                 assert_eq!(deleted.rows_affected(), 1);
 
                 assert!(matches!(
@@ -2781,13 +3353,16 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                             .await?;
                         }
                         "transport_reservation" => {
+                            let mut corruption =
+                                postgres::begin_transport_corruption(&pool).await?;
                             sqlx::query(
                                 "DELETE FROM game_durability_transport_ref_reservations \
                                  WHERE transport_ref = $1",
                             )
                             .bind(transport_ref.as_slice())
-                            .execute(&pool)
+                            .execute(&mut *corruption)
                             .await?;
+                            postgres::finish_transport_corruption(corruption).await?;
                         }
                         "protection_continuity" => {
                             sqlx::query(
@@ -3105,4 +3680,714 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
             database.cleanup().await?;
             result
         })
+}
+
+#[test]
+fn registered_process_restart_reconciles_real_originals_without_releasing_custody()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::AdmissionRuntime;
+    use durability::fresh_admission::{
+        FreshLossReconciliation, FreshReconciliation, decode_fresh_loss, decode_operation,
+        encode_fresh_loss, encode_operation,
+    };
+    use foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+    use foundation::*;
+    const CHILD_URL: &str = "OTERYN_ORIGINAL_RESTART_TEST_DATABASE";
+    const CHILD_MODE: &str = "OTERYN_ORIGINAL_RESTART_TEST_MODE";
+    const CHILD_CA: &str = "OTERYN_ORIGINAL_RESTART_TEST_CA";
+    const TEST: &str =
+        "registered_process_restart_reconciles_real_originals_without_releasing_custody";
+    struct LossSource(ControlLossObservationV1);
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl ControlLossSourceV1 for LossSource {
+        fn resolve_loss(
+            &self,
+            _: GameSessionId,
+            _: i64,
+        ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
+            Ok(self.0.clone())
+        }
+    }
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    // The outer test owns the service-wide fixture while its restart children
+    // consume that exact identity; children must not reacquire their parent's
+    // cross-process lease.
+    let _tls_fixture_lease = if std::env::var_os(CHILD_URL).is_none() {
+        Some(wp3_registered_root_qualification::acquire_tls_fixture_lease()?)
+    } else {
+        None
+    };
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        if let Ok(url) = std::env::var(CHILD_URL) {
+            let runtime = AdmissionRuntime::connect(
+                wp3_registered_root_qualification::production_config(
+                    &url,
+                    std::path::Path::new(&std::env::var(CHILD_CA)?),
+                )?,
+            )
+            .await
+            .map_err(|_| wp3_registered_root_qualification::registered_connect_stage_failure("WP3_STAGE=child_admission_runtime_connect"))?;
+            let pool = sqlx::PgPool::connect(&url)
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fixture_pool_connect"))?;
+            let fresh = runtime.fresh();
+            if std::env::var(CHILD_MODE)?.starts_with("produce") {
+                assert!(runtime.recovered_pending()?.iter().all(Option::is_none));
+                let now = postgres_clock(&pool).await?;
+                let owner = postgres::fresh::Source::new(now)?;
+                let request = owner.request()?;
+                let publication = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&owner, now),
+                )?;
+                let guard_original = durability::admission_authority_guards::encode_publication_operation(
+                    &publication,
+                    65536,
+                )?;
+                let guard_pass = runtime
+                    .enqueue_checkpoint(6, &guard_original)?
+                    .establish()
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_guard_checkpoint"))?;
+                guard_pass
+                    .run(runtime.guards().publish(&publication))
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_first_guard_publish"))?;
+                runtime
+                    .acknowledge_checkpoint(&guard_pass)
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_guard_ack_finality"))?;
+                let original = encode_operation(request.operation(), 65536)?;
+                let fresh_pass = runtime
+                    .enqueue_checkpoint(1, &original)?
+                    .establish()
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_fresh_checkpoint"))?;
+                assert_eq!(fresh_pass.slot(), 1);
+                let mismatched_request = postgres::fresh::Source::new(now + 1)?.request()?;
+                assert!(matches!(
+                    fresh_pass.run(fresh.commit(&mismatched_request)).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let initial = fresh_pass.run(async {
+                    assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
+                    let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err(DurabilityError::InvalidStoredState); };
+                    Ok(initial)
+                })
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_first_fresh_semantic_sql"))?;
+                let session = initial.current_session;
+                let source = LossSource(ControlLossObservationV1 {
+                    source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
+                    decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?, accepted_decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                    observed_at: now, session,
+                    account_presence: authority_matrix::checked(AccountPresenceClaimV1::new("00000000-0000-4000-8000-000000000001", session.commit().character_id()))?,
+                    placement_identity: [9;16], placement_revision: 1, actor_present: true, runtime_ready: true,
+                    cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss, loss_epoch: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                    loss_origin: now, original_grace_deadline: now + 120, history: ControlLossHistoryV1::FreshOrigin,
+                    protection: RecoveryProtectionContinuityV1 { usage: RecoveryProtectionUseV1::NotEntitled,
+                        rearm: RecoveryProtectionRearmV1::NotRearmed { generation: 7, stable_control_started_at: None, accepted_deadline: None } },
+                });
+                let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(&source, session.commit().game_session_id(), now))?;
+                let mut flow = ControlLossFlowV1::begin(authorization);
+                let request = authority_matrix::checked(flow.take_request())?;
+                let loss_original = encode_fresh_loss(request.operation())?;
+                let loss_pass = runtime
+                    .enqueue_checkpoint(2, &loss_original)?
+                    .establish()
+                    .await
+                    .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_loss_checkpoint"))?;
+                assert_eq!(loss_pass.slot(), 2);
+                if std::env::var(CHILD_MODE)? == "produce_absent" { std::process::exit(0); }
+                loss_pass.run(async {
+                    assert!(matches!(fresh.commit_fresh_loss(&request, &source).await?, ControlLossOutcomeV1::Committed { .. }));
+                    Ok(())
+                })
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=producer_loss_semantic_sql"))?;
+                // Terminate this actual producer process with unresolved originals;
+                // neither destructors nor an acknowledgement release active slots.
+                std::process::exit(0);
+            }
+            let pending = runtime.recovered_pending()?;
+            let first = pending[0].as_ref().ok_or("lost first pending original")?;
+            let second = pending[1].as_ref().ok_or("lost second pending original")?;
+            assert_eq!((first.slot, first.operation_kind), (1,1));
+            assert_eq!((second.slot, second.operation_kind), (2,2));
+            let fresh_pass = runtime.resume_checkpoint(first.slot, first.operation_kind, &first.operation_json)?;
+            let loss_pass = runtime.resume_checkpoint(second.slot, second.operation_kind, &second.operation_json)?;
+            let original = decode_operation(&first.operation_json, 65536)?;
+            let FreshReconciliation::Committed(current) = fresh_pass
+                .run(fresh.reconcile(&original))
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fresh_reconciliation"))?
+            else { return Err("restart fresh receipt absent".into()); };
+            let loss = decode_fresh_loss(
+                &second.operation_json,
+                current
+                    .receipt
+                    .binding()
+                    .initial_commit()
+                    .map_err(|_| "invalid initial receipt")?,
+            )
+            .map_err(|_| {
+                wp3_registered_root_qualification::stage_failure(
+                    "WP3_STAGE=child_loss_decode",
+                )
+            })?;
+            if std::env::var(CHILD_MODE)? == "recover_absent" {
+                assert_eq!(
+                    loss_pass
+                        .run(fresh.reconcile_fresh_loss(&loss))
+                        .await
+                        .map_err(|_| {
+                            wp3_registered_root_qualification::stage_failure(
+                                "WP3_STAGE=child_loss_reconciliation",
+                            )
+                        })?,
+                    FreshLossReconciliation::Absent
+                );
+                assert_eq!(current.current_session.session_state(), GameSessionState::Active);
+                assert_eq!(current.current_session.current_transport(), Some(current.receipt.binding().transport));
+            } else {
+                let FreshLossReconciliation::Committed { completion, current: loss_current } = loss_pass
+                    .run(fresh.reconcile_fresh_loss(&loss))
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=child_loss_reconciliation",
+                        )
+                    })?
+                else { return Err("restart loss receipt absent".into()); };
+                assert_eq!(completion.operation, loss);
+                assert_eq!(loss_current, current);
+                assert_eq!(current.current_session.session_state(), GameSessionState::Reconnectable);
+                assert_eq!(current.current_session.current_transport(), None);
+                assert!(matches!(completion.outcome, ControlLossOutcomeV1::Committed { decided_at } if decided_at >= loss.authorized_at));
+            }
+            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss.clone()))
+                .map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=child_loss_flow_restore",
+                    )
+                })?;
+            assert!(history.take_request().is_err());
+            let delivery = loss_pass
+                .run(fresh.loss_completion_source(&loss))
+                .await
+                .map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=child_loss_completion_source",
+                    )
+                })?;
+            if std::env::var(CHILD_MODE)? == "recover_absent" {
+                assert!(delivery.is_none(), "absence is not a definitive rejection completion");
+                assert_eq!(history.phase(), ControlLossPhaseV1::ReconciliationRequired);
+            } else {
+                let mut delivery = delivery.ok_or("missing registered durable completion")?;
+                assert_eq!(delivery.current_snapshot(), current.as_ref());
+                let mut wrong = loss.clone();
+                wrong.observation.source_revision = 2;
+                wrong.observation.accepted_source_revision = 2;
+                assert!(matches!(delivery.take_loss_completion(&wrong), Err(ReconnectDurabilityErrorV1::IdempotencyConflict)));
+                authority_matrix::checked(history.accept_completion(&mut delivery))?;
+                assert_eq!(history.phase(), ControlLossPhaseV1::Completed);
+                let receipt = history.receipt().ok_or("missing owning flow receipt")?.clone();
+                assert_eq!(receipt.operation(), &loss);
+                let original_l: i64 = sqlx::query_scalar("SELECT decided_at FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool).await?;
+                assert_eq!(receipt.decided_at(), original_l);
+                assert!(authority_matrix::checked(delivery.take_loss_completion(&loss))?.is_none(), "one source instance delivers at most once");
+                authority_matrix::checked(history.accept_completion(&mut delivery))?;
+                assert_eq!(history.receipt(), Some(&receipt));
+                assert!(history.take_request().is_err());
+            }
+            assert!(matches!(runtime.enqueue_checkpoint(1, "different third work")?.establish().await, Err(DurabilityError::Unavailable)));
+            let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
+            assert_eq!(attempts, 0);
+            pool.close().await;
+            return Ok(());
+        }
+        for committed in [true, false] {
+        let database = postgres::IsolatedPostgres::create("real_original_restart").await?;
+        let result = async {
+            let url = database.database_url()?;
+            let ca_cert = wp3_registered_root_qualification::configure_tls_fixture(
+                &url,
+                "restart",
+            )
+            .await
+            .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=restart_tls_fixture_activation"))?;
+            MigrationExecutor::connect_migration(&url)
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=restart_migration_connect"))?
+                .apply_embedded_ledger()
+                .await
+                .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=restart_schema_apply"))?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let run = |mode: &str| -> Result<(), Box<dyn std::error::Error>> {
+                let status = std::process::Command::new(std::env::current_exe()?).args(["--exact", TEST, "--nocapture"])
+                    .env(CHILD_URL, &url).env(CHILD_MODE, mode).env(CHILD_CA, &ca_cert).status()?;
+                if !status.success() { return Err(format!("restart child failed: {mode}").into()); }
+                Ok(())
+            };
+            run(if committed { "produce" } else { "produce_absent" })?;
+            let originals: Vec<(i16, i16, String)> = sqlx::query_as("SELECT slot, operation_kind, operation_json FROM game_durability_executor_custody WHERE slot IN (1,2) ORDER BY slot").fetch_all(&pool).await?;
+            let receipt: Option<(Vec<u8>, String, i64)> = sqlx::query_as("SELECT operation_key, operation_json, decided_at FROM game_durability_admission_lifecycle_receipts").fetch_optional(&pool).await?;
+            assert_eq!(receipt.is_some(), committed);
+            let session: String = sqlx::query_scalar("SELECT to_jsonb(s)::text FROM game_durability_reconnect_sessions s").fetch_one(&pool).await?;
+            for expected_generation in [2u64,3] {
+                run(if committed { "recover" } else { "recover_absent" })?;
+                let generation: String = sqlx::query_scalar("SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0").fetch_one(&pool).await?;
+                assert_eq!(generation, expected_generation.to_string());
+                assert_eq!(sqlx::query_as::<_, (i16,i16,String)>("SELECT slot, operation_kind, operation_json FROM game_durability_executor_custody WHERE slot IN (1,2) ORDER BY slot").fetch_all(&pool).await?, originals);
+                assert_eq!(sqlx::query_as::<_, (Vec<u8>,String,i64)>("SELECT operation_key, operation_json, decided_at FROM game_durability_admission_lifecycle_receipts").fetch_optional(&pool).await?, receipt);
+                assert_eq!(sqlx::query_scalar::<_,String>("SELECT to_jsonb(s)::text FROM game_durability_reconnect_sessions s").fetch_one(&pool).await?, session);
+            }
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{AdmissionRuntime, DurabilityCustody};
+    use foundation::ReconnectDurabilityFlowV2;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    let _tls_fixture_lease = wp3_registered_root_qualification::acquire_tls_fixture_lease()?;
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("registered_runtime").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let ca_cert = wp3_registered_root_qualification::configure_tls_fixture(
+                    &url,
+                    "shared-runtime",
+                )
+                .await
+                .map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=shared_tls_fixture_activation",
+                    )
+                })?;
+                MigrationExecutor::connect_migration(&url)
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_migration_connect",
+                        )
+                    })?
+                    .apply_embedded_ledger()
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_schema_apply",
+                        )
+                    })?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let guard_original =
+                    durability::admission_authority_guards::encode_load_operation(&[], 65536)?;
+                let owner = postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
+                let fresh_request = owner.request()?;
+                let fresh_original = durability::fresh_admission::encode_operation(
+                    fresh_request.operation(),
+                    65536,
+                )?;
+                let (predecessor, _) = DurabilityCustody::acquire(&pool).await.map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=shared_predecessor_custody_acquire",
+                    )
+                })?;
+                predecessor
+                    .checkpoint(&pool, 1, 5, &guard_original)
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_guard_checkpoint_seed",
+                        )
+                    })?;
+                predecessor
+                    .checkpoint(&pool, 2, 1, &fresh_original)
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_fresh_checkpoint_seed",
+                        )
+                    })?;
+                let production_config =
+                    wp3_registered_root_qualification::production_config(&url, &ca_cert)?;
+                let runtime = AdmissionRuntime::connect(production_config.clone())
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::registered_connect_stage_failure(
+                            "WP3_STAGE=shared_admission_runtime_connect",
+                        )
+                    })?;
+                let repeated =
+                    AdmissionRuntime::connect(production_config)
+                        .await
+                        .map_err(|_| {
+                            wp3_registered_root_qualification::stage_failure(
+                                "WP3_STAGE=shared_repeated_identity_connect",
+                            )
+                        })?;
+                let generation: String = sqlx::query_scalar(
+                    "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(
+                    generation, "2",
+                    "same process registration must not take custody twice"
+                );
+                assert_eq!(runtime.recovered_pending()?, repeated.recovered_pending()?);
+                for (slot, expected) in [(0, guard_original.as_str()), (1, fresh_original.as_str())]
+                {
+                    assert_eq!(
+                        runtime.recovered_pending()?[slot]
+                            .as_ref()
+                            .ok_or("registered runtime lost pending original")?
+                            .operation_json,
+                        expected
+                    );
+                }
+                assert!(matches!(
+                    predecessor.fence(&pool).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let first_pending = runtime.recovered_pending()?[0]
+                    .clone()
+                    .ok_or("missing first registered original")?;
+                let second_pending = runtime.recovered_pending()?[1]
+                    .clone()
+                    .ok_or("missing second registered original")?;
+                let first_pass = runtime.resume_checkpoint(
+                    first_pending.slot,
+                    first_pending.operation_kind,
+                    &first_pending.operation_json,
+                )?;
+                let second_pass = runtime.resume_checkpoint(
+                    second_pending.slot,
+                    second_pending.operation_kind,
+                    &second_pending.operation_json,
+                )?;
+                let guards = runtime.guards();
+                assert!(
+                    first_pass
+                        .run(guards.load(&[]))
+                        .await
+                        .map_err(|_| wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_first_guard_load"
+                        ))?
+                        .is_empty()
+                );
+                let fresh = repeated.fresh();
+                assert!(matches!(
+                    second_pass
+                        .run(fresh.reconcile(fresh_request.operation()))
+                        .await
+                        .map_err(|_| wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=shared_first_fresh_reconciliation"
+                        ))?,
+                    durability::fresh_admission::FreshReconciliation::Absent
+                ));
+                let record = authority_matrix::prepared_record(authority_matrix::Seed::fixed())?;
+                let v1_request = ReconnectDurabilityFlowV1::begin(record.clone()).1;
+                let v2_request = ReconnectDurabilityFlowV2::begin(record, None).1;
+                let v1 = runtime.reconnect_v1();
+                let v2 = repeated.reconnect_v2();
+                // A real successor invalidates every previously issued handle.
+                let (_successor, retained) = DurabilityCustody::acquire(&pool).await?;
+                assert_eq!(retained, runtime.recovered_pending()?);
+                assert!(matches!(
+                    first_pass.run(guards.load(&[])).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    second_pass
+                        .run(fresh.reconcile(fresh_request.operation()))
+                        .await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    first_pass.run(v1.prepare(&v1_request)).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    second_pass.run(v2.prepare(&v2_request)).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                // Registration cannot mint replacement capacity after its token is stale.
+                assert!(matches!(
+                    AdmissionRuntime::connect(
+                        wp3_registered_root_qualification::production_config(&url, &ca_cert)?,
+                    )
+                    .await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    AdmissionRuntime::connect(durability::AdmissionRuntimeConfig::new(
+                        "127.0.0.1".parse()?,
+                        5432,
+                        "different.invalid",
+                        "other",
+                        "different",
+                        "different",
+                        b"invalid ca",
+                        std::sync::Arc::new(wp3_registered_root_qualification::RootBudget::new(),),
+                    )?)
+                    .await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let attempts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts")
+                        .fetch_one(&pool)
+                        .await?;
+                assert_eq!(attempts, 0, "stale handles must retain no command effects");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn guard_publication_is_atomic_replayable_and_retains_decision_history()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::admission_authority_guards::{
+        AdmissionGuardStore, GuardPublicationDisposition,
+    };
+    use foundation::admission_authority_publication::*;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("guard_publication").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let mut source = postgres::fresh::Source::new(now)?;
+                // Explicit test allocation, not a selected production resource default.
+                let store = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                let request = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(
+                    &source, now,
+                ))?;
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Applied
+                );
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Existing
+                );
+                let keys: Vec<_> = source.rows.iter().map(|row| row.key.clone()).collect();
+                assert_eq!(
+                    store.load(&keys).await?,
+                    source.rows.iter().cloned().map(Some).collect::<Vec<_>>()
+                );
+                for row in &mut source.rows {
+                    row.publication_revision = 2;
+                    row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                        expected_publication_revision: 1,
+                    };
+                    row.source.source_revision = 2;
+                    row.source.decision_identity = "next-independent-decision".into();
+                    if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state
+                    {
+                        security.provenance.publication_revision = 2;
+                    }
+                }
+                // Independently valid full-u64 source/runtime fences survive SQL
+                // NUMERIC storage and exact textual mirror reconstruction.
+                source.rows[2].source.source_revision = u64::MAX;
+                if let AdmissionAuthorityGuardStateV1::Runtime {
+                    ownership_generation,
+                    ..
+                } = &mut source.rows[2].state
+                {
+                    *ownership_generation = u64::MAX;
+                }
+                // Reusing an accepted decision for different effects must reject the
+                // entire batch, including otherwise valid changes preceding it.
+                source.rows[3].source.decision_identity = "platform-observation-1".into();
+                let conflicting = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&source, now),
+                )?;
+                assert_eq!(
+                    store.publish(&conflicting).await?,
+                    GuardPublicationDisposition::Conflict
+                );
+                assert_eq!(
+                    store.load(&keys).await?,
+                    request
+                        .changes()
+                        .iter()
+                        .cloned()
+                        .map(Some)
+                        .collect::<Vec<_>>()
+                );
+                source.rows[3].source.decision_identity = "next-independent-decision".into();
+                let successor = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&source, now),
+                )?;
+                assert_eq!(
+                    store.publish(&successor).await?,
+                    GuardPublicationDisposition::Applied
+                );
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Stale
+                );
+                let restarted = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                assert_eq!(
+                    restarted.load(&keys).await?,
+                    source.rows.iter().cloned().map(Some).collect::<Vec<_>>()
+                );
+                let history: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_admission_guard_history",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(history, 8);
+                // Observe the exact production SELECT before decoding/mirror
+                // validation. Old per-mirror rejection cannot satisfy this test.
+                if restarted.projected_guard_presence(&keys[1]).await? != (true, true) {
+                    return Err("bounded positive guard projection missing".into());
+                }
+                let overhead: i64 = sqlx::query_scalar("SELECT (octet_length(to_jsonb(g)::text) - octet_length(source_authority))::bigint FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                for (size, presence) in [(131072_i64, (true, true)), (131073, (false, false))] {
+                    let padding = size.checked_sub(overhead).and_then(|n| i32::try_from(n).ok()).filter(|n| *n > 0).ok_or("invalid complete-row boundary fixture")?;
+                    sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = repeat('x', $1)").bind(padding).execute(&pool).await?;
+                    let actual: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text)::bigint FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                    if actual != size || restarted.projected_guard_presence(&keys[1]).await? != presence {
+                        return Err(format!("guard SQL complete-row boundary failed: wanted {size}, actual {actual}").into());
+                    }
+                    if !matches!(restarted.load(&keys).await, Err(DurabilityError::InvalidStoredState)) {
+                        return Err("corrupt mirror passed full guard consistency checks".into());
+                    }
+                }
+                sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = $1").bind(&source.rows[1].source.authority).execute(&pool).await?;
+                if restarted.load(&keys).await? != source.rows.iter().cloned().map(Some).collect::<Vec<_>>() {
+                    return Err("bounded guard row failed after restoring its exact mirror".into());
+                }
+                // Isolated administrator corrupts one mirror; decoded history
+                // must not override the independently stored eligibility field.
+                sqlx::query(
+                    "UPDATE game_durability_admission_character_guards SET eligible = NOT eligible",
+                )
+                .execute(&pool)
+                .await?;
+                assert!(matches!(
+                    restarted.load(&keys).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn fresh_operation_codec_retains_effects_and_rejects_trailing_or_oversized_storage()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::fresh_admission::{decode_operation, encode_operation, encoded_operation_size};
+    let source = postgres::fresh::Source::new(100)?;
+    let request = source.request()?;
+    // Test allocation budget; no production resource ceiling is selected here.
+    let budget = 65_536;
+    let encoded = encode_operation(request.operation(), budget)?;
+    assert_eq!(
+        encoded_operation_size(request.operation(), budget)?,
+        encoded.len()
+    );
+    assert!(encoded_operation_size(request.operation(), encoded.len() - 1).is_err());
+    assert_eq!(
+        encode_operation(request.operation(), encoded.len())?,
+        encoded
+    );
+    assert_eq!(decode_operation(&encoded, budget)?, *request.operation());
+    assert!(decode_operation(&encoded, encoded.len() - 1).is_err());
+    assert!(encode_operation(request.operation(), encoded.len() - 1).is_err());
+    assert!(decode_operation(&format!("{encoded}x"), budget).is_err());
+    let duplicate = encoded.replacen("\"version\":1", "\"version\":1,\"version\":1", 1);
+    assert!(decode_operation(&duplicate, budget).is_err());
+    let mut different_effect = request.operation().clone();
+    different_effect.transition.successors[0]
+        .source
+        .decision_identity = "another-exact-decision".into();
+    let other = encode_operation(&different_effect, budget)?;
+    assert_ne!(other, encoded);
+    assert_eq!(encode_operation(&different_effect, other.len())?, other);
+    assert_eq!(decode_operation(&other, budget)?, different_effect);
+    Ok(())
+}
+
+#[test]
+fn fresh_guard_codec_preserves_full_u64_and_rejects_invalid_binary()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::Engine;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use durability::admission_authority_guards::{decode_guard, encode_guard, encoded_guard_size};
+    use foundation::admission_authority_publication::AdmissionPublicationPreconditionV1;
+    let source = postgres::fresh::Source::new(100)?;
+    let budget = 65_536;
+    for original in &source.rows {
+        let encoded = encode_guard(original, budget)?;
+        println!(
+            "guard fixture {:?}: {} encoded bytes",
+            original.source.purpose,
+            encoded.len()
+        );
+        assert_eq!(encoded_guard_size(original, budget)?, encoded.len());
+        assert!(encoded_guard_size(original, encoded.len() - 1).is_err());
+        assert_eq!(decode_guard(&encoded, budget)?, *original);
+        let mut maximum = original.clone();
+        maximum.publication_revision = u64::MAX;
+        maximum.source.source_revision = u64::MAX;
+        maximum.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: u64::MAX - 1,
+        };
+        let encoded = encode_guard(&maximum, budget)?;
+        assert_eq!(decode_guard(&encoded, budget)?, maximum);
+        let envelope: serde_json::Value = serde_json::from_str(&encoded)?;
+        let payload = envelope["payload"].as_str().ok_or("payload missing")?;
+        let mut bytes = URL_SAFE_NO_PAD.decode(payload)?;
+        bytes.push(0);
+        let trailing = format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            URL_SAFE_NO_PAD.encode(&bytes)
+        );
+        assert!(decode_guard(&trailing, budget).is_err());
+        bytes.truncate(1);
+        let truncated = format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            URL_SAFE_NO_PAD.encode(&bytes)
+        );
+        assert!(decode_guard(&truncated, budget).is_err());
+    }
+    Ok(())
 }

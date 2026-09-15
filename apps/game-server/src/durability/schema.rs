@@ -1,6 +1,105 @@
 use crate::durability::{DurabilityError, db};
 use sqlx::{PgPool, Row};
 
+#[cfg(test)]
+#[derive(Clone, Copy)]
+enum SchemaFailureClass {
+    None,
+    MissingLedger,
+    Incompatible,
+    SqlxIo,
+    SqlxTls,
+    SqlxProtocol,
+    PoolTimeout,
+    Database,
+    Decode,
+    Configuration,
+    InvalidArgument,
+    Encode,
+    RowNotFound,
+    AnyDriver,
+    PoolClosed,
+    WorkerCrashed,
+    Migrate,
+    InvalidSavepoint,
+    BeginFailed,
+    ConfigFile,
+    OtherUnclassified,
+}
+
+#[cfg(test)]
+impl SchemaFailureClass {
+    const fn label(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::MissingLedger => "missing_ledger",
+            Self::Incompatible => "incompatible",
+            Self::SqlxIo => "sqlx_io",
+            Self::SqlxTls => "sqlx_tls",
+            Self::SqlxProtocol => "sqlx_protocol",
+            Self::PoolTimeout => "pool_timeout",
+            Self::Database => "database",
+            Self::Decode => "decode",
+            Self::Configuration => "configuration",
+            Self::InvalidArgument => "invalid_argument",
+            Self::Encode => "encode",
+            Self::RowNotFound => "row_not_found",
+            Self::AnyDriver => "any_driver",
+            Self::PoolClosed => "pool_closed",
+            Self::WorkerCrashed => "worker_crashed",
+            Self::Migrate => "migrate",
+            Self::InvalidSavepoint => "invalid_savepoint",
+            Self::BeginFailed => "begin_failed",
+            Self::ConfigFile => "config_file",
+            Self::OtherUnclassified => "other_unclassified",
+        }
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    static SCHEMA_FAILURE_CLASS: std::cell::Cell<SchemaFailureClass> =
+        const { std::cell::Cell::new(SchemaFailureClass::None) };
+}
+
+#[cfg(test)]
+fn record_schema_failure(class: SchemaFailureClass) {
+    SCHEMA_FAILURE_CLASS.set(class);
+}
+
+#[cfg(test)]
+pub(crate) fn schema_failure_class() -> &'static str {
+    SCHEMA_FAILURE_CLASS.with(|class| class.get().label())
+}
+
+#[cfg(test)]
+fn classify_sqlx_error(error: &sqlx::Error) -> SchemaFailureClass {
+    match error {
+        sqlx::Error::Io(_) => SchemaFailureClass::SqlxIo,
+        sqlx::Error::Tls(_) => SchemaFailureClass::SqlxTls,
+        sqlx::Error::Protocol(_) => SchemaFailureClass::SqlxProtocol,
+        sqlx::Error::PoolTimedOut => SchemaFailureClass::PoolTimeout,
+        sqlx::Error::Database(_) => SchemaFailureClass::Database,
+        sqlx::Error::Configuration(_) => SchemaFailureClass::Configuration,
+        sqlx::Error::InvalidArgument(_) => SchemaFailureClass::InvalidArgument,
+        sqlx::Error::Encode(_) => SchemaFailureClass::Encode,
+        sqlx::Error::RowNotFound => SchemaFailureClass::RowNotFound,
+        sqlx::Error::AnyDriverError(_) => SchemaFailureClass::AnyDriver,
+        sqlx::Error::PoolClosed => SchemaFailureClass::PoolClosed,
+        sqlx::Error::WorkerCrashed => SchemaFailureClass::WorkerCrashed,
+        sqlx::Error::Migrate(_) => SchemaFailureClass::Migrate,
+        sqlx::Error::InvalidSavePointStatement => SchemaFailureClass::InvalidSavepoint,
+        sqlx::Error::BeginFailed => SchemaFailureClass::BeginFailed,
+        sqlx::Error::ConfigFile(_) => SchemaFailureClass::ConfigFile,
+        sqlx::Error::ColumnDecode { .. }
+        | sqlx::Error::Decode(_)
+        | sqlx::Error::ColumnIndexOutOfBounds { .. }
+        | sqlx::Error::ColumnNotFound(_)
+        | sqlx::Error::TypeNotFound { .. } => SchemaFailureClass::Decode,
+        _ => SchemaFailureClass::OtherUnclassified,
+    }
+}
+
 pub(crate) static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,6 +134,7 @@ impl MigrationExecutor {
     }
 }
 
+#[cfg(test)]
 pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, DurabilityError> {
     let pool = db::connect(database_url, 4).await?;
     let compatibility = inspect(&pool).await?;
@@ -44,38 +144,103 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
     Ok(pool)
 }
 
+/// Establish the single production holder from an explicit no-ambient profile.
+/// Schema inspection is root maintenance; semantic passes never call this path.
+pub(crate) async fn connect_runtime_root(
+    options: sqlx::postgres::OterynRootProfile,
+) -> Result<PgPool, DurabilityError> {
+    #[cfg(test)]
+    record_schema_failure(SchemaFailureClass::None);
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(1)
+        .min_connections(0)
+        .acquire_timeout(std::time::Duration::from_secs(5))
+        .idle_timeout(std::time::Duration::from_secs(10 * 60))
+        .max_lifetime(std::time::Duration::from_secs(30 * 60))
+        .connect_lazy_with(options.into_connect_options());
+    let compatibility = inspect(&pool).await?;
+    if compatibility != SchemaCompatibility::Compatible {
+        #[cfg(test)]
+        record_schema_failure(match compatibility {
+            SchemaCompatibility::MissingMigrationLedger => SchemaFailureClass::MissingLedger,
+            SchemaCompatibility::Incompatible => SchemaFailureClass::Incompatible,
+            SchemaCompatibility::Compatible => SchemaFailureClass::None,
+        });
+        return Err(DurabilityError::SchemaIncompatible(compatibility));
+    }
+    Ok(pool)
+}
+
+// SQLx's pinned migration constructor hashes every embedded migration with SHA-384.
+// Derive the length from that embedded ledger, not from database-controlled values.
+const INSPECT_LEDGER_SQL: &str = "SELECT version, CASE WHEN octet_length(checksum) = $2 THEN checksum ELSE NULL END \
+     AS checksum, success FROM _sqlx_migrations ORDER BY version ASC LIMIT $1";
+
+fn ledger_bounds() -> Result<(usize, i64, i32), DurabilityError> {
+    let count = GAME_MIGRATOR.iter().count();
+    let sentinel_limit = count
+        .checked_add(1)
+        .and_then(|limit| i64::try_from(limit).ok())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    let checksum_length = GAME_MIGRATOR
+        .iter()
+        .next()
+        .map_or(0, |migration| migration.checksum.len());
+    // Fail closed if the pinned, uniform checksum profile ever changes.
+    if GAME_MIGRATOR
+        .iter()
+        .any(|migration| migration.checksum.len() != checksum_length)
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let checksum_length =
+        i32::try_from(checksum_length).map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok((count, sentinel_limit, checksum_length))
+}
+
 async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> {
-    let rows = match sqlx::query(
-        "SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version ASC",
-    )
-    .fetch_all(pool)
-    .await
+    let (expected_count, sentinel_limit, checksum_length) = ledger_bounds()?;
+    let rows = match sqlx::query(INSPECT_LEDGER_SQL)
+        .bind(sentinel_limit)
+        .bind(checksum_length)
+        .fetch_all(pool)
+        .await
     {
         Ok(rows) => rows,
         Err(error) if is_missing_table(&error) => {
+            #[cfg(test)]
+            record_schema_failure(SchemaFailureClass::MissingLedger);
             return Ok(SchemaCompatibility::MissingMigrationLedger);
         }
-        Err(error) => return Err(DurabilityError::from(error)),
+        Err(error) => {
+            #[cfg(test)]
+            record_schema_failure(classify_sqlx_error(&error));
+            return Err(DurabilityError::from(error));
+        }
     };
 
-    let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
-    if rows.len() != expected.len() {
+    // The extra row distinguishes an exact ledger from any oversized ledger.
+    if rows.len() != expected_count {
         return Ok(SchemaCompatibility::Incompatible);
     }
 
-    for (row, migration) in rows.iter().zip(expected) {
-        let version: i64 = row.try_get("version")?;
-        let checksum: Vec<u8> = row.try_get("checksum")?;
-        let success: bool = row.try_get("success")?;
-        if !success
-            || version != migration.version
-            || checksum.as_slice() != migration.checksum.as_ref()
+    for (row, migration) in rows.iter().zip(GAME_MIGRATOR.iter()) {
+        let version: i64 = row.try_get("version").map_err(record_decode_failure)?;
+        let checksum: Option<&[u8]> = row.try_get("checksum").map_err(record_decode_failure)?;
+        let success: bool = row.try_get("success").map_err(record_decode_failure)?;
+        if !success || version != migration.version || checksum != Some(migration.checksum.as_ref())
         {
             return Ok(SchemaCompatibility::Incompatible);
         }
     }
 
     Ok(SchemaCompatibility::Compatible)
+}
+
+fn record_decode_failure(error: sqlx::Error) -> DurabilityError {
+    #[cfg(test)]
+    record_schema_failure(classify_sqlx_error(&error));
+    DurabilityError::from(error)
 }
 
 fn is_missing_table(error: &sqlx::Error) -> bool {
@@ -87,6 +252,7 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
 
 #[cfg(test)]
 mod contract_tests {
+    use super::{SchemaFailureClass, classify_sqlx_error};
     const MIGRATION: &str = include_str!("../../migrations/0001_admission_reconnect_journal.sql");
     const ADMISSION_RECOVERY: &str = include_str!("../foundation/admission_recovery_inner.rs");
 
@@ -94,6 +260,54 @@ mod contract_tests {
         MIGRATION
             .split_once("CREATE TABLE game_durability_transport_ref_reservations")
             .map(|(session, _rest)| session)
+    }
+
+    #[test]
+    fn schema_error_diagnostics_are_closed_static_classes() {
+        let private = "private-payload-must-not-escape";
+        let cases = [
+            (sqlx::Error::Io(std::io::Error::other(private)), "sqlx_io"),
+            (sqlx::Error::Protocol(private.to_owned()), "sqlx_protocol"),
+            (sqlx::Error::PoolTimedOut, "pool_timeout"),
+            (sqlx::Error::Decode(private.into()), "decode"),
+            (
+                sqlx::Error::config(std::io::Error::other(private)),
+                "configuration",
+            ),
+            (
+                sqlx::Error::InvalidArgument(private.to_owned()),
+                "invalid_argument",
+            ),
+            (sqlx::Error::Encode(private.into()), "encode"),
+            (sqlx::Error::RowNotFound, "row_not_found"),
+            (sqlx::Error::AnyDriverError(private.into()), "any_driver"),
+            (sqlx::Error::PoolClosed, "pool_closed"),
+            (sqlx::Error::WorkerCrashed, "worker_crashed"),
+            (
+                sqlx::Error::Migrate(Box::new(sqlx::migrate::MigrateError::Source(
+                    private.into(),
+                ))),
+                "migrate",
+            ),
+            (sqlx::Error::InvalidSavePointStatement, "invalid_savepoint"),
+            (sqlx::Error::BeginFailed, "begin_failed"),
+        ];
+
+        for (error, expected) in cases {
+            let class = classify_sqlx_error(&error);
+            let label = class.label();
+            assert_eq!(label, expected);
+            assert!(!label.contains(private));
+        }
+
+        for class in [
+            SchemaFailureClass::SqlxTls,
+            SchemaFailureClass::Database,
+            SchemaFailureClass::ConfigFile,
+            SchemaFailureClass::OtherUnclassified,
+        ] {
+            assert!(!class.label().contains(private));
+        }
     }
 
     #[test]
@@ -459,6 +673,165 @@ mod terminal_replacement_postgres_red_tests {
         Ok((database, database_url))
     }
 
+    #[test]
+    fn schema_ledger_bounds_follow_embedded_migrations() -> TestResult {
+        let (count, limit, checksum_length) = super::ledger_bounds()?;
+        assert_eq!(count, super::GAME_MIGRATOR.iter().count());
+        assert_eq!(usize::try_from(limit)?, count + 1);
+        for migration in super::GAME_MIGRATOR.iter() {
+            assert_eq!(usize::try_from(checksum_length)?, migration.checksum.len());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn schema_ledger_missing_inspection_does_not_create_ledger() -> TestResult {
+        run_postgres_test(async {
+            let database = IsolatedDatabase::create("ledger_missing").await?;
+            let executor = MigrationExecutor::connect_migration(&database.database_url()?).await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::MissingMigrationLedger
+            );
+            let absent: bool = sqlx::query_scalar("SELECT to_regclass('_sqlx_migrations') IS NULL")
+                .fetch_one(&executor.pool)
+                .await?;
+            assert!(absent);
+            executor.apply_embedded_ledger().await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            executor.pool.close().await;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn schema_ledger_checksum_guard_rejects_malformed_before_transfer() -> TestResult {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("ledger_checksum_guard").await?;
+            let executor = MigrationExecutor::connect_migration(&url).await?;
+            let migration = super::GAME_MIGRATOR
+                .iter()
+                .next()
+                .ok_or("empty embedded ledger")?;
+            let (_, limit, length) = super::ledger_bounds()?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            for malformed_length in [0, length - 1, length + 1, 1_048_576] {
+                sqlx::query("UPDATE _sqlx_migrations SET checksum = decode(repeat('00', $1), 'hex') WHERE version = $2")
+                    .bind(malformed_length).bind(migration.version).execute(&executor.pool).await?;
+                let rows = sqlx::query(super::INSPECT_LEDGER_SQL)
+                    .bind(limit)
+                    .bind(length)
+                    .fetch_all(&executor.pool)
+                    .await?;
+                let row = rows.first().ok_or("missing ledger row")?;
+                let transferred: Option<&[u8]> = sqlx::Row::try_get(row, "checksum")?;
+                assert_eq!(
+                    transferred, None,
+                    "malformed length {malformed_length} crossed projection"
+                );
+                assert_eq!(
+                    executor.inspect().await?,
+                    super::SchemaCompatibility::Incompatible
+                );
+            }
+            // An exact-length wrong digest must still fail full byte comparison.
+            let mut wrong = migration.checksum.to_vec();
+            wrong[0] ^= 1;
+            sqlx::query("UPDATE _sqlx_migrations SET checksum = $1 WHERE version = $2")
+                .bind(wrong)
+                .bind(migration.version)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            sqlx::query("UPDATE _sqlx_migrations SET checksum = $1 WHERE version = $2")
+                .bind(migration.checksum.as_ref())
+                .bind(migration.version)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            sqlx::query("UPDATE _sqlx_migrations SET success = false WHERE version = $1")
+                .bind(migration.version)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            executor.pool.close().await;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn schema_ledger_sentinel_rejects_extra_rows_and_preserves_missing_version_checks() -> TestResult
+    {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("ledger_sentinel").await?;
+            let executor = MigrationExecutor::connect_migration(&url).await?;
+            let (count, limit, length) = super::ledger_bounds()?;
+            let highest = super::GAME_MIGRATOR
+                .iter()
+                .map(|migration| migration.version)
+                .max()
+                .ok_or("empty embedded ledger")?;
+            for extra_count in [1_i64, 128] {
+                sqlx::query("INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time) SELECT $1 + n, '', true, decode(repeat('00', $3), 'hex'), 0 FROM generate_series(1::bigint, $2) AS n")
+                    .bind(highest).bind(extra_count).bind(length).execute(&executor.pool).await?;
+                let rows = sqlx::query(super::INSPECT_LEDGER_SQL)
+                    .bind(limit)
+                    .bind(length)
+                    .fetch_all(&executor.pool)
+                    .await?;
+                assert_eq!(rows.len(), count + 1, "must transfer exactly one sentinel");
+                assert_eq!(
+                    executor.inspect().await?,
+                    super::SchemaCompatibility::Incompatible
+                );
+                sqlx::query("DELETE FROM _sqlx_migrations WHERE version > $1")
+                    .bind(highest)
+                    .execute(&executor.pool)
+                    .await?;
+            }
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Compatible
+            );
+            sqlx::query("UPDATE _sqlx_migrations SET version = version + 1 WHERE version = $1")
+                .bind(highest)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            sqlx::query("DELETE FROM _sqlx_migrations WHERE version > $1")
+                .bind(highest)
+                .execute(&executor.pool)
+                .await?;
+            assert_eq!(
+                executor.inspect().await?,
+                super::SchemaCompatibility::Incompatible
+            );
+            executor.pool.close().await;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
     fn unix_now() -> Result<i64, ReconnectDurabilityErrorV1> {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -492,6 +865,20 @@ mod terminal_replacement_postgres_red_tests {
         ChannelId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
     }
 
+    // This module is also compiled in the migrate binary's separate test crate.
+    fn fixture_account_for_character(character: u64) -> String {
+        if character == 11 {
+            ACCOUNT.into()
+        } else {
+            format!(
+                "{:08x}-{:04x}-4000-8000-{:012x}",
+                character >> 32,
+                (character >> 16) & 0xffff,
+                character & 0xffff
+            )
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn record(
         game_session_raw: u64,
@@ -508,7 +895,7 @@ mod terminal_replacement_postgres_red_tests {
             game_session(game_session_raw)?,
             ReconnectAttemptRef::new(attempt_raw)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-            ACCOUNT,
+            &fixture_account_for_character(character_raw),
             character(character_raw)?,
             world_id,
             RuntimeScopeRefV1::channel(world_id, channel(13)?),
@@ -971,6 +1358,55 @@ mod terminal_replacement_postgres_red_tests {
             );
 
             drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn replaced_collision_replay_retains_terminal_and_idempotency_priority() -> TestResult {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("replaced_collision_history").await?;
+            let now = unix_now().map_err(|_| "clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+            let reserved = record(50, 51, 1, 0xa2, 3, 7, 10, now).map_err(|_| "reservation")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(reserved).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let original = record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "original")?;
+            let original_request = ReconnectDurabilityFlowV1::begin(original.clone()).1;
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::RejectedTransportRefCollision
+            );
+            let successor = record(30, 11, 2, 0xa3, 3, 7, 10, now).map_err(|_| "successor")?;
+            let successor_request =
+                v2_request(successor, 20, 10).map_err(|_| "replacement authority")?;
+            assert_eq!(
+                journal.prepare_v2(&successor_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::ExistingTerminal
+            );
+            let typed_original = ReconnectDurabilityFlowV2::begin(original, None).1;
+            assert_eq!(
+                journal.prepare_v2(&typed_original).await?,
+                ReconnectPrepareDispositionV2::ExistingTerminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+                }
+            );
+            let changed = record(20, 11, 1, 0xa4, 3, 7, 10, now).map_err(|_| "changed replay")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(changed).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::IdempotencyConflict
+            );
             database.cleanup().await?;
             Ok(())
         })
