@@ -2627,7 +2627,13 @@ impl DurabilityCustody {
         if changed.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
-        tx.commit().await?;
+        // Takeover is not complete while SQLx still owns the asynchronous
+        // transaction-return tail.  In particular, a caller may immediately
+        // use the max-one holder to fence an older semantic pass.  Observe the
+        // exact connection's return/retirement before exposing the successor
+        // generation so that the old pass sees the generation mismatch rather
+        // than a transient empty-holder `Unavailable` result.
+        db::commit_semantic(tx).await?;
         Ok((Self { generation }, pending))
     }
 
