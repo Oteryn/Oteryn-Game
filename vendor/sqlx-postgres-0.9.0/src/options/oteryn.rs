@@ -133,8 +133,10 @@ impl PgConnectOptions {
         // value is built with exactly the capacity charged below. The Arc
         // allocation holding this destruction-bound charge is included too.
         const MAX_IP_TEXT_BYTES: usize = 39;
+        const EXTRA_FLOAT_DIGITS_BYTES: usize = 1;
         let retained_bytes = MAX_IP_TEXT_BYTES
-            .checked_add(tls_server_name.len())
+            .checked_add(EXTRA_FLOAT_DIGITS_BYTES)
+            .and_then(|n| n.checked_add(tls_server_name.len()))
             .and_then(|n| n.checked_add(database.len()))
             .and_then(|n| n.checked_add(username.len()))
             .and_then(|n| n.checked_add(password.len()))
@@ -157,6 +159,8 @@ impl PgConnectOptions {
         let mut host = String::with_capacity(MAX_IP_TEXT_BYTES);
         use std::fmt::Write as _;
         write!(&mut host, "{transport_ip}").expect("formatting an IP address cannot fail");
+        let mut extra_float_digits = String::with_capacity(EXTRA_FLOAT_DIGITS_BYTES);
+        extra_float_digits.push('2');
         let mut log_settings = LogSettings::default();
         log_settings.statements_level = log::LevelFilter::Off;
         log_settings.slow_statements_level = log::LevelFilter::Off;
@@ -175,7 +179,7 @@ impl PgConnectOptions {
             statement_cache_capacity: 100,
             application_name: None,
             log_settings,
-            extra_float_digits: Some("2".into()),
+            extra_float_digits: Some(extra_float_digits.into()),
             options: None,
             resource_budget: Some(PgResourceBudget(profile_budget.clone())),
             oteryn_root_profile: true,

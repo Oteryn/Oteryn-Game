@@ -100,7 +100,7 @@ fn prepare_helper(root: &Path) -> Result<PathBuf, Box<dyn Error>> {
     let core = root.join("vendor/sqlx-core-0.9.0");
     let postgres = root.join("vendor/sqlx-postgres-0.9.0");
     let tokio = root.join("vendor/tokio-1.53.1");
-    let rustls = root.join("vendor/rustls-0.23.43");
+    let rustls = root.join("vendor/rustls-0.23.45");
     let manifest = format!(
         r#"[package]
 name = "oteryn-wp3-aws-lc-qualification"
