@@ -689,14 +689,19 @@ impl AdmissionGuardStore {
         }
         let original = encode_load_operation(keys, self.maximum_guard_bytes)?;
         self.backend.validate_semantic(5, &original)?;
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_relations(&mut transaction).await?;
-        let mut rows = Vec::with_capacity(keys.len());
-        for key in keys {
-            rows.push(self.load_locked(&mut transaction, key).await?);
-        }
-        super::db::commit_semantic(transaction).await?;
-        Ok(rows)
+        let store = self.clone();
+        let keys = keys.to_vec();
+        super::db::run_semantic_transaction(&self.backend, |transaction| {
+            Box::pin(async move {
+                super::db::lock_admission_relations(transaction).await?;
+                let mut rows = Vec::with_capacity(keys.len());
+                for key in &keys {
+                    rows.push(store.load_locked(transaction, key).await?);
+                }
+                Ok(super::db::SemanticTransactionOutcome::Commit(rows))
+            })
+        })
+        .await
     }
 
     async fn guard_projection_locked(
@@ -727,14 +732,22 @@ impl AdmissionGuardStore {
         key: &AdmissionAuthorityGuardKeyV1,
     ) -> Result<(bool, bool)> {
         use sqlx::Row;
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_relations(&mut transaction).await?;
-        let (row, _) = self.guard_projection_locked(&mut transaction, key).await?;
-        let row = row.ok_or(DurabilityError::InvalidStoredState)?;
-        let payload: Option<String> = row.try_get("payload")?;
-        let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
-        super::db::commit_semantic(transaction).await?;
-        Ok((payload.is_some(), mirrors.is_some()))
+        let store = self.clone();
+        let key = key.clone();
+        super::db::run_semantic_transaction(&self.backend, |transaction| {
+            Box::pin(async move {
+                super::db::lock_admission_relations(transaction).await?;
+                let (row, _) = store.guard_projection_locked(transaction, &key).await?;
+                let row = row.ok_or(DurabilityError::InvalidStoredState)?;
+                let payload: Option<String> = row.try_get("payload")?;
+                let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
+                Ok(super::db::SemanticTransactionOutcome::Commit((
+                    payload.is_some(),
+                    mirrors.is_some(),
+                )))
+            })
+        })
+        .await
     }
 
     pub(super) async fn load_locked(
@@ -794,40 +807,49 @@ impl AdmissionGuardStore {
             .iter()
             .map(|row| encode_guard(row, self.maximum_guard_bytes))
             .collect::<Result<_>>()?;
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_relations(&mut transaction).await?;
-        let mut current = Vec::with_capacity(request.changes().len());
-        for change in request.changes() {
-            current.push(self.load_locked(&mut transaction, &change.key).await?);
-        }
-        if let Err(error) = request.validate_locked(&current) {
-            let disposition = if error == AdmissionAuthorityPublicationErrorV1::Stale {
-                GuardPublicationDisposition::Stale
-            } else {
-                GuardPublicationDisposition::Conflict
-            };
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(disposition);
-        }
-        if current
-            .iter()
-            .zip(request.changes())
-            .all(|(old, new)| old.as_ref() == Some(new))
-        {
-            super::db::commit_semantic(transaction).await?;
-            return Ok(GuardPublicationDisposition::Existing);
-        }
-        if !self
-            .successor_history_available(&mut transaction, request.changes(), &current)
-            .await?
-        {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(GuardPublicationDisposition::Conflict);
-        }
-        self.persist_locked(&mut transaction, request.changes(), &current, &encoded)
-            .await?;
-        super::db::commit_semantic(transaction).await?;
-        Ok(GuardPublicationDisposition::Applied)
+        let store = self.clone();
+        let request = request.clone();
+        super::db::run_semantic_transaction(&self.backend, |transaction| {
+            Box::pin(async move {
+                super::db::lock_admission_relations(transaction).await?;
+                let mut current = Vec::with_capacity(request.changes().len());
+                for change in request.changes() {
+                    current.push(store.load_locked(transaction, &change.key).await?);
+                }
+                if let Err(error) = request.validate_locked(&current) {
+                    let disposition = if error == AdmissionAuthorityPublicationErrorV1::Stale {
+                        GuardPublicationDisposition::Stale
+                    } else {
+                        GuardPublicationDisposition::Conflict
+                    };
+                    return Ok(super::db::SemanticTransactionOutcome::Rollback(disposition));
+                }
+                if current
+                    .iter()
+                    .zip(request.changes())
+                    .all(|(old, new)| old.as_ref() == Some(new))
+                {
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        GuardPublicationDisposition::Existing,
+                    ));
+                }
+                if !store
+                    .successor_history_available(transaction, request.changes(), &current)
+                    .await?
+                {
+                    return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                        GuardPublicationDisposition::Conflict,
+                    ));
+                }
+                store
+                    .persist_locked(transaction, request.changes(), &current, &encoded)
+                    .await?;
+                Ok(super::db::SemanticTransactionOutcome::Commit(
+                    GuardPublicationDisposition::Applied,
+                ))
+            })
+        })
+        .await
     }
     pub(super) async fn successor_history_available(
         &self,

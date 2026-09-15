@@ -174,6 +174,48 @@ pub(super) async fn rollback_semantic(
     }
 }
 
+/// The only two intentional outcomes of a registered semantic transaction.
+///
+/// Keeping this decision outside the transaction-owning future makes every
+/// ordinary `?` in that future construction-safe: an error is converted into
+/// an observed rollback/holder-return before it can escape.
+pub(super) enum SemanticTransactionOutcome<T> {
+    Commit(T),
+    Rollback(T),
+}
+
+pub(super) async fn run_semantic_transaction<T, F>(
+    backend: &RuntimeBackend,
+    body: F,
+) -> Result<T, DurabilityError>
+where
+    F: for<'transaction> FnOnce(
+        &'transaction mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<SemanticTransactionOutcome<T>, DurabilityError>>
+                + 'transaction,
+        >,
+    >,
+{
+    let mut transaction = backend.begin().await?;
+    let outcome = body(&mut transaction).await;
+    match outcome {
+        Ok(SemanticTransactionOutcome::Commit(value)) => {
+            commit_semantic(transaction).await?;
+            Ok(value)
+        }
+        Ok(SemanticTransactionOutcome::Rollback(value)) => {
+            rollback_semantic(transaction).await?;
+            Ok(value)
+        }
+        Err(operation_error) => match rollback_semantic(transaction).await {
+            Ok(()) => Err(operation_error),
+            Err(finality_error) => Err(DurabilityError::from(finality_error)),
+        },
+    }
+}
+
 // Fixed bookkeeping arrays, not a complete SQL-driver/resident-work proof.
 // Box<str> retains no caller-selected spare capacity. At most eight queued and
 // two active complete envelopes plus two bounded submission copies exist here.
