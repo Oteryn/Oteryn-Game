@@ -3824,22 +3824,64 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 .await
                 .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fresh_reconciliation"))?
             else { return Err("restart fresh receipt absent".into()); };
-            let loss = decode_fresh_loss(&second.operation_json, current.receipt.binding().initial_commit().map_err(|_| "invalid initial receipt")?)?;
+            let loss = decode_fresh_loss(
+                &second.operation_json,
+                current
+                    .receipt
+                    .binding()
+                    .initial_commit()
+                    .map_err(|_| "invalid initial receipt")?,
+            )
+            .map_err(|_| {
+                wp3_registered_root_qualification::stage_failure(
+                    "WP3_STAGE=child_loss_decode",
+                )
+            })?;
             if std::env::var(CHILD_MODE)? == "recover_absent" {
-                assert_eq!(loss_pass.run(fresh.reconcile_fresh_loss(&loss)).await?, FreshLossReconciliation::Absent);
+                assert_eq!(
+                    loss_pass
+                        .run(fresh.reconcile_fresh_loss(&loss))
+                        .await
+                        .map_err(|_| {
+                            wp3_registered_root_qualification::stage_failure(
+                                "WP3_STAGE=child_loss_reconciliation",
+                            )
+                        })?,
+                    FreshLossReconciliation::Absent
+                );
                 assert_eq!(current.current_session.session_state(), GameSessionState::Active);
                 assert_eq!(current.current_session.current_transport(), Some(current.receipt.binding().transport));
             } else {
-                let FreshLossReconciliation::Committed { completion, current: loss_current } = loss_pass.run(fresh.reconcile_fresh_loss(&loss)).await? else { return Err("restart loss receipt absent".into()); };
+                let FreshLossReconciliation::Committed { completion, current: loss_current } = loss_pass
+                    .run(fresh.reconcile_fresh_loss(&loss))
+                    .await
+                    .map_err(|_| {
+                        wp3_registered_root_qualification::stage_failure(
+                            "WP3_STAGE=child_loss_reconciliation",
+                        )
+                    })?
+                else { return Err("restart loss receipt absent".into()); };
                 assert_eq!(completion.operation, loss);
                 assert_eq!(loss_current, current);
                 assert_eq!(current.current_session.session_state(), GameSessionState::Reconnectable);
                 assert_eq!(current.current_session.current_transport(), None);
                 assert!(matches!(completion.outcome, ControlLossOutcomeV1::Committed { decided_at } if decided_at >= loss.authorized_at));
             }
-            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss.clone()))?;
+            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss.clone()))
+                .map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=child_loss_flow_restore",
+                    )
+                })?;
             assert!(history.take_request().is_err());
-            let delivery = loss_pass.run(fresh.loss_completion_source(&loss)).await?;
+            let delivery = loss_pass
+                .run(fresh.loss_completion_source(&loss))
+                .await
+                .map_err(|_| {
+                    wp3_registered_root_qualification::stage_failure(
+                        "WP3_STAGE=child_loss_completion_source",
+                    )
+                })?;
             if std::env::var(CHILD_MODE)? == "recover_absent" {
                 assert!(delivery.is_none(), "absence is not a definitive rejection completion");
                 assert_eq!(history.phase(), ControlLossPhaseV1::ReconciliationRequired);
