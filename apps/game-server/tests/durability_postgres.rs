@@ -3579,7 +3579,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                     .await?;
                 guard_pass.run(runtime.guards().publish(&publication)).await?;
                 runtime
-                    .acknowledge_checkpoint(guard_pass.slot(), 6, &guard_original)
+                    .acknowledge_checkpoint(&guard_pass)
                     .await?;
                 let original = encode_operation(request.operation(), 65536)?;
                 let fresh_pass = runtime.enqueue_checkpoint(1, &original)?.establish().await?;

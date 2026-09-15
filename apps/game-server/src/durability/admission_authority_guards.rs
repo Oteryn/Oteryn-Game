@@ -695,7 +695,7 @@ impl AdmissionGuardStore {
         for key in keys {
             rows.push(self.load_locked(&mut transaction, key).await?);
         }
-        transaction.commit().await?;
+        super::db::commit_semantic(transaction).await?;
         Ok(rows)
     }
 
@@ -733,7 +733,7 @@ impl AdmissionGuardStore {
         let row = row.ok_or(DurabilityError::InvalidStoredState)?;
         let payload: Option<String> = row.try_get("payload")?;
         let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
-        transaction.commit().await?;
+        super::db::commit_semantic(transaction).await?;
         Ok((payload.is_some(), mirrors.is_some()))
     }
 
@@ -812,7 +812,7 @@ impl AdmissionGuardStore {
             .zip(request.changes())
             .all(|(old, new)| old.as_ref() == Some(new))
         {
-            transaction.commit().await?;
+            super::db::commit_semantic(transaction).await?;
             return Ok(GuardPublicationDisposition::Existing);
         }
         if !self
@@ -823,7 +823,7 @@ impl AdmissionGuardStore {
         }
         self.persist_locked(&mut transaction, request.changes(), &current, &encoded)
             .await?;
-        transaction.commit().await?;
+        super::db::commit_semantic(transaction).await?;
         Ok(GuardPublicationDisposition::Applied)
     }
     pub(super) async fn successor_history_available(

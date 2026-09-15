@@ -126,6 +126,30 @@ pub(super) async fn lock_admission_relations(
     Ok(())
 }
 
+/// Finalize an owned semantic transaction and observe the exact holder tail.
+/// Terminal authority is recorded only after both COMMIT and return/retirement.
+pub(super) async fn commit_semantic(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+) -> Result<(), sqlx::Error> {
+    let (connection, result) = transaction.oteryn_m05_commit().await;
+    let disposition = match connection {
+        sqlx::pool::MaybePoolConnection::PoolConnection(mut connection) => {
+            connection.oteryn_m05_return_to_pool().await
+        }
+        sqlx::pool::MaybePoolConnection::Connection(_) => None,
+    };
+    match (result, disposition) {
+        (Ok(()), Some(_)) => {
+            let _ = mark_current_semantic_terminal();
+            Ok(())
+        }
+        (Err(error), Some(_)) => Err(error),
+        (_, None) => Err(sqlx::Error::Protocol(
+            "M05 transaction finality produced no terminal holder evidence".into(),
+        )),
+    }
+}
+
 // Fixed bookkeeping arrays, not a complete SQL-driver/resident-work proof.
 // Box<str> retains no caller-selected spare capacity. At most eight queued and
 // two active complete envelopes plus two bounded submission copies exist here.
@@ -136,6 +160,7 @@ struct WorkOperation {
     operation: std::sync::Arc<str>,
     definitive: bool,
     in_flight: usize,
+    acknowledging: bool,
     persisted: bool,
     deadline: Option<tokio::time::Instant>,
 }
@@ -160,6 +185,7 @@ impl WorkCustody {
                     operation: std::sync::Arc::from(p.operation_json.as_str()),
                     definitive: false,
                     in_flight: 0,
+                    acknowledging: false,
                     persisted: true,
                     deadline: None,
                 })
@@ -207,6 +233,7 @@ impl WorkCustody {
                 operation: std::sync::Arc::from(operation),
                 definitive: false,
                 in_flight: 0,
+                acknowledging: false,
                 persisted: false,
                 deadline: None,
             },
@@ -307,11 +334,12 @@ impl WorkCustody {
             .get_or_insert_with(|| tokio::time::Instant::now() + Duration::from_millis(2000)))
     }
 
-    fn acknowledge(
+    fn finish_acknowledgement(
         &mut self,
         slot: i16,
         kind: i16,
         operation: &str,
+        incarnation: u64,
     ) -> Result<(), DurabilityError> {
         let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
         let active = self
@@ -319,31 +347,54 @@ impl WorkCustody {
             .get(index)
             .and_then(Option::as_ref)
             .ok_or(DurabilityError::InvalidStoredState)?;
-        if active.kind != kind || active.operation.as_ref() != operation {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        if !active.definitive || active.in_flight != 0 {
+        if active.kind != kind
+            || active.operation.as_ref() != operation
+            || active.incarnation != incarnation
+            || !active.acknowledging
+            || !active.definitive
+            || active.in_flight != 0
+        {
             return Err(DurabilityError::Unavailable);
         }
         self.active[index] = None;
         Ok(())
     }
 
-    fn can_acknowledge(
-        &self,
+    #[cfg(test)]
+    fn acknowledge(
+        &mut self,
         slot: i16,
         kind: i16,
         operation: &str,
     ) -> Result<(), DurabilityError> {
-        self.validate(slot, kind, operation)?;
         let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
-        if self.active[index]
+        let incarnation = self.active[index]
             .as_ref()
-            .is_some_and(|active| active.definitive && active.in_flight == 0)
-        {
-            Ok(())
-        } else {
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .incarnation;
+        self.begin_acknowledgement(slot, kind, operation, incarnation)?;
+        self.finish_acknowledgement(slot, kind, operation, incarnation)
+    }
+
+    fn begin_acknowledgement(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if !active.definitive || active.in_flight != 0 {
             Err(DurabilityError::Unavailable)
+        } else {
+            // Set before the database await. A cancelled/lost-response retry
+            // with this exact pass is allowed to converge, but no new run is.
+            active.acknowledging = true;
+            Ok(())
         }
     }
 
@@ -395,6 +446,7 @@ impl WorkCustody {
         active.in_flight = active
             .in_flight
             .checked_add(1)
+            .filter(|_| !active.acknowledging)
             .ok_or(DurabilityError::Unavailable)?;
         Ok(())
     }
@@ -431,6 +483,22 @@ impl WorkCustody {
         active.persisted = true;
         Ok(())
     }
+
+    fn release_unsubmitted(&mut self, slot: i16, incarnation: u64) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.incarnation != incarnation
+            || active.persisted
+            || active.in_flight != 0
+            || active.acknowledging
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        self.active[index] = None;
+        Ok(())
+    }
 }
 
 #[derive(Clone)]
@@ -441,6 +509,7 @@ struct ActivePassIdentity {
     original: std::sync::Arc<str>,
     deadline: tokio::time::Instant,
     incarnation: u64,
+    terminal: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 tokio::task_local! {
@@ -483,18 +552,35 @@ impl SemanticPass {
             identity: self.identity.clone(),
             finished: false,
         };
-        let result = ACTIVE_SEMANTIC_PASS
-            .scope(self.identity.clone(), body)
-            .await;
-        // A completed semantic result is authoritative. In particular, never
-        // rewrite a definitive commit into ambiguity merely because observing
-        // the completed future happened after the wall-clock deadline.
-        self.identity
-            .backend
-            .finish_run(&self.identity, result.is_ok())?;
+        // Completion authority is scoped to this exact run. An intermediate
+        // terminal transaction from a failed run cannot bless a later,
+        // unrelated successful future that reuses the same pass handle.
+        let mut run_identity = self.identity.clone();
+        run_identity.terminal = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let result = ACTIVE_SEMANTIC_PASS.scope(run_identity.clone(), body).await;
+        // Only Game-owned storage finalization can set this run-local token.
+        // Outer `Ok` alone is deliberately not terminal authority.
+        self.identity.backend.finish_run(
+            &self.identity,
+            result.is_ok()
+                && run_identity
+                    .terminal
+                    .load(std::sync::atomic::Ordering::Acquire),
+        )?;
         guard.finished = true;
         result
     }
+}
+
+/// Records terminal semantic authority from inside Game-owned storage code.
+/// Ordinary callers cannot manufacture this signal merely by completing a future.
+pub(super) fn mark_current_semantic_terminal() -> Result<(), DurabilityError> {
+    ACTIVE_SEMANTIC_PASS
+        .try_with(|pass| {
+            pass.terminal
+                .store(true, std::sync::atomic::Ordering::Release);
+        })
+        .map_err(|_| DurabilityError::Unavailable)
 }
 
 #[derive(serde::Deserialize)]
@@ -555,14 +641,27 @@ impl QueuedCheckpoint {
                 std::time::Instant::now(),
                 started + Duration::from_millis(2000),
             )?;
-        self.backend
+        let checkpoint = self
+            .backend
             .establish_checkpoint(
                 slot,
                 operation.kind,
                 &operation.operation,
                 started + Duration::from_millis(2000),
             )
-            .await?;
+            .await;
+        if matches!(
+            checkpoint,
+            Err(CheckpointEstablishmentError::DefinitelyUnsubmitted)
+        ) {
+            self.backend
+                .work
+                .lock()
+                .map_err(|_| DurabilityError::Unavailable)?
+                .release_unsubmitted(slot, operation.incarnation)?;
+            return Err(DurabilityError::Unavailable);
+        }
+        checkpoint.map_err(CheckpointEstablishmentError::into_durability)?;
         self.backend
             .work
             .lock()
@@ -576,8 +675,22 @@ impl QueuedCheckpoint {
                 original: operation.operation.clone(),
                 deadline: started + Duration::from_millis(2000),
                 incarnation: operation.incarnation,
+                terminal: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             },
         })
+    }
+}
+
+enum CheckpointEstablishmentError {
+    DefinitelyUnsubmitted,
+    Uncertain(DurabilityError),
+}
+impl CheckpointEstablishmentError {
+    fn into_durability(self) -> DurabilityError {
+        match self {
+            Self::DefinitelyUnsubmitted => DurabilityError::Unavailable,
+            Self::Uncertain(error) => error,
+        }
     }
 }
 
@@ -616,25 +729,40 @@ impl RuntimeBackend {
         kind: i16,
         original: &str,
         deadline: tokio::time::Instant,
-    ) -> Result<(), DurabilityError> {
+    ) -> Result<(), CheckpointEstablishmentError> {
         #[cfg(not(test))]
         let BackendCustody::Registered(custody) = &self.custody;
         #[cfg(test)]
         let custody = match &self.custody {
             BackendCustody::Registered(custody) => custody,
-            BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
+            BackendCustody::LegacyFixture => {
+                return Err(CheckpointEstablishmentError::Uncertain(
+                    DurabilityError::Unavailable,
+                ));
+            }
         };
         if tokio::time::Instant::now() >= deadline {
-            return Err(DurabilityError::Unavailable);
+            return Err(CheckpointEstablishmentError::Uncertain(
+                DurabilityError::Unavailable,
+            ));
         }
         // The holder's PostgreSQL startup timeout is already active before
         // BEGIN. Await the exact checkpoint result; never turn a completed
         // checkpoint commit into an artificial timeout result.
         let result = custody.checkpoint(&self.pool, slot, kind, original).await;
-        if matches!(result, Err(DurabilityError::Unavailable)) {
+        if matches!(
+            result,
+            Ok(super::CheckpointDisposition::DefinitelyUnsubmitted)
+        ) {
             self.record_root_ready_demand();
         }
-        result
+        match result {
+            Ok(super::CheckpointDisposition::Persisted) => Ok(()),
+            Ok(super::CheckpointDisposition::DefinitelyUnsubmitted) => {
+                Err(CheckpointEstablishmentError::DefinitelyUnsubmitted)
+            }
+            Err(error) => Err(CheckpointEstablishmentError::Uncertain(error)),
+        }
     }
 
     pub(super) fn resume_pass(
@@ -661,6 +789,7 @@ impl RuntimeBackend {
                 original: retained_original,
                 deadline,
                 incarnation,
+                terminal: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             },
         })
     }
@@ -786,7 +915,9 @@ impl RuntimeBackend {
             )
     }
 
-    pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
+    pub async fn begin(
+        &self,
+    ) -> Result<sqlx::Transaction<'static, sqlx::Postgres>, DurabilityError> {
         match &self.custody {
             BackendCustody::Registered(custody) => {
                 let pass = ACTIVE_SEMANTIC_PASS
@@ -854,27 +985,39 @@ impl RuntimeBackend {
 
     #[allow(irrefutable_let_patterns)]
     #[allow(dead_code)]
-    pub(super) async fn acknowledge(
-        &self,
-        slot: i16,
-        kind: i16,
-        operation: &str,
-    ) -> Result<(), DurabilityError> {
+    pub(super) async fn acknowledge(&self, pass: &SemanticPass) -> Result<(), DurabilityError> {
         let BackendCustody::Registered(custody) = &self.custody else {
             return Err(DurabilityError::Unavailable);
         };
+        self.validate_pass(&pass.identity)?;
         self.work
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
-            .can_acknowledge(slot, kind, operation)?;
+            .begin_acknowledgement(
+                pass.identity.slot,
+                pass.identity.kind,
+                &pass.identity.original,
+                pass.identity.incarnation,
+            )?;
         custody
-            .acknowledge(&self.pool, slot, kind, operation)
+            .acknowledge(
+                &self.pool,
+                pass.identity.slot,
+                pass.identity.kind,
+                &pass.identity.original,
+            )
             .await?;
         self.work
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?
-            .acknowledge(slot, kind, operation)?;
-        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+            .finish_acknowledgement(
+                pass.identity.slot,
+                pass.identity.kind,
+                &pass.identity.original,
+                pass.identity.incarnation,
+            )?;
+        let index = usize::try_from(pass.identity.slot - 1)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
         self.pending
             .lock()
             .map_err(|_| DurabilityError::Unavailable)?[index] = None;
@@ -1136,6 +1279,63 @@ mod work_custody_tests {
                 .definitive
         );
         assert_ne!(first.incarnation, successor.incarnation);
+        Ok(())
+    }
+
+    #[test]
+    fn successful_future_is_not_terminal_authority_and_ack_excludes_new_runs()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(1, "typed-original", now)?;
+        let (slot, operation) = work.promote(id, now)?;
+        work.mark_persisted(slot, operation.incarnation)?;
+        work.begin_run(slot, 1, "typed-original", operation.incarnation)?;
+        // Completing an arbitrary successful future supplies no semantic token.
+        work.finish_run(slot, 1, "typed-original", operation.incarnation, false)?;
+        assert!(matches!(
+            work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation),
+            Err(DurabilityError::Unavailable)
+        ));
+
+        work.begin_run(slot, 1, "typed-original", operation.incarnation)?;
+        work.finish_run(slot, 1, "typed-original", operation.incarnation, true)?;
+        work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation)?;
+        assert!(matches!(
+            work.begin_run(slot, 1, "typed-original", operation.incarnation),
+            Err(DurabilityError::Unavailable)
+        ));
+        // A retry for the same occupation converges; a stale incarnation cannot.
+        work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation)?;
+        assert!(matches!(
+            work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation + 1),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.finish_acknowledgement(slot, 1, "typed-original", operation.incarnation)?;
+        Ok(())
+    }
+
+    #[test]
+    fn only_the_exact_definitely_unsubmitted_incarnation_can_be_released()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(1, "unsubmitted", now)?;
+        let (slot, operation) = work.promote(id, now)?;
+        assert!(matches!(
+            work.release_unsubmitted(slot, operation.incarnation + 1),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.release_unsubmitted(slot, operation.incarnation)?;
+        assert!(work.enqueue(1, "replacement", now).is_ok());
+
+        let id = work.enqueue(2, "persisted", now)?;
+        let (slot, operation) = work.promote(id, now)?;
+        work.mark_persisted(slot, operation.incarnation)?;
+        assert!(matches!(
+            work.release_unsubmitted(slot, operation.incarnation),
+            Err(DurabilityError::InvalidStoredState)
+        ));
         Ok(())
     }
 

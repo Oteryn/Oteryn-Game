@@ -284,7 +284,7 @@ impl AdmissionReconnectJournal {
                     attempt_ref.as_slice(),
                 )
                 .await?;
-                transaction.commit().await?;
+                super::db::commit_semantic(transaction).await?;
                 return Ok(ReconnectPrepareDispositionV1::ExistingTerminal);
             }
             if state == COMMITTED {
@@ -321,7 +321,7 @@ impl AdmissionReconnectJournal {
                 if !committed_current {
                     return Err(DurabilityError::InvalidStoredState);
                 }
-                transaction.commit().await?;
+                super::db::commit_semantic(transaction).await?;
                 return Ok(ReconnectPrepareDispositionV1::Ambiguous);
             }
             return disposition_for_existing(state);
@@ -360,7 +360,7 @@ impl AdmissionReconnectJournal {
                     return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
                 }
                 insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-                transaction.commit().await?;
+                super::db::commit_semantic(transaction).await?;
                 return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             }
 
@@ -387,7 +387,7 @@ impl AdmissionReconnectJournal {
             let can_open_new_epoch = active_shape_matches && active_binding_valid;
             if !can_open_new_epoch || database_now(&mut transaction).await? > prepared_deadline {
                 insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-                transaction.commit().await?;
+                super::db::commit_semantic(transaction).await?;
                 return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             }
 
@@ -446,7 +446,7 @@ impl AdmissionReconnectJournal {
         if !is_current || database_now(&mut transaction).await? > prepared_deadline {
             insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
             increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            transaction.commit().await?;
+            super::db::commit_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
         ensure_precommit_protection_continuity(&mut transaction, record).await?;
@@ -461,7 +461,7 @@ impl AdmissionReconnectJournal {
             )
             .await?;
             increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            transaction.commit().await?;
+            super::db::commit_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedConcurrentPrepared);
         }
 
@@ -485,7 +485,7 @@ impl AdmissionReconnectJournal {
             )
             .await?;
             increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            transaction.commit().await?;
+            super::db::commit_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedTransportRefCollision);
         }
 
@@ -499,7 +499,7 @@ impl AdmissionReconnectJournal {
         .bind(attempt_ref.as_slice())
         .execute(&mut *transaction)
         .await?;
-        transaction.commit().await?;
+        super::db::commit_semantic(transaction).await?;
         Ok(ReconnectPrepareDispositionV1::Prepared)
     }
 
@@ -593,14 +593,14 @@ impl AdmissionReconnectJournal {
                     )
                     .await?
                 {
-                    transaction.commit().await?;
+                    super::db::commit_semantic(transaction).await?;
                     return Ok(ReconnectCommitDispositionV1::Committed);
                 }
                 return Err(DurabilityError::InvalidStoredState);
             }
             PREPARED => {}
             COLLISION_TERMINAL | CONCURRENT_TERMINAL | STALE_TERMINAL => {
-                transaction.commit().await?;
+                super::db::commit_semantic(transaction).await?;
                 return Ok(ReconnectCommitDispositionV1::ExistingTerminal);
             }
             _ => return Err(DurabilityError::InvalidStoredState),
@@ -629,7 +629,7 @@ impl AdmissionReconnectJournal {
                 attempt_ref.as_slice(),
             )
             .await?;
-            transaction.commit().await?;
+            super::db::commit_semantic(transaction).await?;
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         }
 
@@ -667,7 +667,7 @@ impl AdmissionReconnectJournal {
                     attempt_ref.as_slice(),
                 )
                 .await?;
-                transaction.commit().await?;
+                super::db::commit_semantic(transaction).await?;
                 return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
             }
         }
@@ -703,7 +703,7 @@ impl AdmissionReconnectJournal {
         if advanced.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
-        transaction.commit().await?;
+        super::db::commit_semantic(transaction).await?;
         Ok(ReconnectCommitDispositionV1::Committed)
     }
 
@@ -727,7 +727,7 @@ impl AdmissionReconnectJournal {
         super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =
             Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;
-        transaction.commit().await?;
+        super::db::commit_semantic(transaction).await?;
         Ok(snapshot)
     }
 

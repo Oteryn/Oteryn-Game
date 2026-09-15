@@ -412,7 +412,7 @@ impl AdmissionReconnectJournalV2 {
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            transaction.commit().await?;
+            db::commit_semantic(transaction).await?;
             return self.prepare_legacy_typed_receipt_authorized(request).await;
         }
 
@@ -445,7 +445,7 @@ impl AdmissionReconnectJournalV2 {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
                 && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
-                transaction.commit().await?;
+                db::commit_semantic(transaction).await?;
                 return self.prepare_legacy_typed_receipt_authorized(request).await;
             }
             return Err(DurabilityError::InvalidStoredState);
@@ -605,7 +605,7 @@ impl AdmissionReconnectJournalV2 {
         let disposition =
             prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
                 .await?;
-        transaction.commit().await?;
+        db::commit_semantic(transaction).await?;
         Ok(disposition)
     }
 
@@ -663,7 +663,7 @@ impl AdmissionReconnectJournalV2 {
             }
             _ => return Err(DurabilityError::InvalidStoredState),
         };
-        transaction.commit().await?;
+        db::commit_semantic(transaction).await?;
         Ok(ReconnectDurableReconciliationSnapshotV2::new(
             record.clone(),
             outcome,
@@ -758,7 +758,7 @@ impl AdmissionReconnectJournalV2 {
             return Err(DurabilityError::InvalidStoredState);
         }
         let state = row.try_get("state")?;
-        transaction.commit().await?;
+        db::commit_semantic(transaction).await?;
         Ok(state)
     }
 }
@@ -2577,6 +2577,11 @@ pub struct DurablePendingCheckpoint {
     pub operation_kind: i16,
     pub operation_json: String,
 }
+
+pub(crate) enum CheckpointDisposition {
+    Persisted,
+    DefinitelyUnsubmitted,
+}
 // Domain-separated fixed serialization identity, shared by predecessor/successor.
 const EXECUTOR_CUSTODY_LOCK: i64 = 0x4f54_4446_5243_3031;
 impl DurabilityCustody {
@@ -2716,13 +2721,13 @@ impl DurabilityCustody {
 
     /// Establish/reconcile one original checkpoint. Different work cannot overwrite
     /// an occupied slot. Clearing requires future definitive outcome + owner ack.
-    pub async fn checkpoint(
+    pub(crate) async fn checkpoint(
         &self,
         pool: &PgPool,
         slot: i16,
         operation_kind: i16,
         operation_json: &str,
-    ) -> Result<(), DurabilityError> {
+    ) -> Result<CheckpointDisposition, DurabilityError> {
         if !(1..=2).contains(&slot)
             || !(1..=8).contains(&operation_kind)
             || operation_json.is_empty()
@@ -2730,7 +2735,10 @@ impl DurabilityCustody {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let mut tx = self.fence(pool).await?;
+        let Some(transaction) = pool.try_begin().await? else {
+            return Ok(CheckpointDisposition::DefinitelyUnsubmitted);
+        };
+        let mut tx = self.fence_transaction(transaction).await?;
         db::lock_admission_relations(&mut tx).await?;
         let changed = sqlx::query("UPDATE game_durability_executor_custody SET generation = $1::text::numeric(20,0), operation_kind = $2, operation_json = $3 WHERE slot = $4 AND (operation_json IS NULL OR (operation_kind = $2 AND operation_json = $3)) AND octet_length(jsonb_build_object('slot', $4::smallint, 'generation', $1::text, 'operation_kind', $2::smallint, 'operation_json', $3::text)::text) <= 131072")
             .bind(self.generation.to_string()).bind(operation_kind).bind(operation_json).bind(slot)
@@ -2738,8 +2746,8 @@ impl DurabilityCustody {
         if changed.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
-        tx.commit().await?;
-        Ok(())
+        db::commit_semantic(tx).await?;
+        Ok(CheckpointDisposition::Persisted)
     }
 
     #[allow(dead_code)]
@@ -2753,7 +2761,11 @@ impl DurabilityCustody {
         if !(1..=2).contains(&slot) || !(1..=8).contains(&operation_kind) {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let mut tx = self.fence(pool).await?;
+        let transaction = pool
+            .try_begin()
+            .await?
+            .ok_or(DurabilityError::Unavailable)?;
+        let mut tx = self.fence_transaction(transaction).await?;
         db::lock_admission_relations(&mut tx).await?;
         let changed = sqlx::query("UPDATE game_durability_executor_custody SET operation_kind = NULL, operation_json = NULL WHERE slot = $1 AND generation = $2::text::numeric(20,0) AND operation_kind = $3 AND operation_json = $4")
             .bind(slot).bind(self.generation.to_string()).bind(operation_kind)
@@ -2775,7 +2787,7 @@ impl DurabilityCustody {
         } else if changed.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
-        tx.commit().await?;
+        db::commit_semantic(tx).await?;
         Ok(())
     }
 }
@@ -2900,14 +2912,7 @@ impl AdmissionRuntime {
     }
 
     #[allow(dead_code)]
-    pub async fn acknowledge_checkpoint(
-        &self,
-        slot: i16,
-        operation_kind: i16,
-        original: &str,
-    ) -> Result<(), DurabilityError> {
-        self.backend
-            .acknowledge(slot, operation_kind, original)
-            .await
+    pub async fn acknowledge_checkpoint(&self, pass: &SemanticPass) -> Result<(), DurabilityError> {
+        self.backend.acknowledge(pass).await
     }
 }

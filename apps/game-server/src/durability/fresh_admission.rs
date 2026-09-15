@@ -389,7 +389,7 @@ impl FreshAdmissionStore {
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(receipt) = self.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
-            tx.commit().await?;
+            super::db::commit_semantic(tx).await?;
             return Ok(outcome);
         }
         let initial = checked(b.initial_commit())?;
@@ -455,7 +455,7 @@ impl FreshAdmissionStore {
         ))?;
         // An acknowledgement error is uncertain; caller reconciles this original
         // operation rather than assuming rollback or manufacturing another key.
-        if tx.commit().await.is_err() {
+        if super::db::commit_semantic(tx).await.is_err() {
             return Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable);
         }
         Ok(FreshAdmissionDurableOutcomeV1::Committed(receipt))
@@ -485,7 +485,7 @@ impl FreshAdmissionStore {
             if stored.as_deref() != Some(encoded.as_str()) { return Err(DurabilityError::InvalidStoredState); }
             let decided_at: i64 = row.try_get("decided_at")?;
             if decided_at < operation.authorized_at { return Err(DurabilityError::InvalidStoredState); }
-            tx.commit().await?;
+            super::db::commit_semantic(tx).await?;
             return Ok(ControlLossOutcomeV1::Committed { decided_at });
         }
         let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
@@ -568,7 +568,7 @@ impl FreshAdmissionStore {
         // prepare/replacement fail closed on this receipt until a typed bridge.
         sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts(operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
             .bind(&key).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-        if tx.commit().await.is_err() {
+        if super::db::commit_semantic(tx).await.is_err() {
             return Ok(ControlLossOutcomeV1::Ambiguous);
         }
         Ok(ControlLossOutcomeV1::Committed { decided_at })
@@ -610,7 +610,7 @@ impl FreshAdmissionStore {
         super::db::lock_admission_relations(&mut tx).await?;
         let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
             .bind(&key).fetch_optional(&mut *tx).await? else {
-                tx.commit().await?;
+                super::db::commit_semantic(tx).await?;
                 return Ok(FreshLossReconciliation::Absent);
             };
         let stored: Option<String> = row.try_get("operation_json")?;
@@ -635,7 +635,7 @@ impl FreshAdmissionStore {
             return Err(DurabilityError::InvalidStoredState);
         }
         if stored != encoded {
-            tx.commit().await?;
+            super::db::commit_semantic(tx).await?;
             return Ok(FreshLossReconciliation::Conflict);
         }
         let FreshReconciliation::Committed(current) =
@@ -690,7 +690,7 @@ impl FreshAdmissionStore {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        tx.commit().await?;
+        super::db::commit_semantic(tx).await?;
         Ok(FreshLossReconciliation::Committed {
             completion: Box::new(ControlLossCompletionV1 {
                 operation,
@@ -709,7 +709,7 @@ impl FreshAdmissionStore {
         let mut tx = self.guards.backend.begin().await?;
         super::db::lock_admission_relations(&mut tx).await?;
         let result = self.reconcile_locked(&mut tx, original).await?;
-        tx.commit().await?;
+        super::db::commit_semantic(tx).await?;
         Ok(result)
     }
 
