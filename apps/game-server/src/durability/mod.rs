@@ -2918,7 +2918,19 @@ impl AdmissionRuntime {
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
 pub(crate) fn registered_connect_diagnostic_substage() -> &'static str {
     db::registered_connect_diagnostic_substage()
+}
+
+#[cfg(test)]
+#[test]
+fn registered_connect_diagnostic_is_available_to_qualification_callers() {
+    assert!(matches!(
+        registered_connect_diagnostic_substage(),
+        "root_profile_construct"
+            | "root_schema_inspect"
+            | "root_custody_acquire"
+            | "root_holder_return"
+            | "ready"
+    ));
 }

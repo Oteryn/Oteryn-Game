@@ -1097,7 +1097,6 @@ fn set_registered_connect_diagnostic_substage(stage: RegisteredConnectDiagnostic
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
 pub(super) fn registered_connect_diagnostic_substage() -> &'static str {
     REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE.with(|stage| match stage.get() {
         RegisteredConnectDiagnosticSubstage::RootProfileConstruct => "root_profile_construct",
@@ -1232,6 +1231,32 @@ pub(super) async fn backend_for_constructor(
 #[cfg(test)]
 mod work_custody_tests {
     use super::*;
+
+    #[test]
+    fn registered_connect_diagnostic_labels_cover_every_substage() {
+        for (stage, expected) in [
+            (
+                RegisteredConnectDiagnosticSubstage::RootProfileConstruct,
+                "root_profile_construct",
+            ),
+            (
+                RegisteredConnectDiagnosticSubstage::RootSchemaInspect,
+                "root_schema_inspect",
+            ),
+            (
+                RegisteredConnectDiagnosticSubstage::RootCustodyAcquire,
+                "root_custody_acquire",
+            ),
+            (
+                RegisteredConnectDiagnosticSubstage::RootHolderReturn,
+                "root_holder_return",
+            ),
+            (RegisteredConnectDiagnosticSubstage::Ready, "ready"),
+        ] {
+            set_registered_connect_diagnostic_substage(stage);
+            assert_eq!(registered_connect_diagnostic_substage(), expected);
+        }
+    }
 
     #[test]
     fn queue_capacity_is_reserved_before_copy_and_cancel_releases_only_queued()

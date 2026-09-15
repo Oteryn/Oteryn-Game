@@ -243,6 +243,44 @@ mod wp3_registered_root_qualification {
                 )
             {
                 pool.close().await;
+
+                // A setting read on the pre-existing administrator connection
+                // does not prove that the postmaster can serve the newly
+                // installed certificate.  Require a new TLS client, rooted in
+                // this fixture's CA, to authenticate `localhost` before the
+                // registered runtime is allowed to consume the fixture.
+                let mut verify_full_options =
+                    sqlx::postgres::PgConnectOptions::from_str(admin_url)?;
+                verify_full_options = verify_full_options
+                    .host("localhost")
+                    .ssl_mode(sqlx::postgres::PgSslMode::VerifyFull)
+                    .ssl_root_cert(&ca_cert);
+                let witness = tokio::time::timeout(Duration::from_secs(5), async {
+                    use sqlx::Connection;
+
+                    let mut connection =
+                        sqlx::PgConnection::connect_with(&verify_full_options)
+                            .await
+                            .map_err(|_| "registered-root VerifyFull connection failed")?;
+                    let (ssl, protocol, server_version): (bool, String, i32) = sqlx::query_as(
+                        "SELECT ssl, version, current_setting('server_version_num')::int \
+                         FROM pg_stat_ssl WHERE pid = pg_backend_pid()",
+                    )
+                    .fetch_one(&mut connection)
+                    .await
+                    .map_err(|_| "registered-root VerifyFull witness query failed")?;
+                    if !ssl || protocol != "TLSv1.3" || server_version != 170006 {
+                        return Err("registered-root VerifyFull witness did not use PostgreSQL 17.6 over TLS1.3");
+                    }
+                    connection
+                        .close()
+                        .await
+                        .map_err(|_| "registered-root VerifyFull witness close failed")?;
+                    Ok::<(), &'static str>(())
+                })
+                .await
+                .map_err(|_| "registered-root VerifyFull witness timed out")?;
+                witness?;
                 return Ok(ca_cert);
             }
             if tokio::time::Instant::now() >= activation_deadline {
