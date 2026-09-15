@@ -295,8 +295,12 @@ P0 is `PROVEN` only when one exact qualification packet demonstrates all of the 
 - scheduled execution uses an explicitly selected default target policy and remains separate from PR/MQ;
 - target, workflow, harness, compartment, dependency source/patch, feature, target-triple and toolchain
   identities are retained and machine-checkable;
-- a deliberately incompatible/unsupported target or unprovable isolation boundary fails closed as
-  `BLOCKED_CAPABILITY` or `INCOMPLETE_CAMPAIGN`, not PASS;
+- an unprovable trusted/untrusted isolation boundary is classified exclusively as `BLOCKED_CAPABILITY`;
+  `INCOMPLETE_CAMPAIGN` is reserved for an otherwise valid campaign that cannot complete after the
+  isolation boundary has been proven;
+- a deliberately incompatible/unsupported target fails closed as `BLOCKED_CAPABILITY` or
+  `INCOMPLETE_CAMPAIGN` according to whether capability is absent or an otherwise valid campaign is
+  incomplete, never PASS;
 - no hidden retry converts a failed attempt into an apparently green attempt; every attempt retains its
   own result identity.
 
