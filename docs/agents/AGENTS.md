@@ -17,9 +17,10 @@ When the active control plane explicitly records `CONVERGENCE_MODE`, load `CLOSU
 
 For an independent audit dispatched under convergence mode:
 
-- `audit_mode: DISCOVERY_SWEEP` means one comprehensive read-only search for all currently knowable current/next-gate defects before the final repair generation, with mandatory `MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE` classification and root-cause collapse;
+- `audit_mode: DISCOVERY_SWEEP` means one comprehensive read-only search for all currently knowable current/next-gate defects before the final repair generation, with mandatory `gate_classification: MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE` and root-cause collapse;
 - `audit_mode: FINAL_CANDIDATE_REVIEW` means review the exact qualified candidate against the frozen root-cause inventory and still-binding current-gate requirements rather than starting a new open-ended architecture expedition;
-- after the inventory freeze, a newly proposed blocker must satisfy a novelty trigger from `CLOSURE_CONVERGENCE_PROTOCOL.md`; otherwise record `FINAL_SWEEP_MISS` and keep discovery bounded.
+- preserve the auditor's existing evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT`; convergence gate classification is a separate field;
+- after the inventory freeze, a newly proposed blocker must satisfy a novelty trigger from `CLOSURE_CONVERGENCE_PROTOCOL.md`; otherwise mark a real current-gate miss `FINAL_SWEEP_MISS` and keep discovery bounded.
 
 Canonical material workers must also obey the convergence protocol's publication-safety rule: if the normal authorized high-level publication path is unavailable or rejected, fail closed and return custody. Do not improvise low-level Git commit/tree/blob/ref construction as a publication fallback.
 
