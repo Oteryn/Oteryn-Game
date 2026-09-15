@@ -129,6 +129,28 @@ If the fingerprint is unchanged:
 
 Allow at most **two repair/retry cycles** for one unchanged fingerprint unless the second attempt yields new diagnostic evidence. A third attempt requires a changed fingerprint or one new concrete hypothesis. A material repair creates a new exact head and therefore a new fingerprint.
 
+## Closure convergence mode
+
+When a lane is in late-stage closure and repeated repair/review generations risk finding-by-finding churn, route it through `docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md` and record `CONVERGENCE_MODE` on the live control-plane Issue/task.
+
+Convergence mode does not widen authority. If a mutating or diagnostic generation is already active, finish only that authorized generation first and obtain one stable canonical head with custody returned before starting the sweep.
+
+While convergence mode is active:
+
+- reinterpret the ordinary "one bounded task" worker rule as **one bounded coherent repair generation**;
+- freeze one exact closure head before discovery;
+- dispatch exactly one comprehensive read-only final defect sweep before final repair, using `audit_mode: DISCOVERY_SWEEP` when `Oteryn: work auditor` is selected;
+- require every sweep result to be classified `MATERIAL_BLOCKER | EVIDENCE_GAP | HARDENING | OUT_OF_SCOPE` and collapse symptoms by root cause;
+- freeze the material root-cause inventory before mutation;
+- prepare all required authority for the compatible repair generation up front rather than stopping at each already-known missing path;
+- dispatch the same canonical writer to repair all compatible material blockers in that generation rather than returning after the first finding;
+- run one complete exact-head qualification after the coherent repair generation, then one final whole-diff review using `audit_mode: FINAL_CANDIDATE_REVIEW`;
+- after inventory freeze, expand closure scope only for the novelty triggers defined by the convergence protocol; otherwise record a `FINAL_SWEEP_MISS` instead of reopening unrestricted discovery.
+
+Do not treat `EVIDENCE_GAP` as proof that production code must change. `HARDENING` and `OUT_OF_SCOPE` do not block the current accepted gate unless current authority explicitly says otherwise.
+
+For canonical material writers, if the normal authorized publication path is unavailable or rejected, stop with the applicable capability blocker. Do not authorize a worker to construct replacement Git commits, trees, blobs or refs through low-level Git object APIs as a fallback publication mechanism.
+
 ## Dispatcher states
 
 Use distinct states:
