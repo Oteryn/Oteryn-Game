@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-15T10:49:00Z
-updated_at: 2026-09-15T13:45:00Z
+updated_at: 2026-09-15T13:50:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/AGENTS.md
@@ -34,7 +34,7 @@ external_repositories: []
 
 ## Outcome
 
-Introduce a reusable late-stage convergence protocol so delivery can perform one full read-only defect sweep, freeze a generation-bound root-cause inventory, reconcile uncertain evidence without mutating frozen evidence, repair compatible material blockers as one coherent generation, qualify one exact candidate, and complete one final whole-diff review without weakening current authority or protected integration rules.
+Introduce a reusable late-stage convergence protocol so delivery can perform one full read-only defect sweep, freeze a generation-bound root-cause inventory, reconcile uncertain evidence without mutating frozen evidence, admit any genuinely new late current-gate blocker through a formal immutable successor generation, repair compatible material blockers coherently, qualify one exact candidate, and complete one final whole-diff review without weakening current authority or protected integration rules.
 
 ## Architecture and source of truth
 
@@ -56,15 +56,17 @@ reason: Documentation/prompt governance only; no production mutation, authority-
 
 - [x] Add one routed closure convergence protocol with explicit activation, one-shot sweep, finding classification, root-cause collapse, frozen inventory, coherent repair generation, final qualification/review and anti-drip novelty triggers.
 - [x] Bind discovery sweeps to the exact frozen closure head and exact protected-`main` generation; mixed-generation sweep evidence fails closed.
-- [x] Re-resolve protected `main` before contract-sensitive evidence reconciliation and before mutating repair dispatch; material movement invalidates the sweep base before mutation.
+- [x] Re-resolve protected `main` before contract-sensitive evidence reconciliation and immediately before mutating repair dispatch; material movement invalidates the sweep base before mutation.
 - [x] Keep `UNKNOWN`/`CONFLICT` material findings out of mutating repair generations until evidence is reconciled.
 - [x] Preserve every frozen root-cause inventory as immutable; evidence reconciliation creates one hashed successor inventory per coherent reconciliation generation.
+- [x] Admit a genuinely new late current-gate root cause only through a hashed `LATE_BLOCKER_ADMISSION` successor; material protected-main movement instead requires a fresh Phase 1 + discovery sweep.
+- [x] Make any late-blocker successor invalidate prior integration-readiness qualification/review and require fresh repair, exact-head qualification and final review against the new active inventory generation.
 - [x] Give every inventory generation its own evidence locator; never overwrite or repurpose the predecessor locator for successor content.
 - [x] Represent the hashed `inventory` envelope member as a structured JSON value rather than a string placeholder, matching the RFC 8785 canonicalization contract.
 - [x] Bind each active inventory generation to RFC 8785 + SHA-256 identity including repository/Issue/task/PR/branch, protected-main/audit-main generation, Phase-1 closure head/tree, inventory generation and predecessor identity.
 - [x] Bind the active-inventory pointer as `(inventory_generation, evidence_locator, content_identity)` and fail closed on ambiguous/partial transition.
 - [x] Require final-candidate review to exact-match the live target to `qualified_head` and independently reconcile protected-`main` movement since the sweep.
-- [x] Preserve `MATERIAL_BLOCKER` when recording `FINAL_SWEEP_MISS`.
+- [x] Preserve `MATERIAL_BLOCKER` when recording `FINAL_SWEEP_MISS`, and route a genuinely new missed root cause through late-blocker admission rather than mutating the frozen inventory.
 - [x] Add publication-safety fail-closed behavior for unavailable normal Git publication; no direct low-level Git-object fallback on canonical material branches.
 - [x] Keep coordinator packet compatibility by routing convergence data inside existing `accepted_decisions` rather than new top-level keys.
 - [x] Preserve auditor evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT` separately from convergence gate classification.
@@ -113,35 +115,49 @@ The resulting exact head `dae61ae0ff8b806dc66283c6de947aa76f670103` passed Agent
 
 Fresh Codex review `5210541937` on exact qualified head `dae61ae0ff8b806dc66283c6de947aa76f670103` reported:
 
-1. `4016077633` P1 — discovery sweep identity omitted the frozen protected-`main` generation. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`: Phase 1/sweep now bind `base_main_sha`, independently resolved `audit_main_sha`, and the inventory sweep target.
-2. `4016077641` P1 — frozen inventory had no conforming transition after successful evidence reconciliation. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`: frozen inventories are never edited in place; coherent evidence reconciliation creates a linked immutable successor generation.
+1. `4016077633` P1 — discovery sweep identity omitted the frozen protected-`main` generation. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`.
+2. `4016077641` P1 — frozen inventory had no conforming transition after successful evidence reconciliation. `ACCEPTED_AND_REPAIRED` in `928be692241791930b49711424950e8e9e83800f`.
 
 Both review threads were answered with exact repair evidence and resolved.
 
-### Implementing-agent bounded self-review after generation 6
+### Bounded self-review after generation 6
 
 Before treating the generation-6 repair as final, a bounded review of only the protected-main binding and successor-inventory state machine found three handoff gaps and repaired them together in `4db3390ac65bf3902fb59e2716716c3cd4f125a7`:
 
-1. the JSON envelope example rendered the structured `inventory` member as a quoted string despite prose requiring a structured value;
-2. protected `main` was rechecked at sweep/final-review boundaries but not immediately before contract-sensitive reconciliation or a mutating repair dispatch;
-3. successor inventory semantics required immutable predecessors but did not explicitly require a new generation-specific evidence locator, allowing accidental predecessor-note reuse/overwrite.
+1. the JSON envelope rendered the structured `inventory` member as a quoted string;
+2. protected `main` was not rechecked immediately before contract-sensitive reconciliation or a mutating repair dispatch;
+3. successor semantics did not explicitly require a new generation-specific evidence locator.
 
-The repair makes the envelope example structurally consistent, adds fail-closed live-main reconciliation before mutation, requires a new locator per successor generation, and binds the active inventory as the exact generation/locator/digest tuple. No authority was added and no product/runtime surface changed.
+The repair made the envelope structurally consistent, added fail-closed live-main reconciliation before mutation, required a new locator per successor generation, and bound the active inventory as the exact generation/locator/digest tuple.
+
+### Independent review generation 7 / late-blocker state-machine repair
+
+While exact-head qualification of the post-self-review candidate was starting, Codex review thread `4016247113` (anchored to prior exact head `58d6b2bb7d689eda69d10a6cd33441bb2a694b8f`) reported one further P1: final review could prove a genuinely new material root cause or `FINAL_SWEEP_MISS`, but the protocol only defined evidence-reconciliation successors and therefore had no immutable transition that could legally add the late blocker before repair.
+
+`ACCEPTED_AND_REPAIRED` in `77561601a5ddd5557e697dc593fa5959ac9aac5c`:
+
+- the envelope now carries separate `late_blocker_refs`;
+- `LATE_BLOCKER_ADMISSION` is a formal immutable successor transition for novelty-trigger 1–3 or a genuinely new `FINAL_SWEEP_MISS` root cause;
+- material protected-main movement (trigger 4) never uses that successor and instead invalidates the sweep base;
+- duplicate root causes are not re-added;
+- the successor must use a new locator, increment generation, link predecessor digest and preserve the sweep target;
+- activating a late-blocker successor makes prior qualification/review historical and forces return through authority checks, coherent repair, fresh exact-head qualification and fresh final review.
+
+This canonical task-record commit is part of the same coherent late-blocker review-repair generation.
 
 ## Validation
 
 ### Focused
 
 - changed-file inventory vs `main`: PASS — only task-owned documentation/prompt/task/lifecycle paths.
-- prompt semantic self-review: PASS after bounded handoff repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
+- prompt semantic self-review: PASS after late-blocker repair — no authority expansion, no review weakening, no Merge Queue semantic change, no product/runtime mutation.
 - META 3.1 prompting-standard reconciliation: PASS — one routed shared protocol with prompt-specific deltas; no full global procedure copied into every prompt.
 - lifecycle integrity self-review: PASS — intentionally revised prompt versions and embedded metadata are consistent.
 - #356 isolation: PASS — no #356 material path is in this task's changed-file set.
 
 ### Component/integration
 
-- prior exact-head qualification on `dae61ae0ff8b806dc66283c6de947aa76f670103`: Agent Governance `34974838822` SUCCESS; Architecture Semantic Audit `34974435113` SUCCESS; Merge Gate `34974838856` SUCCESS. Historical after later repairs.
-- later exact-head qualification evidence is historical whenever the candidate moves.
+- all qualification evidence on earlier heads is historical after this late-blocker repair.
 - fresh exact-head repository checks: required on the final candidate produced by this task-record commit.
 
 ### E2E
@@ -161,8 +177,8 @@ The repair makes the envelope example structurally consistent, adds fail-closed 
 ## Self-review
 
 - exact head: record from PR readback after this task-record commit
-- method/reviewer: implementing agent bounded review against #624 + generation-6 findings + bound META 3.1
-- material findings: 0 open in the bounded pass after `4db3390ac65bf3902fb59e2716716c3cd4f125a7`
+- method/reviewer: implementing agent bounded review against #624 + all accepted review findings + late-blocker successor state machine
+- material findings: 0 open in the implementing-agent pass after `77561601a5ddd5557e697dc593fa5959ac9aac5c`
 - verdict: PASS_PENDING_FRESH_EXACT_HEAD_CI_AND_FINAL_INDEPENDENT_REVIEW
 
 ## Independent review
@@ -171,6 +187,7 @@ The repair makes the envelope example structurally consistent, adds fail-closed 
 - historical generation 1: `5209285222` / head `7abaa1fa...` / 3 P1, dispositioned
 - historical generation 5: `5210336765` / head `a3de0bcd...` / 2 P1 + follow-up P2, dispositioned
 - historical generation 6: `5210541937` / head `dae61ae0...` / 2 P1, dispositioned
+- historical generation 7 finding: inline `4016247113` / head `58d6b2bb...` / 1 P1, repaired in `77561601...`
 - exact final head: record after this task-record commit
 - method/auditor: one fresh Codex deep review after deterministic validation
 - material findings: pending
@@ -180,7 +197,7 @@ The repair makes the envelope example structurally consistent, adds fail-closed 
 
 - PR: #625
 - changed-file review: PASS pre-final-freeze
-- unresolved review threads: 0 before this self-review repair; must remain 0 before final integration readiness
+- unresolved review threads: generation-7 P1 must be replied/resolved with exact repair evidence before final review
 - related/superseded PRs: none
 - protected integration: NOT_AUTHORIZED_BY_TASK
 - merge commit/result: pending
@@ -189,7 +206,7 @@ The repair makes the envelope example structurally consistent, adds fail-closed 
 ## Context checkpoint
 
 ```yaml
-last_progress: Closed generation-6 handoff gaps for structured envelope identity, live-main mutation preflight and generation-specific successor locators; reconciled canonical task record.
+last_progress: Added formal immutable late-blocker successor transition and reconciled canonical task record for generation-7 P1.
 status: validating
 branch: agent/closure-convergence-protocol
 head_sha: record_after_this_commit
@@ -206,10 +223,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 5
+repair_cycles_for_current_gate: 6
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze exact PR head, update PR body once with required metadata headings, run fresh exact-head CI, then obtain one fresh independent deep review without moving code or metadata.
+next_action: Reply/resolve generation-7 review thread with exact repair evidence, freeze exact PR head, update PR body once with required metadata headings, run fresh exact-head CI, then obtain one fresh independent deep review without moving code or metadata.
 ```
