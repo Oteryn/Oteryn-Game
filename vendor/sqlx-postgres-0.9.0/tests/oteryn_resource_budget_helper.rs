@@ -297,12 +297,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             } else {
                 let sizing = Arc::new(Ledger::new(usize::MAX, usize::MAX));
                 let sizing_owner: Arc<dyn ResourceBudget> = sizing.clone();
-                drop(selected_options(&admin_url, ca_path, sizing_owner)?);
-                let snapshot = sizing.snapshot();
-                if snapshot.ordinary == 0 || snapshot.ordinary != snapshot.root {
+                let profile = selected_options(&admin_url, ca_path, sizing_owner)?;
+                let live = sizing.snapshot();
+                if live.ordinary == 0 || live.ordinary != live.root {
                     return Err("selected profile sizing did not isolate retained backing".into());
                 }
-                snapshot.ordinary
+                drop(profile);
+                let released = sizing.snapshot();
+                if released.ordinary != 0 || released.root != 0 {
+                    return Err("selected profile sizing retained custody after drop".into());
+                }
+                live.ordinary
             };
             let ledger = Arc::new(if tls_phase {
                 tls_denial_ledger()
