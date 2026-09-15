@@ -1027,8 +1027,7 @@ impl RuntimeBackend {
                     .deadline
                     .saturating_duration_since(tokio::time::Instant::now());
                 if remaining.is_zero() {
-                    transaction
-                        .rollback()
+                    rollback_semantic(transaction)
                         .await
                         .map_err(DurabilityError::from)?;
                     return Err(DurabilityError::Unavailable);
@@ -1038,10 +1037,16 @@ impl RuntimeBackend {
                 // Install the transaction-wide server deadline before custody
                 // locks or generation SQL can block. Every later statement uses
                 // this same immutable pass deadline.
-                sqlx::query("SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)")
+                let timeout_result = sqlx::query("SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)")
                     .bind(format!("{millis}ms"))
                     .execute(&mut *transaction)
-                    .await?;
+                    .await;
+                if let Err(error) = timeout_result {
+                    rollback_semantic(transaction)
+                        .await
+                        .map_err(DurabilityError::from)?;
+                    return Err(DurabilityError::from(error));
+                }
                 // Keep ownership of the already-started transaction while the
                 // custody fence runs. A rejected fence is a no-mutation path,
                 // but dropping the transaction would only enqueue rollback and
@@ -1056,7 +1061,9 @@ impl RuntimeBackend {
                 .await;
                 if let Err(error) = fence_result {
                     let unavailable = matches!(error, DurabilityError::Unavailable);
-                    let _ = rollback_semantic(transaction).await;
+                    rollback_semantic(transaction)
+                        .await
+                        .map_err(DurabilityError::from)?;
                     if unavailable {
                         self.record_root_ready_demand();
                     }
@@ -1075,14 +1082,22 @@ impl RuntimeBackend {
         if !self.consume_root_ready_demand() {
             return Ok(());
         }
-        let mut connection = tokio::time::timeout(Duration::from_secs(5), self.pool.acquire())
-            .await
-            .map_err(|_| DurabilityError::Unavailable)??;
-        if connection.oteryn_m05_return_to_pool().await == Some(true) {
-            Ok(())
-        } else {
-            Err(DurabilityError::Unavailable)
+        let result = async {
+            let mut connection = tokio::time::timeout(Duration::from_secs(5), self.pool.acquire())
+                .await
+                .map_err(|_| DurabilityError::Unavailable)??;
+            match connection.oteryn_m05_return_to_pool().await {
+                Some(true) => Ok(()),
+                Some(false) | None => Err(DurabilityError::Unavailable),
+            }
         }
+        .await;
+        if result.is_err() {
+            // Consuming a coalesced demand is conditional on establishing a
+            // ready holder. Failed bounded windows leave the demand actionable.
+            self.record_root_ready_demand();
+        }
+        result
     }
 
     #[allow(irrefutable_let_patterns)]
@@ -1126,10 +1141,13 @@ impl RuntimeBackend {
         Ok(())
     }
 
-    pub(super) fn pending_snapshot(&self) -> [Option<super::DurablePendingCheckpoint>; 2] {
+    pub(super) fn pending_snapshot(
+        &self,
+    ) -> Result<[Option<super::DurablePendingCheckpoint>; 2], DurabilityError> {
         self.pending
             .lock()
-            .map_or([None, None], |pending| pending.clone())
+            .map(|pending| pending.clone())
+            .map_err(|_| DurabilityError::Unavailable)
     }
 }
 enum RuntimeRegistration {
@@ -1980,6 +1998,37 @@ mod work_custody_tests {
         assert!(!demand.consume());
         demand.record();
         assert!(demand.consume());
+    }
+
+    #[test]
+    #[allow(clippy::expect_used, clippy::panic)]
+    fn poisoned_pending_snapshot_fails_closed() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let pool =
+                sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://localhost/test")?;
+            let backend = std::sync::Arc::new(RuntimeBackend {
+                pool,
+                custody: BackendCustody::LegacyFixture,
+                pending: std::sync::Mutex::new([None, None]),
+                work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                root_ready_demand: RootReadyDemand::new(),
+                root_maintenance: tokio::sync::Mutex::new(()),
+            });
+            let poison = backend.clone();
+            let _ = std::thread::spawn(move || {
+                let _guard = poison.pending.lock().expect("pending lock");
+                panic!("poison pending custody");
+            })
+            .join();
+            assert!(matches!(
+                backend.pending_snapshot(),
+                Err(DurabilityError::Unavailable)
+            ));
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
     }
 
     #[test]

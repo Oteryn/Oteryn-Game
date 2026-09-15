@@ -260,6 +260,9 @@ impl AdmissionRuntimeConfig {
                 value.checked_add(std::mem::size_of::<AdmissionRuntimeConfigBacking>())
             })
             .and_then(|value| value.checked_add(2 * std::mem::size_of::<usize>()))
+            // `backing` and the distinct configuration-generation identity
+            // each retain an Arc allocation with a strong/weak counter pair.
+            .and_then(|value| value.checked_add(2 * std::mem::size_of::<usize>()))
             .ok_or(sqlx::postgres::BudgetError::Overflow)?;
         resource_budget.try_reserve(bytes)?;
         let reservation = ConfigReservation {
@@ -342,7 +345,14 @@ mod m05_config_accounting_tests {
         });
         let config = build(funded.clone())?;
         let retained = funded.retained.load(Ordering::SeqCst);
-        assert!(retained > 0);
+        let expected = "localhost".len()
+            + "game".len()
+            + "game".len()
+            + "secret".len()
+            + b"inline-ca".len()
+            + std::mem::size_of::<super::AdmissionRuntimeConfigBacking>()
+            + 4 * std::mem::size_of::<usize>();
+        assert_eq!(retained, expected);
         let clone = config.clone();
         assert!(Arc::ptr_eq(&config.backing, &clone.backing));
         assert_eq!(funded.retained.load(Ordering::SeqCst), retained);
@@ -2921,8 +2931,9 @@ impl AdmissionRuntime {
     pub fn guards(&self) -> admission_authority_guards::AdmissionGuardStore {
         admission_authority_guards::AdmissionGuardStore::from_backend(self.backend.clone())
     }
-    #[must_use]
-    pub fn recovered_pending(&self) -> [Option<DurablePendingCheckpoint>; 2] {
+    pub fn recovered_pending(
+        &self,
+    ) -> Result<[Option<DurablePendingCheckpoint>; 2], DurabilityError> {
         self.backend.pending_snapshot()
     }
 

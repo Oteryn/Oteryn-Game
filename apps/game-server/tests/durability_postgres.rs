@@ -3735,7 +3735,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fixture_pool_connect"))?;
             let fresh = runtime.fresh();
             if std::env::var(CHILD_MODE)?.starts_with("produce") {
-                assert!(runtime.recovered_pending().iter().all(Option::is_none));
+                assert!(runtime.recovered_pending()?.iter().all(Option::is_none));
                 let now = postgres_clock(&pool).await?;
                 let owner = postgres::fresh::Source::new(now)?;
                 let request = owner.request()?;
@@ -3811,7 +3811,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 // neither destructors nor an acknowledgement release active slots.
                 std::process::exit(0);
             }
-            let pending = runtime.recovered_pending();
+            let pending = runtime.recovered_pending()?;
             let first = pending[0].as_ref().ok_or("lost first pending original")?;
             let second = pending[1].as_ref().ok_or("lost second pending original")?;
             assert_eq!((first.slot, first.operation_kind), (1,1));
@@ -4051,11 +4051,11 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     generation, "2",
                     "same process registration must not take custody twice"
                 );
-                assert_eq!(runtime.recovered_pending(), repeated.recovered_pending());
+                assert_eq!(runtime.recovered_pending()?, repeated.recovered_pending()?);
                 for (slot, expected) in [(0, guard_original.as_str()), (1, fresh_original.as_str())]
                 {
                     assert_eq!(
-                        runtime.recovered_pending()[slot]
+                        runtime.recovered_pending()?[slot]
                             .as_ref()
                             .ok_or("registered runtime lost pending original")?
                             .operation_json,
@@ -4066,10 +4066,10 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                     predecessor.fence(&pool).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
-                let first_pending = runtime.recovered_pending()[0]
+                let first_pending = runtime.recovered_pending()?[0]
                     .clone()
                     .ok_or("missing first registered original")?;
-                let second_pending = runtime.recovered_pending()[1]
+                let second_pending = runtime.recovered_pending()?[1]
                     .clone()
                     .ok_or("missing second registered original")?;
                 let first_pass = runtime.resume_checkpoint(
@@ -4109,7 +4109,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 let v2 = repeated.reconnect_v2();
                 // A real successor invalidates every previously issued handle.
                 let (_successor, retained) = DurabilityCustody::acquire(&pool).await?;
-                assert_eq!(retained, runtime.recovered_pending());
+                assert_eq!(retained, runtime.recovered_pending()?);
                 assert!(matches!(
                     first_pass.run(guards.load(&[])).await,
                     Err(DurabilityError::InvalidStoredState)
