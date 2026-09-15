@@ -2916,3 +2916,8 @@ impl AdmissionRuntime {
         self.backend.acknowledge(pass).await
     }
 }
+
+#[cfg(test)]
+pub(crate) fn registered_connect_diagnostic_substage() -> &'static str {
+    db::registered_connect_diagnostic_substage()
+}

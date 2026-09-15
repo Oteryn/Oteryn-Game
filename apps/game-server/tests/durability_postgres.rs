@@ -35,6 +35,15 @@ mod wp3_registered_root_qualification {
         Box::new(std::io::Error::other(stage))
     }
 
+    pub(super) fn registered_connect_stage_failure(
+        stage: &'static str,
+    ) -> Box<dyn std::error::Error> {
+        Box::new(std::io::Error::other(format!(
+            "{stage};REGISTERED_CONNECT_FIRST_SUBSTAGE={}",
+            super::durability::registered_connect_diagnostic_substage()
+        )))
+    }
+
     pub(super) struct TlsFixtureLease(PathBuf);
 
     impl Drop for TlsFixtureLease {
@@ -3598,7 +3607,7 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 )?,
             )
             .await
-            .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_admission_runtime_connect"))?;
+            .map_err(|_| wp3_registered_root_qualification::registered_connect_stage_failure("WP3_STAGE=child_admission_runtime_connect"))?;
             let pool = sqlx::PgPool::connect(&url)
                 .await
                 .map_err(|_| wp3_registered_root_qualification::stage_failure("WP3_STAGE=child_fixture_pool_connect"))?;
@@ -3858,7 +3867,7 @@ fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
                 let runtime = AdmissionRuntime::connect(production_config.clone())
                     .await
                     .map_err(|_| {
-                        wp3_registered_root_qualification::stage_failure(
+                        wp3_registered_root_qualification::registered_connect_stage_failure(
                             "WP3_STAGE=shared_admission_runtime_connect",
                         )
                     })?;

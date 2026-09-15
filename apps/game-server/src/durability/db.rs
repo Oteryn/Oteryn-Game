@@ -1074,9 +1074,46 @@ impl PartialEq for RuntimeIdentity {
 static RUNTIME_REGISTRATION: tokio::sync::Mutex<RuntimeRegistration> =
     tokio::sync::Mutex::const_new(RuntimeRegistration::Empty);
 
+#[cfg(test)]
+#[derive(Clone, Copy)]
+enum RegisteredConnectDiagnosticSubstage {
+    RootProfileConstruct,
+    RootSchemaInspect,
+    RootCustodyAcquire,
+    RootHolderReturn,
+    Ready,
+}
+
+#[cfg(test)]
+thread_local! {
+    static REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE:
+        std::cell::Cell<RegisteredConnectDiagnosticSubstage> =
+        const { std::cell::Cell::new(RegisteredConnectDiagnosticSubstage::RootProfileConstruct) };
+}
+
+#[cfg(test)]
+fn set_registered_connect_diagnostic_substage(stage: RegisteredConnectDiagnosticSubstage) {
+    REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE.set(stage);
+}
+
+#[cfg(test)]
+pub(super) fn registered_connect_diagnostic_substage() -> &'static str {
+    REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE.with(|stage| match stage.get() {
+        RegisteredConnectDiagnosticSubstage::RootProfileConstruct => "root_profile_construct",
+        RegisteredConnectDiagnosticSubstage::RootSchemaInspect => "root_schema_inspect",
+        RegisteredConnectDiagnosticSubstage::RootCustodyAcquire => "root_custody_acquire",
+        RegisteredConnectDiagnosticSubstage::RootHolderReturn => "root_holder_return",
+        RegisteredConnectDiagnosticSubstage::Ready => "ready",
+    })
+}
+
 pub(super) async fn registered_backend(
     config: super::AdmissionRuntimeConfig,
 ) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootProfileConstruct,
+    );
     if config.port == 0
         || config.backing.tls_server_name.is_empty()
         || config.backing.database.is_empty()
@@ -1134,13 +1171,25 @@ pub(super) async fn registered_backend(
         ("lock_timeout", "2000ms"),
     ])
     .map_err(|_| DurabilityError::Unavailable)?;
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootSchemaInspect,
+    );
     let pool = super::schema::connect_runtime_root(options).await?;
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootCustodyAcquire,
+    );
     let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
     // `DurabilityCustody::acquire` consumes the holder's only connection in a
     // transaction. Committing that transaction starts SQLx's asynchronous
     // return path; it does not itself prove that the connection is idle. Take
     // custody of that exact max-one holder capacity and explicitly complete a
     // return before publishing this generation as ready.
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootHolderReturn,
+    );
     let mut connection = pool.acquire().await.map_err(DurabilityError::from)?;
     if connection.oteryn_m05_return_to_pool().await != Some(true) {
         return Err(DurabilityError::Unavailable);
@@ -1158,6 +1207,8 @@ pub(super) async fn registered_backend(
         backend: std::sync::Arc::downgrade(&backend),
     };
     starting.complete = true;
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(RegisteredConnectDiagnosticSubstage::Ready);
     Ok(backend)
 }
 
