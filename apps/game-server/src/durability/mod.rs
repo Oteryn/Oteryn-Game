@@ -2886,6 +2886,19 @@ impl AdmissionRuntime {
         self.backend.resume_pass(slot, operation_kind, original)
     }
 
+    /// Retry an ambiguous checkpoint establishment for the exact retained
+    /// occupation. This never mints replacement work or clears uncertain state.
+    #[allow(dead_code)]
+    pub async fn retry_checkpoint_establishment(
+        &self,
+        operation_kind: i16,
+        original: &str,
+    ) -> Result<SemanticPass, DurabilityError> {
+        self.backend
+            .retry_checkpoint_establishment(operation_kind, original)
+            .await
+    }
+
     pub async fn connect(config: AdmissionRuntimeConfig) -> Result<Self, DurabilityError> {
         Ok(Self {
             backend: db::registered_backend(config).await?,

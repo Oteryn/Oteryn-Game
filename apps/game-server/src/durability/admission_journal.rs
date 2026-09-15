@@ -171,6 +171,7 @@ impl AdmissionReconnectJournal {
         .fetch_one(&mut *transaction)
         .await?;
         if occupied {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
         let inserted_session = sqlx::query(
@@ -223,6 +224,7 @@ impl AdmissionReconnectJournal {
             .try_get::<Option<String>, _>("control_loss_epoch")?
             .is_none()
         {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
         // Owning-loss protection uses independent entitlement/rearm namespaces.
@@ -539,6 +541,7 @@ impl AdmissionReconnectJournal {
         let Some(session) =
             load_session_for_update(&mut transaction, session_id.as_slice()).await?
         else {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         };
         if !session_binding_is_valid(&session, record)? {
@@ -551,6 +554,7 @@ impl AdmissionReconnectJournal {
             .fetch_optional(&mut *transaction)
             .await?;
         let Some(attempt) = attempt else {
+            super::db::rollback_semantic(transaction).await?;
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         };
         if guarded_record_json(&attempt)? != encoded_record {

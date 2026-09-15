@@ -395,18 +395,21 @@ impl FreshAdmissionStore {
         let initial = checked(b.initial_commit())?;
         let candidate_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1, 'hex')::uuid)").bind(b.candidate_session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if candidate_exists {
+            super::db::rollback_semantic(tx).await?;
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedCollision(
                 FreshAdmissionCollisionV1::CandidateSession,
             ));
         }
         let transport_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1)").bind(b.transport.to_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if transport_exists {
+            super::db::rollback_semantic(tx).await?;
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedCollision(
                 FreshAdmissionCollisionV1::TransportReference,
             ));
         }
         let incumbent: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE session_state IN (1,2) AND (account_id = $1::text::uuid OR character_id = encode($2, 'hex')::uuid))").bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if incumbent {
+            super::db::rollback_semantic(tx).await?;
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedIncumbent);
         }
         let mut current = Vec::with_capacity(b.expected_guards.len());
@@ -430,6 +433,7 @@ impl FreshAdmissionStore {
             .successor_history_available(&mut tx, &operation.transition.successors, &previous)
             .await?
         {
+            super::db::rollback_semantic(tx).await?;
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         }
         // All relation protection and conflict/history observations precede L.
@@ -439,6 +443,7 @@ impl FreshAdmissionStore {
                 .fetch_one(&mut *tx)
                 .await?;
         let Ok(successors) = request.validate_at_decision(&current, Some(decided_at)) else {
+            super::db::rollback_semantic(tx).await?;
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         };
         sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
