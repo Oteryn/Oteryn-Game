@@ -287,10 +287,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     match mode.as_str() {
         "deny" | "deny-transport" => {
             let tls_phase = mode == "deny";
+            // The selected profile itself owns precharged retained backing. For
+            // transport denial, fund exactly that backing and leave no capacity
+            // for the first connection-owner allocation; derive the amount by
+            // constructing and destroying the real selected profile rather than
+            // hard-coding a compensating allowance.
+            let transport_profile_bytes = if tls_phase {
+                0
+            } else {
+                let sizing = Arc::new(Ledger::new(usize::MAX, usize::MAX));
+                let sizing_owner: Arc<dyn ResourceBudget> = sizing.clone();
+                drop(selected_options(&admin_url, ca_path, sizing_owner)?);
+                let snapshot = sizing.snapshot();
+                if snapshot.ordinary == 0 || snapshot.ordinary != snapshot.root {
+                    return Err("selected profile sizing did not isolate retained backing".into());
+                }
+                snapshot.ordinary
+            };
             let ledger = Arc::new(if tls_phase {
                 tls_denial_ledger()
             } else {
-                Ledger::new(0, 0)
+                Ledger::new(transport_profile_bytes, transport_profile_bytes)
             });
             let owner: Arc<dyn ResourceBudget> = ledger.clone();
             let options = selected_options(&admin_url, ca_path, owner.clone())?;
@@ -360,8 +377,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             } else {
                 if snapshot.ordinary != 0
                     || snapshot.root != 0
-                    || snapshot.peak_ordinary != 0
-                    || snapshot.peak_root != 0
+                    || snapshot.peak_ordinary != transport_profile_bytes
+                    || snapshot.peak_root != transport_profile_bytes
                     || snapshot.provider_shared != 0
                     || snapshot.denied_tls_phase
                 {
