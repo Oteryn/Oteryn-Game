@@ -50,6 +50,7 @@ Record:
 closure_head:
   repository: Oteryn/Oteryn-Game
   issue: <issue>
+  task_id: <task id>
   pr: <pr>
   branch: <branch>
   base_main_sha: <sha>
@@ -77,7 +78,7 @@ accepted_decisions:
 
 The auditor must resolve the live target and require its exact head to equal `closure_head` before using source/check/review evidence for the sweep. If the branch or PR head differs, return a stale-target/insufficient-evidence disposition and do not silently audit the newer generation under the frozen sweep.
 
-For final review the same existing field carries the additional frozen locators:
+For final review the same existing field carries the frozen sweep-generation identity, immutable inventory identity and exact qualified candidate:
 
 ```yaml
 accepted_decisions:
@@ -86,13 +87,23 @@ accepted_decisions:
       audit_mode: FINAL_CANDIDATE_REVIEW
       frozen_root_cause_inventory:
         evidence_locator: <editable GitHub evidence-note ref>
+        sweep_target:
+          repository: Oteryn/Oteryn-Game
+          issue: <governing issue>
+          task_id: <task id>
+          pr: <pr>
+          branch: <branch>
+          closure_head: <Phase 1 head_sha>
+          tree_sha: <Phase 1 tree_sha>
         content_identity:
           serialization: RFC8785_JSON
-          sha256: <lowercase hex digest of the canonical serialized inventory>
-      qualified_head: <exact sha>
+          sha256: <lowercase hex digest of the canonical serialized inventory envelope>
+      qualified_head: <exact qualified candidate sha>
 ```
 
-The final reviewer must retrieve the inventory through `evidence_locator`, canonicalize its inventory content using the declared serialization, recompute the digest, and require an exact match with `content_identity` before review. A missing identity, unavailable content, unsupported serialization or digest mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed or unverified inventory content.
+Before dispatch, the control plane must require the descriptor's `sweep_target` to exact-match the corresponding immutable fields of the Phase 1 `closure_head` record. The final reviewer must retrieve the inventory through `evidence_locator`, canonicalize the complete inventory envelope using the declared serialization, recompute the digest, and require an exact match with `content_identity`. The reviewer must also require the envelope's `sweep_target` to exact-match the descriptor and the Phase 1 closure generation. A missing identity, unavailable content, unsupported serialization, digest mismatch or sweep-target mismatch is a fail-closed stale/drifted-inventory disposition; the reviewer must not qualify the candidate against changed, cross-lane, cross-task or wrong-generation inventory content.
+
+Independently of the inventory checks, the control plane immediately before dispatch and the reviewer immediately before review must resolve the live PR/branch target and require its exact current head to equal `qualified_head`. A live-target mismatch returns a fail-closed `STALE_QUALIFIED_HEAD` (or repository-defined equivalent) disposition. Never review a newer live head under qualification evidence for an older candidate.
 
 These descriptors narrow how the requested audit is performed. They do not add authority and do not replace the normal `objective`, `relevant_findings`, `required_validation` or `lazy_refs` packet fields.
 
@@ -154,23 +165,49 @@ evidence_refs: []
 
 If the selected auditor emits its canonical `classification` field rather than duplicating it as `evidence_classification`, the control plane may copy that exact value into the root-cause inventory. Never reinterpret `UNKNOWN` or `CONFLICT` as `PROVEN` merely to complete the inventory.
 
-The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation. Serialize the complete inventory content as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The resulting immutable `content_identity` proves the exact inventory; the auditor's normal editable GitHub evidence note remains only an `evidence_locator` and must never be treated as the inventory identity by itself.
+The sweep ends with one frozen `FINAL_ROOT_CAUSE_INVENTORY` and no source mutation. The immutable object whose identity is bound must be a complete inventory envelope, not the root-cause payload alone:
+
+```json
+{
+  "schema": "OTV2_FINAL_ROOT_CAUSE_INVENTORY_V1",
+  "sweep_target": {
+    "repository": "Oteryn/Oteryn-Game",
+    "issue": "<governing issue>",
+    "task_id": "<task id>",
+    "pr": "<pr>",
+    "branch": "<branch>",
+    "closure_head": "<Phase 1 head_sha>",
+    "tree_sha": "<Phase 1 tree_sha>"
+  },
+  "inventory": "<complete FINAL_ROOT_CAUSE_INVENTORY content>"
+}
+```
+
+The `inventory` value above denotes the complete structured inventory value, not a string serialization. Serialize this entire envelope as RFC 8785 canonical JSON and bind it to a lowercase hexadecimal SHA-256 digest. The `sweep_target` fields must exact-match the Phase 1 closure record before the identity is accepted. The resulting immutable `content_identity` therefore proves both the exact inventory and the exact sweep generation; the auditor's normal editable GitHub evidence note remains only an `evidence_locator` and must never be treated as inventory or generation identity by itself.
 
 ## Phase 3 — freeze inventory and prepare authority once
 
 The active control plane consumes the sweep and freezes the material root-cause set before repair.
 
-The freeze record must carry both the editable evidence locator and the immutable content identity:
+The freeze record must carry the immutable sweep target, editable evidence locator and immutable content identity:
 
 ```yaml
 final_root_cause_inventory:
   evidence_locator: <editable GitHub evidence-note ref>
+  sweep_target:
+    repository: Oteryn/Oteryn-Game
+    issue: <governing issue>
+    task_id: <task id>
+    pr: <pr>
+    branch: <branch>
+    closure_head: <Phase 1 head_sha>
+    tree_sha: <Phase 1 tree_sha>
   content_identity:
     serialization: RFC8785_JSON
-    sha256: <lowercase hex digest of the canonical serialized inventory>
+    sha256: <lowercase hex digest of the canonical serialized inventory envelope>
 ```
 
-Immediately before any repair dispatch, retrieve the inventory through the locator, canonicalize the complete inventory content using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Missing/unavailable identity material, an unsupported serialization, or any digest mismatch/drift fails closed and returns the inventory for reconciliation; changed content behind the same editable locator cannot silently qualify for the frozen repair generation.
+Immediately before any repair dispatch, retrieve the inventory through the locator, canonicalize the complete envelope using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Independently exact-match the envelope's `sweep_target` and the freeze record's `sweep_target` against the Phase 1 `closure_head` record. Missing/unavailable identity material, an unsupported serialization, digest mismatch/drift or target-generation mismatch fails closed and returns the inventory for reconciliation; valid inventory from another repository, task, PR, branch or closure generation cannot silently qualify for this repair generation.
 
 Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its evidence classification:
 
@@ -215,7 +252,9 @@ A qualification failure may create a new concrete repair trigger. Diagnose the f
 
 ## Phase 6 — final whole-diff review
 
-Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the frozen root-cause inventory locator and immutable content identity, and the exact qualified head. The control plane and reviewer must exact-match the recomputed inventory identity before dispatch and before review respectively; mismatch or drift fails closed.
+Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the frozen root-cause inventory locator, immutable sweep-target identity, immutable content identity, and the exact qualified head. Before dispatch, the control plane must (1) exact-match the recomputed inventory envelope identity, (2) exact-match the envelope and descriptor `sweep_target` to the Phase 1 closure record, and (3) resolve the live candidate and require its current exact head to equal `qualified_head`.
+
+The reviewer must repeat all three checks against independently resolved evidence immediately before review. Inventory mismatch/drift or sweep-target mismatch fails closed. If the live PR/branch head does not equal `qualified_head`, return `STALE_QUALIFIED_HEAD` and do not attach review conclusions to the newer generation. The pre-repair `closure_head` and post-repair `qualified_head` may legitimately differ; the required invariant is that the inventory remains bound to the exact Phase 1 sweep generation while the review itself remains bound to the exact qualified candidate.
 
 The final review asks primarily:
 
@@ -257,6 +296,14 @@ convergence_mode: ACTIVE | COMPLETE
 closure_head: <sha or null>
 final_root_cause_inventory:
   evidence_locator: <editable evidence ref or null>
+  sweep_target:
+    repository: <repo or null>
+    issue: <issue or null>
+    task_id: <task id or null>
+    pr: <pr or null>
+    branch: <branch or null>
+    closure_head: <Phase 1 sha or null>
+    tree_sha: <Phase 1 tree or null>
   content_identity:
     serialization: RFC8785_JSON
     sha256: <lowercase hex digest or null>
