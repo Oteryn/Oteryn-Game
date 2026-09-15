@@ -33,6 +33,7 @@ struct Snapshot {
     denied_ordinary: usize,
     denied_root: usize,
     denied_tls_phase: bool,
+    denial_count: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -54,6 +55,7 @@ struct State {
     denied_ordinary: usize,
     denied_root: usize,
     denied_tls_phase: bool,
+    denial_count: usize,
     events: Vec<Event>,
 }
 
@@ -71,6 +73,7 @@ impl State {
     }
 
     fn record_denial(&mut self, bytes: usize) {
+        self.denial_count += 1;
         self.denied_bytes = bytes;
         self.denied_ordinary = self.ordinary;
         self.denied_root = self.root;
@@ -106,6 +109,7 @@ impl Ledger {
             denied_ordinary: state.denied_ordinary,
             denied_root: state.denied_root,
             denied_tls_phase: state.denied_tls_phase,
+            denial_count: state.denial_count,
         }
     }
 
@@ -123,6 +127,60 @@ impl Ledger {
             .collect::<Vec<_>>()
             .join(";")
     }
+}
+
+fn error_variant(error: &sqlx::Error) -> &'static str {
+    match error {
+        sqlx::Error::Configuration(_) => "Configuration",
+        sqlx::Error::InvalidArgument(_) => "InvalidArgument",
+        sqlx::Error::Database(_) => "Database",
+        sqlx::Error::Io(_) => "Io",
+        sqlx::Error::Tls(_) => "Tls",
+        sqlx::Error::Protocol(_) => "Protocol",
+        sqlx::Error::RowNotFound => "RowNotFound",
+        sqlx::Error::TypeNotFound { .. } => "TypeNotFound",
+        sqlx::Error::ColumnIndexOutOfBounds { .. } => "ColumnIndexOutOfBounds",
+        sqlx::Error::ColumnNotFound(_) => "ColumnNotFound",
+        sqlx::Error::ColumnDecode { .. } => "ColumnDecode",
+        sqlx::Error::Encode(_) => "Encode",
+        sqlx::Error::Decode(_) => "Decode",
+        sqlx::Error::AnyDriverError(_) => "AnyDriverError",
+        sqlx::Error::PoolTimedOut => "PoolTimedOut",
+        sqlx::Error::PoolClosed => "PoolClosed",
+        sqlx::Error::WorkerCrashed => "WorkerCrashed",
+        sqlx::Error::Migrate(_) => "Migrate",
+        _ => "UnknownNonExhaustive",
+    }
+}
+
+fn source_chain_diagnostics(error: &(dyn Error + 'static)) -> String {
+    let mut entries = Vec::new();
+    let mut current = Some(error);
+    while let Some(source) = current {
+        let detail = source
+            .downcast_ref::<std::io::Error>()
+            .map_or_else(|| source.to_string(), |io| format!("io_kind={:?}", io.kind()));
+        entries.push(format!("{}:{detail}", entries.len()));
+        current = source.source();
+    }
+    entries.join(" -> ")
+}
+
+fn source_chain_has_io_kind(
+    error: &(dyn Error + 'static),
+    expected: std::io::ErrorKind,
+) -> bool {
+    let mut current = Some(error);
+    while let Some(source) = current {
+        if source
+            .downcast_ref::<std::io::Error>()
+            .is_some_and(|io| io.kind() == expected)
+        {
+            return true;
+        }
+        current = source.source();
+    }
+    false
 }
 
 impl ResourceBudget for Ledger {
@@ -334,9 +392,23 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(error) => error,
             };
+            let denial_snapshot = ledger.snapshot();
             match &error {
                 sqlx::Error::Io(source)
-                    if !tls_phase && source.kind() == std::io::ErrorKind::OutOfMemory => {}
+                    if !tls_phase
+                        && source.kind() == std::io::ErrorKind::OutOfMemory
+                        && source_chain_has_io_kind(
+                            &error,
+                            std::io::ErrorKind::OutOfMemory,
+                        )
+                        && denial_snapshot.denial_count == 1
+                        && denial_snapshot.denied_bytes != 0
+                        && denial_snapshot.denied_ordinary == transport_profile_bytes
+                        && denial_snapshot.denied_root == transport_profile_bytes
+                        && denial_snapshot.ordinary == transport_profile_bytes
+                        && denial_snapshot.root == transport_profile_bytes
+                        && denial_snapshot.provider_shared == 0
+                        && !denial_snapshot.denied_tls_phase => {}
                 sqlx::Error::Tls(source) if tls_phase => {
                     let Some(cause) = source.downcast_ref::<BudgetError>() else {
                         return Err(format!(
@@ -349,8 +421,22 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
                 other => {
+                    let snapshot = ledger.snapshot();
                     return Err(format!(
-                        "{mode} resource denial escaped through unexpected holder surface: {other}"
+                        "{mode} resource denial escaped through unexpected holder surface: variant={}, source_chain=[{}], denied_count={}, denied_bytes={}, denied_at_ordinary={}, denied_at_root={}, ordinary={}, root={}, peak_ordinary={}, peak_root={}, provider_shared={}, denied_tls_phase={}, trace=[{}]",
+                        error_variant(other),
+                        source_chain_diagnostics(other),
+                        snapshot.denial_count,
+                        snapshot.denied_bytes,
+                        snapshot.denied_ordinary,
+                        snapshot.denied_root,
+                        snapshot.ordinary,
+                        snapshot.root,
+                        snapshot.peak_ordinary,
+                        snapshot.peak_root,
+                        snapshot.provider_shared,
+                        snapshot.denied_tls_phase,
+                        ledger.trace(),
                     )
                     .into());
                 }

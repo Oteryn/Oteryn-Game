@@ -993,6 +993,15 @@ pub(super) async fn registered_backend(
     .map_err(|_| DurabilityError::Unavailable)?;
     let pool = super::schema::connect_runtime_root(options).await?;
     let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
+    // `DurabilityCustody::acquire` consumes the holder's only connection in a
+    // transaction. Committing that transaction starts SQLx's asynchronous
+    // return path; it does not itself prove that the connection is idle. Take
+    // custody of that exact max-one holder capacity and explicitly complete a
+    // return before publishing this generation as ready.
+    let mut connection = pool.acquire().await.map_err(DurabilityError::from)?;
+    if connection.oteryn_m05_return_to_pool().await != Some(true) {
+        return Err(DurabilityError::Unavailable);
+    }
     let backend = std::sync::Arc::new(RuntimeBackend {
         pool,
         custody: BackendCustody::Registered(custody),
