@@ -153,29 +153,31 @@ impl AdmissionReconnectJournal {
             scope_storage(record);
 
         let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_domain(&mut transaction, record).await?;
-        // Exclusion applies only to a new session for another character. Existing
-        // sessions must retain binding, replay and actor-budget classification;
-        // same-character session forks retain the continuity error below. The
-        // common relation fence protects both absence and incumbent observations.
-        let occupied: bool = sqlx::query_scalar(
-            "SELECT NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions \
+        let outcome = async {
+            super::db::lock_admission_domain(&mut transaction, record).await?;
+            // Exclusion applies only to a new session for another character. Existing
+            // sessions must retain binding, replay and actor-budget classification;
+            // same-character session forks retain the continuity error below. The
+            // common relation fence protects both absence and incumbent observations.
+            let occupied: bool = sqlx::query_scalar(
+                "SELECT NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions \
              WHERE game_session_id = encode($2, 'hex')::uuid) \
              AND EXISTS (SELECT 1 FROM game_durability_reconnect_sessions \
              WHERE account_id = $1::text::uuid AND session_state IN (1, 2) \
                AND character_id <> encode($3, 'hex')::uuid)",
-        )
-        .bind(identity.account_id())
-        .bind(session_id.as_slice())
-        .bind(identity.character_id().as_bytes().as_slice())
-        .fetch_one(&mut *transaction)
-        .await?;
-        if occupied {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
-        }
-        let inserted_session = sqlx::query(
-            "INSERT INTO game_durability_reconnect_sessions (\
+            )
+            .bind(identity.account_id())
+            .bind(session_id.as_slice())
+            .bind(identity.character_id().as_bytes().as_slice())
+            .fetch_one(&mut *transaction)
+            .await?;
+            if occupied {
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                ));
+            }
+            let inserted_session = sqlx::query(
+                "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
                 runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
                 control_loss_epoch, original_grace_deadline, predecessor_generation, \
@@ -188,218 +190,239 @@ impl AdmissionReconnectJournal {
                 $12::text::numeric(20, 0), $13::text::numeric(20, 0), \
                 $11::text::numeric(20, 0)\
              ) ON CONFLICT DO NOTHING",
-        )
-        .bind(session_id.as_slice())
-        .bind(identity.account_id())
-        .bind(identity.character_id().as_bytes().as_slice())
-        .bind(identity.world_id().as_bytes().as_slice())
-        .bind(scope_kind)
-        .bind(scope_world_id.as_slice())
-        .bind(scope_channel_id.as_deref())
-        .bind(scope_instance_id.as_deref())
-        .bind(&epoch)
-        .bind(original_grace_deadline)
-        .bind(&predecessor)
-        .bind(&character_lease)
-        .bind(&scope_generation)
-        .execute(&mut *transaction)
-        .await?;
-        if inserted_session.rows_affected() == 1 {
-            ensure_precommit_protection_continuity(&mut transaction, record).await?;
-        }
-
-        let Some(mut session) =
-            load_session_for_update(&mut transaction, session_id.as_slice()).await?
-        else {
-            return Err(DurabilityError::InvalidStoredState);
-        };
-        if !session_binding_is_valid(&session, record)? {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        // PREPARE is not owning evidence of unexpected controller loss.
-        // Initial fresh continuity remains absent until an independently
-        // authorized canonical loss operation installs it. Reject before any
-        // stale attempt/children can poison a future legitimate epoch.
-        if session
-            .try_get::<Option<String>, _>("control_loss_epoch")?
-            .is_none()
-        {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
-        }
-        // Owning-loss protection uses independent entitlement/rearm namespaces.
-        // Legacy records cannot safely translate those facts into candidate-
-        // connection protection flags; require the separately qualified bridge.
-        if super::fresh_admission::has_owning_loss_receipt(
-            &mut transaction,
-            &session_id,
-            session
-                .try_get::<String, _>("control_loss_epoch")?
-                .parse::<u64>()
-                .map_err(|_| DurabilityError::InvalidStoredState)?,
-        )
-        .await?
-        {
-            return Ok(ReconnectPrepareDispositionV1::Unavailable);
-        }
-        let receipt_backed = !receipt_authorized
-            && replacement_receipt_matches_record(&mut transaction, record).await?;
-        let existing = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+            )
             .bind(session_id.as_slice())
-            .bind(attempt_ref.as_slice())
-            .bind(super::MAX_ADMISSION_ROW_BYTES)
-            .fetch_optional(&mut *transaction)
+            .bind(identity.account_id())
+            .bind(identity.character_id().as_bytes().as_slice())
+            .bind(identity.world_id().as_bytes().as_slice())
+            .bind(scope_kind)
+            .bind(scope_world_id.as_slice())
+            .bind(scope_channel_id.as_deref())
+            .bind(scope_instance_id.as_deref())
+            .bind(&epoch)
+            .bind(original_grace_deadline)
+            .bind(&predecessor)
+            .bind(&character_lease)
+            .bind(&scope_generation)
+            .execute(&mut *transaction)
             .await?;
-        if let Some(existing) = existing {
-            if receipt_backed {
+            if inserted_session.rows_affected() == 1 {
+                ensure_precommit_protection_continuity(&mut transaction, record).await?;
+            }
+
+            let Some(mut session) =
+                load_session_for_update(&mut transaction, session_id.as_slice()).await?
+            else {
+                return Err(DurabilityError::InvalidStoredState);
+            };
+            if !session_binding_is_valid(&session, record)? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            let stored_record = guarded_record_json(&existing)?;
-            if stored_record != encoded_record {
-                super::db::rollback_semantic(transaction).await?;
-                return Ok(ReconnectPrepareDispositionV1::IdempotencyConflict);
-            }
-            if !attempt_binding_is_valid(&mut transaction, record).await? {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            let state: i16 = existing.try_get("state")?;
-            if state == COMMITTED
-                && !committed_protection_binding_is_valid(&mut transaction, record).await?
+            // PREPARE is not owning evidence of unexpected controller loss.
+            // Initial fresh continuity remains absent until an independently
+            // authorized canonical loss operation installs it. Reject before any
+            // stale attempt/children can poison a future legitimate epoch.
+            if session
+                .try_get::<Option<String>, _>("control_loss_epoch")?
+                .is_none()
             {
-                return Err(DurabilityError::InvalidStoredState);
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                ));
             }
-            if state == PREPARED
-                && !precommit_protection_binding_is_valid(&mut transaction, record, false).await?
+            // Owning-loss protection uses independent entitlement/rearm namespaces.
+            // Legacy records cannot safely translate those facts into candidate-
+            // connection protection flags; require the separately qualified bridge.
+            if super::fresh_admission::has_owning_loss_receipt(
+                &mut transaction,
+                &session_id,
+                session
+                    .try_get::<String, _>("control_loss_epoch")?
+                    .parse::<u64>()
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            )
+            .await?
             {
-                return Err(DurabilityError::InvalidStoredState);
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectPrepareDispositionV1::Unavailable,
+                ));
             }
-            if state == PREPARED && database_now(&mut transaction).await? > prepared_deadline {
-                if session
-                    .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
-                    .as_deref()
-                    != Some(attempt_ref.as_slice())
+            let receipt_backed = !receipt_authorized
+                && replacement_receipt_matches_record(&mut transaction, record).await?;
+            let existing = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .bind(super::MAX_ADMISSION_ROW_BYTES)
+                .fetch_optional(&mut *transaction)
+                .await?;
+            if let Some(existing) = existing {
+                if receipt_backed {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let stored_record = guarded_record_json(&existing)?;
+                if stored_record != encoded_record {
+                    return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                        ReconnectPrepareDispositionV1::IdempotencyConflict,
+                    ));
+                }
+                if !attempt_binding_is_valid(&mut transaction, record).await? {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let state: i16 = existing.try_get("state")?;
+                if state == COMMITTED
+                    && !committed_protection_binding_is_valid(&mut transaction, record).await?
                 {
                     return Err(DurabilityError::InvalidStoredState);
                 }
-                terminalize_prepared_attempt(
-                    &mut transaction,
-                    session_id.as_slice(),
-                    attempt_ref.as_slice(),
-                )
-                .await?;
-                super::db::commit_semantic(transaction).await?;
-                return Ok(ReconnectPrepareDispositionV1::ExistingTerminal);
-            }
-            if state == COMMITTED {
-                let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
-                let recovery_grant_nonce = recovery_grant_nonce(record);
-                let committed_current = session.try_get::<String, _>("control_loss_epoch")?
-                    == epoch
-                    && session.try_get::<i64, _>("original_grace_deadline")?
-                        == original_grace_deadline
-                    && session.try_get::<String, _>("predecessor_generation")? == predecessor
-                    && session.try_get::<String, _>("character_lease_generation")?
-                        == character_lease
-                    && session.try_get::<String, _>("scope_ownership_generation")?
-                        == scope_generation
-                    && session.try_get::<String, _>("current_generation")? == candidate
-                    && current_ref.as_deref() == Some(transport_ref.as_slice())
-                    && session.try_get::<i16, _>("session_state")? == ACTIVE
-                    && session
+                if state == PREPARED
+                    && !precommit_protection_binding_is_valid(&mut transaction, record, false)
+                        .await?
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                if state == PREPARED && database_now(&mut transaction).await? > prepared_deadline {
+                    if session
                         .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
-                        .is_none()
-                    && recovery_grant_binding_is_valid(
+                        .as_deref()
+                        != Some(attempt_ref.as_slice())
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    terminalize_prepared_attempt(
                         &mut transaction,
-                        recovery_grant_nonce.as_deref(),
                         session_id.as_slice(),
                         attempt_ref.as_slice(),
                     )
-                    .await?
-                    && active_committed_binding_is_valid(
-                        &mut transaction,
-                        session_id.as_slice(),
-                        &session,
-                    )
                     .await?;
-                if !committed_current {
-                    return Err(DurabilityError::InvalidStoredState);
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        ReconnectPrepareDispositionV1::ExistingTerminal,
+                    ));
                 }
-                super::db::commit_semantic(transaction).await?;
-                return Ok(ReconnectPrepareDispositionV1::Ambiguous);
+                if state == COMMITTED {
+                    let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+                    let recovery_grant_nonce = recovery_grant_nonce(record);
+                    let committed_current = session.try_get::<String, _>("control_loss_epoch")?
+                        == epoch
+                        && session.try_get::<i64, _>("original_grace_deadline")?
+                            == original_grace_deadline
+                        && session.try_get::<String, _>("predecessor_generation")? == predecessor
+                        && session.try_get::<String, _>("character_lease_generation")?
+                            == character_lease
+                        && session.try_get::<String, _>("scope_ownership_generation")?
+                            == scope_generation
+                        && session.try_get::<String, _>("current_generation")? == candidate
+                        && current_ref.as_deref() == Some(transport_ref.as_slice())
+                        && session.try_get::<i16, _>("session_state")? == ACTIVE
+                        && session
+                            .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                            .is_none()
+                        && recovery_grant_binding_is_valid(
+                            &mut transaction,
+                            recovery_grant_nonce.as_deref(),
+                            session_id.as_slice(),
+                            attempt_ref.as_slice(),
+                        )
+                        .await?
+                        && active_committed_binding_is_valid(
+                            &mut transaction,
+                            session_id.as_slice(),
+                            &session,
+                        )
+                        .await?;
+                    if !committed_current {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        ReconnectPrepareDispositionV1::Ambiguous,
+                    ));
+                }
+                return disposition_for_existing(state)
+                    .map(super::db::SemanticTransactionOutcome::Commit);
             }
-            return disposition_for_existing(state);
-        }
 
-        if let Some(retained_for_actor_epoch) =
-            lock_actor_epoch_attempt_budget(&mut transaction, record).await?
-            && retained_for_actor_epoch >= MAX_ATTEMPTS_PER_EPOCH
-        {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
-        }
-        let current_epoch: String = session.try_get("control_loss_epoch")?;
-        if current_epoch != epoch {
-            let previously_used: bool = sqlx::query_scalar(
-                "SELECT EXISTS (\
+            if let Some(retained_for_actor_epoch) =
+                lock_actor_epoch_attempt_budget(&mut transaction, record).await?
+                && retained_for_actor_epoch >= MAX_ATTEMPTS_PER_EPOCH
+            {
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectPrepareDispositionV1::AttemptCapacityExceeded,
+                ));
+            }
+            let current_epoch: String = session.try_get("control_loss_epoch")?;
+            if current_epoch != epoch {
+                let previously_used: bool = sqlx::query_scalar(
+                    "SELECT EXISTS (\
                     SELECT 1 FROM game_durability_reconnect_attempts \
                     WHERE game_session_id = encode($1, 'hex')::uuid \
                       AND control_loss_epoch = $2::text::numeric(20, 0)\
                  )",
-            )
-            .bind(session_id.as_slice())
-            .bind(&epoch)
-            .fetch_one(&mut *transaction)
-            .await?;
-            if previously_used {
-                let retained_for_epoch: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
-                     WHERE game_session_id = encode($1, 'hex')::uuid \
-                       AND control_loss_epoch = $2::text::numeric(20, 0)",
                 )
                 .bind(session_id.as_slice())
                 .bind(&epoch)
                 .fetch_one(&mut *transaction)
                 .await?;
-                if retained_for_epoch >= i64::from(MAX_ATTEMPTS_PER_EPOCH) {
-                    super::db::rollback_semantic(transaction).await?;
-                    return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
+                if previously_used {
+                    let retained_for_epoch: i64 = sqlx::query_scalar(
+                        "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND control_loss_epoch = $2::text::numeric(20, 0)",
+                    )
+                    .bind(session_id.as_slice())
+                    .bind(&epoch)
+                    .fetch_one(&mut *transaction)
+                    .await?;
+                    if retained_for_epoch >= i64::from(MAX_ATTEMPTS_PER_EPOCH) {
+                        return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                            ReconnectPrepareDispositionV1::AttemptCapacityExceeded,
+                        ));
+                    }
+                    insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL)
+                        .await?;
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                    ));
                 }
-                insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-                super::db::commit_semantic(transaction).await?;
-                return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
-            }
 
-            let active_shape_matches = session.try_get::<String, _>("current_generation")?
-                == predecessor
-                && session.try_get::<String, _>("character_lease_generation")? == character_lease
-                && session.try_get::<String, _>("scope_ownership_generation")? == scope_generation
-                && session
-                    .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
-                    .is_some()
-                && session.try_get::<i16, _>("session_state")? == ACTIVE
-                && session
-                    .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
-                    .is_none();
-            let active_binding_valid = if active_shape_matches {
-                active_committed_binding_is_valid(&mut transaction, session_id.as_slice(), &session)
+                let active_shape_matches = session.try_get::<String, _>("current_generation")?
+                    == predecessor
+                    && session.try_get::<String, _>("character_lease_generation")?
+                        == character_lease
+                    && session.try_get::<String, _>("scope_ownership_generation")?
+                        == scope_generation
+                    && session
+                        .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
+                        .is_some()
+                    && session.try_get::<i16, _>("session_state")? == ACTIVE
+                    && session
+                        .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                        .is_none();
+                let active_binding_valid = if active_shape_matches {
+                    active_committed_binding_is_valid(
+                        &mut transaction,
+                        session_id.as_slice(),
+                        &session,
+                    )
                     .await?
-            } else {
-                false
-            };
-            if active_shape_matches && !active_binding_valid {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            let can_open_new_epoch = active_shape_matches && active_binding_valid;
-            if !can_open_new_epoch || database_now(&mut transaction).await? > prepared_deadline {
-                insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-                super::db::commit_semantic(transaction).await?;
-                return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
-            }
+                } else {
+                    false
+                };
+                if active_shape_matches && !active_binding_valid {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let can_open_new_epoch = active_shape_matches && active_binding_valid;
+                if !can_open_new_epoch || database_now(&mut transaction).await? > prepared_deadline
+                {
+                    insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL)
+                        .await?;
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                    ));
+                }
 
-            ensure_precommit_protection_continuity(&mut transaction, record).await?;
+                ensure_precommit_protection_continuity(&mut transaction, record).await?;
 
-            let opened = sqlx::query(
-                "UPDATE game_durability_reconnect_sessions \
+                let opened = sqlx::query(
+                    "UPDATE game_durability_reconnect_sessions \
                  SET control_loss_epoch = $2::text::numeric(20, 0), \
                      original_grace_deadline = $3, \
                      predecessor_generation = $4::text::numeric(20, 0), \
@@ -410,103 +433,111 @@ impl AdmissionReconnectJournal {
                    AND current_generation = $4::text::numeric(20, 0) \
                    AND session_state = $6 AND current_transport_ref IS NOT NULL \
                    AND prepared_attempt_ref IS NULL",
-            )
-            .bind(session_id.as_slice())
-            .bind(&epoch)
-            .bind(original_grace_deadline)
-            .bind(&predecessor)
-            .bind(RECONNECTABLE)
-            .bind(ACTIVE)
-            .execute(&mut *transaction)
-            .await?;
-            if opened.rows_affected() != 1 {
-                return Err(DurabilityError::InvalidStoredState);
+                )
+                .bind(session_id.as_slice())
+                .bind(&epoch)
+                .bind(original_grace_deadline)
+                .bind(&predecessor)
+                .bind(RECONNECTABLE)
+                .bind(ACTIVE)
+                .execute(&mut *transaction)
+                .await?;
+                if opened.rows_affected() != 1 {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let Some(refreshed_session) =
+                    load_session_for_update(&mut transaction, session_id.as_slice()).await?
+                else {
+                    return Err(DurabilityError::InvalidStoredState);
+                };
+                session = refreshed_session;
+                if !session_binding_is_valid(&session, record)? {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
             }
-            let Some(refreshed_session) =
-                load_session_for_update(&mut transaction, session_id.as_slice()).await?
-            else {
-                return Err(DurabilityError::InvalidStoredState);
-            };
-            session = refreshed_session;
-            if !session_binding_is_valid(&session, record)? {
-                return Err(DurabilityError::InvalidStoredState);
+
+            let count: i16 = session.try_get("attempt_count")?;
+            if count >= MAX_ATTEMPTS_PER_EPOCH {
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectPrepareDispositionV1::AttemptCapacityExceeded,
+                ));
             }
-        }
 
-        let count: i16 = session.try_get("attempt_count")?;
-        if count >= MAX_ATTEMPTS_PER_EPOCH {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
-        }
+            let is_current = session.try_get::<String, _>("control_loss_epoch")? == epoch
+                && session.try_get::<i64, _>("original_grace_deadline")? == original_grace_deadline
+                && session.try_get::<String, _>("predecessor_generation")? == predecessor
+                && session.try_get::<String, _>("character_lease_generation")? == character_lease
+                && session.try_get::<String, _>("scope_ownership_generation")? == scope_generation
+                && session.try_get::<String, _>("current_generation")? == predecessor
+                && session
+                    .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
+                    .is_none()
+                && session.try_get::<i16, _>("session_state")? == RECONNECTABLE;
+            if !is_current || database_now(&mut transaction).await? > prepared_deadline {
+                insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
+                increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
+                return Ok(super::db::SemanticTransactionOutcome::Commit(
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                ));
+            }
+            ensure_precommit_protection_continuity(&mut transaction, record).await?;
 
-        let is_current = session.try_get::<String, _>("control_loss_epoch")? == epoch
-            && session.try_get::<i64, _>("original_grace_deadline")? == original_grace_deadline
-            && session.try_get::<String, _>("predecessor_generation")? == predecessor
-            && session.try_get::<String, _>("character_lease_generation")? == character_lease
-            && session.try_get::<String, _>("scope_ownership_generation")? == scope_generation
-            && session.try_get::<String, _>("current_generation")? == predecessor
-            && session
-                .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
-                .is_none()
-            && session.try_get::<i16, _>("session_state")? == RECONNECTABLE;
-        if !is_current || database_now(&mut transaction).await? > prepared_deadline {
-            insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-            increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            super::db::commit_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
-        }
-        ensure_precommit_protection_continuity(&mut transaction, record).await?;
+            let incumbent: Option<Vec<u8>> = session.try_get("prepared_attempt_ref")?;
+            if incumbent.is_some() {
+                insert_attempt(
+                    &mut transaction,
+                    record,
+                    &encoded_record,
+                    CONCURRENT_TERMINAL,
+                )
+                .await?;
+                increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
+                return Ok(super::db::SemanticTransactionOutcome::Commit(
+                    ReconnectPrepareDispositionV1::RejectedConcurrentPrepared,
+                ));
+            }
 
-        let incumbent: Option<Vec<u8>> = session.try_get("prepared_attempt_ref")?;
-        if incumbent.is_some() {
-            insert_attempt(
-                &mut transaction,
-                record,
-                &encoded_record,
-                CONCURRENT_TERMINAL,
-            )
-            .await?;
-            increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            super::db::commit_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::RejectedConcurrentPrepared);
-        }
-
-        let reservation = sqlx::query(
-            "INSERT INTO game_durability_transport_ref_reservations \
+            let reservation = sqlx::query(
+                "INSERT INTO game_durability_transport_ref_reservations \
                 (transport_ref, game_session_id, reconnect_attempt_ref) \
              VALUES ($1, encode($2, 'hex')::uuid, $3) \
              ON CONFLICT (transport_ref) DO NOTHING",
-        )
-        .bind(transport_ref.as_slice())
-        .bind(session_id.as_slice())
-        .bind(attempt_ref.as_slice())
-        .execute(&mut *transaction)
-        .await?;
-        if reservation.rows_affected() == 0 {
-            insert_attempt(
-                &mut transaction,
-                record,
-                &encoded_record,
-                COLLISION_TERMINAL,
             )
+            .bind(transport_ref.as_slice())
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .execute(&mut *transaction)
             .await?;
-            increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            super::db::commit_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV1::RejectedTransportRefCollision);
-        }
+            if reservation.rows_affected() == 0 {
+                insert_attempt(
+                    &mut transaction,
+                    record,
+                    &encoded_record,
+                    COLLISION_TERMINAL,
+                )
+                .await?;
+                increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
+                return Ok(super::db::SemanticTransactionOutcome::Commit(
+                    ReconnectPrepareDispositionV1::RejectedTransportRefCollision,
+                ));
+            }
 
-        insert_attempt(&mut transaction, record, &encoded_record, PREPARED).await?;
-        sqlx::query(
-            "UPDATE game_durability_reconnect_sessions \
+            insert_attempt(&mut transaction, record, &encoded_record, PREPARED).await?;
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions \
              SET attempt_count = attempt_count + 1, prepared_attempt_ref = $2 \
              WHERE game_session_id = encode($1, 'hex')::uuid",
-        )
-        .bind(session_id.as_slice())
-        .bind(attempt_ref.as_slice())
-        .execute(&mut *transaction)
-        .await?;
-        super::db::commit_semantic(transaction).await?;
-        Ok(ReconnectPrepareDispositionV1::Prepared)
+            )
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .execute(&mut *transaction)
+            .await?;
+            Ok(super::db::SemanticTransactionOutcome::Commit(
+                ReconnectPrepareDispositionV1::Prepared,
+            ))
+        }
+        .await;
+        super::db::finish_started_semantic_transaction(transaction, outcome).await
     }
 
     pub async fn commit(
@@ -541,179 +572,191 @@ impl AdmissionReconnectJournal {
             .to_string();
 
         let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_domain(&mut transaction, record).await?;
-        let Some(session) =
-            load_session_for_update(&mut transaction, session_id.as_slice()).await?
-        else {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
-        };
-        if !session_binding_is_valid(&session, record)? {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        let attempt = sqlx::query(RECONNECT_RECORD_STATE_SQL)
-            .bind(session_id.as_slice())
-            .bind(attempt_ref.as_slice())
-            .bind(super::MAX_ADMISSION_ROW_BYTES)
-            .fetch_optional(&mut *transaction)
-            .await?;
-        let Some(attempt) = attempt else {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
-        };
-        if guarded_record_json(&attempt)? != encoded_record {
-            super::db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectCommitDispositionV1::IdempotencyConflict);
-        }
-        if !attempt_binding_is_valid(&mut transaction, record).await? {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        match attempt.try_get::<i16, _>("state")? {
-            COMMITTED => {
-                if !committed_protection_binding_is_valid(&mut transaction, record).await? {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
-                if session.try_get::<String, _>("control_loss_epoch")? == epoch
-                    && session.try_get::<i64, _>("original_grace_deadline")?
-                        == original_grace_deadline
-                    && session.try_get::<String, _>("predecessor_generation")? == predecessor
-                    && session.try_get::<String, _>("character_lease_generation")?
-                        == character_lease
-                    && session.try_get::<String, _>("scope_ownership_generation")?
-                        == scope_generation
-                    && session.try_get::<String, _>("current_generation")? == candidate
-                    && current_ref.as_deref() == Some(transport_ref.as_slice())
-                    && session.try_get::<i16, _>("session_state")? == ACTIVE
-                    && session
-                        .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
-                        .is_none()
-                    && recovery_grant_binding_is_valid(
-                        &mut transaction,
-                        recovery_grant_nonce.as_deref(),
-                        session_id.as_slice(),
-                        attempt_ref.as_slice(),
-                    )
-                    .await?
-                    && active_committed_binding_is_valid(
-                        &mut transaction,
-                        session_id.as_slice(),
-                        &session,
-                    )
-                    .await?
-                {
-                    super::db::commit_semantic(transaction).await?;
-                    return Ok(ReconnectCommitDispositionV1::Committed);
-                }
+        let outcome = async {
+            super::db::lock_admission_domain(&mut transaction, record).await?;
+            let Some(session) =
+                load_session_for_update(&mut transaction, session_id.as_slice()).await?
+            else {
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectCommitDispositionV1::RejectedStaleAuthority,
+                ));
+            };
+            if !session_binding_is_valid(&session, record)? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            PREPARED => {}
-            COLLISION_TERMINAL | CONCURRENT_TERMINAL | STALE_TERMINAL => {
-                super::db::commit_semantic(transaction).await?;
-                return Ok(ReconnectCommitDispositionV1::ExistingTerminal);
+            let attempt = sqlx::query(RECONNECT_RECORD_STATE_SQL)
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .bind(super::MAX_ADMISSION_ROW_BYTES)
+                .fetch_optional(&mut *transaction)
+                .await?;
+            let Some(attempt) = attempt else {
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectCommitDispositionV1::RejectedStaleAuthority,
+                ));
+            };
+            if guarded_record_json(&attempt)? != encoded_record {
+                return Ok(super::db::SemanticTransactionOutcome::Rollback(
+                    ReconnectCommitDispositionV1::IdempotencyConflict,
+                ));
             }
-            _ => return Err(DurabilityError::InvalidStoredState),
-        }
-        let is_current = session.try_get::<String, _>("control_loss_epoch")? == epoch
-            && session.try_get::<i64, _>("original_grace_deadline")? == original_grace_deadline
-            && session.try_get::<String, _>("predecessor_generation")? == predecessor
-            && session.try_get::<String, _>("character_lease_generation")? == character_lease
-            && session.try_get::<String, _>("scope_ownership_generation")? == scope_generation
-            && session.try_get::<String, _>("current_generation")? == predecessor
-            && session
-                .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
-                .is_none()
-            && session.try_get::<i16, _>("session_state")? == RECONNECTABLE
-            && session
-                .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
-                .as_deref()
-                == Some(attempt_ref.as_slice());
-        if !is_current
-            || database_now(&mut transaction).await?
-                > request.authorization().authorization_deadline()
-        {
-            terminalize_prepared_attempt(
-                &mut transaction,
-                session_id.as_slice(),
-                attempt_ref.as_slice(),
-            )
-            .await?;
-            super::db::commit_semantic(transaction).await?;
-            return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
-        }
-
-        if !precommit_protection_binding_is_valid(&mut transaction, record, true).await? {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-
-        if !transport_reservation_binding_is_valid(
-            &mut transaction,
-            transport_ref.as_slice(),
-            session_id.as_slice(),
-            attempt_ref.as_slice(),
-        )
-        .await?
-        {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-
-        if let Some(recovery_grant_nonce) = recovery_grant_nonce.as_deref() {
-            let consumed = sqlx::query(
-                "INSERT INTO game_durability_recovery_grant_consumptions (\
-                    recovery_grant_nonce, game_session_id, reconnect_attempt_ref\
-                 ) VALUES ($1, encode($2, 'hex')::uuid, $3) \
-                 ON CONFLICT (recovery_grant_nonce) DO NOTHING",
-            )
-            .bind(recovery_grant_nonce)
-            .bind(session_id.as_slice())
-            .bind(attempt_ref.as_slice())
-            .execute(&mut *transaction)
-            .await?;
-            if consumed.rows_affected() != 1 {
+            if !attempt_binding_is_valid(&mut transaction, record).await? {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            match attempt.try_get::<i16, _>("state")? {
+                COMMITTED => {
+                    if !committed_protection_binding_is_valid(&mut transaction, record).await? {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+                    if session.try_get::<String, _>("control_loss_epoch")? == epoch
+                        && session.try_get::<i64, _>("original_grace_deadline")?
+                            == original_grace_deadline
+                        && session.try_get::<String, _>("predecessor_generation")? == predecessor
+                        && session.try_get::<String, _>("character_lease_generation")?
+                            == character_lease
+                        && session.try_get::<String, _>("scope_ownership_generation")?
+                            == scope_generation
+                        && session.try_get::<String, _>("current_generation")? == candidate
+                        && current_ref.as_deref() == Some(transport_ref.as_slice())
+                        && session.try_get::<i16, _>("session_state")? == ACTIVE
+                        && session
+                            .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                            .is_none()
+                        && recovery_grant_binding_is_valid(
+                            &mut transaction,
+                            recovery_grant_nonce.as_deref(),
+                            session_id.as_slice(),
+                            attempt_ref.as_slice(),
+                        )
+                        .await?
+                        && active_committed_binding_is_valid(
+                            &mut transaction,
+                            session_id.as_slice(),
+                            &session,
+                        )
+                        .await?
+                    {
+                        return Ok(super::db::SemanticTransactionOutcome::Commit(
+                            ReconnectCommitDispositionV1::Committed,
+                        ));
+                    }
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                PREPARED => {}
+                COLLISION_TERMINAL | CONCURRENT_TERMINAL | STALE_TERMINAL => {
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        ReconnectCommitDispositionV1::ExistingTerminal,
+                    ));
+                }
+                _ => return Err(DurabilityError::InvalidStoredState),
+            }
+            let is_current = session.try_get::<String, _>("control_loss_epoch")? == epoch
+                && session.try_get::<i64, _>("original_grace_deadline")? == original_grace_deadline
+                && session.try_get::<String, _>("predecessor_generation")? == predecessor
+                && session.try_get::<String, _>("character_lease_generation")? == character_lease
+                && session.try_get::<String, _>("scope_ownership_generation")? == scope_generation
+                && session.try_get::<String, _>("current_generation")? == predecessor
+                && session
+                    .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
+                    .is_none()
+                && session.try_get::<i16, _>("session_state")? == RECONNECTABLE
+                && session
+                    .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                    .as_deref()
+                    == Some(attempt_ref.as_slice());
+            if !is_current
+                || database_now(&mut transaction).await?
+                    > request.authorization().authorization_deadline()
+            {
                 terminalize_prepared_attempt(
                     &mut transaction,
                     session_id.as_slice(),
                     attempt_ref.as_slice(),
                 )
                 .await?;
-                super::db::commit_semantic(transaction).await?;
-                return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
+                return Ok(super::db::SemanticTransactionOutcome::Commit(
+                    ReconnectCommitDispositionV1::RejectedStaleAuthority,
+                ));
             }
-        }
 
-        commit_protection_entitlement(&mut transaction, record).await?;
+            if !precommit_protection_binding_is_valid(&mut transaction, record, true).await? {
+                return Err(DurabilityError::InvalidStoredState);
+            }
 
-        let committed = sqlx::query(
-            "UPDATE game_durability_reconnect_attempts SET state = $3 \
+            if !transport_reservation_binding_is_valid(
+                &mut transaction,
+                transport_ref.as_slice(),
+                session_id.as_slice(),
+                attempt_ref.as_slice(),
+            )
+            .await?
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+
+            if let Some(recovery_grant_nonce) = recovery_grant_nonce.as_deref() {
+                let consumed = sqlx::query(
+                    "INSERT INTO game_durability_recovery_grant_consumptions (\
+                    recovery_grant_nonce, game_session_id, reconnect_attempt_ref\
+                 ) VALUES ($1, encode($2, 'hex')::uuid, $3) \
+                 ON CONFLICT (recovery_grant_nonce) DO NOTHING",
+                )
+                .bind(recovery_grant_nonce)
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&mut *transaction)
+                .await?;
+                if consumed.rows_affected() != 1 {
+                    terminalize_prepared_attempt(
+                        &mut transaction,
+                        session_id.as_slice(),
+                        attempt_ref.as_slice(),
+                    )
+                    .await?;
+                    return Ok(super::db::SemanticTransactionOutcome::Commit(
+                        ReconnectCommitDispositionV1::RejectedStaleAuthority,
+                    ));
+                }
+            }
+
+            commit_protection_entitlement(&mut transaction, record).await?;
+
+            let committed = sqlx::query(
+                "UPDATE game_durability_reconnect_attempts SET state = $3 \
              WHERE game_session_id = encode($1, 'hex')::uuid \
                AND reconnect_attempt_ref = $2 AND state = $4",
-        )
-        .bind(session_id.as_slice())
-        .bind(attempt_ref.as_slice())
-        .bind(COMMITTED)
-        .bind(PREPARED)
-        .execute(&mut *transaction)
-        .await?;
-        if committed.rows_affected() != 1 {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        let advanced = sqlx::query(
-            "UPDATE game_durability_reconnect_sessions \
+            )
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .bind(COMMITTED)
+            .bind(PREPARED)
+            .execute(&mut *transaction)
+            .await?;
+            if committed.rows_affected() != 1 {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let advanced = sqlx::query(
+                "UPDATE game_durability_reconnect_sessions \
              SET current_generation = $2::text::numeric(20, 0), current_transport_ref = $3, \
                  session_state = $4, prepared_attempt_ref = NULL \
              WHERE game_session_id = encode($1, 'hex')::uuid",
-        )
-        .bind(session_id.as_slice())
-        .bind(&candidate)
-        .bind(transport_ref.as_slice())
-        .bind(ACTIVE)
-        .execute(&mut *transaction)
-        .await?;
-        if advanced.rows_affected() != 1 {
-            return Err(DurabilityError::InvalidStoredState);
+            )
+            .bind(session_id.as_slice())
+            .bind(&candidate)
+            .bind(transport_ref.as_slice())
+            .bind(ACTIVE)
+            .execute(&mut *transaction)
+            .await?;
+            if advanced.rows_affected() != 1 {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            Ok(super::db::SemanticTransactionOutcome::Commit(
+                ReconnectCommitDispositionV1::Committed,
+            ))
         }
-        super::db::commit_semantic(transaction).await?;
-        Ok(ReconnectCommitDispositionV1::Committed)
+        .await;
+        super::db::finish_started_semantic_transaction(transaction, outcome).await
     }
 
     #[allow(dead_code)]

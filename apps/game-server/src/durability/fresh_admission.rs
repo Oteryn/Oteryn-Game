@@ -386,31 +386,28 @@ impl FreshAdmissionStore {
             .collect::<Result<_>>()?;
         let replay = b.facts.replay_key().to_bytes();
         let mut tx = self.guards.backend.begin().await?;
+        let outcome = async {
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(receipt) = self.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
-            super::db::commit_semantic(tx).await?;
-            return Ok(outcome);
+            return Ok(super::db::SemanticTransactionOutcome::Commit(outcome));
         }
         let initial = checked(b.initial_commit())?;
         let candidate_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1, 'hex')::uuid)").bind(b.candidate_session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if candidate_exists {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(FreshAdmissionDurableOutcomeV1::RejectedCollision(
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(FreshAdmissionDurableOutcomeV1::RejectedCollision(
                 FreshAdmissionCollisionV1::CandidateSession,
-            ));
+            )));
         }
         let transport_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1)").bind(b.transport.to_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if transport_exists {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(FreshAdmissionDurableOutcomeV1::RejectedCollision(
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(FreshAdmissionDurableOutcomeV1::RejectedCollision(
                 FreshAdmissionCollisionV1::TransportReference,
-            ));
+            )));
         }
         let incumbent: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE session_state IN (1,2) AND (account_id = $1::text::uuid OR character_id = encode($2, 'hex')::uuid))").bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if incumbent {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(FreshAdmissionDurableOutcomeV1::RejectedIncumbent);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(FreshAdmissionDurableOutcomeV1::RejectedIncumbent));
         }
         let mut current = Vec::with_capacity(b.expected_guards.len());
         for expected in &b.expected_guards {
@@ -433,8 +430,7 @@ impl FreshAdmissionStore {
             .successor_history_available(&mut tx, &operation.transition.successors, &previous)
             .await?
         {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority));
         }
         // All relation protection and conflict/history observations precede L.
         // No SQL-generated source revision, decision or source timestamp exists.
@@ -443,8 +439,7 @@ impl FreshAdmissionStore {
                 .fetch_one(&mut *tx)
                 .await?;
         let Ok(successors) = request.validate_at_decision(&current, Some(decided_at)) else {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority));
         };
         sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
             .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
@@ -460,10 +455,13 @@ impl FreshAdmissionStore {
         ))?;
         // An acknowledgement error is uncertain; caller reconciles this original
         // operation rather than assuming rollback or manufacturing another key.
-        if super::db::commit_semantic(tx).await.is_err() {
-            return Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable);
+        Ok(super::db::SemanticTransactionOutcome::CommitAmbiguous {
+            committed: FreshAdmissionDurableOutcomeV1::Committed(receipt),
+            ambiguous: FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable,
+        })
         }
-        Ok(FreshAdmissionDurableOutcomeV1::Committed(receipt))
+        .await;
+        super::db::finish_started_semantic_transaction(tx, outcome).await
     }
 
     /// Initial supported owning-loss slice. Unsupported continuity shapes remain
@@ -483,6 +481,7 @@ impl FreshAdmissionStore {
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&observation.loss_epoch.get().to_be_bytes());
         let mut tx = self.guards.backend.begin().await?;
+        let outcome = async {
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
             .bind(&key).fetch_optional(&mut *tx).await? {
@@ -490,14 +489,12 @@ impl FreshAdmissionStore {
             if stored.as_deref() != Some(encoded.as_str()) { return Err(DurabilityError::InvalidStoredState); }
             let decided_at: i64 = row.try_get("decided_at")?;
             if decided_at < operation.authorized_at { return Err(DurabilityError::InvalidStoredState); }
-            super::db::commit_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Committed { decided_at });
+            return Ok(super::db::SemanticTransactionOutcome::Commit(ControlLossOutcomeV1::Committed { decided_at }));
         }
         let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
             .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
         let Some(row) = row else {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         };
         let original_json: Option<String> = row.try_get("operation_json")?;
         let original = decode_operation(
@@ -507,8 +504,7 @@ impl FreshAdmissionStore {
         let FreshReconciliation::Committed(current) =
             self.reconcile_locked(&mut tx, &original).await?
         else {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         };
         let expected_claims = &original.transition.successors;
         let mut claims = Vec::with_capacity(2);
@@ -525,8 +521,7 @@ impl FreshAdmissionStore {
             )
             .is_err()
         {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         }
         // The sealed observation does not supersede the independently published
         // current runtime owner. Load its complete guard under the same relation
@@ -543,16 +538,14 @@ impl FreshAdmissionStore {
             Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
             if *ownership_generation == observation.session.current_scope_generation().get())
         {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         }
         let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
             .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(session_id.as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?;
         let epoch_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_control_loss_continuity WHERE character_id = encode($1,'hex')::uuid AND control_loss_epoch = $2::text::numeric(20,0))")
             .bind(observation.session.commit().character_id().as_bytes().as_slice()).bind(observation.loss_epoch.get().to_string()).fetch_one(&mut *tx).await?;
         if !reservation || epoch_exists {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         }
         // Strong common relation fencing excludes every sibling semantic writer
         // before this single final decision-time sample.
@@ -561,12 +554,10 @@ impl FreshAdmissionStore {
                 .fetch_one(&mut *tx)
                 .await?;
         let Ok(effect) = request.validate_final(source, decided_at) else {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         };
         if effect.predecessor() != current.current_session {
-            super::db::rollback_semantic(tx).await?;
-            return Ok(ControlLossOutcomeV1::Rejected);
+            return Ok(super::db::SemanticTransactionOutcome::Rollback(ControlLossOutcomeV1::Rejected));
         }
         let successor = effect.successor();
         let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 1, current_transport_ref = NULL, control_loss_epoch = $2::text::numeric(20,0), original_grace_deadline = $3, predecessor_generation = current_generation WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 2 AND control_loss_epoch IS NULL AND prepared_attempt_ref IS NULL AND attempt_count = 0")
@@ -580,10 +571,13 @@ impl FreshAdmissionStore {
         // prepare/replacement fail closed on this receipt until a typed bridge.
         sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts(operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
             .bind(&key).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-        if super::db::commit_semantic(tx).await.is_err() {
-            return Ok(ControlLossOutcomeV1::Ambiguous);
+        Ok(super::db::SemanticTransactionOutcome::CommitAmbiguous {
+            committed: ControlLossOutcomeV1::Committed { decided_at },
+            ambiguous: ControlLossOutcomeV1::Ambiguous,
+        })
         }
-        Ok(ControlLossOutcomeV1::Committed { decided_at })
+        .await;
+        super::db::finish_started_semantic_transaction(tx, outcome).await
     }
 
     /// Bind sealed delivery to an actual validated durable original. Absence or

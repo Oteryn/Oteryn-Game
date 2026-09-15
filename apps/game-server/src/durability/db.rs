@@ -194,6 +194,7 @@ pub(super) async fn rollback_semantic_error<T>(
 pub(super) enum SemanticTransactionOutcome<T> {
     Commit(T),
     Rollback(T),
+    CommitAmbiguous { committed: T, ambiguous: T },
 }
 
 pub(super) async fn run_semantic_transaction<T, F>(
@@ -236,6 +237,13 @@ where
     >,
 {
     let outcome = body(&mut transaction).await;
+    finish_started_semantic_transaction(transaction, outcome).await
+}
+
+pub(super) async fn finish_started_semantic_transaction<T>(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    outcome: Result<SemanticTransactionOutcome<T>, DurabilityError>,
+) -> Result<T, DurabilityError> {
     match outcome {
         Ok(SemanticTransactionOutcome::Commit(value)) => {
             commit_semantic(transaction).await?;
@@ -245,6 +253,13 @@ where
             rollback_semantic(transaction).await?;
             Ok(value)
         }
+        Ok(SemanticTransactionOutcome::CommitAmbiguous {
+            committed,
+            ambiguous,
+        }) => match commit_semantic(transaction).await {
+            Ok(()) => Ok(committed),
+            Err(_) => Ok(ambiguous),
+        },
         Err(operation_error) => match rollback_semantic(transaction).await {
             Ok(()) => Err(operation_error),
             Err(finality_error) => Err(DurabilityError::from(finality_error)),

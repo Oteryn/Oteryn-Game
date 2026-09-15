@@ -406,6 +406,10 @@ impl AdmissionReconnectJournalV2 {
         let Some(authorization) = request.terminal_replacement() else {
             return self.prepare_legacy_typed(request).await;
         };
+        enum TransactionResult {
+            Disposition(ReconnectPrepareDispositionV2),
+            DelegateReceipt,
+        }
         let record = request.record();
         if !replacement_authorization_matches_record(authorization, record) {
             return Err(DurabilityError::InvalidStoredState);
@@ -414,6 +418,7 @@ impl AdmissionReconnectJournalV2 {
         let candidate_session_id = record.identity().game_session_id().as_bytes().to_vec();
         let character_id = record.identity().character_id().as_bytes().to_vec();
         let mut transaction = self.backend.begin().await?;
+        let outcome = async {
         db::lock_admission_domain(&mut transaction, record).await?;
 
         let candidate_exists =
@@ -422,8 +427,9 @@ impl AdmissionReconnectJournalV2 {
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            db::commit_semantic(transaction).await?;
-            return self.prepare_legacy_typed_receipt_authorized(request).await;
+            return Ok(db::SemanticTransactionOutcome::Commit(
+                TransactionResult::DelegateReceipt,
+            ));
         }
 
         if replacement_receipt_for_candidate_exists(
@@ -455,8 +461,9 @@ impl AdmissionReconnectJournalV2 {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
                 && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
-                db::commit_semantic(transaction).await?;
-                return self.prepare_legacy_typed_receipt_authorized(request).await;
+                return Ok(db::SemanticTransactionOutcome::Commit(
+                    TransactionResult::DelegateReceipt,
+                ));
             }
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -466,7 +473,9 @@ impl AdmissionReconnectJournalV2 {
                 .map_err(|_| DurabilityError::InvalidStoredState)?;
             let session: Vec<u8> = predecessor.try_get("game_session_id")?;
             if fresh_admission::has_owning_loss_receipt(&mut transaction, &session, epoch).await? {
-                return Ok(ReconnectPrepareDispositionV2::Unavailable);
+                return Ok(db::SemanticTransactionOutcome::Rollback(
+                    TransactionResult::Disposition(ReconnectPrepareDispositionV2::Unavailable),
+                ));
             }
         }
         if !replacement_predecessor_row_matches(&predecessor, authorization)? {
@@ -487,8 +496,9 @@ impl AdmissionReconnectJournalV2 {
         let retained_attempt_count =
             retained_actor_epoch_attempt_count_v2(&mut transaction, record).await?;
         if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
-            db::rollback_semantic(transaction).await?;
-            return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
+            return Ok(db::SemanticTransactionOutcome::Rollback(
+                TransactionResult::Disposition(ReconnectPrepareDispositionV2::AttemptCapacityExceeded),
+            ));
         }
         ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
@@ -616,8 +626,17 @@ impl AdmissionReconnectJournalV2 {
         let disposition =
             prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
                 .await?;
-        db::commit_semantic(transaction).await?;
-        Ok(disposition)
+        Ok(db::SemanticTransactionOutcome::Commit(
+            TransactionResult::Disposition(disposition),
+        ))
+        }
+        .await;
+        match db::finish_started_semantic_transaction(transaction, outcome).await? {
+            TransactionResult::Disposition(disposition) => Ok(disposition),
+            TransactionResult::DelegateReceipt => {
+                self.prepare_legacy_typed_receipt_authorized(request).await
+            }
+        }
     }
 
     pub async fn reconcile(
