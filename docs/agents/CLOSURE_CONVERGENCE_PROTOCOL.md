@@ -120,7 +120,7 @@ accepted_decisions:
 
 Before dispatch, the control plane must require the descriptor's `sweep_target` to exact-match the corresponding immutable fields of the Phase 1 `closure_head` record and require `audit_main_sha == base_main_sha`. The final reviewer must retrieve the active inventory through its generation-specific `evidence_locator`, canonicalize the complete inventory envelope using the declared serialization, recompute the digest, and require an exact match with `content_identity`. The reviewer must also require the envelope's `inventory_generation` and `sweep_target` to exact-match the descriptor and the Phase 1 closure generation.
 
-If the active inventory is a successor (`inventory_generation > 1`), the control plane before dispatch and the final reviewer independently must also validate the complete immutable predecessor chain back to generation 1. For each generation, retrieve the exact generation-specific `evidence_locator`, canonicalize and recompute its declared digest, require generation numbers to decrease by exactly one, require the successor's `predecessor_content_identity` to equal the predecessor's recomputed SHA-256 identity, and require every envelope to preserve the same `sweep_target`. Validate each transition against its declared `transition_reason`: `EVIDENCE_RECONCILIATION` must preserve every unaffected root cause and add no new root cause; `LATE_BLOCKER_ADMISSION` must preserve every pre-existing root cause unchanged and add only the specifically evidenced late root causes. The chain must prove that no unresolved or still-binding prior root cause disappeared. A missing predecessor locator/content, broken digest link, skipped/duplicated generation, sweep-target drift, invalid transition, or silently dropped prior blocker is fail-closed `INSUFFICIENT_EVIDENCE` with convergence reason code `DRIFTED_INVENTORY`.
+If the active inventory is a successor (`inventory_generation > 1`), the control plane before dispatch and the final reviewer independently must also validate the complete immutable predecessor chain back to generation 1. Start from the descriptor's active `evidence_locator`; for every successor envelope require a non-null `predecessor_evidence_locator` and use that exact locator to retrieve generation N-1. Canonicalize and recompute each predecessor's declared digest, require generation numbers to decrease by exactly one, require the successor's `predecessor_content_identity` to equal the predecessor's recomputed SHA-256 identity, require the successor's `predecessor_evidence_locator` to resolve exactly that predecessor generation, and require every envelope to preserve the same `sweep_target`. Generation 1 must have both `predecessor_content_identity: null` and `predecessor_evidence_locator: null`. Validate each transition against its declared `transition_reason`: `EVIDENCE_RECONCILIATION` must preserve every unaffected root cause and add no new root cause; `LATE_BLOCKER_ADMISSION` must preserve every pre-existing root cause unchanged and add only the specifically evidenced late root causes. The chain must prove that no unresolved or still-binding prior root cause disappeared. A missing predecessor locator/content, broken locator/digest link, skipped/duplicated generation, sweep-target drift, invalid transition, or silently dropped prior blocker is fail-closed `INSUFFICIENT_EVIDENCE` with convergence reason code `DRIFTED_INVENTORY`.
 
 A missing identity, unavailable content, unsupported serialization, digest mismatch, inventory-generation mismatch or sweep-target mismatch is fail-closed `INSUFFICIENT_EVIDENCE` with convergence reason code `DRIFTED_INVENTORY`; the reviewer must not qualify the candidate against changed, cross-lane, cross-task or wrong-generation inventory content.
 
@@ -195,6 +195,7 @@ The sweep ends with one frozen initial `FINAL_ROOT_CAUSE_INVENTORY` and no sourc
   "schema": "OTV2_FINAL_ROOT_CAUSE_INVENTORY_V1",
   "inventory_generation": 1,
   "predecessor_content_identity": null,
+  "predecessor_evidence_locator": null,
   "transition_reason": "DISCOVERY_SWEEP",
   "sweep_target": {
     "repository": "Oteryn/Oteryn-Game",
@@ -246,7 +247,7 @@ Immediately before any evidence reconciliation that interprets governing contrac
 
 Immediately before any repair dispatch, retrieve the active inventory through its generation-specific locator, canonicalize the complete envelope using the recorded serialization, recompute the digest, and require an exact match with `content_identity`. Independently exact-match the envelope's `inventory_generation` and `sweep_target` against the freeze record and the Phase 1 `closure_head` record, including `base_main_sha`, and require `audit_main_sha == base_main_sha`. Missing/unavailable identity material, an unsupported serialization, digest mismatch/drift, inventory-generation mismatch or target-generation mismatch fails closed and returns the inventory for reconciliation; valid inventory from another repository, task, PR, branch, protected-main generation or closure generation cannot silently qualify for this repair generation.
 
-Immediately before dispatching the **first mutating worker of a new repair generation**, the control plane and writer must independently resolve the live PR/branch head and exact-match it to the recorded repair base for that generation. For the initial post-sweep repair generation, `repair_base_head` is the active inventory's `sweep_target.closure_head`. For a new repair generation created by `LATE_BLOCKER_ADMISSION` during Phase 5 qualification or Phase 6 final review, `repair_base_head` is the exact head on which the qualifying late-blocker evidence was produced: the exact qualified head for Phase 5, or the exact reviewed/qualified head for Phase 6. Record that head immutably with the late-blocker successor evidence before dispatch. If the live head differs from the applicable recorded `repair_base_head`, return custody without mutation with convergence reason code `STALE_REPAIR_BASE`; do not infer or advance the repair base from the live branch. This exception does not rewrite the preserved Phase 1 `sweep_target` and does not permit arbitrary post-sweep movement.
+Immediately before dispatching the **first mutating worker of a new repair generation**, the control plane and writer must independently resolve the live PR/branch head and exact-match it to the recorded repair base for that generation. For the initial post-sweep repair generation, `repair_base_head` is the active inventory's `sweep_target.closure_head`. For a new repair generation created by `LATE_BLOCKER_ADMISSION` during Phase 5 qualification, `repair_base_head` is the exact frozen `qualification_target_head` on which the qualifying evidence was produced; after successful qualification this is also `qualified_head`, while after failed qualification it remains the exact failed candidate head and does not require a nonexistent `qualified_head`. For a new repair generation created during Phase 6 final review, `repair_base_head` is the exact reviewed `qualified_head`. Record that head immutably with the late-blocker successor evidence before dispatch. If the live head differs from the applicable recorded `repair_base_head`, return custody without mutation with convergence reason code `STALE_REPAIR_BASE`; do not infer or advance the repair base from the live branch. This exception does not rewrite the preserved Phase 1 `sweep_target` and does not permit arbitrary post-sweep movement.
 
 Before any `MATERIAL_BLOCKER` enters a mutating repair generation, reconcile its evidence classification:
 
@@ -263,12 +264,13 @@ The evidence-reconciliation successor must:
 1. preserve the exact same `sweep_target` as its predecessor;
 2. increment `inventory_generation` by exactly one;
 3. set `predecessor_content_identity` to the predecessor's exact SHA-256 identity;
-4. set `transition_reason: EVIDENCE_RECONCILIATION`;
-5. list exact immutable `reconciliation_refs` proving every changed finding field while preserving `late_blocker_refs` from its predecessor;
-6. preserve every unaffected root cause unchanged at the structured-value level;
-7. add no newly discovered root cause under the guise of evidence reconciliation;
-8. be canonicalized and hashed as a new complete RFC 8785 envelope before it can become active;
-9. be persisted at a **new generation-specific `evidence_locator`**. Never edit, overwrite or repurpose the predecessor generation's locator to store successor content.
+4. set `predecessor_evidence_locator` to the predecessor generation's exact immutable `evidence_locator`;
+5. set `transition_reason: EVIDENCE_RECONCILIATION`;
+6. list exact immutable `reconciliation_refs` proving every changed finding field while preserving `late_blocker_refs` from its predecessor;
+7. preserve every unaffected root cause unchanged at the structured-value level;
+8. add no newly discovered root cause under the guise of evidence reconciliation;
+9. be canonicalized and hashed as a new complete RFC 8785 envelope before it can become active;
+10. be persisted at a **new generation-specific `evidence_locator`**. Never edit, overwrite or repurpose the predecessor generation's locator to store successor content.
 
 Create successors per **coherent reconciliation generation**, not one successor per individual finding.
 
@@ -286,11 +288,12 @@ The late-blocker successor must:
 1. preserve the predecessor's exact `sweep_target`;
 2. increment `inventory_generation` by exactly one;
 3. set `predecessor_content_identity` to the predecessor's exact SHA-256 identity;
-4. set `transition_reason: LATE_BLOCKER_ADMISSION`;
-5. preserve all prior `reconciliation_refs` and append exact immutable `late_blocker_refs` for every newly admitted root cause, including the qualifying CI/runtime/review/evidence-reconciliation/repair evidence and the proven novelty trigger or `FINAL_SWEEP_MISS` disposition;
-6. add only the newly proven current-gate root cause(s) from that coherent late-finding generation, using the same root-cause schema and evidence/repair-eligibility rules as the original inventory;
-7. preserve all pre-existing root causes unchanged at the structured-value level unless a separate evidence-reconciliation transition is also required; do not silently combine unrelated state changes into late admission;
-8. be canonicalized and hashed as a new complete RFC 8785 envelope and persisted at a new generation-specific locator before becoming active.
+4. set `predecessor_evidence_locator` to the predecessor generation's exact immutable `evidence_locator`;
+5. set `transition_reason: LATE_BLOCKER_ADMISSION`;
+6. preserve all prior `reconciliation_refs` and append exact immutable `late_blocker_refs` for every newly admitted root cause, including the qualifying CI/runtime/review/evidence-reconciliation/repair evidence and the proven novelty trigger or `FINAL_SWEEP_MISS` disposition;
+7. add only the newly proven current-gate root cause(s) from that coherent late-finding generation, using the same root-cause schema and evidence/repair-eligibility rules as the original inventory;
+8. preserve all pre-existing root causes unchanged at the structured-value level unless a separate evidence-reconciliation transition is also required; do not silently combine unrelated state changes into late admission;
+9. be canonicalized and hashed as a new complete RFC 8785 envelope and persisted at a new generation-specific locator before becoming active.
 
 Create one late-blocker successor for the coherent late-finding generation, not one per review comment. If the late finding maps to an already-recorded root cause rather than a genuinely new root cause, do not add a duplicate; reconcile the existing root through the evidence-reconciliation successor only when one of its preserved fields must change.
 
@@ -298,7 +301,7 @@ If a genuinely new root cause is proven during **Phase 3 evidence reconciliation
 
 If a genuinely new root cause is proven **after Phase 4 mutation has already begun**, the writer must stop at the nearest safe bounded point, record the exact current branch head as `paused_repair_head`, record the active `repair_generation`, and return custody without making any mutation for the newly discovered root cause. The control plane may admit one `LATE_BLOCKER_ADMISSION` successor from the proven evidence. The same already-started repair generation may resume only if (1) the successor is fully active and identity-verified, (2) authority/evidence checks pass for the enlarged blocker set, (3) the live branch head still exact-matches `paused_repair_head`, (4) no intervening writer or unrecorded mutation occurred, and (5) the same repair-generation identity is preserved. This resume is not a new repair dispatch from the Phase 1 base, so the initial post-sweep repair-base rule does not reapply. If any resume condition fails, terminate that repair generation, return custody, and freeze a new Phase 1 closure generation plus discovery sweep from the live head.
 
-If a genuinely new root cause is proven during **Phase 5 qualification or Phase 6 final review**, the late-blocker successor must additionally record `repair_base_head` equal to the exact qualified/reviewed head on which that evidence was produced, plus the exact qualification/review evidence ref proving the binding. The following repair generation may start only from that exact `repair_base_head`; any intervening head movement is `STALE_REPAIR_BASE`. This creates a bounded continuation from reviewed evidence without pretending the post-repair candidate is still the Phase 1 `closure_head`.
+If a genuinely new root cause is proven during **Phase 5 qualification**, the late-blocker successor must additionally record `repair_base_head` equal to the exact frozen `qualification_target_head` on which that evidence was produced, plus the exact qualification evidence ref proving the binding. A failed qualification uses that failed candidate head directly; it does not require a `qualified_head`. If the qualification had already succeeded before the late blocker was established, `qualification_target_head == qualified_head`. If a genuinely new root cause is proven during **Phase 6 final review**, record `repair_base_head` equal to the exact reviewed `qualified_head` plus the exact review evidence ref. In either case the following repair generation may start only from that exact recorded `repair_base_head`; any intervening head movement is `STALE_REPAIR_BASE`. This creates a bounded continuation from exact evidence without pretending the post-repair candidate is still the Phase 1 `closure_head`.
 
 After any late-blocker successor becomes active, previous qualification/review evidence is historical for integration readiness. When the successor is admitted before qualification/review, complete or safely resume the authorized coherent repair generation under the rules above; otherwise return to the Phase 3 authority/evidence checks and perform the required coherent repair generation from the exact recorded `repair_base_head`. In all cases, run a fresh complete Phase 5 exact-head qualification and obtain a fresh Phase 6 final review bound to the new active inventory generation. A late current-gate blocker can never be admitted and then bypass requalification/re-review.
 
@@ -310,7 +313,7 @@ The predecessor envelope, digest and locator remain preserved audit evidence. Af
 (inventory_generation, evidence_locator, content_identity)
 ```
 
-All later repair dispatch, qualification reconciliation and final review must bind to that exact active tuple. A partially written successor, reused predecessor locator, digest mismatch or ambiguous active-generation pointer fails closed.
+All later repair dispatch, qualification reconciliation and final review must bind to that exact active tuple. A partially written successor, reused predecessor locator, missing/incorrect `predecessor_evidence_locator`, digest mismatch or ambiguous active-generation pointer fails closed.
 
 If unresolved `EVIDENCE_RECONCILIATION_REQUIRED` items remain, they stay outside mutating repair scope. A material blocker that remains unresolved at final qualification prevents closure; it cannot be silently dropped from the active inventory.
 
@@ -348,17 +351,17 @@ A diagnostic-only generation is not a repair generation. When authority says dia
 
 ## Phase 5 — complete exact-head qualification
 
-After the coherent repair generation is complete, freeze the candidate and run one complete qualification generation required by the changed paths and accepted gate. Reuse still-valid immutable evidence only within its proven generation; do not rerun unchanged heavy evidence merely for narration.
+After the coherent repair generation is complete, freeze the candidate as the exact `qualification_target_head` and run one complete qualification generation required by the changed paths and accepted gate. Reuse still-valid immutable evidence only within its proven generation; do not rerun unchanged heavy evidence merely for narration. Only after the required qualification succeeds may that exact `qualification_target_head` become the `qualified_head`.
 
 Before treating qualification as closure evidence, confirm that every active-inventory `MATERIAL_BLOCKER` is either closed by the candidate or explicitly remains open and blocking. An unresolved evidence-reconciliation item cannot disappear merely because deterministic CI is green.
 
-A qualification failure may create a new concrete repair trigger. Diagnose the failure before mutating again. If diagnosis proves a genuinely new current-gate root cause satisfying the Phase 6 novelty rules, admit it through the late-blocker successor transition above before any repair mutation.
+A qualification failure may create a new concrete repair trigger. Diagnose the failure before mutating again. If diagnosis proves a genuinely new current-gate root cause satisfying the Phase 6 novelty rules, admit it through the late-blocker successor transition above, bind its `repair_base_head` to the exact failed `qualification_target_head`, and record the exact failed-qualification evidence before any repair mutation.
 
 ## Phase 6 — final whole-diff review
 
 Dispatch the independent auditor through the convergence descriptor above with `audit_mode: FINAL_CANDIDATE_REVIEW`, the active frozen root-cause inventory generation/locator, immutable sweep-target identity, immutable content identity, and the exact qualified head. Before dispatch, the control plane must (1) exact-match the recomputed active inventory envelope identity and generation, (2) exact-match the envelope and descriptor `sweep_target` to the Phase 1 closure record including `base_main_sha`, (3) require `audit_main_sha == base_main_sha`, (4) resolve the live candidate and require its current exact head to equal `qualified_head`, and (5) when the active inventory is a successor, validate the complete predecessor chain and every transition's preservation/addition rules as specified in the convergence dispatch descriptor.
 
-The reviewer must repeat these checks against independently resolved evidence immediately before review, including the complete predecessor-chain validation for every successor generation. Inventory mismatch/drift, active-generation mismatch, sweep-target mismatch, broken predecessor identity, invalid transition, or loss of a prior unresolved/still-binding root cause fails closed as `INSUFFICIENT_EVIDENCE` with convergence reason code `DRIFTED_INVENTORY`. If the live PR/branch head does not equal `qualified_head`, return `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_QUALIFIED_HEAD` and do not attach review conclusions to the newer generation. The pre-repair `closure_head` and post-repair `qualified_head` may legitimately differ; the required invariant is that the active inventory remains bound to the exact Phase 1 sweep generation while the review itself remains bound to the exact qualified candidate.
+The reviewer must repeat these checks against independently resolved evidence immediately before review, including the complete predecessor-chain validation for every successor generation. Inventory mismatch/drift, active-generation mismatch, sweep-target mismatch, broken predecessor locator/identity, invalid transition, or loss of a prior unresolved/still-binding root cause fails closed as `INSUFFICIENT_EVIDENCE` with convergence reason code `DRIFTED_INVENTORY`. If the live PR/branch head does not equal `qualified_head`, return `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_QUALIFIED_HEAD` and do not attach review conclusions to the newer generation. The pre-repair `closure_head` and post-repair `qualified_head` may legitimately differ; the required invariant is that the active inventory remains bound to the exact Phase 1 sweep generation while the review itself remains bound to the exact qualified candidate.
 
 Resolve current protected `main` as `review_main_sha`. If it differs from the frozen `audit_main_sha`, inspect the delta relevant to current accepted contracts/policy before applying the novelty rule below. Material movement invalidates the sweep base, requires overall disposition `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_SWEEP_BASE`, and requires a fresh Phase 1 + discovery sweep; proven immaterial movement must be recorded as exact evidence and does not mutate the active inventory.
 
@@ -421,6 +424,7 @@ final_root_cause_inventory:
     closure_head: <Phase 1 sha or null>
     tree_sha: <Phase 1 tree or null>
   predecessor_content_identity: <sha256 or null>
+  predecessor_evidence_locator: <generation-specific predecessor evidence ref or null>
   content_identity:
     serialization: RFC8785_JSON
     sha256: <lowercase hex digest or null>
@@ -433,6 +437,7 @@ repair_generation: <id or null>
 repair_start_head: <sha or null>
 paused_repair_head: <sha or null>
 qualification_generation: <id or null>
+qualification_target_head: <sha or null>
 final_review_generation: <id or null>
 new_scope_trigger: <ref or null>
 next_action: <one concrete action>
