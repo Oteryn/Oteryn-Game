@@ -9,6 +9,24 @@
 5. Keep the change focused, update affected tests and contracts, and record exact validation evidence.
 6. Resolve requested changes and review threads before integration. When Merge Queue is enabled, keep the accepted PR head unchanged and let the queue create and validate the synthetic integration candidate instead of merging `main` into the PR merely to refresh it.
 
+## Playable-first and minimum-sufficient delivery
+
+Oteryn prioritizes the shortest safe path to a real playable product. Prefer the smallest change that satisfies the current accepted requirement and unlocks the next real capability in the production-shaped path: login/session, character, transport, world/map, gameplay, persistence, reconnect and restart.
+
+Do not add speculative frameworks, generalized abstractions, future-scale machinery, benchmark-only substitutes or hardening for hypothetical problems unless a current accepted contract, concrete threat, hard-to-reverse compatibility decision, or representative measurement proves they are needed now.
+
+Minimum effort does **not** mean reduced quality. Accepted correctness, security, durability, compatibility, validation and measured performance requirements remain mandatory. Avoid premature optimization, but do not knowingly accept a material measured regression merely to reduce implementation effort.
+
+## Upstream-first dependencies
+
+Oteryn follows `UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED` as part of the broader `PLAYABLE_FIRST / MINIMUM_SUFFICIENT_CHANGE` doctrine. Read `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` before introducing or expanding a fork, vendored modification, deep dependency instrumentation or local reimplementation of mature third-party functionality.
+
+Prefer, in order: upstream configuration, supported upstream APIs/extension points, an Oteryn-owned wrapper/adapter, an upstream contribution where practical, then the smallest justified downstream patch. Maintain a full fork only when the smaller options are proven insufficient.
+
+A dependency customization must be justified by concrete evidence against an exact upstream version, such as a failing reproducible test, source-level API gap, representative benchmark, concrete security reproducer, or accepted contract requirement that upstream cannot satisfy. Hypothetical future need, generic `hardening`, `more control`, or an unmeasured performance claim is not enough.
+
+Keep every retained patch small, provenance-pinned, independently reviewable, regression-tested and removable. Re-evaluate it on dependency upgrades and remove it when upstream or a simpler Oteryn-owned layer can satisfy the same accepted requirement. Do not weaken an accepted correctness or security invariant merely to eliminate a patch; an intentional invariant change requires an explicit reviewed architecture/contract decision.
+
 ## Pull request titles
 
 Use:
