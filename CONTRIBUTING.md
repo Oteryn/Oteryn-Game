@@ -19,7 +19,7 @@ Minimum effort does **not** mean reduced quality. Accepted correctness, security
 
 ## Upstream-first dependencies
 
-Oteryn follows `UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED` as part of the broader `PLAYABLE_FIRST / MINIMUM_SUFFICIENT_CHANGE` doctrine. Read `docs/repository/UPSTREAM_FIRST_DEPENDENCY_POLICY.md` before introducing or expanding a fork, vendored modification, deep dependency instrumentation or local reimplementation of mature third-party functionality.
+Oteryn follows `UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED` as part of the broader `PLAYABLE_FIRST / MINIMUM_SUFFICIENT_CHANGE` doctrine. Read `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` before introducing or expanding a fork, vendored modification, deep dependency instrumentation or local reimplementation of mature third-party functionality.
 
 Prefer, in order: upstream configuration, supported upstream APIs/extension points, an Oteryn-owned wrapper/adapter, an upstream contribution where practical, then the smallest justified downstream patch. Maintain a full fork only when the smaller options are proven insufficient.
 
