@@ -19,6 +19,13 @@ allocation record, #351 task and SQLx-driver plan where they conflict with this
 amendment. Historical evidence and already-proven test results remain evidence;
 they are not erased.
 
+The companion `OTV2_WP3_A_Q01_Q75_TRANSITION_DISPOSITION_20260916.md` is part of
+this amendment. Its authority-backed per-property routing also supersedes the
+historical blanket Q01-Q75-before-WP3-A release rule after protected adoption.
+It does not supersede accepted security, durability or numeric resource values.
+Owner correction #635 comment `5698458209` and the unmerged #636 prompt delta
+motivate this repair; neither is being represented as protected acceptance.
+
 ## 1. Selected WP3-A lineage
 
 WP3-A SHALL use a clean candidate based on the protected Game `main` selected at
@@ -55,14 +62,14 @@ The default WP3-A production dependency set is:
 - upstream SQLx `0.9.0` semantics everywhere except the smallest source-proven
   seams listed below.
 
-As of this amendment, upstream SQLx `v0.9.0` remains the latest stable upstream
-tag. Open upstream work is retained as semantic provenance, not treated as a
-released dependency:
+SQLx `0.9.0` is the selected version, not a claim about the latest public
+release. The following upstream references remain historical semantic
+provenance; their current merge/release state is not asserted here:
 
 - `transact-rs/sqlx#3832`: deterministic PostgreSQL options without ambient environment;
 - `transact-rs/sqlx#4102`: separate `hostaddr` transport routing from TLS host identity;
 - `transact-rs/sqlx#4350`: bounded return-to-pool ping on an unresponsive peer;
-- `transact-rs/sqlx#4051`: draft custom rustls configuration direction only.
+- `transact-rs/sqlx#4051`: custom rustls configuration direction only.
 
 No downstream dependency customization is authorized for a hypothetical
 benefit. Each retained seam below is tied to an accepted current requirement
@@ -92,8 +99,16 @@ The accepted production root requires `VerifyFull`, inline CA material,
 TLS1.3-only and the accepted AWS-LC/PQ provider profile. SQLx 0.9.0's rustls path
 uses safe default protocol versions and does not expose a stable public hook that
 can express the complete profile. Add only the smallest generic TLS
-configuration/protocol seam needed by PostgreSQL. Do not wholesale backport the
-current draft SQLx #4051 and do not fork rustls source.
+configuration/protocol seam needed by PostgreSQL. Do not wholesale backport
+SQLx #4051 and do not fork rustls source.
+
+Preserve the accepted Revision-3 profile restrictions, not just the positive TLS
+test: resumption is disabled unless separately source-bounded; certificate
+compression is not admitted without exact reachability/bounds proof; no client
+certificate/key authentication or implicit root-file discovery. Prove these
+through the selected configuration and source graph. Historical hook tests for
+excluded features do not become WP3-A requirements, but an unenforced exclusion
+is not a valid qualification result.
 
 ### 3.4 SCRAM-SHA-256-only authentication
 
@@ -170,6 +185,12 @@ This model preserves the correctness intent of the useful #356 mechanisms while
 moving scheduler/cancellation ownership into Oteryn-owned code over upstream
 Tokio.
 
+Retain the accepted bounded no-ambient configuration and built-in PostgreSQL
+type profile, including the selected statement-cache capacity. Exact numbers,
+source authority and local-versus-composed proof are in companion N01-N32.
+No arbitrary options/application name, generic type discovery or extra resource
+allowance is introduced by moving ownership into the application layer.
+
 ## 5. WP3-A source allocation after activation
 
 After this amendment is protected and freshly read back, #162 may activate one
@@ -207,37 +228,60 @@ This amendment does not transfer it. If the final WP3-A implementation proves
 that exact symbol is a prerequisite rather than a downstream B consumer, #162
 must protect a separate exact shared-custody amendment before mutation.
 
-## 6. Acceptance obligations
+## 6. Authority-backed acceptance obligations
 
-This amendment changes implementation strategy, not correctness meaning.
-Current correctness/security/durability/compatibility invariants remain binding,
-including exact original identity, fencing/nonreuse, replay/reconciliation,
-ambiguous COMMIT, cancellation/completion ownership, reconnect/restart,
-explicit TLS/auth/configuration and fail-closed error handling.
+The companion is the complete per-Q and numeric routing ledger for this
+amendment. No unlisted remainder of Q01-Q75 is automatically required or marked
+blocked. Classify the underlying property, not the existence of a #356 hook:
 
-No canonical `WP3-Q01..WP3-Q75` item becomes PASS merely because this amendment
-is protected. For closure, each item must be classified from exact candidate
-evidence as one of:
+- A: current correctness/security/durability/compatibility/resource invariant,
+  with exact authority and minimum selected-root proof;
+- H: historical mechanism evidence only, with the surviving A property named;
+- B: representative qualification at the real-product T-P trigger;
+- D: exact downstream T-B/T-G composition, not a circular B-before-B admission;
+- S: accepted profile supersession, whose enforcement still requires Q61 proof;
+- U: exact missing authority/reachability evidence at T-U, not an invented
+  blocker or an assumed safe exclusion.
 
-- `PROVEN_CURRENT` — required now and proven on the exact WP3-A candidate;
-- `CURRENT_BLOCKER` — required now and not yet proven;
-- `WP3_B_TRIGGERED` — representative performance/resource/failure measurement
-  whose current correctness/safety floor is already met; record owner, exact
-  trigger and expected evidence;
-- `SUPERSEDED_BY_PROTECTED_DECISION` — only with the exact superseding protected
-  architecture/contract reference.
+Routing and execution result are different. The 75 row dispositions do not
+create PASS claims. For an actually required A property, record exact candidate
+proof or the precise missing proof/defect and affected release. Do not create a
+new failing-test claim simply because material implementation has not started.
+No historical hook needs reimplementation unless it is retained or independently
+necessary for that current property. Current resource-denial, hostile-input and
+failure regressions are not deferred as representative performance work.
 
-The historical equation `I + max(R,T) + Q + A <= 12 MiB`, root/retirement
-ownership and hard resource-denial requirements are not silently waived. WP3-A
-must prove the still-binding current safety floor with the minimum sufficient
-mechanism. Broad per-allocation instrumentation and representative
-performance/resource optimization move to WP3-B only where the protected
-classification says they are not current blockers. Any reproduced current
-resource/security failure triggers immediate re-entry to the owning lane.
+### Numeric authority, including 12 MiB
+
+Protected `RESOURCE_LIMITS_REGISTRY.json` explicitly registers
+`DFR-TOTAL-RESIDENT-BYTES = 12,582,912`: queue plus active charged resident work,
+not process RSS. Revision 3's `I + max(R,T) + Q + A <= 12 MiB` root model was
+accepted through protected #589 and #162 comment `5652184410`; historical
+candidate headings do not negate that acceptance. These are independently
+verified current requirements, not inherited merely because #356 used them.
+
+Preserve the value, one-root custody, strict R/T generation non-overlap and
+lifecycle-complete charges. Prove the actual WP3-A root and owned work; full B
+producer/consumer composition closes at T-B. I/R/T/active component byte values
+are UNKNOWN until candidate proof, not invented blocker numbers or zero. Q/A
+mean actual coupled charges, not mandatory simultaneous occupancy at every
+individual maximum. Representative sizing/tuning is B, but does not waive the
+accepted safety bound.
+
+The required proof may use defensible finite reservations, bounded upstream APIs
+and focused source/boundary/failure evidence. It does not mandate a vendored
+Tokio/rustls per-allocation instrumented runtime. If the selected graph cannot
+meet an accepted bound, identify the exact gap and smallest necessary seam under
+normal lease discipline, or seek explicit owning contract supersession. This
+amendment does neither implicitly. The companion separates every relevant
+numeric limit, historical observation, profile pin and missing numeric proof.
 
 ## 7. Mandatory WP3-A regressions and qualification
 
-At minimum the admitted exact candidate must cover:
+At minimum the admitted exact candidate must cover the current A properties
+below and in the companion, restricted to its actual selected root/owned paths.
+The full B consumer is qualified at T-B; no fake mini-server or B fixture may
+stand in for either the real WP3-A root or later composed production proof.
 
 ### Configuration / TLS / auth
 
@@ -248,7 +292,9 @@ At minimum the admitted exact candidate must cover:
 - exact resolved AWS-LC provider plus accepted PQ KX order;
 - Cleartext, MD5, passwordless and unsupported-auth downgrade rejection;
 - ordinary SCRAM-SHA-256 positive;
-- no plaintext fallback.
+- no plaintext fallback;
+- enforced first-slice exclusions and bounded retained config/diagnostics,
+  including the resumption/compression/client-certificate restrictions above.
 
 ### Finality / cancellation / recovery
 
@@ -265,6 +311,15 @@ At minimum the admitted exact candidate must cover:
   genuine event during the first window authorizes exactly one later window;
 - third sequential operation only after exact completion/finality/owner ACK;
 - restart/takeover fencing and retained original identity.
+
+### Current resource and compatibility boundary
+
+Prove accepted local root/queue/active bounds, reachable hostile PG lengths and
+counts before uncontrolled allocation, partial denial/cleanup, bounded SQL and
+migration transfers, and no hidden reduction of accepted reconnect maxima.
+These are current properties, not a demand to complete discarded hook tests.
+Full B SQL corpus, sibling lock inventory and producer-to-completion ownership
+are explicit T-B/T-G obligations, with local A portions preserved in the ledger.
 
 ### Retained audit findings
 
@@ -296,20 +351,23 @@ After explicit #162 activation:
 3. configured PostgreSQL 17.6 registered-root execution; an unconfigured skip is
    not evidence;
 4. TLS/auth downgrade qualification and same-generation finality/recovery tests;
-5. exact disposition of the retained #633 findings;
+5. exact disposition of the retained #633 findings and every current A property;
 6. producer full-diff review;
-7. genuinely independent HIGH-risk exact-head whole-diff review;
+7. genuinely independent HIGH-risk exact-head whole-diff review: explicit PASS,
+   P0=0, P1=0, P2=0 and BLOCKING_EVIDENCE_GAP=0 for the affected current gate;
 8. exact-head repository CI and zero unresolved material review threads;
 9. integration only through the authenticated bound META 3.1 exact-head Merge
    Queue route;
 10. real `merge_group` `game-gate` SUCCESS plus protected-main readback.
 
 Only after protected integration/readback and coordinator closeout may WP3-A be
-`DONE` and Child B/WP4 be considered for explicit release.
+`DONE` and Child B/WP4 be considered for explicit release. Downstream D evidence
+is required at its named release, not before its own readmission. Representative
+B work remains triggered; no current invariant or existing required gate is waived.
 
 ## 9. Activation state
 
-At creation of this amendment candidate the truthful state is:
+At this amendment candidate the truthful state is:
 
 ```text
 WP3_A_STRATEGY = UPSTREAM_FIRST_MINIMAL_PATCH_ON_PROVEN_NEED
@@ -320,6 +378,8 @@ TOKIO_SOURCE_FORK = NOT_ALLOCATED
 RUSTLS_SOURCE_FORK = NOT_ALLOCATED
 SQLX_SOURCE_CUSTOMIZATION = MINIMUM_PROVEN_SEAMS_ONLY
 FRESH_ADMISSION_SHARED_CUSTODY = UNCHANGED_CHILD_B
+Q_ROUTING = EXPLICIT_PROPERTY_AUTHORITY_AND_MILESTONE_IN_COMPANION
+NUMERIC_ROUTING = N01_N32_AUTHORITY_AND_SCOPE_IN_COMPANION
 ALLOCATION_STATE = PROSPECTIVE_NOT_ACTIVE
 WORKER_STATE = NOT_ADMITTED
 TRUSTED_INTEGRATION_CAPABILITY = MUST_BE_FRESH_AT_WORKER_RELEASE
@@ -327,7 +387,7 @@ WP4_CHILD_B = HOLD
 SERVER_SEAM_247 = WAITING_DEPENDENCY
 ```
 
-Protected integration of this document is necessary but not sufficient for
+Protected integration of these two documents is necessary but not sufficient for
 source activation. The active Work coordinator must freshly read protected main,
 #162/#364/#351/#356/#329/#335, open material PRs and path ownership, obtain the
 current trusted capability decision, then record the exact admitted main/branch
