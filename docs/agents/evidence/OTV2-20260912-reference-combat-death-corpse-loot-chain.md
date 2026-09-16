@@ -1,11 +1,11 @@
 # Oteryn Reference Combat — ordinary death/corpse/loot chain evidence
 
-Status: **READ-ONLY EVIDENCE / NON-AUTHORITY**  
-Date: 2026-09-12; reconciled 2026-09-16  
-Refs: #483, #506, #513  
-Downstream gate: #514 (no manifest mutation authority from this document)  
-Target: `global-tibia-observable-2026-07-28-post-server-save`  
-Scope: ordinary single-player creature path only  
+Status: **READ-ONLY EVIDENCE / NON-AUTHORITY**
+Date: 2026-09-12; reconciled 2026-09-16
+Refs: #483, #506, #513
+Downstream gate: #514 (no manifest mutation authority from this document)
+Target: `global-tibia-observable-2026-07-28-post-server-save`
+Scope: ordinary single-player creature path only
 Durability rule: **NO_DURABILITY_OWNERSHIP_INVENTED**
 
 ## 1. Purpose and exclusions
