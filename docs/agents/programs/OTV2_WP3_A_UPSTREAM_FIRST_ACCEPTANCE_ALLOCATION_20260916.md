@@ -48,7 +48,7 @@ vendor changes.
 The default WP3-A production dependency set is:
 
 - upstream Tokio `1.53.1` from the normal dependency graph; no Tokio source fork;
-- upstream rustls `0.23.45`; no rustls source fork;
+- upstream rustls `0.23.45`; no rustls source fork. Protected security PR #623 supersedes the historical Gate-1 `0.23.43` pin; do not downgrade;
 - AWS-LC selected through supported features;
 - explicit `rustls/prefer-post-quantum` feature unification where required by
   the accepted KX profile;
@@ -59,10 +59,10 @@ As of this amendment, upstream SQLx `v0.9.0` remains the latest stable upstream
 tag. Open upstream work is retained as semantic provenance, not treated as a
 released dependency:
 
-- SQLx #3832: deterministic PostgreSQL options without ambient environment;
-- SQLx #4102: separate `hostaddr` transport routing from TLS host identity;
-- SQLx #4350: bounded return-to-pool ping on an unresponsive peer;
-- SQLx #4051: draft custom rustls configuration direction only.
+- `transact-rs/sqlx#3832`: deterministic PostgreSQL options without ambient environment;
+- `transact-rs/sqlx#4102`: separate `hostaddr` transport routing from TLS host identity;
+- `transact-rs/sqlx#4350`: bounded return-to-pool ping on an unresponsive peer;
+- `transact-rs/sqlx#4051`: draft custom rustls configuration direction only.
 
 No downstream dependency customization is authorized for a hypothetical
 benefit. Each retained seam below is tied to an accepted current requirement
@@ -184,7 +184,6 @@ The initial allowed production surface is bounded to:
 - `apps/game-server/src/durability/mod.rs`;
 - `apps/game-server/src/durability/schema.rs`;
 - `apps/game-server/src/durability/admission_journal.rs`;
-- `apps/game-server/src/durability/admission_authority_guards.rs`;
 - `apps/game-server/tests/durability_postgres.rs`, only the exact WP3 registered
   root/finality/recovery/TLS-auth qualification modules and named tests;
 - clean exact-upstream SQLx 0.9.0 source/provenance needed to provide the seams
