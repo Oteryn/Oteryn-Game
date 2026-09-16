@@ -147,7 +147,12 @@ The application layer, not Tokio/rustls forks, owns semantic custody:
   immutable absolute deadline;
 - the same deadline covers begin/setup, generation/fencing SQL, relation and
   advisory locks, semantic SQL, COMMIT/ROLLBACK, same-generation finality and
-  required reconciliation; it is never reset per phase;
+  any reconciliation that is part of that same authorized semantic pass; it is
+  never reset per phase;
+- a persisted ambiguous original that outlives its mutation deadline may enter
+  only a separately authorized bounded reconciliation-only window. That window
+  may determine durable outcome/cleanup for the same original but cannot
+  re-authorize the expired mutation or mint a new original identity;
 - root-owned Tokio task lifetime retains issued semantic work after caller
   cancellation; caller disappearance cannot acknowledge or release custody;
 - healthy definitive holders return to idle;
@@ -264,11 +269,15 @@ At minimum the admitted exact candidate must cover:
 
 ### Retained audit findings
 
-`AUDIT-LIVE-RECONCILE` must prove same-runtime reconciliation of a persisted
-ambiguous original after its old mutation deadline expired, without a new
-identity, duplicate effect, blind mutation-deadline reset or premature slot
-release. Any new reconciliation-only window must be separately authorized and
-must not re-authorize the original mutation.
+`AUDIT-LIVE-RECONCILE` must receive an exact protected disposition. If the
+relevant reconciliation/executor path is present in WP3-A, prove same-runtime
+resolution of a persisted ambiguous original after its old mutation deadline
+expired, without a new identity, duplicate effect, blind mutation-deadline reset
+or premature slot release. Any new reconciliation-only window must be separately
+authorized and must not re-authorize the original mutation. If the only reachable
+reproducer remains in B-owned `fresh_admission.rs`, retain this finding as an
+explicit Child-B release prerequisite with the same evidence requirements; this
+amendment does not seize that B-owned path merely to close the audit finding.
 
 `AUDIT-ROOT-DEMAND` must prove a failed maintenance window does not re-arm itself
 without a new event, while preserving a genuine independently arriving/coalesced
