@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260916-upstream-first-dependency-doctrine
-title: Establish repository-wide upstream-first dependency doctrine
+title: Establish playable-first minimum-sufficient upstream-first doctrine
 mode: GOVERNANCE
 status: validating
 repository: Oteryn/Oteryn-Game
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
 created_at: 2026-09-16T09:24:00+02:00
-updated_at: 2026-09-16T09:51:00+02:00
+updated_at: 2026-09-16T10:00:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - AGENTS.md
@@ -32,7 +32,7 @@ external_repositories: []
 
 ## Outcome
 
-Establish one repository-wide rule that mature upstream implementations are the default and that forks, vendored modifications, deep dependency instrumentation or local reimplementations require concrete evidence of a real accepted requirement gap. Preserve the ability to introduce the smallest necessary exception when upstream genuinely cannot meet an accepted Oteryn invariant.
+Establish one repository-wide engineering rule: advance the real Oteryn product toward a playable server with the minimum sufficient engineering change, while preserving accepted correctness, security, durability, compatibility, validation and measured performance requirements. Mature upstream implementations are the default; forks, vendored modifications, deep dependency instrumentation, speculative infrastructure and generalized local substitutes require concrete evidence that simpler options cannot satisfy a current accepted requirement.
 
 ## Architecture and source of truth
 
@@ -40,6 +40,7 @@ Establish one repository-wide rule that mature upstream implementations are the 
 - `PROVEN`: `CONTRIBUTING.md` is the repository contribution workflow for human and tool-assisted changes.
 - `PROVEN`: bound META policy requires one rule/one authority and permits provider-local durable product constraints.
 - `DERIVED`: a single canonical policy under `docs/repository/` plus short references from the bootstrap/contribution guide avoids independent duplicate policy prose.
+- `DERIVED`: playable-first/minimum-sufficient delivery complements upstream-first by preventing speculative work from remaining on the critical path when the real product can be advanced safely with a simpler implementation.
 
 ## High-risk authority/recovery qualification
 
@@ -47,12 +48,16 @@ Establish one repository-wide rule that mature upstream implementations are the 
 
 ## Acceptance criteria
 
-- [x] Define `UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED` as the repository default.
+- [x] Define `PLAYABLE_FIRST / MINIMUM_SUFFICIENT_CHANGE / UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED` as the repository default.
+- [x] Prioritize the real production-shaped login/session -> character -> transport -> world/map -> gameplay -> persistence -> reconnect/restart path over benchmark-only or throwaway substitutes.
+- [x] Require the minimum implementation that satisfies the current accepted requirement and unlocks the next real product capability.
+- [x] Explicitly reject speculative infrastructure, generalized abstractions, premature future-scale work and hypothetical hardening as default critical-path work.
+- [x] Preserve accepted correctness, security, durability, compatibility, validation and measured performance requirements; minimum effort must not lower these floors.
+- [x] Require representative measurement before performance hypotheses justify added complexity, while retaining immediate correctness/security fixes supported by concrete evidence.
+- [x] Define upstream mature implementations as the dependency default.
 - [x] Require concrete evidence against an exact upstream version before dependency customization.
-- [x] Define the decision order from upstream configuration through minimal patch to last-resort fork.
+- [x] Define the decision order from upstream configuration through Oteryn layer, minimal patch and last-resort fork.
 - [x] Require minimal, provenance-pinned, regression-tested and removable downstream patches.
-- [x] Require representative measurement for performance-based exceptions and concrete threat/reproducer evidence for security-based exceptions.
-- [x] State that accepted correctness/security invariants must not be silently weakened merely to remove a patch.
 - [x] Apply the doctrine to agents through root `AGENTS.md`.
 - [x] Apply the doctrine to contributors through `CONTRIBUTING.md`.
 - [x] State that existing forks are re-evaluated rather than automatically grandfathered, while preserving useful history/tests/research.
@@ -64,12 +69,22 @@ Establish one repository-wide rule that mature upstream implementations are the 
 - No architecture acceptance or threat-model change.
 - No workflow, ruleset, Merge Queue, production, deployment, secret or external-repository mutation.
 - No claim that every dependency must remain unmodified; proven minimal exceptions remain allowed.
+- No permission to skip repository-required tests, security controls or accepted invariants for speed.
 
 ## Implementation / findings
 
-The policy explicitly prevents both extremes: forcing custom solutions without evidence and forcing pure upstream by weakening a real Oteryn invariant. The preferred resolution order is upstream configuration/API, Oteryn-owned adapter, upstream contribution where practical, minimal downstream patch, and only then a maintained fork.
+The policy explicitly prevents four failure modes:
 
-Existing dependency customizations remain historical/current implementation evidence; when touched or superseded they must be reassessed under the new doctrine rather than deleted automatically.
+1. forcing custom dependency solutions without evidence;
+2. forcing pure upstream by weakening a real Oteryn invariant;
+3. spending critical-path effort on speculative infrastructure before the real playable product requires it;
+4. interpreting `minimum effort` as permission to accept a known quality/security/correctness or measured performance regression.
+
+The preferred dependency resolution order is upstream configuration/API, Oteryn-owned adapter, upstream contribution where practical, minimal downstream patch, and only then a maintained fork.
+
+The preferred delivery rule is to stop adding machinery once the current accepted requirement is met and the next real product capability is unblocked. Future extension points may be kept simple and explicit, but future functionality is not implemented until evidence requires it.
+
+Existing dependency customizations remain historical/current implementation evidence; when touched or superseded they must be reassessed under the doctrine rather than deleted automatically.
 
 ## Validation
 
@@ -105,10 +120,10 @@ Existing dependency customizations remain historical/current implementation evid
 ## Independent review
 
 - required: pending
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- exact head: pending or `NOT_APPLICABLE`
+- method/auditor: pending or `NOT_APPLICABLE`
+- material findings: pending or `NOT_APPLICABLE`
+- verdict: pending or `NOT_APPLICABLE`
 
 ## PR and closeout
 
@@ -122,7 +137,7 @@ Existing dependency customizations remain historical/current implementation evid
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #634 opened for repository-wide upstream-first dependency doctrine
+last_progress: doctrine expanded to playable-first minimum-sufficient delivery without lowering quality/security/performance floors
 status: validating
 branch: governance/upstream-first-dependency-doctrine-20260916
 head_sha: null
