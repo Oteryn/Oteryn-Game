@@ -8,14 +8,14 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/upstream-first-dependency-doctrine-20260916
-pr: null
+pr: 634
 base_sha: 82534b2d33550b2a5ff1ef923526cb6dd8d30673
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
 created_at: 2026-09-16T09:24:00+02:00
-updated_at: 2026-09-16T09:24:00+02:00
+updated_at: 2026-09-16T09:51:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - AGENTS.md
@@ -122,11 +122,11 @@ Existing dependency customizations remain historical/current implementation evid
 ## Context checkpoint
 
 ```yaml
-last_progress: repository-wide upstream-first dependency doctrine authored
+last_progress: PR #634 opened for repository-wide upstream-first dependency doctrine
 status: validating
 branch: governance/upstream-first-dependency-doctrine-20260916
 head_sha: null
-pr: null
+pr: 634
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
