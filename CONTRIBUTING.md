@@ -9,9 +9,17 @@
 5. Keep the change focused, update affected tests and contracts, and record exact validation evidence.
 6. Resolve requested changes and review threads before integration. When Merge Queue is enabled, keep the accepted PR head unchanged and let the queue create and validate the synthetic integration candidate instead of merging `main` into the PR merely to refresh it.
 
+## Playable-first and minimum-sufficient delivery
+
+Oteryn prioritizes the shortest safe path to a real playable product. Prefer the smallest change that satisfies the current accepted requirement and unlocks the next real capability in the production-shaped path: login/session, character, transport, world/map, gameplay, persistence, reconnect and restart.
+
+Do not add speculative frameworks, generalized abstractions, future-scale machinery, benchmark-only substitutes or hardening for hypothetical problems unless a current accepted contract, concrete threat, hard-to-reverse compatibility decision, or representative measurement proves they are needed now.
+
+Minimum effort does **not** mean reduced quality. Accepted correctness, security, durability, compatibility, validation and measured performance requirements remain mandatory. Avoid premature optimization, but do not knowingly accept a material measured regression merely to reduce implementation effort.
+
 ## Upstream-first dependencies
 
-Oteryn follows `UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED`. Read `docs/repository/UPSTREAM_FIRST_DEPENDENCY_POLICY.md` before introducing or expanding a fork, vendored modification, deep dependency instrumentation or local reimplementation of mature third-party functionality.
+Oteryn follows `UPSTREAM_FIRST / PATCH_ON_PROVEN_NEED` as part of the broader `PLAYABLE_FIRST / MINIMUM_SUFFICIENT_CHANGE` doctrine. Read `docs/repository/UPSTREAM_FIRST_DEPENDENCY_POLICY.md` before introducing or expanding a fork, vendored modification, deep dependency instrumentation or local reimplementation of mature third-party functionality.
 
 Prefer, in order: upstream configuration, supported upstream APIs/extension points, an Oteryn-owned wrapper/adapter, an upstream contribution where practical, then the smallest justified downstream patch. Maintain a full fork only when the smaller options are proven insufficient.
 
