@@ -8,14 +8,14 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/wp3-playable-first-q-triage-20260916
-pr: null
+pr: 636
 base_sha: 1995bd97460774ea9fc136959d5548471b81c987
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
 created_at: 2026-09-16T15:33:00+02:00
-updated_at: 2026-09-16T15:33:00+02:00
+updated_at: 2026-09-16T15:42:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md
@@ -53,6 +53,7 @@ Prevent the WP3-v2 programme coordinator from reintroducing broad #356 obligatio
 - [x] Explicitly preserve a numeric floor when current protected authority still binds it.
 - [x] Prevent mechanism-named #356 tests from forcing retention of that mechanism when a smaller proof satisfies the property.
 - [x] Require an explicit Q/numeric-floor disposition summary before protecting a WP3-A acceptance/allocation amendment.
+- [x] Publish the same correction to live PR #635 as owner-directed guidance without claiming independent review authority (comment `5698458209`).
 
 ## Excluded scope
 
@@ -62,12 +63,18 @@ Prevent the WP3-v2 programme coordinator from reintroducing broad #356 obligatio
 - No direct amendment of PR #635 from this branch.
 - No new prompt alias/control plane.
 
+## Implementation / findings
+
+The reusable prompt's identity, owner, alias, status and supersession relation are unchanged; `PROMPT_LIFECYCLE.json` therefore remains untouched. This change narrows how the existing coordinator applies the already-protected playable-first scope rather than registering a new prompt lifecycle identity.
+
+The critical guard is authority-first classification: a historical mechanism-specific test or number is not a current WP3-A requirement merely because it existed in #356. Conversely, an exact current protected requirement remains binding until protected authority explicitly changes it.
+
 ## Validation
 
-- focused prompt readback and diff review: pending
+- focused prompt readback and diff review: pending exact-head readback
 - lifecycle alias/status/owner/supersession identity: unchanged
 - component/E2E: `NOT_APPLICABLE`, prompt/governance only
-- exact-head repository checks: pending after PR creation
+- exact-head repository checks: pending on PR #636
 
 ## Self-review
 
@@ -79,9 +86,9 @@ Prevent the WP3-v2 programme coordinator from reintroducing broad #356 obligatio
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical WP3 coordinator prompt now requires authority-backed Q/numeric-floor triage
+last_progress: prompt correction published as PR #636 and live #635 received owner-directed correction
 status: validating
 branch: governance/wp3-playable-first-q-triage-20260916
 head_sha: null
-pr: null
+pr: 636
 ```
