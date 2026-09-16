@@ -23,6 +23,7 @@ owned_paths:
 public_contracts: []
 depends_on:
   - PR #634 protected playable-first policy
+  - PR #635 protected WP3-A authority-backed disposition
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -34,14 +35,15 @@ Prevent the WP3-v2 programme coordinator from reintroducing broad #356 obligatio
 
 ## Architecture and source of truth
 
-- `PROVEN`: protected `main@1995bd97460774ea9fc136959d5548471b81c987` contains `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` from PR #634.
-- `PROVEN`: PR #635 currently uses `ALL_OTHER_Q = CURRENT_EVIDENCE_REQUIRED` and carries the historical 12 MiB equation as an assumed current floor.
-- `DERIVED`: that blanket inheritance can recreate broad-fork-era proof scope even when individual cells are mechanism-specific, representative-load work, downstream-composed, superseded, or no longer current protected authority.
-- `REQUIRED`: accepted protected safety/correctness limits remain binding until protected authority changes them; this task does not waive any accepted invariant.
+- `PROVEN`: protected PR #634 established `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` and the upstream-first/minimum-sufficient transition contract.
+- `PROVEN`: PR #635 is protected-integrated on Game `main@0ab58cb2570b8355049659f3c95b4a5eb14a8299` and replaced blanket historical inheritance with an explicit Q01-Q75/N01-N32 authority-backed disposition.
+- `PROVEN`: protected #635 retains the exact 12 MiB root/work safety requirement because current protected authority independently binds it; it does not retain every historical #356 allocation mechanism.
+- `DERIVED`: the reusable coordinator prompt still needs the generic authority-first guard so future executions do not regress to blanket broad-fork-era proof scope after #635.
+- `REQUIRED`: accepted protected safety/correctness/durability/compatibility/resource limits remain binding until protected authority changes them; this task does not waive any accepted invariant.
 
 ## High-risk authority/recovery qualification
 
-`NOT_APPLICABLE`: prompt/governance only. No runtime, persistence, authority-bearing session, production, credential or recovery-state mutation.
+Prompt/governance only. No runtime, persistence, authority-bearing session, production, credential or recovery-state mutation. Because this changes reusable coordinator behavior, normal current control-plane review policy still applies before protected integration.
 
 ## Acceptance criteria
 
@@ -53,42 +55,49 @@ Prevent the WP3-v2 programme coordinator from reintroducing broad #356 obligatio
 - [x] Explicitly preserve a numeric floor when current protected authority still binds it.
 - [x] Prevent mechanism-named #356 tests from forcing retention of that mechanism when a smaller proof satisfies the property.
 - [x] Require an explicit Q/numeric-floor disposition summary before protecting a WP3-A acceptance/allocation amendment.
-- [x] Publish the same correction to live PR #635 as owner-directed guidance without claiming independent review authority (comment `5698458209`).
+- [x] Preserve owner correction comment `5698458209` as historical guidance and recognize protected #635 as the current authority-backed implementation of that correction.
 
 ## Excluded scope
 
 - No runtime, Cargo, vendor, workflow, ruleset or production mutation.
 - No change to PR #356 history or source.
 - No weakening of accepted correctness/security/durability/compatibility requirements.
-- No direct amendment of PR #635 from this branch.
+- No amendment of protected #635 from this branch.
 - No new prompt alias/control plane.
 
 ## Implementation / findings
 
-The reusable prompt's identity, owner, alias, status and supersession relation are unchanged; `PROMPT_LIFECYCLE.json` therefore remains untouched. This change narrows how the existing coordinator applies the already-protected playable-first scope rather than registering a new prompt lifecycle identity.
+The reusable prompt's identity, owner, alias, status and supersession relation are unchanged; `PROMPT_LIFECYCLE.json` therefore remains untouched. The prompt delta codifies the same authority-first classification now protected by #635 so later coordinator runs cannot accidentally reconstruct the superseded blanket Q-matrix behavior.
 
-The critical guard is authority-first classification: a historical mechanism-specific test or number is not a current WP3-A requirement merely because it existed in #356. Conversely, an exact current protected requirement remains binding until protected authority explicitly changes it.
+The critical guard is property-first classification: a historical mechanism-specific test or number is not a current WP3-A requirement merely because it existed in #356. Conversely, an exact current protected requirement remains binding until protected authority explicitly changes it.
+
+Fresh post-#635 reconciliation found one stale task-record statement on predecessor head `5d61d9f6b3b78746fa6e006fe9f0e9ffe46a51c9`: it incorrectly described #635 as still carrying blanket `ALL_OTHER_Q = CURRENT_EVIDENCE_REQUIRED`. That statement is removed here; no prompt semantics are changed by this repair.
 
 ## Validation
 
-- focused prompt readback and diff review: pending exact-head readback
+- prompt delta whole-diff readback against protected #634/#635: PASS; no conflict found with the protected Q/numeric-floor disposition
+- predecessor #636 Architecture Semantic Audit `35103648459`: SUCCESS
+- predecessor Agent Governance `35103648394` and Merge Gate `35103648150`: FAILURE because PR metadata lacked `## Validation`, not because prompt content failed validation
+- task-record protected-state reconciliation: repaired on the same branch; exact successor-head readback required
 - lifecycle alias/status/owner/supersession identity: unchanged
 - component/E2E: `NOT_APPLICABLE`, prompt/governance only
-- exact-head repository checks: pending on PR #636
+- exact-head repository checks: required on the repaired head before review/integration
 
 ## Self-review
 
-- exact head: pending
-- method: whole prompt delta against protected #634 policy and current #635 prospective allocation
-- material findings: pending
-- verdict: pending
+- predecessor head reviewed: `5d61d9f6b3b78746fa6e006fe9f0e9ffe46a51c9`
+- method: complete two-file diff against protected #634 policy and protected #635 disposition/readback
+- material finding: stale task-record `PROVEN` statement about #635; minimum repair applied on the same branch
+- prompt findings: none requiring semantic repair
+- final verdict: pending successor exact-head checks and applicable independent review
 
 ## Context checkpoint
 
 ```yaml
-last_progress: prompt correction published as PR #636 and live #635 received owner-directed correction
+last_progress: protected #635 read back; #636 prompt remains aligned; stale task-record authority statement repaired in-place
 status: validating
 branch: governance/wp3-playable-first-q-triage-20260916
-head_sha: null
+head_sha: pending readback
 pr: 636
+next: repair PR metadata Validation section, run exact-head gates, independent review, then use #636 only if it becomes a truthful qualified Game canary candidate
 ```
