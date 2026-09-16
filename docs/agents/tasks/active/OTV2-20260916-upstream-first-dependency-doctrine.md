@@ -15,15 +15,15 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
 created_at: 2026-09-16T09:24:00+02:00
-updated_at: 2026-09-16T10:00:00+02:00
+updated_at: 2026-09-16T10:05:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - AGENTS.md
   - CONTRIBUTING.md
-  - docs/repository/UPSTREAM_FIRST_DEPENDENCY_POLICY.md
+  - docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md
   - docs/agents/tasks/active/OTV2-20260916-upstream-first-dependency-doctrine.md
 public_contracts:
-  - docs/repository/UPSTREAM_FIRST_DEPENDENCY_POLICY.md
+  - docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md
 depends_on: []
 blocks: []
 cross_repository_coordination_id: null
@@ -61,6 +61,7 @@ Establish one repository-wide engineering rule: advance the real Oteryn product 
 - [x] Apply the doctrine to agents through root `AGENTS.md`.
 - [x] Apply the doctrine to contributors through `CONTRIBUTING.md`.
 - [x] State that existing forks are re-evaluated rather than automatically grandfathered, while preserving useful history/tests/research.
+- [x] Keep one clearly named canonical repository policy instead of duplicating full policy prose in agent files.
 
 ## Excluded scope
 
@@ -85,6 +86,8 @@ The preferred dependency resolution order is upstream configuration/API, Oteryn-
 The preferred delivery rule is to stop adding machinery once the current accepted requirement is met and the next real product capability is unblocked. Future extension points may be kept simple and explicit, but future functionality is not implemented until evidence requires it.
 
 Existing dependency customizations remain historical/current implementation evidence; when touched or superseded they must be reassessed under the doctrine rather than deleted automatically.
+
+The canonical policy was named `PLAYABLE_FIRST_ENGINEERING_POLICY.md` so its path reflects its full project-wide delivery scope rather than implying that it only governs dependency forks.
 
 ## Validation
 
@@ -137,7 +140,7 @@ Existing dependency customizations remain historical/current implementation evid
 ## Context checkpoint
 
 ```yaml
-last_progress: doctrine expanded to playable-first minimum-sufficient delivery without lowering quality/security/performance floors
+last_progress: canonical policy renamed to reflect full playable-first engineering scope without adding another policy layer
 status: validating
 branch: governance/upstream-first-dependency-doctrine-20260916
 head_sha: null
