@@ -16,6 +16,10 @@
 - Platform owns web identity, commercial and control-plane responsibilities under accepted contracts. Atlas consumes normalized Game-owned exports and cannot become Game truth authority.
 - `blakinio/Oteryn-v2` and other legacy repositories are migration/reference evidence only. Do not create ordinary work there.
 
+## Upstream-first dependency doctrine
+
+`docs/repository/UPSTREAM_FIRST_DEPENDENCY_POLICY.md` is the repository-wide dependency-customization policy. Default to mature upstream implementations and supported configuration/APIs. Do not fork, vendor-modify, reimplement or deeply instrument third-party components without concrete evidence that the exact upstream version cannot satisfy an accepted Oteryn requirement through upstream configuration, extension points or a bounded Oteryn-owned layer. When an exception is proven, use the smallest maintainable patch and preserve a clear path back to upstream. Existing forks are not automatically justified forever and must be re-evaluated when touched or superseded.
+
 ## Repository boundaries
 
 Read the nearest `AGENTS.md` for a touched path. Use `docs/architecture/` for accepted architecture, `docs/contracts/` for durable integration contracts, and `docs/agents/` for routed specialist procedures and task records. Live GitHub Issue, PR and check state governs task lifecycle; historical prompts, handoffs and reports are evidence only.
