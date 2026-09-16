@@ -1070,3 +1070,50 @@ Enforce accepted337/341/342 resource accounting through preallocation denial aga
 ## Current terminal override — native wire346 released
 
 Protected PR349/main9be69b4e0a06f3978d5c5c5603ca3e5670a9f18a at2026-09-06T14:48:04Z completes346 after exact-head34039525638 and MQ34039815144/game-gate success. Archive: `docs/agents/tasks/archive/OTV2-20260906-native-evidence-wire-346.md`. The earlier prospective346 block is historical and no longer an active lease. Work releases its five paths and single247 lib.rs export transfer; all other247 ownership and WAITING_DEPENDENCY remain held. Original admission/window/repair2 remain preserved. No producer/source/TLS or Server Seam readiness claim. This closeout and prospective351 correction are serialized under Work162 comment5560037097.
+
+
+## Prospective WP3-v2 AWS-LC root Cargo feature amendment (2026-09-13)
+
+Status: `PROSPECTIVE_NOT_ACTIVE`. Coordinator: existing Work #162 under
+[scope grant 5654245867](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5654245867).
+This narrowly extends the existing serialized #351 Cargo lease only after the
+activation gates below. It creates no replacement worker, branch, PR or architecture.
+
+The accepted Revision-3 contract selects the AWS-LC first-slice profile. The older
+SQLx path-patch lease preserves selected features and therefore does not itself
+permit replacing the root ring feature. The exact gap is recorded in
+[#162 comment 5653954056](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5653954056)
+and the bounded source audit in
+[#162 comment 5654121613](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5654121613).
+
+After protected integration, readback and explicit Work activation, the sole writer
+on #351 / #356 / `agent/sqlx-driver-budget-351` may change exactly:
+
+- Root `Cargo.toml`: replace only SQLx's `tls-rustls-ring-webpki` feature with its
+  SQLx 0.9.0 public AWS-LC counterpart. Verify the exact public facade feature and
+  transitive mapping before mutation; the expected spelling
+  `tls-rustls-aws-lc-rs` is not evidence of feature existence. Preserve the SQLx
+  version, disabled defaults, all other selected features, patches and exclusions.
+- Root `Cargo.lock`: only dependency-resolution consequences strictly required by
+  that feature replacement. Preserve the accepted pinned production graph;
+  no upgrades, unrelated regeneration churn or general dependency authority.
+  A zero lock delta is valid if exact resolution proves it.
+
+This amendment grants no dependency-manifest, workflow, registry, TLS trust,
+protocol/version/cipher/KX policy or production authority. Existing vendor seams
+remain separately bounded. If the exact facade or resolved graph needs additional
+scope or conflicts with the accepted profile, stop that cell with the exact source
+and obtain the owning scope/architecture disposition rather than broadening it.
+
+Work must freshly reconcile main, #162/#351/#356 and overlapping Cargo custody,
+qualify/review this amendment, integrate it through normal FULL native Merge Queue,
+and verify protected-main content before explicitly activating it for the SAME
+canonical writer. Until then it grants no material mutation. The existing exclusive
+Cargo custody remains serialized; #247, #335 and other overlapping writers do not
+resume or inherit this scope. Preserve existing task/window and evidence history.
+
+The implementation unit must qualify the exact resolved provider graph and required
+repository checks; configuration, compilation or feature selection alone does not
+prove real PostgreSQL 17.6 / AWS-LC TLS1.3 VerifyFull execution, complete resource
+ownership, or Q01-Q75. All final WP3 review/qualification/FULL MQ/readback/closeout
+requirements remain. Child B/WP4 and Server Seam stay held until their own gates.

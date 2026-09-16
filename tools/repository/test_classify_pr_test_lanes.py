@@ -212,6 +212,257 @@ def test_candidate_modes(module):
     print("Candidate mode family PASS: executable/regular controls, symlink/gitlink rejection and missing evidence FULL")
 
 
+def test_bounded_document_consumer_drift(module):
+    docs = [dict(filename="README.md", status="modified")]
+    result = module.classify(docs, 1, fixture(), "stale-nonserver", docs_digest="stale-all",
+                             candidate_modes_verified=True, docs_consumers_verified=True)
+    assert result["rust"] is False and result["windows"] is False, result
+    result = module.classify(docs, 1, fixture(), module.AUDITED_INPUT_SHA256,
+                             docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                             candidate_modes_verified=True, docs_consumers_verified=False)
+    assert result["rust"] and result["windows"], result
+    assert result["reason"] == "unreviewed-document-consumer-inputs", result
+
+    assert not module.document_consumer_content_safe(
+        "apps/game-server/src/combat.rs", b"fn damage() -> u32 { 6 }", b"fn damage() -> u32 { 7 }")
+    unchanged_consumer = b'const GUIDE: &str = include_str!("guide.md");\n'
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", unchanged_consumer, unchanged_consumer + b"// harmless note\n")
+    literal_context = b'''const Q1: char = '\"';\nconst Q2: u8 = b'\"';\nconst ESC: char = '\\u{1F_600}';\n'''
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", literal_context + b"// old note\n",
+        literal_context + b"// changed note\n")
+    malformed_unicode_context = b"const BAD: char = '\\u{_1}';\n"
+    assert not module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", malformed_unicode_context + b"// old note\n",
+        malformed_unicode_context + b"// changed note\n")
+    lifetime_context = b"fn borrow<'a>(value: &'a str) -> &'a str { value }\n'outer: loop { break 'outer; }\n"
+    assert module.document_consumer_content_safe(
+        "apps/game-server/src/lib.rs", lifetime_context + b"// old note\n",
+        lifetime_context + b"// changed note\n")
+    for path, baseline, current in (
+        ("Cargo.toml", b"[workspace]", b"[workspace]\n"),
+        ("apps/game-server/build.rs", b"fn main() {}", b"fn main() { println!(); }"),
+        ("apps/game-server/src/lib.rs", b"", b"use std::{fs}; fs::read(path);"),
+        ("apps/game-server/src/lib.rs", b"", b"use std::{fs as storage}; storage::read(path);"),
+        ("apps/game-server/src/lib.rs", b"", b'const X: &str = include_str!("fixture.sql");'),
+        ("apps/game-server/src/lib.rs", b"const USE_DOCS: bool = false;", b"const USE_DOCS: bool = true;"),
+        ("apps/game-server/src/lib.rs", b"fn use_docs() -> bool { false }", b"fn use_docs() -> bool { true }"),
+        ("apps/game-server/src/lib.rs", b"// module", b"/// module"),
+        ("apps/game-server/src/lib.rs", b"// crate", b"//! crate"),
+        ("apps/game-server/src/lib.rs", b"/**\n// old doc text\n*/", b"/**\n// changed doc text\n*/"),
+        ("apps/game-server/src/lib.rs", b"/*!\n// old crate docs\n*/", b"/*!\n// changed crate docs\n*/"),
+        ("apps/game-server/src/lib.rs", b'let text = r#"\n// old string text\n"#;', b'let text = r#"\n// changed string text\n"#;'),
+        ("apps/game-server/src/lib.rs",
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// old string text\n"#;\nconst Q2: u8 = b'\"';''',
+         b'''const Q1: char = '\"';\nconst TEXT: &str = r#"\n// changed string text\n"#;\nconst Q2: u8 = b'\"';'''),
+        ("apps/game-server/src/lib.rs", b'let text = "\n// old string text\n";', b'let text = "\n// changed string text\n";'),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"/* unterminated\n// uncertain"),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: char = '\\q';\n// uncertain"),
+        ("apps/game-server/src/lib.rs", b"// baseline", b"const BAD: u8 = b'xy';\n// uncertain"),
+    ):
+        assert not module.document_consumer_content_safe(path, baseline, current), (path, current)
+
+    complete = subprocess.CompletedProcess([], 0)
+    safe_outputs = [
+        ("a" * 40 + "\n").encode(),
+        b"",
+        b"apps/game-server/src/combat.rs\0",
+        b"// damage remains audited",
+        b"// damage remains audited\n// ordinary note",
+    ]
+    with patch.object(module.subprocess, "run", return_value=complete), \
+            patch.object(module.subprocess, "check_output", side_effect=safe_outputs):
+        assert module.document_consumers_safe(fixture()) is True
+
+    unsafe_outputs = [
+        ("a" * 40 + "\n").encode(),
+        b"",
+        b"apps/game-server/src/combat.rs\0",
+        b"fn damage() -> u32 { 7 }",
+        b'use std::{fs as storage}; storage::read(path);',
+    ]
+    with patch.object(module.subprocess, "run", return_value=complete), \
+            patch.object(module.subprocess, "check_output", side_effect=unsafe_outputs):
+        assert module.document_consumers_safe(fixture()) is False
+
+    deleted_outputs = [("a" * 40 + "\n").encode(), b"apps/game-server/src/old.rs\0"]
+    with patch.object(module.subprocess, "run", return_value=complete), \
+            patch.object(module.subprocess, "check_output", side_effect=deleted_outputs):
+        assert module.document_consumers_safe(fixture()) is False
+
+    # Exercise the PR classifier's proof against real immutable Git objects.
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        def git(*args):
+            return subprocess.check_output(["git", "-C", directory, "-c", "user.name=Fixture",
+                                            "-c", "user.email=fixture@example.invalid", *args]).decode().strip()
+        git("init", "-q")
+        source = root / "apps/game-server/src/lib.rs"
+        source.parent.mkdir(parents=True)
+        lexical_contexts = (b"/**\n// old block docs\n*/\n/*!\n// old crate block docs\n*/\n"
+                            b'const TEXT: &str = r#"\n// old raw string\n"#;\n'
+                            b'''const Q1: char = '\"';\nconst QUOTED: &str = r#"\n// old quoted raw string\n"#;\nconst Q2: u8 = b'\"';\n''')
+        baseline_source = unchanged_consumer + b"const USE_DOCS: bool = false;\n" + lexical_contexts
+        source.write_bytes(baseline_source)
+        for package in fixture()["packages"]:
+            manifest = root / Path(package["manifest_path"]).relative_to("/repo")
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\n")
+        git("add", ".")
+        git("commit", "-qm", "baseline")
+        baseline_sha = git("rev-parse", "HEAD")
+        real_meta = copy.deepcopy(fixture())
+        real_meta["workspace_root"] = directory
+        for package in real_meta["packages"]:
+            package["manifest_path"] = package["manifest_path"].replace("/repo", directory, 1)
+            for dependency in package["dependencies"]:
+                dependency["path"] = dependency["path"].replace("/repo", directory, 1)
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            source.write_bytes(baseline_source + b"// harmless note\n")
+            git("add", "."); git("commit", "-qm", "harmless")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                assert module.document_consumers_safe(real_meta) is True
+            git("checkout", "-q", baseline_sha)
+            source.write_bytes(baseline_source + malformed_unicode_context + b"// old note\n")
+            git("add", "."); git("commit", "-qm", "malformed unicode baseline")
+            malformed_base = git("rev-parse", "HEAD")
+            source.write_bytes(baseline_source + malformed_unicode_context + b"// changed note\n")
+            git("add", "."); git("commit", "-qm", "comment after malformed unicode")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", malformed_base):
+                assert module.document_consumers_safe(real_meta) is False
+            for statement in (b"use std::{fs}; fs::read(path);\n",
+                              b"use std::{fs as storage}; storage::read(path);\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(baseline_source + statement)
+                git("add", "."); git("commit", "-qm", "unsafe alias")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+            git("checkout", "-q", baseline_sha)
+            source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = true;\n")
+            git("add", "."); git("commit", "-qm", "unsafe scalar gate")
+            with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                assert module.document_consumers_safe(real_meta) is False
+            for doc_comment in (b"/// module docs\n", b"//! crate docs\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(baseline_source + doc_comment)
+                git("add", "."); git("commit", "-qm", "unsafe doc attribute")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+            for ambiguous in (lexical_contexts.replace(b"// old block docs", b"// changed block docs"),
+                              lexical_contexts.replace(b"// old crate block docs", b"// changed crate block docs"),
+                              lexical_contexts.replace(b"// old raw string", b"// changed raw string"),
+                              lexical_contexts.replace(b"// old quoted raw string", b"// changed quoted raw string"),
+                              lexical_contexts + b"/* unterminated\n// uncertain\n"):
+                git("checkout", "-q", baseline_sha)
+                source.write_bytes(unchanged_consumer + b"const USE_DOCS: bool = false;\n" + ambiguous)
+                git("add", "."); git("commit", "-qm", "unsafe lexical context")
+                with patch.object(module, "AUDITED_DOC_CONSUMER_BASE_SHA", baseline_sha):
+                    assert module.document_consumers_safe(real_meta) is False
+        finally:
+            os.chdir(old_cwd)
+    print("Bounded document consumer drift PASS: lexical ordinary comments allowed; strings, block/docs, scalar and uncertain drift FULL")
+
+
+def test_large_pr_git_fallback(module):
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+
+        def git(*args):
+            return subprocess.check_output(
+                ["git", "-C", directory, "-c", "user.name=Fixture",
+                 "-c", "user.email=fixture@example.invalid", *args]
+            ).decode().strip()
+
+        git("init", "-q")
+        git("commit", "--allow-empty", "-qm", "baseline")
+        baseline = git("rev-parse", "HEAD")
+        source = root / "apps/game-server/src/generated"
+        source.mkdir(parents=True)
+        for index in range(301):
+            (source / f"large_{index:03d}.rs").write_text(f"pub const ITEM_{index}: usize = {index};\n")
+        git("add", ".")
+        git("commit", "-qm", "large server-only change")
+        head = git("rev-parse", "HEAD")
+        git("checkout", "-q", baseline)
+
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            env = {
+                "ENUMERATION_COMPLETE": "false",
+                "CHANGED_FILE_RECORDS": "[]",
+                "CHANGED_FILE_COUNT": "301",
+                "EXPECTED_HEAD": head,
+            }
+            with patch.dict(os.environ, env, clear=False):
+                files, count, complete = module.pr_file_records()
+            assert complete is True and count == 301 and len(files) == 301
+            assert {item["status"] for item in files} == {"added"}
+            result = module.classify(
+                files, count, fixture(), module.AUDITED_INPUT_SHA256,
+                docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                candidate_modes_verified=True,
+            )
+            assert result["rust"] is True and result["windows"] is False, result
+
+            git("checkout", "-q", head)
+            client = root / "apps/client/src/large_pr_probe.rs"
+            client.parent.mkdir(parents=True, exist_ok=True)
+            client.write_text("pub const CLIENT_PROBE: bool = true;\n")
+            git("add", ".")
+            git("commit", "-qm", "add client impact")
+            client_head = git("rev-parse", "HEAD")
+            git("checkout", "-q", baseline)
+            with patch.dict(os.environ, env | {"EXPECTED_HEAD": client_head, "CHANGED_FILE_COUNT": "302"}, clear=False):
+                files, count, complete = module.pr_file_records()
+            assert complete is True and count == 302 and len(files) == 302
+            result = module.classify(
+                files, count, fixture(), module.AUDITED_INPUT_SHA256,
+                docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                candidate_modes_verified=True,
+            )
+            assert result["rust"] is True and result["windows"] is True, result
+        finally:
+            os.chdir(old_cwd)
+
+    with patch.object(module.subprocess, "check_output",
+                      return_value=b"T\0apps/game-server/src/lib.rs\0"):
+        try:
+            module.git_diff_records("a" * 40, "b" * 40)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("unsupported Git diff status accepted")
+
+    with patch.dict(os.environ, {"ENUMERATION_COMPLETE": "unknown"}, clear=False):
+        try:
+            module.pr_file_records()
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid enumeration state accepted")
+
+    for invalid_count in ("True", "0", "-1", "01", ""):
+        with patch.dict(os.environ, {
+            "ENUMERATION_COMPLETE": "false",
+            "CHANGED_FILE_RECORDS": "[]",
+            "CHANGED_FILE_COUNT": invalid_count,
+            "EXPECTED_HEAD": "b" * 40,
+        }, clear=False), patch.object(module.subprocess, "check_output") as check_output:
+            try:
+                module.pr_file_records()
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(("invalid transported file count accepted", invalid_count))
+            check_output.assert_not_called()
+
+    print("Large-PR Git fallback PASS: >300 server-only records recover reduced Windows lane; client impact and malformed evidence fail closed")
+
+
 def main() -> int:
     assert MODULE.is_file(), "dependency-aware trusted-base classifier is not implemented"
     spec = importlib.util.spec_from_file_location("risk_classifier", MODULE)
@@ -219,7 +470,9 @@ def main() -> int:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     test_candidate_modes(module)
+    test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
+    test_bounded_document_consumer_drift(module)
 
     def classify(paths, metadata=None, digest=None, **kwargs):
         files = [dict(filename=p, status="modified") if isinstance(p, str) else p for p in paths]
@@ -242,7 +495,7 @@ def main() -> int:
         "Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "apps/game-server/build.rs",
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
         "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
-        "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
+        "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
     )
     for path in full_paths:
         result = classify([path])
@@ -252,7 +505,8 @@ def main() -> int:
                   [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}]):
         result = classify(paths)
         assert result["rust"] and result["windows"], result
-    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"]):
+    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"],
+                  ["docs/agents/PROMPT_LIFECYCLE.json"]):
         result = classify(paths)
         assert result["rust"] is False and result["windows"] is False, result
         result = classify(paths, digest="unreviewed-document-consumer")
