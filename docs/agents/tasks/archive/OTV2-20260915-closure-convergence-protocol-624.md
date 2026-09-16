@@ -17,7 +17,7 @@ repair_pr: 631
 repair_final_head_sha: f919b10ff0fd350856ec1a21670258aa27db5dad
 repair_merge_sha: b313c914f92bc3f788367026de8c0fef6fa88244
 closeout_branch: agent/closure-convergence-protocol-closeout-624
-closeout_pr: pending
+closeout_pr: 632
 protected_main_readback_sha: b313c914f92bc3f788367026de8c0fef6fa88244
 meta_policy_id: OTERYN_ORGANIZATION_AGENT_POLICY
 meta_policy_version: 3.1.0
@@ -133,7 +133,7 @@ This proves that the repair is canonical on protected `main` through the require
 - runtime/product E2E requirement for this governance-only task: NOT_APPLICABLE;
 - task-owned implementation paths: released;
 - active task record: removed by this archive closeout;
-- archive closeout PR: recorded in this file before final qualification;
+- archive closeout PR: #632;
 - closeout PR exact-head CI/review/Merge Queue evidence remains canonical on the immutable GitHub PR/workflow surfaces to avoid a self-referential tracked-head update;
 - ownership release: complete when this archive move is protected on `main`;
 - next action after protected archive integration: close Issue #624 as `completed`.
@@ -145,7 +145,7 @@ last_progress: PR #631 repaired both post-merge P1 findings and merged through n
 status: completed
 initial_pr: 625
 repair_pr: 631
-closeout_pr: pending
+closeout_pr: 632
 protected_main_readback_sha: b313c914f92bc3f788367026de8c0fef6fa88244
 material_findings_open: 0
 review_threads_open: 0
