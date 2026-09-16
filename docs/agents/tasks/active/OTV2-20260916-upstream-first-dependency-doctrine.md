@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol
 created_at: 2026-09-16T09:24:00+02:00
-updated_at: 2026-09-16T10:05:00+02:00
+updated_at: 2026-09-16T10:08:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - AGENTS.md
@@ -87,13 +87,13 @@ The preferred delivery rule is to stop adding machinery once the current accepte
 
 Existing dependency customizations remain historical/current implementation evidence; when touched or superseded they must be reassessed under the doctrine rather than deleted automatically.
 
-The canonical policy was named `PLAYABLE_FIRST_ENGINEERING_POLICY.md` so its path reflects its full project-wide delivery scope rather than implying that it only governs dependency forks.
+The canonical policy is `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md`; the earlier working filename `UPSTREAM_FIRST_DEPENDENCY_POLICY.md` was removed from the candidate so there is only one active policy file and its name reflects the full project-wide delivery scope.
 
 ## Validation
 
 ### Focused
 
-- changed paths and policy cross-references: pending exact-head readback
+- changed paths and policy cross-references: canonical path renamed and old candidate path removed; final exact-head readback pending
 - result: pending
 
 ### Component/integration
@@ -140,7 +140,7 @@ The canonical policy was named `PLAYABLE_FIRST_ENGINEERING_POLICY.md` so its pat
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical policy renamed to reflect full playable-first engineering scope without adding another policy layer
+last_progress: canonical policy renamed to PLAYABLE_FIRST_ENGINEERING_POLICY.md and superseded candidate filename removed
 status: validating
 branch: governance/upstream-first-dependency-doctrine-20260916
 head_sha: null
