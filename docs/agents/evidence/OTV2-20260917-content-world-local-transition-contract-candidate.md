@@ -2,13 +2,14 @@
 
 ```yaml
 status: PROPOSED_NONCANONICAL
-revision: 1
+revision: 2
 date: 2026-09-17
 repository: Oteryn/Oteryn-Game
 pr: 641
 branch: agent/content-world-design-dossier-20260917
 inspected_main: b44fefe08f6aaf1b2c1c23dedd92bab0de87146e
 predecessor_head: b1fc73ee8c6dc4cfae427564dc5fdc6efaf01316
+reviewed_predecessor_head: 70ac6659341a6d204ef6dbbfe990ae70950da141
 implementation_authority: NONE
 format_acceptance: NONE
 resource_registry_mutation_authority: NONE
@@ -28,6 +29,9 @@ The following sources were read on the exact main above. `PROVEN` means inspecte
 | [Foundation](../../../apps/game-server/src/foundation/mod.rs), blob `fac64fb048cd7b53af4400aca572f500ca205aef` | `CommandIngress::{reserve,mark_terminal,classify_duplicate}`, `DuplicateDisposition`, `FoundationProtocolError::CommandOutcomeExpired` | **PROVEN:** ingress already distinguishes pending-original, retained-result replay and expired outcome; terminal handling preserves order. Outcome expiration maps to resync, not new execution permission. |
 | [Foundation protocol](../../../apps/game-server/src/foundation/protocol.rs), blob `6642eef72c5bbb202ebe71075dc712f92bcf89aa` | `CommandRef`, `MessageType::{CommandResult,StateDelta}`, `Sequencing` | **PROVEN:** command identity includes GameSessionId; both result and delta are server-sequenced, but they are distinct message families. |
 | [Actor carrier](../../../apps/game-server/src/foundation/runtime_actor_carrier.rs), blob `4040c307d963ae5eef1b6243e73aadafccc599b2` | module preamble; private `ActorRef`, `PreProductionContinuityGrant`, `ChannelActorCarrier` | **PROVEN:** private, preproduction-only, uncomposed carrier; no grant constructor/issuer here. Do not describe it as a public production object resolver. |
+| [FND-02 contract](../../architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md), blob `29dc83ed934c4931791ae10478c54344b7117c23` | Sections 7, 13, 14, 16 | **PROVEN:** semantic command identity is not protobuf byte identity; ordered admission also requires ordered authoritative commit; snapshot transfer has a server-side sequencing barrier. |
+| [Protocol registry](../../contracts/PROTOCOL_OTERYN_V1_REGISTRY.json), blob `6d7f65e9247a5eace5019fdf8703259ba9536b26` | `command_types`, `state_domains`, message types | **PROVEN:** both gameplay registries are empty on inspected main. Generic command/result/delta/snapshot envelopes exist; a registered spatial/world domain does not yet exist. |
+| [Snapshot facade](../../../apps/game-server/src/foundation/snapshot_facade.rs), blob `faa9625ae7b04de931c02a74d2d29aa8cdf51a6d` | `SnapshotBarrier::{begin,commit,may_emit_sequenced,discard_for_generation_change}` | **PROVEN:** a reusable snapshot barrier boundary exists. Its presence alone does not prove that a future object egress producer invokes it. |
 
 **Correction to CW-04 and execution-design section 3:** the current runtime owner is already selected. The remaining gap is the typed world-object operation and its composition with that owner, not an unanswered choice of a new service/domain authority. Historical wording is narrowed by this section, not used to reopen the one-writer decision.
 
@@ -45,7 +49,7 @@ Two realistic alternatives are rejected for this slice: Content callbacks mutati
 |---|---|
 | One plain two-state object, OPEN/CLOSE intent, exact immutable definition and placement; declared scope-ephemeral lifetime | Key consumption, quest progress, reward grants, valuable objects, durable door state, house ACL, scripts and arbitrary state dictionaries |
 | Current-owner validation; movement consumes resulting spatial view | Auto-walk through doors, automatic displacement, local/cross-scope teleport, multi-owner footprints |
-| Existing command/result/delta/reconciliation semantics | New protocol IDs, global occurrence IDs, a second result journal, authoritative client collision |
+| Existing command/result/delta/reconciliation semantics | Numeric protocol allocation in this evidence PR, global occurrence IDs, a second result journal, authoritative client collision. A later real wire child requires its owning payload/domain registration as specified in section 6. |
 
 Closed/open and reject-occupied-close are synthetic witness choices, not inferred Global mechanics. Executable Reference promotion still needs evidence for the exact selected object's rules; evidence work is not blocked by unrelated catalogue gaps.
 
@@ -84,6 +88,8 @@ current scope + ownership + session/connection authority
 
 Before commit, validate the selected definition, trigger/state, manipulation permission, actor range/visibility and affected footprint under the applicable owner rules. A client's expected revision is only a precondition against server truth, never permission to set the current revision. Closing and crossing are independent operations and may have different policies.
 
+**Session commit order:** before the first authoritative effect or new terminal result, the current writer must establish that the command has its turn in the existing GameSession ingress order, across all targets and command families. Serial object-local execution alone does not satisfy FND-02 section 13.1. `CommandIngress::reserve` orders admission, while `mark_terminal` rejects out-of-order retirement; neither licenses a consumer to mutate first and discover an ordering failure afterward. A command waiting behind an earlier pending command remains the same admitted operation. Do not introduce per-door command streams or consume a later terminal rejection ahead of an earlier reserved command.
+
 No asynchronous gap is allowed between final dynamic-occupancy validation and local commit. Worker/precomputed results must be fenced and revalidated by the owner. Reserve the necessary bounded outcome/projection bookkeeping before mutation, or use an already accepted loss-and-resync contract. Never return COMMITTED merely because an operation was queued.
 
 The commit makes logical state, all affected spatial contributions and the reconciliation outcome coherent before any observer can use them. If an essential fallible step remains after publication, its failure behavior must already be defined; an implementation may not rely on the Python witness's assumed indivisible assignment. A rejected operation changes no gameplay state, although required ingress/result/accounting records may change.
@@ -105,6 +111,8 @@ For the fixture's reject-occupied-close policy, both serialized orders are safe:
 
 Do not add a world-object receipt table. FND owns client-command admission/result lifetime; an Interaction child uses its existing lifecycle and delegated owner's operation. Production consumers must derive retained-outcome evidence from their actual store: a caller-chosen boolean is not proof that an outcome exists.
 
+Where retained input is compared to classify a duplicate/conflict, compare normalized typed intent and its originally selected binding, never raw protobuf bytes. Different legal encodings of the same typed input are not a different semantic command. Pending/expired duplicate classification still follows the authoritative CommandRef/high-water mark and must not reinterpret replacement bytes as fresh work or resolve them against newly selected Content.
+
 The model's finite no-eviction receipt list is only a conservative stand-in for owner/result composition. Its separate ingress witness shows why the real implementation can expire response data without re-executing old commands. The model does not select production retention, infer a durable horizon or replace pending-operation recovery.
 
 A failure before owner commit is not synonymous with an unreserved network command. FND may already have reserved the command. Preserve its pending lineage and either complete/reject it through the owner contract or reconcile the same operation; do not skip its ID or claim a new reservation. The witness's `NOT_ADMITTED` means no world-object effect was published, not a new protocol error or an instruction to reset ingress.
@@ -117,7 +125,9 @@ A result acknowledgement does not update world state. A late replay result may d
 
 A complete, validated replacement snapshot is installed as one baseline. Incomplete snapshots cannot become partly visible. A stale snapshot cannot lower the known revision. Equal revision with a conflicting semantic state is a consistency failure, not last-writer-wins. Higher numeric sequence alone does not legitimize mismatched scope, generation or content.
 
-Per-object fields can be projected under the existing spatial/world state domain; this candidate does not require a separately registered state domain per door. Hidden or no-longer-visible targets still use the normal server-side access policy and current observation filtering.
+**Registration prerequisite for real wire execution:** the inspected `PROTOCOL_OTERYN_V1_REGISTRY.json` has `command_types: []` and `state_domains: []`. There is no existing registered spatial/world state domain to consume. Reuse the foundation envelopes, but the owning gameplay/protocol child must register the typed command/result and state delta/snapshot semantics, including the required stable numeric identities, before any real client-server object exchange. Prefer one appropriately scoped shared spatial/world domain, not one domain per door. This evidence PR allocates no IDs. Do not bypass the missing registration with an opaque payload, a borrowed unrelated ID or relaxed decoder checks. A synthetic in-process test does not satisfy this prerequisite. Hidden or no-longer-visible targets still use the normal server-side access policy and current observation filtering.
+
+**Snapshot egress barrier:** during the accepted SnapshotBegin-to-SnapshotCommit interval, later server-sequenced output must remain in the existing bounded server egress/replay path. This includes both object StateDelta and CommandResult, even though a result does not change the client's world state. Compose the existing `SnapshotBarrier::may_emit_sequenced` boundary at transmission eligibility; constructing a barrier without consulting it is insufficient. Rebind aborts the old generation's partial snapshot/barrier and establishes fresh reconciliation. Retention exhaustion follows the existing FND slow-client/recovery policy, not early transmission or an unbounded client buffer. This makes the inherited FND-02 section 16 requirement explicit; it is not a new transport or queue design.
 
 ## 7. Activation and lifetime: choose the bounded first shape
 
@@ -139,7 +149,9 @@ Within a live scope, cache eviction, unload/reload, file reimport and observer d
 
 The smallest implementation-shaped package is source binding validation plus one current-owner transition and its spatial/client projections. It consumes existing Foundation/Interaction interfaces where applicable; it cannot expose the private #573 actor carrier as a production resolver by convenience. Fresh #162 allocation must name actual writable symbols, accepted target fields, finite resource decisions and current dependency readiness.
 
-Required real qualification is: source/linker negatives; current-session/owner/incarnation fencing; duplicate/expired-outcome behavior; both movement/close orders; overlapping spatial contributors; injected failures around owner publication; actual client delta/result/snapshot sequence behavior; and exact-candidate repository checks. Extend the test scope only for capabilities actually admitted. Runtime absence, missing target evidence or a not-yet-qualified resolver remains a named dependency, not proof of a production defect.
+Choose the evidence claim before allocation. A first **synthetic in-process Rust composition** may verify typed source binding and current-owner operation without claiming Reference parity, wire compatibility or a playable client. A **real client-server child** additionally requires the owning registration above, the qualified current-owner lookup and the selected Content path; a **Reference claim** further requires evidence for each exercised target-sensitive rule. These are proof boundaries, not three mandatory new programmes or permission to release workers. Do not inherit raw Global capture as a blocker for an otherwise authorized synthetic technical child.
+
+Required real qualification is: source/linker negatives; current-session/owner/incarnation fencing; duplicate/expired-outcome behavior and semantically equivalent wire encodings; whole-session commit order across different targets, including an earlier pending command; both movement/close orders; overlapping spatial contributors; injected failures around owner publication; registered typed payload negatives; actual client delta/result/snapshot sequence behavior with both results and deltas held behind the snapshot barrier; and exact-candidate repository checks. Extend the test scope only for capabilities actually admitted. Runtime absence, missing target evidence or a not-yet-qualified resolver remains a named dependency, not proof of a production defect.
 
 ## 9. Validation in this continuation
 
@@ -152,6 +164,14 @@ The predecessor execution document's embedded witness was also extracted and rer
 Model assumptions/omissions are explicit: trusted Context/snapshot assignment is not authorization issuance; inputs are already typed fixtures; calls are serialized; publication is indivisible by construction; the client sketch is not the FND codec; lifetime and capacities are synthetic; no database, network, fault-tolerant storage, real corpus, parallel execution or Global parity is tested. An exhaustive bounded toy trace set is not exhaustive production verification.
 
 Direct container Git access failed with `Could not resolve host: github.com`. Read/write publication uses the working GitHub connector as API-native documentation editing, without selecting/reconstructing a local Git commit. Full local repository governance/build is not claimed. Hosted checks for the published head and independent review where applicable remain separate.
+
+### Revision 2 — bounded author review
+
+Review target: `70ac6659341a6d204ef6dbbfe990ae70950da141`, reconciled against unchanged inspected main. This is an author self-review, not an independent approval or owner acceptance. The only false current-state premise found in this bounded pass was the phrase "existing spatial/world state domain"; section 6 now records the empty registry and the exact wire-stage dependency. Sections 4–6 additionally make already accepted FND command-order, semantic-equality and snapshot-barrier obligations explicit rather than adding new global gates.
+
+The embedded models are unchanged and were rerun: 21 and 26 tests passed, with the same 4096 bounded traces and four rejected deliberate mutations. In particular, the separate Owner and IngressWitness sketches do not prove their ordered composition, and the Client sketch does not prove server egress gating. A scratch boundary check deliberately invoked command 2 before pending command 1: Owner returned COMMITTED, while subsequent ingress retirement returned false. This demonstrates the missing composition proof, not a defect in the accepted FND contract or production runtime. The new acceptance obligations require real owning integration tests; they are not marked passed by the old models.
+
+Disposition: preserve this corrected proposal for owning decision, stop broad design expansion, and hand the smallest explicitly classified implementation child to #162. No code, registry, accepted architecture or worker allocation is changed by this revision. The earlier DNS observation is historical; this revision does not claim a new transport probe or a full local repository build.
 
 ## Appendix — reproducible model
 
