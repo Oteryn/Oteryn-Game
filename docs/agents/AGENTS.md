@@ -22,7 +22,7 @@ For an independent audit dispatched under convergence mode:
 - preserve the auditor's existing evidence `classification: PROVEN | DERIVED | UNKNOWN | CONFLICT`; convergence gate classification is a separate field;
 - after the inventory freeze, a newly proposed blocker must satisfy a novelty trigger from `CLOSURE_CONVERGENCE_PROTOCOL.md`; otherwise mark a real current-gate miss `FINAL_SWEEP_MISS` and keep discovery bounded.
 
-Canonical material workers must also obey the convergence protocol's publication-safety rule: if the normal authorized high-level publication path is unavailable or rejected, fail closed and return custody. Do not improvise low-level Git commit/tree/blob/ref construction as a publication fallback.
+Canonical material workers must also obey the convergence protocol's publication-safety rule: if the normal authorized high-level publication path is unavailable or rejected, fail closed and return custody. Do not improvise low-level Git commit/tree/blob/ref construction, raw Git Data reconstruction, or per-file API reconstruction as a publication fallback.
 
 Classify evidence as `PROVEN`, `DERIVED`, `UNKNOWN` or `CONFLICT`. An unmerged task document cannot authorize architecture, production access or cross-repository writes. Preserve history when later decisions supersede only part of an older contract.
 
