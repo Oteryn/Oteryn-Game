@@ -15,6 +15,7 @@ spec.loader.exec_module(adoption)
 
 SHA = "a" * 40
 MAIN = "b" * 40
+PUBLICATION_INTEGRITY_AUTHORITY = "33b212e652c680bd4047be3b414c9a358b8bf26f"
 
 
 class CentralStatementView:
@@ -69,6 +70,17 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "repository-native GitHub APIs",
             "isolated checkout or worktree",
             "Remote Desktop is denied",
+        ):
+            self.assertIn(value, text)
+
+    def test_publication_integrity_provider_contract_fails_closed_without_reconstruction(self):
+        binding = json.loads((ROOT / "docs/agents/META_AGENT_POLICY_BINDING.json").read_text(encoding="utf-8"))
+        self.assertEqual(binding["authority_commit"], PUBLICATION_INTEGRITY_AUTHORITY)
+        text = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "fail closed and return custody",
+            "raw Git Data reconstruction",
+            "per-file API reconstruction",
         ):
             self.assertIn(value, text)
 
