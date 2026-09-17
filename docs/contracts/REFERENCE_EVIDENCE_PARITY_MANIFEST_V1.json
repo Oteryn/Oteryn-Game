@@ -492,7 +492,7 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "Global target behavior retains the qualitative family of experience and skill loss on death followed by temple/home-city return. Oteryn Reference intentionally differs: XP loss uses LevelXPSpan(current_level), while skill loss and magic-level loss are zero.",
+        "expected_observable_behavior": "Global target behavior retains the qualitative death family of experience loss and skill loss followed by temple/home-city return.",
         "evidence_class": "DERIVED",
         "sources": [
           {
@@ -504,19 +504,9 @@
             "retrieved_at": "2026-09-09T00:00:00Z",
             "provenance_state": "CLEARED",
             "uncertainty_notes": "Current official manual supports the qualitative death-loss and return family; exact target-cut arithmetic and rounding are not promoted."
-          },
-          {
-            "source_type": "OTERYN_ACCEPTED_CONTRACT",
-            "locator": "docs/architecture/OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md",
-            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s7-accepted-oteryn-death-difference",
-            "effective_date": "2026-09-09",
-            "observed_at": null,
-            "retrieved_at": "2026-09-17T07:14:16Z",
-            "provenance_state": "CLEARED",
-            "uncertainty_notes": "Accepted Oteryn Reference difference; it is not evidence that Global has zero skill or magic loss."
           }
         ],
-        "confidence_notes": "Official continuity supports the bounded Global qualitative family; the Oteryn behavior is explicitly owner-accepted as a declared difference.",
+        "confidence_notes": "Official continuity supports the bounded Global qualitative death family.",
         "uncertainty_notes": "Exact Global percentage, thresholds, blessing/promotion transforms, arithmetic, ordering, rounding, level transition, and item loss remain UNKNOWN for this case.",
         "conflicts": []
       },

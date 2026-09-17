@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/reference-manifest-v4-514
 issue: 514
-pr: null
+pr: 640
 base_sha: b44fefe08f6aaf1b2c1c23dedd92bab0de87146e
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_MANIFEST_V4_514
 created_at: 2026-09-17T07:14:16Z
-updated_at: 2026-09-17T07:14:16Z
+updated_at: 2026-09-17T08:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
@@ -122,7 +122,7 @@ Schema mutation/versioning; runtime/client/server/Content/Cargo/workflow/registr
 
 - changed-file review: pending
 - unresolved review threads: pending
-- related/superseded PRs: exactly one PR for this branch; pending creation/readback
+- related/superseded PRs: PR #640 is the one existing PR for this branch; repair publication/readback pending
 - protected auto-merge: forbidden by this task; return `READY_FOR_INTEGRATION`
 - merge commit/result: not requested
 - ownership release: pending integration control-plane handoff
@@ -130,11 +130,11 @@ Schema mutation/versioning; runtime/client/server/Content/Cargo/workflow/registr
 ## Context checkpoint
 
 ```yaml
-last_progress: pinned schema validation, governance validation, semantic invariants, and whole-diff checks passed
-status: ready
+last_progress: repairing the independent-axis finding on the existing PR #640 candidate
+status: validating
 branch: agent/reference-manifest-v4-514
 head_sha: null
-pr: null
+pr: 640
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -147,10 +147,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit and publish the exact candidate, open the one PR, and read exact-head CI
+next_action: qualify and publish one repair commit to existing PR #640, then read back its exact head and CI; independent whole-diff review remains required
 ```
