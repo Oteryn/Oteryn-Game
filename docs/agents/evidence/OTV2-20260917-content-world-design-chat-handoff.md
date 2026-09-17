@@ -15,7 +15,7 @@ production_authority: NONE
 
 Retain the substantive owner conversation that evolved the Oteryn content/world design from an initial source-format proposal through interaction/state/durability corrections and a CrystalServer reference audit.
 
-This handoff is a navigation/status record. The primary dossier contains the consolidated technical content. The latest execution/state continuation is linked in [Phase G](#phase-g--pr-641-executionstate-architecture-continuation).
+This handoff is a navigation/status record. The primary dossier contains the consolidated technical content. The latest bounded contract candidate is linked in [Phase H](#phase-h--bounded-local-transition-contract-candidate). Phase G retains the preceding execution/state audit.
 
 ## Conversation evolution retained
 
@@ -169,7 +169,7 @@ MERGE_AUTHORITY: REPOSITORY_CONTROL_PLANE_ONLY
 
 ## Phase G — PR #641 execution/state architecture continuation
 
-Latest continuation: [Content / World execution design](OTV2-20260917-content-world-execution-design.md), introduced by commit `c6e4c16d55e864980d0fcddf0c4fda2430cfbce9`. Read it together with the original dossier; the preceding conversation is retained history, not a fresh runtime qualification.
+Phase-G continuation: [Content / World execution design](OTV2-20260917-content-world-execution-design.md), introduced by commit `c6e4c16d55e864980d0fcddf0c4fda2430cfbce9`. Read it together with the original dossier; the preceding conversation is retained history, not a fresh runtime qualification.
 
 The owner requested continued audit, analysis and architecture work on the existing PR. The continuation inspected protected `main@b44fefe08f6aaf1b2c1c23dedd92bab0de87146e` and predecessor PR head `13e48009cefaa7c7f0ffc7b07390cd5b4cc4eca5`, retaining the same branch and documentation-only scope.
 
@@ -197,3 +197,18 @@ The original **63 tests** remain historical reported evidence and were not rerun
 The earlier eight-step recommendation is refined into separate, dependency-aware children in addendum section 14: source inventory/bindings, bounded source/linker decision, explicit #504 successor lowering, one current-owner world interaction, then one durable value operation. A plain door must not acquire full quest/economy/Studio dependencies unnecessarily; candidate ingestion stays separate from executable promotion.
 
 The next architectural decision is the minimum **typed source-to-capability binding and local state-transition owner seam**. Production execution still requires its protected owner contract, exact allocation, accepted target fields, admitted resource envelope and real composed tests. This evidence continuation changes none of those authority boundaries and releases no worker.
+
+
+## Phase H — bounded local-transition contract candidate
+
+The next concrete candidate is [Content / World local-transition contract](OTV2-20260917-content-world-local-transition-contract-candidate.md), introduced in commit `d1e578ca85fa42f97f5d5f4ea26f51e2622058da` on the same PR/branch. It remains `PROPOSED_NONCANONICAL`; no runtime, public API, registry, production or merge authority is granted.
+
+Fresh protected-main inspection narrows Phase G's owner question: the multichannel scope matrix already assigns the public map runtime overlay to ChannelRuntime, and accepted VSL-MOVE keeps position/occupancy in the current ChannelRuntime/InstanceRuntime. The missing deliverable is the typed local-object operation and its composition, not a new owner service. Existing Foundation `CommandIngress` also already distinguishes pending work, retained results and expired outcomes; a second global replay/receipt subsystem is unnecessary.
+
+The candidate defines minimum typed definition/placement/state/transition bindings, an owner-local non-interleaved commit, removal of only the changing object's spatial contribution, current-authority validation before replay, existing FND result/delta/snapshot reconciliation and a bounded first activation policy. It recommends no different Content-generation activation while that scope is live; staging remains separate. Durable keys, rewards, quest state, house ACL, multi-owner effects and hot-reload machinery are not prerequisites for the plain-object child.
+
+Validation on Python 3.13.5: **21 new synthetic model tests PASS**, including **4096 length-four serialized traces**; four deliberately broken model variants were rejected. The predecessor **26-test** model was extracted from its retained document and rerun successfully. The historical 63-test prototype remains unverified here. The new model source is embedded in the candidate, SHA-256 `e1e6cb4713b84586df2293205daa9b7667b52f26c3f8adfff80c1d93e49aadaa`.
+
+These results do not prove production Rust, wire compatibility, concurrency, PostgreSQL, source-parser correctness, resource capacity or Global parity. Current Context assignment, snapshot admission and atomic publication are explicit model assumptions. The full local checkout remains unavailable because container DNS could not resolve github.com; publication uses API-native documentation editing and exact-head hosted checks remain separate.
+
+Phase H supplies the recommendation Phase G left open. The next product-facing boundary is owning review and a fresh exact #162 allocation for the smallest source-to-owner composition, with actual symbols, target evidence, resources and real runtime/client checks. No worker is released by this handoff and no prior pending task is silently reclassified as complete.
