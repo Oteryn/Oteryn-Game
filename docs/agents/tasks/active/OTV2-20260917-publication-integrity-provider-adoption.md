@@ -8,14 +8,14 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/publication-integrity-adoption-638
-pr: null
+pr: 639
 base_sha: ee4a13212d392dd00f8adcd47b103997687b1d6c
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: coordination-agent
 created_at: 2026-09-17T05:39:16Z
-updated_at: 2026-09-17T05:39:16Z
+updated_at: 2026-09-17T05:56:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/META_AGENT_POLICY_BINDING.json
@@ -101,7 +101,7 @@ No Game runtime/product/Cargo/vendor/protocol/persistence changes. No WP3/#356 s
 
 ## Independent review
 
-- required: pending under bound META risk policy
+- required: yes under bound META control-plane policy
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -109,7 +109,7 @@ No Game runtime/product/Cargo/vendor/protocol/persistence changes. No WP3/#356 s
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: exact four-path scope verified
 - unresolved review threads: pending
 - related/superseded PRs: none found at task creation
 - protected auto-merge: forbidden substitute; use governed/native Merge Queue
@@ -119,27 +119,27 @@ No Game runtime/product/Cargo/vendor/protocol/persistence changes. No WP3/#356 s
 ## Context checkpoint
 
 ```yaml
-last_progress: provider binding and representative regression prepared
+last_progress: PR #639 opened; metadata and task-lifecycle validation repaired
 status: validating
 branch: governance/publication-integrity-adoption-638
 head_sha: null
-pr: null
+pr: 639
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: pending new exact-head generation
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: pending
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
+repair_cycles_for_current_gate: 1
+ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open one Draft PR for exact changed-file review and CI
+next_action: consume exact-head CI and independent deep review
 ```
