@@ -15,7 +15,7 @@ production_authority: NONE
 
 Retain the substantive owner conversation that evolved the Oteryn content/world design from an initial source-format proposal through interaction/state/durability corrections and a CrystalServer reference audit.
 
-This handoff is a navigation/status record. The primary dossier contains the consolidated technical content.
+This handoff is a navigation/status record. The primary dossier contains the consolidated technical content. The latest execution/state continuation is linked in [Phase G](#phase-g--pr-641-executionstate-architecture-continuation).
 
 ## Conversation evolution retained
 
@@ -144,7 +144,7 @@ Not proven by that result:
 - renderer correctness;
 - Global Reference parity.
 
-## Current recommended next slice
+## Original recommended next slice — refined by Phase G
 
 1. source-contract minimum for representative world objects/interactions;
 2. pinned legacy-source manifest using existing Game-owned extraction logic where possible;
@@ -166,3 +166,34 @@ REGISTRY_MUTATION_AUTHORITY: NONE
 PRODUCTION_AUTHORITY: NONE
 MERGE_AUTHORITY: REPOSITORY_CONTROL_PLANE_ONLY
 ```
+
+## Phase G — PR #641 execution/state architecture continuation
+
+Latest continuation: [Content / World execution design](OTV2-20260917-content-world-execution-design.md), introduced by commit `c6e4c16d55e864980d0fcddf0c4fda2430cfbce9`. Read it together with the original dossier; the preceding conversation is retained history, not a fresh runtime qualification.
+
+The owner requested continued audit, analysis and architecture work on the existing PR. The continuation inspected protected `main@b44fefe08f6aaf1b2c1c23dedd92bab0de87146e` and predecessor PR head `13e48009cefaa7c7f0ffc7b07390cd5b4cc4eca5`, retaining the same branch and documentation-only scope.
+
+### Source-backed additions and corrections
+
+- Eight bounded audit findings now identify exact source symbols, evidence status and the specific downstream trigger; they are not new global Server Seam blockers.
+- The production Content profile lacks ordered cell placements, the GAME-ITEM capability bridge and explicit creature reward/combat bindings. This is a semantic successor problem, not merely insufficient numeric limits.
+- Existing Interaction occurrence, proposal and reconciliation machinery is reusable. Its in-memory lifecycle book does not establish durable restart behavior or a composed world-object mutation adapter.
+- PR #500 is already merged. GAME-NPC-SERVICE architecture is protected; dialogue/catalogue can be separated from later real trade settlement. Runtime and target-evidence dependencies remain separate.
+- Existing Game/Atlas visual projection is not a lossless gameplay IR. Reuse the Game-owned input/decoder lineage while accounting for nested contents, sidecars and binding semantics, rather than adding a parallel OTBM parser or copying Crystal code.
+- Desired-state operations alone do not prevent stale replay: A opens, B closes, and replaying A must not reopen the door or overwrite newer client state.
+- Coupled irreversible effects need an owning transaction/composition contract; several generic children do not imply atomicity. Cosmetic rebuild, reload and owner changes do not create reward eligibility.
+- Source snapshots, selected dependency closure, semantic/presentation/evidence distinctions, activation safety and deletion-aware reimport now have explicit proposed behavior and acceptance witnesses.
+
+### Reproducible validation of this continuation
+
+The addendum embeds the full independent synthetic witness source. It was extracted and run on Python `3.13.5`: **26 tests passed**, including two intentionally reproduced broken-design counterexamples. Witness SHA-256: `9809f28dd0b34e4c2b7c42dadcdeda856d35f8587b487240de9c889d94f5034d`.
+
+Local checks also validated the metadata authority markers, section sequence, code fences, relative links against the connector-inspected path inventory, and added-file whitespace. These are scratch/document checks, not the repository governance validator.
+
+The original **63 tests** remain historical reported evidence and were not rerun. Do not combine them with the 26 witnesses as production coverage. No Rust runtime, real client/server, raw corpus, PostgreSQL, concurrency, production resource or Global-parity qualification was performed by this continuation. Exact-head hosted CI/review must be read from the live PR; predecessor checks do not qualify new commits.
+
+### Current next boundary
+
+The earlier eight-step recommendation is refined into separate, dependency-aware children in addendum section 14: source inventory/bindings, bounded source/linker decision, explicit #504 successor lowering, one current-owner world interaction, then one durable value operation. A plain door must not acquire full quest/economy/Studio dependencies unnecessarily; candidate ingestion stays separate from executable promotion.
+
+The next architectural decision is the minimum **typed source-to-capability binding and local state-transition owner seam**. Production execution still requires its protected owner contract, exact allocation, accepted target fields, admitted resource envelope and real composed tests. This evidence continuation changes none of those authority boundaries and releases no worker.
