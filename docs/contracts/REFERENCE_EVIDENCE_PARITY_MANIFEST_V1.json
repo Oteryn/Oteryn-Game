@@ -473,9 +473,9 @@
     {
       "case_id": "character.death.low_level_base_xp_skill_loss.v1",
       "domain": "CHARACTER",
-      "title": "Low-level death loss family and Oteryn Reference difference",
+      "title": "Low-level death progression loss and Oteryn Reference difference",
       "scope": {
-        "summary": "A bounded level-7, PvE, no-promotion, no-blessing death case separating Global target evidence from the accepted Oteryn Reference XP/skill/magic-loss difference.",
+        "summary": "A bounded level-7, PvE, no-promotion, no-blessing progression-loss case covering Global experience-loss and skill-loss semantics only; respawn destination, item/equipment loss, PvP modifiers, and unrelated death behavior are excluded.",
         "profiles": ["Reference"],
         "world_assumptions": [
           "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
@@ -488,11 +488,11 @@
         },
         {
           "id": "precondition-2",
-          "description": "Item/equipment loss, PvP modifiers, exact arithmetic, ordering, and rounding are excluded."
+          "description": "Respawn destination, item/equipment loss, PvP modifiers, exact XP basis/rate, skill/magic arithmetic, ordering, and rounding are excluded from the Global target claim."
         }
       ],
       "target": {
-        "expected_observable_behavior": "Global target behavior retains the qualitative death family of experience loss and skill loss followed by temple/home-city return.",
+        "expected_observable_behavior": "Global target behavior includes experience loss and skill loss on death.",
         "evidence_class": "DERIVED",
         "sources": [
           {
@@ -501,13 +501,13 @@
             "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s6-global-death-family",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-09-09T00:00:00Z",
+            "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Current official manual supports the qualitative death-loss and return family; exact target-cut arithmetic and rounding are not promoted."
+            "uncertainty_notes": "Current official manual supports the bounded qualitative experience-loss and skill-loss family; exact target-cut arithmetic, thresholds, and related death behavior are not promoted."
           }
         ],
-        "confidence_notes": "Official continuity supports the bounded Global qualitative death family.",
-        "uncertainty_notes": "Exact Global percentage, thresholds, blessing/promotion transforms, arithmetic, ordering, rounding, level transition, and item loss remain UNKNOWN for this case.",
+        "confidence_notes": "Official continuity supports the bounded Global progression-loss family.",
+        "uncertainty_notes": "Exact Global XP basis/rate, thresholds, blessing/promotion transforms, skill/magic arithmetic, ordering, rounding, level transition, item loss, respawn destination, and other death behavior remain UNKNOWN for this case.",
         "conflicts": []
       },
       "oteryn": {
@@ -523,12 +523,12 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+        "notes": "Public Global target facts are paraphrased from the official source; the accepted Oteryn progression-loss difference is referenced only through the parity-side accepted-difference contract. Clearance applies only to the bounded claims in this case."
       },
       "history": [
         {
           "date": "2026-09-17",
-          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "summary": "Registered as a bounded DERIVED Global progression-loss target case with an accepted Oteryn declared-difference reference; no parity is confirmed.",
           "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
         }
       ]
@@ -578,7 +578,7 @@
             "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s9-corpse-authority-continuity",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-09-09T00:00:00Z",
+            "retrieved_at": null,
             "provenance_state": "CLEARED",
             "uncertainty_notes": "Current official controls documentation supports continuity of the authorization family; exact target tick semantics remain excluded."
           }
@@ -600,7 +600,7 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+        "notes": "Public official facts are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
       },
       "history": [
         {
@@ -704,7 +704,7 @@
             "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s11-goblin-intruder-retaliation",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-09-09T00:00:00Z",
+            "retrieved_at": null,
             "provenance_state": "CLEARED",
             "uncertainty_notes": "Current official Quickstart supports the qualitative retaliation statement; dated Newhaven production chronology supports continuity only at DERIVED."
           }
@@ -771,9 +771,9 @@
             "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s12-rat-target-near-structured-record",
             "effective_date": "2026-07-25",
             "observed_at": null,
-            "retrieved_at": "2026-09-17T00:00:00Z",
+            "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Schema-v1 serialization of STRUCTURED_REFERENCE_DATA. The stable target-near revision supports DERIVED HIGH fields only, never PROVEN."
+            "uncertainty_notes": "Schema-v1 serialization of STRUCTURED_REFERENCE_DATA selected by #162 comment 5711026915. The stable target-near revision supports DERIVED HIGH fields only, never PROVEN."
           },
           {
             "source_type": "COMMUNITY_CORROBORATION",
@@ -781,9 +781,9 @@
             "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s13-dead-rat-structured-record",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-09-17T00:00:00Z",
+            "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Supports the semantic corpse-family name only; numeric item identity and decay fields are excluded."
+            "uncertainty_notes": "Schema-v1 serialization of STRUCTURED_REFERENCE_DATA selected by #162 comment 5711026915. Supports the semantic corpse-family name only; numeric item identity and decay fields are excluded."
           },
           {
             "source_type": "OFFICIAL_PUBLIC",
@@ -791,7 +791,7 @@
             "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s14-official-creature-catalogue-anchor",
             "effective_date": null,
             "observed_at": null,
-            "retrieved_at": "2026-09-12T00:00:00Z",
+            "retrieved_at": null,
             "provenance_state": "CLEARED",
             "uncertainty_notes": "Official terminology/catalogue anchor only; it does not independently prove the numeric Rat tuple."
           }
@@ -813,7 +813,7 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+        "notes": "Public structured-reference and official locator facts are paraphrased with bounded schema-v1 serialization; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
       },
       "history": [
         {
@@ -873,7 +873,7 @@
     {
       "manifest_revision": 4,
       "date": "2026-09-17",
-      "summary": "Register seven bounded DERIVED cases for Newhaven/Targuna chronology, Discovery movement reward range, the Global/Oteryn death distinction, corpse-loot authority, Newhaven trade and retaliation shapes, and target-near Rat static fields; preserve all revision-3 cases and fail-closed unknown boundaries; no parity is confirmed.",
+      "summary": "Register seven bounded DERIVED cases for Newhaven/Targuna chronology, Discovery movement reward range, the Global/Oteryn death progression distinction, corpse-loot authority, Newhaven trade and retaliation shapes, and target-near Rat static fields; preserve all revision-3 cases and fail-closed unknown boundaries; no parity is confirmed.",
       "issue": "#514"
     }
   ]
