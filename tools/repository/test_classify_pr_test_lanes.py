@@ -24,8 +24,9 @@ def test_aggregate():
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL")
     rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
-    env = dict.fromkeys(mandatory + rust + ("RUST_WINDOWS",), "success")
-    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
+    conditional = ("RUST_WINDOWS", "ATLAS_FULLWORLD")
+    env = dict.fromkeys(mandatory + rust + conditional, "success")
+    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true", ATLAS_FULLWORLD_REQUIRED="true")
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -37,15 +38,22 @@ def test_aggregate():
 
     assert accepts({})
     assert accepts({"WINDOWS_REQUIRED": "false", "RUST_WINDOWS": "skipped"}), "proven server-only lane cannot omit Windows"
-    assert accepts(dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped") | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false"})
-    for name in mandatory + rust + ("RUST_WINDOWS",):
+    assert accepts({"ATLAS_FULLWORLD_REQUIRED": "false", "ATLAS_FULLWORLD": "skipped"})
+    assert accepts(dict.fromkeys(rust + conditional, "skipped") | {
+        "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false", "ATLAS_FULLWORLD_REQUIRED": "false"
+    })
+    assert accepts(dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped") | {
+        "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false", "ATLAS_FULLWORLD_REQUIRED": "true",
+        "ATLAS_FULLWORLD": "success",
+    }), "Atlas-only lane must not require Rust or Windows"
+    for name in mandatory + rust + conditional:
         for value in ("failure", "cancelled", "skipped", ""):
             assert not accepts({name: value}), (name, value)
-    for name in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):
+    for name in ("RUST_REQUIRED", "WINDOWS_REQUIRED", "ATLAS_FULLWORLD_REQUIRED"):
         for value in ("", "TRUE", "unknown", "0"):
             assert not accepts({name: value}), (name, value)
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
-    print("Risk aggregate PASS: full/server/docs controls, every selected failure and invalid output")
+    print("Risk aggregate PASS: full/server/docs/Atlas controls, every selected failure and invalid output")
 
 
 def fixture():
@@ -98,12 +106,12 @@ def test_snapshot_and_fallbacks(module):
         output = Path(directory) / "output"
         env = dict(os.environ, GITHUB_OUTPUT=str(output), RUNNER_TEMP=directory)
         result = subprocess.run(["bash", "-c", script], cwd=directory, env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
         output.unlink()
         invalid = Path(directory) / "metadata.json"
         invalid.write_text("{}")
         result = subprocess.run([sys.executable, str(MODULE), str(invalid)], env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
     print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
 
 
