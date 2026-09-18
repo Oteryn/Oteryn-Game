@@ -98,20 +98,18 @@ pub struct ReferenceDefinition {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EvidenceDisposition {
     Proven,
+    Observed,
     Derived,
-    ObservedContinuityProven,
-    ObservedPostTarget,
     Unknown,
     Conflict,
+    DeclaredDifference,
     OtsHypothesisOnly,
+    ObservedPostTarget,
 }
 
 impl EvidenceDisposition {
     pub const fn is_reference_promotable(self) -> bool {
-        matches!(
-            self,
-            Self::Proven | Self::Derived | Self::ObservedContinuityProven
-        )
+        matches!(self, Self::Proven)
     }
 }
 
