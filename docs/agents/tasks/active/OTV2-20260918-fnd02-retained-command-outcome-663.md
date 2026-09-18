@@ -4,7 +4,7 @@
 task_id: OTV2-20260918-fnd02-retained-command-outcome-663
 title: Implement Foundation-owned retained command outcome lifecycle
 mode: IMPLEMENT
-status: validating
+status: review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/fnd02-retained-command-outcome-663
@@ -141,8 +141,8 @@ Remaining material findings after repair: NONE after final custody-only diff/rea
 ## Independent review
 
 - required: YES — stable high-risk Foundation/GameSession authority state;
-- exact head: pending final commit;
-- reviewer: pending;
+- exact head: pending final checkpoint commit;
+- reviewer: pending independent exact-head reviewer;
 - material findings: pending;
 - verdict: pending.
 
@@ -156,11 +156,11 @@ Remaining material findings after repair: NONE after final custody-only diff/rea
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation-owned retained terminal lifecycle implemented and locally qualified
-status: validating
+last_progress: implementation locally committed as f83c2eb95bb4cb960486486c93467ce583e15378 and all local qualification reverified
+status: review
 branch: agent/fnd02-retained-command-outcome-663
 head_sha: null
 pr: null
 blocker: independent exact-head review and hosted exact-head qualification pending
-next_action: final custody/diff validation, commit, normal push, open PR, request independent exact-head review
+next_action: commit this checkpoint, normal push, open PR, then require independent exact-head review
 ```
