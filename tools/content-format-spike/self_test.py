@@ -26,7 +26,6 @@ def make_d3_fixture():
         "typed_definition_ref": None,
         "placement_key": None,
         "target_sensitive_fields": dict(deferred),
-        "measurement_revision": 0,
     }
     first = dict(placement, source_occurrence_ref="presentation:aaa")
     second = dict(
@@ -46,6 +45,11 @@ def make_d3_fixture():
             "classification": spike.D3_SOURCE_CLASSIFICATION,
             "source_generation_profile_id": spike.D3_FRESH_SOURCE_PROFILE,
             "source_generation_profile_revision": 2,
+            "selection": {
+                "windows": [
+                    {"name": "newhaven", "retained_shard": "source-shard-a"}
+                ]
+            },
         },
         "definitions": {
             "source-appearance:2031": {
@@ -337,7 +341,7 @@ class ContentFormatSpikeTests(unittest.TestCase):
                     mode=mode,
                 )
             )
-        for mutation in ("profile", "version", "critical", "placement-index"):
+        for mutation in ("profile", "version", "critical", "placement-index", "raw-size"):
             self.assertTrue(
                 spike._d3_manifest_negative(
                     server,
@@ -346,6 +350,10 @@ class ContentFormatSpikeTests(unittest.TestCase):
                     mutation=mutation,
                 )
             )
+        leaky = make_d3_fixture()
+        leaky["provenance"]["server_secret"] = "must-not-reach-client"
+        with self.assertRaises(spike.SpikeError):
+            spike.d3_client_fixture(leaky)
 
 
     def test_d3_identity_is_enumeration_and_rechunk_independent(self) -> None:
@@ -357,6 +365,14 @@ class ContentFormatSpikeTests(unittest.TestCase):
         self.assertEqual(
             spike.d3_logical_identity(fixture),
             spike.d3_logical_identity(reversed_fixture),
+        )
+        shard_variant = copy.deepcopy(fixture)
+        shard_variant["provenance"]["selection"]["windows"][0][
+            "retained_shard"
+        ] = "source-shard-b"
+        self.assertEqual(
+            spike.d3_logical_identity(fixture),
+            spike.d3_logical_identity(shard_variant),
         )
 
         a = self.root / "d3-c8"

@@ -4,6 +4,7 @@ Task: CONTENT_WORLD_D3_REAL_BATCH_BUNDLE_MEASUREMENT_504
 Repository: Oteryn/Oteryn-Game
 Branch: agent/content-world-d3-real-batch-measurement-504
 issue: 162
+pr: 662
 status: implementing
 Admission SHA: 7b61accf6148981cadaacebe707cae35bd4c0ae5
 Reconciled protected main: 5f8146e2d4fce7b1c0f8cabe9bd49e937ee7ea3d
@@ -51,6 +52,17 @@ Validation so far:
 - Four focused D3 tests cover carrier equivalence/round-trip, random access, client allowlist, negative boundaries, enumeration/rechunk identity and one-record locality.
 - git diff --check: PASS after the first material implementation increment.
 
-Independent whole-diff review is treated as required before final integration because the final diff exercises a new D3 loading/decompression path over real source-derived data, even though it reuses the existing bounded zlib decoder.
+## Whole-diff self-review checkpoint
 
-Next action: publish the first material commit and open an early Draft PR, then execute the real measurement from that committed exact head and add the two evidence files.
+The first published material candidate is PR #662 head e946eb1d52bef7f03b0e55fa7a2c65e9bf2e32fd. Self-review before final evidence found and repaired:
+
+- P1: logical identity included retained source-shard metadata, violating the explicit requirement that source sharding must not change logical identity. Logical identity now excludes physical selection/shard metadata while retaining exact source-generation identity and logical records; focused regression covers shard relabel plus enumeration reorder and rechunk.
+- P2: client projection removed server_only after copying the server fixture instead of using a positive allowlist. The client projection now constructs only explicitly shared top-level fields, and D3 validation rejects non-allowlisted provenance/definition/cell/placement fields before projection.
+- P2: the baseline logical records carried a synthetic measurement_revision field only for locality probing. It is removed from real carriers; the scratch-only update probe now changes one source-role field only in the temporary mutated carrier.
+- P2 evidence completeness: add encoded record-byte maxima and an oversized raw-chunk negative in addition to corruption/truncation/profile/version/critical/index/ratio negatives.
+
+Post-repair Python compile and the complete focused suite remain PASS, 16/16, including all 12 historical Issue #95 tests.
+
+External AI review remains subject to the final trigger classification. META AI review policy defaults to no external review for ordinary non-control-plane work; the task-specific rule requires one only if the final change creates a material parser/decompression/download/signing trust boundary. The D3 path reuses the existing bounded zlib decoder for locally generated evidence carriers and does not create a production/runtime/download trust boundary; final classification will be recorded after exact-head qualification.
+
+Next action: publish this self-review repair on the same branch, then rerun the real measurement from the repaired committed exact head and add the two evidence files.

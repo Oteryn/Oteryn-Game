@@ -976,6 +976,62 @@ D3_WINDOWS = (
     ("newhaven", 32512, 32544, 32512, 32544, -7, "f-7-r1016-c1016"),
     ("targuna", 31904, 31936, 31904, 31936, -7, "f-7-r997-c997"),
 )
+D3_SHARED_TOP_LEVEL_FIELDS = frozenset(
+    {"schema_version", "world_id", "critical_features", "provenance", "definitions", "cells"}
+)
+D3_PROVENANCE_FIELDS = frozenset(
+    {
+        "measurement_profile",
+        "classification",
+        "source_generation_profile_id",
+        "source_generation_profile_revision",
+        "source_repository",
+        "source_repository_sha",
+        "world_otbm_sha256",
+        "world_otbm_git_blob",
+        "world_otbm_bytes",
+        "asset_zip_sha256",
+        "asset_catalog_sha256",
+        "asset_appearance_sha256",
+        "parser_repository",
+        "parser_repository_sha",
+        "game_measurement_head",
+        "game_readonly_code",
+        "selection",
+    }
+)
+D3_IDENTITY_PROVENANCE_FIELDS = (
+    "measurement_profile",
+    "classification",
+    "source_generation_profile_id",
+    "source_generation_profile_revision",
+    "source_repository",
+    "source_repository_sha",
+    "world_otbm_sha256",
+    "world_otbm_git_blob",
+    "world_otbm_bytes",
+    "asset_zip_sha256",
+    "asset_catalog_sha256",
+    "asset_appearance_sha256",
+    "parser_repository",
+    "parser_repository_sha",
+)
+D3_DEFINITION_FIELDS = frozenset(
+    {"definition_kind", "appearance_source_id", "identity_disposition", "production_authority"}
+)
+D3_CELL_FIELDS = frozenset({"x", "y", "z", "source_placements"})
+D3_PLACEMENT_FIELDS = frozenset(
+    {
+        "source_occurrence_ref",
+        "appearance_source_id",
+        "source_role",
+        "source_presentation_order",
+        "identity_disposition",
+        "typed_definition_ref",
+        "placement_key",
+        "target_sensitive_fields",
+    }
+)
 
 
 def _load_module(name: str, path: Path) -> Any:
@@ -1146,7 +1202,6 @@ def d3_fixture_from_typed_batch(
             "typed_definition_ref": typed_ref,
             "placement_key": placement_key,
             "target_sensitive_fields": {field: "DEFERRED_REQUIRES_PHASE_B" for field in deferred},
-            "measurement_revision": 0,
         })
 
     for row in typed_batch.get("unresolved_source_occurrences", []):
@@ -1206,30 +1261,86 @@ def d3_normalize_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
 def validate_d3_fixture(fixture: dict[str, Any]) -> None:
     fixture = d3_normalize_fixture(fixture)
     validate_fixture(fixture)
+    allowed_top = D3_SHARED_TOP_LEVEL_FIELDS | {"server_only"}
+    if not D3_SHARED_TOP_LEVEL_FIELDS.issubset(fixture) or not set(fixture).issubset(allowed_top):
+        raise SpikeError("D3 fixture contains non-allowlisted top-level fields")
+
     provenance = fixture.get("provenance")
     if not isinstance(provenance, dict) or provenance.get("classification") != D3_SOURCE_CLASSIFICATION:
         raise SpikeError("D3 source classification mismatch")
     if provenance.get("measurement_profile") != D3_REAL_BATCH_PROFILE:
         raise SpikeError("D3 measurement profile mismatch")
+    if not set(provenance).issubset(D3_PROVENANCE_FIELDS):
+        raise SpikeError("D3 provenance contains non-allowlisted fields")
+
+    server_only = fixture.get("server_only")
+    if server_only is not None:
+        if not isinstance(server_only, dict):
+            raise SpikeError("D3 server-only metadata must be an object")
+        if server_only.get("production_authority") != "NONE":
+            raise SpikeError("D3 server-only metadata carries production authority")
+        if server_only.get("reference_parity_claim") != "NONE":
+            raise SpikeError("D3 server-only metadata carries Reference parity")
+
+    definitions = fixture.get("definitions")
+    if not isinstance(definitions, dict):
+        raise SpikeError("D3 definitions must be an object")
+    for definition in definitions.values():
+        if not isinstance(definition, dict) or set(definition) != D3_DEFINITION_FIELDS:
+            raise SpikeError("D3 definition contains non-allowlisted fields")
+        if definition.get("identity_disposition") != "SOURCE_ID_ONLY_NOT_CANONICAL":
+            raise SpikeError("D3 source definition promoted canonical identity")
+        if definition.get("production_authority") != "NONE":
+            raise SpikeError("D3 source definition carries production authority")
+
     seen: set[str] = set()
     for cell in fixture["cells"]:
-        if set(cell) != {"x", "y", "z", "source_placements"}:
+        if set(cell) != D3_CELL_FIELDS:
             raise SpikeError("D3 cell contains non-allowlisted fields")
         for placement in cell["source_placements"]:
+            if not isinstance(placement, dict) or set(placement) != D3_PLACEMENT_FIELDS:
+                raise SpikeError("D3 placement contains non-allowlisted fields")
             ref = placement.get("source_occurrence_ref")
             if not isinstance(ref, str) or not ref or ref in seen:
                 raise SpikeError("D3 source occurrence identity is missing or duplicated")
             seen.add(ref)
+            if not isinstance(placement.get("appearance_source_id"), int) or placement["appearance_source_id"] <= 0:
+                raise SpikeError("D3 appearance source ID must be positive")
+            disposition = placement.get("identity_disposition")
+            typed_ref = placement.get("typed_definition_ref")
+            placement_key = placement.get("placement_key")
+            if disposition == "UNRESOLVED_SOURCE_IDENTITY":
+                if typed_ref is not None or placement_key is not None:
+                    raise SpikeError("D3 unresolved source identity carries a target binding")
+            elif disposition == "EXPLICITLY_BOUND":
+                if not isinstance(typed_ref, dict) or not isinstance(placement_key, str) or not placement_key:
+                    raise SpikeError("D3 explicit source binding is incomplete")
+            else:
+                raise SpikeError("D3 source identity disposition is unsupported")
             target_fields = placement.get("target_sensitive_fields")
             if not isinstance(target_fields, dict) or not target_fields:
                 raise SpikeError("D3 placement lacks deferred target-sensitive fields")
             if set(target_fields.values()) != {"DEFERRED_REQUIRES_PHASE_B"}:
                 raise SpikeError("D3 target-sensitive field was promoted")
 
+
 def d3_logical_identity(fixture: dict[str, Any]) -> str:
     normalized = d3_normalize_fixture(fixture)
     validate_d3_fixture(normalized)
-    return sha256(canonical_json(normalized))
+    provenance = normalized["provenance"]
+    identity_payload = {
+        "schema_version": normalized["schema_version"],
+        "world_id": normalized["world_id"],
+        "critical_features": normalized["critical_features"],
+        "provenance": {
+            key: provenance[key]
+            for key in D3_IDENTITY_PROVENANCE_FIELDS
+            if key in provenance
+        },
+        "definitions": normalized["definitions"],
+        "cells": normalized["cells"],
+    }
+    return sha256(canonical_json(identity_payload))
 
 
 def _d3_chunk_path(key: tuple[int, int, int]) -> str:
@@ -1442,9 +1553,19 @@ def reconstruct_d3_fixture(path: Path, *, expected_source_profile: str) -> dict[
 
 
 def d3_client_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
-    result = d3_normalize_fixture(fixture)
-    result.pop("server_only", None)
-    return result
+    normalized = d3_normalize_fixture(fixture)
+    validate_d3_fixture(normalized)
+    return {
+        key: copy.deepcopy(normalized[key])
+        for key in (
+            "schema_version",
+            "world_id",
+            "critical_features",
+            "provenance",
+            "definitions",
+            "cells",
+        )
+    }
 
 def d3_index_signature(manifest: dict[str, Any]) -> str:
     logical_entries = [
@@ -1472,6 +1593,25 @@ def _decoded_field_count(value: Any) -> int:
     return 0
 
 
+def _d3_record_size_stats(fixture: dict[str, Any]) -> dict[str, int]:
+    cells = fixture["cells"]
+    placements = [
+        placement
+        for cell in cells
+        for placement in cell["source_placements"]
+    ]
+    definitions = list(fixture["definitions"].values())
+    return {
+        "max_source_cell_encoded_bytes": max(len(canonical_json(cell)) for cell in cells),
+        "max_source_placement_encoded_bytes": max(
+            len(canonical_json(placement)) for placement in placements
+        ),
+        "max_source_definition_encoded_bytes": max(
+            len(canonical_json(definition)) for definition in definitions
+        ),
+    }
+
+
 def _d3_changed_artifact_metrics(before: Path, after: Path) -> tuple[list[str], int]:
     left = artifact_files(before)
     right = artifact_files(after)
@@ -1485,14 +1625,17 @@ def _d3_changed_artifact_metrics(before: Path, after: Path) -> tuple[list[str], 
 def _d3_mutated_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
     changed = d3_normalize_fixture(fixture)
     candidates = [
-        (cell, placement)
+        placement
         for cell in changed["cells"]
         for placement in cell["source_placements"]
     ]
     if not candidates:
         raise SpikeError("D3 update probe requires one source placement")
-    _cell, placement = candidates[len(candidates) // 2]
-    placement["measurement_revision"] = int(placement["measurement_revision"]) + 1
+    placement = candidates[len(candidates) // 2]
+    source_role = placement.get("source_role")
+    if not isinstance(source_role, str) or not source_role:
+        raise SpikeError("D3 update probe requires a source role")
+    placement["source_role"] = source_role + "|D3_UPDATE_PROBE"
     return changed
 
 def _d3_corruption_rejected(
@@ -1535,6 +1678,7 @@ def _d3_manifest_negative(
     _copy_artifact(carrier, damaged)
     manifest_path = damaged / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    target_key: tuple[int, int, int] | None = None
 
     if mutation == "profile":
         manifest["provenance"]["source_generation_profile_id"] = "wrong-profile"
@@ -1545,11 +1689,22 @@ def _d3_manifest_negative(
     elif mutation == "placement-index":
         first = next(iter(manifest["placement_index"]))
         manifest["placement_index"][first] = ["bad"]
+    elif mutation == "raw-size":
+        first_entry = manifest["chunks"][0]
+        first_entry["raw_bytes"] = MAX_CHUNK_RAW_BYTES + 1
+        target_key = tuple(first_entry["key"])
     else:
         raise SpikeError("unknown D3 manifest negative")
     manifest_path.write_bytes(canonical_json(manifest) + b"\n")
     try:
-        read_d3_manifest(damaged, expected_source_profile=expected_source_profile)
+        if target_key is None:
+            read_d3_manifest(damaged, expected_source_profile=expected_source_profile)
+        else:
+            read_d3_chunk(
+                damaged,
+                target_key,
+                expected_source_profile=expected_source_profile,
+            )
     except SpikeError:
         return True
     return False
@@ -1870,6 +2025,18 @@ def run_d3_real_batch(
     if not enumeration_independent:
         raise SpikeError("D3 identity changed under source enumeration reorder")
 
+    shard_variant = copy.deepcopy(fixture)
+    selection = shard_variant["provenance"].get("selection")
+    if not isinstance(selection, dict) or not isinstance(selection.get("windows"), list):
+        raise SpikeError("D3 source selection lacks shard evidence")
+    for window in selection["windows"]:
+        window["retained_shard"] = f"repartition-probe:{window['name']}"
+    source_shard_identity_stable = (
+        d3_logical_identity(shard_variant) == logical_identity
+    )
+    if not source_shard_identity_stable:
+        raise SpikeError("D3 logical identity changed under source shard metadata")
+
     if work_dir.exists():
         shutil.rmtree(work_dir)
     work_dir.mkdir(parents=True)
@@ -1919,6 +2086,10 @@ def run_d3_real_batch(
         "malformed_placement_index_rejected": _d3_manifest_negative(
             baseline_root, work_dir,
             expected_source_profile=source_generation_profile_id, mutation="placement-index"
+        ),
+        "oversized_raw_chunk_rejected": _d3_manifest_negative(
+            baseline_root, work_dir,
+            expected_source_profile=source_generation_profile_id, mutation="raw-size"
         ),
         "decompression_ratio_rejected": _d3_ratio_negative(),
     }
@@ -1970,9 +2141,11 @@ def run_d3_real_batch(
                 len(cell["source_placements"]) for cell in fixture["cells"]
             ),
             "decoded_field_count": _decoded_field_count(fixture),
+            **_d3_record_size_stats(fixture),
         },
         "determinism": {
             "source_enumeration_order_independent": enumeration_independent,
+            "source_shard_identity_independent": source_shard_identity_stable,
             "rechunk_identity_independent": rechunk_identity_stable,
             "two_carriers_same_logical_index": (
                 carriers[0]["logical_index_signature"]
@@ -2022,6 +2195,7 @@ def render_d3_dossier(result: dict[str, Any], exact_head: str) -> str:
         f"- Typed counts: `{json.dumps(typed['counts'], sort_keys=True)}`.",
         f"- D3 normalized logical input: {logical['canonical_bytes']} bytes, SHA-256 `{logical['canonical_sha256']}`.",
         f"- Source cells: {logical['source_cell_count']}; source definitions: {logical['source_definition_count']}; source placements: {logical['aggregate_source_placements']}; max source placements/cell: {logical['max_source_placements_per_cell']}.",
+        f"- Encoded record maxima: cell {logical['max_source_cell_encoded_bytes']} B; placement {logical['max_source_placement_encoded_bytes']} B; source definition {logical['max_source_definition_encoded_bytes']} B.",
         "",
         "No canonical target identity, target coordinates, collision, order or footprint truth is inferred by this measurement. "
         "When CW2 has no accepted SourceIdentityBinding, the carrier records the real source occurrence as unresolved and the appearance ID as source provenance only.",
@@ -2053,11 +2227,12 @@ def render_d3_dossier(result: dict[str, Any], exact_head: str) -> str:
         "## Determinism and locality",
         "",
         f"- Source enumeration reorder preserves the typed/logical batch: **{'PASS' if determinism['source_enumeration_order_independent'] else 'FAIL'}**.",
+        f"- Source-shard metadata does not alter logical identity: **{'PASS' if determinism['source_shard_identity_independent'] else 'FAIL'}**.",
         f"- Rechunking preserves logical identity: **{'PASS' if determinism['rechunk_identity_independent'] else 'FAIL'}**.",
         f"- Both physical carriers have the same logical index signature: **{'PASS' if determinism['two_carriers_same_logical_index'] else 'FAIL'}**.",
         f"- Independent repeated builds are byte-identical per carrier: **{'PASS' if determinism['per_carrier_repeat_exact_bytes'] else 'FAIL'}**.",
         "- Random-access probes resolve one source cell, one source occurrence and one source-definition reference by index without decoding every chunk.",
-        "- The one-record update probe is D3-local measurement metadata only; it measures physical rebuild locality and does not alter gameplay semantics.",
+        "- The one-record update probe mutates one source-role field only in scratch output; it measures physical rebuild locality and is not claimed as source or gameplay truth.",
         "",
         "## Fail-closed evidence",
         "",
