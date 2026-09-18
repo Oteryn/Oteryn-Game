@@ -392,3 +392,5 @@ def adapt_tile_source_identities(
     if stale:
         raise ProducerError(f"identity binding does not match tile occurrence: {stale[0]}")
     return candidates
+
+# CI routing final probe for Issue #651; inert and must not merge.
