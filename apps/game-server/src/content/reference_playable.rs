@@ -347,9 +347,7 @@ impl CanonicalReferencePlayableContent {
     pub fn client_safe_definitions(&self) -> Vec<ClientSafeDefinitionRef> {
         self.definitions
             .iter()
-            .filter(|definition| {
-                definition.client_projection == ClientProjectionClass::ClientSafe
-            })
+            .filter(|definition| definition.client_projection == ClientProjectionClass::ClientSafe)
             .map(|definition| ClientSafeDefinitionRef {
                 definition: definition.definition.clone(),
                 kind: match &definition.kind {
@@ -437,8 +435,7 @@ fn resolve_definition<'a>(
         return Ok(definition);
     }
     if definitions.iter().any(|candidate| {
-        candidate.definition.family == reference.family
-            && candidate.definition.key == reference.key
+        candidate.definition.family == reference.family && candidate.definition.key == reference.key
     }) {
         return Err(ContentError::RevisionMismatch(
             "reference-playable definition revision",
