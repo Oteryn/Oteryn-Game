@@ -2,6 +2,7 @@ use super::{
     ContentError, ContentLockBinding, PackageManifestBinding, ProductionAtom, ProductionKey,
 };
 use crate::foundation::WorldId;
+use serde::Deserialize;
 use std::collections::BTreeSet;
 
 pub const REFERENCE_PLAYABLE_CONTENT_PROFILE_ID: &str = "REFERENCE_PLAYABLE_CONTENT_PROFILE/v1";
@@ -95,6 +96,101 @@ pub struct ReferenceDefinition {
     pub client_projection: ClientProjectionClass,
 }
 
+const REFERENCE_EVIDENCE_MANIFEST_JSON: &str =
+    include_str!("../../../../docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json");
+const REFERENCE_EVIDENCE_CASE_KEY_PREFIX: &str = "oteryn:reference.case.";
+
+#[derive(Debug, Deserialize)]
+struct AcceptedReferenceEvidenceManifest {
+    schema_version: u64,
+    manifest_revision: u64,
+    status: String,
+    cases: Vec<AcceptedReferenceEvidenceCase>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AcceptedReferenceEvidenceCase {
+    case_id: String,
+    target: AcceptedReferenceEvidenceTarget,
+    provenance: AcceptedReferenceEvidenceProvenance,
+}
+
+#[derive(Debug, Deserialize)]
+struct AcceptedReferenceEvidenceTarget {
+    evidence_class: String,
+    sources: Vec<AcceptedReferenceEvidenceSource>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AcceptedReferenceEvidenceSource {
+    source_type: String,
+    provenance_state: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AcceptedReferenceEvidenceProvenance {
+    state: String,
+    legal_review_state: String,
+}
+
+#[derive(Debug)]
+struct ReferenceEvidenceAuthority {
+    manifest: AcceptedReferenceEvidenceManifest,
+}
+
+impl ReferenceEvidenceAuthority {
+    fn load() -> Result<Self, ContentError> {
+        let manifest: AcceptedReferenceEvidenceManifest =
+            serde_json::from_str(REFERENCE_EVIDENCE_MANIFEST_JSON).map_err(|_| {
+                ContentError::InvalidArtifact(
+                    "accepted Reference evidence manifest cannot be decoded",
+                )
+            })?;
+        if manifest.schema_version != 1 || manifest.manifest_revision == 0 || manifest.status != "ACCEPTED"
+        {
+            return Err(ContentError::InvalidArtifact(
+                "accepted Reference evidence manifest identity is invalid",
+            ));
+        }
+        let mut case_ids = BTreeSet::new();
+        for case in &manifest.cases {
+            if case.case_id.is_empty() || !case_ids.insert(case.case_id.as_str()) {
+                return Err(ContentError::InvalidArtifact(
+                    "accepted Reference evidence manifest case identity is invalid",
+                ));
+            }
+        }
+        Ok(Self { manifest })
+    }
+
+    fn manifest_revision_atom(&self) -> Result<ProductionAtom, ContentError> {
+        ProductionAtom::new(
+            "reference manifest revision",
+            &format!("manifest-r{}", self.manifest.manifest_revision),
+        )
+    }
+
+    fn resolve_case<'a>(
+        &'a self,
+        case_key: &ProductionKey,
+    ) -> Result<&'a AcceptedReferenceEvidenceCase, ContentError> {
+        let case_id = case_key
+            .as_str()
+            .strip_prefix(REFERENCE_EVIDENCE_CASE_KEY_PREFIX)
+            .ok_or(ContentError::InvalidArtifact(
+                "reference-playable evidence case key is invalid",
+            ))?;
+        self.manifest
+            .cases
+            .iter()
+            .find(|case| case.case_id == case_id)
+            .ok_or_else(|| ContentError::MissingReference {
+                owner: case_key.as_str().to_owned(),
+                target: "accepted Reference evidence case".to_owned(),
+            })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EvidenceDisposition {
     Proven,
@@ -111,13 +207,27 @@ impl EvidenceDisposition {
     pub const fn is_reference_promotable(self) -> bool {
         matches!(self, Self::Proven)
     }
+
+    fn from_manifest(value: &str) -> Result<Self, ContentError> {
+        match value {
+            "PROVEN" => Ok(Self::Proven),
+            "OBSERVED" => Ok(Self::Observed),
+            "DERIVED" => Ok(Self::Derived),
+            "UNKNOWN" => Ok(Self::Unknown),
+            "CONFLICT" => Ok(Self::Conflict),
+            "DECLARED_DIFFERENCE" => Ok(Self::DeclaredDifference),
+            _ => Err(ContentError::InvalidArtifact(
+                "accepted Reference evidence class is unsupported",
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EvidenceBindingRef {
-    pub manifest_revision: ProductionAtom,
-    pub case_key: ProductionKey,
-    pub disposition: EvidenceDisposition,
+    manifest_revision: ProductionAtom,
+    case_key: ProductionKey,
+    disposition: EvidenceDisposition,
 }
 
 impl EvidenceBindingRef {
@@ -133,10 +243,69 @@ impl EvidenceBindingRef {
         }
     }
 
-    fn require_reference_promotion(&self) -> Result<(), ContentError> {
-        if !self.disposition.is_reference_promotable() {
+    pub fn from_accepted_case(case_key: ProductionKey) -> Result<Self, ContentError> {
+        let authority = ReferenceEvidenceAuthority::load()?;
+        let case = authority.resolve_case(&case_key)?;
+        Ok(Self {
+            manifest_revision: authority.manifest_revision_atom()?,
+            case_key,
+            disposition: EvidenceDisposition::from_manifest(&case.target.evidence_class)?,
+        })
+    }
+
+    pub fn manifest_revision(&self) -> &ProductionAtom {
+        &self.manifest_revision
+    }
+
+    pub fn case_key(&self) -> &ProductionKey {
+        &self.case_key
+    }
+
+    pub const fn disposition(&self) -> EvidenceDisposition {
+        self.disposition
+    }
+
+    fn require_reference_promotion(
+        &self,
+        authority: &ReferenceEvidenceAuthority,
+    ) -> Result<(), ContentError> {
+        if self.manifest_revision != authority.manifest_revision_atom()? {
+            return Err(ContentError::RevisionMismatch(
+                "reference-playable evidence manifest revision",
+            ));
+        }
+
+        let case = authority.resolve_case(&self.case_key)?;
+        let actual_disposition = EvidenceDisposition::from_manifest(&case.target.evidence_class)?;
+        if self.disposition != actual_disposition {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable evidence disposition does not match accepted manifest",
+            ));
+        }
+        if !actual_disposition.is_reference_promotable() {
             return Err(ContentError::InvalidArtifact(
                 "target-sensitive Reference claim lacks promotable evidence",
+            ));
+        }
+
+        let all_sources_cleared = !case.target.sources.is_empty()
+            && case
+                .target
+                .sources
+                .iter()
+                .all(|source| source.provenance_state == "CLEARED");
+        let has_non_ots_source = case
+            .target
+            .sources
+            .iter()
+            .any(|source| source.source_type != "OTS_HYPOTHESIS_ONLY");
+        if case.provenance.state != "CLEARED"
+            || case.provenance.legal_review_state != "CLEARED"
+            || !all_sources_cleared
+            || !has_non_ots_source
+        {
+            return Err(ContentError::InvalidArtifact(
+                "target-sensitive Reference claim lacks cleared provenance",
             ));
         }
         Ok(())
@@ -233,20 +402,33 @@ pub enum FootprintRelation {
 }
 
 impl FootprintRelation {
-    fn validate_for_reference(&self) -> Result<(), ContentError> {
-        match self {
-            Self::Qualified { members, evidence } => {
-                evidence.require_reference_promotion()?;
-                let mut seen = BTreeSet::new();
-                for member in members {
-                    if !seen.insert(*member) {
-                        return Err(ContentError::InvalidArtifact(
-                            "reference-playable footprint contains duplicate member",
-                        ));
-                    }
-                }
-                Ok(())
+    fn canonicalize_structure(&mut self) -> Result<(), ContentError> {
+        if let Self::Qualified { members, .. } = self {
+            members.sort();
+            if members.windows(2).any(|pair| pair[0] == pair[1]) {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable footprint contains duplicate member",
+                ));
             }
+        }
+        Ok(())
+    }
+
+    fn require_resolved(&self) -> Result<(), ContentError> {
+        if matches!(self, Self::Unresolved(_)) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable footprint remains unresolved",
+            ));
+        }
+        Ok(())
+    }
+
+    fn validate_for_reference(
+        &self,
+        authority: &ReferenceEvidenceAuthority,
+    ) -> Result<(), ContentError> {
+        match self {
+            Self::Qualified { evidence, .. } => evidence.require_reference_promotion(authority),
             Self::Unresolved(_) => Err(ContentError::InvalidArtifact(
                 "reference-playable footprint remains unresolved",
             )),
@@ -448,6 +630,7 @@ fn resolve_definition<'a>(
 fn validate_placement(
     source: &ReferencePlayableContentSource,
     placement: &PlacementRef,
+    authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
     resolve_definition(&source.definitions, &placement.definition)?;
     if placement.address.world_id != source.world_id {
@@ -460,17 +643,24 @@ fn validate_placement(
             "reference-playable coordinate frame mismatch",
         ));
     }
-    placement.address.evidence.require_reference_promotion()?;
-    placement.presentation_footprint.validate_for_reference()?;
-    placement.collision_footprint.validate_for_reference()?;
+    placement.presentation_footprint.require_resolved()?;
+    placement.collision_footprint.require_resolved()?;
+    placement
+        .address
+        .evidence
+        .require_reference_promotion(authority)?;
+    placement
+        .presentation_footprint
+        .validate_for_reference(authority)?;
+    placement.collision_footprint.validate_for_reference(authority)?;
     Ok(())
 }
 
 fn validate_ordering(
     placements: &[PlacementRef],
     ordered: &OrderedPlacementSet,
+    authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
-    ordered.evidence.require_reference_promotion()?;
     let mut seen = BTreeSet::new();
     for key in &ordered.placement_keys {
         if !seen.insert(key.clone()) {
@@ -483,6 +673,7 @@ fn validate_ordering(
             });
         }
     }
+    ordered.evidence.require_reference_promotion(authority)?;
     Ok(())
 }
 
@@ -526,6 +717,7 @@ pub fn link_reference_playable(
         ));
     }
     validate_content_lock(&source.package_manifest, &source.content_lock)?;
+    let evidence_authority = ReferenceEvidenceAuthority::load()?;
 
     let mut definition_keys = BTreeSet::new();
     for definition in &source.definitions {
@@ -541,6 +733,11 @@ pub fn link_reference_playable(
         }
     }
 
+    for placement in &mut source.placements {
+        placement.presentation_footprint.canonicalize_structure()?;
+        placement.collision_footprint.canonicalize_structure()?;
+    }
+
     let mut placement_keys = BTreeSet::new();
     for placement in &source.placements {
         if !placement_keys.insert(placement.key.clone()) {
@@ -548,7 +745,9 @@ pub fn link_reference_playable(
                 placement.key.as_str().to_owned(),
             ));
         }
-        validate_placement(&source, placement)?;
+    }
+    for placement in &source.placements {
+        validate_placement(&source, placement, &evidence_authority)?;
     }
 
     let mut ordering_keys = BTreeSet::new();
@@ -558,7 +757,7 @@ pub fn link_reference_playable(
                 ordered.field_key.as_str().to_owned(),
             ));
         }
-        validate_ordering(&source.placements, ordered)?;
+        validate_ordering(&source.placements, ordered, &evidence_authority)?;
     }
 
     let mut transition_keys = BTreeSet::new();
@@ -600,4 +799,43 @@ pub fn link_reference_playable(
         ordered_placements: source.ordered_placements,
         transitions: source.transitions,
     })
+}
+
+
+#[cfg(test)]
+mod corrective_tests {
+    use super::*;
+
+    #[test]
+    fn footprint_member_order_is_canonicalized() -> Result<(), ContentError> {
+        let evidence = EvidenceBindingRef::new(
+            ProductionAtom::new("reference manifest revision", "manifest-r1")?,
+            ProductionKey::new(
+                "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
+            )?,
+            EvidenceDisposition::Unknown,
+        );
+        let low = FootprintCell {
+            dx: 0,
+            dy: 0,
+            dz: 0,
+        };
+        let high = FootprintCell {
+            dx: 1,
+            dy: 0,
+            dz: 0,
+        };
+        let mut relation = FootprintRelation::Qualified {
+            members: vec![high, low],
+            evidence,
+        };
+
+        relation.canonicalize_structure()?;
+
+        let FootprintRelation::Qualified { members, .. } = relation else {
+            unreachable!("qualified footprint changed variant");
+        };
+        assert_eq!(members, vec![low, high]);
+        Ok(())
+    }
 }
