@@ -823,6 +823,8 @@ jobs:
                   failures.append(f'invalid {flag}={os.environ[flag]}')
           if os.environ['RUST_REQUIRED'] == 'false' and os.environ['WINDOWS_REQUIRED'] == 'true':
               failures.append('Windows selection without Rust selection is invalid')
+          if os.environ['ATLAS_FULLWORLD_REQUIRED'] == 'true' and os.environ['RUST_REQUIRED'] != 'true':
+              failures.append('Atlas fullworld selection without Rust selection is invalid')
           for flag, names in (
               ('RUST_REQUIRED', ('RUST_POLICY', 'RUST_LINUX', 'RUST_SUPPLY_CHAIN')),
               ('WINDOWS_REQUIRED', ('RUST_WINDOWS',)),
