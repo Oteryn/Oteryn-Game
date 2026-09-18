@@ -327,7 +327,7 @@ impl LocalObjectRuntime {
         }
         if open_transition.owner_capability != close_transition.owner_capability {
             return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transitions require different runtime capabilities",
+                "OPEN/CLOSE transitions require the same runtime capability",
             ));
         }
         if !open_transition.policy_guard_refs.is_empty()
@@ -710,7 +710,7 @@ mod tests {
         ClientProjectionClass, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
         DefinitionRevisionRef, EvidenceBindingRef, EvidenceDisposition, FootprintCell,
         MapRevisionRef, OwnerCapabilityRequirement, PackageManifestBinding, PlacementRef,
-        ProductionAtom, ReferenceDefinition, Sha256HexDigest, SpatialAddress, TypedDefinitionRef,
+        ProductionAtom, ReferenceDefinition, Sha256HexDigest, TypedDefinitionRef,
     };
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandIdError, FoundationProtocolError,
