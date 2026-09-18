@@ -462,12 +462,18 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
                 affected.add(consumer)
                 pending.append(consumer)
         if not affected and atlas_fullworld:
+            if digest != AUDITED_INPUT_SHA256:
+                return full(
+                    "unreviewed-consumer-input-snapshot",
+                    "atlas-fullworld",
+                    atlas_fullworld=True,
+                )
             return dict(
-                rust=False,
+                rust=True,
                 windows=False,
                 atlas_fullworld=True,
                 surface="atlas-fullworld",
-                reason="atlas-fullworld-only",
+                reason="atlas-fullworld-and-audited-nonwindows-consumers",
             )
         if affected & WINDOWS:
             surface = "simulation" if "oteryn-simulation-determinism" in affected else "shared" if SERVER in affected else "client"
@@ -523,7 +529,7 @@ def classify_post_merge(event, metadata) -> dict:
                           docs_consumers_verified=document_consumers_safe(metadata))
         if result["rust"] is False and result["windows"] is False and result["surface"] == "docs":
             return result
-        if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability"}:
+        if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability", "atlas-fullworld"}:
             return result
         return full(result["reason"], result["surface"])
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
