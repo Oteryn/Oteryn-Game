@@ -111,9 +111,24 @@ struct AcceptedReferenceEvidenceManifest {
 #[derive(Debug, Deserialize)]
 struct AcceptedReferenceEvidenceCase {
     case_id: String,
+    domain: String,
     target: AcceptedReferenceEvidenceTarget,
     provenance: AcceptedReferenceEvidenceProvenance,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReferenceTargetClaim {
+    SpatialAddress,
+    PresentationFootprint,
+    CollisionFootprint,
+    OrderedPlacementSequence,
+}
+
+// D1 requires per-target-sensitive evidence binding. The evidence manifest currently has no
+// CONTENT_WORLD mechanic case that can authorize any of these claims. Keep this exact-case
+// consumer binding empty until a separately accepted manifest case establishes the semantics;
+// a PROVEN case from another domain must never become geometry/footprint/order authority.
+const REFERENCE_TARGET_CLAIM_CASE_BINDINGS: &[(&str, ReferenceTargetClaim)] = &[];
 
 #[derive(Debug, Deserialize)]
 struct AcceptedReferenceEvidenceTarget {
@@ -170,6 +185,27 @@ impl ReferenceEvidenceAuthority {
             "reference manifest revision",
             &format!("manifest-r{}", self.manifest.manifest_revision),
         )
+    }
+
+    fn require_case_bound_to_claim(
+        &self,
+        case: &AcceptedReferenceEvidenceCase,
+        required_claim: ReferenceTargetClaim,
+    ) -> Result<(), ContentError> {
+        if case.domain != "CONTENT_WORLD" {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable evidence case domain does not match target-sensitive claim",
+            ));
+        }
+        let bound_claim = REFERENCE_TARGET_CLAIM_CASE_BINDINGS
+            .iter()
+            .find_map(|(case_id, claim)| (case.case_id == *case_id).then_some(*claim));
+        if bound_claim != Some(required_claim) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable evidence case is not bound to target-sensitive claim",
+            ));
+        }
+        Ok(())
     }
 
     fn resolve_case<'a>(
@@ -270,6 +306,7 @@ impl EvidenceBindingRef {
     fn require_reference_promotion(
         &self,
         authority: &ReferenceEvidenceAuthority,
+        required_claim: ReferenceTargetClaim,
     ) -> Result<(), ContentError> {
         if self.manifest_revision != authority.manifest_revision_atom()? {
             return Err(ContentError::RevisionMismatch(
@@ -310,6 +347,7 @@ impl EvidenceBindingRef {
                 "target-sensitive Reference claim lacks cleared provenance",
             ));
         }
+        authority.require_case_bound_to_claim(case, required_claim)?;
         Ok(())
     }
 }
@@ -428,9 +466,12 @@ impl FootprintRelation {
     fn validate_for_reference(
         &self,
         authority: &ReferenceEvidenceAuthority,
+        required_claim: ReferenceTargetClaim,
     ) -> Result<(), ContentError> {
         match self {
-            Self::Qualified { evidence, .. } => evidence.require_reference_promotion(authority),
+            Self::Qualified { evidence, .. } => {
+                evidence.require_reference_promotion(authority, required_claim)
+            }
             Self::Unresolved(_) => Err(ContentError::InvalidArtifact(
                 "reference-playable footprint remains unresolved",
             )),
@@ -650,13 +691,15 @@ fn validate_placement(
     placement
         .address
         .evidence
-        .require_reference_promotion(authority)?;
-    placement
-        .presentation_footprint
-        .validate_for_reference(authority)?;
-    placement
-        .collision_footprint
-        .validate_for_reference(authority)?;
+        .require_reference_promotion(authority, ReferenceTargetClaim::SpatialAddress)?;
+    placement.presentation_footprint.validate_for_reference(
+        authority,
+        ReferenceTargetClaim::PresentationFootprint,
+    )?;
+    placement.collision_footprint.validate_for_reference(
+        authority,
+        ReferenceTargetClaim::CollisionFootprint,
+    )?;
     Ok(())
 }
 
@@ -683,7 +726,10 @@ fn validate_ordering_evidence(
     ordered: &OrderedPlacementSet,
     authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
-    ordered.evidence.require_reference_promotion(authority)
+    ordered.evidence.require_reference_promotion(
+        authority,
+        ReferenceTargetClaim::OrderedPlacementSequence,
+    )
 }
 
 fn validate_transition(
@@ -816,6 +862,24 @@ pub fn link_reference_playable(
 #[cfg(test)]
 mod corrective_tests {
     use super::*;
+
+    #[test]
+    fn accepted_case_from_other_domain_cannot_bind_content_world_target_claim(
+    ) -> Result<(), ContentError> {
+        let authority = ReferenceEvidenceAuthority::load()?;
+        let key = ProductionKey::new(
+            "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
+        )?;
+        let case = authority.resolve_case(&key)?;
+
+        assert!(matches!(
+            authority.require_case_bound_to_claim(case, ReferenceTargetClaim::SpatialAddress),
+            Err(ContentError::InvalidArtifact(
+                "reference-playable evidence case domain does not match target-sensitive claim"
+            ))
+        ));
+        Ok(())
+    }
 
     #[test]
     fn footprint_member_order_is_canonicalized() -> Result<(), ContentError> {
