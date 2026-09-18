@@ -29,6 +29,10 @@ REQUIRED = {
     "oteryn-simulation-determinism": "crates/simulation-determinism",
 }
 BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
+ATLAS_FULLWORLD_PATHS = {
+    "tools/game-atlas-fullworld-source/producer.py",
+    "tools/game-atlas-fullworld-source/self_test.py",
+}
 
 
 def full(reason: str, surface: str = "unknown") -> dict:
@@ -43,6 +47,34 @@ def neutral(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} or path.startswith("docs/migration/"):
         return False
     return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md", "docs/agents/PROMPT_LIFECYCLE.json"} or (path.startswith("docs/") and path.endswith(".md"))
+
+
+def atlas_fullworld_path(path: str) -> bool:
+    return path in ATLAS_FULLWORLD_PATHS
+
+
+def atlas_fullworld_required(files, changed_count, complete=True) -> bool:
+    """Select the bounded Atlas producer lane, failing closed on malformed evidence."""
+    try:
+        if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
+            return True
+        for item in files:
+            if not isinstance(item, dict):
+                return True
+            path = item.get("filename")
+            previous = item.get("previous_filename")
+            if not valid_path(path):
+                return True
+            if atlas_fullworld_path(path):
+                return True
+            if previous is not None:
+                if not valid_path(previous):
+                    return True
+                if atlas_fullworld_path(previous):
+                    return True
+        return False
+    except (TypeError, ValueError, AttributeError):
+        return True
 
 
 def graph(metadata: dict):
@@ -432,8 +464,12 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
             return full("explicit-build-or-control-input", "control-plane")
         roots, reverse = graph(metadata)
         affected = set()
+        atlas_fullworld = False
         for path in paths:
             if neutral(path):
+                continue
+            if atlas_fullworld_path(path):
+                atlas_fullworld = True
                 continue
             owners = [name for name, root in roots.items() if path.startswith(root + "/")]
             if len(owners) != 1 or PurePosixPath(path).suffix not in {".rs", ".sql"}:
@@ -444,6 +480,10 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
             for consumer in reverse[pending.pop()] - affected:
                 affected.add(consumer)
                 pending.append(consumer)
+        if not affected:
+            if atlas_fullworld:
+                return dict(rust=False, windows=False, surface="atlas-fullworld", reason="audited-atlas-fullworld-source")
+            return full("mixed-or-unowned-surface")
         if affected & WINDOWS:
             surface = "simulation" if "oteryn-simulation-determinism" in affected else "shared" if SERVER in affected else "client"
             return full("windows-consumer-affected", surface)
@@ -452,7 +492,10 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
         if digest != AUDITED_INPUT_SHA256:
             return full("unreviewed-consumer-input-snapshot")
         surface = "durability" if any(any(token in path for token in ("/durability/", "/migrations/", "postgres", "reconnect")) for path in paths) else "server"
-        return dict(rust=True, windows=False, surface=surface, reason="server-only-reverse-closure-and-audited-inputs")
+        reason = "server-only-reverse-closure-and-audited-inputs"
+        if atlas_fullworld:
+            reason += "-plus-atlas-fullworld"
+        return dict(rust=True, windows=False, surface=surface, reason=reason)
     except (KeyError, TypeError, ValueError, AttributeError):
         return full("classifier-input-failure")
 
@@ -500,6 +543,8 @@ def classify_post_merge(event, metadata) -> dict:
 
 
 def main() -> int:
+    post_merge = False
+    atlas_fullworld = True
     try:
         post_merge = sys.argv[1] == "--post-merge"
         metadata = json.loads(Path(sys.argv[2] if post_merge else sys.argv[1]).read_text(encoding="utf-8"))
@@ -507,6 +552,7 @@ def main() -> int:
             result = classify_post_merge(json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")), metadata)
         else:
             files, changed_count, complete = pr_file_records()
+            atlas_fullworld = atlas_fullworld_required(files, changed_count, complete)
             digest = input_digest(metadata)
             docs_candidate = (
                 isinstance(files, list) and bool(files)
@@ -526,6 +572,8 @@ def main() -> int:
     print(json.dumps(result, sort_keys=True))
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
         output.write(f"rust={str(result['rust']).lower()}\nwindows={str(result['windows']).lower()}\n")
+        if not post_merge:
+            output.write(f"atlas_fullworld={str(atlas_fullworld).lower()}\n")
     return 0
 
 
