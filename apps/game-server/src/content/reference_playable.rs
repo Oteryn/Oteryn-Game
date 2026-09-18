@@ -146,7 +146,9 @@ impl ReferenceEvidenceAuthority {
                     "accepted Reference evidence manifest cannot be decoded",
                 )
             })?;
-        if manifest.schema_version != 1 || manifest.manifest_revision == 0 || manifest.status != "ACCEPTED"
+        if manifest.schema_version != 1
+            || manifest.manifest_revision == 0
+            || manifest.status != "ACCEPTED"
         {
             return Err(ContentError::InvalidArtifact(
                 "accepted Reference evidence manifest identity is invalid",
@@ -652,7 +654,9 @@ fn validate_placement(
     placement
         .presentation_footprint
         .validate_for_reference(authority)?;
-    placement.collision_footprint.validate_for_reference(authority)?;
+    placement
+        .collision_footprint
+        .validate_for_reference(authority)?;
     Ok(())
 }
 
@@ -808,7 +812,6 @@ pub fn link_reference_playable(
         transitions: source.transitions,
     })
 }
-
 
 #[cfg(test)]
 mod corrective_tests {
