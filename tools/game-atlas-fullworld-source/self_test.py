@@ -452,34 +452,65 @@ def test_loaded_parser_modules_are_root_bound() -> None:
         root = Path(temp_dir)
         expected = {
             "tools.otbm_atlas": "tools/otbm_atlas/__init__.py",
+            "tools.otbm_atlas.assets": "tools/otbm_atlas/assets.py",
+            "tools.otbm_atlas.semantic": "tools/otbm_atlas/semantic.py",
             "tools.otbm_atlas.nodefile": "tools/otbm_atlas/nodefile.py",
         }
-        for relative_path in (
-            "tools/otbm_atlas/__init__.py",
-            "tools/otbm_atlas/assets.py",
-            "tools/otbm_atlas/semantic.py",
-            "tools/otbm_atlas/nodefile.py",
-        ):
+        for relative_path in expected.values():
             path = root / relative_path
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("# unit\n", encoding="utf-8")
 
+        names = ("tools", *expected.keys(), "tools.otbm_atlas.extra")
         sentinel = object()
-        saved = {name: producer.sys.modules.get(name, sentinel) for name in expected}
-        assets = SimpleNamespace(__file__=str(root / "tools/otbm_atlas/assets.py"))
-        semantic = SimpleNamespace(__file__=str(root / "tools/otbm_atlas/semantic.py"))
+        saved = {name: producer.sys.modules.get(name, sentinel) for name in names}
+        modules = {
+            name: SimpleNamespace(__file__=str(root / relative_path))
+            for name, relative_path in expected.items()
+        }
         try:
-            producer.sys.modules["tools.otbm_atlas"] = SimpleNamespace(
-                __file__=str(root / expected["tools.otbm_atlas"])
+            producer.sys.modules["tools"] = SimpleNamespace(__path__=[str(root / "tools")])
+            for name, module in modules.items():
+                producer.sys.modules[name] = module
+
+            producer._validate_loaded_parser_modules(
+                root,
+                modules["tools.otbm_atlas.assets"],
+                modules["tools.otbm_atlas.semantic"],
             )
-            producer.sys.modules["tools.otbm_atlas.nodefile"] = SimpleNamespace(
-                __file__=str(root / expected["tools.otbm_atlas.nodefile"])
+
+            producer.sys.modules["tools"].__path__ = [str(root / "wrong-tools")]
+            _expect_producer_error(
+                "parser package path mismatch",
+                lambda: producer._validate_loaded_parser_modules(
+                    root,
+                    modules["tools.otbm_atlas.assets"],
+                    modules["tools.otbm_atlas.semantic"],
+                ),
             )
-            producer._validate_loaded_parser_modules(root, assets, semantic)
-            semantic.__file__ = str(root / "wrong-semantic.py")
+            producer.sys.modules["tools"].__path__ = [str(root / "tools")]
+
+            producer.sys.modules["tools.otbm_atlas.extra"] = SimpleNamespace(
+                __file__=str(root / "tools/otbm_atlas/extra.py")
+            )
+            _expect_producer_error(
+                "unexpected parser module",
+                lambda: producer._validate_loaded_parser_modules(
+                    root,
+                    modules["tools.otbm_atlas.assets"],
+                    modules["tools.otbm_atlas.semantic"],
+                ),
+            )
+            producer.sys.modules.pop("tools.otbm_atlas.extra", None)
+
+            modules["tools.otbm_atlas.semantic"].__file__ = str(root / "wrong-semantic.py")
             _expect_producer_error(
                 "parser module path mismatch",
-                lambda: producer._validate_loaded_parser_modules(root, assets, semantic),
+                lambda: producer._validate_loaded_parser_modules(
+                    root,
+                    modules["tools.otbm_atlas.assets"],
+                    modules["tools.otbm_atlas.semantic"],
+                ),
             )
         finally:
             for name, previous in saved.items():
