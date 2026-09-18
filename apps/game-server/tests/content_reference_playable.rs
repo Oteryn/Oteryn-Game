@@ -123,7 +123,7 @@ fn source_with_target_claim(
         map_revision: MapRevisionRef::new("map-r1")?,
         definition,
         address: SpatialAddress {
-            world_id: candidate.world_id,
+            world_id: candidate.world_id.clone(),
             coordinate_frame: candidate.coordinate_frame.clone(),
             cell: LogicalCell {
                 x: 33_572,
@@ -157,9 +157,16 @@ fn source_with_target_claim(
         ),
     };
     candidate.placements.push(placement);
+    Ok(candidate)
+}
+
+fn source_with_ordered_target_claim(
+    evidence: EvidenceBindingRef,
+) -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source_with_target_claim(evidence.clone())?;
     candidate.ordered_placements.push(OrderedPlacementSet {
         field_key: ProductionKey::new("oteryn:reference.field.local-door")?,
-        placement_keys: vec![placement_key],
+        placement_keys: vec![candidate.placements[0].key.clone()],
         evidence,
     });
     Ok(candidate)
@@ -420,7 +427,7 @@ fn content_lock_must_bind_exact_package_provenance() -> Result<(), ContentError>
 #[test]
 fn ordered_placement_relation_rejects_unknown_or_duplicate_members_before_evidence()
 -> Result<(), ContentError> {
-    let mut unknown = source_with_target_claim(accepted_case_binding()?)?;
+    let mut unknown = source_with_ordered_target_claim(accepted_case_binding()?)?;
     unknown.ordered_placements[0]
         .placement_keys
         .push(PlacementKey::new("oteryn:reference.placement.unknown")?);
@@ -429,7 +436,7 @@ fn ordered_placement_relation_rejects_unknown_or_duplicate_members_before_eviden
         Err(ContentError::MissingReference { .. })
     ));
 
-    let mut duplicate = source_with_target_claim(accepted_case_binding()?)?;
+    let mut duplicate = source_with_ordered_target_claim(accepted_case_binding()?)?;
     let first = duplicate.ordered_placements[0].placement_keys[0].clone();
     duplicate.ordered_placements[0].placement_keys.push(first);
     assert!(matches!(
