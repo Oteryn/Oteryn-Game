@@ -692,14 +692,12 @@ fn validate_placement(
         .address
         .evidence
         .require_reference_promotion(authority, ReferenceTargetClaim::SpatialAddress)?;
-    placement.presentation_footprint.validate_for_reference(
-        authority,
-        ReferenceTargetClaim::PresentationFootprint,
-    )?;
-    placement.collision_footprint.validate_for_reference(
-        authority,
-        ReferenceTargetClaim::CollisionFootprint,
-    )?;
+    placement
+        .presentation_footprint
+        .validate_for_reference(authority, ReferenceTargetClaim::PresentationFootprint)?;
+    placement
+        .collision_footprint
+        .validate_for_reference(authority, ReferenceTargetClaim::CollisionFootprint)?;
     Ok(())
 }
 
@@ -726,10 +724,9 @@ fn validate_ordering_evidence(
     ordered: &OrderedPlacementSet,
     authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
-    ordered.evidence.require_reference_promotion(
-        authority,
-        ReferenceTargetClaim::OrderedPlacementSequence,
-    )
+    ordered
+        .evidence
+        .require_reference_promotion(authority, ReferenceTargetClaim::OrderedPlacementSequence)
 }
 
 fn validate_transition(
@@ -864,8 +861,8 @@ mod corrective_tests {
     use super::*;
 
     #[test]
-    fn accepted_case_from_other_domain_cannot_bind_content_world_target_claim(
-    ) -> Result<(), ContentError> {
+    fn accepted_case_from_other_domain_cannot_bind_content_world_target_claim()
+    -> Result<(), ContentError> {
         let authority = ReferenceEvidenceAuthority::load()?;
         let key = ProductionKey::new(
             "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
