@@ -1143,7 +1143,10 @@ mod tests {
 
         let result = runtime.apply(&authority, &command, &mut ingress, &BTreeSet::new())?;
         assert_eq!(result.disposition(), DISPOSITION_BINDING_MISMATCH);
-        assert_eq!(runtime.state_key().as_str(), "oteryn:reference.state.closed");
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.closed"
+        );
         assert_eq!(runtime.revision(), 0);
         assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
         Ok(())
