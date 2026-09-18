@@ -125,9 +125,9 @@ FIRST_PLAYABLE_RETAINED_SEMANTIC_RECORD_CHARGED_BYTE_BOUND = 3116 charged bytes.
 
 ### Focused
 
-- python compile of evidence.py: PASS on intended exact content before repository write.
-- evidence.py --self-test: PASS 19 tests on intended exact content before repository write.
-- deterministic JSON/Markdown write/check: PASS on intended exact content before repository write.
+- exact-head Python parse: required through hosted CodeQL / repository qualification; no unsupported local-execution claim.
+- exact harness contains 19 focused assertions; exact-head self-test execution requires an authorized Git/Python workspace.
+- deterministic JSON/Markdown exact-head readback: PASS for bound/count/handoff/code-marker consistency.
 - exact-head repository/CI qualification: pending PR creation.
 
 ### Component/integration
