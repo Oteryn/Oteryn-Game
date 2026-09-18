@@ -194,3 +194,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# CI routing final probe for Issue #651; inert and must not merge.
