@@ -33,10 +33,48 @@ ATLAS_FULLWORLD_PATHS = {
     "tools/game-atlas-fullworld-source/producer.py",
     "tools/game-atlas-fullworld-source/self_test.py",
 }
+ATLAS_INTENTIONALLY_FULL_PATHS = {
+    "tools/game-atlas-fullworld-source/README.md",
+    "tools/game-atlas-fullworld-source/animated.py",
+    "tools/game-atlas-fullworld-source/animated_self_test.py",
+}
+ATLAS_INTENTIONALLY_FULL_PREFIXES = (
+    "tools/game-atlas-appearances/",
+    "tools/game-atlas-outfit-spatial/",
+    "tools/game-atlas-creature-gameplay/",
+    "tools/game-atlas-creatures/",
+    "tools/game-atlas-profile-spike/",
+    "tools/game-atlas-semantic-search/",
+    "tools/game-atlas-thais-fixture/",
+)
+DEGRADED_ROUTING_REASONS = {
+    "classifier-input-failure",
+    "classifier-or-metadata-failure",
+    "incomplete-enumeration",
+    "invalid-file-record",
+    "missing-rename-source",
+    "invalid-rename-source",
+    "unreviewed-consumer-input-snapshot",
+    "unreviewed-document-consumer-inputs",
+    "unverified-or-special-candidate-modes",
+}
+UNMODELLED_ROUTING_REASONS = {
+    "mixed-or-unowned-surface",
+    "unmodelled-input",
+}
 
 
 def full(reason: str, surface: str = "unknown") -> dict:
     return dict(rust=True, windows=True, surface=surface, reason=reason)
+
+
+def routing_health(result: dict) -> str:
+    reason = result.get("reason")
+    if reason in DEGRADED_ROUTING_REASONS:
+        return "degraded"
+    if reason in UNMODELLED_ROUTING_REASONS:
+        return "unmodelled"
+    return "modelled"
 
 
 def valid_path(value) -> bool:
@@ -51,6 +89,14 @@ def neutral(path: str) -> bool:
 
 def atlas_fullworld_path(path: str) -> bool:
     return path in ATLAS_FULLWORLD_PATHS
+
+
+def atlas_path_disposition(path: str) -> str | None:
+    if path in ATLAS_FULLWORLD_PATHS:
+        return "atlas-fullworld"
+    if path in ATLAS_INTENTIONALLY_FULL_PATHS or path.startswith(ATLAS_INTENTIONALLY_FULL_PREFIXES):
+        return "full"
+    return None
 
 
 def atlas_fullworld_required(files, changed_count, complete=True) -> bool:
@@ -114,6 +160,12 @@ def graph(metadata: dict):
                 # Deliberately union optional, dev/build and every target condition.
                 reverse[by_path[path]].add(package["name"])
     return roots, reverse
+
+
+def audited_input_path(metadata: dict, path: str, include_server: bool = False) -> bool:
+    roots, _ = graph(metadata)
+    prefixes = tuple(root + "/" for name, root in roots.items() if include_server or name != SERVER)
+    return path in BUILD_INPUTS or path.startswith(".cargo/") or path.startswith(prefixes)
 
 
 def input_digest(metadata: dict, include_server: bool = False) -> str:
@@ -468,9 +520,12 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
         for path in paths:
             if neutral(path):
                 continue
-            if atlas_fullworld_path(path):
+            disposition = atlas_path_disposition(path)
+            if disposition == "atlas-fullworld":
                 atlas_fullworld = True
                 continue
+            if disposition == "full":
+                return full("explicit-atlas-non-cargo-full", "atlas")
             owners = [name for name, root in roots.items() if path.startswith(root + "/")]
             if len(owners) != 1 or PurePosixPath(path).suffix not in {".rs", ".sql"}:
                 return full("unmodelled-input")
@@ -569,11 +624,15 @@ def main() -> int:
                               docs_consumers_verified=document_consumers_safe(metadata) if docs_candidate else None)
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
         result = full("classifier-or-metadata-failure")
-    print(json.dumps(result, sort_keys=True))
+    health = routing_health(result)
+    print(json.dumps(result | {"routing_health": health}, sort_keys=True))
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
         output.write(f"rust={str(result['rust']).lower()}\nwindows={str(result['windows']).lower()}\n")
         if not post_merge:
             output.write(f"atlas_fullworld={str(atlas_fullworld).lower()}\n")
+            output.write(f"surface={result['surface']}\n")
+            output.write(f"reason={result['reason']}\n")
+            output.write(f"routing_health={health}\n")
     return 0
 
 
