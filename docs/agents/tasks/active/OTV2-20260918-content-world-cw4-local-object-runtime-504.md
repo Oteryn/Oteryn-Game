@@ -1,5 +1,39 @@
 # CW4 local-object runtime — task evidence
 
+```yaml
+task_id: OTV2-20260918-content-world-cw4-local-object-runtime-504
+title: Implement first CW4 scope-local object runtime component
+mode: IMPLEMENT
+status: active
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: agent/content-world-cw4-local-object-runtime-504
+issue: 162
+pr: 669
+base_sha: d251770f6757d1f5e87df9c39c71f91bae8343f9
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: "Oteryn: content world runtime"
+created_at: 2026-09-18
+updated_at: 2026-09-18
+execution_policy: continuous_progress
+owned_paths:
+  - apps/game-server/src/world_runtime.rs
+  - apps/game-server/src/lib.rs
+  - docs/agents/tasks/active/OTV2-20260918-content-world-cw4-local-object-runtime-504.md
+public_contracts:
+  - OTV2-20260917-content-world-local-transition-contract-candidate.md
+depends_on:
+  - "#162 comment 5732276491"
+  - "#162 comment 5736225915"
+  - "#504 comment 5721079000"
+  - "PR #667 protected merge/readback d251770f6757d1f5e87df9c39c71f91bae8343f9"
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
 ## Allocation
 
 - Control plane: `Oteryn/Oteryn-Game#162`.
