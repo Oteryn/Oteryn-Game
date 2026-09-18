@@ -214,8 +214,11 @@ fn incompatible_definition_revision_fails_closed() -> Result<(), ContentError> {
 #[test]
 fn unsafe_target_evidence_classes_fail_closed() -> Result<(), ContentError> {
     for disposition in [
+        EvidenceDisposition::Observed,
+        EvidenceDisposition::Derived,
         EvidenceDisposition::Unknown,
         EvidenceDisposition::Conflict,
+        EvidenceDisposition::DeclaredDifference,
         EvidenceDisposition::OtsHypothesisOnly,
         EvidenceDisposition::ObservedPostTarget,
     ] {
@@ -225,19 +228,6 @@ fn unsafe_target_evidence_classes_fail_closed() -> Result<(), ContentError> {
             link_reference_playable(candidate).is_err(),
             "{disposition:?} unexpectedly promoted"
         );
-    }
-    Ok(())
-}
-
-#[test]
-fn derived_and_continuity_proven_evidence_can_remain_typed() -> Result<(), ContentError> {
-    for disposition in [
-        EvidenceDisposition::Derived,
-        EvidenceDisposition::ObservedContinuityProven,
-    ] {
-        let mut candidate = source()?;
-        candidate.placements[0].address.evidence = evidence(disposition)?;
-        assert!(link_reference_playable(candidate).is_ok());
     }
     Ok(())
 }
