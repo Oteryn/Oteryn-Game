@@ -44,9 +44,10 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
     "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "bed1966b918ef7548bcaa0ac5b1a4563d4c7cc7464a34e35128fdaf72d8b5160"
+    "5970a14f1963e52e55d0c2e664696a857966632d3b0c97a5d54b099cfdfe2536"
 )
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "7f101b51bfeff7c63495f8d9662a9369a1abd597485d852a5b4964d1fad221c5"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "9df4ca580734d529766ed1825e3ac82cbcb08b8d62cb4ea18760cc2a1a369eb5"
+EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "c59b30fde7538e738346eec03a602081dc4ac2d6"
 EXPECTED_POST_MERGE_RUST_SHA256 = "d34a8feeef8b37568217159e85cab54a0868abf9ab8045f5113b9bc8c3c6f0f7"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
@@ -367,6 +368,13 @@ def main() -> int:
         lanes_digest = hashlib.sha256(lanes_block.encode("utf-8")).hexdigest() if lanes_block else None
         if lanes_digest != EXPECTED_MERGE_GATE_LANES_JOB_SHA256:
             errors.append("merge gate risk lanes must exactly match trusted-base classification and fail-closed outputs")
+        atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
+        atlas_fullworld_digest = (
+            hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
+            if atlas_fullworld_block else None
+        )
+        if atlas_fullworld_digest != EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256:
+            errors.append("merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
         if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
@@ -398,6 +406,7 @@ def main() -> int:
             "Merge gate / governance",
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
+            "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
             "Merge gate / Rust Linux workspace",
             "Merge gate / Rust Windows client",
