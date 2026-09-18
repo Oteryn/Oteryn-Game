@@ -443,3 +443,5 @@ fn ordered_placement_relation_rejects_unknown_or_duplicate_members_before_eviden
     ));
     Ok(())
 }
+
+// CI routing final probe for Issue #651; inert and must not merge.
