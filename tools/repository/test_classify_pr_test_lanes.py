@@ -215,6 +215,26 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "trusted-base lane mutation passed policy"
+    routing = core.indented_yaml_mapping_block(original, "routing_contract", 2)
+    assert routing is not None
+    routing_mutations = [
+        routing.replace("  routing_contract:\n", "  routing_contract:\n    if: false\n"),
+        routing.replace("  routing_contract:\n", "  routing_contract:\n    continue-on-error: true\n"),
+        routing.replace("          ref: ${{ needs.scope.outputs.target_sha }}\n", "          ref: ${{ needs.scope.outputs.base_sha }}\n"),
+        routing.replace("          fetch-depth: 0\n", "          fetch-depth: 1\n"),
+        routing.replace(
+            '        run: python -I tools/repository/validate_pr_routing_contract.py "$RUNNER_TEMP/routing-contract-metadata.json"\n',
+            "        run: python -c 'pass'\n",
+        ),
+    ]
+    for changed in routing_mutations:
+        assert changed != routing
+        mutated = original.replace(routing, changed, 1)
+        def read(file, *args, **kwargs):
+            return mutated if file == path else read_text(file, *args, **kwargs)
+        with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert core.main() != 0, "routing-contract mutation passed policy"
+
     atlas = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
     assert atlas is not None
     atlas_mutations = [
@@ -230,7 +250,7 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "Atlas fullworld gate mutation passed policy"
-    print("Trusted-base job mutation family PASS: lane selection and Atlas exact-head evidence remain fail closed")
+    print("Trusted-base job mutation family PASS: lane selection, routing contract and Atlas exact-head evidence remain fail closed")
 
 
 def test_candidate_modes(module):
