@@ -215,13 +215,39 @@ def _validate_source_generation_inputs(
 
 
 def _validate_loaded_parser_modules(legacy_root: Path, legacy_assets: Any, legacy_semantic: Any) -> None:
-    expected_modules = (
-        (sys.modules.get("tools.otbm_atlas"), "tools/otbm_atlas/__init__.py"),
-        (legacy_assets, "tools/otbm_atlas/assets.py"),
-        (legacy_semantic, "tools/otbm_atlas/semantic.py"),
-        (sys.modules.get("tools.otbm_atlas.nodefile"), "tools/otbm_atlas/nodefile.py"),
-    )
-    for module, relative_path in expected_modules:
+    tools_module = sys.modules.get("tools")
+    tools_paths = getattr(tools_module, "__path__", None) if tools_module is not None else None
+    expected_tools_root = (legacy_root / "tools").resolve()
+    if tools_paths is None:
+        raise ProducerError("fresh source parser package path mismatch: tools")
+    resolved_tools_paths = tuple(Path(path).resolve() for path in tools_paths)
+    if not resolved_tools_paths or any(path != expected_tools_root for path in resolved_tools_paths):
+        raise ProducerError("fresh source parser package path mismatch: tools")
+
+    expected_modules = {
+        "tools.otbm_atlas": (sys.modules.get("tools.otbm_atlas"), "tools/otbm_atlas/__init__.py"),
+        "tools.otbm_atlas.assets": (legacy_assets, "tools/otbm_atlas/assets.py"),
+        "tools.otbm_atlas.semantic": (legacy_semantic, "tools/otbm_atlas/semantic.py"),
+        "tools.otbm_atlas.nodefile": (
+            sys.modules.get("tools.otbm_atlas.nodefile"),
+            "tools/otbm_atlas/nodefile.py",
+        ),
+    }
+    loaded_parser_modules = {
+        name
+        for name in sys.modules
+        if name == "tools.otbm_atlas" or name.startswith("tools.otbm_atlas.")
+    }
+    unexpected = sorted(loaded_parser_modules - expected_modules.keys())
+    if unexpected:
+        raise ProducerError(f"fresh source unexpected parser module loaded: {unexpected[0]}")
+    missing = sorted(expected_modules.keys() - loaded_parser_modules)
+    if missing:
+        raise ProducerError(f"fresh source required parser module missing: {missing[0]}")
+
+    for name, (module, relative_path) in expected_modules.items():
+        if sys.modules.get(name) is not module:
+            raise ProducerError(f"fresh source parser module identity mismatch: {name}")
         module_file = getattr(module, "__file__", None) if module is not None else None
         expected_path = (legacy_root / relative_path).resolve()
         if module_file is None or Path(module_file).resolve() != expected_path:
