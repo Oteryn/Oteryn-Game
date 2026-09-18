@@ -24,8 +24,9 @@ def test_aggregate():
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL")
     rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
-    env = dict.fromkeys(mandatory + rust + ("RUST_WINDOWS",), "success")
-    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
+    optional = rust + ("RUST_WINDOWS", "ATLAS_FULLWORLD")
+    env = dict.fromkeys(mandatory + optional, "success")
+    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true", ATLAS_FULLWORLD_REQUIRED="true")
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -37,15 +38,22 @@ def test_aggregate():
 
     assert accepts({})
     assert accepts({"WINDOWS_REQUIRED": "false", "RUST_WINDOWS": "skipped"}), "proven server-only lane cannot omit Windows"
-    assert accepts(dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped") | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false"})
-    for name in mandatory + rust + ("RUST_WINDOWS",):
+    assert accepts(
+        dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped")
+        | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false"}
+    ), "Atlas-only lane was not accepted"
+    assert accepts(
+        dict.fromkeys(optional, "skipped")
+        | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false", "ATLAS_FULLWORLD_REQUIRED": "false"}
+    ), "fully unselected optional lanes were not accepted"
+    for name in mandatory + optional:
         for value in ("failure", "cancelled", "skipped", ""):
             assert not accepts({name: value}), (name, value)
-    for name in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):
+    for name in ("RUST_REQUIRED", "WINDOWS_REQUIRED", "ATLAS_FULLWORLD_REQUIRED"):
         for value in ("", "TRUE", "unknown", "0"):
             assert not accepts({name: value}), (name, value)
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
-    print("Risk aggregate PASS: full/server/docs controls, every selected failure and invalid output")
+    print("Risk aggregate PASS: full/server/Atlas/docs controls, every selected failure and invalid output")
 
 
 def fixture():
@@ -98,12 +106,12 @@ def test_snapshot_and_fallbacks(module):
         output = Path(directory) / "output"
         env = dict(os.environ, GITHUB_OUTPUT=str(output), RUNNER_TEMP=directory)
         result = subprocess.run(["bash", "-c", script], cwd=directory, env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=false\n", result
         output.unlink()
         invalid = Path(directory) / "metadata.json"
         invalid.write_text("{}")
         result = subprocess.run([sys.executable, str(MODULE), str(invalid)], env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=false\n", result
     print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
 
 
@@ -483,7 +491,22 @@ def main() -> int:
     server = "apps/game-server/src/lib.rs"
     result = classify([server])
     assert result["rust"] is True and result["windows"] is False, result
+    assert result["atlas_fullworld"] is False, result
     assert result["surface"] == "server", result
+
+    atlas_inputs = (
+        "tools/game-atlas-fullworld-source/producer.py",
+        "tools/game-atlas-fullworld-source/self_test.py",
+    )
+    for path in atlas_inputs:
+        result = classify([path])
+        assert result["rust"] is False and result["windows"] is False, (path, result)
+        assert result["atlas_fullworld"] is True and result["surface"] == "atlas-fullworld", (path, result)
+        result = classify([server, path])
+        assert result["rust"] is True and result["windows"] is False, (path, result)
+        assert result["atlas_fullworld"] is True and result["surface"] == "server", (path, result)
+    result = classify(["apps/client/src/lib.rs", atlas_inputs[0]])
+    assert result["rust"] is True and result["windows"] is True and result["atlas_fullworld"] is True, result
     for path in ("apps/game-server/src/durability/mod.rs", "apps/game-server/migrations/0001.sql",
                  "apps/game-server/tests/support/postgres.rs", "apps/game-server/src/foundation/reconnect.rs"):
         result = classify([path])
@@ -496,6 +519,8 @@ def main() -> int:
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
         "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
         "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
+        "tools/game-atlas-fullworld-source/animated.py",
+        "tools/game-atlas-fullworld-source/unmodelled_helper.py",
     )
     for path in full_paths:
         result = classify([path])
@@ -550,7 +575,7 @@ def main() -> int:
         change(metadata)
         result = classify([server], metadata=metadata)
         assert result["rust"] and result["windows"], result
-    print("Risk classifier fixtures PASS: surfaces, transitive dependency kinds, protected inputs and fail-closed enumeration")
+    print("Risk classifier fixtures PASS: Cargo/Atlas surfaces, transitive dependency kinds, protected inputs and fail-closed enumeration")
     test_aggregate()
     test_snapshot_and_fallbacks(module)
     test_trusted_job_mutations()
