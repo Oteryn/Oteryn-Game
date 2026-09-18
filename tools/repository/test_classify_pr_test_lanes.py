@@ -235,6 +235,15 @@ def test_trusted_job_mutations():
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "routing-contract mutation passed policy"
 
+    validator_path = ROOT / "tools/repository/validate_pr_routing_contract.py"
+    validator_original = read_text(validator_path)
+    validator_changed = validator_original.replace("        return 1\n", "        return 0\n", 1)
+    assert validator_changed != validator_original
+    def read_validator(file, *args, **kwargs):
+        return validator_changed if file == validator_path else read_text(file, *args, **kwargs)
+    with patch.object(Path, "read_text", read_validator), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        assert core.main() != 0, "mutated routing-contract validator passed policy"
+
     atlas = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
     assert atlas is not None
     atlas_mutations = [
