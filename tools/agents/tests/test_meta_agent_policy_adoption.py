@@ -15,7 +15,7 @@ spec.loader.exec_module(adoption)
 
 SHA = "a" * 40
 MAIN = "b" * 40
-PUBLICATION_INTEGRITY_AUTHORITY = "33b212e652c680bd4047be3b414c9a358b8bf26f"
+PUBLICATION_INTEGRITY_AUTHORITY = "d972e0f2dd37de265864fedf86615157d680275d"
 
 
 class CentralStatementView:
