@@ -61,6 +61,22 @@ def changed_audited_inputs(module, metadata: dict, records: list[dict]) -> list[
     return sorted(affected)
 
 
+def evaluate_snapshot_health(
+    module,
+    metadata: dict,
+    actual: str,
+    records: list[dict] | None = None,
+    *,
+    protected_main: bool = False,
+) -> tuple[str, list[str]]:
+    if actual == module.AUDITED_INPUT_SHA256:
+        return "healthy", []
+    if protected_main:
+        return "stale-protected-main", []
+    changed = changed_audited_inputs(module, metadata, records or [])
+    return ("degraded-candidate" if changed else "stale-inherited"), changed
+
+
 def verify_classifier_matrix(module, metadata: dict) -> None:
     digest = module.AUDITED_INPUT_SHA256
     docs_digest = module.AUDITED_DOC_INPUT_SHA256
@@ -173,17 +189,17 @@ def main() -> int:
         declared = module.AUDITED_INPUT_SHA256
         actual = module.input_digest(metadata)
 
-        if actual == declared:
-            health = "healthy"
-            changed: list[str] = []
-        elif protected_main:
-            health = "stale-protected-main"
-            changed = []
-        else:
+        records = None
+        if actual != declared and not protected_main:
             base = exact_sha("EXPECTED_BASE")
             records = changed_records(module, base, expected_head)
-            changed = changed_audited_inputs(module, metadata, records)
-            health = "degraded-candidate" if changed else "stale-inherited"
+        health, changed = evaluate_snapshot_health(
+            module,
+            metadata,
+            actual,
+            records,
+            protected_main=protected_main,
+        )
 
         write_summary(health, declared, actual, changed)
         write_outputs(health, declared, actual)
