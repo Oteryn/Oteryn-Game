@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import hashlib
+import importlib.util
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -285,6 +286,10 @@ def test_source_generation_inputs_and_parser_fail_closed() -> None:
             profile, map_path, asset_zip, assets_dir
         ) == appearance
         producer._validate_parser_source(profile, parser_root)
+        _expect_producer_error(
+            "repository root mismatch",
+            lambda: producer._validate_parser_source(profile, parser_root / "tools"),
+        )
 
         map_path.write_bytes(b"x")
         _expect_producer_error(
@@ -373,7 +378,11 @@ def test_default_runtime_path_delegates_to_qualified_validator() -> None:
 
     bounded = FakeLoadBounded()
     original_loader = producer._load_bounded_module
+    module_name = "tools.otbm_atlas.semantic"
+    sentinel = object()
+    previous_module = producer.sys.modules.get(module_name, sentinel)
     producer._load_bounded_module = lambda: bounded
+    producer.sys.modules[module_name] = SimpleNamespace(__file__="legacy/tools/otbm_atlas/semantic.py")
     try:
         runtime_state = producer.load_runtime(
             legacy_root="legacy",
@@ -383,10 +392,59 @@ def test_default_runtime_path_delegates_to_qualified_validator() -> None:
         )
     finally:
         producer._load_bounded_module = original_loader
+        if previous_module is sentinel:
+            producer.sys.modules.pop(module_name, None)
+        else:
+            producer.sys.modules[module_name] = previous_module
 
     assert bounded.validation_calls == 1
     assert runtime_state.source_generation_profile_id is None
     assert runtime_state.source_generation_profile_revision is None
+
+
+def test_fresh_runtime_rejects_stale_same_path_parser_cache() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        profile, map_path, asset_zip, assets_dir, parser_root, _appearance = _profile_fixture(root)
+        semantic_path = parser_root / "tools" / "otbm_atlas" / "semantic.py"
+        original_semantic = semantic_path.read_bytes()
+        module_name = "tools.otbm_atlas.semantic"
+        sentinel = object()
+        previous_module = producer.sys.modules.get(module_name, sentinel)
+        previous_profile = producer._SOURCE_GENERATION_PROFILES.get(profile.profile_id, sentinel)
+
+        semantic_path.write_text("SENTINEL = 'stale-parser-code'\n", encoding="utf-8")
+        spec = importlib.util.spec_from_file_location(module_name, semantic_path)
+        assert spec is not None and spec.loader is not None
+        stale_module = importlib.util.module_from_spec(spec)
+        producer.sys.modules[module_name] = stale_module
+        spec.loader.exec_module(stale_module)
+        assert stale_module.SENTINEL == "stale-parser-code"
+
+        semantic_path.write_bytes(original_semantic)
+        assert _run_git(parser_root, "status", "--porcelain=v1", "--untracked-files=all") == ""
+        producer._validate_parser_source(profile, parser_root)
+        producer._SOURCE_GENERATION_PROFILES[profile.profile_id] = profile
+        try:
+            _expect_producer_error(
+                "pre-existing module",
+                lambda: producer.load_runtime(
+                    legacy_root=parser_root,
+                    map_path=map_path,
+                    asset_zip=asset_zip,
+                    assets_dir=assets_dir,
+                    source_generation_profile_id=profile.profile_id,
+                ),
+            )
+        finally:
+            if previous_module is sentinel:
+                producer.sys.modules.pop(module_name, None)
+            else:
+                producer.sys.modules[module_name] = previous_module
+            if previous_profile is sentinel:
+                producer._SOURCE_GENERATION_PROFILES.pop(profile.profile_id, None)
+            else:
+                producer._SOURCE_GENERATION_PROFILES[profile.profile_id] = previous_profile
 
 
 def test_loaded_parser_modules_are_root_bound() -> None:
@@ -442,6 +500,7 @@ def main() -> int:
     test_fresh_source_generation_profile_is_exact_and_not_floating()
     test_source_generation_inputs_and_parser_fail_closed()
     test_default_runtime_path_delegates_to_qualified_validator()
+    test_fresh_runtime_rejects_stale_same_path_parser_cache()
     test_loaded_parser_modules_are_root_bound()
     print("game-atlas-fullworld-source self-test: PASS")
     return 0
