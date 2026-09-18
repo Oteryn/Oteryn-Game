@@ -4,7 +4,9 @@ from __future__ import annotations
 from dataclasses import replace
 import hashlib
 import importlib.util
+import os
 from pathlib import Path
+import py_compile
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
@@ -81,10 +83,10 @@ def _profile_fixture(root: Path):
     appearance.write_bytes(b"appearance0")
 
     parser_bytes = {
-        "tools/otbm_atlas/__init__.py": b"package0",
-        "tools/otbm_atlas/assets.py": b"assets00",
-        "tools/otbm_atlas/semantic.py": b"semantic",
-        "tools/otbm_atlas/nodefile.py": b"nodefile",
+        "tools/otbm_atlas/__init__.py": b"# unit parser package\n",
+        "tools/otbm_atlas/assets.py": b"ASSET_SENTINEL = 'clean'\n",
+        "tools/otbm_atlas/semantic.py": b"SENTINEL = 'clean'\n",
+        "tools/otbm_atlas/nodefile.py": b"NODE_SENTINEL = 'clean'\n",
     }
     for relative_path, data in parser_bytes.items():
         (parser_root / relative_path).write_bytes(data)
@@ -423,6 +425,11 @@ def test_fresh_runtime_rejects_stale_same_path_parser_cache() -> None:
         assert stale_module.SENTINEL == "stale-parser-code"
 
         semantic_path.write_bytes(original_semantic)
+        cache_dir = semantic_path.parent / "__pycache__"
+        if cache_dir.is_dir():
+            for cache_file in cache_dir.iterdir():
+                cache_file.unlink()
+            cache_dir.rmdir()
         assert _run_git(parser_root, "status", "--porcelain=v1", "--untracked-files=all") == ""
         producer._validate_parser_source(profile, parser_root)
         producer._SOURCE_GENERATION_PROFILES[profile.profile_id] = profile
@@ -446,6 +453,88 @@ def test_fresh_runtime_rejects_stale_same_path_parser_cache() -> None:
                 producer._SOURCE_GENERATION_PROFILES.pop(profile.profile_id, None)
             else:
                 producer._SOURCE_GENERATION_PROFILES[profile.profile_id] = previous_profile
+
+
+def test_fresh_parser_rejects_ignored_stale_bytecode_in_new_interpreter() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        profile, _map_path, _asset_zip, _assets_dir, parser_root, _appearance = _profile_fixture(root)
+        semantic_path = parser_root / "tools" / "otbm_atlas" / "semantic.py"
+        clean_source = b"SENTINEL = 'clean'\n"
+        stale_source = b"SENTINEL = 'stale'\n"
+        assert len(clean_source) == len(stale_source)
+        original_stat = semantic_path.stat()
+
+        semantic_path.write_bytes(stale_source)
+        os.utime(
+            semantic_path,
+            ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns),
+        )
+        py_compile.compile(str(semantic_path), doraise=True)
+        semantic_path.write_bytes(clean_source)
+        os.utime(
+            semantic_path,
+            ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns),
+        )
+
+        assert _run_git(parser_root, "status", "--porcelain=v1", "--untracked-files=all") == ""
+        expected_semantic_blob = dict(profile.parser_blobs)["tools/otbm_atlas/semantic.py"]
+        assert _run_git(parser_root, "hash-object", "--", "tools/otbm_atlas/semantic.py") == expected_semantic_blob
+
+        import_code = (
+            "import sys; "
+            f"sys.path.insert(0, {str(parser_root)!r}); "
+            "from tools.otbm_atlas import semantic; "
+            "print(semantic.SENTINEL)"
+        )
+        imported = producer.subprocess.run(
+            [producer.sys.executable, "-c", import_code],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert imported.stdout.strip() == "stale", imported.stdout
+
+        _expect_producer_error(
+            "bytecode cache",
+            lambda: producer._validate_parser_source(profile, parser_root),
+        )
+
+        producer_dir = Path(producer.__file__).resolve().parent
+        guard_code = (
+            "import sys\n"
+            "from pathlib import Path\n"
+            f"sys.path.insert(0, {str(producer_dir)!r})\n"
+            "import producer\n"
+            "try:\n"
+            f"    producer._validate_parser_bytecode_state(Path({str(parser_root)!r}))\n"
+            "except producer.ProducerError as exc:\n"
+            "    print(exc)\n"
+            "else:\n"
+            "    raise SystemExit('stale bytecode cache accepted')\n"
+        )
+        guarded = producer.subprocess.run(
+            [producer.sys.executable, "-c", guard_code],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert "bytecode cache" in guarded.stdout, guarded.stdout
+
+
+def test_fresh_parser_import_disables_bytecode_writes() -> None:
+    observed: list[bool] = []
+
+    class FakeLoadBounded:
+        @staticmethod
+        def _load_legacy_modules(_legacy_root):
+            observed.append(producer.sys.dont_write_bytecode)
+            return object(), object()
+
+    previous = producer.sys.dont_write_bytecode
+    producer._load_fresh_parser_modules(FakeLoadBounded(), Path("legacy"))
+    assert observed == [True]
+    assert producer.sys.dont_write_bytecode is previous
 
 
 def test_loaded_parser_modules_are_root_bound() -> None:
@@ -533,6 +622,8 @@ def main() -> int:
     test_source_generation_inputs_and_parser_fail_closed()
     test_default_runtime_path_delegates_to_qualified_validator()
     test_fresh_runtime_rejects_stale_same_path_parser_cache()
+    test_fresh_parser_rejects_ignored_stale_bytecode_in_new_interpreter()
+    test_fresh_parser_import_disables_bytecode_writes()
     test_loaded_parser_modules_are_root_bound()
     print("game-atlas-fullworld-source self-test: PASS")
     return 0

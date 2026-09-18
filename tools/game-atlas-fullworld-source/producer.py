@@ -162,6 +162,36 @@ def _git_output(repository: Path, *args: str) -> str:
     return completed.stdout.strip()
 
 
+def _validate_parser_bytecode_state(legacy_root: Path) -> None:
+    """Reject ignored executable caches that could bypass pinned source blobs."""
+    parser_root = legacy_root / "tools" / "otbm_atlas"
+    cache_dirs = sorted(path for path in parser_root.rglob("__pycache__") if path.is_dir())
+    bytecode_files = sorted(
+        path
+        for suffix in ("*.pyc", "*.pyo")
+        for path in parser_root.rglob(suffix)
+        if path.is_file()
+    )
+    contaminated = [*cache_dirs, *bytecode_files]
+    if contaminated:
+        try:
+            relative = contaminated[0].resolve().relative_to(legacy_root.resolve()).as_posix()
+        except ValueError:
+            relative = str(contaminated[0].resolve())
+        raise ProducerError(f"fresh source parser bytecode cache present: {relative}")
+
+
+def _load_fresh_parser_modules(bounded: Any, legacy_root: Path) -> tuple[Any, Any]:
+    """Import the pinned parser from source without creating bytecode caches."""
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        importlib.invalidate_caches()
+        return bounded._load_legacy_modules(legacy_root)
+    finally:
+        sys.dont_write_bytecode = previous
+
+
 def _validate_parser_source(profile: SourceGenerationProfile, legacy_root: Path) -> None:
     expected_root = legacy_root.resolve()
     actual_root = Path(_git_output(legacy_root, "rev-parse", "--show-toplevel")).resolve()
@@ -171,6 +201,7 @@ def _validate_parser_source(profile: SourceGenerationProfile, legacy_root: Path)
         raise ProducerError("fresh source parser repository revision mismatch")
     if _git_output(legacy_root, "status", "--porcelain=v1", "--untracked-files=all"):
         raise ProducerError("fresh source parser worktree is dirty")
+    _validate_parser_bytecode_state(legacy_root)
 
     for relative_path, expected_blob in profile.parser_blobs:
         path = legacy_root / relative_path
@@ -286,8 +317,11 @@ def load_runtime(
         appearance_path = _validate_source_generation_inputs(profile, map_path, asset_zip, assets_dir)
         _validate_parser_source(profile, legacy_root)
 
-    legacy_assets, legacy_semantic = bounded._load_legacy_modules(legacy_root)
-    if profile is not None:
+    if profile is None:
+        legacy_assets, legacy_semantic = bounded._load_legacy_modules(legacy_root)
+    else:
+        legacy_assets, legacy_semantic = _load_fresh_parser_modules(bounded, legacy_root)
+        _validate_parser_bytecode_state(legacy_root)
         _validate_loaded_parser_modules(legacy_root, legacy_assets, legacy_semantic)
     appearances = legacy_assets.load_object_appearances(appearance_path)
     sheets = legacy_assets.load_sprite_catalog(assets_dir)

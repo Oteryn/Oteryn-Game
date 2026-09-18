@@ -48,7 +48,7 @@ The required tracked parser blobs are:
 - `tools/otbm_atlas/semantic.py` — `a11343a472145aee4d9cf65c6ce28b3e4a71a2b3`
 - `tools/otbm_atlas/nodefile.py` — `bed6f7a803d9de485c1f03cbdca4be0cb1521d30`
 
-The parser repository MUST resolve its Git top-level to the supplied parser root, be at the exact commit, have a clean worktree including untracked files, and contain each required tracked file at the pinned Git blob. The fresh profile additionally requires a one-shot import context: `tools`, `tools.otbm_atlas`, every `tools.otbm_atlas.*` module and the qualified bounded-producer module must not already exist in `sys.modules` before admission. Pre-existing in-memory code is not trusted merely because its `__file__` points at the pinned checkout. The modules loaded by the producer after those checks MUST resolve under that exact parser root.
+The parser repository MUST resolve its Git top-level to the supplied parser root, be at the exact commit, have a clean worktree including untracked files, and contain each required tracked file at the pinned Git blob. The fresh profile additionally requires a one-shot import context: `tools`, `tools.otbm_atlas`, every `tools.otbm_atlas.*` module and the qualified bounded-producer module must not already exist in `sys.modules` before admission. Pre-existing in-memory code is not trusted merely because its `__file__` points at the pinned checkout. Ignored executable bytecode is also outside the trust boundary: `tools/otbm_atlas/**` MUST contain no `__pycache__` directory and no `.pyc`/`.pyo` file before parser import. Fresh-profile parser import MUST run with Python bytecode writes disabled, and the bytecode-cache absence MUST be checked again immediately after import. The modules loaded by the producer after those checks MUST resolve under that exact parser root.
 
 This is parser reuse, not parser adoption as Oteryn runtime authority and not permission to fork or rewrite it.
 
@@ -96,7 +96,7 @@ This profile does not authorize promotion of:
 
 ## 8. Failure behavior
 
-The fresh profile fails closed on map byte-length, SHA-256 or Git-blob mismatch; asset ZIP, catalogue or appearance digest mismatch; missing or multiple appearance DAT candidates; parser Git top-level or repository revision mismatch; dirty parser worktree; untracked/missing or wrong required parser blobs; any pre-existing parser/package/bounded-producer module in the fresh import context; loaded parser module outside the pinned parser root; malformed source rejected by strict parsing; and unknown or floating source-generation profile selection.
+The fresh profile fails closed on map byte-length, SHA-256 or Git-blob mismatch; asset ZIP, catalogue or appearance digest mismatch; missing or multiple appearance DAT candidates; parser Git top-level or repository revision mismatch; dirty parser worktree; untracked/missing or wrong required parser blobs; any `__pycache__`, `.pyc` or `.pyo` under the pinned parser package; any pre-existing parser/package/bounded-producer module in the fresh import context; loaded parser module outside the pinned parser root; malformed source rejected by strict parsing; and unknown or floating source-generation profile selection.
 
 No heuristic repair or fallback to a different generation is permitted.
 
@@ -113,7 +113,7 @@ Waypoint: 18
 
 The fresh header is `version=4`, `width=35143`, `height=34812`, `items_major=4`, `items_minor=4`.
 
-The patched producer then exhausted the same exact source through `iter_records(..., strict=True)` with the identical counts in 143.699 seconds. The historical default producer path separately accepted the historical exact map and rejected the fresh map with `canonical world.otbm SHA-256 mismatch`.
+The repaired producer exhausted the same exact source through `iter_records(..., strict=True)` with the identical counts. The same qualification first proved that a Git-clean pinned parser checkout containing ignored `tools/otbm_atlas/__pycache__/*.pyc` fails closed, then removed only those ignored caches and completed the fresh import/strict stream with zero parser bytecode caches created. The historical default producer path separately accepted the historical exact map and rejected the fresh map with `canonical world.otbm SHA-256 mismatch`.
 
 The explicit fresh profile initialized the existing producer successfully and projected a real fresh-map tile at `x=1356`, `y=3298`, `floor=0`; the canonical projected tile encoded to 774 bytes in that qualification run.
 

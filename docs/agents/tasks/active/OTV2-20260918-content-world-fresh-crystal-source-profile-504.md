@@ -61,7 +61,7 @@ Admit one explicit exact-digest fresh CrystalServer map generation through the e
 - [x] Fresh profile is explicit, exact-versioned and rejects unknown/floating profile IDs.
 - [x] Fresh map byte length, SHA-256 and Git blob are checked fail-closed.
 - [x] Asset ZIP/catalog/appearance identities are checked fail-closed.
-- [x] Pinned parser Git top-level/revision, clean worktree, tracked blobs and actual loaded module roots are checked fail-closed; the fresh profile also rejects any pre-existing parser/package/bounded-producer module cache.
+- [x] Pinned parser Git top-level/revision, clean worktree, tracked blobs and actual loaded module roots are checked fail-closed; the fresh profile rejects pre-existing parser/package/bounded-producer modules and ignored executable bytecode caches, and imports with bytecode writes disabled.
 - [x] Exact fresh map exhausts through the pinned parser and patched producer with `strict=True`.
 - [x] Existing real tile projection initializes without bypassing validation.
 - [x] Existing source-identity tests remain green; no target-sensitive fact is promoted.
@@ -76,18 +76,21 @@ The minimum sufficient change adds an explicit source-generation profile to the 
 
 A Windows checkout initially exposed that raw working-tree bytes are not a portable proxy for Git blob identity because line-ending checkout conversion can differ while the repository is clean. Parser provenance therefore uses exact Git top-level/`HEAD`, clean status, tracked-path verification, pinned-tree blobs and `git hash-object` for required tracked paths; source map integrity remains SHA-256 first with Git blob only as corroborating provenance.
 
-Independent review of initial PR head `3a5393f26fc6e2ac1a9306f98819d2204a504736` found one P1 provenance gap: a parser module imported from the pinned path while modified could remain executable from `sys.modules` after the checkout was restored clean. The fresh-profile path now rejects pre-existing `tools`, `tools.otbm_atlas*` and qualified bounded-producer modules before import. A regression test reproduces modified import -> clean checkout restore -> fail-closed admission. The historical/default path intentionally does not inherit this new fresh-profile import-context rule.
+Independent review of initial PR head `3a5393f26fc6e2ac1a9306f98819d2204a504736` found one P1 provenance gap: a parser module imported from the pinned path while modified could remain executable from `sys.modules` after the checkout was restored clean. The fresh-profile path now rejects pre-existing `tools`, `tools.otbm_atlas*` and qualified bounded-producer modules before import. A regression test reproduces modified import -> clean checkout restore -> fail-closed admission.
+
+Fresh independent review of exact head `e8eadc86548606b3c6efca4ebcb41a9cf8bad968` found a second P1 provenance gap: Git-ignored `__pycache__`/`.pyc` could survive a clean pinned checkout and be executed by a fresh Python interpreter. The repaired fresh path rejects parser-package bytecode caches before import, disables bytecode writes during import, rechecks cache absence after import, and retains the source/module-origin checks. A regression constructs a valid stale timestamp `.pyc`, proves a separate fresh interpreter executes it while Git remains clean and the tracked source blob is pinned, then proves the repaired gate rejects it. The historical/default path intentionally does not inherit these fresh-profile import-context rules.
 
 ## Validation
 
 ### Focused
 
 - `python -m py_compile tools/game-atlas-fullworld-source/producer.py tools/game-atlas-fullworld-source/self_test.py` — PASS.
-- `python tools/game-atlas-fullworld-source/self_test.py` — PASS.
+- `python tools/game-atlas-fullworld-source/self_test.py` — PASS, including fresh-interpreter stale `.pyc` reproduction/rejection and bytecode-write suppression coverage.
 - real historical default runtime with historical map/assets — PASS; profile fields remain `None`.
 - real historical default runtime with fresh map — expected FAIL: `canonical world.otbm SHA-256 mismatch`.
-- explicit fresh profile runtime + first real tile projection — PASS; profile revision 2, canonical tile 774 bytes.
-- exact fresh map full strict stream through patched producer — PASS: 1 MapHeader, 18,997,668 Tile, 33 Town, 18 Waypoint; 143.699 seconds.
+- real pinned parser checkout with ignored `tools/otbm_atlas/__pycache__/*.pyc` and otherwise clean Git state — expected FAIL: `fresh source parser bytecode cache present`.
+- after removing only ignored parser bytecode caches, explicit fresh profile runtime + first real tile projection — PASS; profile revision 2, canonical tile 774 bytes, post-import parser bytecode cache count 0.
+- exact fresh map full strict stream through the repaired producer — PASS on the current candidate: 1 MapHeader, 18,997,668 Tile, 33 Town, 18 Waypoint; post-stream parser bytecode cache count 0.
 - full visible-presentation/appearance census — PASS: 24,502,036 visible ground/top-level presentations; exactly one unresolved occurrence, server ID `2141`, matching the producer's already-supported explicit unresolved case.
 
 ### Component/integration
@@ -107,19 +110,19 @@ PR #657 exists. Repository-required exact-head checks are being rerun on the rep
 ## Self-review
 
 - method/reviewer: implementing `Oteryn: content world build` session, whole-diff review against #162 allocation `5728471141`.
-- material findings: raw working-tree hashing was rejected as parser Git-identity evidence on Windows; independent review then found the same-path stale `sys.modules` P1 on initial PR head `3a5393f26fc6e2ac1a9306f98819d2204a504736`.
-- repair: exact Git top-level/HEAD + tracked/pinned blob checks are retained, and the fresh profile now requires a clean one-shot parser import context with a regression reproducing the stale-cache case.
+- material findings: raw working-tree hashing was rejected as parser Git-identity evidence on Windows; independent review found the same-path stale `sys.modules` P1 on initial PR head `3a5393f26fc6e2ac1a9306f98819d2204a504736`, and fresh review found an ignored stale-bytecode P1 on `e8eadc86548606b3c6efca4ebcb41a9cf8bad968`.
+- repair: exact Git top-level/HEAD + tracked/pinned blob checks are retained; the fresh profile requires a clean one-shot parser import context, rejects parser-package bytecode caches before and after import, and imports with bytecode writes disabled. Regressions cover both same-process stale modules and valid stale `.pyc` execution in a separate fresh interpreter.
 - verdict: repaired candidate pending exact-head repository qualification and post-repair independent whole-diff review.
 
 ## Independent review
 
 - required: `YES` because the candidate adds a durable source-admission contract and provenance gate.
-- exact head/method/result: initial manual independent whole-diff review on `3a5393f26fc6e2ac1a9306f98819d2204a504736` found one P1 stale-parser-cache provenance gap; repaired candidate requires fresh exact-head hosted checks and post-repair review.
+- exact head/method/result: independent whole-diff review on `3a5393f26fc6e2ac1a9306f98819d2204a504736` found the stale-`sys.modules` P1; fresh independent review on `e8eadc86548606b3c6efca4ebcb41a9cf8bad968` found the ignored stale-bytecode P1. Both are repaired in the current candidate, which requires fresh exact-head hosted checks and another post-repair whole-diff review.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: independent P1 stale-parser-cache finding repaired with one-shot import guard and regression coverage
+last_progress: independent stale-module and stale-bytecode P1 findings repaired with source-only fresh import guards and regression coverage
 status: validating
 branch: agent/content-world-fresh-crystal-source-profile-504
 pr: 657
