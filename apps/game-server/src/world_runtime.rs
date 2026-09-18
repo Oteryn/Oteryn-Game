@@ -1,7 +1,8 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LogicalCell, PlacementKey, ProductionKey, ReferenceDefinitionKind, TransitionBinding,
-    TransitionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    LogicalCell, PlacementKey, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, TransitionBinding,
+    TransitionKey,
 };
 use crate::foundation::{
     CommandId, CommandIngress, CommandLifecycleError, CommandRef, CommandSemanticIdentity,
@@ -190,9 +191,8 @@ impl Display for WorldRuntimeError {
             Self::OutcomeExpired => {
                 formatter.write_str("terminal command outcome expired; reconcile state")
             }
-            Self::IngressClassificationMismatch => {
-                formatter.write_str("Foundation duplicate classification is internally inconsistent")
-            }
+            Self::IngressClassificationMismatch => formatter
+                .write_str("Foundation duplicate classification is internally inconsistent"),
         }
     }
 }
@@ -521,11 +521,7 @@ impl LocalObjectRuntime {
 
         let transition = self.transition_for(command.operation);
         if self.state == transition.target_state {
-            return PreparedTerminal::unchanged(
-                DISPOSITION_NO_CHANGE,
-                &self.state,
-                self.revision,
-            );
+            return PreparedTerminal::unchanged(DISPOSITION_NO_CHANGE, &self.state, self.revision);
         }
         if self.state != transition.source_state {
             return Err(WorldRuntimeError::InvalidBinding(
@@ -536,11 +532,7 @@ impl LocalObjectRuntime {
         if command.operation == LocalObjectOperation::Close
             && !self.collision_cells.is_disjoint(occupied_cells)
         {
-            return PreparedTerminal::unchanged(
-                DISPOSITION_OCCUPIED,
-                &self.state,
-                self.revision,
-            );
+            return PreparedTerminal::unchanged(DISPOSITION_OCCUPIED, &self.state, self.revision);
         }
 
         let Some(next_revision) = self.revision.checked_add(1) else {
@@ -611,30 +603,15 @@ fn absolute_collision_cells(
     let mut cells = BTreeSet::new();
     for member in members {
         let cell = LogicalCell {
-            x: placement
-                .address
-                .cell
-                .x
-                .checked_add(member.dx)
-                .ok_or(WorldRuntimeError::InvalidBinding(
-                    "collision footprint x coordinate overflow",
-                ))?,
-            y: placement
-                .address
-                .cell
-                .y
-                .checked_add(member.dy)
-                .ok_or(WorldRuntimeError::InvalidBinding(
-                    "collision footprint y coordinate overflow",
-                ))?,
-            z: placement
-                .address
-                .cell
-                .z
-                .checked_add(member.dz)
-                .ok_or(WorldRuntimeError::InvalidBinding(
-                    "collision footprint z coordinate overflow",
-                ))?,
+            x: placement.address.cell.x.checked_add(member.dx).ok_or(
+                WorldRuntimeError::InvalidBinding("collision footprint x coordinate overflow"),
+            )?,
+            y: placement.address.cell.y.checked_add(member.dy).ok_or(
+                WorldRuntimeError::InvalidBinding("collision footprint y coordinate overflow"),
+            )?,
+            z: placement.address.cell.z.checked_add(member.dz).ok_or(
+                WorldRuntimeError::InvalidBinding("collision footprint z coordinate overflow"),
+            )?,
         };
         if !cells.insert(cell) {
             return Err(WorldRuntimeError::InvalidBinding(
@@ -908,8 +885,8 @@ mod tests {
         let scope = RuntimeScopeRefV1::channel(world, channel);
         let connection_generation = ConnectionGeneration::new(connection_generation)
             .map_err(|_error: GenerationError| fixture_error("connection generation"))?;
-        let character_lease = CharacterLease::new(character, 1)
-            .map_err(|_error| fixture_error("character lease"))?;
+        let character_lease =
+            CharacterLease::new(character, 1).map_err(|_error| fixture_error("character lease"))?;
         let scope_generation = ScopeOwnershipGeneration::new(scope_generation)
             .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
         let snapshot = GameSessionAuthoritySnapshot::new(
@@ -950,8 +927,8 @@ mod tests {
         operation: LocalObjectOperation,
         expected_revision: u64,
     ) -> Result<LocalObjectCommand, WorldRuntimeError> {
-        let command_id = CommandId::new(id)
-            .map_err(|_error: CommandIdError| fixture_error("command id"))?;
+        let command_id =
+            CommandId::new(id).map_err(|_error: CommandIdError| fixture_error("command id"))?;
         let connection_generation = ConnectionGeneration::new(connection_generation)
             .map_err(|_error: GenerationError| fixture_error("connection generation"))?;
         Ok(LocalObjectCommand::new(
@@ -966,8 +943,8 @@ mod tests {
     }
 
     #[test]
-    fn open_close_then_replay_open_preserves_current_closed_state(
-    ) -> Result<(), WorldRuntimeError> {
+    fn open_close_then_replay_open_preserves_current_closed_state() -> Result<(), WorldRuntimeError>
+    {
         let content = synthetic_content("package-r1")?;
         let (authority_a, session_a, scope) = authority(10, 3, 1, 1)?;
         let (authority_b, session_b, _) = authority(11, 3, 1, 1)?;
@@ -1000,14 +977,17 @@ mod tests {
         assert_eq!(replay.disposition(), DISPOSITION_COMMITTED);
         assert_eq!(replay.state(), "oteryn:reference.state.open");
         assert_eq!(replay.revision(), 1);
-        assert_eq!(runtime.state_key().as_str(), "oteryn:reference.state.closed");
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.closed"
+        );
         assert_eq!(runtime.revision(), 2);
         Ok(())
     }
 
     #[test]
-    fn later_command_cannot_commit_ahead_of_earlier_pending_across_objects(
-    ) -> Result<(), WorldRuntimeError> {
+    fn later_command_cannot_commit_ahead_of_earlier_pending_across_objects()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (authority, session, scope) = authority(20, 4, 1, 1)?;
         let runtime_a = runtime_for(&content, scope, PLACEMENT_A, 1)?;
@@ -1034,8 +1014,8 @@ mod tests {
     }
 
     #[test]
-    fn stale_scope_or_session_authority_fails_before_ingress_or_mutation(
-    ) -> Result<(), WorldRuntimeError> {
+    fn stale_scope_or_session_authority_fails_before_ingress_or_mutation()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (_authority, session, scope) = authority(30, 5, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
@@ -1049,10 +1029,7 @@ mod tests {
         ));
         assert_eq!(
             ingress.next_command_id(),
-            Some(
-                CommandId::new(1)
-                    .map_err(|_error: CommandIdError| fixture_error("command id"))?
-            )
+            Some(CommandId::new(1).map_err(|_error: CommandIdError| fixture_error("command id"))?)
         );
         assert_eq!(runtime.revision(), 0);
 
@@ -1071,8 +1048,8 @@ mod tests {
     }
 
     #[test]
-    fn same_placement_in_two_channels_has_independent_overlay_state(
-    ) -> Result<(), WorldRuntimeError> {
+    fn same_placement_in_two_channels_has_independent_overlay_state()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (authority_a, session_a, scope_a) = authority(40, 6, 1, 1)?;
         let (_authority_b, _session_b, scope_b) = authority(41, 7, 1, 1)?;
@@ -1084,15 +1061,18 @@ mod tests {
 
         runtime_a.apply(&authority_a, &open, &mut ingress_a, &BTreeSet::new())?;
         assert!(runtime_a.blocking_cells().is_empty());
-        assert_eq!(runtime_b.state_key().as_str(), "oteryn:reference.state.closed");
+        assert_eq!(
+            runtime_b.state_key().as_str(),
+            "oteryn:reference.state.closed"
+        );
         assert_eq!(runtime_b.revision(), 0);
         assert_eq!(runtime_b.blocking_cells(), &before_b);
         Ok(())
     }
 
     #[test]
-    fn occupied_multicell_close_is_atomic_and_open_removes_only_own_contribution(
-    ) -> Result<(), WorldRuntimeError> {
+    fn occupied_multicell_close_is_atomic_and_open_removes_only_own_contribution()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (authority, session, scope) = authority(50, 8, 1, 1)?;
         let mut runtime_a = runtime_for(&content, scope, PLACEMENT_A, 1)?;
@@ -1104,25 +1084,26 @@ mod tests {
         assert!(runtime_a.blocking_cells().is_empty());
         assert_eq!(runtime_b.blocking_cells().len(), 2);
 
-        let occupied_cell = runtime_a
-            .collision_cells()
-            .iter()
-            .next()
-            .copied()
-            .ok_or(WorldRuntimeError::InvalidBinding(
-                "test fixture has no collision cell",
-            ))?;
+        let occupied_cell = runtime_a.collision_cells().iter().next().copied().ok_or(
+            WorldRuntimeError::InvalidBinding("test fixture has no collision cell"),
+        )?;
         let occupied = BTreeSet::from([occupied_cell]);
         let close = command(&runtime_a, session, 2, 1, LocalObjectOperation::Close, 1)?;
         let rejected = runtime_a.apply(&authority, &close, &mut ingress, &occupied)?;
         assert_eq!(rejected.disposition(), DISPOSITION_OCCUPIED);
-        assert_eq!(runtime_a.state_key().as_str(), "oteryn:reference.state.open");
+        assert_eq!(
+            runtime_a.state_key().as_str(),
+            "oteryn:reference.state.open"
+        );
         assert!(runtime_a.blocking_cells().is_empty());
 
-        let close_after_leave =
-            command(&runtime_a, session, 3, 1, LocalObjectOperation::Close, 1)?;
-        let committed =
-            runtime_a.apply(&authority, &close_after_leave, &mut ingress, &BTreeSet::new())?;
+        let close_after_leave = command(&runtime_a, session, 3, 1, LocalObjectOperation::Close, 1)?;
+        let committed = runtime_a.apply(
+            &authority,
+            &close_after_leave,
+            &mut ingress,
+            &BTreeSet::new(),
+        )?;
         assert_eq!(committed.disposition(), DISPOSITION_COMMITTED);
         assert_eq!(runtime_a.blocking_cells(), runtime_a.collision_cells());
         assert_eq!(runtime_a.blocking_cells().len(), 2);
@@ -1130,8 +1111,8 @@ mod tests {
     }
 
     #[test]
-    fn changed_duplicate_conflicts_without_reexecuting_transition(
-    ) -> Result<(), WorldRuntimeError> {
+    fn changed_duplicate_conflicts_without_reexecuting_transition() -> Result<(), WorldRuntimeError>
+    {
         let content = synthetic_content("package-r1")?;
         let (authority, session, scope) = authority(60, 9, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
@@ -1150,8 +1131,8 @@ mod tests {
     }
 
     #[test]
-    fn different_content_generation_is_terminally_rejected_while_scope_stays_live(
-    ) -> Result<(), WorldRuntimeError> {
+    fn different_content_generation_is_terminally_rejected_while_scope_stays_live()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let other_content = synthetic_content("package-r2")?;
         let (authority, session, scope) = authority(70, 10, 1, 1)?;
