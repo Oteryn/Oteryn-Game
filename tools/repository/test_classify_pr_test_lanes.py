@@ -16,13 +16,14 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = Path(__file__).with_name("classify_pr_test_lanes.py")
+ROUTING_CONTRACT = Path(__file__).with_name("validate_pr_routing_contract.py")
 
 
 def test_aggregate():
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text()
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
-    mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL")
+    mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL", "ROUTING_CONTRACT")
     rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
     conditional = ("RUST_WINDOWS", "ATLAS_FULLWORLD")
     env = dict.fromkeys(mandatory + rust + conditional, "success")
@@ -53,7 +54,7 @@ def test_aggregate():
         for value in ("", "TRUE", "unknown", "0"):
             assert not accepts({name: value}), (name, value)
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
-    print("Risk aggregate PASS: full/server/docs/Atlas controls, every selected failure and invalid output")
+    print("Risk aggregate PASS: routing contract plus full/server/docs/Atlas controls, every selected failure and invalid output")
 
 
 def fixture():
@@ -101,17 +102,27 @@ def test_snapshot_and_fallbacks(module):
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text()
     assert "  lanes:\n" in gate, "trusted-base lane job is absent"
     block = gate.split("  lanes:\n", 1)[1].split("  governance:\n", 1)[0]
-    script = textwrap.dedent(block.split("        run: |\n", 1)[1])
+    script = textwrap.dedent(
+        block.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    )
     with tempfile.TemporaryDirectory() as directory:
         output = Path(directory) / "output"
         env = dict(os.environ, GITHUB_OUTPUT=str(output), RUNNER_TEMP=directory)
         result = subprocess.run(["bash", "-c", script], cwd=directory, env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
+        assert result.returncode == 0 and output.read_text() == (
+            "rust=true\nwindows=true\natlas_fullworld=true\n"
+            "surface=unknown\nreason=protected-base-classifier-missing\n"
+            "routing_health=degraded\n"
+        ), result
         output.unlink()
         invalid = Path(directory) / "metadata.json"
         invalid.write_text("{}")
         result = subprocess.run([sys.executable, str(MODULE), str(invalid)], env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
+        assert result.returncode == 0 and output.read_text() == (
+            "rust=true\nwindows=true\natlas_fullworld=true\n"
+            "surface=unknown\nreason=classifier-or-metadata-failure\n"
+            "routing_health=degraded\n"
+        ), result
     print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
 
 
@@ -204,6 +215,35 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "trusted-base lane mutation passed policy"
+    routing = core.indented_yaml_mapping_block(original, "routing_contract", 2)
+    assert routing is not None
+    routing_mutations = [
+        routing.replace("  routing_contract:\n", "  routing_contract:\n    if: false\n"),
+        routing.replace("  routing_contract:\n", "  routing_contract:\n    continue-on-error: true\n"),
+        routing.replace("          ref: ${{ needs.scope.outputs.target_sha }}\n", "          ref: ${{ needs.scope.outputs.base_sha }}\n"),
+        routing.replace("          fetch-depth: 0\n", "          fetch-depth: 1\n"),
+        routing.replace(
+            '        run: python -I tools/repository/validate_pr_routing_contract.py "$RUNNER_TEMP/routing-contract-metadata.json"\n',
+            "        run: python -c 'pass'\n",
+        ),
+    ]
+    for changed in routing_mutations:
+        assert changed != routing
+        mutated = original.replace(routing, changed, 1)
+        def read(file, *args, **kwargs):
+            return mutated if file == path else read_text(file, *args, **kwargs)
+        with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert core.main() != 0, "routing-contract mutation passed policy"
+
+    validator_path = ROOT / "tools/repository/validate_pr_routing_contract.py"
+    validator_original = read_text(validator_path)
+    validator_changed = validator_original.replace("        return 1\n", "        return 0\n", 1)
+    assert validator_changed != validator_original
+    def read_validator(file, *args, **kwargs):
+        return validator_changed if file == validator_path else read_text(file, *args, **kwargs)
+    with patch.object(Path, "read_text", read_validator), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        assert core.main() != 0, "mutated routing-contract validator passed policy"
+
     atlas = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
     assert atlas is not None
     atlas_mutations = [
@@ -219,7 +259,7 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "Atlas fullworld gate mutation passed policy"
-    print("Trusted-base job mutation family PASS: lane selection and Atlas exact-head evidence remain fail closed")
+    print("Trusted-base job mutation family PASS: lane selection, routing contract and Atlas exact-head evidence remain fail closed")
 
 
 def test_candidate_modes(module):
@@ -270,13 +310,21 @@ def test_atlas_fullworld_surface(module):
     assert result["rust"] is True and result["windows"] is True, result
 
     for path in ("tools/game-atlas-fullworld-source/animated.py",
-                 "tools/game-atlas-fullworld-source/README.md",
-                 "tools/unreviewed/helper.py"):
+                 "tools/game-atlas-fullworld-source/README.md"):
         result = module.classify(
             [dict(filename=path, status="modified")], 1, fixture(), module.AUDITED_INPUT_SHA256,
             docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
         )
         assert result["rust"] is True and result["windows"] is True, (path, result)
+        assert result["reason"] == "explicit-atlas-non-cargo-full", (path, result)
+
+    result = module.classify(
+        [dict(filename="tools/unreviewed/helper.py", status="modified")],
+        1, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is True, result
+    assert result["reason"] == "unmodelled-input", result
 
     renamed = [{"filename": "tools/unreviewed/producer.py", "status": "renamed", "previous_filename": producer}]
     result = module.classify(
@@ -288,6 +336,95 @@ def test_atlas_fullworld_surface(module):
     assert module.atlas_fullworld_required([dict(filename=server, status="modified")], 1) is False
     assert module.atlas_fullworld_required([], 0) is True
     print("Atlas fullworld surface PASS: bounded paths reduce Windows only with dedicated lane; siblings/renames stay fail closed")
+
+
+def test_atlas_workflow_dispositions(module):
+    triggers = set()
+    for workflow in sorted((ROOT / ".github/workflows").glob("game-atlas-*.yml")):
+        for line in workflow.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("- "):
+                continue
+            value = stripped[2:].strip().strip("'\"")
+            if value.startswith("tools/game-atlas-"):
+                triggers.add(value)
+
+    assert triggers, "no specialized Atlas tool triggers discovered"
+    missing = sorted(path for path in triggers if module.atlas_path_disposition(path) is None)
+    assert not missing, f"Atlas workflow trigger lacks classifier disposition: {missing}"
+    for path in module.ATLAS_FULLWORLD_PATHS:
+        assert path in triggers, f"dedicated Atlas path is not covered by a specialized workflow: {path}"
+
+    assert module.atlas_path_disposition("tools/game-atlas-creatures/export.py") == "full"
+    assert module.atlas_path_disposition("tools/game-atlas-semantic-search/**") == "full"
+    assert module.atlas_path_disposition("tools/game-atlas-thais-fixture/export.py") == "full"
+    assert module.atlas_path_disposition("tools/unreviewed/helper.py") is None
+    print("Atlas workflow disposition PASS: every specialized Atlas tool trigger is explicitly dedicated or intentionally FULL")
+
+
+def test_routing_health_helpers(module):
+    assert module.routing_health(module.full("unreviewed-consumer-input-snapshot")) == "degraded"
+    assert module.routing_health(module.full("classifier-or-metadata-failure")) == "degraded"
+    assert module.routing_health(module.full("unmodelled-input")) == "unmodelled"
+    assert module.routing_health(module.full("explicit-atlas-non-cargo-full", "atlas")) == "modelled"
+    assert module.routing_health({
+        "rust": True, "windows": False, "surface": "server",
+        "reason": "server-only-reverse-closure-and-audited-inputs",
+    }) == "modelled"
+
+    assert module.audited_input_path(fixture(), "apps/client/src/lib.rs") is True
+    assert module.audited_input_path(fixture(), "Cargo.lock") is True
+    assert module.audited_input_path(fixture(), ".cargo/config.toml") is True
+    assert module.audited_input_path(fixture(), "apps/game-server/src/lib.rs") is False
+    print("Routing health helpers PASS: degraded/unmodelled/modelled states and audited input selection are explicit")
+
+
+def test_routing_contract_helpers(module):
+    assert ROUTING_CONTRACT.is_file(), "routing contract validator is missing"
+    spec = importlib.util.spec_from_file_location("routing_contract_validator", ROUTING_CONTRACT)
+    assert spec is not None and spec.loader is not None
+    validator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(validator)
+
+    validator.verify_classifier_matrix(module, fixture())
+    records = [
+        {"filename": "apps/game-server/src/lib.rs", "status": "modified"},
+        {"filename": "apps/client/src/lib.rs", "status": "modified"},
+        {"filename": "Cargo.lock", "status": "modified"},
+    ]
+    affected = validator.changed_audited_inputs(module, fixture(), records)
+    assert affected == ["Cargo.lock", "apps/client/src/lib.rs"], affected
+
+    health, changed = validator.evaluate_snapshot_health(
+        module, fixture(), module.AUDITED_INPUT_SHA256, records
+    )
+    assert health == "healthy" and changed == []
+
+    stale = "0" * 64
+    health, changed = validator.evaluate_snapshot_health(
+        module,
+        fixture(),
+        stale,
+        [{"filename": "apps/client/src/lib.rs", "status": "modified"}],
+    )
+    assert health == "degraded-candidate" and changed == ["apps/client/src/lib.rs"]
+
+    health, changed = validator.evaluate_snapshot_health(
+        module,
+        fixture(),
+        stale,
+        [{"filename": "apps/game-server/src/lib.rs", "status": "modified"}],
+    )
+    assert health == "stale-inherited" and changed == []
+
+    health, changed = validator.evaluate_snapshot_health(
+        module,
+        fixture(),
+        stale,
+        protected_main=True,
+    )
+    assert health == "stale-protected-main" and changed == []
+    print("Routing contract helpers PASS: healthy, candidate-degraded, inherited-stale and protected-main-stale states")
 
 
 def test_bounded_document_consumer_drift(module):
@@ -549,6 +686,9 @@ def main() -> int:
     spec.loader.exec_module(module)
     test_candidate_modes(module)
     test_atlas_fullworld_surface(module)
+    test_atlas_workflow_dispositions(module)
+    test_routing_health_helpers(module)
+    test_routing_contract_helpers(module)
     test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
     test_bounded_document_consumer_drift(module)

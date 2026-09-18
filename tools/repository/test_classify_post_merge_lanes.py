@@ -229,7 +229,7 @@ def main():
     assert "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc" in workflow
     # Execute the actual shell fallback with a failed toolchain dependency.
     block = policy.indented_yaml_mapping_block(workflow, "lanes", 2)
-    script = textwrap.dedent(block.split("        run: |\n", 1)[1])
+    script = textwrap.dedent(block.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0])
     with tempfile.TemporaryDirectory() as directory:
         output = Path(directory) / "outputs"
         rustup = Path(directory) / "rustup"
