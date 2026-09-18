@@ -131,6 +131,11 @@ class Session:
         r=self.current()
         if r and r.command_id==cid: return "REPLAY" if (r.intent,r.binding)==(i,b) else "CONFLICT"
         return "EXPIRED" if cid<self.next_id else "NEW"
+    def replay_result(self,cid:int,i:Intent,b:Binding)->Result:
+        if self.classify(cid,i,b)!="REPLAY": raise E("not replayable")
+        r=self.current()
+        if r is None or r.command_id!=cid: raise E("retained result missing")
+        return r.result
     def reserve(self,cid:int,i:Intent,b:Binding)->str:
         check_u64("cid",cid); i.valid(); b.valid()
         if cid<self.next_id: return self.classify(cid,i,b)
@@ -185,9 +190,10 @@ def tests()->int:
     raises(TooLarge,replace(mr,binding=replace(mr.binding,generation="g"*513)).encode); ok()
     ok(mr.encode()==enc and Record.decode(enc)==mr)
     raises(E,lambda:Record.decode(enc+b"x")); ok()
-    s=Session(); i,b=oi(),bi(); s.reserve(1,i,b); s.finish(1,rs(True,1)); before=s.mutations
-    ok(s.classify(1,i,b)=="REPLAY" and s.mutations==before)
-    ok(s.classify(1,replace(i,expected_revision=1),b)=="CONFLICT")
+    s=Session(); i,b=oi(),bi(); original=rs(True,1); s.reserve(1,i,b); s.finish(1,original); before=s.mutations
+    ok(s.classify(1,i,b)=="REPLAY" and s.replay_result(1,i,b)==original and s.mutations==before)
+    changed=(replace(i,expected_revision=1),replace(i,incarnation=2),replace(i,family="oteryn:reference.intent.local-object-close"),replace(i,placement="oteryn:reference.placement.other-door"))
+    ok(all(s.classify(1,x,b)=="CONFLICT" for x in changed))
     ok(s.classify(1,i,replace(b,generation="reference-generation-2"))=="CONFLICT")
     ok(s.classify(1,i,replace(b,transition_key="oteryn:reference.transition.close"))=="CONFLICT")
     s=Session(BOUND-1); s.pending[mr.command_id]=(mr.intent,mr.binding); called=[False]
@@ -195,9 +201,9 @@ def tests()->int:
     s=Session(); s.pending[mr.command_id]=(mr.intent,mr.binding); p=s.finish(mr.command_id,mr.result); ok(p.charge==BOUND and s.retained is p.payload)
     s=Session(); i1,b1=oi(),bi(); s.reserve(1,i1,b1); s.finish(1,rs(True,1)); i2,b2=ci(),bi("oteryn:reference.transition.close"); s.reserve(2,i2,b2); p=s.finish(2,rs(False,2)); ok(p.evicted==1 and s.classify(1,i1,b1)=="EXPIRED" and s.reserve(1,i1,b1)=="EXPIRED")
     s=Session(); s.reserve(1,oi(),bi()); s.reserve(2,ci(),bi("oteryn:reference.transition.close")); raises(Order,lambda:s.finish(2,rs(False,2))); ok(tuple(s.pending)==(1,2))
-    a,b=Session(),Session(); ai,ab=oi(),bi(); a.reserve(1,ai,ab); a.finish(1,rs(True,1)); b.reserve(1,ci(),bi("oteryn:reference.transition.close")); b.finish(1,rs(False,2)); before=a.mutations; ok(a.classify(1,ai,ab)=="REPLAY" and a.mutations==before and a.current() is not None and b.current() is not None)
-    status,recovered=Session.recover(a.next_id,True,a.retained); ok(status=="RESUMABLE" and recovered is not None and recovered.classify(1,ai,ab)=="REPLAY")
-    status,recovered=Session.recover(a.next_id,True,None); ok(status=="NON_RESUMABLE" and recovered is None)
+    a,b=Session(),Session(); ai,ab=oi(),bi(); a_result=rs(True,1); a.reserve(1,ai,ab); a.finish(1,a_result); b.reserve(1,ci(),bi("oteryn:reference.transition.close")); b.finish(1,rs(False,2)); before=a.mutations; ok(a.classify(1,ai,ab)=="REPLAY" and a.replay_result(1,ai,ab)==a_result and a.mutations==before and a.current() is not None and b.current() is not None)
+    status,recovered=Session.recover(a.next_id,True,a.retained); ok(status=="RESUMABLE" and recovered is not None and recovered.classify(1,ai,ab)=="REPLAY" and recovered.replay_result(1,ai,ab)==a_result)
+    missing_status,missing=Session.recover(a.next_id,True,None); corrupt_status,corrupt=Session.recover(a.next_id,True,a.retained+b"x"); ok(missing_status=="NON_RESUMABLE" and missing is None and corrupt_status=="NON_RESUMABLE" and corrupt is None)
     raises(OverflowError,lambda:add(U64_MAX,1)); ok()
     ok(set(Binding.__dataclass_fields__)=={"generation","transition_key"} and "policy_guard_refs" not in Record.__dataclass_fields__)
     return done
