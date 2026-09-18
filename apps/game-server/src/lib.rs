@@ -10,6 +10,9 @@ pub mod domain;
 pub mod durability;
 pub mod foundation;
 
+#[allow(dead_code)]
+pub(crate) mod world_runtime;
+
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
 mod foundation_recovery_tests;
