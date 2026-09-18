@@ -5,7 +5,7 @@ Repository: Oteryn/Oteryn-Game
 Branch: agent/content-world-d3-real-batch-measurement-504
 issue: 162
 pr: 662
-status: implementing
+status: validating
 Admission SHA: 7b61accf6148981cadaacebe707cae35bd4c0ae5
 Reconciled protected main: 5f8146e2d4fce7b1c0f8cabe9bd49e937ee7ea3d
 Owner: Oteryn: content world build
@@ -63,6 +63,38 @@ The first published material candidate is PR #662 head e946eb1d52bef7f03b0e55fa7
 
 Post-repair Python compile and the complete focused suite remain PASS, 16/16, including all 12 historical Issue #95 tests.
 
-External AI review remains subject to the final trigger classification. META AI review policy defaults to no external review for ordinary non-control-plane work; the task-specific rule requires one only if the final change creates a material parser/decompression/download/signing trust boundary. The D3 path reuses the existing bounded zlib decoder for locally generated evidence carriers and does not create a production/runtime/download trust boundary; final classification will be recorded after exact-head qualification.
+## Final real measurement on repaired committed seam
 
-Next action: publish this self-review repair on the same branch, then rerun the real measurement from the repaired committed exact head and add the two evidence files.
+Repair head 6ba0e9964f3e1182f4bf6da12e478ee3bfa70f88 was published through the guarded META 3.1 publication path before the final real run. The exact-source run then completed PASS.
+
+- typed CW2/pre-promotion input: 1,321,309 bytes, SHA-256 4838be7abf70a390b61f4a7578626c1a0b61725c1313e2046606110065d47ec7;
+- 2,048 source tile records / 2,463 source occurrences;
+- 0 bound definitions / 0 bound placements / 2,463 unresolved source occurrences;
+- normalized logical input: 1,953,208 bytes; logical identity 662b3ed148aff5646b95114c5859eac72355cb25b8ec8af6eb2d77abe88cd333;
+- 183 source-definition references; max 5 source placements per cell;
+- encoded maxima: cell 3,737 bytes; placement 738 bytes; source definition 162 bytes.
+
+Uncompressed carrier:
+- artifact 2,106,802 bytes;
+- raw/stored chunk bytes 1,916,220 / 1,916,220;
+- max raw/stored chunk 982,068 / 982,068 bytes;
+- build 680.778 ms; median cell lookup 75.678 ms;
+- one-record scratch update changes one chunk plus manifest, 1,172,666 rebuilt/patch bytes.
+
+zlib level-6 carrier:
+- artifact 265,659 bytes;
+- raw/stored chunk bytes 1,916,220 / 75,079;
+- raw/stored compression ratio 25.522716:1;
+- max raw/stored chunk 982,068 / 38,812 bytes;
+- build 703.895 ms; median cell lookup 74.854 ms;
+- one-record scratch update changes the same one chunk plus manifest, 229,427 rebuilt/patch bytes.
+
+Determinism PASS: source enumeration order, source-shard metadata, rechunk identity, same logical index across both physical carriers and exact-byte repeated builds. Negative evidence PASS: wrong source profile, wrong carrier version, unknown critical feature, malformed placement index, oversized raw chunk, decompression-ratio fence, plus per-carrier corruption and truncation rejection. Client projection uses a positive shared-field allowlist and excludes server_only metadata.
+
+No production hard maxima are selected. Production authority and Reference parity remain NONE. SPIKE_RESULT != OWNER_FORMAT_DECISION remains binding.
+
+## Independent review classification
+
+NOT_REQUIRED under the current META AI review policy and the task-specific D3 trigger. This is ordinary offline measurement tooling, not control-plane/high-risk work. It does not add a new parser, downloader, signing boundary, production/runtime loader or new decompression primitive: zlib decoding already existed in the historical spike and D3 reuses the same bounded_decompress implementation only for carriers generated inside the local measurement workflow. The new container checks add fail-closed size/hash/profile/version/index fences rather than broadening runtime trust.
+
+Next action: commit the two generated evidence files plus this final checkpoint, publish the exact candidate, then run exact-head repository qualification and whole-diff final self-review.
