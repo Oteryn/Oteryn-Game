@@ -71,18 +71,18 @@ def test_explicit_source_identity_binding() -> None:
         export_record_id="presentation:abc",
         appearance_source_id=2141,
         definition_family="LOCAL_OBJECT",
-        production_key="oteryn:reference.object.test-door",
+        production_key="oteryn:reference.object.local-door",
         definition_revision="definition-r1",
-        placement_key="oteryn:reference.placement.test-door",
+        placement_key="oteryn:reference.placement.local-door",
     )
     adapted = producer.adapt_presentation_source_identity(presentation, binding)
     assert adapted["identity_disposition"] == "EXPLICITLY_BOUND"
     assert adapted["typed_definition_ref"] == {
         "definition_family": "LOCAL_OBJECT",
-        "production_key": "oteryn:reference.object.test-door",
+        "production_key": "oteryn:reference.object.local-door",
         "definition_revision": "definition-r1",
     }
-    assert adapted["placement_key"] == "oteryn:reference.placement.test-door"
+    assert adapted["placement_key"] == "oteryn:reference.placement.local-door"
     assert presentation["canonical_entity_id"] is None
     assert presentation["entity_identity_state"] == "UNRESOLVED"
 
@@ -111,9 +111,9 @@ def test_binding_mismatch_fails_closed() -> None:
         export_record_id="presentation:other",
         appearance_source_id=2141,
         definition_family="LOCAL_OBJECT",
-        production_key="oteryn:reference.object.test-door",
+        production_key="oteryn:reference.object.local-door",
         definition_revision="definition-r1",
-        placement_key="oteryn:reference.placement.test-door",
+        placement_key="oteryn:reference.placement.local-door",
     )
     try:
         producer.adapt_presentation_source_identity(presentation, mismatched)
@@ -121,6 +121,35 @@ def test_binding_mismatch_fails_closed() -> None:
         assert "export_record_id mismatch" in str(exc)
     else:
         raise AssertionError("mismatched source occurrence was accepted")
+
+
+def test_binding_rejects_nonproduction_and_oversize_content_identity() -> None:
+    base = dict(
+        export_record_id="presentation:abc",
+        appearance_source_id=2141,
+        definition_family="LOCAL_OBJECT",
+        production_key="oteryn:reference.object.local-door",
+        definition_revision="definition-r1",
+        placement_key="oteryn:reference.placement.local-door",
+    )
+    invalid_values = (
+        ("production_key", "oteryn:reference.object.fixture-door"),
+        ("production_key", "oteryn:reference.object.test-door"),
+        ("production_key", "oteryn:" + "x" * 506),
+        ("definition_revision", "evidence-r1"),
+        ("definition_revision", "r" * 513),
+        ("placement_key", "oteryn:reference.placement.synthetic-door"),
+        ("placement_key", "oteryn:" + "p" * 506),
+    )
+    for field, value in invalid_values:
+        values = dict(base)
+        values[field] = value
+        try:
+            producer.validate_source_identity_binding(producer.SourceIdentityBinding(**values))
+        except producer.ProducerError:
+            pass
+        else:
+            raise AssertionError(f"invalid {field} unexpectedly accepted: {value[:64]!r}")
 
 
 def test_tile_adapter_rejects_stale_binding() -> None:
@@ -139,9 +168,9 @@ def test_tile_adapter_rejects_stale_binding() -> None:
         export_record_id="presentation:stale",
         appearance_source_id=2141,
         definition_family="LOCAL_OBJECT",
-        production_key="oteryn:reference.object.test-door",
+        production_key="oteryn:reference.object.local-door",
         definition_revision="definition-r1",
-        placement_key="oteryn:reference.placement.test-door",
+        placement_key="oteryn:reference.placement.local-door",
     )
     try:
         producer.adapt_tile_source_identities(record, {"presentation:stale": stale})
@@ -157,6 +186,7 @@ def main() -> int:
     test_explicit_source_identity_binding()
     test_unbound_source_identity_stays_unresolved()
     test_binding_mismatch_fails_closed()
+    test_binding_rejects_nonproduction_and_oversize_content_identity()
     test_tile_adapter_rejects_stale_binding()
     print("game-atlas-fullworld-source self-test: PASS")
     return 0

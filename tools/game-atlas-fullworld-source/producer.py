@@ -251,8 +251,35 @@ class SourceIdentityBinding:
     placement_key: str
 
 
+PRODUCTION_MAX_KEY_BYTES = 512
+PRODUCTION_MAX_ATOM_BYTES = 512
+
+
+def _has_nonproduction_marker(value: str) -> bool:
+    """Mirror the existing ProductionKey/ProductionAtom release marker fence."""
+
+    lower = value.lower()
+    segments = lower
+    for separator in ":./_-":
+        segments = segments.replace(separator, " ")
+    has_test_segment = "test" in segments.split()
+    return (
+        "fixture" in lower
+        or "synthetic" in lower
+        or "evidence" in lower
+        or "test-only" in lower
+        or has_test_segment
+    )
+
+
 def _valid_namespaced_key(value: str) -> bool:
-    if not value or not value.isascii() or ":" not in value:
+    if (
+        not value
+        or not value.isascii()
+        or len(value) > PRODUCTION_MAX_KEY_BYTES
+        or ":" not in value
+        or _has_nonproduction_marker(value)
+    ):
         return False
     namespace, local = value.split(":", 1)
     if not namespace or not local:
@@ -261,7 +288,13 @@ def _valid_namespaced_key(value: str) -> bool:
 
 
 def _valid_revision(value: str) -> bool:
-    return bool(value) and value.isascii() and all(0x21 <= ord(char) <= 0x7E for char in value)
+    return (
+        bool(value)
+        and value.isascii()
+        and len(value) <= PRODUCTION_MAX_ATOM_BYTES
+        and all(0x21 <= ord(char) <= 0x7E for char in value)
+        and not _has_nonproduction_marker(value)
+    )
 
 
 def validate_source_identity_binding(binding: SourceIdentityBinding) -> None:
