@@ -11,9 +11,7 @@ fn world_id() -> Result<WorldId, ContentError> {
 }
 
 fn accepted_case_key() -> Result<ProductionKey, ContentError> {
-    ProductionKey::new(
-        "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
-    )
+    ProductionKey::new("oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1")
 }
 
 fn accepted_case_binding() -> Result<EvidenceBindingRef, ContentError> {
