@@ -911,3 +911,5 @@ mod corrective_tests {
         Ok(())
     }
 }
+
+// CI routing final probe for Issue #651; inert and must not merge.
