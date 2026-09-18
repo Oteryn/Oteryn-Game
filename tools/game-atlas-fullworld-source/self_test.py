@@ -58,9 +58,106 @@ def test_missing_is_explicit() -> None:
     assert stats["unresolved_presentation_count"] == 1
 
 
+def test_explicit_source_identity_binding() -> None:
+    presentation = {
+        "export_record_id": "presentation:abc",
+        "appearance_source_id": 2141,
+        "source_role": "tile_item",
+        "presentation_order": {"plane": 0, "order": 3},
+        "canonical_entity_id": None,
+        "entity_identity_state": "UNRESOLVED",
+    }
+    binding = producer.SourceIdentityBinding(
+        export_record_id="presentation:abc",
+        appearance_source_id=2141,
+        definition_family="LOCAL_OBJECT",
+        production_key="oteryn:reference.object.test-door",
+        definition_revision="definition-r1",
+        placement_key="oteryn:reference.placement.test-door",
+    )
+    adapted = producer.adapt_presentation_source_identity(presentation, binding)
+    assert adapted["identity_disposition"] == "EXPLICITLY_BOUND"
+    assert adapted["typed_definition_ref"] == {
+        "definition_family": "LOCAL_OBJECT",
+        "production_key": "oteryn:reference.object.test-door",
+        "definition_revision": "definition-r1",
+    }
+    assert adapted["placement_key"] == "oteryn:reference.placement.test-door"
+    assert presentation["canonical_entity_id"] is None
+    assert presentation["entity_identity_state"] == "UNRESOLVED"
+
+
+def test_unbound_source_identity_stays_unresolved() -> None:
+    presentation = {
+        "export_record_id": "presentation:def",
+        "appearance_source_id": 3687,
+        "source_role": "tile_item",
+        "presentation_order": {"plane": 0, "order": 1},
+    }
+    adapted = producer.adapt_presentation_source_identity(presentation, None)
+    assert adapted["identity_disposition"] == "UNRESOLVED_SOURCE_IDENTITY"
+    assert adapted["typed_definition_ref"] is None
+    assert adapted["placement_key"] is None
+
+
+def test_binding_mismatch_fails_closed() -> None:
+    presentation = {
+        "export_record_id": "presentation:abc",
+        "appearance_source_id": 2141,
+        "source_role": "tile_item",
+        "presentation_order": {"plane": 0, "order": 0},
+    }
+    mismatched = producer.SourceIdentityBinding(
+        export_record_id="presentation:other",
+        appearance_source_id=2141,
+        definition_family="LOCAL_OBJECT",
+        production_key="oteryn:reference.object.test-door",
+        definition_revision="definition-r1",
+        placement_key="oteryn:reference.placement.test-door",
+    )
+    try:
+        producer.adapt_presentation_source_identity(presentation, mismatched)
+    except producer.ProducerError as exc:
+        assert "export_record_id mismatch" in str(exc)
+    else:
+        raise AssertionError("mismatched source occurrence was accepted")
+
+
+def test_tile_adapter_rejects_stale_binding() -> None:
+    record = {
+        "record_type": "tile",
+        "presentation": [
+            {
+                "export_record_id": "presentation:abc",
+                "appearance_source_id": 2141,
+                "source_role": "tile_item",
+                "presentation_order": {"plane": 0, "order": 0},
+            }
+        ],
+    }
+    stale = producer.SourceIdentityBinding(
+        export_record_id="presentation:stale",
+        appearance_source_id=2141,
+        definition_family="LOCAL_OBJECT",
+        production_key="oteryn:reference.object.test-door",
+        definition_revision="definition-r1",
+        placement_key="oteryn:reference.placement.test-door",
+    )
+    try:
+        producer.adapt_tile_source_identities(record, {"presentation:stale": stale})
+    except producer.ProducerError as exc:
+        assert "does not match tile occurrence" in str(exc)
+    else:
+        raise AssertionError("stale source binding was accepted")
+
+
 def main() -> int:
     test_resolved_delegates()
     test_missing_is_explicit()
+    test_explicit_source_identity_binding()
+    test_unbound_source_identity_stays_unresolved()
+    test_binding_mismatch_fails_closed()
+    test_tile_adapter_rejects_stale_binding()
     print("game-atlas-fullworld-source self-test: PASS")
     return 0
 
