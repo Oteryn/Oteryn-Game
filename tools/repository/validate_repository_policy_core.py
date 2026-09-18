@@ -48,6 +48,7 @@ EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
 )
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a1916163861957a899aa2ed5f632b56bf"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "d78ef896fc4bad7cf8800b2b9c4084a96e1a1c33290d1a6500449e3fb100c004"
+EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "2c06a0d52c5315ea7b381c11c0271bb9984cef55"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "c59b30fde7538e738346eec03a602081dc4ac2d6"
 EXPECTED_POST_MERGE_RUST_SHA256 = "8378d595272b8d134b261835eb3ff8aa9b1094dd317f26d333e10ccc1f65fe17"
@@ -199,6 +200,12 @@ def main() -> int:
     for relative in REQUIRED_FILES:
         if not (ROOT / relative).is_file():
             errors.append(f"missing required repository-governance file: {relative}")
+
+    routing_validator = ROOT / "tools/repository/validate_pr_routing_contract.py"
+    if routing_validator.is_file():
+        validator_text = routing_validator.read_text(encoding="utf-8")
+        if git_blob_sha(validator_text.encode("utf-8")) != EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB:
+            errors.append("routing contract validator must equal the reviewed fail-closed implementation")
 
     try:
         policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
