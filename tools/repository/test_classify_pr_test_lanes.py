@@ -394,7 +394,37 @@ def test_routing_contract_helpers(module):
     ]
     affected = validator.changed_audited_inputs(module, fixture(), records)
     assert affected == ["Cargo.lock", "apps/client/src/lib.rs"], affected
-    print("Routing contract helpers PASS: real-metadata matrix and candidate-caused audited-input detection")
+
+    health, changed = validator.evaluate_snapshot_health(
+        module, fixture(), module.AUDITED_INPUT_SHA256, records
+    )
+    assert health == "healthy" and changed == []
+
+    stale = "0" * 64
+    health, changed = validator.evaluate_snapshot_health(
+        module,
+        fixture(),
+        stale,
+        [{"filename": "apps/client/src/lib.rs", "status": "modified"}],
+    )
+    assert health == "degraded-candidate" and changed == ["apps/client/src/lib.rs"]
+
+    health, changed = validator.evaluate_snapshot_health(
+        module,
+        fixture(),
+        stale,
+        [{"filename": "apps/game-server/src/lib.rs", "status": "modified"}],
+    )
+    assert health == "stale-inherited" and changed == []
+
+    health, changed = validator.evaluate_snapshot_health(
+        module,
+        fixture(),
+        stale,
+        protected_main=True,
+    )
+    assert health == "stale-protected-main" and changed == []
+    print("Routing contract helpers PASS: healthy, candidate-degraded, inherited-stale and protected-main-stale states")
 
 
 def test_bounded_document_consumer_drift(module):
