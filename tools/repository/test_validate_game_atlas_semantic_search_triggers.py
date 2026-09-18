@@ -16,6 +16,7 @@ SEMANTIC_WORKFLOW = ROOT / ".github/workflows/game-atlas-semantic-search.yml"
 STATIC_WORKFLOW = ROOT / ".github/workflows/game-atlas-static-creatures.yml"
 
 FULLWORLD_PRODUCER = "tools/game-atlas-fullworld-source/producer.py"
+FULLWORLD_SELF_TEST = "tools/game-atlas-fullworld-source/self_test.py"
 THAIS_PRODUCER = "tools/game-atlas-thais-fixture/export.py"
 CREATURE_EXPORT = "tools/game-atlas-creatures/export.py"
 CREATURE_IDENTITY = "tools/game-atlas-creatures/identity.py"
@@ -725,7 +726,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         self.assertIn('"game-atlas-fullworld-source" / "producer.py"', semantic_export)
         self.assertIn("tools/game-atlas-thais-fixture/export.py", fullworld)
         self.assertRegex(creature_export, r"from identity import .*stable_creature_entity_id")
-        for dependency in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, THAIS_PRODUCER):
+        for dependency in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, FULLWORLD_SELF_TEST, THAIS_PRODUCER):
             self.assertIn(dependency, _paths(self.semantic, "pull_request"))
             self.assertIn(dependency, _paths(self.semantic, "push"))
         self.assertIn(CREATURE_IDENTITY, _paths(self.static, "pull_request"))
@@ -979,7 +980,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
 
     def test_every_control_is_mutation_protected_without_blob_binding(self) -> None:
         mutations: list[tuple[str, str]] = []
-        for path in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, THAIS_PRODUCER):
+        for path in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, FULLWORLD_SELF_TEST, THAIS_PRODUCER):
             mutations.append((self.semantic.replace(f"      - '{path}'\n", "", 1), self.static))
             push_pos = self.semantic.index("  push:")
             mutations.append((
