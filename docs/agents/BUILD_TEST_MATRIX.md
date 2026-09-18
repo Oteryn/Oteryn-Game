@@ -54,9 +54,12 @@ The lane job checks out and verifies the exact protected base, then runs its cla
 | Proven surface | Required Rust lanes |
 |---|---|
 | Neutral root/documentation Markdown | none; all always-required checks still run |
+| Audited Atlas fullworld producer/self-test paths | exact-head Atlas fullworld producer + direct content-source consumer gate; Rust/Windows only when another changed path selects them |
 | Server-only, including durability/migrations/reconnect | Linux workspace + real PG17.6 + strict Clippy, policy and supply chain |
 | Client, shared or simulation | full Linux/PG + Windows production/SIM + policy and supply chain |
 | Control plane, dependencies/build inputs, unknown/mixed/incomplete evidence | full set |
+
+The Atlas fullworld reduction is intentionally narrower than a directory whitelist. Only `tools/game-atlas-fullworld-source/producer.py` and `self_test.py` are modeled. An Atlas-only PR selects the dedicated exact-head Python gate without Rust/Windows; a server + Atlas PR keeps the proven server lane plus that gate; client/shared/simulation impact still selects FULL. Other files in the same directory, renames to unowned paths, malformed evidence and unknown tools remain FULL. The gate compiles and runs the producer self-test plus the direct `reference-world-corridor-census/content_source_batch` consumer self-test. Full Merge Queue qualification remains unchanged. Protected-main post-merge routing remains conservative for Atlas-only changes until separately qualified.
 
 Server-only Windows/SIM omission also requires the reviewed SHA256 snapshot of all non-server workspace package trees and root Cargo/toolchain/build inputs. Cargo alone does not model include macros, symlinks or runtime file reads. Current reviewed consumers do not read server inputs; any consumer-tree/dependency change disables the optimization until a reviewed classifier update adopts its new input contract. Symlinks/submodules select FULL. This deliberately conservative snapshot may reduce savings after unrelated consumer changes; it never silently assumes their new input dependencies are safe.
 
