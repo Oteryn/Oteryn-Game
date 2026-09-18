@@ -154,7 +154,7 @@ impl ReferenceEvidenceAuthority {
         }
         let mut case_ids = BTreeSet::new();
         for case in &manifest.cases {
-            if case.case_id.is_empty() || !case_ids.insert(case.case_id.as_str()) {
+            if case.case_id.is_empty() || !case_ids.insert(case.case_id.clone()) {
                 return Err(ContentError::InvalidArtifact(
                     "accepted Reference evidence manifest case identity is invalid",
                 ));
@@ -656,10 +656,9 @@ fn validate_placement(
     Ok(())
 }
 
-fn validate_ordering(
+fn validate_ordering_structure(
     placements: &[PlacementRef],
     ordered: &OrderedPlacementSet,
-    authority: &ReferenceEvidenceAuthority,
 ) -> Result<(), ContentError> {
     let mut seen = BTreeSet::new();
     for key in &ordered.placement_keys {
@@ -673,8 +672,14 @@ fn validate_ordering(
             });
         }
     }
-    ordered.evidence.require_reference_promotion(authority)?;
     Ok(())
+}
+
+fn validate_ordering_evidence(
+    ordered: &OrderedPlacementSet,
+    authority: &ReferenceEvidenceAuthority,
+) -> Result<(), ContentError> {
+    ordered.evidence.require_reference_promotion(authority)
 }
 
 fn validate_transition(
@@ -746,10 +751,6 @@ pub fn link_reference_playable(
             ));
         }
     }
-    for placement in &source.placements {
-        validate_placement(&source, placement, &evidence_authority)?;
-    }
-
     let mut ordering_keys = BTreeSet::new();
     for ordered in &source.ordered_placements {
         if !ordering_keys.insert(ordered.field_key.clone()) {
@@ -757,7 +758,14 @@ pub fn link_reference_playable(
                 ordered.field_key.as_str().to_owned(),
             ));
         }
-        validate_ordering(&source.placements, ordered, &evidence_authority)?;
+        validate_ordering_structure(&source.placements, ordered)?;
+    }
+
+    for placement in &source.placements {
+        validate_placement(&source, placement, &evidence_authority)?;
+    }
+    for ordered in &source.ordered_placements {
+        validate_ordering_evidence(ordered, &evidence_authority)?;
     }
 
     let mut transition_keys = BTreeSet::new();
