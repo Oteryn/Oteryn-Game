@@ -24,8 +24,9 @@ def test_aggregate():
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL")
     rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
-    env = dict.fromkeys(mandatory + rust + ("RUST_WINDOWS",), "success")
-    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true")
+    conditional = ("RUST_WINDOWS", "ATLAS_FULLWORLD")
+    env = dict.fromkeys(mandatory + rust + conditional, "success")
+    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true", ATLAS_FULLWORLD_REQUIRED="true")
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -37,15 +38,22 @@ def test_aggregate():
 
     assert accepts({})
     assert accepts({"WINDOWS_REQUIRED": "false", "RUST_WINDOWS": "skipped"}), "proven server-only lane cannot omit Windows"
-    assert accepts(dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped") | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false"})
-    for name in mandatory + rust + ("RUST_WINDOWS",):
+    assert accepts({"ATLAS_FULLWORLD_REQUIRED": "false", "ATLAS_FULLWORLD": "skipped"})
+    assert accepts(dict.fromkeys(rust + conditional, "skipped") | {
+        "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false", "ATLAS_FULLWORLD_REQUIRED": "false"
+    })
+    assert accepts(dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped") | {
+        "RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false", "ATLAS_FULLWORLD_REQUIRED": "true",
+        "ATLAS_FULLWORLD": "success",
+    }), "Atlas-only lane must not require Rust or Windows"
+    for name in mandatory + rust + conditional:
         for value in ("failure", "cancelled", "skipped", ""):
             assert not accepts({name: value}), (name, value)
-    for name in ("RUST_REQUIRED", "WINDOWS_REQUIRED"):
+    for name in ("RUST_REQUIRED", "WINDOWS_REQUIRED", "ATLAS_FULLWORLD_REQUIRED"):
         for value in ("", "TRUE", "unknown", "0"):
             assert not accepts({name: value}), (name, value)
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
-    print("Risk aggregate PASS: full/server/docs controls, every selected failure and invalid output")
+    print("Risk aggregate PASS: full/server/docs/Atlas controls, every selected failure and invalid output")
 
 
 def fixture():
@@ -98,12 +106,12 @@ def test_snapshot_and_fallbacks(module):
         output = Path(directory) / "output"
         env = dict(os.environ, GITHUB_OUTPUT=str(output), RUNNER_TEMP=directory)
         result = subprocess.run(["bash", "-c", script], cwd=directory, env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
         output.unlink()
         invalid = Path(directory) / "metadata.json"
         invalid.write_text("{}")
         result = subprocess.run([sys.executable, str(MODULE), str(invalid)], env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
     print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
 
 
@@ -186,6 +194,7 @@ def test_trusted_job_mutations():
                  block.replace("  lanes:\n", "  lanes:\n    continue-on-error: true\n"),
                  block.replace("rust=true", "rust=false"),
                  block.replace("windows=true", "windows=false"),
+                 block.replace("atlas_fullworld=true", "atlas_fullworld=false"),
                  block.replace("          python -I", "          exit 0\n          python -I")]
     for changed in mutations:
         assert changed != block
@@ -194,7 +203,22 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "trusted-base lane mutation passed policy"
-    print("Trusted-base job mutation family PASS: candidate checkout, skip, tolerance, weakened fallback, early exit")
+    atlas = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
+    assert atlas is not None
+    atlas_mutations = [
+        atlas.replace("    if: needs.lanes.outputs.atlas_fullworld == 'true'\n", "    if: false\n"),
+        atlas.replace("          ref: ${{ needs.scope.outputs.target_sha }}\n", "          ref: ${{ needs.scope.outputs.base_sha }}\n"),
+        atlas.replace("python -S tools/game-atlas-fullworld-source/self_test.py", "python -S -c 'pass'"),
+        atlas.replace("  atlas_fullworld:\n", "  atlas_fullworld:\n    continue-on-error: true\n"),
+    ]
+    for changed in atlas_mutations:
+        assert changed != atlas
+        mutated = original.replace(atlas, changed, 1)
+        def read(file, *args, **kwargs):
+            return mutated if file == path else read_text(file, *args, **kwargs)
+        with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert core.main() != 0, "Atlas fullworld gate mutation passed policy"
+    print("Trusted-base job mutation family PASS: lane selection and Atlas exact-head evidence remain fail closed")
 
 
 def test_candidate_modes(module):
@@ -210,6 +234,59 @@ def test_candidate_modes(module):
                                  docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=False)
         assert result["rust"] and result["windows"], "missing candidate modes permitted reduced lanes"
     print("Candidate mode family PASS: executable/regular controls, symlink/gitlink rejection and missing evidence FULL")
+
+
+def test_atlas_fullworld_surface(module):
+    producer = "tools/game-atlas-fullworld-source/producer.py"
+    self_test = "tools/game-atlas-fullworld-source/self_test.py"
+    server = "apps/game-server/src/content/reference_playable.rs"
+    client = "apps/client/src/lib.rs"
+
+    for path in (producer, self_test):
+        result = module.classify(
+            [dict(filename=path, status="modified")], 1, fixture(), module.AUDITED_INPUT_SHA256,
+            docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+        )
+        assert result == {
+            "rust": False, "windows": False, "surface": "atlas-fullworld",
+            "reason": "audited-atlas-fullworld-source",
+        }, result
+        assert module.atlas_fullworld_required([dict(filename=path, status="modified")], 1) is True
+
+    result = module.classify(
+        [dict(filename=server, status="modified"), dict(filename=producer, status="modified")],
+        2, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is False, result
+    assert result["surface"] == "server" and result["reason"].endswith("-plus-atlas-fullworld"), result
+
+    result = module.classify(
+        [dict(filename=client, status="modified"), dict(filename=producer, status="modified")],
+        2, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is True, result
+
+    for path in ("tools/game-atlas-fullworld-source/animated.py",
+                 "tools/game-atlas-fullworld-source/README.md",
+                 "tools/unreviewed/helper.py"):
+        result = module.classify(
+            [dict(filename=path, status="modified")], 1, fixture(), module.AUDITED_INPUT_SHA256,
+            docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+        )
+        assert result["rust"] is True and result["windows"] is True, (path, result)
+
+    renamed = [{"filename": "tools/unreviewed/producer.py", "status": "renamed", "previous_filename": producer}]
+    result = module.classify(
+        renamed, 1, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is True, result
+    assert module.atlas_fullworld_required(renamed, 1) is True
+    assert module.atlas_fullworld_required([dict(filename=server, status="modified")], 1) is False
+    assert module.atlas_fullworld_required([], 0) is True
+    print("Atlas fullworld surface PASS: bounded paths reduce Windows only with dedicated lane; siblings/renames stay fail closed")
 
 
 def test_bounded_document_consumer_drift(module):
@@ -470,6 +547,7 @@ def main() -> int:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     test_candidate_modes(module)
+    test_atlas_fullworld_surface(module)
     test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
     test_bounded_document_consumer_drift(module)
@@ -495,6 +573,7 @@ def main() -> int:
         "Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "apps/game-server/build.rs",
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
         "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
+        "tools/game-atlas-fullworld-source/animated.py", "tools/game-atlas-fullworld-source/README.md",
         "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
     )
     for path in full_paths:
