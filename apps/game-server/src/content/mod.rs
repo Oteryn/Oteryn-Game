@@ -35,6 +35,7 @@ mod digest;
 mod fixture;
 mod model;
 mod production;
+mod reference_playable;
 
 pub use activation::*;
 #[cfg(test)]
@@ -67,6 +68,7 @@ pub use production::{
     PackageManifestBinding, ProductionAtom, ProductionKey, Sha256HexDigest,
     compile_first_production,
 };
+pub use reference_playable::*;
 
 #[cfg(test)]
 mod tests;
