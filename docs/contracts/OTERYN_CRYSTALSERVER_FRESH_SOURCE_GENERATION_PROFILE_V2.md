@@ -48,7 +48,7 @@ The required tracked parser blobs are:
 - `tools/otbm_atlas/semantic.py` — `a11343a472145aee4d9cf65c6ce28b3e4a71a2b3`
 - `tools/otbm_atlas/nodefile.py` — `bed6f7a803d9de485c1f03cbdca4be0cb1521d30`
 
-The parser repository MUST be at the exact commit, its worktree MUST be clean including untracked files, each required file MUST match its Git blob, and the modules actually loaded by the producer MUST resolve under that exact parser root.
+The parser repository MUST resolve its Git top-level to the supplied parser root, be at the exact commit, have a clean worktree including untracked files, and contain each required tracked file at the pinned Git blob. The fresh profile additionally requires a one-shot import context: `tools`, `tools.otbm_atlas`, every `tools.otbm_atlas.*` module and the qualified bounded-producer module must not already exist in `sys.modules` before admission. Pre-existing in-memory code is not trusted merely because its `__file__` points at the pinned checkout. The modules loaded by the producer after those checks MUST resolve under that exact parser root.
 
 This is parser reuse, not parser adoption as Oteryn runtime authority and not permission to fork or rewrite it.
 
@@ -67,7 +67,7 @@ The profile accepts no inferred or substituted appearance generation. Any differ
 
 ## 6. Producer selection and compatibility
 
-`tools/game-atlas-fullworld-source/producer.py::load_runtime(...)` keeps its historical behavior when `source_generation_profile_id` is omitted. The default path continues to delegate to the previously qualified bounded validator and therefore continues to require the historical `world.otbm` SHA-256 `3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034`.
+`tools/game-atlas-fullworld-source/producer.py::load_runtime(...)` keeps its historical behavior when `source_generation_profile_id` is omitted. The default path continues to delegate to the previously qualified bounded validator and therefore continues to require the historical `world.otbm` SHA-256 `3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034`. The fresh-profile one-shot import-context requirement is not imposed on callers that omit the selector.
 
 The fresh source is admitted only when the caller explicitly selects:
 
@@ -96,7 +96,7 @@ This profile does not authorize promotion of:
 
 ## 8. Failure behavior
 
-The fresh profile fails closed on map byte-length, SHA-256 or Git-blob mismatch; asset ZIP, catalogue or appearance digest mismatch; missing or multiple appearance DAT candidates; parser repository revision mismatch; dirty parser worktree; required parser blob mismatch; loaded parser module outside the pinned parser root; malformed source rejected by strict parsing; and unknown or floating source-generation profile selection.
+The fresh profile fails closed on map byte-length, SHA-256 or Git-blob mismatch; asset ZIP, catalogue or appearance digest mismatch; missing or multiple appearance DAT candidates; parser Git top-level or repository revision mismatch; dirty parser worktree; untracked/missing or wrong required parser blobs; any pre-existing parser/package/bounded-producer module in the fresh import context; loaded parser module outside the pinned parser root; malformed source rejected by strict parsing; and unknown or floating source-generation profile selection.
 
 No heuristic repair or fallback to a different generation is permitted.
 
