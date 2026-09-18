@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-fresh-crystal-source-profile-504
 issue: 162
-pr: null
+pr: 657
 base_sha: 988b17f609a9a156a5f2d7e7eef1daf0b23c47e8
 head_sha: null
 final_head_sha: null
@@ -61,7 +61,7 @@ Admit one explicit exact-digest fresh CrystalServer map generation through the e
 - [x] Fresh profile is explicit, exact-versioned and rejects unknown/floating profile IDs.
 - [x] Fresh map byte length, SHA-256 and Git blob are checked fail-closed.
 - [x] Asset ZIP/catalog/appearance identities are checked fail-closed.
-- [x] Pinned parser repository revision, clean worktree, tracked blobs and actual loaded module roots are checked fail-closed.
+- [x] Pinned parser Git top-level/revision, clean worktree, tracked blobs and actual loaded module roots are checked fail-closed; the fresh profile also rejects any pre-existing parser/package/bounded-producer module cache.
 - [x] Exact fresh map exhausts through the pinned parser and patched producer with `strict=True`.
 - [x] Existing real tile projection initializes without bypassing validation.
 - [x] Existing source-identity tests remain green; no target-sensitive fact is promoted.
@@ -74,7 +74,9 @@ No CW2/CW3/D3 mutation, parser rewrite, corridor recapture, target parity claim,
 
 The minimum sufficient change adds an explicit source-generation profile to the existing fullworld producer. Omitting the new selector preserves the previous qualified validation path. The new selector validates exact source, assets and parser identity before reusing the same parser/projection implementation.
 
-A Windows checkout initially exposed that raw working-tree bytes are not a portable proxy for Git blob identity because line-ending checkout conversion can differ while the repository is clean. Parser provenance therefore uses exact Git `HEAD`, clean status and `git hash-object` for required tracked paths; source map integrity remains SHA-256 first with Git blob only as corroborating provenance.
+A Windows checkout initially exposed that raw working-tree bytes are not a portable proxy for Git blob identity because line-ending checkout conversion can differ while the repository is clean. Parser provenance therefore uses exact Git top-level/`HEAD`, clean status, tracked-path verification, pinned-tree blobs and `git hash-object` for required tracked paths; source map integrity remains SHA-256 first with Git blob only as corroborating provenance.
+
+Independent review of initial PR head `3a5393f26fc6e2ac1a9306f98819d2204a504736` found one P1 provenance gap: a parser module imported from the pinned path while modified could remain executable from `sys.modules` after the checkout was restored clean. The fresh-profile path now rejects pre-existing `tools`, `tools.otbm_atlas*` and qualified bounded-producer modules before import. A regression test reproduces modified import -> clean checkout restore -> fail-closed admission. The historical/default path intentionally does not inherit this new fresh-profile import-context rule.
 
 ## Validation
 
@@ -100,26 +102,27 @@ A Windows checkout initially exposed that raw working-tree bytes are not a porta
 
 ### Exact-head CI
 
-Pending PR creation. Repository-required exact-head checks and Merge Queue qualification remain authoritative and cannot be replaced by these local results.
+PR #657 exists. Repository-required exact-head checks are being rerun on the repaired candidate; Merge Queue qualification remains authoritative and cannot be replaced by local results.
 
 ## Self-review
 
 - method/reviewer: implementing `Oteryn: content world build` session, whole-diff review against #162 allocation `5728471141`.
-- material findings: raw working-tree hashing was rejected as parser Git-identity evidence on Windows and replaced before freeze with exact Git HEAD + clean worktree + `git hash-object` checks.
-- verdict: no remaining material scope, provenance, semantic-promotion or backward-compatibility finding identified before candidate freeze.
+- material findings: raw working-tree hashing was rejected as parser Git-identity evidence on Windows; independent review then found the same-path stale `sys.modules` P1 on initial PR head `3a5393f26fc6e2ac1a9306f98819d2204a504736`.
+- repair: exact Git top-level/HEAD + tracked/pinned blob checks are retained, and the fresh profile now requires a clean one-shot parser import context with a regression reproducing the stale-cache case.
+- verdict: repaired candidate pending exact-head repository qualification and post-repair independent whole-diff review.
 
 ## Independent review
 
 - required: `YES` because the candidate adds a durable source-admission contract and provenance gate.
-- exact head/method/result: pending hosted exact-head Architecture Semantic Audit / repository checks after PR creation.
+- exact head/method/result: initial manual independent whole-diff review on `3a5393f26fc6e2ac1a9306f98819d2204a504736` found one P1 stale-parser-cache provenance gap; repaired candidate requires fresh exact-head hosted checks and post-repair review.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: local source/parser/asset and full strict-stream qualification passed
+last_progress: independent P1 stale-parser-cache finding repaired with one-shot import guard and regression coverage
 status: validating
 branch: agent/content-world-fresh-crystal-source-profile-504
-pr: null
+pr: 657
 blocker: null
-next_action: freeze, commit and publish the exact candidate through normal Git push, then open one PR against main
+next_action: require exact-head CI PASS and repeat the whole-diff independent review on the repaired candidate
 ```
