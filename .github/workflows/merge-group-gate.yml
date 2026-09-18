@@ -346,8 +346,15 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
           cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
-          cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke
-          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+          $client = ".\target\x86_64-pc-windows-msvc\release\oteryn-client.exe"
+          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {
+            throw "release client artifact missing: $client"
+          }
+          & $client --smoke
+          if ($LASTEXITCODE -ne 0) {
+            throw "release client smoke failed with exit code $LASTEXITCODE"
+          }
+          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
 
       - name: Verify deterministic simulation golden fixtures
         shell: pwsh
