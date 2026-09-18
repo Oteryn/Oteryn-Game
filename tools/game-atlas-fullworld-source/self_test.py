@@ -194,3 +194,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# CI routing probe for Issue #651: server + audited Atlas surface; do not merge.
