@@ -370,6 +370,24 @@ def test_routing_health_helpers(module):
     print("Routing health helpers PASS: degraded/unmodelled/modelled states and audited input selection are explicit")
 
 
+def test_routing_contract_helpers(module):
+    assert ROUTING_CONTRACT.is_file(), "routing contract validator is missing"
+    spec = importlib.util.spec_from_file_location("routing_contract_validator", ROUTING_CONTRACT)
+    assert spec is not None and spec.loader is not None
+    validator = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(validator)
+
+    validator.verify_classifier_matrix(module, fixture())
+    records = [
+        {"filename": "apps/game-server/src/lib.rs", "status": "modified"},
+        {"filename": "apps/client/src/lib.rs", "status": "modified"},
+        {"filename": "Cargo.lock", "status": "modified"},
+    ]
+    affected = validator.changed_audited_inputs(module, fixture(), records)
+    assert affected == ["Cargo.lock", "apps/client/src/lib.rs"], affected
+    print("Routing contract helpers PASS: real-metadata matrix and candidate-caused audited-input detection")
+
+
 def test_bounded_document_consumer_drift(module):
     docs = [dict(filename="README.md", status="modified")]
     result = module.classify(docs, 1, fixture(), "stale-nonserver", docs_digest="stale-all",
@@ -631,6 +649,7 @@ def main() -> int:
     test_atlas_fullworld_surface(module)
     test_atlas_workflow_dispositions(module)
     test_routing_health_helpers(module)
+    test_routing_contract_helpers(module)
     test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
     test_bounded_document_consumer_drift(module)
