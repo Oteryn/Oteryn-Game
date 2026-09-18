@@ -44,12 +44,13 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
     "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "5970a14f1963e52e55d0c2e664696a857966632d3b0c97a5d54b099cfdfe2536"
+    "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7"
 )
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "9df4ca580734d529766ed1825e3ac82cbcb08b8d62cb4ea18760cc2a1a369eb5"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a1916163861957a899aa2ed5f632b56bf"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "d78ef896fc4bad7cf8800b2b9c4084a96e1a1c33290d1a6500449e3fb100c004"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "c59b30fde7538e738346eec03a602081dc4ac2d6"
-EXPECTED_POST_MERGE_RUST_SHA256 = "d34a8feeef8b37568217159e85cab54a0868abf9ab8045f5113b9bc8c3c6f0f7"
+EXPECTED_POST_MERGE_RUST_SHA256 = "8378d595272b8d134b261835eb3ff8aa9b1094dd317f26d333e10ccc1f65fe17"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -86,6 +87,7 @@ REQUIRED_FILES = [
     ".github/workflows/codeql.yml",
     ".github/workflows/repository-configuration.yml",
     ".github/workflows/rust.yml",
+    "tools/repository/validate_pr_routing_contract.py",
     "CONTRIBUTING.md",
     "SECURITY.md",
     "LICENSE",
@@ -368,6 +370,13 @@ def main() -> int:
         lanes_digest = hashlib.sha256(lanes_block.encode("utf-8")).hexdigest() if lanes_block else None
         if lanes_digest != EXPECTED_MERGE_GATE_LANES_JOB_SHA256:
             errors.append("merge gate risk lanes must exactly match trusted-base classification and fail-closed outputs")
+        routing_contract_block = indented_yaml_mapping_block(text, "routing_contract", 2)
+        routing_contract_digest = (
+            hashlib.sha256(routing_contract_block.encode("utf-8")).hexdigest()
+            if routing_contract_block else None
+        )
+        if routing_contract_digest != EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256:
+            errors.append("merge gate routing contract job must exactly match the reviewed exact-head snapshot-health contract")
         atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
         atlas_fullworld_digest = (
             hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
@@ -406,6 +415,7 @@ def main() -> int:
             "Merge gate / governance",
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
+            "Merge gate / routing contract",
             "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
             "Merge gate / Rust Linux workspace",
