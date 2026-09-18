@@ -38,10 +38,10 @@ def test_aggregate():
 
     assert accepts({})
     assert accepts({"WINDOWS_REQUIRED": "false", "RUST_WINDOWS": "skipped"}), "proven server-only lane cannot omit Windows"
-    assert accepts(
+    assert not accepts(
         dict.fromkeys(rust + ("RUST_WINDOWS",), "skipped")
         | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false"}
-    ), "Atlas-only lane was not accepted"
+    ), "Atlas lane incorrectly bypassed Rust qualification"
     assert accepts(
         dict.fromkeys(optional, "skipped")
         | {"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "false", "ATLAS_FULLWORLD_REQUIRED": "false"}
@@ -53,6 +53,15 @@ def test_aggregate():
         for value in ("", "TRUE", "unknown", "0"):
             assert not accepts({name: value}), (name, value)
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
+    assert not accepts({
+        "RUST_REQUIRED": "false",
+        "WINDOWS_REQUIRED": "false",
+        "ATLAS_FULLWORLD_REQUIRED": "true",
+        "RUST_POLICY": "skipped",
+        "RUST_LINUX": "skipped",
+        "RUST_SUPPLY_CHAIN": "skipped",
+        "RUST_WINDOWS": "skipped",
+    })
     print("Risk aggregate PASS: full/server/Atlas/docs controls, every selected failure and invalid output")
 
 
@@ -518,8 +527,11 @@ def main() -> int:
     )
     for path in atlas_inputs:
         result = classify([path])
-        assert result["rust"] is False and result["windows"] is False, (path, result)
+        assert result["rust"] is True and result["windows"] is False, (path, result)
         assert result["atlas_fullworld"] is True and result["surface"] == "atlas-fullworld", (path, result)
+        stale = classify([path], digest="stale-consumer-snapshot")
+        assert stale["rust"] is True and stale["windows"] is True and stale["atlas_fullworld"] is True, (path, stale)
+        assert stale["reason"] == "unreviewed-consumer-input-snapshot", (path, stale)
         result = classify([server, path])
         assert result["rust"] is True and result["windows"] is False, (path, result)
         assert result["atlas_fullworld"] is True and result["surface"] == "server", (path, result)
