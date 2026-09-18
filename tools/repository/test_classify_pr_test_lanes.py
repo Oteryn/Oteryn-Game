@@ -194,6 +194,7 @@ def test_trusted_job_mutations():
                  block.replace("  lanes:\n", "  lanes:\n    continue-on-error: true\n"),
                  block.replace("rust=true", "rust=false"),
                  block.replace("windows=true", "windows=false"),
+                 block.replace("atlas_fullworld=true", "atlas_fullworld=false"),
                  block.replace("          python -I", "          exit 0\n          python -I")]
     for changed in mutations:
         assert changed != block
@@ -202,7 +203,22 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "trusted-base lane mutation passed policy"
-    print("Trusted-base job mutation family PASS: candidate checkout, skip, tolerance, weakened fallback, early exit")
+    atlas = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
+    assert atlas is not None
+    atlas_mutations = [
+        atlas.replace("    if: needs.lanes.outputs.atlas_fullworld == 'true'\n", "    if: false\n"),
+        atlas.replace("          ref: ${{ needs.scope.outputs.target_sha }}\n", "          ref: ${{ needs.scope.outputs.base_sha }}\n"),
+        atlas.replace("python -S tools/game-atlas-fullworld-source/self_test.py", "python -S -c 'pass'"),
+        atlas.replace("  atlas_fullworld:\n", "  atlas_fullworld:\n    continue-on-error: true\n"),
+    ]
+    for changed in atlas_mutations:
+        assert changed != atlas
+        mutated = original.replace(atlas, changed, 1)
+        def read(file, *args, **kwargs):
+            return mutated if file == path else read_text(file, *args, **kwargs)
+        with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert core.main() != 0, "Atlas fullworld gate mutation passed policy"
+    print("Trusted-base job mutation family PASS: lane selection and Atlas exact-head evidence remain fail closed")
 
 
 def test_candidate_modes(module):
