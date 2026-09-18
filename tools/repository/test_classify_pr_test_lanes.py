@@ -203,7 +203,10 @@ def test_trusted_job_mutations():
                  block.replace("  lanes:\n", "  lanes:\n    continue-on-error: true\n"),
                  block.replace("rust=true", "rust=false"),
                  block.replace("windows=true", "windows=false"),
-                 block.replace("          python -I", "          exit 0\n          python -I")]
+                 block.replace(
+                     '          GITHUB_OUTPUT="$wire" python -I',
+                     '          exit 0\n          GITHUB_OUTPUT="$wire" python -I',
+                 )]
     for changed in mutations:
         assert changed != block
         mutated = original.replace(block, changed, 1)
