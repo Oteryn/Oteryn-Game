@@ -911,3 +911,5 @@ mod corrective_tests {
         Ok(())
     }
 }
+
+// CI routing probe for Issue #651: server + audited Atlas surface; do not merge.
