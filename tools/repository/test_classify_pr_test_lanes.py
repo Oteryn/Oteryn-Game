@@ -236,6 +236,59 @@ def test_candidate_modes(module):
     print("Candidate mode family PASS: executable/regular controls, symlink/gitlink rejection and missing evidence FULL")
 
 
+def test_atlas_fullworld_surface(module):
+    producer = "tools/game-atlas-fullworld-source/producer.py"
+    self_test = "tools/game-atlas-fullworld-source/self_test.py"
+    server = "apps/game-server/src/content/reference_playable.rs"
+    client = "apps/client/src/lib.rs"
+
+    for path in (producer, self_test):
+        result = module.classify(
+            [dict(filename=path, status="modified")], 1, fixture(), module.AUDITED_INPUT_SHA256,
+            docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+        )
+        assert result == {
+            "rust": False, "windows": False, "surface": "atlas-fullworld",
+            "reason": "audited-atlas-fullworld-source",
+        }, result
+        assert module.atlas_fullworld_required([dict(filename=path, status="modified")], 1) is True
+
+    result = module.classify(
+        [dict(filename=server, status="modified"), dict(filename=producer, status="modified")],
+        2, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is False, result
+    assert result["surface"] == "server" and result["reason"].endswith("-plus-atlas-fullworld"), result
+
+    result = module.classify(
+        [dict(filename=client, status="modified"), dict(filename=producer, status="modified")],
+        2, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is True, result
+
+    for path in ("tools/game-atlas-fullworld-source/animated.py",
+                 "tools/game-atlas-fullworld-source/README.md",
+                 "tools/unreviewed/helper.py"):
+        result = module.classify(
+            [dict(filename=path, status="modified")], 1, fixture(), module.AUDITED_INPUT_SHA256,
+            docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+        )
+        assert result["rust"] is True and result["windows"] is True, (path, result)
+
+    renamed = [{"filename": "tools/unreviewed/producer.py", "status": "renamed", "previous_filename": producer}]
+    result = module.classify(
+        renamed, 1, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is True, result
+    assert module.atlas_fullworld_required(renamed, 1) is True
+    assert module.atlas_fullworld_required([dict(filename=server, status="modified")], 1) is False
+    assert module.atlas_fullworld_required([], 0) is True
+    print("Atlas fullworld surface PASS: bounded paths reduce Windows only with dedicated lane; siblings/renames stay fail closed")
+
+
 def test_bounded_document_consumer_drift(module):
     docs = [dict(filename="README.md", status="modified")]
     result = module.classify(docs, 1, fixture(), "stale-nonserver", docs_digest="stale-all",
@@ -494,6 +547,7 @@ def main() -> int:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     test_candidate_modes(module)
+    test_atlas_fullworld_surface(module)
     test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
     test_bounded_document_consumer_drift(module)
@@ -519,6 +573,7 @@ def main() -> int:
         "Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "apps/game-server/build.rs",
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
         "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
+        "tools/game-atlas-fullworld-source/animated.py", "tools/game-atlas-fullworld-source/README.md",
         "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
     )
     for path in full_paths:
