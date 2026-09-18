@@ -19,6 +19,7 @@ from typing import Any, Iterator
 
 PRODUCER_API = "oteryn-game-atlas-fullworld-source-v0"
 BOUNDED_EXPORT_REL = Path("tools/game-atlas-thais-fixture/export.py")
+QUALIFIED_BOUNDED_MODULE_NAME = "oteryn_game_atlas_qualified_dyn_producer"
 FRESH_SOURCE_GENERATION_PROFILE_ID = "oteryn-crystalserver-fresh-source-generation-v2"
 
 
@@ -91,7 +92,7 @@ def _load_bounded_module() -> Any:
     path = _repository_root() / BOUNDED_EXPORT_REL
     if not path.is_file():
         raise ProducerError(f"missing qualified DYN producer implementation: {path}")
-    name = "oteryn_game_atlas_qualified_dyn_producer"
+    name = QUALIFIED_BOUNDED_MODULE_NAME
     existing = sys.modules.get(name)
     if existing is not None:
         return existing
@@ -102,6 +103,23 @@ def _load_bounded_module() -> Any:
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _reject_preexisting_fresh_source_modules() -> None:
+    """Require a fresh one-shot import context for pinned parser evidence."""
+    contaminated = sorted(
+        name
+        for name in sys.modules
+        if name == QUALIFIED_BOUNDED_MODULE_NAME
+        or name == "tools"
+        or name == "tools.otbm_atlas"
+        or name.startswith("tools.otbm_atlas.")
+    )
+    if contaminated:
+        raise ProducerError(
+            "fresh source parser import context contains pre-existing module: "
+            f"{contaminated[0]}"
+        )
 
 
 def source_generation_profile(profile_id: str) -> SourceGenerationProfile:
@@ -145,6 +163,10 @@ def _git_output(repository: Path, *args: str) -> str:
 
 
 def _validate_parser_source(profile: SourceGenerationProfile, legacy_root: Path) -> None:
+    expected_root = legacy_root.resolve()
+    actual_root = Path(_git_output(legacy_root, "rev-parse", "--show-toplevel")).resolve()
+    if actual_root != expected_root:
+        raise ProducerError("fresh source parser repository root mismatch")
     if _git_output(legacy_root, "rev-parse", "HEAD") != profile.parser_repository_sha:
         raise ProducerError("fresh source parser repository revision mismatch")
     if _git_output(legacy_root, "status", "--porcelain=v1", "--untracked-files=all"):
@@ -154,6 +176,12 @@ def _validate_parser_source(profile: SourceGenerationProfile, legacy_root: Path)
         path = legacy_root / relative_path
         if not path.is_file():
             raise ProducerError(f"fresh source parser file missing: {relative_path}")
+        _git_output(legacy_root, "ls-files", "--error-unmatch", "--", relative_path)
+        pinned_blob = _git_output(
+            legacy_root, "rev-parse", f"{profile.parser_repository_sha}:{relative_path}"
+        )
+        if pinned_blob != expected_blob:
+            raise ProducerError(f"fresh source pinned parser blob mismatch: {relative_path}")
         actual_blob = _git_output(legacy_root, "hash-object", "--", relative_path)
         if actual_blob != expected_blob:
             raise ProducerError(f"fresh source parser blob mismatch: {relative_path}")
@@ -223,6 +251,8 @@ def load_runtime(
         if source_generation_profile_id is None
         else source_generation_profile(source_generation_profile_id)
     )
+    if profile is not None:
+        _reject_preexisting_fresh_source_modules()
     bounded = _load_bounded_module()
     if profile is None:
         appearance_path = bounded._validate_inputs(map_path, asset_zip, assets_dir)
