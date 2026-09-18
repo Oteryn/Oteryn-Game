@@ -217,3 +217,145 @@ def canonical_tile_bytes(runtime: Runtime, record: dict[str, Any]) -> bytes:
 def project_tile_bytes(runtime: Runtime, tile: Any) -> tuple[bytes, dict[str, Any]]:
     record, stats = project_tile(runtime, tile)
     return canonical_tile_bytes(runtime, record), stats
+
+
+TYPED_DEFINITION_FAMILIES = frozenset(
+    {
+        "TERRAIN",
+        "PRESENTATION",
+        "LOCAL_OBJECT",
+        "CREATURE",
+        "ITEM",
+        "ABILITY",
+        "EFFECT",
+        "FORMULA",
+        "BEHAVIOR",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class SourceIdentityBinding:
+    """Explicit D1 identity binding for one producer presentation occurrence.
+
+    The binding is intentionally external to the legacy numeric source identity.
+    Neither coordinates, presentation order nor appearance_source_id may mint a
+    canonical Content definition or PlacementKey.
+    """
+
+    export_record_id: str
+    appearance_source_id: int
+    definition_family: str
+    production_key: str
+    definition_revision: str
+    placement_key: str
+
+
+def _valid_namespaced_key(value: str) -> bool:
+    if not value or not value.isascii() or ":" not in value:
+        return False
+    namespace, local = value.split(":", 1)
+    if not namespace or not local:
+        return False
+    return all(char.isalnum() or char in ":._-/" for char in value)
+
+
+def _valid_revision(value: str) -> bool:
+    return bool(value) and value.isascii() and all(0x21 <= ord(char) <= 0x7E for char in value)
+
+
+def validate_source_identity_binding(binding: SourceIdentityBinding) -> None:
+    if not binding.export_record_id:
+        raise ProducerError("source identity binding requires export_record_id")
+    if binding.appearance_source_id <= 0:
+        raise ProducerError("source identity binding requires positive appearance_source_id")
+    if binding.definition_family not in TYPED_DEFINITION_FAMILIES:
+        raise ProducerError(f"unsupported typed definition family: {binding.definition_family}")
+    if not _valid_namespaced_key(binding.production_key):
+        raise ProducerError("source identity binding has invalid production_key")
+    if not _valid_revision(binding.definition_revision):
+        raise ProducerError("source identity binding has invalid definition_revision")
+    if not _valid_namespaced_key(binding.placement_key):
+        raise ProducerError("source identity binding has invalid placement_key")
+
+
+def adapt_presentation_source_identity(
+    presentation: dict[str, Any],
+    binding: SourceIdentityBinding | None,
+) -> dict[str, Any]:
+    """Return a typed Content-source candidate without rewriting Atlas identity.
+
+    An unbound legacy occurrence remains explicitly unresolved.  A supplied
+    binding must match the exact source occurrence and legacy appearance
+    provenance before it can expose D1 typed definition and placement identity.
+    """
+
+    record_id = presentation.get("export_record_id")
+    appearance_source_id = presentation.get("appearance_source_id")
+    if not isinstance(record_id, str) or not record_id:
+        raise ProducerError("presentation lacks stable export_record_id provenance")
+    if not isinstance(appearance_source_id, int) or appearance_source_id <= 0:
+        raise ProducerError("presentation lacks positive appearance_source_id provenance")
+
+    candidate: dict[str, Any] = {
+        "source_occurrence_ref": record_id,
+        "appearance_source_id": appearance_source_id,
+        "source_role": presentation.get("source_role"),
+        "source_presentation_order": presentation.get("presentation_order"),
+        "identity_disposition": "UNRESOLVED_SOURCE_IDENTITY",
+        "typed_definition_ref": None,
+        "placement_key": None,
+    }
+    if binding is None:
+        return candidate
+
+    validate_source_identity_binding(binding)
+    if binding.export_record_id != record_id:
+        raise ProducerError("source identity binding export_record_id mismatch")
+    if binding.appearance_source_id != appearance_source_id:
+        raise ProducerError("source identity binding appearance_source_id mismatch")
+
+    candidate["identity_disposition"] = "EXPLICITLY_BOUND"
+    candidate["typed_definition_ref"] = {
+        "definition_family": binding.definition_family,
+        "production_key": binding.production_key,
+        "definition_revision": binding.definition_revision,
+    }
+    candidate["placement_key"] = binding.placement_key
+    return candidate
+
+
+def adapt_tile_source_identities(
+    record: dict[str, Any],
+    bindings: dict[str, SourceIdentityBinding],
+) -> list[dict[str, Any]]:
+    """Adapt one projected tile with exact occurrence-keyed bindings.
+
+    Existing tile/presentation projection bytes are not modified.  Extra or
+    duplicate bindings fail closed so stale mappings cannot silently attach to a
+    different source occurrence.
+    """
+
+    presentations = record.get("presentation")
+    if not isinstance(presentations, list):
+        raise ProducerError("tile record lacks presentation list")
+
+    seen_occurrences: set[str] = set()
+    candidates: list[dict[str, Any]] = []
+    for presentation in presentations:
+        if not isinstance(presentation, dict):
+            raise ProducerError("tile presentation must be an object")
+        record_id = presentation.get("export_record_id")
+        if not isinstance(record_id, str) or not record_id:
+            raise ProducerError("tile presentation lacks export_record_id")
+        if record_id in seen_occurrences:
+            raise ProducerError(f"duplicate source occurrence: {record_id}")
+        seen_occurrences.add(record_id)
+        candidates.append(
+            adapt_presentation_source_identity(presentation, bindings.get(record_id))
+        )
+
+    stale = sorted(set(bindings) - seen_occurrences)
+    if stale:
+        raise ProducerError(f"identity binding does not match tile occurrence: {stale[0]}")
+    return candidates
