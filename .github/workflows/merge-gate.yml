@@ -395,6 +395,9 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
+      - name: Verify routing validator blob
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "2c06a0d52c5315ea7b381c11c0271bb9984cef55"
+
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
 
