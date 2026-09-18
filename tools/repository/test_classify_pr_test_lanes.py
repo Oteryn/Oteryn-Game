@@ -101,17 +101,27 @@ def test_snapshot_and_fallbacks(module):
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text()
     assert "  lanes:\n" in gate, "trusted-base lane job is absent"
     block = gate.split("  lanes:\n", 1)[1].split("  governance:\n", 1)[0]
-    script = textwrap.dedent(block.split("        run: |\n", 1)[1])
+    script = textwrap.dedent(
+        block.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+    )
     with tempfile.TemporaryDirectory() as directory:
         output = Path(directory) / "output"
         env = dict(os.environ, GITHUB_OUTPUT=str(output), RUNNER_TEMP=directory)
         result = subprocess.run(["bash", "-c", script], cwd=directory, env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
+        assert result.returncode == 0 and output.read_text() == (
+            "rust=true\nwindows=true\natlas_fullworld=true\n"
+            "surface=unknown\nreason=protected-base-classifier-missing\n"
+            "routing_health=degraded\n"
+        ), result
         output.unlink()
         invalid = Path(directory) / "metadata.json"
         invalid.write_text("{}")
         result = subprocess.run([sys.executable, str(MODULE), str(invalid)], env=env, capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\natlas_fullworld=true\n", result
+        assert result.returncode == 0 and output.read_text() == (
+            "rust=true\nwindows=true\natlas_fullworld=true\n"
+            "surface=unknown\nreason=classifier-or-metadata-failure\n"
+            "routing_health=degraded\n"
+        ), result
     print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
 
 
