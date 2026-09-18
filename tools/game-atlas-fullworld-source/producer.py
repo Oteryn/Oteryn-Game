@@ -10,17 +10,62 @@ records owned by Game.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import importlib.util
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any, Iterator
 
 PRODUCER_API = "oteryn-game-atlas-fullworld-source-v0"
 BOUNDED_EXPORT_REL = Path("tools/game-atlas-thais-fixture/export.py")
+FRESH_SOURCE_GENERATION_PROFILE_ID = "oteryn-crystalserver-fresh-source-generation-v2"
+
+
+@dataclass(frozen=True, slots=True)
+class SourceGenerationProfile:
+    profile_id: str
+    revision: int
+    source_repository: str
+    source_repository_sha: str
+    world_otbm_sha256: str
+    world_otbm_git_blob: str
+    world_otbm_bytes: int
+    asset_zip_sha256: str
+    asset_catalog_sha256: str
+    asset_appearance_sha256: str
+    parser_repository: str
+    parser_repository_sha: str
+    parser_blobs: tuple[tuple[str, str], ...]
 
 
 class ProducerError(RuntimeError):
     pass
+
+
+FRESH_SOURCE_GENERATION_PROFILE = SourceGenerationProfile(
+    profile_id=FRESH_SOURCE_GENERATION_PROFILE_ID,
+    revision=2,
+    source_repository="zimbadev/crystalserver",
+    source_repository_sha="ff7ede593c69d4c658b382c97443e8155926924a",
+    world_otbm_sha256="09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb",
+    world_otbm_git_blob="e95e8f7c7a95d1b634b49a5dea5a5dc76021406b",
+    world_otbm_bytes=52_267_895,
+    asset_zip_sha256="1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f",
+    asset_catalog_sha256="35639e000c4c108665a091cfbdf699d549d995b37670bc08de575ab6cd380d85",
+    asset_appearance_sha256="dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075",
+    parser_repository="blakinio/Otheryn",
+    parser_repository_sha="e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+    parser_blobs=(
+        ("tools/otbm_atlas/__init__.py", "047d1274022e1d2a71d6aa23d6efcf420a24535d"),
+        ("tools/otbm_atlas/assets.py", "25ed2400813bb3ccdc54482967ed05197eb1a850"),
+        ("tools/otbm_atlas/semantic.py", "a11343a472145aee4d9cf65c6ce28b3e4a71a2b3"),
+        ("tools/otbm_atlas/nodefile.py", "bed6f7a803d9de485c1f03cbdca4be0cb1521d30"),
+    ),
+)
+_SOURCE_GENERATION_PROFILES = {
+    FRESH_SOURCE_GENERATION_PROFILE.profile_id: FRESH_SOURCE_GENERATION_PROFILE,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +79,8 @@ class Runtime:
     appearances: dict[int, Any]
     sheets: list[Any]
     sheet_for_sprite: Any
+    source_generation_profile_id: str | None = None
+    source_generation_profile_revision: int | None = None
 
 
 def _repository_root() -> Path:
@@ -57,21 +104,135 @@ def _load_bounded_module() -> Any:
     return module
 
 
+def source_generation_profile(profile_id: str) -> SourceGenerationProfile:
+    """Resolve one explicitly admitted source generation; unknown IDs fail closed."""
+    profile = _SOURCE_GENERATION_PROFILES.get(profile_id)
+    if profile is None:
+        raise ProducerError(f"unknown source generation profile: {profile_id}")
+    return profile
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _git_blob_sha1_file(path: Path) -> str:
+    """Return Git's SHA-1 blob identity; this is provenance, not a trust digest."""
+    size = path.stat().st_size
+    digest = hashlib.sha1(usedforsecurity=False)
+    digest.update(f"blob {size}\0".encode("ascii"))
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _git_output(repository: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repository), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "git command failed"
+        raise ProducerError(f"fresh source parser Git validation failed: {detail}")
+    return completed.stdout.strip()
+
+
+def _validate_parser_source(profile: SourceGenerationProfile, legacy_root: Path) -> None:
+    if _git_output(legacy_root, "rev-parse", "HEAD") != profile.parser_repository_sha:
+        raise ProducerError("fresh source parser repository revision mismatch")
+    if _git_output(legacy_root, "status", "--porcelain=v1", "--untracked-files=all"):
+        raise ProducerError("fresh source parser worktree is dirty")
+
+    for relative_path, expected_blob in profile.parser_blobs:
+        path = legacy_root / relative_path
+        if not path.is_file():
+            raise ProducerError(f"fresh source parser file missing: {relative_path}")
+        actual_blob = _git_output(legacy_root, "hash-object", "--", relative_path)
+        if actual_blob != expected_blob:
+            raise ProducerError(f"fresh source parser blob mismatch: {relative_path}")
+
+
+def _validate_source_generation_inputs(
+    profile: SourceGenerationProfile,
+    map_path: Path,
+    asset_zip: Path,
+    assets_dir: Path,
+) -> Path:
+    if map_path.stat().st_size != profile.world_otbm_bytes:
+        raise ProducerError("fresh world.otbm byte-size mismatch")
+    if _sha256_file(map_path) != profile.world_otbm_sha256:
+        raise ProducerError("fresh world.otbm SHA-256 mismatch")
+    if _git_blob_sha1_file(map_path) != profile.world_otbm_git_blob:
+        raise ProducerError("fresh world.otbm Git blob mismatch")
+    if _sha256_file(asset_zip) != profile.asset_zip_sha256:
+        raise ProducerError("15.32 asset ZIP SHA-256 mismatch")
+
+    catalog = assets_dir / "catalog-content.json"
+    if _sha256_file(catalog) != profile.asset_catalog_sha256:
+        raise ProducerError("15.32 asset catalog SHA-256 mismatch")
+
+    appearances = sorted(assets_dir.glob("appearances-*.dat"))
+    if len(appearances) != 1:
+        raise ProducerError(f"expected exactly one appearances-*.dat, got {len(appearances)}")
+    if _sha256_file(appearances[0]) != profile.asset_appearance_sha256:
+        raise ProducerError("15.32 appearance SHA-256 mismatch")
+    return appearances[0]
+
+
+def _validate_loaded_parser_modules(legacy_root: Path, legacy_assets: Any, legacy_semantic: Any) -> None:
+    expected_modules = (
+        (sys.modules.get("tools.otbm_atlas"), "tools/otbm_atlas/__init__.py"),
+        (legacy_assets, "tools/otbm_atlas/assets.py"),
+        (legacy_semantic, "tools/otbm_atlas/semantic.py"),
+        (sys.modules.get("tools.otbm_atlas.nodefile"), "tools/otbm_atlas/nodefile.py"),
+    )
+    for module, relative_path in expected_modules:
+        module_file = getattr(module, "__file__", None) if module is not None else None
+        expected_path = (legacy_root / relative_path).resolve()
+        if module_file is None or Path(module_file).resolve() != expected_path:
+            raise ProducerError(f"fresh source parser module path mismatch: {relative_path}")
+
+
 def load_runtime(
     *,
     legacy_root: str | Path,
     map_path: str | Path,
     asset_zip: str | Path,
     assets_dir: str | Path,
+    source_generation_profile_id: str | None = None,
 ) -> Runtime:
-    """Validate the exact accepted inputs and prepare immutable projection state."""
+    """Validate one exact accepted source generation and prepare projection state.
+
+    Omitting ``source_generation_profile_id`` preserves the qualified historical
+    validation path exactly.  Any later source generation is explicit opt-in and
+    exact-digest scoped.
+    """
     legacy_root = Path(legacy_root).resolve()
     map_path = Path(map_path).resolve()
     asset_zip = Path(asset_zip).resolve()
     assets_dir = Path(assets_dir).resolve()
+    profile = (
+        None
+        if source_generation_profile_id is None
+        else source_generation_profile(source_generation_profile_id)
+    )
     bounded = _load_bounded_module()
-    appearance_path = bounded._validate_inputs(map_path, asset_zip, assets_dir)
+    if profile is None:
+        appearance_path = bounded._validate_inputs(map_path, asset_zip, assets_dir)
+    else:
+        appearance_path = _validate_source_generation_inputs(profile, map_path, asset_zip, assets_dir)
+        _validate_parser_source(profile, legacy_root)
+
     legacy_assets, legacy_semantic = bounded._load_legacy_modules(legacy_root)
+    if profile is not None:
+        _validate_loaded_parser_modules(legacy_root, legacy_assets, legacy_semantic)
     appearances = legacy_assets.load_object_appearances(appearance_path)
     sheets = legacy_assets.load_sprite_catalog(assets_dir)
     return Runtime(
@@ -84,6 +245,8 @@ def load_runtime(
         appearances=appearances,
         sheets=sheets,
         sheet_for_sprite=legacy_assets.sheet_for_sprite,
+        source_generation_profile_id=profile.profile_id if profile is not None else None,
+        source_generation_profile_revision=profile.revision if profile is not None else None,
     )
 
 

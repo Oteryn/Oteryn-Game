@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+from dataclasses import replace
 import hashlib
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 import producer
@@ -32,6 +35,85 @@ def runtime(appearances):
     bounded = FakeBounded()
     legacy = SimpleNamespace(Tile=Tile)
     return producer.Runtime(None, None, None, None, bounded, legacy, appearances, [], None), bounded
+
+
+def _git_blob_id(data: bytes) -> str:
+    digest = hashlib.sha1(usedforsecurity=False)
+    digest.update(f"blob {len(data)}\0".encode("ascii"))
+    digest.update(data)
+    return digest.hexdigest()
+
+
+def _run_git(repository: Path, *args: str) -> str:
+    completed = producer.subprocess.run(
+        ["git", "-C", str(repository), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def _expect_producer_error(fragment: str, action) -> None:
+    try:
+        action()
+    except producer.ProducerError as exc:
+        assert fragment in str(exc), str(exc)
+    else:
+        raise AssertionError(f"expected ProducerError containing {fragment!r}")
+
+
+def _profile_fixture(root: Path):
+    map_path = root / "world.otbm"
+    asset_zip = root / "15.32.zip"
+    assets_dir = root / "assets"
+    parser_root = root / "parser"
+    parser_dir = parser_root / "tools" / "otbm_atlas"
+    assets_dir.mkdir()
+    parser_dir.mkdir(parents=True)
+
+    map_path.write_bytes(b"map0")
+    asset_zip.write_bytes(b"zip0")
+    catalog = assets_dir / "catalog-content.json"
+    appearance = assets_dir / "appearances-unit.dat"
+    catalog.write_bytes(b"catalog0")
+    appearance.write_bytes(b"appearance0")
+
+    parser_bytes = {
+        "tools/otbm_atlas/__init__.py": b"package0",
+        "tools/otbm_atlas/assets.py": b"assets00",
+        "tools/otbm_atlas/semantic.py": b"semantic",
+        "tools/otbm_atlas/nodefile.py": b"nodefile",
+    }
+    for relative_path, data in parser_bytes.items():
+        (parser_root / relative_path).write_bytes(data)
+
+    _run_git(parser_root, "init", "-q")
+    _run_git(parser_root, "config", "user.email", "unit@example.invalid")
+    _run_git(parser_root, "config", "user.name", "unit")
+    _run_git(parser_root, "add", ".")
+    _run_git(parser_root, "commit", "-q", "-m", "unit parser")
+    parser_repository_sha = _run_git(parser_root, "rev-parse", "HEAD")
+    parser_blobs = tuple(
+        (path, _run_git(parser_root, "hash-object", "--", path)) for path in parser_bytes
+    )
+
+    profile = producer.SourceGenerationProfile(
+        profile_id="unit-source-generation-v1",
+        revision=1,
+        source_repository="example/source",
+        source_repository_sha="1" * 40,
+        world_otbm_sha256=hashlib.sha256(map_path.read_bytes()).hexdigest(),
+        world_otbm_git_blob=_git_blob_id(map_path.read_bytes()),
+        world_otbm_bytes=map_path.stat().st_size,
+        asset_zip_sha256=hashlib.sha256(asset_zip.read_bytes()).hexdigest(),
+        asset_catalog_sha256=hashlib.sha256(catalog.read_bytes()).hexdigest(),
+        asset_appearance_sha256=hashlib.sha256(appearance.read_bytes()).hexdigest(),
+        parser_repository="example/parser",
+        parser_repository_sha=parser_repository_sha,
+        parser_blobs=parser_blobs,
+    )
+    return profile, map_path, asset_zip, assets_dir, parser_root, appearance
 
 
 def test_resolved_delegates() -> None:
@@ -180,6 +262,175 @@ def test_tile_adapter_rejects_stale_binding() -> None:
         raise AssertionError("stale source binding was accepted")
 
 
+def test_fresh_source_generation_profile_is_exact_and_not_floating() -> None:
+    profile = producer.source_generation_profile(producer.FRESH_SOURCE_GENERATION_PROFILE_ID)
+    assert profile.revision == 2
+    assert profile.source_repository == "zimbadev/crystalserver"
+    assert profile.source_repository_sha == "ff7ede593c69d4c658b382c97443e8155926924a"
+    assert profile.world_otbm_sha256 == "09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb"
+    assert profile.world_otbm_git_blob == "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b"
+    assert profile.world_otbm_bytes == 52_267_895
+    for floating in ("main", "latest", "zimbadev/crystalserver@main"):
+        _expect_producer_error(
+            "unknown source generation profile",
+            lambda profile_id=floating: producer.source_generation_profile(profile_id),
+        )
+
+
+def test_source_generation_inputs_and_parser_fail_closed() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        profile, map_path, asset_zip, assets_dir, parser_root, appearance = _profile_fixture(root)
+        assert producer._validate_source_generation_inputs(
+            profile, map_path, asset_zip, assets_dir
+        ) == appearance
+        producer._validate_parser_source(profile, parser_root)
+
+        map_path.write_bytes(b"x")
+        _expect_producer_error(
+            "byte-size mismatch",
+            lambda: producer._validate_source_generation_inputs(profile, map_path, asset_zip, assets_dir),
+        )
+        map_path.write_bytes(b"map0")
+        map_path.write_bytes(b"MAP0")
+        _expect_producer_error(
+            "SHA-256 mismatch",
+            lambda: producer._validate_source_generation_inputs(profile, map_path, asset_zip, assets_dir),
+        )
+        map_path.write_bytes(b"map0")
+        _expect_producer_error(
+            "Git blob mismatch",
+            lambda: producer._validate_source_generation_inputs(
+                replace(profile, world_otbm_git_blob="0" * 40), map_path, asset_zip, assets_dir
+            ),
+        )
+
+        for path, replacement_bytes, fragment in (
+            (asset_zip, b"ZIP0", "asset ZIP SHA-256 mismatch"),
+            (assets_dir / "catalog-content.json", b"Catalog0", "asset catalog SHA-256 mismatch"),
+            (appearance, b"Appearance0", "appearance SHA-256 mismatch"),
+        ):
+            original = path.read_bytes()
+            path.write_bytes(replacement_bytes)
+            _expect_producer_error(
+                fragment,
+                lambda: producer._validate_source_generation_inputs(
+                    profile, map_path, asset_zip, assets_dir
+                ),
+            )
+            path.write_bytes(original)
+
+        bad_parser_blobs = tuple(
+            (path, "0" * 40 if path.endswith("semantic.py") else blob)
+            for path, blob in profile.parser_blobs
+        )
+        _expect_producer_error(
+            "parser blob mismatch",
+            lambda: producer._validate_parser_source(
+                replace(profile, parser_blobs=bad_parser_blobs), parser_root
+            ),
+        )
+        _expect_producer_error(
+            "repository revision mismatch",
+            lambda: producer._validate_parser_source(
+                replace(profile, parser_repository_sha="0" * 40), parser_root
+            ),
+        )
+
+        semantic = parser_root / "tools" / "otbm_atlas" / "semantic.py"
+        semantic.write_bytes(b"Semantic")
+        _expect_producer_error(
+            "parser worktree is dirty",
+            lambda: producer._validate_parser_source(profile, parser_root),
+        )
+
+
+def test_default_runtime_path_delegates_to_qualified_validator() -> None:
+    class FakeLegacyAssets:
+        @staticmethod
+        def load_object_appearances(_path):
+            return {}
+
+        @staticmethod
+        def load_sprite_catalog(_path):
+            return []
+
+        @staticmethod
+        def sheet_for_sprite(_sheets, _sprite_id):
+            return None
+
+    class FakeLoadBounded:
+        def __init__(self) -> None:
+            self.validation_calls = 0
+
+        def _validate_inputs(self, _map_path, _asset_zip, assets_dir):
+            self.validation_calls += 1
+            return assets_dir / "appearance.dat"
+
+        @staticmethod
+        def _load_legacy_modules(_legacy_root):
+            return FakeLegacyAssets, SimpleNamespace()
+
+    bounded = FakeLoadBounded()
+    original_loader = producer._load_bounded_module
+    producer._load_bounded_module = lambda: bounded
+    try:
+        runtime_state = producer.load_runtime(
+            legacy_root="legacy",
+            map_path="world.otbm",
+            asset_zip="15.32.zip",
+            assets_dir="assets",
+        )
+    finally:
+        producer._load_bounded_module = original_loader
+
+    assert bounded.validation_calls == 1
+    assert runtime_state.source_generation_profile_id is None
+    assert runtime_state.source_generation_profile_revision is None
+
+
+def test_loaded_parser_modules_are_root_bound() -> None:
+    with TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        expected = {
+            "tools.otbm_atlas": "tools/otbm_atlas/__init__.py",
+            "tools.otbm_atlas.nodefile": "tools/otbm_atlas/nodefile.py",
+        }
+        for relative_path in (
+            "tools/otbm_atlas/__init__.py",
+            "tools/otbm_atlas/assets.py",
+            "tools/otbm_atlas/semantic.py",
+            "tools/otbm_atlas/nodefile.py",
+        ):
+            path = root / relative_path
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("# unit\n", encoding="utf-8")
+
+        sentinel = object()
+        saved = {name: producer.sys.modules.get(name, sentinel) for name in expected}
+        assets = SimpleNamespace(__file__=str(root / "tools/otbm_atlas/assets.py"))
+        semantic = SimpleNamespace(__file__=str(root / "tools/otbm_atlas/semantic.py"))
+        try:
+            producer.sys.modules["tools.otbm_atlas"] = SimpleNamespace(
+                __file__=str(root / expected["tools.otbm_atlas"])
+            )
+            producer.sys.modules["tools.otbm_atlas.nodefile"] = SimpleNamespace(
+                __file__=str(root / expected["tools.otbm_atlas.nodefile"])
+            )
+            producer._validate_loaded_parser_modules(root, assets, semantic)
+            semantic.__file__ = str(root / "wrong-semantic.py")
+            _expect_producer_error(
+                "parser module path mismatch",
+                lambda: producer._validate_loaded_parser_modules(root, assets, semantic),
+            )
+        finally:
+            for name, previous in saved.items():
+                if previous is sentinel:
+                    producer.sys.modules.pop(name, None)
+                else:
+                    producer.sys.modules[name] = previous
+
+
 def main() -> int:
     test_resolved_delegates()
     test_missing_is_explicit()
@@ -188,6 +439,10 @@ def main() -> int:
     test_binding_mismatch_fails_closed()
     test_binding_rejects_nonproduction_and_oversize_content_identity()
     test_tile_adapter_rejects_stale_binding()
+    test_fresh_source_generation_profile_is_exact_and_not_floating()
+    test_source_generation_inputs_and_parser_fail_closed()
+    test_default_runtime_path_delegates_to_qualified_validator()
+    test_loaded_parser_modules_are_root_bound()
     print("game-atlas-fullworld-source self-test: PASS")
     return 0
 
