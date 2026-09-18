@@ -202,7 +202,25 @@ def test_trusted_job_mutations():
             return mutated if file == path else read_text(file, *args, **kwargs)
         with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             assert core.main() != 0, "trusted-base lane mutation passed policy"
-    print("Trusted-base job mutation family PASS: candidate checkout, skip, tolerance, weakened fallback, early exit")
+    atlas_block = core.indented_yaml_mapping_block(original, "atlas_fullworld", 2)
+    assert atlas_block is not None
+    atlas_mutations = [
+        atlas_block.replace("ref: ${{ needs.scope.outputs.target_sha }}", "ref: ${{ needs.scope.outputs.base_sha }}"),
+        atlas_block.replace("  atlas_fullworld:\n", "  atlas_fullworld:\n    if: false\n"),
+        atlas_block.replace(
+            "      - name: Compile Atlas fullworld source\n        run: >-\n",
+            "      - name: Compile Atlas fullworld source\n        run: true #\n",
+        ),
+        atlas_block.replace("        run: python -S self_test.py", "        run: true"),
+    ]
+    for changed in atlas_mutations:
+        assert changed != atlas_block
+        mutated = original.replace(atlas_block, changed, 1)
+        def read_atlas(file, *args, **kwargs):
+            return mutated if file == path else read_text(file, *args, **kwargs)
+        with patch.object(Path, "read_text", read_atlas), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert core.main() != 0, "Atlas fullworld gate mutation passed policy"
+    print("Trusted-base job mutation family PASS: classifier and Atlas exact-head/fail-closed contracts")
 
 
 def test_candidate_modes(module):
