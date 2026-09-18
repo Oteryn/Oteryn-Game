@@ -88,6 +88,7 @@ def _profile_fixture(root: Path):
     }
     for relative_path, data in parser_bytes.items():
         (parser_root / relative_path).write_bytes(data)
+    (parser_root / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
 
     _run_git(parser_root, "init", "-q")
     _run_git(parser_root, "config", "user.email", "unit@example.invalid")
