@@ -14,6 +14,2189 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
         .map_err(DurabilityError::from)
 }
 
+/// Conservative first implementation: all journal writers and row-locking
+/// readers serialize before any semantic clock sample. EXCLUSIVE still permits
+/// ordinary snapshot readers. This intentionally makes no concurrency claim.
+pub(super) async fn lock_admission_domain(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &oteryn_game_server::foundation::ReconnectDurabilityRecordV1,
+) -> Result<(), DurabilityError> {
+    lock_admission_relations(transaction).await?;
+    let identity = record.identity();
+    let mut keys = vec![
+        (
+            b"account".as_slice(),
+            identity.account_id().as_bytes().to_vec(),
+        ),
+        (
+            b"character".as_slice(),
+            identity.character_id().as_bytes().to_vec(),
+        ),
+        (
+            b"session".as_slice(),
+            identity.game_session_id().as_bytes().to_vec(),
+        ),
+        (
+            b"transport".as_slice(),
+            record.connection().transport_ref().to_bytes().to_vec(),
+        ),
+        (
+            b"attempt".as_slice(),
+            [
+                identity.game_session_id().as_bytes().as_slice(),
+                &identity.reconnect_attempt_ref().to_be_bytes(),
+            ]
+            .concat(),
+        ),
+        (
+            b"epoch".as_slice(),
+            [
+                identity.character_id().as_bytes().as_slice(),
+                &record.continuity().control_loss_epoch().get().to_be_bytes(),
+            ]
+            .concat(),
+        ),
+    ];
+    let mut scope = super::admission_authority_guards::Writer::new(33);
+    super::admission_authority_guards::write_scope(&mut scope, identity.runtime_scope())?;
+    keys.push((b"runtime".as_slice(), scope.bytes));
+    if let oteryn_game_server::foundation::ReconnectProofV1::ReauthenticatedRecovery {
+        recovery_grant_nonce,
+        ..
+    } = record.proof()
+    {
+        keys.push((b"recovery-nonce".as_slice(), recovery_grant_nonce.to_vec()));
+    }
+    // Stable FNV-1a only chooses serialization buckets. Hash collisions may
+    // over-serialize; complete typed identities remain mandatory SQL predicates.
+    let mut physical: Vec<i64> = keys
+        .into_iter()
+        .map(|(domain, key)| {
+            let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+            for byte in b"oteryn-admission-v1"
+                .iter()
+                .chain(domain)
+                .chain([0].iter())
+                .chain(&key)
+            {
+                hash ^= u64::from(*byte);
+                hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+            i64::from_be_bytes(hash.to_be_bytes())
+        })
+        .collect();
+    physical.sort_unstable();
+    physical.dedup();
+    for key in physical {
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(key)
+            .execute(&mut **transaction)
+            .await?;
+    }
+    Ok(())
+}
+
+const ADMISSION_RELATION_FENCE: &str = "LOCK TABLE
+    game_durability_admission_account_guards,
+    game_durability_admission_character_guards,
+    game_durability_admission_guard_history,
+    game_durability_admission_lifecycle_receipts,
+    game_durability_admission_runtime_guards,
+    game_durability_admission_signing_trust_guards,
+    game_durability_control_loss_continuity,
+    game_durability_executor_custody,
+    game_durability_fresh_admission_receipts,
+    game_durability_reconnect_attempts,
+    game_durability_reconnect_pending_commands,
+    game_durability_reconnect_sessions,
+    game_durability_recovery_grant_consumptions,
+    game_durability_session_replacements,
+    game_durability_transport_ref_reservations
+    IN EXCLUSIVE MODE";
+
+/// Shared strongest relation fence, acquired before domain keys and semantic time.
+pub(super) async fn lock_admission_relations(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), DurabilityError> {
+    // One statement preserves the complete lexical relation order and strongest
+    // mode while avoiding fifteen prepared statement shapes and await points.
+    sqlx::query(ADMISSION_RELATION_FENCE)
+        .execute(&mut **transaction)
+        .await?;
+    Ok(())
+}
+
+/// Finalize an owned semantic transaction and observe the exact holder tail.
+/// Terminal authority is recorded only after both COMMIT and return/retirement.
+pub(super) async fn commit_semantic(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+) -> Result<(), sqlx::Error> {
+    let (connection, result) = transaction.oteryn_m05_commit().await;
+    let disposition = match connection {
+        sqlx::pool::MaybePoolConnection::PoolConnection(mut connection) => {
+            connection.oteryn_m05_return_to_pool().await
+        }
+        sqlx::pool::MaybePoolConnection::Connection(_) => None,
+    };
+    match (result, disposition) {
+        (Ok(()), Some(_)) => {
+            let _ = mark_current_semantic_terminal();
+            Ok(())
+        }
+        (Err(error), Some(_)) => Err(error),
+        (_, None) => Err(sqlx::Error::Protocol(
+            "M05 transaction finality produced no terminal holder evidence".into(),
+        )),
+    }
+}
+
+/// Roll back a semantic transaction and observe the exact holder tail.
+/// A definitive no-mutation disposition is terminal only after both steps.
+pub(super) async fn rollback_semantic(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+) -> Result<(), sqlx::Error> {
+    let (connection, result) = transaction.oteryn_m05_rollback().await;
+    let disposition = match connection {
+        sqlx::pool::MaybePoolConnection::PoolConnection(mut connection) => {
+            connection.oteryn_m05_return_to_pool().await
+        }
+        sqlx::pool::MaybePoolConnection::Connection(_) => None,
+    };
+    match (result, disposition) {
+        (Ok(()), Some(_)) => {
+            let _ = mark_current_semantic_terminal();
+            Ok(())
+        }
+        (Err(error), Some(_)) => Err(error),
+        (_, None) => Err(sqlx::Error::Protocol(
+            "M05 transaction rollback produced no terminal holder evidence".into(),
+        )),
+    }
+}
+
+/// Preserve an operation error only after rollback and holder finality are
+/// observed.  If finality is uncertain, that error wins fail-closed.
+pub(super) async fn rollback_semantic_error<T>(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    operation_error: DurabilityError,
+) -> Result<T, DurabilityError> {
+    match rollback_semantic(transaction).await {
+        Ok(()) => Err(operation_error),
+        Err(finality_error) => Err(DurabilityError::from(finality_error)),
+    }
+}
+
+/// The only two intentional outcomes of a registered semantic transaction.
+///
+/// Keeping this decision outside the transaction-owning future makes every
+/// ordinary `?` in that future construction-safe: an error is converted into
+/// an observed rollback/holder-return before it can escape.
+pub(super) enum SemanticTransactionOutcome<T> {
+    Commit(T),
+    Rollback(T),
+    CommitAmbiguous { committed: T, ambiguous: T },
+}
+
+pub(super) async fn run_semantic_transaction<T, F>(
+    backend: &RuntimeBackend,
+    body: F,
+) -> Result<T, DurabilityError>
+where
+    F: for<'transaction> FnOnce(
+        &'transaction mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<SemanticTransactionOutcome<T>, DurabilityError>>
+                + Send
+                + 'transaction,
+        >,
+    >,
+{
+    let transaction = backend.begin().await?;
+    run_started_semantic_transaction(transaction, body).await
+}
+
+/// Apply the semantic finality contract to a transaction acquired by a caller.
+///
+/// Custody bootstrap uses `try_begin` and therefore cannot use
+/// [`run_semantic_transaction`].  Taking ownership here ensures that its error
+/// paths receive the identical observed rollback and holder disposition.
+pub(super) async fn run_started_semantic_transaction<T, F>(
+    mut transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    body: F,
+) -> Result<T, DurabilityError>
+where
+    F: for<'transaction> FnOnce(
+        &'transaction mut sqlx::Transaction<'static, sqlx::Postgres>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<SemanticTransactionOutcome<T>, DurabilityError>>
+                + Send
+                + 'transaction,
+        >,
+    >,
+{
+    let outcome = body(&mut transaction).await;
+    finish_started_semantic_transaction(transaction, outcome).await
+}
+
+pub(super) async fn finish_started_semantic_transaction<T>(
+    transaction: sqlx::Transaction<'static, sqlx::Postgres>,
+    outcome: Result<SemanticTransactionOutcome<T>, DurabilityError>,
+) -> Result<T, DurabilityError> {
+    match outcome {
+        Ok(SemanticTransactionOutcome::Commit(value)) => {
+            commit_semantic(transaction).await?;
+            Ok(value)
+        }
+        Ok(SemanticTransactionOutcome::Rollback(value)) => {
+            rollback_semantic(transaction).await?;
+            Ok(value)
+        }
+        Ok(SemanticTransactionOutcome::CommitAmbiguous {
+            committed,
+            ambiguous,
+        }) => match commit_semantic(transaction).await {
+            Ok(()) => Ok(committed),
+            Err(_) => Ok(ambiguous),
+        },
+        Err(operation_error) => match rollback_semantic(transaction).await {
+            Ok(()) => Err(operation_error),
+            Err(finality_error) => Err(DurabilityError::from(finality_error)),
+        },
+    }
+}
+
+// Fixed bookkeeping arrays, not a complete SQL-driver/resident-work proof.
+// Box<str> retains no caller-selected spare capacity. At most eight queued and
+// two active complete envelopes plus two bounded submission copies exist here.
+#[derive(Clone)]
+struct WorkOperation {
+    incarnation: u64,
+    kind: i16,
+    operation: std::sync::Arc<str>,
+    definitive: bool,
+    in_flight: usize,
+    acknowledging: bool,
+    persisted: bool,
+    deadline: Option<tokio::time::Instant>,
+}
+struct QueuedWork {
+    id: u64,
+    enqueued: std::time::Instant,
+    operation: WorkOperation,
+}
+struct WorkCustody {
+    queued: [Option<QueuedWork>; 8],
+    active: [Option<WorkOperation>; 2],
+    next_id: u64,
+}
+impl WorkCustody {
+    fn new(pending: &[Option<super::DurablePendingCheckpoint>; 2]) -> Self {
+        Self {
+            queued: std::array::from_fn(|_| None),
+            active: std::array::from_fn(|i| {
+                pending[i].as_ref().map(|p| WorkOperation {
+                    incarnation: (i as u64) + 1,
+                    kind: p.operation_kind,
+                    operation: std::sync::Arc::from(p.operation_json.as_str()),
+                    definitive: false,
+                    in_flight: 0,
+                    acknowledging: false,
+                    persisted: true,
+                    deadline: None,
+                })
+            }),
+            next_id: 3,
+        }
+    }
+
+    fn enqueue(
+        &mut self,
+        kind: i16,
+        operation: &str,
+        now: std::time::Instant,
+    ) -> Result<u64, DurabilityError> {
+        if !(1..=8).contains(&kind)
+            || operation.is_empty()
+            || operation.len() > super::MAX_FRESH_OPERATION_BYTES
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        // A retry cannot mint a second active identity for an original already
+        // retained for reconciliation. It must use `resume_checkpoint`.
+        if self
+            .active
+            .iter()
+            .flatten()
+            .any(|active| active.kind == kind && active.operation.as_ref() == operation)
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        let target = self
+            .queued
+            .iter_mut()
+            .find(|slot| slot.is_none())
+            .ok_or(DurabilityError::Unavailable)?;
+        let id = self.next_id;
+        let next = id.checked_add(1).ok_or(DurabilityError::Unavailable)?;
+        // All reservation, length and counter checks precede the only input copy.
+        *target = Some(QueuedWork {
+            id,
+            enqueued: now,
+            operation: WorkOperation {
+                incarnation: id,
+                kind,
+                operation: std::sync::Arc::from(operation),
+                definitive: false,
+                in_flight: 0,
+                acknowledging: false,
+                persisted: false,
+                deadline: None,
+            },
+        });
+        self.next_id = next;
+        Ok(id)
+    }
+
+    fn cancel(&mut self, id: u64) {
+        if let Some(slot) = self
+            .queued
+            .iter_mut()
+            .find(|slot| slot.as_ref().is_some_and(|work| work.id == id))
+        {
+            *slot = None;
+        }
+        // There is deliberately no active-slot clear: dropping a submitted
+        // caller is neither definitive outcome nor owner acknowledgement.
+    }
+
+    fn promote_with_deadline(
+        &mut self,
+        id: u64,
+        now: std::time::Instant,
+        deadline: tokio::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        let index = self
+            .queued
+            .iter()
+            .position(|slot| slot.as_ref().is_some_and(|work| work.id == id))
+            .ok_or(DurabilityError::Unavailable)?;
+        let queued = self.queued[index]
+            .as_ref()
+            .ok_or(DurabilityError::Unavailable)?;
+        if now.saturating_duration_since(queued.enqueued) > Duration::from_millis(1000) {
+            self.queued[index] = None;
+            return Err(DurabilityError::Unavailable);
+        }
+        if self.active.iter().flatten().any(|active| {
+            active.kind == queued.operation.kind && active.operation == queued.operation.operation
+        }) {
+            return Err(DurabilityError::Unavailable);
+        }
+        let active_index = self
+            .active
+            .iter()
+            .position(Option::is_none)
+            .ok_or(DurabilityError::Unavailable)?;
+        let queued = self.queued[index]
+            .take()
+            .ok_or(DurabilityError::Unavailable)?;
+        // The original moves into active custody before the bounded submission
+        // copy or any await. Cancellation can never put this identity back in queue.
+        self.active[active_index] = Some(queued.operation);
+        self.active[active_index]
+            .as_mut()
+            .ok_or(DurabilityError::Unavailable)?
+            .deadline = Some(deadline);
+        let submission = self.active[active_index]
+            .as_ref()
+            .ok_or(DurabilityError::Unavailable)?
+            .clone();
+        Ok((if active_index == 0 { 1 } else { 2 }, submission))
+    }
+
+    #[cfg(test)]
+    fn promote(
+        &mut self,
+        id: u64,
+        now: std::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        self.promote_with_deadline(
+            id,
+            now,
+            tokio::time::Instant::now() + Duration::from_millis(2000),
+        )
+    }
+
+    fn resume_deadline(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<tokio::time::Instant, DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if !active.persisted {
+            return Err(DurabilityError::Unavailable);
+        }
+        // A live attempt always retains its original absolute deadline. Only a
+        // checkpoint recovered from the prior process has no monotonic instant;
+        // it receives one bounded reconciliation deadline, retained thereafter.
+        Ok(*active
+            .deadline
+            .get_or_insert_with(|| tokio::time::Instant::now() + Duration::from_millis(2000)))
+    }
+
+    fn checkpoint_retry(
+        &mut self,
+        kind: i16,
+        operation: &str,
+        deadline: tokio::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        let index = self
+            .active
+            .iter()
+            .position(|active| {
+                active.as_ref().is_some_and(|active| {
+                    active.kind == kind && active.operation.as_ref() == operation
+                })
+            })
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.persisted || active.in_flight != 0 || active.acknowledging {
+            return Err(DurabilityError::Unavailable);
+        }
+        // This is a new bounded checkpoint-reconciliation attempt, not a
+        // renewal of a semantic pass (none was returned for this occupation).
+        active.deadline = Some(deadline);
+        Ok(((index as i16) + 1, active.clone()))
+    }
+
+    fn finish_acknowledgement(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self
+            .active
+            .get(index)
+            .and_then(Option::as_ref)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.kind != kind
+            || active.operation.as_ref() != operation
+            || active.incarnation != incarnation
+            || !active.acknowledging
+            || !active.definitive
+            || active.in_flight != 0
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        self.active[index] = None;
+        Ok(())
+    }
+
+    #[cfg(test)]
+    fn acknowledge(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+    ) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let incarnation = self.active[index]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .incarnation;
+        self.begin_acknowledgement(slot, kind, operation, incarnation)?;
+        self.finish_acknowledgement(slot, kind, operation, incarnation)
+    }
+
+    fn begin_acknowledgement(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if !active.definitive || active.in_flight != 0 {
+            Err(DurabilityError::Unavailable)
+        } else {
+            // Set before the database await. A cancelled/lost-response retry
+            // with this exact pass is allowed to converge, but no new run is.
+            active.acknowledging = true;
+            Ok(())
+        }
+    }
+
+    fn validate(&self, slot: i16, kind: i16, operation: &str) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self
+            .active
+            .get(index)
+            .and_then(Option::as_ref)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.kind == kind && active.operation.as_ref() == operation {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn validate_incarnation(
+        &self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        self.validate(slot, kind, operation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if self.active[index]
+            .as_ref()
+            .is_some_and(|active| active.incarnation == incarnation)
+        {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn begin_run(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.in_flight = active
+            .in_flight
+            .checked_add(1)
+            .filter(|_| !active.acknowledging)
+            .ok_or(DurabilityError::Unavailable)?;
+        Ok(())
+    }
+
+    fn finish_run(
+        &mut self,
+        slot: i16,
+        kind: i16,
+        operation: &str,
+        incarnation: u64,
+        definitive: bool,
+    ) -> Result<(), DurabilityError> {
+        self.validate_incarnation(slot, kind, operation, incarnation)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.in_flight = active
+            .in_flight
+            .checked_sub(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        active.definitive |= definitive;
+        Ok(())
+    }
+
+    fn mark_persisted(&mut self, slot: i16, incarnation: u64) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_mut()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.incarnation != incarnation {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        active.persisted = true;
+        Ok(())
+    }
+
+    fn release_unsubmitted(&mut self, slot: i16, incarnation: u64) -> Result<(), DurabilityError> {
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let active = self.active[index]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if active.incarnation != incarnation
+            || active.persisted
+            || active.in_flight != 0
+            || active.acknowledging
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        self.active[index] = None;
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+struct ActivePassIdentity {
+    backend: std::sync::Arc<RuntimeBackend>,
+    slot: i16,
+    kind: i16,
+    original: std::sync::Arc<str>,
+    deadline: tokio::time::Instant,
+    incarnation: u64,
+    terminal: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+tokio::task_local! {
+    static ACTIVE_SEMANTIC_PASS: ActivePassIdentity;
+}
+
+/// Exact active-slot custody for one bounded semantic attempt.
+///
+/// Dropping or timing out this value never acknowledges or releases its slot.
+pub struct SemanticPass {
+    identity: ActivePassIdentity,
+}
+
+struct ActiveRunGuard {
+    identity: ActivePassIdentity,
+    finished: bool,
+}
+
+impl Drop for ActiveRunGuard {
+    fn drop(&mut self) {
+        if !self.finished {
+            let _ = self.identity.backend.finish_run(&self.identity, false);
+        }
+    }
+}
+
+impl SemanticPass {
+    #[must_use]
+    pub const fn slot(&self) -> i16 {
+        self.identity.slot
+    }
+
+    /// Run the complete semantic body under the original, unchanged pass deadline.
+    pub async fn run<F, T>(&self, body: F) -> Result<T, DurabilityError>
+    where
+        F: std::future::Future<Output = Result<T, DurabilityError>>,
+    {
+        self.identity.backend.begin_run(&self.identity)?;
+        let mut guard = ActiveRunGuard {
+            identity: self.identity.clone(),
+            finished: false,
+        };
+        // Completion authority is scoped to this exact run. An intermediate
+        // terminal transaction from a failed run cannot bless a later,
+        // unrelated successful future that reuses the same pass handle.
+        let mut run_identity = self.identity.clone();
+        run_identity.terminal = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        // Once semantic work has been issued, retain custody of its future
+        // until the PostgreSQL timeout/finality path reaches a real outcome.
+        // Dropping this future at the client deadline could abandon rollback,
+        // pool return, or dead-connection eviction while fabricating terminal
+        // unavailability. The unchanged absolute deadline is enforced by the
+        // transaction-local PostgreSQL timeout settings installed by `begin`.
+        let result = ACTIVE_SEMANTIC_PASS.scope(run_identity.clone(), body).await;
+        // Only Game-owned storage finalization can set this run-local token.
+        // Outer `Ok` alone is deliberately not terminal authority.
+        self.identity.backend.finish_run(
+            &self.identity,
+            result.is_ok()
+                && run_identity
+                    .terminal
+                    .load(std::sync::atomic::Ordering::Acquire),
+        )?;
+        guard.finished = true;
+        result
+    }
+}
+
+/// Records terminal semantic authority from inside Game-owned storage code.
+/// Ordinary callers cannot manufacture this signal merely by completing a future.
+pub(super) fn mark_current_semantic_terminal() -> Result<(), DurabilityError> {
+    ACTIVE_SEMANTIC_PASS
+        .try_with(|pass| {
+            pass.terminal
+                .store(true, std::sync::atomic::Ordering::Release);
+        })
+        .map_err(|_| DurabilityError::Unavailable)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct V1ReconciliationOriginal {
+    m05_operation: String,
+    record: String,
+    authorization_deadline: Option<i64>,
+}
+
+fn validate_v1_reconciliation_original(
+    original: &str,
+    encoded_record: &str,
+    allowed_origins: &[&str],
+) -> Result<(), DurabilityError> {
+    let original: V1ReconciliationOriginal =
+        serde_json::from_str(original).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let deadline_shape_valid = if original.m05_operation == "commit" {
+        original.authorization_deadline.is_some()
+    } else {
+        original.authorization_deadline.is_none()
+    };
+    if allowed_origins.contains(&original.m05_operation.as_str())
+        && original.record == encoded_record
+        && deadline_shape_valid
+    {
+        Ok(())
+    } else {
+        Err(DurabilityError::InvalidStoredState)
+    }
+}
+
+/// A never-submitted queue reservation. Drop releases only this queued identity.
+/// Establishment retains the original active slot on success, error or cancellation.
+/// Only the returned pass authorizes an admission effect; it is not completion.
+pub struct QueuedCheckpoint {
+    backend: std::sync::Arc<RuntimeBackend>,
+    id: u64,
+}
+impl Drop for QueuedCheckpoint {
+    fn drop(&mut self) {
+        if let Ok(mut work) = self.backend.work.lock() {
+            work.cancel(self.id);
+        }
+    }
+}
+impl QueuedCheckpoint {
+    #[allow(clippy::infallible_destructuring_match)]
+    pub async fn establish(self) -> Result<SemanticPass, DurabilityError> {
+        let started = tokio::time::Instant::now();
+        let (slot, operation) = self
+            .backend
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .promote_with_deadline(
+                self.id,
+                std::time::Instant::now(),
+                started + Duration::from_millis(2000),
+            )?;
+        let checkpoint = self
+            .backend
+            .establish_checkpoint(
+                slot,
+                operation.kind,
+                &operation.operation,
+                started + Duration::from_millis(2000),
+            )
+            .await;
+        if matches!(
+            checkpoint,
+            Err(CheckpointEstablishmentError::DefinitelyUnsubmitted)
+        ) {
+            self.backend
+                .work
+                .lock()
+                .map_err(|_| DurabilityError::Unavailable)?
+                .release_unsubmitted(slot, operation.incarnation)?;
+            return Err(DurabilityError::Unavailable);
+        }
+        checkpoint.map_err(CheckpointEstablishmentError::into_durability)?;
+        self.backend
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .mark_persisted(slot, operation.incarnation)?;
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.backend.clone(),
+                slot,
+                kind: operation.kind,
+                original: operation.operation.clone(),
+                deadline: started + Duration::from_millis(2000),
+                incarnation: operation.incarnation,
+                terminal: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            },
+        })
+    }
+}
+
+enum CheckpointEstablishmentError {
+    DefinitelyUnsubmitted,
+    Uncertain(DurabilityError),
+}
+impl CheckpointEstablishmentError {
+    fn into_durability(self) -> DurabilityError {
+        match self {
+            Self::DefinitelyUnsubmitted => DurabilityError::Unavailable,
+            Self::Uncertain(error) => error,
+        }
+    }
+}
+
+/// One shared production backend, including the recovered fixed-slot custody.
+/// This is not yet the executor's queue/active-operation budget.
+pub(super) struct RuntimeBackend {
+    pub pool: PgPool,
+    custody: BackendCustody,
+    pub pending: std::sync::Mutex<[Option<super::DurablePendingCheckpoint>; 2]>,
+    work: std::sync::Mutex<WorkCustody>,
+    root_ready_demand: RootReadyDemand,
+    #[allow(dead_code)]
+    root_maintenance: tokio::sync::Mutex<()>,
+}
+struct RootReadyDemand(std::sync::atomic::AtomicBool);
+impl RootReadyDemand {
+    const fn new() -> Self {
+        Self(std::sync::atomic::AtomicBool::new(false))
+    }
+    fn record(&self) {
+        self.0.store(true, std::sync::atomic::Ordering::Release);
+    }
+    fn consume(&self) -> bool {
+        self.0.swap(false, std::sync::atomic::Ordering::AcqRel)
+    }
+}
+enum BackendCustody {
+    Registered(super::DurabilityCustody),
+    #[cfg(test)]
+    LegacyFixture,
+}
+impl RuntimeBackend {
+    async fn establish_checkpoint(
+        &self,
+        slot: i16,
+        kind: i16,
+        original: &str,
+        deadline: tokio::time::Instant,
+    ) -> Result<(), CheckpointEstablishmentError> {
+        #[cfg(not(test))]
+        let BackendCustody::Registered(custody) = &self.custody;
+        #[cfg(test)]
+        let custody = match &self.custody {
+            BackendCustody::Registered(custody) => custody,
+            BackendCustody::LegacyFixture => {
+                return Err(CheckpointEstablishmentError::Uncertain(
+                    DurabilityError::Unavailable,
+                ));
+            }
+        };
+        if tokio::time::Instant::now() >= deadline {
+            return Err(CheckpointEstablishmentError::Uncertain(
+                DurabilityError::Unavailable,
+            ));
+        }
+        // The holder's PostgreSQL startup timeout is already active before
+        // BEGIN. Await the exact checkpoint result; never turn a completed
+        // checkpoint commit into an artificial timeout result.
+        let result = custody.checkpoint(&self.pool, slot, kind, original).await;
+        if matches!(
+            result,
+            Ok(super::CheckpointDisposition::DefinitelyUnsubmitted)
+        ) {
+            self.record_root_ready_demand();
+        }
+        match result {
+            Ok(super::CheckpointDisposition::Persisted) => Ok(()),
+            Ok(super::CheckpointDisposition::DefinitelyUnsubmitted) => {
+                Err(CheckpointEstablishmentError::DefinitelyUnsubmitted)
+            }
+            Err(error) => Err(CheckpointEstablishmentError::Uncertain(error)),
+        }
+    }
+
+    pub(super) fn resume_pass(
+        self: &std::sync::Arc<Self>,
+        slot: i16,
+        kind: i16,
+        original: &str,
+    ) -> Result<SemanticPass, DurabilityError> {
+        let (deadline, retained_original, incarnation) = {
+            let mut work = self.work.lock().map_err(|_| DurabilityError::Unavailable)?;
+            let deadline = work.resume_deadline(slot, kind, original)?;
+            let index =
+                usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let active = work.active[index]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            (deadline, active.operation.clone(), active.incarnation)
+        };
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.clone(),
+                slot,
+                kind,
+                original: retained_original,
+                deadline,
+                incarnation,
+                terminal: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            },
+        })
+    }
+
+    #[allow(dead_code)]
+    pub(super) async fn retry_checkpoint_establishment(
+        self: &std::sync::Arc<Self>,
+        kind: i16,
+        original: &str,
+    ) -> Result<SemanticPass, DurabilityError> {
+        let deadline = tokio::time::Instant::now() + Duration::from_millis(2000);
+        let (slot, operation) = self
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .checkpoint_retry(kind, original, deadline)?;
+        self.establish_checkpoint(slot, kind, &operation.operation, deadline)
+            .await
+            .map_err(CheckpointEstablishmentError::into_durability)?;
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .mark_persisted(slot, operation.incarnation)?;
+        Ok(SemanticPass {
+            identity: ActivePassIdentity {
+                backend: self.clone(),
+                slot,
+                kind,
+                original: operation.operation,
+                deadline,
+                incarnation: operation.incarnation,
+                terminal: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            },
+        })
+    }
+
+    fn record_root_ready_demand(&self) {
+        self.root_ready_demand.record();
+    }
+
+    fn consume_root_ready_demand(&self) -> bool {
+        self.root_ready_demand.consume()
+    }
+
+    pub(super) fn enqueue(
+        self: &std::sync::Arc<Self>,
+        kind: i16,
+        original: &str,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let id = self
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .enqueue(kind, original, std::time::Instant::now())?;
+        Ok(QueuedCheckpoint {
+            backend: self.clone(),
+            id,
+        })
+    }
+    fn validate_pass(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
+        if !std::ptr::eq(self, std::sync::Arc::as_ptr(&pass.backend)) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .validate_incarnation(pass.slot, pass.kind, &pass.original, pass.incarnation)
+    }
+
+    pub(super) fn validate_semantic(
+        &self,
+        kind: i16,
+        canonical_original: &str,
+    ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind == kind && pass.original.as_ref() == canonical_original {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    pub(super) fn validate_reconciliation(
+        &self,
+        kind: i16,
+        encoded_record: &str,
+        allowed_origins: &[&str],
+    ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind != kind {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        validate_v1_reconciliation_original(&pass.original, encoded_record, allowed_origins)
+    }
+
+    pub(super) fn validate_semantic_any(
+        &self,
+        kind: i16,
+        canonical_originals: &[&str],
+    ) -> Result<(), DurabilityError> {
+        #[cfg(test)]
+        if matches!(self.custody, BackendCustody::LegacyFixture) {
+            return Ok(());
+        }
+        let pass = ACTIVE_SEMANTIC_PASS
+            .try_with(Clone::clone)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.validate_pass(&pass)?;
+        if pass.kind == kind
+            && canonical_originals
+                .iter()
+                .any(|candidate| pass.original.as_ref() == *candidate)
+        {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    fn begin_run(&self, pass: &ActivePassIdentity) -> Result<(), DurabilityError> {
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .begin_run(pass.slot, pass.kind, &pass.original, pass.incarnation)
+    }
+
+    fn finish_run(
+        &self,
+        pass: &ActivePassIdentity,
+        definitive: bool,
+    ) -> Result<(), DurabilityError> {
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .finish_run(
+                pass.slot,
+                pass.kind,
+                &pass.original,
+                pass.incarnation,
+                definitive,
+            )
+    }
+
+    pub async fn begin(
+        &self,
+    ) -> Result<sqlx::Transaction<'static, sqlx::Postgres>, DurabilityError> {
+        match &self.custody {
+            BackendCustody::Registered(custody) => {
+                let pass = ACTIVE_SEMANTIC_PASS
+                    .try_with(Clone::clone)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                self.validate_pass(&pass)?;
+                if tokio::time::Instant::now() >= pass.deadline {
+                    return Err(DurabilityError::Unavailable);
+                }
+                let mut transaction = match self.pool.try_begin().await? {
+                    Some(transaction) => transaction,
+                    None => {
+                        self.record_root_ready_demand();
+                        return Err(DurabilityError::Unavailable);
+                    }
+                };
+                let remaining = pass
+                    .deadline
+                    .saturating_duration_since(tokio::time::Instant::now());
+                if remaining.is_zero() {
+                    rollback_semantic(transaction)
+                        .await
+                        .map_err(DurabilityError::from)?;
+                    return Err(DurabilityError::Unavailable);
+                }
+                let millis = i64::try_from(remaining.as_millis().max(1))
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                // Install the transaction-wide server deadline before custody
+                // locks or generation SQL can block. Every later statement uses
+                // this same immutable pass deadline.
+                let timeout_result = sqlx::query("SELECT set_config('transaction_timeout', $1, true), set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)")
+                    .bind(format!("{millis}ms"))
+                    .execute(&mut *transaction)
+                    .await;
+                if let Err(error) = timeout_result {
+                    rollback_semantic(transaction)
+                        .await
+                        .map_err(DurabilityError::from)?;
+                    return Err(DurabilityError::from(error));
+                }
+                // Keep ownership of the already-started transaction while the
+                // custody fence runs. A rejected fence is a no-mutation path,
+                // but dropping the transaction would only enqueue rollback and
+                // leave the max-one holder temporarily unavailable.
+                let fence_result = async {
+                    sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+                        .bind(super::EXECUTOR_CUSTODY_LOCK)
+                        .execute(&mut *transaction)
+                        .await?;
+                    custody.validate_generation(&mut transaction).await
+                }
+                .await;
+                if let Err(error) = fence_result {
+                    let unavailable = matches!(error, DurabilityError::Unavailable);
+                    rollback_semantic(transaction)
+                        .await
+                        .map_err(DurabilityError::from)?;
+                    if unavailable {
+                        self.record_root_ready_demand();
+                    }
+                    return Err(error);
+                }
+                Ok(transaction)
+            }
+            #[cfg(test)]
+            BackendCustody::LegacyFixture => self.pool.begin().await.map_err(DurabilityError::from),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(super) async fn maintain_root_ready(&self) -> Result<(), DurabilityError> {
+        let _guard = self.root_maintenance.lock().await;
+        if !self.consume_root_ready_demand() {
+            return Ok(());
+        }
+        let result = async {
+            let mut connection = tokio::time::timeout(Duration::from_secs(5), self.pool.acquire())
+                .await
+                .map_err(|_| DurabilityError::Unavailable)??;
+            match connection.oteryn_m05_return_to_pool().await {
+                Some(true) => Ok(()),
+                Some(false) | None => Err(DurabilityError::Unavailable),
+            }
+        }
+        .await;
+        if result.is_err() {
+            // Consuming a coalesced demand is conditional on establishing a
+            // ready holder. Failed bounded windows leave the demand actionable.
+            self.record_root_ready_demand();
+        }
+        result
+    }
+
+    #[allow(irrefutable_let_patterns)]
+    #[allow(dead_code)]
+    pub(super) async fn acknowledge(&self, pass: &SemanticPass) -> Result<(), DurabilityError> {
+        let BackendCustody::Registered(custody) = &self.custody else {
+            return Err(DurabilityError::Unavailable);
+        };
+        self.validate_pass(&pass.identity)?;
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .begin_acknowledgement(
+                pass.identity.slot,
+                pass.identity.kind,
+                &pass.identity.original,
+                pass.identity.incarnation,
+            )?;
+        custody
+            .acknowledge(
+                &self.pool,
+                pass.identity.slot,
+                pass.identity.kind,
+                &pass.identity.original,
+            )
+            .await?;
+        self.work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .finish_acknowledgement(
+                pass.identity.slot,
+                pass.identity.kind,
+                &pass.identity.original,
+                pass.identity.incarnation,
+            )?;
+        let index = usize::try_from(pass.identity.slot - 1)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        self.pending
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?[index] = None;
+        Ok(())
+    }
+
+    pub(super) fn pending_snapshot(
+        &self,
+    ) -> Result<[Option<super::DurablePendingCheckpoint>; 2], DurabilityError> {
+        self.pending
+            .lock()
+            .map(|pending| pending.clone())
+            .map_err(|_| DurabilityError::Unavailable)
+    }
+}
+enum RuntimeRegistration {
+    Empty,
+    Starting,
+    Ready {
+        identity: RuntimeIdentity,
+        // Registration must not itself keep a retired holder generation alive.
+        // Live AdmissionRuntime/semantic handles own the strong references.
+        backend: std::sync::Weak<RuntimeBackend>,
+    },
+}
+
+/// Owns the one initial root window. If the awaiting caller is cancelled or
+/// any establishment step fails, dropping this guard restores absence only
+/// after the cancelled future and all of its locally owned descendants have
+/// been destroyed. The mutex keeps later demand coalesced behind that finality.
+struct StartingRegistration<'a> {
+    registration: tokio::sync::MutexGuard<'a, RuntimeRegistration>,
+    complete: bool,
+}
+impl Drop for StartingRegistration<'_> {
+    fn drop(&mut self) {
+        if !self.complete {
+            *self.registration = RuntimeRegistration::Empty;
+        }
+    }
+}
+
+struct RuntimeIdentity {
+    transport_ip: std::net::IpAddr,
+    port: u16,
+    config_identity: std::sync::Arc<()>,
+    root_owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget>,
+}
+impl PartialEq for RuntimeIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        self.transport_ip == other.transport_ip
+            && self.port == other.port
+            && std::sync::Arc::ptr_eq(&self.config_identity, &other.config_identity)
+            && std::sync::Arc::ptr_eq(&self.root_owner, &other.root_owner)
+    }
+}
+static RUNTIME_REGISTRATION: tokio::sync::Mutex<RuntimeRegistration> =
+    tokio::sync::Mutex::const_new(RuntimeRegistration::Empty);
+
+#[cfg(test)]
+#[derive(Clone, Copy)]
+enum RegisteredConnectDiagnosticSubstage {
+    RootProfileConstruct,
+    RootSchemaInspect,
+    RootCustodyAcquire,
+    RootHolderReturn,
+    Ready,
+}
+
+#[cfg(test)]
+thread_local! {
+    static REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE:
+        std::cell::Cell<RegisteredConnectDiagnosticSubstage> =
+        const { std::cell::Cell::new(RegisteredConnectDiagnosticSubstage::RootProfileConstruct) };
+}
+
+#[cfg(test)]
+fn set_registered_connect_diagnostic_substage(stage: RegisteredConnectDiagnosticSubstage) {
+    REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE.set(stage);
+}
+
+#[cfg(test)]
+pub(super) fn registered_connect_diagnostic_substage() -> &'static str {
+    REGISTERED_CONNECT_DIAGNOSTIC_SUBSTAGE.with(|stage| match stage.get() {
+        RegisteredConnectDiagnosticSubstage::RootProfileConstruct => "root_profile_construct",
+        RegisteredConnectDiagnosticSubstage::RootSchemaInspect => "root_schema_inspect",
+        RegisteredConnectDiagnosticSubstage::RootCustodyAcquire => "root_custody_acquire",
+        RegisteredConnectDiagnosticSubstage::RootHolderReturn => "root_holder_return",
+        RegisteredConnectDiagnosticSubstage::Ready => "ready",
+    })
+}
+
+pub(super) async fn registered_backend(
+    config: super::AdmissionRuntimeConfig,
+) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootProfileConstruct,
+    );
+    if config.port == 0
+        || config.backing.tls_server_name.is_empty()
+        || config.backing.database.is_empty()
+        || config.backing.username.is_empty()
+        || config.backing.password.is_empty()
+        || config.backing.root_ca_pem.is_empty()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let identity = RuntimeIdentity {
+        transport_ip: config.transport_ip,
+        port: config.port,
+        config_identity: config.identity.clone(),
+        root_owner: config.resource_budget.clone(),
+    };
+    let mut registration = RUNTIME_REGISTRATION.lock().await;
+    match &*registration {
+        RuntimeRegistration::Ready {
+            identity: expected,
+            backend,
+        } if expected == &identity => {
+            if let Some(backend) = backend.upgrade() {
+                return Ok(backend);
+            }
+        }
+        RuntimeRegistration::Ready { backend, .. } if backend.strong_count() == 0 => {}
+        RuntimeRegistration::Empty => {}
+        _ => return Err(DurabilityError::InvalidStoredState),
+    }
+    // Cancellation or uncertain initialization remains Starting. A fresh caller
+    // cannot mint replacement capacity or silently retry an ambiguous takeover.
+    *registration = RuntimeRegistration::Starting;
+    let mut starting = StartingRegistration {
+        registration,
+        complete: false,
+    };
+    let options = sqlx::postgres::PgConnectOptions::new_oteryn_root_profile(
+        config.transport_ip,
+        config.port,
+        &config.backing.tls_server_name,
+        &config.backing.database,
+        &config.backing.username,
+        &config.backing.password,
+        &config.backing.root_ca_pem,
+        config.resource_budget.clone(),
+    )
+    .map_err(|_| DurabilityError::Unavailable)?
+    // PostgreSQL applies these startup parameters before a ready connection is
+    // admitted to the holder. Consequently BEGIN and the first custody-lock SQL
+    // are already protected; the transaction-local remaining value only
+    // tightens this immutable two-second ceiling and never extends it.
+    .options([
+        ("transaction_timeout", "2000ms"),
+        ("statement_timeout", "2000ms"),
+        ("lock_timeout", "2000ms"),
+    ])
+    .map_err(|_| DurabilityError::Unavailable)?;
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootSchemaInspect,
+    );
+    let pool = super::schema::connect_runtime_root(options).await?;
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootCustodyAcquire,
+    );
+    let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
+    // `DurabilityCustody::acquire` consumes the holder's only connection in a
+    // transaction. Committing that transaction starts SQLx's asynchronous
+    // return path; it does not itself prove that the connection is idle. Take
+    // custody of that exact max-one holder capacity and explicitly complete a
+    // return before publishing this generation as ready.
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(
+        RegisteredConnectDiagnosticSubstage::RootHolderReturn,
+    );
+    let mut connection = pool.acquire().await.map_err(DurabilityError::from)?;
+    if connection.oteryn_m05_return_to_pool().await != Some(true) {
+        return Err(DurabilityError::Unavailable);
+    }
+    let backend = std::sync::Arc::new(RuntimeBackend {
+        pool,
+        custody: BackendCustody::Registered(custody),
+        work: std::sync::Mutex::new(WorkCustody::new(&pending)),
+        pending: std::sync::Mutex::new(pending),
+        root_ready_demand: RootReadyDemand::new(),
+        root_maintenance: tokio::sync::Mutex::new(()),
+    });
+    *starting.registration = RuntimeRegistration::Ready {
+        identity,
+        backend: std::sync::Arc::downgrade(&backend),
+    };
+    starting.complete = true;
+    #[cfg(test)]
+    set_registered_connect_diagnostic_substage(RegisteredConnectDiagnosticSubstage::Ready);
+    Ok(backend)
+}
+
+// Historical isolated PostgreSQL fixtures are not production executor proof.
+// Explicit AdmissionRuntime::connect always tests registered production wiring.
+#[cfg(test)]
+pub(super) async fn backend_for_constructor(
+    database_url: &str,
+) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    Ok(std::sync::Arc::new(RuntimeBackend {
+        pool: super::schema::connect_runtime(database_url).await?,
+        custody: BackendCustody::LegacyFixture,
+        pending: std::sync::Mutex::new([None, None]),
+        work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+        root_ready_demand: RootReadyDemand::new(),
+        root_maintenance: tokio::sync::Mutex::new(()),
+    }))
+}
+
+#[cfg(test)]
+mod work_custody_tests {
+    use super::*;
+
+    #[test]
+    fn registered_connect_diagnostic_labels_cover_every_substage() {
+        for (stage, expected) in [
+            (
+                RegisteredConnectDiagnosticSubstage::RootProfileConstruct,
+                "root_profile_construct",
+            ),
+            (
+                RegisteredConnectDiagnosticSubstage::RootSchemaInspect,
+                "root_schema_inspect",
+            ),
+            (
+                RegisteredConnectDiagnosticSubstage::RootCustodyAcquire,
+                "root_custody_acquire",
+            ),
+            (
+                RegisteredConnectDiagnosticSubstage::RootHolderReturn,
+                "root_holder_return",
+            ),
+            (RegisteredConnectDiagnosticSubstage::Ready, "ready"),
+        ] {
+            set_registered_connect_diagnostic_substage(stage);
+            assert_eq!(registered_connect_diagnostic_substage(), expected);
+        }
+    }
+
+    #[test]
+    fn queue_capacity_is_reserved_before_copy_and_cancel_releases_only_queued()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let mut tickets = Vec::new();
+        for index in 0..8 {
+            tickets.push(work.enqueue(1, &format!("original-{index}"), now)?);
+        }
+        assert!(matches!(
+            work.enqueue(1, "ninth", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        let (slot, first) = work.promote(tickets[0], now)?;
+        assert_eq!((slot, first.operation.as_ref()), (1, "original-0"));
+        work.cancel(tickets[0]);
+        let (_, second) = work.promote(tickets[1], now)?;
+        assert_eq!(second.operation.as_ref(), "original-1");
+        assert!(matches!(
+            work.promote(tickets[2], now),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.cancel(tickets[2]);
+        assert!(work.enqueue(1, "replacement queued only", now).is_ok());
+        assert_eq!(work.active.iter().filter(|s| s.is_some()).count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn promoted_pass_identity_shares_one_operation_backing() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(3, "canonical-operation-envelope", now)?;
+        let (slot, submitted) = work.promote(id, now)?;
+        let index = usize::try_from(slot - 1).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let retained = work.active[index]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        assert!(std::sync::Arc::ptr_eq(
+            &submitted.operation,
+            &retained.operation
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn slot_reuse_rejects_the_previous_incarnation() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first_id = work.enqueue(3, "same-original", now)?;
+        let (slot, first) = work.promote(first_id, now)?;
+        work.mark_persisted(slot, first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        work.acknowledge(slot, 3, "same-original")?;
+
+        let second_id = work.enqueue(3, "same-original", now)?;
+        let (_, second) = work.promote(second_id, now)?;
+        assert_ne!(first.incarnation, second.incarnation);
+        assert!(matches!(
+            work.validate_incarnation(slot, 3, "same-original", first.incarnation),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.validate_incarnation(slot, 3, "same-original", second.incarnation)?;
+        Ok(())
+    }
+
+    #[test]
+    fn completion_and_acknowledgement_are_atomic_for_the_exact_incarnation()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first_id = work.enqueue(3, "same-original", now)?;
+        let (slot, first) = work.promote(first_id, now)?;
+        work.mark_persisted(slot, first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.begin_run(slot, 3, "same-original", first.incarnation)?;
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        assert!(matches!(
+            work.acknowledge(slot, 3, "same-original"),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.finish_run(slot, 3, "same-original", first.incarnation, true)?;
+        work.acknowledge(slot, 3, "same-original")?;
+
+        let successor_id = work.enqueue(3, "same-original", now)?;
+        let (_, successor) = work.promote(successor_id, now)?;
+        assert!(matches!(
+            work.finish_run(slot, 3, "same-original", first.incarnation, true),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        assert!(
+            !work.active[0]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .definitive
+        );
+        assert_ne!(first.incarnation, successor.incarnation);
+        Ok(())
+    }
+
+    #[test]
+    fn successful_future_is_not_terminal_authority_and_ack_excludes_new_runs()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(1, "typed-original", now)?;
+        let (slot, operation) = work.promote(id, now)?;
+        work.mark_persisted(slot, operation.incarnation)?;
+        work.begin_run(slot, 1, "typed-original", operation.incarnation)?;
+        // Completing an arbitrary successful future supplies no semantic token.
+        work.finish_run(slot, 1, "typed-original", operation.incarnation, false)?;
+        assert!(matches!(
+            work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation),
+            Err(DurabilityError::Unavailable)
+        ));
+
+        work.begin_run(slot, 1, "typed-original", operation.incarnation)?;
+        work.finish_run(slot, 1, "typed-original", operation.incarnation, true)?;
+        work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation)?;
+        assert!(matches!(
+            work.begin_run(slot, 1, "typed-original", operation.incarnation),
+            Err(DurabilityError::Unavailable)
+        ));
+        // A retry for the same occupation converges; a stale incarnation cannot.
+        work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation)?;
+        assert!(matches!(
+            work.begin_acknowledgement(slot, 1, "typed-original", operation.incarnation + 1),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.finish_acknowledgement(slot, 1, "typed-original", operation.incarnation)?;
+        Ok(())
+    }
+
+    #[test]
+    fn terminal_no_mutation_signal_releases_slot_but_unavailable_does_not()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .connect_lazy("postgres://localhost/test")
+                    .map_err(DurabilityError::from)?;
+                let backend = std::sync::Arc::new(RuntimeBackend {
+                    pool,
+                    custody: BackendCustody::LegacyFixture,
+                    pending: std::sync::Mutex::new([None, None]),
+                    work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                    root_ready_demand: RootReadyDemand::new(),
+                    root_maintenance: tokio::sync::Mutex::new(()),
+                });
+                let now = std::time::Instant::now();
+                let id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(3, "terminal-no-mutation", now)?;
+                let (slot, operation) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote(id, now)?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(slot, operation.incarnation)?;
+                let pass = backend.resume_pass(slot, 3, "terminal-no-mutation")?;
+                pass.run(async {
+                    mark_current_semantic_terminal()?;
+                    Ok(())
+                })
+                .await?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .begin_acknowledgement(
+                        slot,
+                        3,
+                        "terminal-no-mutation",
+                        operation.incarnation,
+                    )?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .finish_acknowledgement(
+                        slot,
+                        3,
+                        "terminal-no-mutation",
+                        operation.incarnation,
+                    )?;
+
+                let retry_id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(3, "retryable", now)?;
+                let (retry_slot, retry) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote(retry_id, now)?;
+                assert_eq!(retry_slot, slot);
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(retry_slot, retry.incarnation)?;
+                let retry_pass = backend.resume_pass(retry_slot, 3, "retryable")?;
+                assert!(matches!(
+                    retry_pass
+                        .run(async { Err::<(), _>(DurabilityError::Unavailable) })
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                assert!(matches!(
+                    backend
+                        .work
+                        .lock()
+                        .map_err(|_| DurabilityError::Unavailable)?
+                        .begin_acknowledgement(retry_slot, 3, "retryable", retry.incarnation,),
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), DurabilityError>(())
+            })?;
+        Ok(())
+    }
+
+    #[test]
+    fn only_the_exact_definitely_unsubmitted_incarnation_can_be_released()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(1, "unsubmitted", now)?;
+        let (slot, operation) = work.promote(id, now)?;
+        assert!(matches!(
+            work.release_unsubmitted(slot, operation.incarnation + 1),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        work.release_unsubmitted(slot, operation.incarnation)?;
+        assert!(work.enqueue(1, "replacement", now).is_ok());
+
+        let id = work.enqueue(2, "persisted", now)?;
+        let (slot, operation) = work.promote(id, now)?;
+        work.mark_persisted(slot, operation.incarnation)?;
+        assert!(matches!(
+            work.release_unsubmitted(slot, operation.incarnation),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn v1_recovery_requires_the_complete_canonical_envelope() -> Result<(), DurabilityError> {
+        let record = r#"{"record":"same"}"#;
+        let allowed = ["prepare", "commit"];
+        for valid in [
+            serde_json::json!({
+                "m05_operation": "prepare",
+                "record": record,
+                "authorization_deadline": null,
+            })
+            .to_string(),
+            serde_json::json!({
+                "m05_operation": "commit",
+                "record": record,
+                "authorization_deadline": 17,
+            })
+            .to_string(),
+        ] {
+            validate_v1_reconciliation_original(&valid, record, &allowed)?;
+        }
+        for invalid in [
+            serde_json::json!({
+                "m05_operation": "commit",
+                "record": record,
+                "authorization_deadline": null,
+            })
+            .to_string(),
+            serde_json::json!({
+                "m05_operation": "prepare",
+                "record": record,
+                "authorization_deadline": 17,
+            })
+            .to_string(),
+            format!(
+                r#"{{"authorization_deadline":17,"m05_operation":"commit","record":{record:?},"unknown":true}}"#
+            ),
+        ] {
+            assert!(matches!(
+                validate_v1_reconciliation_original(&invalid, record, &allowed),
+                Err(DurabilityError::InvalidStoredState)
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn resume_requires_persistence_and_reuses_the_retained_backing() -> Result<(), DurabilityError>
+    {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(3, "persist-me", now)?;
+        let (slot, promoted) = work.promote(id, now)?;
+        assert!(matches!(
+            work.resume_deadline(slot, 3, "persist-me"),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.mark_persisted(slot, promoted.incarnation)?;
+        assert!(work.resume_deadline(slot, 3, "persist-me").is_ok());
+        let retained = work.active[0]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        assert!(std::sync::Arc::ptr_eq(
+            &promoted.operation,
+            &retained.operation
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn uncertain_checkpoint_retry_preserves_identity_and_capacity() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let id = work.enqueue(3, "uncertain-checkpoint", now)?;
+        let (slot, promoted) = work.promote(id, now)?;
+
+        let (retry_slot, retry) = work.checkpoint_retry(
+            3,
+            "uncertain-checkpoint",
+            tokio::time::Instant::now() + Duration::from_secs(2),
+        )?;
+        assert_eq!(retry_slot, slot);
+        assert_eq!(retry.incarnation, promoted.incarnation);
+        assert!(std::sync::Arc::ptr_eq(
+            &retry.operation,
+            &promoted.operation
+        ));
+        assert!(matches!(
+            work.resume_deadline(slot, 3, "uncertain-checkpoint"),
+            Err(DurabilityError::Unavailable)
+        ));
+
+        work.mark_persisted(slot, retry.incarnation)?;
+        work.begin_run(slot, 3, "uncertain-checkpoint", retry.incarnation)?;
+        work.finish_run(slot, 3, "uncertain-checkpoint", retry.incarnation, true)?;
+        work.acknowledge(slot, 3, "uncertain-checkpoint")?;
+        let replacement = work.enqueue(4, "replacement", now)?;
+        assert_eq!(work.promote(replacement, now)?.0, slot);
+        Ok(())
+    }
+
+    #[test]
+    fn cancelling_semantic_body_releases_in_flight_without_becoming_definitive()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .connect_lazy("postgres://localhost/test")
+                    .map_err(DurabilityError::from)?;
+                let backend = std::sync::Arc::new(RuntimeBackend {
+                    pool,
+                    custody: BackendCustody::LegacyFixture,
+                    pending: std::sync::Mutex::new([None, None]),
+                    work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                    root_ready_demand: RootReadyDemand::new(),
+                    root_maintenance: tokio::sync::Mutex::new(()),
+                });
+                let now = std::time::Instant::now();
+                let id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(1, "deadline", now)?;
+                let (slot, operation) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote_with_deadline(id, now, tokio::time::Instant::now())?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(slot, operation.incarnation)?;
+                let pass = backend.resume_pass(slot, 1, "deadline")?;
+
+                let task = tokio::spawn(async move {
+                    pass.run(std::future::pending::<Result<(), DurabilityError>>())
+                        .await
+                });
+                tokio::task::yield_now().await;
+                assert_eq!(
+                    backend
+                        .work
+                        .lock()
+                        .map_err(|_| DurabilityError::Unavailable)?
+                        .active[0]
+                        .as_ref()
+                        .ok_or(DurabilityError::InvalidStoredState)?
+                        .in_flight,
+                    1
+                );
+                task.abort();
+                assert!(task.await.is_err());
+                let work = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                let active = work.active[0]
+                    .as_ref()
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                assert_eq!(active.in_flight, 0);
+                assert!(!active.definitive);
+                Ok::<(), DurabilityError>(())
+            })?;
+        Ok(())
+    }
+
+    #[test]
+    fn envelope_and_ticket_limits_fail_before_retention() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let maximum = "x".repeat(super::super::MAX_FRESH_OPERATION_BYTES);
+        let id = work.enqueue(1, &maximum, now)?;
+        assert!(matches!(
+            work.enqueue(1, &(maximum.clone() + "x"), now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert_eq!(work.queued.iter().filter(|s| s.is_some()).count(), 1);
+        assert_eq!(
+            work.promote(id, now + Duration::from_millis(1000))?
+                .1
+                .operation
+                .len(),
+            maximum.len()
+        );
+        work.next_id = u64::MAX;
+        assert!(matches!(
+            work.enqueue(1, "overflow", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(work.queued.iter().all(Option::is_none));
+        Ok(())
+    }
+
+    #[test]
+    fn queue_expiry_and_recovered_slots_never_create_active_capacity() -> Result<(), DurabilityError>
+    {
+        let recovered = [
+            Some(super::super::DurablePendingCheckpoint {
+                slot: 1,
+                operation_kind: 1,
+                operation_json: "recovered original".into(),
+            }),
+            None,
+        ];
+        let mut work = WorkCustody::new(&recovered);
+        let now = std::time::Instant::now();
+        let expired = work.enqueue(2, "never submitted", now)?;
+        assert!(matches!(
+            work.promote(expired, now + Duration::from_millis(1001)),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(work.queued.iter().all(Option::is_none));
+        let next = work.enqueue(2, "second original", now)?;
+        assert_eq!(work.promote(next, now)?.0, 2);
+        let blocked = work.enqueue(2, "third original", now)?;
+        assert!(matches!(
+            work.promote(blocked, now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert_eq!(
+            work.active[0]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .operation
+                .as_ref(),
+            "recovered original"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn exact_acknowledgement_releases_one_slot_and_wrong_identity_cannot()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let first = work.enqueue(1, "first", now)?;
+        let second = work.enqueue(2, "second", now)?;
+        work.promote(first, now)?;
+        work.promote(second, now)?;
+        assert!(matches!(
+            work.enqueue(1, "first", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        let third = work.enqueue(3, "third", now)?;
+        assert!(matches!(
+            work.promote(third, now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(matches!(
+            work.acknowledge(1, 1, "wrong"),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        assert!(matches!(
+            work.acknowledge(1, 1, "first"),
+            Err(DurabilityError::Unavailable)
+        ));
+        let incarnation = work.active[0]
+            .as_ref()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .incarnation;
+        work.begin_run(1, 1, "first", incarnation)?;
+        work.finish_run(1, 1, "first", incarnation, true)?;
+        work.acknowledge(1, 1, "first")?;
+        assert_eq!(work.promote(third, now)?.0, 1);
+        assert!(matches!(
+            work.acknowledge(1, 1, "first"),
+            Err(DurabilityError::InvalidStoredState)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn completed_result_is_not_rewritten_after_deadline() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let pool = sqlx::postgres::PgPoolOptions::new()
+                    .connect_lazy("postgres://localhost/test")
+                    .map_err(DurabilityError::from)?;
+                let backend = std::sync::Arc::new(RuntimeBackend {
+                    pool,
+                    custody: BackendCustody::LegacyFixture,
+                    pending: std::sync::Mutex::new([None, None]),
+                    work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                    root_ready_demand: RootReadyDemand::new(),
+                    root_maintenance: tokio::sync::Mutex::new(()),
+                });
+                let now = std::time::Instant::now();
+                let id = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .enqueue(1, "completed-after-deadline", now)?;
+                let (slot, operation) = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .promote_with_deadline(id, now, tokio::time::Instant::now())?;
+                backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .mark_persisted(slot, operation.incarnation)?;
+                let pass = backend.resume_pass(slot, 1, "completed-after-deadline")?;
+
+                let result = pass
+                    .run(async {
+                        mark_current_semantic_terminal()?;
+                        Ok::<_, DurabilityError>("definitive")
+                    })
+                    .await?;
+                assert_eq!(result, "definitive");
+                let work = backend
+                    .work
+                    .lock()
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                let active = work.active[0]
+                    .as_ref()
+                    .ok_or(DurabilityError::InvalidStoredState)?;
+                assert_eq!(active.in_flight, 0);
+                assert!(active.definitive);
+                Ok::<(), DurabilityError>(())
+            })?;
+        Ok(())
+    }
+
+    #[test]
+    fn live_and_recovered_attempts_each_retain_one_absolute_deadline() -> Result<(), DurabilityError>
+    {
+        let now = std::time::Instant::now();
+        let mut live = WorkCustody::new(&[None, None]);
+        let id = live.enqueue(1, "live", now)?;
+        let expected = tokio::time::Instant::now() + Duration::from_secs(1);
+        let (slot, operation) = live.promote_with_deadline(id, now, expected)?;
+        live.mark_persisted(slot, operation.incarnation)?;
+        assert_eq!(live.resume_deadline(1, 1, "live")?, expected);
+        assert_eq!(live.resume_deadline(1, 1, "live")?, expected);
+
+        let recovered = [
+            Some(super::super::DurablePendingCheckpoint {
+                slot: 1,
+                operation_kind: 2,
+                operation_json: "recovered".into(),
+            }),
+            None,
+        ];
+        let mut recovered = WorkCustody::new(&recovered);
+        let first = recovered.resume_deadline(1, 2, "recovered")?;
+        assert_eq!(recovered.resume_deadline(1, 2, "recovered")?, first);
+        Ok(())
+    }
+
+    #[test]
+    fn root_ready_demand_is_coalesced_and_consumed_once() {
+        let demand = RootReadyDemand::new();
+        demand.record();
+        demand.record();
+        assert!(demand.consume());
+        assert!(!demand.consume());
+        demand.record();
+        assert!(demand.consume());
+    }
+
+    #[test]
+    #[allow(clippy::expect_used, clippy::panic)]
+    fn poisoned_pending_snapshot_fails_closed() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let pool =
+                sqlx::postgres::PgPoolOptions::new().connect_lazy("postgres://localhost/test")?;
+            let backend = std::sync::Arc::new(RuntimeBackend {
+                pool,
+                custody: BackendCustody::LegacyFixture,
+                pending: std::sync::Mutex::new([None, None]),
+                work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
+                root_ready_demand: RootReadyDemand::new(),
+                root_maintenance: tokio::sync::Mutex::new(()),
+            });
+            let poison = backend.clone();
+            let _ = std::thread::spawn(move || {
+                let _guard = poison.pending.lock().expect("pending lock");
+                panic!("poison pending custody");
+            })
+            .join();
+            assert!(matches!(
+                backend.pending_snapshot(),
+                Err(DurabilityError::Unavailable)
+            ));
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+    }
+
+    #[test]
+    fn registration_identity_requires_same_generation_and_root_owner() {
+        #[derive(Debug)]
+        struct Budget;
+        impl sqlx::postgres::ResourceBudget for Budget {
+            fn try_reserve(&self, _: usize) -> Result<(), sqlx::postgres::BudgetError> {
+                Ok(())
+            }
+            fn release(&self, _: usize) {}
+        }
+        fn identity(
+            token: std::sync::Arc<()>,
+            owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget>,
+        ) -> RuntimeIdentity {
+            RuntimeIdentity {
+                transport_ip: std::net::IpAddr::from([127, 0, 0, 1]),
+                port: 5432,
+                config_identity: token,
+                root_owner: owner,
+            }
+        }
+        let token = std::sync::Arc::new(());
+        let owner: std::sync::Arc<dyn sqlx::postgres::ResourceBudget> = std::sync::Arc::new(Budget);
+        assert!(identity(token.clone(), owner.clone()) == identity(token.clone(), owner.clone()));
+        assert!(
+            identity(token.clone(), owner.clone())
+                != identity(std::sync::Arc::new(()), owner.clone())
+        );
+        assert!(
+            identity(token, owner)
+                != identity(std::sync::Arc::new(()), std::sync::Arc::new(Budget))
+        );
+    }
+
+    #[test]
+    fn failed_or_cancelled_starting_window_restores_empty_before_retry()
+    -> Result<(), Box<dyn std::error::Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(async {
+                let registration = tokio::sync::Mutex::new(RuntimeRegistration::Empty);
+                {
+                    let mut state = registration.lock().await;
+                    *state = RuntimeRegistration::Starting;
+                    let _window = StartingRegistration {
+                        registration: state,
+                        complete: false,
+                    };
+                    // Error/cancellation drops the window without publishing
+                    // readiness or leaving the process poisoned in Starting.
+                }
+                assert!(matches!(
+                    *registration.lock().await,
+                    RuntimeRegistration::Empty
+                ));
+
+                let mut state = registration.lock().await;
+                assert!(matches!(*state, RuntimeRegistration::Empty));
+                *state = RuntimeRegistration::Starting;
+                // A successor cannot observe Empty while the old generation's
+                // window (and therefore its descendants) is still owned.
+                assert!(registration.try_lock().is_err());
+                let mut window = StartingRegistration {
+                    registration: state,
+                    complete: false,
+                };
+                window.complete = true;
+            });
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod runtime_scope_identity_red_tests {
     use crate::durability::{AdmissionReconnectJournalV2, MigrationExecutor};

@@ -722,6 +722,25 @@ jobs:
       - name: Test workspace
         run: cargo +1.94.0 test --locked --workspace
 
+      - name: Test SQLx-core M05 transaction finality
+        run: |
+          M05_TEST_LIST="$(cargo +1.94.0 test --locked --manifest-path tools/qualification/sqlx-core/Cargo.toml --features any,_rt-tokio,_tls-rustls-aws-lc-rs --lib oteryn_m05_finality_tests -- --list)"
+          printf '%s\n' "$M05_TEST_LIST"
+          for test_name in \
+            'transaction::oteryn_m05_finality_tests::commit_and_rollback_success_retain_exact_connection_without_drop_rollback: test' \
+            'transaction::oteryn_m05_finality_tests::finalization_errors_preserve_original_error_and_start_rollback_once: test' \
+            'transaction::oteryn_m05_finality_tests::cancelling_pending_finalization_has_no_success_and_uses_ordinary_drop_rollback: test'
+          do
+            if ! grep -Fxq "$test_name" <<<"$M05_TEST_LIST"; then
+              echo "Missing required M05 SQLx-core witness: $test_name" >&2
+              exit 1
+            fi
+          done
+          cargo +1.94.0 test --locked --manifest-path tools/qualification/sqlx-core/Cargo.toml --features any,_rt-tokio,_tls-rustls-aws-lc-rs --lib oteryn_m05_finality_tests
+
+      - name: Test vendored Tokio resource ownership and sockets
+        run: cargo +1.94.0 test --locked --manifest-path vendor/tokio-1.53.1/Cargo.toml --features full --test oteryn_resource_owner --test tcp_connect --test tcp_stream --test uds_stream
+
       - name: Run Durability PostgreSQL E2E when allocated
         env:
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
