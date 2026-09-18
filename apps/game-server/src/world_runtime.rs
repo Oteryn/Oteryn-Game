@@ -1169,8 +1169,8 @@ mod tests {
     }
 
     #[test]
-    fn ingress_capacity_failure_leaves_gameplay_and_spatial_state_unchanged(
-    ) -> Result<(), WorldRuntimeError> {
+    fn ingress_capacity_failure_leaves_gameplay_and_spatial_state_unchanged()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (authority, session, scope) = authority(71, 11, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
