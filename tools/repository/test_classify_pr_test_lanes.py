@@ -270,13 +270,21 @@ def test_atlas_fullworld_surface(module):
     assert result["rust"] is True and result["windows"] is True, result
 
     for path in ("tools/game-atlas-fullworld-source/animated.py",
-                 "tools/game-atlas-fullworld-source/README.md",
-                 "tools/unreviewed/helper.py"):
+                 "tools/game-atlas-fullworld-source/README.md"):
         result = module.classify(
             [dict(filename=path, status="modified")], 1, fixture(), module.AUDITED_INPUT_SHA256,
             docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
         )
         assert result["rust"] is True and result["windows"] is True, (path, result)
+        assert result["reason"] == "explicit-atlas-non-cargo-full", (path, result)
+
+    result = module.classify(
+        [dict(filename="tools/unreviewed/helper.py", status="modified")],
+        1, fixture(), module.AUDITED_INPUT_SHA256,
+        docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=True,
+    )
+    assert result["rust"] is True and result["windows"] is True, result
+    assert result["reason"] == "unmodelled-input", result
 
     renamed = [{"filename": "tools/unreviewed/producer.py", "status": "renamed", "previous_filename": producer}]
     result = module.classify(
@@ -288,6 +296,47 @@ def test_atlas_fullworld_surface(module):
     assert module.atlas_fullworld_required([dict(filename=server, status="modified")], 1) is False
     assert module.atlas_fullworld_required([], 0) is True
     print("Atlas fullworld surface PASS: bounded paths reduce Windows only with dedicated lane; siblings/renames stay fail closed")
+
+
+def test_atlas_workflow_dispositions(module):
+    triggers = set()
+    for workflow in sorted((ROOT / ".github/workflows").glob("game-atlas-*.yml")):
+        for line in workflow.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("- "):
+                continue
+            value = stripped[2:].strip().strip("'\"")
+            if value.startswith("tools/game-atlas-"):
+                triggers.add(value)
+
+    assert triggers, "no specialized Atlas tool triggers discovered"
+    missing = sorted(path for path in triggers if module.atlas_path_disposition(path) is None)
+    assert not missing, f"Atlas workflow trigger lacks classifier disposition: {missing}"
+    for path in module.ATLAS_FULLWORLD_PATHS:
+        assert path in triggers, f"dedicated Atlas path is not covered by a specialized workflow: {path}"
+
+    assert module.atlas_path_disposition("tools/game-atlas-creatures/export.py") == "full"
+    assert module.atlas_path_disposition("tools/game-atlas-semantic-search/**") == "full"
+    assert module.atlas_path_disposition("tools/game-atlas-thais-fixture/export.py") == "full"
+    assert module.atlas_path_disposition("tools/unreviewed/helper.py") is None
+    print("Atlas workflow disposition PASS: every specialized Atlas tool trigger is explicitly dedicated or intentionally FULL")
+
+
+def test_routing_health_helpers(module):
+    assert module.routing_health(module.full("unreviewed-consumer-input-snapshot")) == "degraded"
+    assert module.routing_health(module.full("classifier-or-metadata-failure")) == "degraded"
+    assert module.routing_health(module.full("unmodelled-input")) == "unmodelled"
+    assert module.routing_health(module.full("explicit-atlas-non-cargo-full", "atlas")) == "modelled"
+    assert module.routing_health({
+        "rust": True, "windows": False, "surface": "server",
+        "reason": "server-only-reverse-closure-and-audited-inputs",
+    }) == "modelled"
+
+    assert module.audited_input_path(fixture(), "apps/client/src/lib.rs") is True
+    assert module.audited_input_path(fixture(), "Cargo.lock") is True
+    assert module.audited_input_path(fixture(), ".cargo/config.toml") is True
+    assert module.audited_input_path(fixture(), "apps/game-server/src/lib.rs") is False
+    print("Routing health helpers PASS: degraded/unmodelled/modelled states and audited input selection are explicit")
 
 
 def test_bounded_document_consumer_drift(module):
@@ -549,6 +598,8 @@ def main() -> int:
     spec.loader.exec_module(module)
     test_candidate_modes(module)
     test_atlas_fullworld_surface(module)
+    test_atlas_workflow_dispositions(module)
+    test_routing_health_helpers(module)
     test_large_pr_git_fallback(module)
     test_reviewed_document_consumers(module)
     test_bounded_document_consumer_drift(module)
