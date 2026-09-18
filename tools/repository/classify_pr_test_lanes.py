@@ -22,6 +22,10 @@ AUDITED_DOC_INPUT_SHA256 = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457
 AUDITED_DOC_CONSUMER_BASE_SHA = "8dfae3b9455673feff1745b9f124b786f93fcacc"
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
+ATLAS_FULLWORLD_INPUTS = {
+    "tools/game-atlas-fullworld-source/producer.py",
+    "tools/game-atlas-fullworld-source/self_test.py",
+}
 REQUIRED = {
     SERVER: "apps/game-server",
     "oteryn-client": "apps/client",
@@ -31,8 +35,8 @@ REQUIRED = {
 BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
 
 
-def full(reason: str, surface: str = "unknown") -> dict:
-    return dict(rust=True, windows=True, surface=surface, reason=reason)
+def full(reason: str, surface: str = "unknown", *, atlas_fullworld: bool = False) -> dict:
+    return dict(rust=True, windows=True, atlas_fullworld=atlas_fullworld, surface=surface, reason=reason)
 
 
 def valid_path(value) -> bool:
@@ -397,64 +401,91 @@ def pr_file_records() -> tuple[list[dict], int, bool]:
 
 def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None,
              candidate_modes_verified=False, docs_consumers_verified=None) -> dict:
+    atlas_fullworld = (
+        isinstance(files, list)
+        and any(
+            isinstance(item, dict)
+            and (
+                item.get("filename") in ATLAS_FULLWORLD_INPUTS
+                or item.get("previous_filename") in ATLAS_FULLWORLD_INPUTS
+            )
+            for item in files
+        )
+    )
     try:
         if candidate_modes_verified is not True:
-            return full("unverified-or-special-candidate-modes")
+            return full("unverified-or-special-candidate-modes", atlas_fullworld=atlas_fullworld)
         if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
-            return full("incomplete-enumeration")
+            return full("incomplete-enumeration", atlas_fullworld=atlas_fullworld)
         paths, filenames = [], set()
         for item in files:
             path = item["filename"]
             status = item.get("status")
             previous = item.get("previous_filename")
             if not valid_path(path) or path in filenames or status not in {"added", "modified", "removed", "renamed", "copied", "changed", "unchanged"}:
-                return full("invalid-file-record")
+                return full("invalid-file-record", atlas_fullworld=atlas_fullworld)
             filenames.add(path)
             paths.append(path)
             if status == "renamed" and not previous:
-                return full("missing-rename-source")
+                return full("missing-rename-source", atlas_fullworld=atlas_fullworld)
             if previous is not None:
                 if not valid_path(previous):
-                    return full("invalid-rename-source")
+                    return full("invalid-rename-source", atlas_fullworld=atlas_fullworld)
                 if neutral(path) != neutral(previous):
-                    return full("cross-surface-rename")
+                    return full("cross-surface-rename", atlas_fullworld=atlas_fullworld)
                 paths.append(previous)
         if all(neutral(path) for path in paths):
             graph(metadata)
             if docs_consumers_verified is False:
-                return full("unreviewed-document-consumer-inputs", "docs")
+                return full("unreviewed-document-consumer-inputs", "docs", atlas_fullworld=atlas_fullworld)
             if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
                 return full("unreviewed-document-consumer-inputs", "docs")
-            return dict(rust=False, windows=False, surface="docs", reason="neutral-documentation")
+            return dict(rust=False, windows=False, atlas_fullworld=False, surface="docs", reason="neutral-documentation")
         if any(path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"} for path in paths):
-            return full("explicit-build-or-dependency-input", "dependencies-build")
+            return full("explicit-build-or-dependency-input", "dependencies-build", atlas_fullworld=atlas_fullworld)
         if any(path.startswith((".github/", "tools/repository/", "tools/agents/", "docs/migration/")) or PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} for path in paths):
-            return full("explicit-build-or-control-input", "control-plane")
+            return full("explicit-build-or-control-input", "control-plane", atlas_fullworld=atlas_fullworld)
         roots, reverse = graph(metadata)
         affected = set()
         for path in paths:
             if neutral(path):
                 continue
+            if path in ATLAS_FULLWORLD_INPUTS:
+                continue
             owners = [name for name, root in roots.items() if path.startswith(root + "/")]
             if len(owners) != 1 or PurePosixPath(path).suffix not in {".rs", ".sql"}:
-                return full("unmodelled-input")
+                return full("unmodelled-input", atlas_fullworld=atlas_fullworld)
             affected.add(owners[0])
         pending = list(affected)
         while pending:
             for consumer in reverse[pending.pop()] - affected:
                 affected.add(consumer)
                 pending.append(consumer)
+        if not affected and atlas_fullworld:
+            return dict(
+                rust=False,
+                windows=False,
+                atlas_fullworld=True,
+                surface="atlas-fullworld",
+                reason="atlas-fullworld-only",
+            )
         if affected & WINDOWS:
             surface = "simulation" if "oteryn-simulation-determinism" in affected else "shared" if SERVER in affected else "client"
-            return full("windows-consumer-affected", surface)
+            return full("windows-consumer-affected", surface, atlas_fullworld=atlas_fullworld)
         if SERVER not in affected or affected != {SERVER}:
-            return full("mixed-or-unowned-surface")
+            return full("mixed-or-unowned-surface", atlas_fullworld=atlas_fullworld)
         if digest != AUDITED_INPUT_SHA256:
-            return full("unreviewed-consumer-input-snapshot")
+            return full("unreviewed-consumer-input-snapshot", atlas_fullworld=atlas_fullworld)
         surface = "durability" if any(any(token in path for token in ("/durability/", "/migrations/", "postgres", "reconnect")) for path in paths) else "server"
-        return dict(rust=True, windows=False, surface=surface, reason="server-only-reverse-closure-and-audited-inputs")
+        return dict(
+            rust=True,
+            windows=False,
+            atlas_fullworld=atlas_fullworld,
+            surface=surface,
+            reason="server-only-reverse-closure-and-audited-inputs",
+        )
     except (KeyError, TypeError, ValueError, AttributeError):
-        return full("classifier-input-failure")
+        return full("classifier-input-failure", atlas_fullworld=atlas_fullworld)
 
 
 def classify_post_merge(event, metadata) -> dict:
@@ -526,6 +557,8 @@ def main() -> int:
     print(json.dumps(result, sort_keys=True))
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
         output.write(f"rust={str(result['rust']).lower()}\nwindows={str(result['windows']).lower()}\n")
+        if not post_merge:
+            output.write(f"atlas_fullworld={str(result['atlas_fullworld']).lower()}\n")
     return 0
 
 
