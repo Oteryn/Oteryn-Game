@@ -16,13 +16,14 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = Path(__file__).with_name("classify_pr_test_lanes.py")
+ROUTING_CONTRACT = Path(__file__).with_name("validate_pr_routing_contract.py")
 
 
 def test_aggregate():
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text()
     block = gate.split("  validate:\n", 1)[1].split("  game_gate:\n", 1)[0]
     script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
-    mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL")
+    mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL", "ROUTING_CONTRACT")
     rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
     conditional = ("RUST_WINDOWS", "ATLAS_FULLWORLD")
     env = dict.fromkeys(mandatory + rust + conditional, "success")
@@ -53,7 +54,7 @@ def test_aggregate():
         for value in ("", "TRUE", "unknown", "0"):
             assert not accepts({name: value}), (name, value)
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
-    print("Risk aggregate PASS: full/server/docs/Atlas controls, every selected failure and invalid output")
+    print("Risk aggregate PASS: routing contract plus full/server/docs/Atlas controls, every selected failure and invalid output")
 
 
 def fixture():
