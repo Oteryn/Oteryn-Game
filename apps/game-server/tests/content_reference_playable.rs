@@ -3,8 +3,8 @@ use oteryn_game_server::foundation::WorldId;
 
 fn world_id() -> Result<WorldId, ContentError> {
     let bytes = [
-        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0x70, 0xcd, 0x8e, 0xf0, 0x12, 0x34, 0x56, 0x78,
-        0x9a, 0xbc,
+        0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0x70, 0xcd, 0x8e, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a,
+        0xbc,
     ];
     WorldId::decode(&bytes)
         .map_err(|_| ContentError::InvalidArtifact("reference-playable test WorldId invalid"))
@@ -18,9 +18,7 @@ fn evidence(disposition: EvidenceDisposition) -> Result<EvidenceBindingRef, Cont
     ))
 }
 
-fn qualified_footprint(
-    members: Vec<FootprintCell>,
-) -> Result<FootprintRelation, ContentError> {
+fn qualified_footprint(members: Vec<FootprintCell>) -> Result<FootprintRelation, ContentError> {
     Ok(FootprintRelation::Qualified {
         members,
         evidence: evidence(EvidenceDisposition::Proven)?,
@@ -49,11 +47,8 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
 
     let object_key = ProductionKey::new("oteryn:reference.object.local-door")?;
     let object_revision = DefinitionRevisionRef::new("definition-r1")?;
-    let object_ref = TypedDefinitionRef::new(
-        DefinitionFamily::LocalObject,
-        object_key,
-        object_revision,
-    );
+    let object_ref =
+        TypedDefinitionRef::new(DefinitionFamily::LocalObject, object_key, object_revision);
     let closed = ProductionKey::new("oteryn:reference.state.closed")?;
     let open = ProductionKey::new("oteryn:reference.state.open")?;
 
@@ -284,8 +279,7 @@ fn source_enumeration_order_does_not_change_canonical_result() -> Result<(), Con
 #[test]
 fn coordinate_frame_mismatch_rejects() -> Result<(), ContentError> {
     let mut candidate = source()?;
-    candidate.placements[0].address.coordinate_frame =
-        CoordinateFrameRef::new("legacy-ots-frame")?;
+    candidate.placements[0].address.coordinate_frame = CoordinateFrameRef::new("legacy-ots-frame")?;
     assert!(matches!(
         link_reference_playable(candidate),
         Err(ContentError::InvalidArtifact(
@@ -317,8 +311,7 @@ fn duplicate_footprint_member_rejects() -> Result<(), ContentError> {
         dy: 0,
         dz: 0,
     };
-    candidate.placements[0].collision_footprint =
-        qualified_footprint(vec![member, member])?;
+    candidate.placements[0].collision_footprint = qualified_footprint(vec![member, member])?;
     assert!(matches!(
         link_reference_playable(candidate),
         Err(ContentError::InvalidArtifact(
