@@ -121,7 +121,7 @@ fn source_with_target_claim(
         map_revision: MapRevisionRef::new("map-r1")?,
         definition,
         address: SpatialAddress {
-            world_id: candidate.world_id.clone(),
+            world_id: candidate.world_id,
             coordinate_frame: candidate.coordinate_frame.clone(),
             cell: LogicalCell {
                 x: 33_572,
