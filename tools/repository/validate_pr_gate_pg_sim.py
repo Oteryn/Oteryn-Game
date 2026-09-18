@@ -16,7 +16,7 @@ POSTGRES_IMAGE = (
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
     "rust_linux": "5f11db3a3126371d8138b579b0abc908eb9a93c72fa8ec4302a29c866b5e035e",
-    "rust_windows": "de7eca96c0dd87d6a7c6d119a619f3ab67211bbb0982b5a1f1125d8ea7a5ca08",
+    "rust_windows": "20959a694f0cb1d9203750cb9d14e573ce0f97049257c5b2ef30954497e983f9",
 }
 
 
@@ -201,6 +201,10 @@ def validate() -> list[str]:
                 "          ref: ${{ needs.scope.outputs.target_sha }}\n",
                 "          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}\n",
                 "if ((git rev-parse HEAD).Trim() -ne \"$env:EXPECTED_SHA\")",
+                '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
+                "Test-Path -LiteralPath $client -PathType Leaf",
+                "& $client --smoke",
+                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
             ),
         )
