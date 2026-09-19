@@ -21,7 +21,7 @@ use oteryn_game_server::foundation::{
     TerminalGameSessionReplacementAuthorizationV1,
 };
 use serde_json::json;
-use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 use std::fmt::{self, Display, Formatter};
 
 const V2_PREPARED: i16 = 1;
@@ -302,16 +302,21 @@ mod wp3_error_classification_tests {
 /// replay/reconciliation surface; ordinary V1 behavior is delegated unchanged.
 #[derive(Clone)]
 pub struct AdmissionReconnectJournalV2 {
-    pool: PgPool,
     legacy: AdmissionReconnectJournal,
 }
 
 impl AdmissionReconnectJournalV2 {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
             legacy: AdmissionReconnectJournal::connect_runtime(database_url).await?,
         })
+    }
+
+    #[must_use]
+    pub fn from_root(root: DurabilityRoot) -> Self {
+        Self {
+            legacy: AdmissionReconnectJournal::from_root(root),
+        }
     }
 
     #[must_use]
@@ -327,14 +332,46 @@ impl AdmissionReconnectJournalV2 {
         let Some(authorization) = request.terminal_replacement() else {
             return self.prepare_legacy_typed(request).await;
         };
-        let record = request.record();
-        if !replacement_authorization_matches_record(authorization, record) {
+        if !replacement_authorization_matches_record(authorization, request.record()) {
             return Err(DurabilityError::InvalidStoredState);
         }
 
+        if let Some(issued) = self.legacy.try_issue_root_pass()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return db::await_root_task(tokio::spawn(async move {
+                journal
+                    .prepare_replacement_internal(request, Some(issued))
+                    .await
+            }))
+            .await;
+        }
+        self.prepare_replacement_internal(request.clone(), None).await
+    }
+
+    async fn prepare_replacement_internal(
+        &self,
+        request: ReconnectPrepareRequestV2,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        enum ReplacementPassResult {
+            Disposition(ReconnectPrepareDispositionV2),
+            ReplayReceipt,
+        }
+
+        let pass_request = request.clone();
+        let pass_result = self
+            .legacy
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let authorization = pass_request
+                        .terminal_replacement()
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let record = pass_request.record();
         let candidate_session_id = record.identity().game_session_id().as_bytes().to_vec();
         let character_id = record.identity().character_id().as_bytes().to_vec();
-        let mut transaction = self.pool.begin().await?;
+                    let mut transaction =
+                        admission_journal::begin_pass_transaction(holder, deadline).await?;
 
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
@@ -342,8 +379,8 @@ impl AdmissionReconnectJournalV2 {
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            transaction.commit().await?;
-            return self.prepare_legacy_typed_receipt_authorized(request).await;
+            admission_journal::commit_pass_transaction(transaction, deadline).await?;
+            return Ok(ReplacementPassResult::ReplayReceipt);
         }
 
         if replacement_receipt_for_candidate_exists(
@@ -375,8 +412,8 @@ impl AdmissionReconnectJournalV2 {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
                 && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
-                transaction.commit().await?;
-                return self.prepare_legacy_typed_receipt_authorized(request).await;
+                admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                return Ok(ReplacementPassResult::ReplayReceipt);
             }
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -526,16 +563,46 @@ impl AdmissionReconnectJournalV2 {
         let disposition =
             prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
                 .await?;
-        transaction.commit().await?;
-        Ok(disposition)
+                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    Ok(ReplacementPassResult::Disposition(disposition))
+                })
+            })
+            .await?;
+
+        match pass_result {
+            ReplacementPassResult::Disposition(disposition) => Ok(disposition),
+            ReplacementPassResult::ReplayReceipt => {
+                self.prepare_legacy_typed_receipt_authorized(&request).await
+            }
+        }
     }
 
     pub async fn reconcile(
         &self,
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
+        if let Some(issued) = self.legacy.try_issue_root_pass()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return db::await_root_task(tokio::spawn(async move {
+                journal.reconcile_internal(request, Some(issued)).await
+            }))
+            .await;
+        }
+        self.reconcile_internal(request.clone(), None).await
+    }
+
+    async fn reconcile_internal(
+        &self,
+        request: ReconnectPrepareRequestV2,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
+        self.legacy
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
         let record = request.record();
-        let mut transaction = self.pool.begin().await?;
+                    let mut transaction =
+                        admission_journal::begin_pass_transaction(holder, deadline).await?;
         if let Some(authorization) = request.terminal_replacement()
             && (!replacement_authorization_matches_record(authorization, record)
                 || !replacement_receipt_matches(&mut transaction, authorization, record).await?)
@@ -578,11 +645,14 @@ impl AdmissionReconnectJournalV2 {
             }
             _ => return Err(DurabilityError::InvalidStoredState),
         };
-        transaction.commit().await?;
-        Ok(ReconnectDurableReconciliationSnapshotV2::new(
-            record.clone(),
-            outcome,
-        ))
+                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    Ok(ReconnectDurableReconciliationSnapshotV2::new(
+                        record.clone(),
+                        outcome,
+                    ))
+                })
+            })
+            .await
     }
 
     async fn prepare_legacy_typed(
@@ -652,31 +722,60 @@ impl AdmissionReconnectJournalV2 {
         &self,
         record: &ReconnectDurabilityRecordV1,
     ) -> Result<i16, DurabilityError> {
-        let row = sqlx::query(
-            "SELECT state, record_json FROM game_durability_reconnect_attempts \
-             WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
-        )
-        .bind(record.identity().game_session_id().as_bytes().as_slice())
-        .bind(
-            record
-                .identity()
-                .reconnect_attempt_ref()
-                .to_be_bytes()
-                .as_slice(),
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-        let Some(row) = row else {
-            return Err(DurabilityError::InvalidStoredState);
-        };
-        let stored_record = row.try_get::<String, _>("record_json")?;
-        let stored_record: serde_json::Value = serde_json::from_str(&stored_record)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        if stored_record != encode_record_v2(record) {
-            return Err(DurabilityError::InvalidStoredState);
+        let record = record.clone();
+        if let Some(issued) = self.legacy.try_issue_root_pass()? {
+            let journal = self.clone();
+            return db::await_root_task(tokio::spawn(async move {
+                journal
+                    .terminal_state_for_record_internal(record, Some(issued))
+                    .await
+            }))
+            .await;
         }
-        row.try_get("state").map_err(DurabilityError::from)
+        self.terminal_state_for_record_internal(record, None).await
     }
+
+    async fn terminal_state_for_record_internal(
+        &self,
+        record: ReconnectDurabilityRecordV1,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<i16, DurabilityError> {
+        self.legacy
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut transaction =
+                        admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    let row = sqlx::query(
+                        "SELECT state, record_json FROM game_durability_reconnect_attempts \
+                         WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+                    )
+                    .bind(record.identity().game_session_id().as_bytes().as_slice())
+                    .bind(
+                        record
+                            .identity()
+                            .reconnect_attempt_ref()
+                            .to_be_bytes()
+                            .as_slice(),
+                    )
+                    .fetch_optional(&mut *transaction)
+                    .await?;
+                    let Some(row) = row else {
+                        return Err(DurabilityError::InvalidStoredState);
+                    };
+                    let stored_record = row.try_get::<String, _>("record_json")?;
+                    let stored_record: serde_json::Value = serde_json::from_str(&stored_record)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if stored_record != encode_record_v2(&record) {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let state = row.try_get("state").map_err(DurabilityError::from)?;
+                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    Ok(state)
+                })
+            })
+            .await
+    }
+
 }
 
 fn replacement_authorization_matches_record(
@@ -1798,6 +1897,54 @@ mod terminal_replacement_foundation_red_tests {
             snapshot,
             candidate,
         )
+    }
+
+    #[test]
+    fn v2_replacement_root_ready_miss_is_fail_closed_without_connect() {
+        use std::net::{IpAddr, Ipv4Addr};
+
+        let candidate =
+            candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("candidate record");
+        let authorization = authorize(
+            predecessor_snapshot(GameSessionState::Terminal, None, 10).expect("snapshot"),
+            &candidate,
+            game_session(10).expect("predecessor session"),
+            game_session(20).expect("candidate session"),
+        )
+        .expect("replacement authorization");
+        let request = ReconnectDurabilityFlowV2::begin(candidate, Some(authorization)).1;
+
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime")
+            .block_on(async {
+                let root = super::DurabilityRoot::new(
+                    super::DurabilityRootConfig::new(
+                        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                        5432,
+                        "db.example".to_owned(),
+                        "oteryn".to_owned(),
+                        "explicit".to_owned(),
+                        "test-secret".to_owned(),
+                        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+                    )
+                    .expect("root config"),
+                );
+                let journal = super::AdmissionReconnectJournalV2::from_root(root.clone());
+
+                assert!(matches!(
+                    journal.prepare(&request).await,
+                    Err(super::DurabilityError::RootUnavailable)
+                ));
+                assert!(!root.is_ready());
+                assert!(root.has_ready_demand());
+                tokio::task::yield_now().await;
+                assert!(
+                    !root.is_ready(),
+                    "V2 replacement ready miss must not establish a connection in the background"
+                );
+            });
     }
 
     #[test]
