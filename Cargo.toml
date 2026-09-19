@@ -34,9 +34,12 @@ publish = false
 
 [workspace.dependencies]
 base64 = "=0.22.1"
+cap-fs-ext = "=4.0.3"
+cap-std = "=4.0.3"
 ed25519-dalek = { version = "=2.2.0", default-features = false }
 pollster = { version = "=1.0.1", default-features = false }
 reqwest = { version = "=0.13.4", default-features = false, features = ["form", "json", "rustls", "stream"] }
+rustix = { version = "=1.1.5", default-features = false, features = ["fs"] }
 serde = "=1.0.229"
 serde_json = "=1.0.151"
 sqlx = {
