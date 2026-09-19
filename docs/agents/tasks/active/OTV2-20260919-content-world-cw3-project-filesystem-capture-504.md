@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build
 created_at: 2026-09-19T23:14:55Z
-updated_at: 2026-09-19T23:31:38Z
+updated_at: 2026-09-19T23:34:33Z
 execution_policy: continuous_progress
 owned_paths:
   - Cargo.toml
@@ -169,11 +169,14 @@ patch entry.
 - `cargo clippy --locked --workspace --all-targets -- -D warnings`: PASS.
 - `cargo test --locked --workspace`: PASS.
 - `cargo run --locked -p oteryn-synthetic-client-harness`: PASS.
-- A local `x86_64-pc-windows-msvc` check reached the existing `ring` build and
-  stopped because this Linux environment has no MSVC `lib.exe`. It did not
-  exercise the application stub and supplies no non-Linux compile or runtime
-  evidence. No existing hosted job is assumed to compile this game-server
-  target.
+- The default local `x86_64-pc-windows-msvc` check first stopped in the existing
+  `ring` build because this Linux environment has no MSVC `lib.exe`. A delegated
+  toolchain-only rerun set the target archiver to Rust 1.94's official
+  `llvm-ar` (LLVM 21.1.8, COFF support) and
+  `cargo +1.94.0 check --locked -p oteryn-game-server --all-targets --target
+  x86_64-pc-windows-msvc` passed through the game-server. This is compile-only
+  evidence; it is not Windows runtime evidence or a Windows capture claim. No
+  source, Cargo or workflow mutation was used for the rerun.
 - `cargo-deny` is not installed in this environment; dependency review and
   supply-chain policy remain hosted exact-head gates.
 
