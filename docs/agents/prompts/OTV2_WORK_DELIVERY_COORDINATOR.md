@@ -61,6 +61,7 @@ execution_surface: <proven surface or locator>
 publication_route: <normal_non_force_git | api_native | none>
 review_requirement: <none | required>
 review_authorization: <standing_required_review | task_specific | none>
+review_trigger_owner: <control_plane | standalone_task_owner | none>
 review_request_state: <not_requested | running | completed | stale>
 objective: <one bounded outcome>
 owned_paths: []
@@ -95,19 +96,25 @@ Packet rules:
 - accepted current decisions supersede historical exploration unless an exact contradiction must be investigated;
 - a direct worker alias without current write allocation is read-only.
 
-### Review authorization and de-duplication
+### Review authorization, ownership and de-duplication
 
 Before dispatching or triggering an external independent reviewer, resolve
-`docs/agents/OWNER_FUNDED_AI_POLICY.md`, the bound META review policy, the exact PR/head
-and current live review state.
+`docs/agents/OWNER_FUNDED_AI_POLICY.md`, the bound META review policy, the exact PR/head,
+the unique review-trigger owner and current live review state.
 
 - If a required review is covered by the repository standing authorization, record
   `review_authorization: standing_required_review` and do **not** ask the owner again.
+- For this programme, the unique active control plane is the sole manual review-trigger
+  owner. Workers may return a complete review packet, but they must not emit
+  `@codex review` or an equivalent owner-funded invocation themselves.
+- A standalone task with no programme control plane may use only its exact live task owner
+  as `review_trigger_owner: standalone_task_owner`. Ambiguous ownership fails closed.
 - If review is optional and no separate task-specific authorization exists, skip it rather
   than asking the owner merely to spend quota.
-- Before every trigger, read live PR comments/reviews/provider summary. If the same exact
-  head is already requested, running or completed, do not issue another `@codex review`
-  or equivalent invocation.
+- Immediately before the single trigger, the trigger owner must read live PR
+  comments/reviews/provider summary. If the same exact head is already requested, running
+  or completed, do not issue another invocation. An automatic provider review already
+  running for that head counts as the covered invocation.
 - A materially risk-bearing head change makes the old review historical; request at most
   one new review for the new stable head only when the bound policy requires re-review.
 - Ambiguous/slow provider response is a readback problem, not permission to send a
