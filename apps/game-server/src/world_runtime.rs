@@ -77,6 +77,7 @@ impl ReferenceContentGeneration {
     fn as_str(&self) -> &str {
         &self.semantic_identity
     }
+}
 
 fn append_reference_generation_component(
     preimage: &mut Vec<u8>,
