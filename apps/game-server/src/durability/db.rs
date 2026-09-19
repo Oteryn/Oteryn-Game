@@ -1,10 +1,12 @@
 use crate::durability::DurabilityError;
-use sqlx::PgPool;
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
     PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
 };
+use sqlx::{Acquire, PgPool, Transaction};
+use std::future::Future;
 use std::net::IpAddr;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -152,7 +154,7 @@ impl DurabilityRoot {
             .map_err(|_| DurabilityError::RootUnavailable)?;
         let mut holder = match acquired {
             Ok(holder) => holder,
-            Err(error) => return Err(DurabilityError::Database(error)),
+            Err(error) => return Err(DurabilityError::from(error)),
         };
 
         match holder.return_to_pool_observed_until(deadline).await {
@@ -170,6 +172,107 @@ impl DurabilityRoot {
     #[must_use]
     pub fn has_ready_demand(&self) -> bool {
         self.ready_demand.load(Ordering::Acquire)
+    }
+
+    pub(crate) fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
+        let holder = self.try_acquire_ready()?;
+        Ok(IssuedSemanticPass {
+            root: self.clone(),
+            holder,
+            deadline: Instant::now() + DB_PASS_DEADLINE,
+        })
+    }
+}
+
+pub(crate) struct IssuedSemanticPass {
+    root: DurabilityRoot,
+    holder: PoolConnection<Postgres>,
+    deadline: Instant,
+}
+
+impl IssuedSemanticPass {
+    pub(crate) async fn run<T, F>(mut self, operation: F) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: for<'a> FnOnce(
+                &'a mut PoolConnection<Postgres>,
+                Instant,
+            )
+                -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
+            + Send,
+    {
+        let remaining = self.deadline.saturating_duration_since(Instant::now());
+        let result =
+            match tokio::time::timeout(remaining, operation(&mut self.holder, self.deadline)).await
+            {
+                Ok(result) => result,
+                Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
+            };
+
+        match self
+            .holder
+            .return_to_pool_observed_until(self.deadline)
+            .await
+        {
+            PoolConnectionReturnDisposition::ReturnedToIdle => result,
+            PoolConnectionReturnDisposition::RetiredClosed => {
+                self.root.request_ready();
+                result
+            }
+            PoolConnectionReturnDisposition::NoEvidence => Err(DurabilityError::InvalidStoredState),
+        }
+    }
+}
+
+pub(crate) async fn begin_semantic_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        return Err(DurabilityError::RootPassDeadlineExceeded);
+    }
+
+    let mut transaction = tokio::time::timeout(remaining, holder.begin())
+        .await
+        .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        return Err(DurabilityError::RootPassDeadlineExceeded);
+    }
+    let millis = u64::try_from(remaining.as_millis().max(1))
+        .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+    let timeout_value = format!("{millis}ms");
+    tokio::time::timeout(
+        remaining,
+        sqlx::query(
+            "SELECT set_config('transaction_timeout', $1, true), \
+             set_config('statement_timeout', $1, true), \
+             set_config('lock_timeout', $1, true)",
+        )
+        .bind(timeout_value)
+        .execute(&mut *transaction),
+    )
+    .await
+    .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
+
+    Ok(transaction)
+}
+
+pub(crate) async fn commit_semantic_transaction(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Instant,
+) -> Result<(), DurabilityError> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        return Err(DurabilityError::CommitOutcomeUnknown);
+    }
+
+    match tokio::time::timeout(remaining, transaction.commit()).await {
+        Ok(Ok(())) => Ok(()),
+        Ok(Err(error)) => Err(DurabilityError::from_commit_error(error)),
+        Err(_) => Err(DurabilityError::CommitOutcomeUnknown),
     }
 }
 

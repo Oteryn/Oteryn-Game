@@ -1,4 +1,4 @@
-use crate::durability::{DurabilityError, schema};
+use crate::durability::{DurabilityError, DurabilityRoot, db, schema};
 use oteryn_game_server::foundation::{
     MAX_OUTSTANDING_COMMANDS, PendingCommandDispositionV1, ProtectionEntitlementV1,
     ReconnectCommitDispositionV1, ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
@@ -6,8 +6,12 @@ use oteryn_game_server::foundation::{
     ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
 };
 use serde_json::{Value, json};
+use sqlx::pool::PoolConnection;
 use sqlx::postgres::PgRow;
-use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::{Acquire, PgPool, Postgres, Row, Transaction};
+use std::future::Future;
+use std::pin::Pin;
+use std::time::Instant;
 
 const PREPARED: i16 = 1;
 const COLLISION_TERMINAL: i16 = 2;
@@ -62,36 +66,142 @@ pub(super) async fn replacement_receipt_matches_record(
 }
 
 #[derive(Clone)]
+enum JournalBackend {
+    Legacy(PgPool),
+    Root(DurabilityRoot),
+}
+
+impl JournalBackend {
+    fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
+        match self {
+            Self::Legacy(_) => Ok(None),
+            Self::Root(root) => root.try_issue_semantic_pass().map(Some),
+        }
+    }
+
+    async fn run_pass<T, F>(
+        &self,
+        issued: Option<db::IssuedSemanticPass>,
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: for<'a> FnOnce(
+                &'a mut PoolConnection<Postgres>,
+                Option<Instant>,
+            )
+                -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
+            + Send,
+    {
+        match self {
+            Self::Legacy(pool) => {
+                if issued.is_some() {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let mut holder = pool.acquire().await?;
+                operation(&mut holder, None).await
+            }
+            Self::Root(_) => {
+                let issued = issued.ok_or(DurabilityError::InvalidStoredState)?;
+                issued
+                    .run(|holder, deadline| operation(holder, Some(deadline)))
+                    .await
+            }
+        }
+    }
+}
+
+async fn begin_pass_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Option<Instant>,
+) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+    match deadline {
+        Some(deadline) => db::begin_semantic_transaction(holder, deadline).await,
+        None => holder.begin().await.map_err(DurabilityError::from),
+    }
+}
+
+async fn commit_pass_transaction(
+    transaction: Transaction<'_, Postgres>,
+    deadline: Option<Instant>,
+) -> Result<(), DurabilityError> {
+    match deadline {
+        Some(deadline) => db::commit_semantic_transaction(transaction, deadline).await,
+        None => transaction.commit().await.map_err(DurabilityError::from),
+    }
+}
+
+async fn await_root_task<T>(
+    task: tokio::task::JoinHandle<Result<T, DurabilityError>>,
+) -> Result<T, DurabilityError>
+where
+    T: Send + 'static,
+{
+    match task.await {
+        Ok(result) => result,
+        Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
+        Err(_) => Err(DurabilityError::RootTaskFailed),
+    }
+}
+
+#[derive(Clone)]
 pub struct AdmissionReconnectJournal {
-    pool: PgPool,
+    backend: JournalBackend,
 }
 
 impl AdmissionReconnectJournal {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
+            backend: JournalBackend::Legacy(schema::connect_runtime(database_url).await?),
         })
+    }
+
+    #[must_use]
+    pub fn from_root(root: DurabilityRoot) -> Self {
+        Self {
+            backend: JournalBackend::Root(root),
+        }
     }
 
     pub async fn prepare(
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
-        self.prepare_internal(request, false).await
+        if let Some(issued) = self.backend.try_issue_root()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return await_root_task(tokio::spawn(async move {
+                journal.prepare_internal(request, false, Some(issued)).await
+            }))
+            .await;
+        }
+        self.prepare_internal(request.clone(), false, None).await
     }
 
     pub(crate) async fn prepare_receipt_authorized(
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
-        self.prepare_internal(request, true).await
+        if let Some(issued) = self.backend.try_issue_root()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return await_root_task(tokio::spawn(async move {
+                journal.prepare_internal(request, true, Some(issued)).await
+            }))
+            .await;
+        }
+        self.prepare_internal(request.clone(), true, None).await
     }
 
     async fn prepare_internal(
         &self,
-        request: &ReconnectPrepareRequestV1,
+        request: ReconnectPrepareRequestV1,
         receipt_authorized: bool,
+        issued: Option<db::IssuedSemanticPass>,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
+        self.backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
         let record = request.record();
         let identity = record.identity();
         let session_id = identity.game_session_id().as_bytes().to_vec();
@@ -112,7 +222,7 @@ impl AdmissionReconnectJournal {
         let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
             scope_storage(record);
 
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = begin_pass_transaction(holder, deadline).await?;
         let inserted_session = sqlx::query(
             "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -178,12 +288,17 @@ impl AdmissionReconnectJournal {
             }
             let state: i16 = existing.try_get("state")?;
             if state == COMMITTED
-                && !committed_protection_binding_is_valid(&mut transaction, record).await?
+                && !committed_protection_binding_is_valid(&mut transaction, record)
+                                .await?
             {
                 return Err(DurabilityError::InvalidStoredState);
             }
             if state == PREPARED
-                && !precommit_protection_binding_is_valid(&mut transaction, record, false).await?
+                && !precommit_protection_binding_is_valid(
+                                &mut transaction, record,
+                                false,
+                            )
+                            .await?
             {
                 return Err(DurabilityError::InvalidStoredState);
             }
@@ -201,13 +316,14 @@ impl AdmissionReconnectJournal {
                     attempt_ref.as_slice(),
                 )
                 .await?;
-                transaction.commit().await?;
+                            commit_pass_transaction(transaction, deadline).await?;
                 return Ok(ReconnectPrepareDispositionV1::ExistingTerminal);
             }
             if state == COMMITTED {
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
                 let recovery_grant_nonce = recovery_grant_nonce(record);
-                let committed_current = session.try_get::<String, _>("control_loss_epoch")?
+                let committed_current = session
+                                .try_get::<String, _>("control_loss_epoch")?
                     == epoch
                     && session.try_get::<i64, _>("original_grace_deadline")?
                         == original_grace_deadline
@@ -238,7 +354,7 @@ impl AdmissionReconnectJournal {
                 if !committed_current {
                     return Err(DurabilityError::InvalidStoredState);
                 }
-                transaction.commit().await?;
+                            commit_pass_transaction(transaction, deadline).await?;
                 return Ok(ReconnectPrepareDispositionV1::Ambiguous);
             }
             return disposition_for_existing(state);
@@ -276,8 +392,12 @@ impl AdmissionReconnectJournal {
                 if retained_for_epoch >= i64::from(MAX_ATTEMPTS_PER_EPOCH) {
                     return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
                 }
-                insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-                transaction.commit().await?;
+                            insert_attempt(
+                                &mut transaction, record, &encoded_record,
+                                STALE_TERMINAL,
+                            )
+                            .await?;
+                            commit_pass_transaction(transaction, deadline).await?;
                 return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             }
 
@@ -293,7 +413,10 @@ impl AdmissionReconnectJournal {
                     .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
                     .is_none();
             let active_binding_valid = if active_shape_matches {
-                active_committed_binding_is_valid(&mut transaction, session_id.as_slice(), &session)
+                            active_committed_binding_is_valid(
+                                &mut transaction, session_id.as_slice(),
+                                &session,
+                            )
                     .await?
             } else {
                 false
@@ -303,8 +426,12 @@ impl AdmissionReconnectJournal {
             }
             let can_open_new_epoch = active_shape_matches && active_binding_valid;
             if !can_open_new_epoch || database_now(&mut transaction).await? > prepared_deadline {
-                insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
-                transaction.commit().await?;
+                            insert_attempt(
+                                &mut transaction, record, &encoded_record,
+                                STALE_TERMINAL,
+                            )
+                            .await?;
+                            commit_pass_transaction(transaction, deadline).await?;
                 return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             }
 
@@ -335,7 +462,8 @@ impl AdmissionReconnectJournal {
                 return Err(DurabilityError::InvalidStoredState);
             }
             let Some(refreshed_session) =
-                load_session_for_update(&mut transaction, session_id.as_slice()).await?
+                load_session_for_update(&mut transaction, session_id.as_slice())
+                                .await?
             else {
                 return Err(DurabilityError::InvalidStoredState);
             };
@@ -361,9 +489,10 @@ impl AdmissionReconnectJournal {
                 .is_none()
             && session.try_get::<i16, _>("session_state")? == RECONNECTABLE;
         if !is_current || database_now(&mut transaction).await? > prepared_deadline {
-            insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
+            insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL)
+                            .await?;
             increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            transaction.commit().await?;
+                        commit_pass_transaction(transaction, deadline).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
         ensure_precommit_protection_continuity(&mut transaction, record).await?;
@@ -378,7 +507,7 @@ impl AdmissionReconnectJournal {
             )
             .await?;
             increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            transaction.commit().await?;
+                        commit_pass_transaction(transaction, deadline).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedConcurrentPrepared);
         }
 
@@ -402,7 +531,7 @@ impl AdmissionReconnectJournal {
             )
             .await?;
             increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
-            transaction.commit().await?;
+                        commit_pass_transaction(transaction, deadline).await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedTransportRefCollision);
         }
 
@@ -416,14 +545,36 @@ impl AdmissionReconnectJournal {
         .bind(attempt_ref.as_slice())
         .execute(&mut *transaction)
         .await?;
-        transaction.commit().await?;
+                    commit_pass_transaction(transaction, deadline).await?;
         Ok(ReconnectPrepareDispositionV1::Prepared)
+                })
+            })
+            .await
     }
 
     pub async fn commit(
         &self,
         request: &ReconnectCommitRequestV1,
     ) -> Result<ReconnectCommitDispositionV1, DurabilityError> {
+        if let Some(issued) = self.backend.try_issue_root()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return await_root_task(tokio::spawn(async move {
+                journal.commit_internal(request, Some(issued)).await
+            }))
+            .await;
+        }
+        self.commit_internal(request.clone(), None).await
+    }
+
+    async fn commit_internal(
+        &self,
+        request: ReconnectCommitRequestV1,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<ReconnectCommitDispositionV1, DurabilityError> {
+        self.backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
         let record = request.record();
         let session_id = record.identity().game_session_id().as_bytes().to_vec();
         let attempt_ref = record
@@ -445,7 +596,7 @@ impl AdmissionReconnectJournal {
             .get()
             .to_string();
 
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = begin_pass_transaction(holder, deadline).await?;
         let Some(session) =
             load_session_for_update(&mut transaction, session_id.as_slice()).await?
         else {
@@ -473,7 +624,8 @@ impl AdmissionReconnectJournal {
         }
         match attempt.try_get::<i16, _>("state")? {
             COMMITTED => {
-                if !committed_protection_binding_is_valid(&mut transaction, record).await? {
+                if !committed_protection_binding_is_valid(&mut transaction, record)
+                                .await? {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
@@ -505,14 +657,14 @@ impl AdmissionReconnectJournal {
                     )
                     .await?
                 {
-                    transaction.commit().await?;
+                                commit_pass_transaction(transaction, deadline).await?;
                     return Ok(ReconnectCommitDispositionV1::Committed);
                 }
                 return Err(DurabilityError::InvalidStoredState);
             }
             PREPARED => {}
             COLLISION_TERMINAL | CONCURRENT_TERMINAL | STALE_TERMINAL => {
-                transaction.commit().await?;
+                            commit_pass_transaction(transaction, deadline).await?;
                 return Ok(ReconnectCommitDispositionV1::ExistingTerminal);
             }
             _ => return Err(DurabilityError::InvalidStoredState),
@@ -541,11 +693,12 @@ impl AdmissionReconnectJournal {
                 attempt_ref.as_slice(),
             )
             .await?;
-            transaction.commit().await?;
+                        commit_pass_transaction(transaction, deadline).await?;
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         }
 
-        if !precommit_protection_binding_is_valid(&mut transaction, record, true).await? {
+        if !precommit_protection_binding_is_valid(&mut transaction, record, true)
+                        .await? {
             return Err(DurabilityError::InvalidStoredState);
         }
 
@@ -579,7 +732,7 @@ impl AdmissionReconnectJournal {
                     attempt_ref.as_slice(),
                 )
                 .await?;
-                transaction.commit().await?;
+                            commit_pass_transaction(transaction, deadline).await?;
                 return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
             }
         }
@@ -615,8 +768,11 @@ impl AdmissionReconnectJournal {
         if advanced.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
-        transaction.commit().await?;
+                    commit_pass_transaction(transaction, deadline).await?;
         Ok(ReconnectCommitDispositionV1::Committed)
+                })
+            })
+            .await
     }
 
     #[allow(dead_code)]
@@ -624,11 +780,34 @@ impl AdmissionReconnectJournal {
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
-        let mut transaction = self.pool.begin().await?;
+        if let Some(issued) = self.backend.try_issue_root()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return await_root_task(tokio::spawn(async move {
+                journal.reconcile_internal(request, Some(issued)).await
+            }))
+            .await;
+        }
+        self.reconcile_internal(request.clone(), None).await
+    }
+
+    async fn reconcile_internal(
+        &self,
+        request: ReconnectPrepareRequestV1,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
+        self.backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
+        let mut transaction = begin_pass_transaction(holder, deadline).await?;
         let (snapshot, _state) =
-            Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;
-        transaction.commit().await?;
+            Self::reconcile_record_in_transaction(&mut transaction, request.record())
+                            .await?;
+                    commit_pass_transaction(transaction, deadline).await?;
         Ok(snapshot)
+                })
+            })
+            .await
     }
 
     pub(super) async fn reconcile_record_in_transaction(

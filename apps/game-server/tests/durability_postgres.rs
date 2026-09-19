@@ -171,6 +171,41 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
 }
 
 #[test]
+fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let root = DurabilityRoot::new(DurabilityRootConfig::new(
+                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                5432,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "test-secret".to_owned(),
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+            )?);
+            let journal = AdmissionReconnectJournal::from_root(root.clone());
+            let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+                record(201, 1, 0xa1, unix_now().map_err(foundation_error)?)
+                    .map_err(foundation_error)?,
+            );
+
+            assert!(matches!(
+                journal.prepare(&request).await,
+                Err(DurabilityError::RootUnavailable)
+            ));
+            assert!(!root.is_ready());
+            assert!(root.has_ready_demand());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
+
+#[test]
 fn wp3_return_finality_deadline_hard_retires_exact_holder() -> Result<(), Box<dyn std::error::Error>>
 {
     if !postgres_e2e_is_configured()? {
