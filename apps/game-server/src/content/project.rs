@@ -9,8 +9,9 @@ use super::{
     CanonicalReferencePlayableContent, ClientProjectionClass, ContentError, ContentLockBinding,
     ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, PackageManifestBinding,
     ProductionAtom, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
-    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceCreatureDefinition, ReferenceDefinition,
-    ReferenceDefinitionKind, ReferenceItemDefinition, ReferenceItemDestination,
+    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceAbilityDefinition, ReferenceCreatureDefinition,
+    ReferenceDefinition, ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
+    ReferenceFormulaDefinition, ReferenceItemDefinition, ReferenceItemDestination,
     ReferenceItemPhysicalClass, ReferenceItemStackClass, ReferencePlayableContentSource,
     Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
 };
@@ -528,6 +529,19 @@ impl ProjectDraft {
 // existing Reference creature fields inline preserves the direct, typed JSON schema.
 #[allow(clippy::large_enum_variant)]
 pub enum ProjectReferenceRecord {
+    Ability {
+        identity: DefinitionIdentityDocument,
+        effects: Vec<DefinitionReferenceDocument>,
+    },
+    Effect {
+        identity: DefinitionIdentityDocument,
+        client_projection: ProjectionDocument,
+        effect_family: EffectFamilyDocument,
+        formula: DefinitionReferenceDocument,
+    },
+    Formula {
+        identity: DefinitionIdentityDocument,
+    },
     Item {
         identity: DefinitionIdentityDocument,
         client_projection: ProjectionDocument,
@@ -550,7 +564,10 @@ pub enum ProjectReferenceRecord {
 impl ProjectReferenceRecord {
     fn identity(&self) -> &DefinitionIdentityDocument {
         match self {
-            Self::Item { identity, .. }
+            Self::Ability { identity, .. }
+            | Self::Effect { identity, .. }
+            | Self::Formula { identity, .. }
+            | Self::Item { identity, .. }
             | Self::Generic { identity, .. }
             | Self::Creature { identity, .. } => identity,
         }
@@ -558,6 +575,47 @@ impl ProjectReferenceRecord {
 
     fn lower(&self) -> Result<ReferenceDefinition, ProjectError> {
         match self {
+            Self::Ability { identity, effects } => {
+                require_family(&identity.family, DefinitionFamily::Ability)?;
+                for effect in effects {
+                    require_family(&effect.family, DefinitionFamily::Effect)?;
+                }
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Ability(ReferenceAbilityDefinition {
+                        effects: effects
+                            .iter()
+                            .map(DefinitionReferenceDocument::lower)
+                            .collect::<Result<_, ProjectError>>()?,
+                    }),
+                    client_projection: ClientProjectionClass::ServerOnly,
+                })
+            }
+            Self::Effect {
+                identity,
+                client_projection,
+                effect_family,
+                formula,
+            } => {
+                require_family(&identity.family, DefinitionFamily::Effect)?;
+                require_family(&formula.family, DefinitionFamily::Formula)?;
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Effect(ReferenceEffectDefinition {
+                        family: effect_family.lower(),
+                        formula: formula.lower()?,
+                    }),
+                    client_projection: client_projection.lower(),
+                })
+            }
+            Self::Formula { identity } => {
+                require_family(&identity.family, DefinitionFamily::Formula)?;
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Formula(ReferenceFormulaDefinition),
+                    client_projection: ClientProjectionClass::ServerOnly,
+                })
+            }
             Self::Item {
                 identity,
                 client_projection,
@@ -692,6 +750,21 @@ impl ProjectionDocument {
 pub enum ItemStackDocument {
     NonStackable,
     StackCapable,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum EffectFamilyDocument {
+    Damage,
+    Heal,
+}
+
+impl EffectFamilyDocument {
+    fn lower(self) -> ReferenceEffectFamily {
+        match self {
+            Self::Damage => ReferenceEffectFamily::Damage,
+            Self::Heal => ReferenceEffectFamily::Heal,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1317,6 +1390,9 @@ fn parse_family(value: &str) -> Result<DefinitionFamily, ProjectError> {
         "Behavior" => Ok(DefinitionFamily::Behavior),
         "Creature" => Ok(DefinitionFamily::Creature),
         "Item" => Ok(DefinitionFamily::Item),
+        "Ability" => Ok(DefinitionFamily::Ability),
+        "Effect" => Ok(DefinitionFamily::Effect),
+        "Formula" => Ok(DefinitionFamily::Formula),
         _ => Err(ProjectError::InvalidProject(
             "unsupported Reference definition family",
         )),
