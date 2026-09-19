@@ -936,7 +936,8 @@ fn parse_snapshot(
         .ok_or(ProjectError::InvalidProject(
             "Content Lock root package missing",
         ))?;
-    if entry.package_revision != package.package_revision
+    if entry.package_key != package.package_key
+        || entry.package_revision != package.package_revision
         || entry.package_provenance_digest != expected_provenance
         || entry.floating
         || entry.dependency
