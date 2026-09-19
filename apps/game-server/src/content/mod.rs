@@ -34,6 +34,7 @@ mod compiler;
 mod digest;
 mod fixture;
 mod model;
+mod project;
 mod production;
 mod reference_playable;
 
@@ -44,6 +45,7 @@ pub use artifact::{ArtifactExpectation, ProjectionClass, StagedArtifact, StagedC
 pub use compiler::{CompiledContent, compile};
 pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
+pub use project::*;
 pub use production::{
     CompiledFirstProductionContent, ContentLockBinding, ContentLockEntry, DurableMigrationClass,
     FIRST_PRODUCTION_ARTIFACT_PROFILE_ID, FIRST_PRODUCTION_CAPABILITY_PROFILE,
