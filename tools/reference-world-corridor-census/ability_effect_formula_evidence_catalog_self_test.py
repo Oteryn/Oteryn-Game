@@ -46,6 +46,35 @@ def test_repeat_and_input_permutation_are_byte_deterministic() -> None:
     assert catalog.canonical_bytes(first) == catalog.canonical_bytes(reversed_cases)
 
 
+def test_mapper_revision_binds_exact_published_bytes() -> None:
+    value = catalog.build_catalog(GAME_ROOT)
+    recorded = value["mapper_revision"]
+    recomputed = catalog.verify_mapper_revision(GAME_ROOT)
+    assert recorded == recomputed
+    mapper_payload = (
+        GAME_ROOT / catalog.MAPPER_PATH
+    ).read_bytes()
+    assert recorded["canonical_sha256"] == catalog.sha256_bytes(
+        catalog.canonical_repository_text_bytes(mapper_payload)
+    )
+    assert recorded["git_blob"] == catalog._git(
+        GAME_ROOT, "rev-parse", f"HEAD:{catalog.MAPPER_PATH}"
+    )
+
+
+def test_mapper_fingerprint_is_checkout_line_ending_invariant() -> None:
+    lf = b"line one\nline two\n"
+    crlf = b"line one\r\nline two\r\n"
+    assert catalog.canonical_repository_text_bytes(lf) == lf
+    assert catalog.canonical_repository_text_bytes(crlf) == lf
+    try:
+        catalog.canonical_repository_text_bytes(b"line one\rline two\n")
+    except catalog.CatalogError as exc:
+        assert "UNSUPPORTED_MAPPER_LINE_ENDING" in str(exc)
+    else:
+        raise AssertionError("lone CR mapper bytes were accepted")
+
+
 def test_protected_blob_mismatch_fails_closed() -> None:
     altered = dict(catalog.PROTECTED_INPUTS)
     _, role = altered[catalog.MANIFEST_PATH]
@@ -105,6 +134,8 @@ def test_no_native_identity_parity_or_formula_is_synthesized() -> None:
 def main() -> int:
     test_protected_inputs_and_tracked_product_are_exact()
     test_repeat_and_input_permutation_are_byte_deterministic()
+    test_mapper_revision_binds_exact_published_bytes()
+    test_mapper_fingerprint_is_checkout_line_ending_invariant()
     test_protected_blob_mismatch_fails_closed()
     test_protected_digest_mismatch_fails_closed()
     test_manifest_promotion_or_formula_invention_fails_closed()
