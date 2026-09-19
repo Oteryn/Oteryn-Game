@@ -17,17 +17,19 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "c59b30fde7538e738346eec03a602081dc4ac2d6"
+APPROVED = "df22c9a40847ce759337ab63c84a28e1180892ba"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
     "$PSNativeCommandUseErrorActionPreference = $true",
 )
-WINDOWS_NATIVE_COMMANDS = (
+WINDOWS_REQUIRED_FRAGMENTS = (
     "cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
     "cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
-    "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
-    "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+    '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
+    "Test-Path -LiteralPath $client -PathType Leaf",
+    "& $client --smoke",
+    "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
 )
 
 
@@ -104,8 +106,9 @@ def main() -> int:
     assert windows is not None
     for policy in NATIVE_POLICY:
         assert policy in windows, f"Merge Queue Windows block lacks fail-closed policy: {policy}"
-    for command in WINDOWS_NATIVE_COMMANDS:
-        assert windows.count(command) == 1, f"required Windows command missing or duplicated: {command}"
+    for fragment in WINDOWS_REQUIRED_FRAGMENTS:
+        assert windows.count(fragment) == 1, f"required Windows fragment missing or duplicated: {fragment}"
+    assert "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke" not in windows
 
     lifecycle = subprocess.run(
         [sys.executable, str(LIFECYCLE)],

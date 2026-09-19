@@ -78,7 +78,7 @@ The protected `main` ruleset requires only the stable `game-gate` context. Indiv
 
 ## Current Merge Queue gate
 
-The inspected `.github/workflows/merge-group-gate.yml` at `main@663bd35a5196a925fc6eb0318381ad0b97f4cc2c` is pinned to blob `c59b30fde7538e738346eec03a602081dc4ac2d6`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
+The canonical `.github/workflows/merge-group-gate.yml` is pinned to exact reviewed blob `df22c9a40847ce759337ab63c84a28e1180892ba`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
 
 | Exact queue classification | Selected additional jobs |
 |---|---|
@@ -117,7 +117,7 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - deletion-safe conditional `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 when the target is allocated on the exact PR head;
 - `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
 - Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
-- Windows strict client Clippy and `--smoke` launch;
+- Windows strict client Clippy plus `--smoke` executed from the exact previously built release client artifact;
 - `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
 - `cargo-deny check --all-features` through the pinned cargo-deny action.
 
@@ -125,7 +125,7 @@ Current exact baseline uses Rust `1.94.0` and includes:
 
 At the inspected revision, `tools/architecture-check/src/lib.rs` validates workspace-local edges and release-role closure. Additional external registry/git and transitive closure evidence is needed when a foundation promises framework/platform/GPU neutrality. The host-default production `cargo tree` checks do not by themselves cover every target/feature combination. Bind such claims to exact package identities, manifests, lockfile, target and feature selection.
 
-The Windows jobs run client build/Clippy, shell smoke, synthetic harness and simulation-determinism tests. They do not execute all client, input-platform or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The shell smoke uses `cargo run` without `--release`, separately from the release build, so it is not a test of the exact release artifact. The inspected shell also exits smoke before renderer construction.
+The Windows jobs run the release client build, strict client Clippy, smoke against that exact release artifact, the synthetic harness on the explicit `x86_64-pc-windows-msvc` target, and simulation-determinism tests. They do not execute all client, input-platform or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The smoke still exits before renderer construction, so it remains pre-native shell evidence rather than renderer or gameplay E2E.
 
 The dedicated architecture semantic workflow selects explicit profiles, not arbitrary architecture Markdown. Record its semantic verdict and selected checks separately from workflow conclusion. On #560 head `db502e473bda60f7cdea2498f5138705c2cf0bea`, run `34562444300` / job `103147774477` passed its dispatcher tests but reported `SEMANTIC_AUDIT_NOT_APPLICABLE` with no UI profile/checks. This was workflow success, not semantic UI PASS or independent KEEP. New or changed coverage requires an allocated implementation change, not reinterpretation of an old green status.
 

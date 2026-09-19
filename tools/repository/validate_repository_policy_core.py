@@ -50,8 +50,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a19161638
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3c4be7c25993af41ab71255c53c23ced1097e40f9b6dcc33e76c921e52656c7f"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "99a898fd511f4b20024739f005f7b065f22c8d1d"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "c59b30fde7538e738346eec03a602081dc4ac2d6"
-EXPECTED_POST_MERGE_RUST_SHA256 = "8378d595272b8d134b261835eb3ff8aa9b1094dd317f26d333e10ccc1f65fe17"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "df22c9a40847ce759337ab63c84a28e1180892ba"
+EXPECTED_POST_MERGE_RUST_SHA256 = "1da79740b5c8c938d654c8712575cd2549c91b2912eab42e475d8f882d73f3f9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -499,8 +499,10 @@ def main() -> int:
                 "$PSNativeCommandUseErrorActionPreference = $true",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
-                "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+                '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
+                "Test-Path -LiteralPath $client -PathType Leaf",
+                "& $client --smoke",
+                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
             ),
             "rust_supply_chain": (
                 "    name: Merge Queue / Rust supply chain\n",
