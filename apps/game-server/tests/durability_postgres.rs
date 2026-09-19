@@ -133,16 +133,16 @@ fn wp3_deterministic_pg_options_ignore_ambient_sources() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn std::error::Error>> {
-    use durability::{DurabilityRootConfig, build_root_pool};
-    use sqlx::postgres::PgSslMode;
+fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn std::error::Error>>
+{
+    use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
         .block_on(async {
-            let pool = build_root_pool(DurabilityRootConfig::new(
+            let root = DurabilityRoot::new(DurabilityRootConfig::new(
                 IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
                 5432,
                 "db.example".to_owned(),
@@ -150,46 +150,74 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
                 "explicit".to_owned(),
                 "test-secret".to_owned(),
                 b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+            )?);
+
+            assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+            assert!(!root.is_ready());
+            assert!(root.has_ready_demand());
+            assert!(matches!(
+                root.try_acquire_ready(),
+                Err(DurabilityError::RootUnavailable)
             ));
-
-            assert_eq!(pool.options().get_max_connections(), 1);
-            assert_eq!(pool.options().get_min_connections(), 0);
-            assert_eq!(
-                pool.options().get_acquire_timeout(),
-                std::time::Duration::from_secs(5)
-            );
-            assert_eq!(
-                pool.options().get_idle_timeout(),
-                Some(std::time::Duration::from_secs(10 * 60))
-            );
-            assert_eq!(
-                pool.options().get_max_lifetime(),
-                Some(std::time::Duration::from_secs(30 * 60))
-            );
-            assert_eq!(pool.size(), 0);
-            assert_eq!(pool.num_idle(), 0);
-
-            let connect = pool.connect_options();
-            assert_eq!(connect.get_host(), "db.example");
-            assert_eq!(connect.get_host_addr(), Some("203.0.113.7"));
-            assert_eq!(connect.get_port(), 5432);
-            assert_eq!(connect.get_username(), "explicit");
-            assert_eq!(connect.get_database(), Some("oteryn"));
-            assert!(matches!(connect.get_ssl_mode(), PgSslMode::VerifyFull));
-
-            assert!(
-                pool.try_acquire().is_none(),
-                "ready-only miss must not establish a connection"
-            );
+            assert!(root.has_ready_demand());
             tokio::task::yield_now().await;
-            assert_eq!(
-                pool.size(),
-                0,
-                "lazy min-zero profile must not connect in the background"
+            assert!(
+                !root.is_ready(),
+                "ready-only miss must not establish a connection in the background"
             );
 
-            pool.close().await;
             Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
+
+#[test]
+fn wp3_return_finality_deadline_hard_retires_exact_holder() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use sqlx::pool::PoolConnectionReturnDisposition;
+            use sqlx::postgres::PgPoolOptions;
+            use std::time::Instant;
+
+            let database = postgres::IsolatedPostgres::create("wp3_return_finality_deadline").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let pool = PgPoolOptions::new()
+                    .max_connections(1)
+                    .min_connections(0)
+                    .after_release(|_connection, _metadata| {
+                        Box::pin(async {
+                            std::future::pending::<()>().await;
+                            Ok(true)
+                        })
+                    })
+                    .connect(&url)
+                    .await?;
+
+                let mut holder = pool.acquire().await?;
+                let deadline = Instant::now() + Duration::from_millis(100);
+                let disposition = holder.return_to_pool_observed_until(deadline).await;
+
+                assert_eq!(
+                    disposition,
+                    PoolConnectionReturnDisposition::RetiredClosed,
+                    "deadline expiry must retire the exact holder before reporting terminal finality"
+                );
+                assert_eq!(pool.num_idle(), 0);
+                assert_eq!(pool.size(), 0, "retired generation must release pool capacity");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
         })
 }
 

@@ -10,7 +10,7 @@ use crate::connection::Connection;
 use crate::database::Database;
 use crate::error::Error;
 
-use super::inner::{is_beyond_max_lifetime, DecrementSizeGuard, PoolInner};
+use super::inner::{DecrementSizeGuard, PoolInner, is_beyond_max_lifetime};
 use crate::pool::options::PoolConnectionMetadata;
 
 const CLOSE_ON_DROP_TIMEOUT: Duration = Duration::from_secs(5);
@@ -155,6 +155,26 @@ impl<DB: Database> PoolConnection<DB> {
     pub fn return_to_pool_observed(
         &mut self,
     ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
+        self.return_to_pool_observed_inner(None)
+    }
+
+    /// Return the exact checked-out connection before an absolute deadline.
+    ///
+    /// If release hooks or the final ping do not complete by `deadline`, the
+    /// exact holder is synchronously retired by dropping its connection before
+    /// `RetiredClosed` is reported.
+    #[doc(hidden)]
+    pub fn return_to_pool_observed_until(
+        &mut self,
+        deadline: Instant,
+    ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
+        self.return_to_pool_observed_inner(Some(deadline))
+    }
+
+    fn return_to_pool_observed_inner(
+        &mut self,
+        deadline: Option<Instant>,
+    ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
         // Float the connection before moving into the future so dropping the
         // returned future cannot make the pool believe the holder is idle.
         let floating: Option<Floating<DB, Live<DB>>> =
@@ -164,7 +184,10 @@ impl<DB: Database> PoolConnection<DB> {
 
         async move {
             let returned_to_pool = if let Some(floating) = floating {
-                floating.return_to_pool().await
+                match deadline {
+                    Some(deadline) => floating.return_to_pool_until(deadline).await,
+                    None => floating.return_to_pool().await,
+                }
             } else {
                 false
             };
@@ -354,6 +377,72 @@ impl<DB: Database> Floating<DB, Live<DB>> {
             self.release();
             true
         }
+    }
+
+    async fn return_to_pool_until(mut self, deadline: Instant) -> bool {
+        if self.guard.pool.is_closed()
+            || is_beyond_max_lifetime(&self.inner, &self.guard.pool.options)
+        {
+            self.retire_by_drop();
+            return false;
+        }
+
+        if let Some(test) = &self.guard.pool.options.after_release {
+            let meta = self.metadata();
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                self.retire_by_drop();
+                return false;
+            }
+
+            match crate::rt::timeout(remaining, (test)(&mut self.inner.raw, meta)).await {
+                Ok(Ok(true)) => {}
+                Ok(Ok(false)) => {
+                    self.retire_by_drop();
+                    return false;
+                }
+                Ok(Err(error)) => {
+                    tracing::warn!(%error, "error from `after_release`");
+                    self.retire_by_drop();
+                    return false;
+                }
+                Err(_) => {
+                    self.retire_by_drop();
+                    return false;
+                }
+            }
+        }
+
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            self.retire_by_drop();
+            return false;
+        }
+
+        match crate::rt::timeout(remaining, self.inner.raw.ping()).await {
+            Ok(Ok(())) => {
+                self.release();
+                true
+            }
+            Ok(Err(error)) => {
+                tracing::warn!(
+                    %error,
+                    "error occurred while testing the connection on-release",
+                );
+                self.retire_by_drop();
+                false
+            }
+            Err(_) => {
+                self.retire_by_drop();
+                false
+            }
+        }
+    }
+
+    fn retire_by_drop(self) {
+        let Floating { inner, guard } = self;
+        drop(inner.raw);
+        drop(guard);
     }
 
     pub async fn close(self) {

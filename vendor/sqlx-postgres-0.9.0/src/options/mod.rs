@@ -106,7 +106,9 @@ impl PgConnectOptions {
             .and_then(|v| v.parse().ok())
             .unwrap_or(5432);
         options.host_addr = var("PGHOSTADDR").ok();
-        options.host = var("PGHOST").ok().unwrap_or_else(|| default_host(options.port));
+        options.host = var("PGHOST")
+            .ok()
+            .unwrap_or_else(|| default_host(options.port));
         options.username = if let Ok(username) = var("PGUSER") {
             username
         } else if let Ok(username) = whoami::username() {
@@ -623,6 +625,31 @@ impl PgConnectOptions {
     /// ```
     pub fn get_ssl_mode(&self) -> PgSslMode {
         self.ssl_mode
+    }
+
+    /// Get the configured PostgreSQL authentication policy.
+    pub fn get_authentication_policy(&self) -> PgAuthenticationPolicy {
+        self.authentication_policy
+    }
+
+    /// Whether TLS negotiation is restricted to TLS 1.3.
+    pub fn get_ssl_tls13_only(&self) -> bool {
+        self.tls13_only
+    }
+
+    /// Whether TLS session resumption is enabled.
+    pub fn get_ssl_session_resumption(&self) -> bool {
+        self.tls_session_resumption
+    }
+
+    /// Whether the TLS verifier begins with default trust roots.
+    pub fn get_ssl_use_default_roots(&self) -> bool {
+        self.tls_use_default_roots
+    }
+
+    /// Whether both a TLS client certificate and private key are configured.
+    pub fn has_ssl_client_auth(&self) -> bool {
+        self.ssl_client_cert.is_some() && self.ssl_client_key.is_some()
     }
 
     /// Get the application name.

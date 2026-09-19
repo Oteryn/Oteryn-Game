@@ -9,9 +9,8 @@ mod db;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
+pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
-#[cfg(test)]
-pub(crate) use db::{DurabilityRootConfig, build_root_pool};
 
 use oteryn_game_server::foundation::{
     PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectDurabilityFlowV1,
@@ -47,6 +46,8 @@ pub enum DurabilityError {
     Database(sqlx::Error),
     Migration(sqlx::migrate::MigrateError),
     SchemaIncompatible(SchemaCompatibility),
+    InvalidConfiguration,
+    RootUnavailable,
     InvalidStoredState,
 }
 
@@ -63,6 +64,10 @@ impl Display for DurabilityError {
                     "game durability schema is not runtime-compatible: {state:?}"
                 )
             }
+            Self::InvalidConfiguration => {
+                formatter.write_str("game durability root configuration is invalid")
+            }
+            Self::RootUnavailable => formatter.write_str("game durability root is not ready"),
             Self::InvalidStoredState => {
                 formatter.write_str("durability journal contains invalid state")
             }

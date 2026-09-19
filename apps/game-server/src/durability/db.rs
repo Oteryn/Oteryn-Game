@@ -1,13 +1,17 @@
 use crate::durability::DurabilityError;
 use sqlx::PgPool;
+use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
-    PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode,
+    PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
 };
 use std::net::IpAddr;
-use std::time::Duration;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
-pub(crate) const DB_PASS_DEADLINE: Duration = Duration::from_secs(2);
+pub const DB_PASS_DEADLINE: Duration = Duration::from_secs(2);
 pub(crate) const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
@@ -19,7 +23,7 @@ const STATEMENT_CACHE_CAPACITY: usize = 100;
 /// the SQLx profile from this value never consults `PG*`, passfiles, OS-user
 /// defaults, Unix-domain-socket discovery, client certificates, or implicit
 /// trust roots.
-pub(crate) struct DurabilityRootConfig {
+pub struct DurabilityRootConfig {
     transport_ip: IpAddr,
     port: u16,
     tls_server_name: String,
@@ -30,7 +34,7 @@ pub(crate) struct DurabilityRootConfig {
 }
 
 impl DurabilityRootConfig {
-    pub(crate) fn new(
+    pub fn new(
         transport_ip: IpAddr,
         port: u16,
         tls_server_name: String,
@@ -38,8 +42,18 @@ impl DurabilityRootConfig {
         username: String,
         password: String,
         root_ca_pem: Vec<u8>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, DurabilityError> {
+        if port == 0
+            || tls_server_name.trim().is_empty()
+            || tls_server_name.parse::<IpAddr>().is_ok()
+            || database.trim().is_empty()
+            || username.trim().is_empty()
+            || root_ca_pem.is_empty()
+        {
+            return Err(DurabilityError::InvalidConfiguration);
+        }
+
+        Ok(Self {
             transport_ip,
             port,
             tls_server_name,
@@ -47,7 +61,7 @@ impl DurabilityRootConfig {
             username,
             password,
             root_ca_pem,
-        }
+        })
     }
 
     fn into_connect_options(self) -> PgConnectOptions {
@@ -83,6 +97,82 @@ pub(crate) fn build_root_pool(config: DurabilityRootConfig) -> PgPool {
         .connect_lazy_with(config.into_connect_options())
 }
 
+/// Process-scoped owner of the accepted max-one durability holder.
+///
+/// Active work may only take an already-idle holder through
+/// [`DurabilityRoot::try_acquire_ready`]. Connection establishment is confined
+/// to [`DurabilityRoot::maintain_ready_once`], which consumes one coalesced
+/// demand and never loops or self-retries.
+#[derive(Clone)]
+pub struct DurabilityRoot {
+    pool: PgPool,
+    ready_demand: Arc<AtomicBool>,
+    maintenance: Arc<Mutex<()>>,
+}
+
+impl DurabilityRoot {
+    #[must_use]
+    pub fn new(config: DurabilityRootConfig) -> Self {
+        Self {
+            pool: build_root_pool(config),
+            ready_demand: Arc::new(AtomicBool::new(true)),
+            maintenance: Arc::new(Mutex::new(())),
+        }
+    }
+
+    /// Record a genuine event that permits one later maintenance window.
+    pub fn request_ready(&self) {
+        self.ready_demand.store(true, Ordering::Release);
+    }
+
+    /// Checkout only an already-idle holder. This method never establishes a connection.
+    pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        if let Some(holder) = self.pool.try_acquire() {
+            return Ok(holder);
+        }
+
+        self.request_ready();
+        Err(DurabilityError::RootUnavailable)
+    }
+
+    /// Consume at most one coalesced demand and run one bounded maintenance window.
+    ///
+    /// A failed window does not re-arm itself. A demand arriving while this window
+    /// is running remains recorded and may authorize one later call.
+    pub async fn maintain_ready_once(&self) -> Result<bool, DurabilityError> {
+        let _maintenance = self.maintenance.lock().await;
+        if !self.ready_demand.swap(false, Ordering::AcqRel) {
+            return Ok(self.pool.num_idle() > 0);
+        }
+
+        let deadline = Instant::now() + ROOT_RECOVERY_WINDOW;
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let acquired = tokio::time::timeout(remaining, self.pool.acquire())
+            .await
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        let mut holder = match acquired {
+            Ok(holder) => holder,
+            Err(error) => return Err(DurabilityError::Database(error)),
+        };
+
+        match holder.return_to_pool_observed_until(deadline).await {
+            PoolConnectionReturnDisposition::ReturnedToIdle => Ok(true),
+            PoolConnectionReturnDisposition::RetiredClosed
+            | PoolConnectionReturnDisposition::NoEvidence => Err(DurabilityError::RootUnavailable),
+        }
+    }
+
+    #[must_use]
+    pub fn is_ready(&self) -> bool {
+        self.pool.num_idle() > 0
+    }
+
+    #[must_use]
+    pub fn has_ready_demand(&self) -> bool {
+        self.ready_demand.load(Ordering::Acquire)
+    }
+}
+
 pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool, DurabilityError> {
     PgPoolOptions::new()
         .max_connections(max_connections)
@@ -90,6 +180,149 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
         .connect(database_url)
         .await
         .map_err(DurabilityError::from)
+}
+
+#[cfg(test)]
+mod wp3_root_contract_tests {
+    use super::*;
+    use std::net::{IpAddr, Ipv4Addr};
+
+    fn config() -> Result<DurabilityRootConfig, DurabilityError> {
+        DurabilityRootConfig::new(
+            IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+            5432,
+            "db.example".to_owned(),
+            "oteryn".to_owned(),
+            "explicit".to_owned(),
+            "test-secret".to_owned(),
+            b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+        )
+    }
+
+    #[test]
+    fn root_configuration_rejects_missing_identity_material_before_retention() {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        let ca = b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec();
+
+        assert!(matches!(
+            DurabilityRootConfig::new(
+                ip,
+                0,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "secret".to_owned(),
+                ca.clone()
+            ),
+            Err(DurabilityError::InvalidConfiguration)
+        ));
+        assert!(matches!(
+            DurabilityRootConfig::new(
+                ip,
+                5432,
+                "203.0.113.9".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "secret".to_owned(),
+                ca.clone()
+            ),
+            Err(DurabilityError::InvalidConfiguration)
+        ));
+        assert!(matches!(
+            DurabilityRootConfig::new(
+                ip,
+                5432,
+                "db.example".to_owned(),
+                " ".to_owned(),
+                "explicit".to_owned(),
+                "secret".to_owned(),
+                ca.clone()
+            ),
+            Err(DurabilityError::InvalidConfiguration)
+        ));
+        assert!(matches!(
+            DurabilityRootConfig::new(
+                ip,
+                5432,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                " ".to_owned(),
+                "secret".to_owned(),
+                ca.clone()
+            ),
+            Err(DurabilityError::InvalidConfiguration)
+        ));
+        assert!(matches!(
+            DurabilityRootConfig::new(
+                ip,
+                5432,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "secret".to_owned(),
+                Vec::new()
+            ),
+            Err(DurabilityError::InvalidConfiguration)
+        ));
+    }
+
+    #[test]
+    fn selected_root_profile_is_strict_lazy_and_max_one() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let config = config()?;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let pool = build_root_pool(config);
+            let options = pool.connect_options();
+
+            assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+            assert_eq!(pool.options().get_max_connections(), 1);
+            assert_eq!(pool.options().get_min_connections(), 0);
+            assert_eq!(pool.options().get_acquire_timeout(), ROOT_RECOVERY_WINDOW);
+            assert_eq!(pool.options().get_idle_timeout(), Some(HOLDER_IDLE_TIMEOUT));
+            assert_eq!(pool.options().get_max_lifetime(), Some(HOLDER_MAX_LIFETIME));
+            assert_eq!(options.get_host(), "db.example");
+            assert_eq!(options.get_host_addr(), Some("203.0.113.7"));
+            assert_eq!(options.get_port(), 5432);
+            assert_eq!(options.get_username(), "explicit");
+            assert_eq!(options.get_database(), Some("oteryn"));
+            assert!(matches!(options.get_ssl_mode(), PgSslMode::VerifyFull));
+            assert!(matches!(
+                options.get_authentication_policy(),
+                PgAuthenticationPolicy::ScramSha256
+            ));
+            assert!(options.get_ssl_tls13_only());
+            assert!(!options.get_ssl_session_resumption());
+            assert!(!options.get_ssl_use_default_roots());
+            assert!(!options.has_ssl_client_auth());
+            assert_eq!(pool.size(), 0);
+            assert_eq!(pool.num_idle(), 0);
+        });
+        Ok(())
+    }
+
+    #[test]
+    fn no_demand_maintenance_is_a_noop_and_never_connects() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let config = config()?;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let root = DurabilityRoot::new(config);
+            root.ready_demand.store(false, Ordering::Release);
+
+            let maintained = root.maintain_ready_once().await?;
+            assert!(!maintained);
+            assert!(!root.is_ready());
+            assert!(!root.has_ready_demand());
+            assert_eq!(root.pool.size(), 0);
+            Ok::<(), DurabilityError>(())
+        })?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
