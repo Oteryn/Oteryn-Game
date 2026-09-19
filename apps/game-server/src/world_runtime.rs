@@ -20,6 +20,8 @@ const DISPOSITION_OCCUPIED: &str = "OCCUPIED";
 const DISPOSITION_BINDING_MISMATCH: &str = "BINDING_MISMATCH";
 const DISPOSITION_STALE_STATE: &str = "STALE_STATE";
 const DISPOSITION_REVISION_EXHAUSTED: &str = "REVISION_EXHAUSTED";
+const LOCAL_OBJECT_TRANSITION_CAPABILITY: &str =
+    "oteryn:runtime.capability.local-object-transition";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ReferenceContentGeneration {
@@ -30,18 +32,14 @@ impl ReferenceContentGeneration {
     pub(crate) fn from_content(
         content: &CanonicalReferencePlayableContent,
     ) -> Result<Self, WorldRuntimeError> {
+        // The Reference successor has one exact locked root package. Its provenance digest
+        // already binds package key/revision/schema/licensing/source-manifest identity, while
+        // profile/capability and WorldId are fenced separately by bind(). Keep the Foundation
+        // retained binding component at this fixed 64-byte identity instead of concatenating
+        // individually bounded atoms into a new hidden aggregate limit.
         let provenance = content.package_manifest.package_provenance_digest()?;
-        let semantic_identity = format!(
-            "{}|{}|{}|{}|{}|{}",
-            content.profile_revision.as_str(),
-            content.capability_profile.as_str(),
-            content.package_manifest.package_key.as_str(),
-            content.package_manifest.package_revision.as_str(),
-            provenance.as_str(),
-            content.content_lock.revision_digest_token.as_str(),
-        );
         Ok(Self {
-            semantic_identity: semantic_identity.into_boxed_str(),
+            semantic_identity: provenance.as_str().to_owned().into_boxed_str(),
         })
     }
 
@@ -154,6 +152,7 @@ pub(crate) enum WorldRuntimeError {
     ConflictChangedInput,
     OutcomeExpired,
     IngressClassificationMismatch,
+    PendingContinuationMissing,
 }
 
 impl Display for WorldRuntimeError {
@@ -193,6 +192,9 @@ impl Display for WorldRuntimeError {
             }
             Self::IngressClassificationMismatch => formatter
                 .write_str("Foundation duplicate classification is internally inconsistent"),
+            Self::PendingContinuationMissing => {
+                formatter.write_str("pending local-object continuation is no longer pending")
+            }
         }
     }
 }
@@ -325,9 +327,13 @@ impl LocalObjectRuntime {
                 "OPEN and CLOSE must have distinct normalized intent families",
             ));
         }
-        if open_transition.owner_capability != close_transition.owner_capability {
+        if open_transition.owner_capability.capability_key.as_str()
+            != LOCAL_OBJECT_TRANSITION_CAPABILITY
+            || close_transition.owner_capability.capability_key.as_str()
+                != LOCAL_OBJECT_TRANSITION_CAPABILITY
+        {
             return Err(WorldRuntimeError::InvalidBinding(
-                "OPEN/CLOSE transitions require the same runtime capability",
+                "OPEN/CLOSE transition capability is not supported by this runtime profile",
             ));
         }
         if !open_transition.policy_guard_refs.is_empty()
@@ -444,6 +450,42 @@ impl LocalObjectRuntime {
             }
         }
 
+        self.terminalize_current(command, ingress, occupied_cells)
+    }
+
+    pub(crate) fn resume_pending<T: Copy + Eq>(
+        &mut self,
+        authority: &GameSessionAuthoritySnapshot<T>,
+        command: &LocalObjectCommand,
+        ingress: &mut CommandIngress,
+        occupied_cells: &BTreeSet<LogicalCell>,
+    ) -> Result<LocalObjectCommandResult, WorldRuntimeError> {
+        self.validate_current_authority(authority, command)?;
+        let semantic = self.command_semantic_identity(command)?;
+        let command_id = command.command_ref.command_id();
+
+        match ingress.classify_duplicate(command_id, &semantic) {
+            DuplicateDisposition::PendingOriginal => {
+                self.terminalize_current(command, ingress, occupied_cells)
+            }
+            DuplicateDisposition::ReplayRetainedOutcome(outcome) => {
+                Ok(LocalObjectCommandResult::from_terminal(outcome, true))
+            }
+            DuplicateDisposition::ConflictChangedInput => {
+                Err(WorldRuntimeError::ConflictChangedInput)
+            }
+            DuplicateDisposition::OutcomeExpired => Err(WorldRuntimeError::OutcomeExpired),
+            DuplicateDisposition::NotDuplicate => Err(WorldRuntimeError::PendingContinuationMissing),
+        }
+    }
+
+    fn terminalize_current(
+        &mut self,
+        command: &LocalObjectCommand,
+        ingress: &mut CommandIngress,
+        occupied_cells: &BTreeSet<LogicalCell>,
+    ) -> Result<LocalObjectCommandResult, WorldRuntimeError> {
+        let command_id = command.command_ref.command_id();
         let prepared = self.prepare(command, occupied_cells)?;
         let result = LocalObjectCommandResult::from_terminal(&prepared.outcome, false);
         let outcome = prepared.outcome;
@@ -990,7 +1032,7 @@ mod tests {
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (authority, session, scope) = authority(20, 4, 1, 1)?;
-        let runtime_a = runtime_for(&content, scope, PLACEMENT_A, 1)?;
+        let mut runtime_a = runtime_for(&content, scope, PLACEMENT_A, 1)?;
         let mut runtime_b = runtime_for(&content, scope, PLACEMENT_B, 1)?;
         let mut ingress = CommandIngress::new();
         let first = command(&runtime_a, session, 1, 1, LocalObjectOperation::Open, 0)?;
@@ -1010,6 +1052,52 @@ mod tests {
         ));
         assert_eq!(runtime_b.revision(), 0);
         assert_eq!(runtime_b.blocking_cells(), &before);
+
+        assert!(matches!(
+            runtime_b.apply(&authority, &second, &mut ingress, &BTreeSet::new()),
+            Err(WorldRuntimeError::PendingOriginal)
+        ));
+        assert_eq!(runtime_b.revision(), 0);
+
+        let first_result =
+            runtime_a.resume_pending(&authority, &first, &mut ingress, &BTreeSet::new())?;
+        assert_eq!(first_result.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(runtime_a.revision(), 1);
+
+        let second_result =
+            runtime_b.resume_pending(&authority, &second, &mut ingress, &BTreeSet::new())?;
+        assert_eq!(second_result.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(runtime_b.revision(), 1);
+        assert!(runtime_b.blocking_cells().is_empty());
+        assert_eq!(ingress.outstanding(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn authored_capability_cannot_grant_runtime_authority() -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let unsupported = OwnerCapabilityRequirement {
+            capability_key: ProductionKey::new("oteryn:runtime.capability.unowned-transition")?,
+        };
+        for transition in &mut content.transitions {
+            transition.owner_capability = unsupported.clone();
+        }
+        let (_authority, _session, scope) = authority(21, 4, 1, 1)?;
+        assert!(matches!(
+            runtime_for(&content, scope, PLACEMENT_A, 1),
+            Err(WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition capability is not supported by this runtime profile"
+            ))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn content_generation_binding_stays_within_foundation_component_bound(
+    ) -> Result<(), WorldRuntimeError> {
+        let content = synthetic_content("package-r1")?;
+        let generation = ReferenceContentGeneration::from_content(&content)?;
+        assert_eq!(generation.as_str().len(), 64);
         Ok(())
     }
 
