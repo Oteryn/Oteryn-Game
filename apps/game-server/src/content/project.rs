@@ -471,6 +471,9 @@ impl ProjectDraft {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", deny_unknown_fields)]
+// This is a bounded source-document carrier, not a hot runtime representation. Keeping the
+// existing Reference creature fields inline preserves the direct, typed JSON schema.
+#[allow(clippy::large_enum_variant)]
 pub enum ProjectReferenceRecord {
     Item {
         identity: DefinitionIdentityDocument,
