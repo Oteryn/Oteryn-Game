@@ -59,6 +59,9 @@ branch: <existing or allocated branch>
 execution_route: <isolated_git | api_native | read_only>
 execution_surface: <proven surface or locator>
 publication_route: <normal_non_force_git | api_native | none>
+review_requirement: <none | required>
+review_authorization: <standing_required_review | task_specific | none>
+review_request_state: <not_requested | running | completed | stale>
 objective: <one bounded outcome>
 owned_paths: []
 prerequisite_merges: []
@@ -91,6 +94,27 @@ Packet rules:
 - do not ask workers to read unrelated worker prompts or full historical PR threads;
 - accepted current decisions supersede historical exploration unless an exact contradiction must be investigated;
 - a direct worker alias without current write allocation is read-only.
+
+### Review authorization and de-duplication
+
+Before dispatching or triggering an external independent reviewer, resolve
+`docs/agents/OWNER_FUNDED_AI_POLICY.md`, the bound META review policy, the exact PR/head
+and current live review state.
+
+- If a required review is covered by the repository standing authorization, record
+  `review_authorization: standing_required_review` and do **not** ask the owner again.
+- If review is optional and no separate task-specific authorization exists, skip it rather
+  than asking the owner merely to spend quota.
+- Before every trigger, read live PR comments/reviews/provider summary. If the same exact
+  head is already requested, running or completed, do not issue another `@codex review`
+  or equivalent invocation.
+- A materially risk-bearing head change makes the old review historical; request at most
+  one new review for the new stable head only when the bound policy requires re-review.
+- Ambiguous/slow provider response is a readback problem, not permission to send a
+  duplicate trigger. Reconcile the existing request first.
+- Standing review permission grants reviewer consumption only. It never grants the
+  reviewer or worker implementation, tracked-file mutation, commit, push, merge/enqueue,
+  production or cross-repository authority.
 
 ## Worker terminal contract
 
