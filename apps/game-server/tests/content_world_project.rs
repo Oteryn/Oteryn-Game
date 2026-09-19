@@ -378,13 +378,9 @@ fn inventory_digest_and_complete_document_set_are_enforced() {
     ));
 }
 
-fn replace_lock_and_rebind_root(
-    documents: &mut BTreeMap<String, Vec<u8>>,
-    lock: &Value,
-) {
+fn replace_lock_and_rebind_root(documents: &mut BTreeMap<String, Vec<u8>>, lock: &Value) {
     let lock_bytes = canonical_value(lock);
-    let mut root: Value =
-        serde_json::from_slice(&documents["project.json"]).expect("project root");
+    let mut root: Value = serde_json::from_slice(&documents["project.json"]).expect("project root");
     root["content_lock_sha256"] = Value::String(world_project_sha256(&lock_bytes));
     documents.insert("content.lock.json".to_owned(), lock_bytes);
     documents.insert("project.json".to_owned(), canonical_value(&root));
@@ -399,14 +395,20 @@ fn content_lock_requires_exactly_one_immutable_root_entry() {
         match mutation {
             0 => {
                 let extra = lock["entries"][0].clone();
-                lock["entries"].as_array_mut().expect("lock entries").push(extra);
+                lock["entries"]
+                    .as_array_mut()
+                    .expect("lock entries")
+                    .push(extra);
             }
             1 => lock["entries"][0]["floating"] = Value::Bool(true),
             2 => lock["entries"][0]["dependency"] = Value::Bool(true),
             _ => return,
         }
         replace_lock_and_rebind_root(&mut emitted, &lock);
-        assert!(matches!(parse(emitted), Err(ProjectError::InvalidProject(_))));
+        assert!(matches!(
+            parse(emitted),
+            Err(ProjectError::InvalidProject(_))
+        ));
     }
 }
 
@@ -590,7 +592,10 @@ fn json_depth_value_and_string_budgets_accept_max_and_reject_max_plus_one() {
         |limits, value| limits.max_string_bytes = value,
         limits().max_string_bytes,
     );
-    assert_eq!((measured_depth, measured_values, measured_strings), (9, 73, 1_866));
+    assert_eq!(
+        (measured_depth, measured_values, measured_strings),
+        (9, 73, 1_866)
+    );
     for (minimum, set_limit) in [
         (
             measured_depth,
