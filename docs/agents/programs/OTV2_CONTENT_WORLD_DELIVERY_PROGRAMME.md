@@ -128,6 +128,22 @@ CW6 projektuje i dodaje testy wraz z komponentami, nie dopiero po całości.
 
 DAG nie narzuca oczekiwania na kompletne D3 przed każdym component testem CW4. Nie wolno jednak przedstawiać bezsieciowego testu albo fixture codec jako końcowej implementacji gry/formatu. Podobnie nie wymaga pełnych questów/economy dla zwykłego obiektu; wybrany quest door lub trade musi użyć rzeczywistych zależności.
 
+## 5A. Równoległy bulk catalogue CW2/CW3
+
+Szeroki import itemów, creatures, spawns, loot, abilities, NPC/services i kolejnych rodzin jest jawną częścią programu CW, a nie pracą odkładaną do momentu po CW5/CW6.
+
+Szczegółowy batching i granice są w [OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md](OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md).
+
+Zasada wykonawcza:
+
+- CW2 (`Oteryn: content world import`) rozszerza candidate catalogue partiami i dostarcza provenance/mapping/loss report;
+- CW3 (`Oteryn: content world build`) jest jedynym writerem wspólnego modelu/compiler path dla executable promotion;
+- CW2 może działać równolegle z CW4/CW5 tylko przy live #162 allocation i faktycznie rozłącznych ścieżkach;
+- D6 oznacza kontynuację skali katalogu/mapy i Studio, **nie pierwszy moment rozpoczęcia bulk importu**;
+- nie uruchamiać osobnego `content catalog` subsystemu lub konkurencyjnego aliasu.
+
+Pierwsza preferowana fala katalogowa to item identity/catalog -> creature/spawn binding -> loot-to-native-ItemKey binding, następnie abilities/NPC/quests według potrzeb grywalnego journey.
+
 ## 6. Przenoszenie zawartości do Oteryn
 
 Korzystać z istniejącego [source registry #486](OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md), nie nowej hierarchii wymyślonej na potrzeby tego planu. `tibiawiki.com.br` jest first-class structured bulk source; Tibiopedia/inne rzeczywiście niezależne źródło służy kontroli. CipSoft/oficjalne dane i kontrolowane obserwacje rozstrzygają odpowiednie target-sensitive zachowania. Crystal/Canary/legacy dostarczają aktywnie danych kandydackich, coverage i testów; wspólne pochodzenie nie jest niezależnym potwierdzeniem.

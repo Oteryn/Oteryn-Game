@@ -42,6 +42,18 @@ Wszystkie profile najpierw odnajdują właściwy live task/branch/owner; bez wym
 4. CW4 + CW5: po gotowych interfejsach i potrzebnych accepted owner/wire boundaries łączyć runtime z klientem. Wcześniejsze component tests są pomocnicze, nie zastępczą grą.
 5. CW6 wraz z pojawieniem się komponentów, następnie na realnym journey z obecnymi ownerami gameplay/DUR. CW2 może nadal rozwijać katalog; CW5 dodaje Studio, gdy jego interfejsy i przydział są gotowe.
 
+### CW2 — szeroki katalog Content
+
+Szeroki import katalogu jest częścią CW2/CW3 i nie czeka na CW6. Używać istniejącego aliasu:
+
+```text
+Oteryn: content world import
+```
+
+Nie tworzyć osobnego konkurencyjnego aliasu `content catalog`. Batch plan i kolejność items -> creatures/spawns -> loot bindings -> dalsze rodziny opisuje [bulk catalogue import plan](OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md).
+
+Bez live #162 allocation alias wykonuje tylko preflight/propozycję exact batch + custody. Po przydziale CW2 może działać równolegle z CW4 wyłącznie na rozłącznych ścieżkach; mutacje wspólnego modelu pozostają serializowane przez CW3.
+
 Nie uruchamiać siedmiu agentów jednocześnie. Zalecane maksimum organizacyjne: trzy aktywne role łącznie, zwykle jeden lub dwóch writerów oraz niezależny read-only/QA. Gdy lead potrzebny jest do nadzoru, zajmuje jeden z tych slotów. Dwie implementacje są równoległe tylko przy faktycznie rozdzielonych ścieżkach i stabilnych interfejsach. Ta sama sesja może kolejno wykonać różne przydzielone przyrosty bez tworzenia nowej gałęzi tylko dla zmiany roli.
 
 ## 4. Istniejące aliasy pozostają
