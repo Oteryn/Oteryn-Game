@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/wp3-v2-tokio-maintenance-task-layout-amendment-351
-pr: null
+pr: 681
 base_sha: 03a821edd828e24ccff6e2cb7fc819a776cbd238
 head_sha: null
 final_head_sha: null
