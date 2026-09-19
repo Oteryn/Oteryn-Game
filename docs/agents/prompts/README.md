@@ -156,7 +156,7 @@ The following files are retained only for provenance. Their lifecycle entries ar
 
 ## Safety / authority
 
-A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity or entitlement activation. External AI review follows current root `AGENTS.md` and the organization policy it adopts; policy selection does not authorize owner-funded, personal-quota or metered AI/API use. Before such use, apply `docs/agents/OWNER_FUNDED_AI_POLICY.md` and current task-specific authority, including authorization already established in the session.
+A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity or entitlement activation. External AI review follows current root `AGENTS.md`, the organization policy it adopts and `docs/agents/OWNER_FUNDED_AI_POLICY.md`. The repository standing authorization in that file covers only required review within its exact bounds and survives chat/worker handoffs; do not ask the owner again for a covered review. Before any trigger, deduplicate against live PR review state for the same exact head. Optional or out-of-scope owner-funded AI remains unauthorized unless separately granted.
 
 High-risk protocol/session/persistence/item/loot/value/multichannel/fencing work still requires genuinely independent exact-head review when current root `AGENTS.md` selects it.
 
