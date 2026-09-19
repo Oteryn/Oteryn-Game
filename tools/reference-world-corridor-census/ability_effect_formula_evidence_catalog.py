@@ -23,6 +23,10 @@ CLOSURE = "CANDIDATE_ONLY"
 
 MANIFEST_PATH = "docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json"
 REFERENCE_SURFACE_PATH = "apps/game-server/src/content/reference_playable.rs"
+MAPPER_PATH = (
+    "tools/reference-world-corridor-census/"
+    "ability_effect_formula_evidence_catalog.py"
+)
 
 PROTECTED_INPUTS: dict[str, tuple[str, str]] = {
     MANIFEST_PATH: (
@@ -114,6 +118,14 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def canonical_repository_text_bytes(value: bytes) -> bytes:
+    """Canonicalize checkout text bytes to repository LF form."""
+    without_crlf = value.replace(b"\r\n", b"")
+    if b"\r" in without_crlf:
+        raise CatalogError("UNSUPPORTED_MAPPER_LINE_ENDING")
+    return value.replace(b"\r\n", b"\n")
+
+
 def canonical_records(records: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted((copy.deepcopy(record) for record in records), key=canonical_bytes)
 
@@ -176,6 +188,27 @@ def verify_protected_inputs(
             }
         )
     return records, payloads
+
+
+def verify_mapper_revision(game_root: Path) -> dict[str, Any]:
+    game_root = game_root.resolve()
+    status = str(_git(game_root, "status", "--porcelain=v1", "--", MAPPER_PATH))
+    if status:
+        raise CatalogError(f"MAPPER_DIRTY: {MAPPER_PATH}")
+    head = str(_git(game_root, "rev-parse", "HEAD^{commit}"))
+    blob = str(_git(game_root, "rev-parse", f"HEAD:{MAPPER_PATH}"))
+    payload = _git(game_root, "cat-file", "blob", blob, binary=True)
+    assert isinstance(payload, bytes)
+    canonical = canonical_repository_text_bytes(payload)
+    return {
+        "profile": MAPPER_PROFILE,
+        "path": MAPPER_PATH,
+        "observed_at_head": head,
+        "git_blob": blob,
+        "canonicalization": "repository text bytes; CRLF normalized to LF; lone CR rejected",
+        "canonical_size": len(canonical),
+        "canonical_sha256": sha256_bytes(canonical),
+    }
 
 
 def _load_manifest(payload: bytes) -> dict[str, Any]:
@@ -321,6 +354,7 @@ def build_catalog(
     protected, payloads = verify_protected_inputs(
         game_root, expected_inputs, expected_sha256
     )
+    mapper_revision = verify_mapper_revision(game_root)
     _verify_semantic_markers(payloads)
     manifest = _load_manifest(payloads[MANIFEST_PATH])
     cases = validate_manifest_cases(manifest, case_ids)
@@ -333,6 +367,7 @@ def build_catalog(
     value: dict[str, Any] = {
         "schema": SCHEMA,
         "mapper_profile": MAPPER_PROFILE,
+        "mapper_revision": mapper_revision,
         "task": TASK,
         "admission_main": ADMISSION_MAIN,
         "closure": CLOSURE,
