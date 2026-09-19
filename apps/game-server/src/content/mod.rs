@@ -36,6 +36,7 @@ mod fixture;
 mod model;
 mod production;
 mod project;
+mod project_fs;
 mod reference_playable;
 
 pub use activation::*;
@@ -70,6 +71,7 @@ pub use production::{
     compile_first_production,
 };
 pub use project::*;
+pub use project_fs::*;
 pub use reference_playable::*;
 
 #[cfg(test)]
