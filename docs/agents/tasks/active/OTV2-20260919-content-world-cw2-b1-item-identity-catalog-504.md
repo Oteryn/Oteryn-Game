@@ -11,7 +11,7 @@ branch: agent/content-world-cw2-b1-item-identity-catalog-504
 issue: 162
 pr: null
 base_sha: 8dac2e86a66f9743a99d8fd14ab66265432db969
-head_sha: 626a3062fbbc29ab7eb63c420da73503e5e08dd1
+head_sha: 11999fcdfdd231840da5b05ce8108ec115a283e1
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: content world import"
@@ -103,7 +103,7 @@ reason: source-catalogue evidence only; no runtime, persistence, authority fence
 - [x] Two clean runs over the exact pinned input are byte-identical and have the same product digest.
 - [x] Selected closure is \`CANDIDATE_ONLY\`.
 - [ ] Normal repository exact-head CI on the final PR head.
-- [ ] Independent review only if required by the repository risk policy after final exact-head qualification.
+- [x] External AI review classified NOT_REQUIRED by the active low-risk review policy; deterministic validation and self-review apply.
 
 ## Excluded scope
 
@@ -147,13 +147,16 @@ Fresh admission-tree search found no already-admitted explicit Crystal source-it
 - excluded-by-policy script observations: **1,565**;
 - explicit field conflict records: **5**;
 - normalized-name collision groups: **3,174**;
-- deduplicated field profiles: **821**.
+- deduplicated field profiles: **821**;
+- deduplicated source-node semantic candidate records with retained candidate values: **12,419**.
 
 The five field conflicts are source records where multiple distinct source observations map to one B1 native candidate field (\`weight\`). They are preserved as conflicts rather than resolved through source order/last-write behavior.
 
 Four reversed ranges are preserved as explicit \`REVERSED_RANGE_EXCLUDED\` records. B1 does not silently repair or reinterpret them.
 
 Name collisions never participate in native identity resolution.
+
+For GAME-ITEM candidate fields, B1 retains the exact source scalar/nested candidate values in typed source-node semantic records keyed by source-node digest. Provenance-only text, scripts and unsupported owner-domain fields are not copied into those candidate records.
 
 ### Mapper/evidence binding
 
@@ -163,23 +166,23 @@ Mapper profile:
 
 Mapper generation commit:
 
-\`626a3062fbbc29ab7eb63c420da73503e5e08dd1\`
+\`11999fcdfdd231840da5b05ce8108ec115a283e1\`
 
 Mapper blob:
 
-\`70556ebc58aec059f898960de4abf43163736eef\`
+\`904d62e1277ceae76434f75bca104686a7303ff2\`
 
 Mapper SHA-256:
 
-\`fdd2bb82efdd4fe4371e5d39ffe921633c0f7ffebaaecbf86e632eafe6c2d25a\`
+\`320ce69f516de2a6e3cec669493ec59a6f3103f405e624478cf2a76acd3d01b6\`
 
 Product digest:
 
-\`a28dd86ba0f045d9f863c2745df0647a6b39cdf377743beb40240bda96f65a50\`
+\`d773076b576599b6ced7eb53e262cdc6363515d842da3e8518b610e2106db0fc\`
 
 Canonical evidence file SHA-256:
 
-\`33828d3a9f372c019b0798f8ec11cc0f417d0c940a02528ad46122d46d0241bb\`
+\`7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7\`
 
 A tracked Git object cannot contain its own final commit SHA without self-reference. The evidence therefore binds the committed mapper/generation head above; the final PR head must be recorded by immutable live PR/check readback after the evidence/task commit.
 
@@ -190,8 +193,8 @@ A tracked Git object cannot contain its own final commit SHA without self-refere
 - \`python -m py_compile tools/reference-world-corridor-census/item_identity_catalog.py tools/reference-world-corridor-census/item_identity_catalog_self_test.py\` — PASS.
 - \`python tools/reference-world-corridor-census/item_identity_catalog_self_test.py\` — PASS.
 - \`python tools/reference-world-corridor-census/content_source_batch_self_test.py\` — PASS.
-- Full pinned Crystal run — PASS: 17,669 nodes / 38,157 identities / 38,157 unresolved / 0 unknown field observations.
-- Clean repeat run — PASS: byte-identical evidence SHA-256 \`33828d3a9f372c019b0798f8ec11cc0f417d0c940a02528ad46122d46d0241bb\`.
+- Full pinned Crystal run — PASS: 17,669 nodes / 38,157 identities / 38,157 unresolved / 12,419 semantic candidate node records / 0 unknown field observations.
+- Clean repeat run — PASS: byte-identical evidence SHA-256 \`7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7\`.
 
 The \`tools/game-atlas-appearances\` self-test is \`NOT_APPLICABLE\`: B1 consumes no qualified appearance/client crosswalk and therefore does not enter that boundary.
 
@@ -212,22 +215,22 @@ Pending final whole-branch validation after evidence/task commit.
 
 ## Self-review
 
-- exact head: pending final commit;
-- method/reviewer: implementing worker whole-diff adversarial review;
-- material findings: pending;
-- verdict: pending.
+- exact head: final PR head is recorded externally after this metadata/evidence commit to avoid self-reference;
+- method/reviewer: implementing worker whole-diff adversarial review plus independent evidence-JSON invariant verifier;
+- material findings: one pre-freeze finding — GAME-ITEM candidate values were initially omitted from the catalogue product; fixed in mapper commit `11999fcdfdd231840da5b05ce8108ec115a283e1`; post-repair verifier found zero remaining material findings;
+- verdict: `PASS_ZERO_MATERIAL_FINDINGS`.
 
 ## Independent review
 
-- required: pending final risk-policy classification;
-- exact head: pending;
-- method/auditor: pending;
-- material findings: pending;
-- verdict: pending.
+- required: **NO** under the active META AI review policy; this is a low-risk source/evidence importer with no runtime, authority, security, workflow, protection or integration mutation;
+- exact head: not applicable;
+- method/auditor: external AI review not invoked;
+- material findings: not applicable;
+- verdict: `NOT_REQUIRED`.
 
 ## PR and closeout
 
-- changed-file review: pending;
+- changed-file review: PASS — final branch diff is constrained to the four #162 custody paths;
 - unresolved review threads: pending;
 - related/superseded PRs: none known;
 - protected integration: not authorized to this worker;
@@ -236,10 +239,10 @@ Pending final whole-branch validation after evidence/task commit.
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: deterministic full-source evidence generated twice byte-identically
+last_progress: retained typed candidate values; regenerated full-source evidence twice byte-identically
 status: validating
 branch: agent/content-world-cw2-b1-item-identity-catalog-504
-head_sha: 626a3062fbbc29ab7eb63c420da73503e5e08dd1
+head_sha: 11999fcdfdd231840da5b05ce8108ec115a283e1
 pr: null
 final_head_sha: null
 final_head_frozen_at: null
