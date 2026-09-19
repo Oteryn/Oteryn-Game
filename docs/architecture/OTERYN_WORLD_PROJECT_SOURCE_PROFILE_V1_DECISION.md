@@ -29,16 +29,19 @@ The merged successor seam already supplies the semantic destination: `ReferenceP
 One project root contains these logical roles:
 
 ```text
-project.json                 canonical project/package manifest
+project.json                 canonical project root and revision commit point
+manifest.json                canonical package/source manifest
 content.lock.json            exact immutable dependency lock
 records/                     typed definition and world records
 imports/                     source snapshots, mappings, baselines and conflicts
 metadata/                    non-authoritative author/editor information
 ```
 
-Exact subdirectories and filenames below these roles are organizational. `project.json` records every authoritative source document by logical role, schema/profile revision, relative locator, byte length and SHA-256 digest. A path locates bytes; it is never `ContentKey`, `PlacementKey`, definition identity, ordering identity or runtime identity.
+Exact subdirectories and filenames below these roles are organizational. `manifest.json` records every project-managed `records/`, `imports/` and `metadata/` document by logical role, schema/profile revision, relative locator, byte length and SHA-256 digest. Metadata is therefore retained in the audited source fingerprint even though it has no gameplay authority. A path locates bytes; it is never `ContentKey`, `PlacementKey`, definition identity, ordering identity or runtime identity.
 
-`project.json` carries the package fields needed to construct the existing `PackageManifestBinding`, the source-profile identity and revision, required/optional feature declarations, and the document inventory. The canonical bytes of `project.json` supply `source_manifest_digest`. `content.lock.json` supplies the existing exact `ContentLockBinding`, including the exact root package revision/provenance and exact dependency revisions. Floating revisions, mutable branches and network-time latest resolution are forbidden.
+`manifest.json` carries the package fields needed to construct the existing `PackageManifestBinding`, required/optional feature declarations and the document inventory. Its canonical bytes supply `source_manifest_digest`. After that digest is known, `content.lock.json` supplies the existing exact `ContentLockBinding`, including the matching root package revision/provenance and exact dependency revisions. Finally, `project.json` binds the source-profile identity/revision, project revision, `manifest.json` locator/digest and `content.lock.json` locator/digest and acts as the publication commit point. This ordering is intentionally acyclic: neither `manifest.json` nor its inventory contains `project.json`, `manifest.json` itself or `content.lock.json`; the root binds the two completed objects. Floating revisions, mutable branches and network-time latest resolution are forbidden.
+
+A metadata-only edit therefore changes the manifest and project/package provenance fingerprints. It does not change the canonical gameplay graph, `content_revision` or compiled artifact digest when the typed semantic input is unchanged. Project/package provenance identity and gameplay revision identity remain distinct.
 
 The profile does not require a file per record or one monolithic world file. A project may group records where practical, provided the manifest inventory, stable semantic identity and deterministic writer make regrouping semantically neutral.
 
@@ -98,15 +101,15 @@ vs new normalized source candidate
 vs current local canonical project value
 ```
 
-The deterministic outcomes are:
+The deterministic outcomes are below, where `B` is the retained baseline value, `U` a changed upstream value and `L` a changed local value:
 
-| New source | Local project | Outcome |
-|---|---|---|
-| equals baseline | equals baseline | unchanged |
-| differs from baseline | equals baseline | adopt new candidate and provenance |
-| equals baseline | differs from baseline | retain local correction |
-| equals local and both differ from baseline | converge to that value |
-| differs from baseline and local differs differently | explicit conflict; no overwrite |
+| Baseline | New source | Local project | Outcome |
+|---|---|---|---|
+| `B` | `B` | `B` | unchanged |
+| `B` | `U` | `B` | adopt `U` and its provenance |
+| `B` | `B` | `L` | retain local correction `L` |
+| `B` | same changed value `X` | same changed value `X` | converge to `X` |
+| `B` | `U` | different `L` | explicit conflict; no overwrite |
 
 Add, delete, rename/move, identity remap, split/merge and transform cases use the same rule. A deletion conflicting with a local correction or retained state becomes a conflict or an explicitly approved retirement/migration. Rechunking, regrouping, file moves, canonical reserialization and reload cannot create semantic additions/deletions or new reward/value occurrences.
 
@@ -114,7 +117,7 @@ Conflict records carry the stable identity, typed field path, baseline/new/local
 
 ## 8. Coherent saves and recovery
 
-A project revision is readable only when `project.json`, `content.lock.json` and every inventoried document form one validated set. Writers stage changed bytes, compute the complete inventory, validate and link the staged project, then publish one project-revision commit point using an atomic filesystem primitive or a journal/recovery protocol. Readers never accept a mix of old and new bytes; digest or lock mismatch fails closed.
+A project revision is readable only when `project.json`, its bound `manifest.json`, its bound `content.lock.json` and every inventoried document form one validated set. Writers stage changed bytes, compute and validate the complete manifest, construct and validate its exact lock, then publish `project.json` as the project-revision commit point using an atomic filesystem primitive or a journal/recovery protocol. Readers resolve from that root and never accept a mix of old and new bytes; digest or lock mismatch fails closed.
 
 Partial authoring saves may update a bounded subset of records, but publication still creates a coherent project revision. Autosave/recovery state remains outside the current committed revision until it passes the same validation. A failed save or interrupted migration leaves the previous valid revision recoverable and preserves a pre-migration backup.
 
