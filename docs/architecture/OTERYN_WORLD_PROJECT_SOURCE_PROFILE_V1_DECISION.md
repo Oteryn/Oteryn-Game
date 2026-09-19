@@ -45,6 +45,24 @@ A metadata-only edit therefore changes the manifest and project/package provenan
 
 The profile does not require a file per record or one monolithic world file. A project may group records where practical, provided the manifest inventory, stable semantic identity and deterministic writer make regrouping semantically neutral.
 
+### Canonical locator and root-containment contract
+
+`project.json`, `manifest.json` and `content.lock.json` are fixed lowercase ASCII names at the project root in v1. They must be distinct ordinary files and cannot also appear as inventoried documents. Every inventory locator is a normalized root-relative logical locator, not an operating-system path supplied by a source package.
+
+A canonical v1 locator uses `/` as its only separator and one or more lowercase ASCII segments. Each segment starts and ends with an ASCII letter or digit and may contain lowercase ASCII letters, digits, `_` and `-`; a `.` may separate nonempty such components. The following are invalid before filesystem access:
+
+- an empty locator or segment, leading/trailing `/`, `.` or `..` segment;
+- absolute, drive-qualified or UNC syntax;
+- `\`, `:`, NUL/control bytes, percent-escaped separators, non-ASCII bytes, or a segment ending in a dot/space;
+- a Windows device basename such as `con`, `prn`, `aux`, `nul`, `com1` through `com9`, or `lpt1` through `lpt9`, with or without an extension;
+- a byte-duplicate locator or a locator colliding with a fixed control filename.
+
+Lowercase ASCII plus the segment grammar gives one platform-independent textual spelling and removes Unicode-normalization, case-folding, alternate-separator, trailing-dot/space and alternate-data-stream aliases. Locator length and segment count remain finite inputs under the selected implementation budget.
+
+Admission anchors all reads to one opened project-root directory; v1 rejects a project root that is itself a symbolic link, junction or other reparse point. Each component is resolved relative to that root without following symbolic links, junctions or other reparse points, and its actual directory-entry spelling must equal the canonical locator segment byte-for-byte. Every control or inventoried document must resolve to a root-contained ordinary regular file. V1 rejects symlinked/reparse-point directories or documents, special files and hard-linked source documents rather than attempting to prove a safe alias topology. Each admitted file must also have a unique filesystem identity; two locators resolving through a case alias, Windows short name, hard link or other platform alias to the same file fail the project. Validation/open must be one no-follow operation where supported, or must recheck the same root-contained filesystem identity immediately before consuming bytes; substitution fails closed.
+
+Writers derive destinations only from fixed control names and already admitted canonical locators. They stage into a newly created non-aliased staging root under the writer-controlled project parent, create ordinary files without following links, and verify containment, unique identity, byte length and digest before publication. Source-provided filenames or archive members never become output paths. A changed component, symlink/reparse substitution, alias collision or destination outside the staging/project root aborts without replacing the current commit point. These are source-profile invariants, not a requirement for a new generic filesystem sandbox.
+
 ## 4. Strict JSON profile
 
 Every JSON document must satisfy all of the following before typed construction:
@@ -117,7 +135,7 @@ Conflict records carry the stable identity, typed field path, baseline/new/local
 
 ## 8. Coherent saves and recovery
 
-A project revision is readable only when `project.json`, its bound `manifest.json`, its bound `content.lock.json` and every inventoried document form one validated set. Writers stage changed bytes, compute and validate the complete manifest, construct and validate its exact lock, then publish `project.json` as the project-revision commit point using an atomic filesystem primitive or a journal/recovery protocol. Readers resolve from that root and never accept a mix of old and new bytes; digest or lock mismatch fails closed.
+A project revision is readable only when the fixed, root-contained `project.json`, its bound `manifest.json`, its bound `content.lock.json` and every uniquely resolved inventoried document form one validated set under the locator contract above. Writers stage changed bytes, compute and validate the complete manifest, construct and validate its exact lock, then publish `project.json` as the project-revision commit point using an atomic filesystem primitive or a journal/recovery protocol. Readers resolve from that root and never accept a mix of old and new bytes; containment, identity, digest or lock mismatch fails closed.
 
 Partial authoring saves may update a bounded subset of records, but publication still creates a coherent project revision. Autosave/recovery state remains outside the current committed revision until it passes the same validation. A failed save or interrupted migration leaves the previous valid revision recoverable and preserves a pre-migration backup.
 
@@ -142,7 +160,7 @@ pinned source + importer provenance
   -> existing Content successor compiler path
 ```
 
-The proof must cover byte determinism, enumeration and file-regrouping independence, malformed/duplicate/unknown-critical input, digest/lock mismatch, typed reference failures, metadata/tag authority exclusion, coherent interrupted save, and three-way unchanged/upstream/local/converged/conflict/delete outcomes. If a JSONL family is proposed, its representative measurement and JSON-equivalent semantic/round-trip proof precede enabling it.
+The proof must cover byte determinism, enumeration and file-regrouping independence, malformed/duplicate/unknown-critical input, digest/lock mismatch, typed reference failures, metadata/tag authority exclusion, coherent interrupted save, and three-way unchanged/upstream/local/converged/conflict/delete outcomes. Locator negatives include `../` and nested traversal, POSIX absolute paths, drive/UNC paths, backslash and alternate-data-stream syntax, empty/dot segments, duplicate locators, case/trailing-dot/trailing-space/device-name aliases, two locators resolving to one filesystem identity, source-document/directory symlinks or reparse points, hard-linked source documents, and staged write-target escape or link substitution. Platform-specific alias cases are mandatory on every supported platform where they exist. If a JSONL family is proposed, its representative measurement and JSON-equivalent semantic/round-trip proof precede enabling it.
 
 No separate compiler may be added for the source profile. Because the merged repository currently has the Reference linker but no Reference artifact compiler, the final arrow is future CW3 work extending the existing Content compiler lineage; this decision does not claim it exists.
 
