@@ -1487,6 +1487,31 @@ mod tests {
     }
 
     #[test]
+    fn changed_content_generation_on_duplicate_conflicts_without_replay()
+    -> Result<(), WorldRuntimeError> {
+        let content = synthetic_content("package-r1")?;
+        let mut changed_content = synthetic_content("package-r1")?;
+        changed_content.content_lock.revision_digest_token =
+            ProductionAtom::new("cw4 test content lock", "lock:changed-duplicate")?;
+        let (authority, session, scope) = authority(69, 10, 1, 1)?;
+        let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
+        let mut ingress = CommandIngress::new();
+        let first = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        runtime.apply(&authority, &first, &mut ingress, &BTreeSet::new())?;
+
+        let mut changed = first.clone();
+        changed.content_generation = ReferenceContentGeneration::from_content(&changed_content)?;
+        assert!(matches!(
+            runtime.apply(&authority, &changed, &mut ingress, &BTreeSet::new()),
+            Err(WorldRuntimeError::ConflictChangedInput)
+        ));
+        assert_eq!(runtime.state_key().as_str(), "oteryn:reference.state.open");
+        assert_eq!(runtime.revision(), 1);
+        assert!(runtime.blocking_cells().is_empty());
+        Ok(())
+    }
+
+    #[test]
     fn different_content_generation_is_terminally_rejected_while_scope_stays_live()
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
