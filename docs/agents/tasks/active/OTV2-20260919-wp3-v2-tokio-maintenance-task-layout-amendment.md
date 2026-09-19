@@ -167,11 +167,11 @@ task-allocation representation query.
 ## Context checkpoint
 
 ```yaml
-last_progress: "Revision-4 docs-only amendment authored on allocated branch"
+last_progress: "PR #681 opened; exact three-path pre-freeze readback clean; exact-head qualification in progress"
 status: validating
 branch: agent/wp3-v2-tokio-maintenance-task-layout-amendment-351
 head_sha: null
-pr: null
+pr: 681
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
@@ -189,5 +189,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: "exact three-path readback, PR, repository CI, then control-plane review trigger"
+next_action: "qualify final head with exact three-path readback and repository CI; then hand the independent-review packet to the active control plane"
 ```
