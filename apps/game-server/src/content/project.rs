@@ -1,0 +1,1095 @@
+//! Canonical editable project snapshot for `OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v1`.
+//!
+//! This module deliberately starts after filesystem capture and ends before filesystem
+//! publication. Callers supply immutable logical-locator/owned-byte pairs and receive a complete
+//! canonical document set. Filesystem containment, no-follow admission, alias detection, staging,
+//! journalling and atomic publication belong to a later boundary.
+
+use super::{
+    CanonicalReferencePlayableContent, ClientProjectionClass, ContentError, ContentLockBinding,
+    ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, PackageManifestBinding,
+    ProductionAtom, ProductionKey, ReferenceCreatureDefinition, ReferenceDefinition,
+    ReferenceDefinitionKind, ReferenceItemDefinition, ReferenceItemDestination,
+    ReferenceItemPhysicalClass, ReferenceItemStackClass, ReferencePlayableContentSource,
+    Sha256HexDigest, TypedDefinitionRef, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, link_reference_playable,
+};
+use crate::foundation::WorldId;
+use serde::de::{self, MapAccess, SeqAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{self, Display, Formatter};
+
+pub const WORLD_PROJECT_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v1";
+pub const WORLD_PROJECT_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v1";
+pub const WORLD_PROJECT_MANIFEST_SCHEMA: &str = "OTERYN_WORLD_PROJECT_MANIFEST/v1";
+pub const WORLD_PROJECT_LOCK_SCHEMA: &str = "OTERYN_WORLD_PROJECT_CONTENT_LOCK/v1";
+pub const WORLD_PROJECT_REFERENCE_SCHEMA: &str = "OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1";
+pub const WORLD_PROJECT_IMPORT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_IMPORT_CANDIDATES/v1";
+pub const WORLD_PROJECT_METADATA_SCHEMA: &str = "OTERYN_WORLD_PROJECT_AUTHOR_METADATA/v1";
+
+const PROJECT_LOCATOR: &str = "project.json";
+const MANIFEST_LOCATOR: &str = "manifest.json";
+const LOCK_LOCATOR: &str = "content.lock.json";
+const RECORDS_LOCATOR: &str = "records/reference.json";
+const IMPORTS_LOCATOR: &str = "imports/candidates.json";
+const METADATA_LOCATOR: &str = "metadata/author.json";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProjectError {
+    InvalidLimit(&'static str),
+    LimitExceeded { resource: &'static str, actual: usize, limit: usize },
+    InvalidLocator(String),
+    DuplicateLocator(String),
+    MissingDocument(String),
+    UnexpectedDocument(String),
+    DuplicateJsonMember(String),
+    InvalidJson(String),
+    InvalidProject(&'static str),
+    DigestMismatch(String),
+    Content(ContentError),
+}
+
+impl Display for ProjectError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidLimit(name) => write!(formatter, "invalid zero project limit: {name}"),
+            Self::LimitExceeded { resource, actual, limit } => {
+                write!(formatter, "{resource} exceeds project limit: {actual} > {limit}")
+            }
+            Self::InvalidLocator(value) => write!(formatter, "invalid project locator: {value}"),
+            Self::DuplicateLocator(value) => write!(formatter, "duplicate project locator: {value}"),
+            Self::MissingDocument(value) => write!(formatter, "missing project document: {value}"),
+            Self::UnexpectedDocument(value) => write!(formatter, "unexpected project document: {value}"),
+            Self::DuplicateJsonMember(value) => write!(formatter, "duplicate JSON member: {value}"),
+            Self::InvalidJson(value) => write!(formatter, "invalid project JSON: {value}"),
+            Self::InvalidProject(value) => write!(formatter, "invalid project: {value}"),
+            Self::DigestMismatch(value) => write!(formatter, "project digest mismatch: {value}"),
+            Self::Content(error) => Display::fmt(error, formatter),
+        }
+    }
+}
+
+impl std::error::Error for ProjectError {}
+
+impl From<ContentError> for ProjectError {
+    fn from(value: ContentError) -> Self {
+        Self::Content(value)
+    }
+}
+
+/// Finite, caller-selected limits for the first non-production evidence corpus.
+///
+/// These values are intentionally not production or full-world maxima.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProjectEvidenceLimits {
+    pub max_documents: usize,
+    pub max_document_bytes: usize,
+    pub max_total_bytes: usize,
+    pub max_json_depth: usize,
+    pub max_decoded_fields: usize,
+    pub max_string_bytes: usize,
+    pub max_locator_bytes: usize,
+    pub max_locator_segments: usize,
+    pub max_reference_records: usize,
+    pub max_import_records: usize,
+    pub max_reimport_states: usize,
+}
+
+impl ProjectEvidenceLimits {
+    pub fn validate(self) -> Result<Self, ProjectError> {
+        for (name, value) in [
+            ("documents", self.max_documents),
+            ("document bytes", self.max_document_bytes),
+            ("total bytes", self.max_total_bytes),
+            ("JSON depth", self.max_json_depth),
+            ("decoded fields", self.max_decoded_fields),
+            ("string bytes", self.max_string_bytes),
+            ("locator bytes", self.max_locator_bytes),
+            ("locator segments", self.max_locator_segments),
+            ("reference records", self.max_reference_records),
+            ("import records", self.max_import_records),
+            ("reimport states", self.max_reimport_states),
+        ] {
+            if value == 0 {
+                return Err(ProjectError::InvalidLimit(name));
+            }
+        }
+        Ok(self)
+    }
+
+    fn check(
+        self,
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    ) -> Result<(), ProjectError> {
+        if actual > limit {
+            return Err(ProjectError::LimitExceeded { resource, actual, limit });
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectSnapshot {
+    documents: BTreeMap<String, Vec<u8>>,
+}
+
+impl ProjectSnapshot {
+    pub fn new(
+        documents: impl IntoIterator<Item = (String, Vec<u8>)>,
+        limits: ProjectEvidenceLimits,
+    ) -> Result<Self, ProjectError> {
+        let limits = limits.validate()?;
+        let mut admitted = BTreeMap::new();
+        let mut total = 0_usize;
+        for (locator, bytes) in documents {
+            validate_locator(&locator, limits)?;
+            limits.check("project document bytes", bytes.len(), limits.max_document_bytes)?;
+            total = total.checked_add(bytes.len()).ok_or(ProjectError::LimitExceeded {
+                resource: "project total bytes",
+                actual: usize::MAX,
+                limit: limits.max_total_bytes,
+            })?;
+            limits.check("project total bytes", total, limits.max_total_bytes)?;
+            if admitted.insert(locator.clone(), bytes).is_some() {
+                return Err(ProjectError::DuplicateLocator(locator));
+            }
+        }
+        limits.check("project documents", admitted.len(), limits.max_documents)?;
+        Ok(Self { documents: admitted })
+    }
+
+    pub fn documents(&self) -> &BTreeMap<String, Vec<u8>> {
+        &self.documents
+    }
+
+    pub fn parse(&self, limits: ProjectEvidenceLimits) -> Result<WorldProject, ProjectError> {
+        parse_snapshot(self, limits.validate()?)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CanonicalProjectDocuments {
+    documents: BTreeMap<String, Vec<u8>>,
+}
+
+impl CanonicalProjectDocuments {
+    pub fn from_draft(
+        mut draft: ProjectDraft,
+        limits: ProjectEvidenceLimits,
+    ) -> Result<Self, ProjectError> {
+        let limits = limits.validate()?;
+        draft.records = sorted_records(draft.records);
+        draft.imports = sorted_imports(draft.imports);
+        draft.metadata = sorted_metadata(draft.metadata);
+        draft.validate(limits)?;
+        let record_document = ReferenceDocument {
+            schema: WORLD_PROJECT_REFERENCE_SCHEMA.to_owned(),
+            world_id: draft.world_id,
+            coordinate_frame: draft.coordinate_frame,
+            records: draft.records,
+        };
+        let import_document = ImportDocument {
+            schema: WORLD_PROJECT_IMPORT_SCHEMA.to_owned(),
+            batches: draft.imports,
+        };
+        let metadata_document = MetadataDocument {
+            schema: WORLD_PROJECT_METADATA_SCHEMA.to_owned(),
+            entries: draft.metadata,
+        };
+
+        let mut managed = BTreeMap::new();
+        managed.insert(RECORDS_LOCATOR.to_owned(), canonical_json(&record_document)?);
+        managed.insert(IMPORTS_LOCATOR.to_owned(), canonical_json(&import_document)?);
+        managed.insert(METADATA_LOCATOR.to_owned(), canonical_json(&metadata_document)?);
+
+        let roles = [
+            (RECORDS_LOCATOR, "reference-records", WORLD_PROJECT_REFERENCE_SCHEMA),
+            (IMPORTS_LOCATOR, "import-candidates", WORLD_PROJECT_IMPORT_SCHEMA),
+            (METADATA_LOCATOR, "author-metadata", WORLD_PROJECT_METADATA_SCHEMA),
+        ];
+        let mut inventory: Vec<_> = roles
+            .into_iter()
+            .map(|(locator, role, schema)| {
+                let bytes = managed.get(locator).ok_or(ProjectError::InvalidProject(
+                    "canonical managed document missing",
+                ))?;
+                Ok(ManifestDocument {
+                    role: role.to_owned(),
+                    schema: schema.to_owned(),
+                    locator: locator.to_owned(),
+                    byte_length: bytes.len(),
+                    sha256: digest_hex(bytes),
+                })
+            })
+            .collect::<Result<_, ProjectError>>()?;
+        inventory.sort_by(|left, right| left.locator.cmp(&right.locator));
+        let manifest = ManifestDocumentRoot {
+            schema: WORLD_PROJECT_MANIFEST_SCHEMA.to_owned(),
+            package_key: draft.package_key,
+            package_revision: draft.project_revision.clone(),
+            semantic_schema_version: draft.semantic_schema_version,
+            licensing_metadata: draft.licensing_metadata,
+            required_features: Vec::new(),
+            optional_features: Vec::new(),
+            documents: inventory,
+        };
+        let manifest_bytes = canonical_json(&manifest)?;
+        let package = package_binding(&manifest, &manifest_bytes)?;
+        let lock = LockDocument {
+            schema: WORLD_PROJECT_LOCK_SCHEMA.to_owned(),
+            project_revision: draft.project_revision.clone(),
+            revision_digest_token: format!("lock:{}", draft.project_revision),
+            entries: vec![LockEntryDocument {
+                package_key: manifest.package_key.clone(),
+                package_revision: manifest.package_revision.clone(),
+                package_provenance_digest: package.package_provenance_digest()?.as_str().to_owned(),
+                floating: false,
+                dependency: false,
+            }],
+        };
+        let lock_bytes = canonical_json(&lock)?;
+        let root = RootDocument {
+            schema: WORLD_PROJECT_ROOT_SCHEMA.to_owned(),
+            source_profile: WORLD_PROJECT_SOURCE_PROFILE.to_owned(),
+            project_revision: draft.project_revision,
+            manifest_locator: MANIFEST_LOCATOR.to_owned(),
+            manifest_sha256: digest_hex(&manifest_bytes),
+            content_lock_locator: LOCK_LOCATOR.to_owned(),
+            content_lock_sha256: digest_hex(&lock_bytes),
+        };
+
+        let mut documents = managed;
+        documents.insert(MANIFEST_LOCATOR.to_owned(), manifest_bytes);
+        documents.insert(LOCK_LOCATOR.to_owned(), lock_bytes);
+        documents.insert(PROJECT_LOCATOR.to_owned(), canonical_json(&root)?);
+        let snapshot = ProjectSnapshot::new(documents.into_iter(), limits)?;
+        snapshot.parse(limits)?;
+        Ok(Self { documents: snapshot.documents })
+    }
+
+    pub fn documents(&self) -> &BTreeMap<String, Vec<u8>> {
+        &self.documents
+    }
+
+    pub fn into_snapshot(self, limits: ProjectEvidenceLimits) -> Result<ProjectSnapshot, ProjectError> {
+        ProjectSnapshot::new(self.documents, limits)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldProject {
+    root: RootDocument,
+    manifest: ManifestDocumentRoot,
+    lock: LockDocument,
+    reference: ReferenceDocument,
+    imports: ImportDocument,
+    metadata: MetadataDocument,
+    manifest_bytes: Vec<u8>,
+}
+
+impl WorldProject {
+    pub fn project_revision(&self) -> &str {
+        &self.root.project_revision
+    }
+
+    pub fn imports(&self) -> &[ImportBatch] {
+        &self.imports.batches
+    }
+
+    pub fn author_metadata(&self) -> &[AuthorMetadataEntry] {
+        &self.metadata.entries
+    }
+
+    pub fn lower_reference_source(&self) -> Result<ReferencePlayableContentSource, ProjectError> {
+        let package_manifest = package_binding(&self.manifest, &self.manifest_bytes)?;
+        let content_lock = content_lock_binding(&self.lock)?;
+        let mut definitions = Vec::with_capacity(self.reference.records.len());
+        for record in &self.reference.records {
+            definitions.push(record.lower()?);
+        }
+        Ok(ReferencePlayableContentSource {
+            profile_revision: ProductionAtom::new(
+                "reference profile revision",
+                REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+            )?,
+            capability_profile: ProductionAtom::new(
+                "reference capability profile",
+                REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+            )?,
+            package_manifest,
+            content_lock,
+            world_id: decode_world_id(&self.reference.world_id)?,
+            coordinate_frame: super::CoordinateFrameRef::new(&self.reference.coordinate_frame)?,
+            definitions,
+            placements: Vec::new(),
+            ordered_placements: Vec::new(),
+            transitions: Vec::new(),
+        })
+    }
+
+    pub fn link(&self) -> Result<CanonicalReferencePlayableContent, ProjectError> {
+        Ok(link_reference_playable(self.lower_reference_source()?)?)
+    }
+
+    pub fn canonical_documents(
+        &self,
+        limits: ProjectEvidenceLimits,
+    ) -> Result<CanonicalProjectDocuments, ProjectError> {
+        CanonicalProjectDocuments::from_draft(
+            ProjectDraft {
+                project_revision: self.root.project_revision.clone(),
+                package_key: self.manifest.package_key.clone(),
+                semantic_schema_version: self.manifest.semantic_schema_version.clone(),
+                licensing_metadata: self.manifest.licensing_metadata.clone(),
+                world_id: self.reference.world_id.clone(),
+                coordinate_frame: self.reference.coordinate_frame.clone(),
+                records: self.reference.records.clone(),
+                imports: self.imports.batches.clone(),
+                metadata: self.metadata.entries.clone(),
+            },
+            limits,
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectDraft {
+    pub project_revision: String,
+    pub package_key: String,
+    pub semantic_schema_version: String,
+    pub licensing_metadata: String,
+    pub world_id: String,
+    pub coordinate_frame: String,
+    pub records: Vec<ProjectReferenceRecord>,
+    pub imports: Vec<ImportBatch>,
+    pub metadata: Vec<AuthorMetadataEntry>,
+}
+
+impl ProjectDraft {
+    fn validate(&self, limits: ProjectEvidenceLimits) -> Result<(), ProjectError> {
+        ProductionAtom::new("project revision", &self.project_revision)?;
+        ProductionKey::new(&self.package_key)?;
+        ProductionAtom::new("project semantic schema", &self.semantic_schema_version)?;
+        ProductionAtom::new("project licensing metadata", &self.licensing_metadata)?;
+        decode_world_id(&self.world_id)?;
+        super::CoordinateFrameRef::new(&self.coordinate_frame)?;
+        limits.check("project reference records", self.records.len(), limits.max_reference_records)?;
+        let import_records = self.imports.iter().try_fold(0_usize, |count, batch| {
+            count.checked_add(batch.candidates.len()).ok_or(ProjectError::LimitExceeded {
+                resource: "project import records",
+                actual: usize::MAX,
+                limit: limits.max_import_records,
+            })
+        })?;
+        limits.check("project import records", import_records, limits.max_import_records)?;
+        let reimports = self.imports.iter().try_fold(0_usize, |count, batch| {
+            count.checked_add(batch.reimport_states.len()).ok_or(ProjectError::LimitExceeded {
+                resource: "project reimport states",
+                actual: usize::MAX,
+                limit: limits.max_reimport_states,
+            })
+        })?;
+        limits.check("project reimport states", reimports, limits.max_reimport_states)?;
+        validate_reference_records(&self.records)?;
+        validate_imports(&self.imports)?;
+        validate_metadata(&self.metadata)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", deny_unknown_fields)]
+pub enum ProjectReferenceRecord {
+    Item {
+        identity: DefinitionIdentityDocument,
+        client_projection: ProjectionDocument,
+        materializable: bool,
+        stack_class: ItemStackDocument,
+    },
+    Generic {
+        identity: DefinitionIdentityDocument,
+        client_projection: ProjectionDocument,
+    },
+    Creature {
+        identity: DefinitionIdentityDocument,
+        client_projection: ProjectionDocument,
+        presentation: DefinitionReferenceDocument,
+        behavior: DefinitionReferenceDocument,
+        loot: Option<DefinitionReferenceDocument>,
+    },
+}
+
+impl ProjectReferenceRecord {
+    fn identity(&self) -> &DefinitionIdentityDocument {
+        match self {
+            Self::Item { identity, .. } | Self::Generic { identity, .. } | Self::Creature { identity, .. } => identity,
+        }
+    }
+
+    fn lower(&self) -> Result<ReferenceDefinition, ProjectError> {
+        match self {
+            Self::Item { identity, client_projection, materializable, stack_class } => {
+                require_family(&identity.family, DefinitionFamily::Item)?;
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+                        physical_class: ReferenceItemPhysicalClass::Physical,
+                        materializable: *materializable,
+                        stack_class: match stack_class {
+                            ItemStackDocument::NonStackable => ReferenceItemStackClass::NonStackable,
+                            ItemStackDocument::StackCapable => ReferenceItemStackClass::StackCapable,
+                        },
+                        legal_destinations: if *materializable {
+                            vec![ReferenceItemDestination::CharacterInventory]
+                        } else {
+                            Vec::new()
+                        },
+                    }),
+                    client_projection: client_projection.lower(),
+                })
+            }
+            Self::Generic { identity, client_projection } => {
+                let family = parse_family(&identity.family)?;
+                if !matches!(family, DefinitionFamily::Presentation | DefinitionFamily::Behavior) {
+                    return Err(ProjectError::InvalidProject("unsupported generic Reference family"));
+                }
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Generic,
+                    client_projection: client_projection.lower(),
+                })
+            }
+            Self::Creature { identity, client_projection, presentation, behavior, loot } => {
+                require_family(&identity.family, DefinitionFamily::Creature)?;
+                require_family(&presentation.family, DefinitionFamily::Presentation)?;
+                require_family(&behavior.family, DefinitionFamily::Behavior)?;
+                if let Some(loot) = loot { require_family(&loot.family, DefinitionFamily::Loot)?; }
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Creature(ReferenceCreatureDefinition {
+                        presentation: presentation.lower()?,
+                        behavior: behavior.lower()?,
+                        loot: loot.as_ref().map(DefinitionReferenceDocument::lower).transpose()?,
+                    }),
+                    client_projection: client_projection.lower(),
+                })
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DefinitionIdentityDocument {
+    pub family: String,
+    pub key: String,
+    pub revision: String,
+}
+
+impl DefinitionIdentityDocument {
+    fn lower(&self) -> Result<TypedDefinitionRef, ProjectError> {
+        Ok(TypedDefinitionRef::new(
+            parse_family(&self.family)?,
+            ProductionKey::new(&self.key)?,
+            DefinitionRevisionRef::new(&self.revision)?,
+        ))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DefinitionReferenceDocument {
+    pub family: String,
+    pub key: String,
+    pub revision: String,
+}
+
+impl DefinitionReferenceDocument {
+    fn lower(&self) -> Result<TypedDefinitionRef, ProjectError> {
+        DefinitionIdentityDocument {
+            family: self.family.clone(), key: self.key.clone(), revision: self.revision.clone(),
+        }.lower()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProjectionDocument { ServerOnly, ClientSafe }
+
+impl ProjectionDocument {
+    fn lower(self) -> ClientProjectionClass {
+        match self { Self::ServerOnly => ClientProjectionClass::ServerOnly, Self::ClientSafe => ClientProjectionClass::ClientSafe }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ItemStackDocument { NonStackable, StackCapable }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImportBatch {
+    pub batch_id: String,
+    pub source_repository: String,
+    pub source_revision: String,
+    pub source_artifact_sha256: String,
+    pub access_disposition: String,
+    pub source_generation_profile: String,
+    pub importer: String,
+    pub mapper: String,
+    pub mapper_revision: String,
+    pub mapper_sha256: String,
+    pub candidates: Vec<ImportCandidate>,
+    pub reimport_states: Vec<ReimportFieldState>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImportCandidate {
+    pub source_candidate_id: String,
+    pub source_label: String,
+    pub source_numeric_id: Option<u64>,
+    pub candidate_family: ImportCandidateFamily,
+    pub candidate_operation: ImportCandidateOperation,
+    pub candidate_target: String,
+    pub candidate_formula: String,
+    pub evidence_class: String,
+    pub closure_disposition: CandidateDisposition,
+    pub disposition_reason: String,
+    pub normalized_fields: Vec<NamedCandidateField>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ImportCandidateFamily { AbilityEffectFormula }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ImportCandidateOperation { Damage, Heal }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CandidateDisposition { CandidateOnly, Blocked }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NamedCandidateField {
+    pub field_path: String,
+    pub value: CandidateValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value", deny_unknown_fields)]
+pub enum CandidateValue { Text(String), Integer(i64), Boolean(bool), SourceId(u64) }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ReimportDecision { Unchanged, AdoptUpstream, RetainLocal, Converged, Conflict }
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReimportFieldState {
+    pub stable_identity: String,
+    pub field_path: String,
+    pub baseline: Option<CandidateValue>,
+    pub upstream: Option<CandidateValue>,
+    pub local: Option<CandidateValue>,
+    pub decision: ReimportDecision,
+}
+
+pub fn decide_reimport(
+    baseline: &Option<CandidateValue>,
+    upstream: &Option<CandidateValue>,
+    local: &Option<CandidateValue>,
+) -> ReimportDecision {
+    if upstream == baseline && local == baseline {
+        ReimportDecision::Unchanged
+    } else if upstream != baseline && local == baseline {
+        ReimportDecision::AdoptUpstream
+    } else if upstream == baseline && local != baseline {
+        ReimportDecision::RetainLocal
+    } else if upstream == local {
+        ReimportDecision::Converged
+    } else {
+        ReimportDecision::Conflict
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthorMetadataEntry {
+    pub stable_identity: String,
+    pub display_name: String,
+    pub description: String,
+    pub categories: Vec<String>,
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RootDocument {
+    schema: String,
+    source_profile: String,
+    project_revision: String,
+    manifest_locator: String,
+    manifest_sha256: String,
+    content_lock_locator: String,
+    content_lock_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ManifestDocumentRoot {
+    schema: String,
+    package_key: String,
+    package_revision: String,
+    semantic_schema_version: String,
+    licensing_metadata: String,
+    required_features: Vec<String>,
+    optional_features: Vec<String>,
+    documents: Vec<ManifestDocument>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ManifestDocument {
+    role: String,
+    schema: String,
+    locator: String,
+    byte_length: usize,
+    sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LockDocument {
+    schema: String,
+    project_revision: String,
+    revision_digest_token: String,
+    entries: Vec<LockEntryDocument>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LockEntryDocument {
+    package_key: String,
+    package_revision: String,
+    package_provenance_digest: String,
+    floating: bool,
+    dependency: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReferenceDocument {
+    schema: String,
+    world_id: String,
+    coordinate_frame: String,
+    records: Vec<ProjectReferenceRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ImportDocument {
+    schema: String,
+    batches: Vec<ImportBatch>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MetadataDocument {
+    schema: String,
+    entries: Vec<AuthorMetadataEntry>,
+}
+
+fn parse_snapshot(snapshot: &ProjectSnapshot, limits: ProjectEvidenceLimits) -> Result<WorldProject, ProjectError> {
+    let root: RootDocument = parse_strict(required(snapshot, PROJECT_LOCATOR)?, limits)?;
+    if root.schema != WORLD_PROJECT_ROOT_SCHEMA || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE {
+        return Err(ProjectError::InvalidProject("unsupported project root profile"));
+    }
+    if root.manifest_locator != MANIFEST_LOCATOR || root.content_lock_locator != LOCK_LOCATOR {
+        return Err(ProjectError::InvalidProject("v1 control locator mismatch"));
+    }
+    let manifest_bytes = required(snapshot, MANIFEST_LOCATOR)?;
+    let lock_bytes = required(snapshot, LOCK_LOCATOR)?;
+    require_digest(MANIFEST_LOCATOR, manifest_bytes, &root.manifest_sha256)?;
+    require_digest(LOCK_LOCATOR, lock_bytes, &root.content_lock_sha256)?;
+    let manifest: ManifestDocumentRoot = parse_strict(manifest_bytes, limits)?;
+    let lock: LockDocument = parse_strict(lock_bytes, limits)?;
+    if manifest.schema != WORLD_PROJECT_MANIFEST_SCHEMA || lock.schema != WORLD_PROJECT_LOCK_SCHEMA {
+        return Err(ProjectError::InvalidProject("unsupported control document schema"));
+    }
+    if root.project_revision != manifest.package_revision || root.project_revision != lock.project_revision {
+        return Err(ProjectError::InvalidProject("mixed project revision"));
+    }
+    if !manifest.required_features.is_empty() || !manifest.optional_features.is_empty() {
+        return Err(ProjectError::InvalidProject("unsupported project feature declaration"));
+    }
+    let package = package_binding(&manifest, manifest_bytes)?;
+    let content_lock = content_lock_binding(&lock)?;
+    let root_entry = content_lock.entries.iter().filter(|entry| entry.package_key == package.package_key).count();
+    if root_entry != 1 {
+        return Err(ProjectError::InvalidProject("Content Lock must bind one root package"));
+    }
+    let expected_provenance = package.package_provenance_digest()?;
+    let entry = content_lock
+        .entries
+        .iter()
+        .find(|entry| entry.package_key == package.package_key)
+        .ok_or(ProjectError::InvalidProject("Content Lock root package missing"))?;
+    if entry.package_revision != package.package_revision || entry.package_provenance_digest != expected_provenance || entry.floating || entry.dependency {
+        return Err(ProjectError::InvalidProject("Content Lock root provenance mismatch"));
+    }
+
+    let mut expected = BTreeSet::from([PROJECT_LOCATOR.to_owned(), MANIFEST_LOCATOR.to_owned(), LOCK_LOCATOR.to_owned()]);
+    let mut by_role: BTreeMap<String, Vec<&ManifestDocument>> = BTreeMap::new();
+    let mut previous_locator: Option<&str> = None;
+    for document in &manifest.documents {
+        validate_locator(&document.locator, limits)?;
+        if matches!(document.locator.as_str(), PROJECT_LOCATOR | MANIFEST_LOCATOR | LOCK_LOCATOR) {
+            return Err(ProjectError::InvalidProject("control document appears in manifest inventory"));
+        }
+        if previous_locator.is_some_and(|previous| previous >= document.locator.as_str()) {
+            return Err(ProjectError::InvalidProject("manifest inventory is not identity sorted"));
+        }
+        previous_locator = Some(&document.locator);
+        if !expected.insert(document.locator.clone()) {
+            return Err(ProjectError::DuplicateLocator(document.locator.clone()));
+        }
+        by_role.entry(document.role.clone()).or_default().push(document);
+        let bytes = required(snapshot, &document.locator)?;
+        if bytes.len() != document.byte_length { return Err(ProjectError::InvalidProject("manifest byte length mismatch")); }
+        require_digest(&document.locator, bytes, &document.sha256)?;
+    }
+    for locator in snapshot.documents.keys() {
+        if !expected.contains(locator) { return Err(ProjectError::UnexpectedDocument(locator.clone())); }
+    }
+    if snapshot.documents.len() != expected.len() {
+        return Err(ProjectError::InvalidProject("manifest document set mismatch"));
+    }
+    let reference_infos = require_role(&by_role, "reference-records", "records/", WORLD_PROJECT_REFERENCE_SCHEMA)?;
+    let import_infos = require_role(&by_role, "import-candidates", "imports/", WORLD_PROJECT_IMPORT_SCHEMA)?;
+    let metadata_infos = require_role(&by_role, "author-metadata", "metadata/", WORLD_PROJECT_METADATA_SCHEMA)?;
+    if by_role.len() != 3 { return Err(ProjectError::InvalidProject("unsupported manifest document role")); }
+    let mut reference: Option<ReferenceDocument> = None;
+    for info in reference_infos {
+        let parsed: ReferenceDocument = parse_strict(required(snapshot, &info.locator)?, limits)?;
+        if parsed.schema != info.schema { return Err(ProjectError::InvalidProject("managed document schema mismatch")); }
+        match &mut reference {
+            Some(combined) => {
+                if combined.world_id != parsed.world_id || combined.coordinate_frame != parsed.coordinate_frame { return Err(ProjectError::InvalidProject("regrouped Reference documents disagree on world binding")); }
+                combined.records.extend(parsed.records);
+            }
+            None => reference = Some(parsed),
+        }
+    }
+    let mut reference = reference.ok_or(ProjectError::InvalidProject(
+        "required Reference document missing",
+    ))?;
+    reference.records = sorted_records(reference.records);
+    let mut imports = ImportDocument { schema: WORLD_PROJECT_IMPORT_SCHEMA.to_owned(), batches: Vec::new() };
+    for info in import_infos {
+        let parsed: ImportDocument = parse_strict(required(snapshot, &info.locator)?, limits)?;
+        if parsed.schema != info.schema { return Err(ProjectError::InvalidProject("managed document schema mismatch")); }
+        imports.batches.extend(parsed.batches);
+    }
+    imports.batches = sorted_imports(imports.batches);
+    let mut metadata = MetadataDocument { schema: WORLD_PROJECT_METADATA_SCHEMA.to_owned(), entries: Vec::new() };
+    for info in metadata_infos {
+        let parsed: MetadataDocument = parse_strict(required(snapshot, &info.locator)?, limits)?;
+        if parsed.schema != info.schema { return Err(ProjectError::InvalidProject("managed document schema mismatch")); }
+        metadata.entries.extend(parsed.entries);
+    }
+    metadata.entries = sorted_metadata(metadata.entries);
+    limits.check("project reference records", reference.records.len(), limits.max_reference_records)?;
+    let imported = imports.batches.iter().try_fold(0_usize, |total, batch| total.checked_add(batch.candidates.len()).ok_or(ProjectError::LimitExceeded { resource: "project import records", actual: usize::MAX, limit: limits.max_import_records }))?;
+    limits.check("project import records", imported, limits.max_import_records)?;
+    let states = imports.batches.iter().try_fold(0_usize, |total, batch| total.checked_add(batch.reimport_states.len()).ok_or(ProjectError::LimitExceeded { resource: "project reimport states", actual: usize::MAX, limit: limits.max_reimport_states }))?;
+    limits.check("project reimport states", states, limits.max_reimport_states)?;
+    validate_reference_records(&reference.records)?;
+    validate_imports(&imports.batches)?;
+    validate_metadata(&metadata.entries)?;
+    Ok(WorldProject { root, manifest, lock, reference, imports, metadata, manifest_bytes: manifest_bytes.to_vec() })
+}
+
+fn required<'a>(snapshot: &'a ProjectSnapshot, locator: &str) -> Result<&'a [u8], ProjectError> {
+    snapshot.documents.get(locator).map(Vec::as_slice).ok_or_else(|| ProjectError::MissingDocument(locator.to_owned()))
+}
+
+fn require_role<'a>(roles: &BTreeMap<String, Vec<&'a ManifestDocument>>, role: &str, locator_prefix: &str, schema: &str) -> Result<Vec<&'a ManifestDocument>, ProjectError> {
+    let documents = roles.get(role).cloned().ok_or(ProjectError::InvalidProject("required manifest role missing"))?;
+    if documents.is_empty() || documents.iter().any(|document| !document.locator.starts_with(locator_prefix) || document.schema != schema) { return Err(ProjectError::InvalidProject("v1 manifest role binding mismatch")); }
+    Ok(documents)
+}
+
+fn package_binding(manifest: &ManifestDocumentRoot, manifest_bytes: &[u8]) -> Result<PackageManifestBinding, ProjectError> {
+    Ok(PackageManifestBinding::new(
+        ProductionKey::new(&manifest.package_key)?,
+        ProductionAtom::new("project package revision", &manifest.package_revision)?,
+        ProductionAtom::new("project semantic schema", &manifest.semantic_schema_version)?,
+        ProductionAtom::new("project licensing metadata", &manifest.licensing_metadata)?,
+        Sha256HexDigest::new(&digest_hex(manifest_bytes))?,
+    ))
+}
+
+fn content_lock_binding(lock: &LockDocument) -> Result<ContentLockBinding, ProjectError> {
+    let entries = lock.entries.iter().map(|entry| Ok(ContentLockEntry {
+        package_key: ProductionKey::new(&entry.package_key)?,
+        package_revision: ProductionAtom::new("project lock package revision", &entry.package_revision)?,
+        package_provenance_digest: Sha256HexDigest::new(&entry.package_provenance_digest)?,
+        floating: entry.floating,
+        dependency: entry.dependency,
+    })).collect::<Result<Vec<_>, ProjectError>>()?;
+    Ok(ContentLockBinding {
+        revision_digest_token: ProductionAtom::new("project Content Lock revision", &lock.revision_digest_token)?,
+        entries,
+    })
+}
+
+fn validate_reference_records(records: &[ProjectReferenceRecord]) -> Result<(), ProjectError> {
+    let mut identities = BTreeSet::new();
+    let mut previous: Option<(&str, &str)> = None;
+    for record in records {
+        let identity = record.identity();
+        parse_family(&identity.family)?;
+        identity.lower()?;
+        let current = (identity.family.as_str(), identity.key.as_str());
+        if previous.is_some_and(|prior| prior >= current) { return Err(ProjectError::InvalidProject("reference records are not identity sorted")); }
+        previous = Some(current);
+        if !identities.insert((identity.family.clone(), identity.key.clone())) { return Err(ProjectError::InvalidProject("duplicate reference record identity")); }
+        record.lower()?;
+    }
+    Ok(())
+}
+
+fn validate_imports(imports: &[ImportBatch]) -> Result<(), ProjectError> {
+    let mut previous_batch: Option<&str> = None;
+    for batch in imports {
+        if previous_batch.is_some_and(|prior| prior >= batch.batch_id.as_str()) { return Err(ProjectError::InvalidProject("import batches are not identity sorted")); }
+        previous_batch = Some(&batch.batch_id);
+        Sha256HexDigest::new(&batch.source_artifact_sha256)?;
+        Sha256HexDigest::new(&batch.mapper_sha256)?;
+        let mut previous_candidate: Option<&str> = None;
+        for candidate in &batch.candidates {
+            if previous_candidate.is_some_and(|prior| prior >= candidate.source_candidate_id.as_str()) { return Err(ProjectError::InvalidProject("import candidates are not identity sorted")); }
+            previous_candidate = Some(&candidate.source_candidate_id);
+            let mut paths = BTreeSet::new();
+            for field in &candidate.normalized_fields {
+                if !paths.insert(&field.field_path) { return Err(ProjectError::InvalidProject("duplicate normalized import field")); }
+            }
+        }
+        let mut previous_state: Option<(&str, &str)> = None;
+        for state in &batch.reimport_states {
+            let current = (state.stable_identity.as_str(), state.field_path.as_str());
+            if previous_state.is_some_and(|prior| prior >= current) { return Err(ProjectError::InvalidProject("reimport states are not identity sorted")); }
+            previous_state = Some(current);
+            if state.decision != decide_reimport(&state.baseline, &state.upstream, &state.local) { return Err(ProjectError::InvalidProject("stored reimport decision is inconsistent")); }
+        }
+    }
+    Ok(())
+}
+
+fn validate_metadata(metadata: &[AuthorMetadataEntry]) -> Result<(), ProjectError> {
+    let mut previous: Option<&str> = None;
+    for entry in metadata {
+        if previous.is_some_and(|prior| prior >= entry.stable_identity.as_str()) { return Err(ProjectError::InvalidProject("author metadata is not identity sorted")); }
+        previous = Some(&entry.stable_identity);
+    }
+    Ok(())
+}
+
+fn sorted_records(mut records: Vec<ProjectReferenceRecord>) -> Vec<ProjectReferenceRecord> {
+    records.sort_by(|left, right| left.identity().family.cmp(&right.identity().family).then_with(|| left.identity().key.cmp(&right.identity().key)));
+    records
+}
+
+fn sorted_imports(mut imports: Vec<ImportBatch>) -> Vec<ImportBatch> {
+    for batch in &mut imports {
+        batch.candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+        for candidate in &mut batch.candidates { candidate.normalized_fields.sort_by(|left, right| left.field_path.cmp(&right.field_path)); }
+        batch.reimport_states.sort_by(|left, right| left.stable_identity.cmp(&right.stable_identity).then_with(|| left.field_path.cmp(&right.field_path)));
+    }
+    imports.sort_by(|left, right| left.batch_id.cmp(&right.batch_id));
+    imports
+}
+
+fn sorted_metadata(mut metadata: Vec<AuthorMetadataEntry>) -> Vec<AuthorMetadataEntry> {
+    metadata.sort_by(|left, right| left.stable_identity.cmp(&right.stable_identity));
+    metadata
+}
+
+fn parse_family(value: &str) -> Result<DefinitionFamily, ProjectError> {
+    match value {
+        "Presentation" => Ok(DefinitionFamily::Presentation),
+        "Behavior" => Ok(DefinitionFamily::Behavior),
+        "Creature" => Ok(DefinitionFamily::Creature),
+        "Item" => Ok(DefinitionFamily::Item),
+        _ => Err(ProjectError::InvalidProject("unsupported Reference definition family")),
+    }
+}
+
+fn require_family(value: &str, expected: DefinitionFamily) -> Result<(), ProjectError> {
+    if parse_family(value)? != expected { return Err(ProjectError::InvalidProject("Reference record family does not match typed shape")); }
+    Ok(())
+}
+
+fn validate_locator(locator: &str, limits: ProjectEvidenceLimits) -> Result<(), ProjectError> {
+    limits.check("project locator bytes", locator.len(), limits.max_locator_bytes)?;
+    if locator.is_empty() || !locator.is_ascii() || locator.contains(['\\', ':', '\0']) || locator.starts_with('/') || locator.ends_with('/') || locator.contains('%') {
+        return Err(ProjectError::InvalidLocator(locator.to_owned()));
+    }
+    let segments: Vec<&str> = locator.split('/').collect();
+    limits.check("project locator segments", segments.len(), limits.max_locator_segments)?;
+    for segment in segments {
+        if segment.is_empty() || segment == "." || segment == ".." || segment.ends_with(['.', ' ']) || !valid_segment(segment) || is_device_name(segment) {
+            return Err(ProjectError::InvalidLocator(locator.to_owned()));
+        }
+    }
+    Ok(())
+}
+
+fn valid_segment(segment: &str) -> bool {
+    let components: Vec<&str> = segment.split('.').collect();
+    !components.is_empty() && components.iter().all(|component| {
+        !component.is_empty() && component.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'_' | b'-')) && component.as_bytes().first().is_some_and(u8::is_ascii_alphanumeric) && component.as_bytes().last().is_some_and(u8::is_ascii_alphanumeric)
+    })
+}
+
+fn is_device_name(segment: &str) -> bool {
+    let base = segment.split('.').next().unwrap_or(segment);
+    matches!(base, "con" | "prn" | "aux" | "nul") || (base.len() == 4 && (base.starts_with("com") || base.starts_with("lpt")) && matches!(base.as_bytes()[3], b'1'..=b'9'))
+}
+
+fn require_digest(locator: &str, bytes: &[u8], expected: &str) -> Result<(), ProjectError> {
+    Sha256HexDigest::new(expected)?;
+    if digest_hex(bytes) != expected { return Err(ProjectError::DigestMismatch(locator.to_owned())); }
+    Ok(())
+}
+
+/// SHA-256 encoding used by snapshot manifests and roots. Filesystem adapters use this after
+/// capturing immutable bytes; this function performs no filesystem access.
+pub fn world_project_sha256(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let digest = super::digest::sha256(bytes);
+    let mut value = String::with_capacity(64);
+    for byte in digest { value.push(char::from(HEX[usize::from(byte >> 4)])); value.push(char::from(HEX[usize::from(byte & 0x0f)])); }
+    value
+}
+
+fn digest_hex(bytes: &[u8]) -> String { world_project_sha256(bytes) }
+
+fn canonical_json<T: Serialize>(value: &T) -> Result<Vec<u8>, ProjectError> {
+    let mut bytes = serde_json::to_vec(value).map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+    bytes.push(b'\n');
+    Ok(bytes)
+}
+
+fn decode_world_id(value: &str) -> Result<WorldId, ProjectError> {
+    if value.len() != 32 || !value.bytes().all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f')) { return Err(ProjectError::InvalidProject("WorldId must be 32 lowercase hexadecimal UUIDv7 bytes")); }
+    let mut bytes = [0_u8; 16];
+    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+        let hex = |byte| match byte { b'0'..=b'9' => Some(byte - b'0'), b'a'..=b'f' => Some(byte - b'a' + 10), _ => None };
+        let high = hex(pair[0]).ok_or(ProjectError::InvalidProject(
+            "WorldId must be lowercase hexadecimal",
+        ))?;
+        let low = hex(pair[1]).ok_or(ProjectError::InvalidProject(
+            "WorldId must be lowercase hexadecimal",
+        ))?;
+        bytes[index] = (high << 4) | low;
+    }
+    WorldId::decode(&bytes).map_err(|_| ProjectError::InvalidProject("WorldId must be UUIDv7"))
+}
+
+#[derive(Debug, Clone)]
+enum StrictJsonValue {
+    Null,
+    Bool(bool),
+    I64(i64),
+    U64(u64),
+    String(String),
+    Array(Vec<StrictJsonValue>),
+    Object(BTreeMap<String, StrictJsonValue>),
+}
+
+impl<'de> Deserialize<'de> for StrictJsonValue {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct StrictVisitor;
+        impl<'de> Visitor<'de> for StrictVisitor {
+            type Value = StrictJsonValue;
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result { formatter.write_str("strict JSON value") }
+            fn visit_bool<E: de::Error>(self, value: bool) -> Result<Self::Value, E> { Ok(StrictJsonValue::Bool(value)) }
+            fn visit_i64<E: de::Error>(self, value: i64) -> Result<Self::Value, E> { Ok(StrictJsonValue::I64(value)) }
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> { Ok(StrictJsonValue::U64(value)) }
+            fn visit_f64<E: de::Error>(self, _value: f64) -> Result<Self::Value, E> { Err(E::custom("floating point numbers are unsupported")) }
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> { Ok(StrictJsonValue::String(value.to_owned())) }
+            fn visit_string<E: de::Error>(self, value: String) -> Result<Self::Value, E> { Ok(StrictJsonValue::String(value)) }
+            fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> { Ok(StrictJsonValue::Null) }
+            fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> { Ok(StrictJsonValue::Null) }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Self::Value, A::Error> {
+                let mut values = Vec::new();
+                while let Some(value) = sequence.next_element()? { values.push(value); }
+                Ok(StrictJsonValue::Array(values))
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let mut values = BTreeMap::new();
+                while let Some((key, value)) = map.next_entry::<String, StrictJsonValue>()? {
+                    if values.insert(key.clone(), value).is_some() { return Err(de::Error::custom(format!("duplicate JSON member:{key}"))); }
+                }
+                Ok(StrictJsonValue::Object(values))
+            }
+        }
+        deserializer.deserialize_any(StrictVisitor)
+    }
+}
+
+fn parse_strict<T: for<'de> Deserialize<'de>>(bytes: &[u8], limits: ProjectEvidenceLimits) -> Result<T, ProjectError> {
+    if bytes.starts_with(&[0xef, 0xbb, 0xbf]) { return Err(ProjectError::InvalidJson("UTF-8 BOM is forbidden".to_owned())); }
+    let mut deserializer = serde_json::Deserializer::from_slice(bytes);
+    let strict = StrictJsonValue::deserialize(&mut deserializer).map_err(map_json_error)?;
+    deserializer.end().map_err(map_json_error)?;
+    let mut metrics = JsonMetrics::default();
+    measure_json(&strict, 1, &mut metrics)?;
+    limits.check("project JSON depth", metrics.depth, limits.max_json_depth)?;
+    limits.check("project decoded fields", metrics.fields, limits.max_decoded_fields)?;
+    limits.check("project JSON string bytes", metrics.string_bytes, limits.max_string_bytes)?;
+    let value = strict.into_serde_value();
+    serde_json::from_value(value).map_err(|error| ProjectError::InvalidJson(error.to_string()))
+}
+
+fn map_json_error(error: serde_json::Error) -> ProjectError {
+    let message = error.to_string();
+    if let Some((_, member)) = message.split_once("duplicate JSON member:") {
+        ProjectError::DuplicateJsonMember(member.split(" at line").next().unwrap_or(member).to_owned())
+    } else { ProjectError::InvalidJson(message) }
+}
+
+impl StrictJsonValue {
+    fn into_serde_value(self) -> serde_json::Value {
+        match self {
+            Self::Null => serde_json::Value::Null,
+            Self::Bool(value) => serde_json::Value::Bool(value),
+            Self::I64(value) => serde_json::Value::Number(value.into()),
+            Self::U64(value) => serde_json::Value::Number(value.into()),
+            Self::String(value) => serde_json::Value::String(value),
+            Self::Array(values) => serde_json::Value::Array(values.into_iter().map(Self::into_serde_value).collect()),
+            Self::Object(values) => serde_json::Value::Object(values.into_iter().map(|(key, value)| (key, value.into_serde_value())).collect()),
+        }
+    }
+}
+
+#[derive(Default)]
+struct JsonMetrics { depth: usize, fields: usize, string_bytes: usize }
+
+fn measure_json(value: &StrictJsonValue, depth: usize, metrics: &mut JsonMetrics) -> Result<(), ProjectError> {
+    metrics.depth = metrics.depth.max(depth);
+    match value {
+        StrictJsonValue::String(value) => metrics.string_bytes = metrics.string_bytes.checked_add(value.len()).ok_or(ProjectError::InvalidProject("JSON string byte count overflow"))?,
+        StrictJsonValue::Array(values) => for value in values { measure_json(value, depth.checked_add(1).ok_or(ProjectError::InvalidProject("JSON depth overflow"))?, metrics)?; },
+        StrictJsonValue::Object(values) => {
+            metrics.fields = metrics.fields.checked_add(values.len()).ok_or(ProjectError::InvalidProject("JSON field count overflow"))?;
+            for (key, value) in values {
+                metrics.string_bytes = metrics.string_bytes.checked_add(key.len()).ok_or(ProjectError::InvalidProject("JSON string byte count overflow"))?;
+                measure_json(value, depth.checked_add(1).ok_or(ProjectError::InvalidProject("JSON depth overflow"))?, metrics)?;
+            }
+        }
+        StrictJsonValue::Null | StrictJsonValue::Bool(_) | StrictJsonValue::I64(_) | StrictJsonValue::U64(_) => {}
+    }
+    Ok(())
+}
