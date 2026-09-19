@@ -256,7 +256,10 @@ fn validate_phases(attempt: &AttemptEvidence) -> Result<(), EvidenceError> {
             }
         }
         ExecutionTier::Tier2NativeClient | ExecutionTier::Tier3ProductionSmoke => {
-            if presentation != PhaseStatus::Passed {
+            if matches!(presentation, PhaseStatus::NotApplicable(_))
+                || (attempt.outcome == AttemptOutcome::Passed
+                    && presentation != PhaseStatus::Passed)
+            {
                 return Err(EvidenceError::EvidenceIncomplete);
             }
         }
