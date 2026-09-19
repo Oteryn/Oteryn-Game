@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/wp3-v2-retained-config-limits-351
-pr: null
+pr: 677
 base_sha: c7688069bc22ac3cde46e48e6b05d8051418fed1
 head_sha: external_pr_evidence
 final_head_sha: external_pr_evidence
@@ -157,7 +157,7 @@ last_progress: P1-2 finite retained-config owner decision authored within exact 
 status: validating
 branch: agent/wp3-v2-retained-config-limits-351
 head_sha: external_pr_evidence
-pr: null
+pr: 677
 final_head_sha: external_pr_evidence
 final_head_frozen_at: external_pr_evidence
 ci_trigger_source: normal_pr
