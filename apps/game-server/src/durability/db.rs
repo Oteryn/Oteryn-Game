@@ -1,4 +1,5 @@
 use crate::durability::DurabilityError;
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
     PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
@@ -18,6 +19,205 @@ pub(crate) const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
 const STATEMENT_CACHE_CAPACITY: usize = 100;
+const TLS_SERVER_NAME_MAX_BYTES: usize = 253;
+const DATABASE_MAX_BYTES: usize = 63;
+const USERNAME_MAX_BYTES: usize = 63;
+const PASSWORD_MAX_BYTES: usize = 1_024;
+const ROOT_CA_PEM_MAX_BYTES: usize = 22_768;
+const RETAINED_CONFIG_MAX_BYTES: usize = 24_171;
+const ROOT_CA_MAX_CERTIFICATES: usize = 4;
+const ROOT_CA_MAX_DER_BYTES: usize = 4_096;
+const ROOT_CA_MAX_AGGREGATE_DER_BYTES: usize = 16_384;
+
+fn checked_retained_config_input_len(lengths: [usize; 5]) -> Result<usize, DurabilityError> {
+    lengths.into_iter().try_fold(0usize, |total, length| {
+        total
+            .checked_add(length)
+            .ok_or(DurabilityError::RootUnavailable)
+    })
+}
+
+fn validate_retained_config_input_lengths(lengths: [usize; 5]) -> Result<usize, DurabilityError> {
+    let [tls, database, username, password, root_ca] = lengths;
+    let aggregate = checked_retained_config_input_len(lengths)?;
+    if tls > TLS_SERVER_NAME_MAX_BYTES
+        || database > DATABASE_MAX_BYTES
+        || username > USERNAME_MAX_BYTES
+        || password > PASSWORD_MAX_BYTES
+        || root_ca > ROOT_CA_PEM_MAX_BYTES
+        || aggregate > RETAINED_CONFIG_MAX_BYTES
+    {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    Ok(aggregate)
+}
+
+fn validate_dns_server_name(name: &str) -> Result<(), DurabilityError> {
+    if !name.is_ascii() || name.ends_with('.') || name.parse::<IpAddr>().is_ok() {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    for label in name.split('.') {
+        let bytes = label.as_bytes();
+        if bytes.is_empty()
+            || bytes.len() > 63
+            || !bytes[0].is_ascii_alphanumeric()
+            || !bytes[bytes.len() - 1].is_ascii_alphanumeric()
+            || bytes
+                .iter()
+                .any(|byte| !byte.is_ascii_alphanumeric() && *byte != b'-')
+        {
+            return Err(DurabilityError::RootUnavailable);
+        }
+    }
+    Ok(())
+}
+
+fn checked_root_der_total(current: usize, next: usize) -> Result<usize, DurabilityError> {
+    let total = current
+        .checked_add(next)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    if total > ROOT_CA_MAX_AGGREGATE_DER_BYTES {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    Ok(total)
+}
+
+fn validate_root_ca_pem(root_ca_pem: &[u8]) -> Result<(), DurabilityError> {
+    if !root_ca_pem.is_ascii() {
+        return Err(DurabilityError::RootUnavailable);
+    }
+
+    let has_crlf = root_ca_pem.windows(2).any(|window| window == b"\r\n");
+    for (index, byte) in root_ca_pem.iter().copied().enumerate() {
+        if byte == b'\r' && root_ca_pem.get(index + 1).copied() != Some(b'\n') {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        if has_crlf
+            && byte == b'\n'
+            && index
+                .checked_sub(1)
+                .and_then(|i| root_ca_pem.get(i))
+                .copied()
+                != Some(b'\r')
+        {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        if !has_crlf && byte == b'\r' {
+            return Err(DurabilityError::RootUnavailable);
+        }
+    }
+
+    let text = std::str::from_utf8(root_ca_pem).map_err(|_| DurabilityError::RootUnavailable)?;
+    let mut lines: Vec<&str> = if has_crlf {
+        text.split("\r\n").collect()
+    } else {
+        text.split('\n').collect()
+    };
+    if lines.last() == Some(&"") {
+        lines.pop();
+    }
+    if lines.is_empty() || lines.iter().any(|line| line.is_empty()) {
+        return Err(DurabilityError::RootUnavailable);
+    }
+
+    let mut index = 0usize;
+    let mut certificate_count = 0usize;
+    let mut aggregate_der = 0usize;
+    while index < lines.len() {
+        if lines[index] != "-----BEGIN CERTIFICATE-----" {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        certificate_count = certificate_count
+            .checked_add(1)
+            .ok_or(DurabilityError::RootUnavailable)?;
+        if certificate_count > ROOT_CA_MAX_CERTIFICATES {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        index += 1;
+
+        let start = index;
+        while index < lines.len() && lines[index] != "-----END CERTIFICATE-----" {
+            index += 1;
+        }
+        if start == index || index >= lines.len() {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        let encoded_lines = &lines[start..index];
+        if encoded_lines
+            .iter()
+            .take(encoded_lines.len().saturating_sub(1))
+            .any(|line| line.len() != 64)
+            || encoded_lines
+                .last()
+                .is_none_or(|line| line.is_empty() || line.len() > 64)
+        {
+            return Err(DurabilityError::RootUnavailable);
+        }
+
+        let encoded_len = encoded_lines.iter().try_fold(0usize, |total, line| {
+            total
+                .checked_add(line.len())
+                .ok_or(DurabilityError::RootUnavailable)
+        })?;
+        if encoded_len % 4 != 0 {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        let mut encoded = String::with_capacity(encoded_len);
+        for line in encoded_lines {
+            encoded.push_str(line);
+        }
+        let padding = encoded
+            .as_bytes()
+            .iter()
+            .rev()
+            .take_while(|byte| **byte == b'=')
+            .count();
+        if padding > 2
+            || encoded.as_bytes()[..encoded.len().saturating_sub(padding)].contains(&b'=')
+        {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        let decoded_len = encoded_len
+            .checked_div(4)
+            .and_then(|groups| groups.checked_mul(3))
+            .and_then(|bytes| bytes.checked_sub(padding))
+            .ok_or(DurabilityError::RootUnavailable)?;
+        if decoded_len > ROOT_CA_MAX_DER_BYTES {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        let decoded = STANDARD
+            .decode(encoded.as_bytes())
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        if decoded.len() != decoded_len {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        aggregate_der = checked_root_der_total(aggregate_der, decoded_len)?;
+        index += 1;
+    }
+
+    if certificate_count == 0 {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    Ok(())
+}
+
+fn retain_exact_string(input: &str) -> Result<String, DurabilityError> {
+    let mut retained = String::with_capacity(input.len());
+    if retained.capacity() != input.len() {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    retained.push_str(input);
+    Ok(retained)
+}
+
+fn retain_exact_bytes(input: &[u8]) -> Result<Vec<u8>, DurabilityError> {
+    let mut retained = Vec::with_capacity(input.len());
+    if retained.capacity() != input.len() {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    retained.extend_from_slice(input);
+    Ok(retained)
+}
 
 /// Explicit first-slice configuration for the process durability root.
 ///
@@ -39,20 +239,47 @@ impl DurabilityRootConfig {
     pub fn new(
         transport_ip: IpAddr,
         port: u16,
-        tls_server_name: String,
-        database: String,
-        username: String,
-        password: String,
-        root_ca_pem: Vec<u8>,
+        tls_server_name: &str,
+        database: &str,
+        username: &str,
+        password: &str,
+        root_ca_pem: &[u8],
     ) -> Result<Self, DurabilityError> {
+        let lengths = [
+            tls_server_name.len(),
+            database.len(),
+            username.len(),
+            password.len(),
+            root_ca_pem.len(),
+        ];
+        let aggregate = validate_retained_config_input_lengths(lengths)?;
         if port == 0
             || tls_server_name.trim().is_empty()
             || tls_server_name.parse::<IpAddr>().is_ok()
             || database.trim().is_empty()
             || username.trim().is_empty()
+            || password.is_empty()
             || root_ca_pem.is_empty()
         {
             return Err(DurabilityError::InvalidConfiguration);
+        }
+        validate_dns_server_name(tls_server_name)?;
+        validate_root_ca_pem(root_ca_pem)?;
+
+        let tls_server_name = retain_exact_string(tls_server_name)?;
+        let database = retain_exact_string(database)?;
+        let username = retain_exact_string(username)?;
+        let password = retain_exact_string(password)?;
+        let root_ca_pem = retain_exact_bytes(root_ca_pem)?;
+        let retained_capacity = checked_retained_config_input_len([
+            tls_server_name.capacity(),
+            database.capacity(),
+            username.capacity(),
+            password.capacity(),
+            root_ca_pem.capacity(),
+        ])?;
+        if retained_capacity != aggregate {
+            return Err(DurabilityError::RootUnavailable);
         }
 
         Ok(Self {
@@ -120,6 +347,16 @@ impl DurabilityRoot {
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
         }
+    }
+
+    #[cfg(test)]
+    #[allow(dead_code)]
+    pub(crate) async fn connect_test_runtime(database_url: &str) -> Result<Self, DurabilityError> {
+        Ok(Self {
+            pool: connect(database_url, 1).await?,
+            ready_demand: Arc::new(AtomicBool::new(true)),
+            maintenance: Arc::new(Mutex::new(())),
+        })
     }
 
     /// Record a genuine event that permits one later maintenance window.
@@ -307,78 +544,223 @@ mod wp3_root_contract_tests {
         DurabilityRootConfig::new(
             IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
             5432,
-            "db.example".to_owned(),
-            "oteryn".to_owned(),
-            "explicit".to_owned(),
-            "test-secret".to_owned(),
-            b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+            "db.example",
+            "oteryn",
+            "explicit",
+            "test-secret",
+            b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
         )
     }
 
     #[test]
     fn root_configuration_rejects_missing_identity_material_before_retention() {
         let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
-        let ca = b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec();
+        let ca = b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n";
 
         assert!(matches!(
-            DurabilityRootConfig::new(
-                ip,
-                0,
-                "db.example".to_owned(),
-                "oteryn".to_owned(),
-                "explicit".to_owned(),
-                "secret".to_owned(),
-                ca.clone()
-            ),
+            DurabilityRootConfig::new(ip, 0, "db.example", "oteryn", "explicit", "secret", ca),
             Err(DurabilityError::InvalidConfiguration)
         ));
         assert!(matches!(
-            DurabilityRootConfig::new(
-                ip,
-                5432,
-                "203.0.113.9".to_owned(),
-                "oteryn".to_owned(),
-                "explicit".to_owned(),
-                "secret".to_owned(),
-                ca.clone()
-            ),
+            DurabilityRootConfig::new(ip, 5432, "203.0.113.9", "oteryn", "explicit", "secret", ca),
             Err(DurabilityError::InvalidConfiguration)
         ));
         assert!(matches!(
-            DurabilityRootConfig::new(
-                ip,
-                5432,
-                "db.example".to_owned(),
-                " ".to_owned(),
-                "explicit".to_owned(),
-                "secret".to_owned(),
-                ca.clone()
-            ),
+            DurabilityRootConfig::new(ip, 5432, "db.example", " ", "explicit", "secret", ca),
             Err(DurabilityError::InvalidConfiguration)
         ));
         assert!(matches!(
-            DurabilityRootConfig::new(
-                ip,
-                5432,
-                "db.example".to_owned(),
-                "oteryn".to_owned(),
-                " ".to_owned(),
-                "secret".to_owned(),
-                ca.clone()
-            ),
+            DurabilityRootConfig::new(ip, 5432, "db.example", "oteryn", " ", "secret", ca),
             Err(DurabilityError::InvalidConfiguration)
         ));
         assert!(matches!(
-            DurabilityRootConfig::new(
-                ip,
-                5432,
-                "db.example".to_owned(),
-                "oteryn".to_owned(),
-                "explicit".to_owned(),
-                "secret".to_owned(),
-                Vec::new()
-            ),
+            DurabilityRootConfig::new(ip, 5432, "db.example", "oteryn", "explicit", "secret", &[]),
             Err(DurabilityError::InvalidConfiguration)
+        ));
+    }
+
+    fn max_dns_server_name() -> String {
+        format!(
+            "{}.{}.{}.{}",
+            "a".repeat(63),
+            "b".repeat(63),
+            "c".repeat(63),
+            "d".repeat(61)
+        )
+    }
+
+    fn pem_block(der_len: usize, newline: &str) -> Vec<u8> {
+        let encoded = STANDARD.encode(vec![0x30; der_len]);
+        let mut pem = String::from("-----BEGIN CERTIFICATE-----");
+        pem.push_str(newline);
+        for chunk in encoded.as_bytes().chunks(64) {
+            for byte in chunk {
+                pem.push(char::from(*byte));
+            }
+            pem.push_str(newline);
+        }
+        pem.push_str("-----END CERTIFICATE-----");
+        pem.push_str(newline);
+        pem.into_bytes()
+    }
+
+    fn pem_bundle(certificates: usize, der_len: usize, newline: &str) -> Vec<u8> {
+        let block = pem_block(der_len, newline);
+        let mut bundle = Vec::with_capacity(block.len() * certificates);
+        for _ in 0..certificates {
+            bundle.extend_from_slice(&block);
+        }
+        bundle
+    }
+
+    #[test]
+    fn retained_configuration_accepts_exact_protected_maxima_before_copy() {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        let tls = max_dns_server_name();
+        let database = "d".repeat(DATABASE_MAX_BYTES);
+        let username = "u".repeat(USERNAME_MAX_BYTES);
+        let password = "p".repeat(PASSWORD_MAX_BYTES);
+        let root_ca = pem_bundle(ROOT_CA_MAX_CERTIFICATES, ROOT_CA_MAX_DER_BYTES, "\r\n");
+
+        assert_eq!(tls.len(), TLS_SERVER_NAME_MAX_BYTES);
+        assert_eq!(root_ca.len(), ROOT_CA_PEM_MAX_BYTES);
+        assert!(matches!(
+            validate_retained_config_input_lengths([
+                tls.len(),
+                database.len(),
+                username.len(),
+                password.len(),
+                root_ca.len(),
+            ]),
+            Ok(RETAINED_CONFIG_MAX_BYTES)
+        ));
+
+        let config =
+            DurabilityRootConfig::new(ip, 5432, &tls, &database, &username, &password, &root_ca);
+        assert!(config.is_ok());
+        let Ok(config) = config else {
+            return;
+        };
+        assert_eq!(config.tls_server_name.capacity(), tls.len());
+        assert_eq!(config.database.capacity(), database.len());
+        assert_eq!(config.username.capacity(), username.len());
+        assert_eq!(config.password.capacity(), password.len());
+        assert_eq!(config.root_ca_pem.capacity(), root_ca.len());
+    }
+
+    #[test]
+    fn retained_configuration_rejects_every_first_byte_above_as_unavailable() {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        let valid_ca = pem_block(32, "\n");
+        let tls_over = format!(
+            "{}.{}.{}.{}",
+            "a".repeat(63),
+            "b".repeat(63),
+            "c".repeat(63),
+            "d".repeat(62)
+        );
+        let database_over = "d".repeat(DATABASE_MAX_BYTES + 1);
+        let username_over = "u".repeat(USERNAME_MAX_BYTES + 1);
+        let password_over = "p".repeat(PASSWORD_MAX_BYTES + 1);
+        let mut root_ca_over = pem_bundle(ROOT_CA_MAX_CERTIFICATES, ROOT_CA_MAX_DER_BYTES, "\r\n");
+        root_ca_over.push(b'X');
+
+        assert_eq!(tls_over.len(), TLS_SERVER_NAME_MAX_BYTES + 1);
+        assert_eq!(root_ca_over.len(), ROOT_CA_PEM_MAX_BYTES + 1);
+        for result in [
+            DurabilityRootConfig::new(ip, 5432, &tls_over, "d", "u", "p", &valid_ca),
+            DurabilityRootConfig::new(ip, 5432, "a", &database_over, "u", "p", &valid_ca),
+            DurabilityRootConfig::new(ip, 5432, "a", "d", &username_over, "p", &valid_ca),
+            DurabilityRootConfig::new(ip, 5432, "a", "d", "u", &password_over, &valid_ca),
+            DurabilityRootConfig::new(ip, 5432, "a", "d", "u", "p", &root_ca_over),
+        ] {
+            assert!(matches!(result, Err(DurabilityError::RootUnavailable)));
+        }
+
+        assert!(matches!(
+            checked_retained_config_input_len([
+                TLS_SERVER_NAME_MAX_BYTES + 1,
+                DATABASE_MAX_BYTES,
+                USERNAME_MAX_BYTES,
+                PASSWORD_MAX_BYTES,
+                ROOT_CA_PEM_MAX_BYTES,
+            ]),
+            Ok(value) if value == RETAINED_CONFIG_MAX_BYTES + 1
+        ));
+        assert!(matches!(
+            validate_retained_config_input_lengths([
+                TLS_SERVER_NAME_MAX_BYTES + 1,
+                DATABASE_MAX_BYTES,
+                USERNAME_MAX_BYTES,
+                PASSWORD_MAX_BYTES,
+                ROOT_CA_PEM_MAX_BYTES,
+            ]),
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert!(matches!(
+            checked_retained_config_input_len([usize::MAX, 1, 0, 0, 0]),
+            Err(DurabilityError::RootUnavailable)
+        ));
+    }
+
+    #[test]
+    fn retained_configuration_enforces_dns_and_secret_grammar() {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        let ca = pem_block(32, "\n");
+        for tls in [
+            format!("{}.example", "a".repeat(64)),
+            "db.example.".to_owned(),
+            "-db.example".to_owned(),
+            "db_.example".to_owned(),
+            "d\u{00e9}b.example".to_owned(),
+        ] {
+            assert!(matches!(
+                DurabilityRootConfig::new(ip, 5432, &tls, "d", "u", "p", &ca),
+                Err(DurabilityError::RootUnavailable)
+            ));
+        }
+        assert!(matches!(
+            DurabilityRootConfig::new(ip, 5432, "db.example", "d", "u", "", &ca),
+            Err(DurabilityError::InvalidConfiguration)
+        ));
+    }
+
+    #[test]
+    fn retained_root_ca_accepts_lf_and_crlf_canonical_bundles() {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        for newline in ["\n", "\r\n"] {
+            let ca = pem_bundle(ROOT_CA_MAX_CERTIFICATES, ROOT_CA_MAX_DER_BYTES, newline);
+            assert!(DurabilityRootConfig::new(ip, 5432, "db.example", "d", "u", "p", &ca).is_ok());
+        }
+    }
+
+    #[test]
+    fn retained_root_ca_rejects_count_der_aggregate_and_noncanonical_text() {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        let fifth_root = pem_bundle(ROOT_CA_MAX_CERTIFICATES + 1, 32, "\n");
+        let oversized_der = pem_block(ROOT_CA_MAX_DER_BYTES + 1, "\n");
+        let malformed =
+            b"unrelated\n-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n";
+        let non_ascii = [0xff_u8];
+        let mut mixed_newline = pem_block(32, "\r\n");
+        mixed_newline
+            .extend_from_slice(b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n");
+
+        for ca in [
+            fifth_root.as_slice(),
+            oversized_der.as_slice(),
+            malformed.as_slice(),
+            non_ascii.as_slice(),
+            mixed_newline.as_slice(),
+        ] {
+            assert!(matches!(
+                DurabilityRootConfig::new(ip, 5432, "db.example", "d", "u", "p", ca),
+                Err(DurabilityError::RootUnavailable)
+            ));
+        }
+        assert!(matches!(
+            checked_root_der_total(ROOT_CA_MAX_AGGREGATE_DER_BYTES, 1),
+            Err(DurabilityError::RootUnavailable)
         ));
     }
 

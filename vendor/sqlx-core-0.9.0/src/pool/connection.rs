@@ -15,6 +15,17 @@ use crate::pool::options::PoolConnectionMetadata;
 
 const CLOSE_ON_DROP_TIMEOUT: Duration = Duration::from_secs(5);
 
+fn redacted_release_failure_class(error: &Error) -> &'static str {
+    match error {
+        Error::Database(_) => "database",
+        Error::Io(_) => "transport",
+        Error::Tls(_) => "tls",
+        Error::Protocol(_) => "protocol",
+        Error::PoolTimedOut | Error::PoolClosed => "pool",
+        _ => "other",
+    }
+}
+
 /// A connection managed by a [`Pool`][crate::pool::Pool].
 ///
 /// Will be returned to the pool on-drop.
@@ -402,7 +413,9 @@ impl<DB: Database> Floating<DB, Live<DB>> {
                     return false;
                 }
                 Ok(Err(error)) => {
-                    tracing::warn!(%error, "error from `after_release`");
+                    let failure_class = redacted_release_failure_class(&error);
+                    drop(error);
+                    tracing::warn!(failure_class, "error from `after_release`");
                     self.retire_by_drop();
                     return false;
                 }
@@ -425,8 +438,10 @@ impl<DB: Database> Floating<DB, Live<DB>> {
                 true
             }
             Ok(Err(error)) => {
+                let failure_class = redacted_release_failure_class(&error);
+                drop(error);
                 tracing::warn!(
-                    %error,
+                    failure_class,
                     "error occurred while testing the connection on-release",
                 );
                 self.retire_by_drop();

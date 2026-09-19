@@ -1,4 +1,6 @@
-use crate::durability::{DurabilityError, DurabilityRoot, db, schema};
+#[cfg(test)]
+use crate::durability::schema;
+use crate::durability::{DurabilityError, DurabilityRoot, db};
 use oteryn_game_server::foundation::{
     MAX_OUTSTANDING_COMMANDS, PendingCommandDispositionV1, ProtectionEntitlementV1,
     ReconnectCommitDispositionV1, ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
@@ -6,9 +8,11 @@ use oteryn_game_server::foundation::{
     ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
 };
 use serde_json::{Value, json};
+#[cfg(test)]
+use sqlx::PgPool;
 use sqlx::pool::PoolConnection;
 use sqlx::postgres::PgRow;
-use sqlx::{Acquire, PgPool, Postgres, Row, Transaction};
+use sqlx::{Acquire, Postgres, Row, Transaction};
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
@@ -67,6 +71,7 @@ pub(super) async fn replacement_receipt_matches_record(
 
 #[derive(Clone)]
 enum JournalBackend {
+    #[cfg(test)]
     Legacy(PgPool),
     Root(DurabilityRoot),
 }
@@ -74,6 +79,7 @@ enum JournalBackend {
 impl JournalBackend {
     fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
+            #[cfg(test)]
             Self::Legacy(_) => Ok(None),
             Self::Root(root) => root.try_issue_semantic_pass().map(Some),
         }
@@ -94,6 +100,7 @@ impl JournalBackend {
             + Send,
     {
         match self {
+            #[cfg(test)]
             Self::Legacy(pool) => {
                 if issued.is_some() {
                     return Err(DurabilityError::InvalidStoredState);
@@ -137,6 +144,7 @@ pub struct AdmissionReconnectJournal {
 }
 
 impl AdmissionReconnectJournal {
+    #[cfg(test)]
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
             backend: JournalBackend::Legacy(schema::connect_runtime(database_url).await?),

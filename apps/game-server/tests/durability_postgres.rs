@@ -6,9 +6,55 @@ mod authority_recovery;
 mod durability;
 #[path = "support/postgres.rs"]
 mod postgres;
+use sqlx::Connection;
+
+async fn seed_shared_root_replacement_predecessor(
+    url: &str,
+    seed: authority_matrix::Seed,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut connection = <sqlx::PgConnection as sqlx::Connection>::connect(url).await?;
+    sqlx::query(
+        "INSERT INTO game_durability_reconnect_sessions (\
+            game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+            runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+            control_loss_epoch, original_grace_deadline, predecessor_generation, \
+            character_lease_generation, scope_ownership_generation, current_generation, session_state\
+         ) VALUES (\
+            encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
+            encode($4, 'hex')::uuid, 1, encode($4, 'hex')::uuid, \
+            encode($5, 'hex')::uuid, NULL, 3, $6, 7, 9, 9, 7, 1\
+         )",
+    )
+    .bind(authority_matrix::uuid(10).as_slice())
+    .bind(authority_matrix::ACCOUNT)
+    .bind(authority_matrix::uuid(seed.character).as_slice())
+    .bind(authority_matrix::uuid(12).as_slice())
+    .bind(authority_matrix::uuid(13).as_slice())
+    .bind(seed.now + 120)
+    .execute(&mut connection)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_durability_control_loss_continuity (\
+            character_id, control_loss_epoch, account_id, world_id, context_game_session_id, \
+            original_grace_deadline, protection_entitlement_state, protection_rearm_state\
+         ) VALUES (\
+            encode($1, 'hex')::uuid, 3, $2::text::uuid, encode($3, 'hex')::uuid, \
+            encode($4, 'hex')::uuid, $5, 1, 1\
+         )",
+    )
+    .bind(authority_matrix::uuid(seed.character).as_slice())
+    .bind(authority_matrix::ACCOUNT)
+    .bind(authority_matrix::uuid(12).as_slice())
+    .bind(authority_matrix::uuid(10).as_slice())
+    .bind(seed.now + 120)
+    .execute(&mut connection)
+    .await?;
+    connection.close().await?;
+    Ok(())
+}
 
 #[test]
-fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
+fn shared_root_positive_v1_v2_authority_matrix_is_configured_postgres_proof()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
         return Ok(());
@@ -32,7 +78,11 @@ fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
                 };
                 let record = prepared_record(seed)?;
                 let source = LiveSource::read(seed);
-                let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let root = durability::DurabilityRoot::connect_test_runtime(&url).await?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                let journal = AdmissionReconnectJournal::from_root(root.clone());
                 let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
                 let prepared = journal.prepare(&request).await?;
                 assert_eq!(prepared, ReconnectPrepareDispositionV1::Prepared);
@@ -44,17 +94,113 @@ fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
                     journal.commit(&commit).await?,
                     ReconnectCommitDispositionV1::Committed
                 );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
                 drop(journal);
-                let reloaded = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let reloaded = AdmissionReconnectJournal::from_root(root.clone());
                 let v1 = reloaded.reconcile(&request).await?;
-                let typed = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
+                let typed = durability::AdmissionReconnectJournalV2::from_root(root.clone());
                 let (_, request_v2) =
                     oteryn_game_server::foundation::ReconnectDurabilityFlowV2::begin(
                         record.clone(),
                         None,
                     );
                 let v2 = typed.reconcile(&request_v2).await?;
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
                 authority_matrix::run_loaded_matrix(seed, &record, &source, v1, v2)?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn shared_root_positive_v2_terminal_replacement_is_configured_postgres_proof()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use authority_matrix::{LiveSource, Seed, checked, prepared_record, v2_budget};
+
+            let database = postgres::IsolatedPostgres::create("shared_root_v2_replacement").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let seed = Seed {
+                    now: unix_now().map_err(foundation_error)?,
+                    ..Seed::fixed()
+                };
+                seed_shared_root_replacement_predecessor(&url, seed).await?;
+                let record = prepared_record(seed)?;
+                let source = LiveSource::read(seed);
+                let root = durability::DurabilityRoot::connect_test_runtime(&url).await?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+
+                let legacy = AdmissionReconnectJournal::from_root(root.clone());
+                let typed = durability::AdmissionReconnectJournalV2::from_root(root.clone());
+                let (mut flow, request) =
+                    oteryn_game_server::foundation::ReconnectDurabilityFlowV2::begin(
+                        record.clone(),
+                        Some(source.authorize_replacement(&record)?),
+                    );
+                let disposition = typed.prepare(&request).await?;
+                assert_eq!(
+                    disposition,
+                    oteryn_game_server::foundation::ReconnectPrepareDispositionV2::Prepared
+                );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+
+                let mut budget = v2_budget(seed)?;
+                checked(flow.accept_prepare_completion(
+                    oteryn_game_server::foundation::ReconnectPrepareCompletionV2::for_request(
+                        &request,
+                        disposition,
+                    ),
+                    &mut budget,
+                ))?;
+                let commit = checked(flow.authorize_commit(source.bind(&record)?, seed.now + 2))?;
+                assert_eq!(
+                    legacy.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                assert_eq!(
+                    checked(flow.accept_commit_completion(
+                        ReconnectCommitCompletionV1::for_request(
+                            &commit,
+                            ReconnectCommitDispositionV1::Committed,
+                        ),
+                    ))?,
+                    ReconnectCommitActionV1::ReconcileSameAttempt
+                );
+
+                let snapshot = typed.reconcile(&request).await?;
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                assert!(matches!(
+                    checked(flow.accept_reconciliation(
+                        snapshot,
+                        source.bind(&record)?,
+                        &mut budget,
+                    ))?,
+                    oteryn_game_server::foundation::ReconnectProjectionDecisionV2::InstallController { .. }
+                ));
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;
@@ -145,11 +291,11 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
             let root = DurabilityRoot::new(DurabilityRootConfig::new(
                 IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
                 5432,
-                "db.example".to_owned(),
-                "oteryn".to_owned(),
-                "explicit".to_owned(),
-                "test-secret".to_owned(),
-                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+                "db.example",
+                "oteryn",
+                "explicit",
+                "test-secret",
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
             )?);
 
             assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
@@ -183,11 +329,11 @@ fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
             let root = DurabilityRoot::new(DurabilityRootConfig::new(
                 IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
                 5432,
-                "db.example".to_owned(),
-                "oteryn".to_owned(),
-                "explicit".to_owned(),
-                "test-secret".to_owned(),
-                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+                "db.example",
+                "oteryn",
+                "explicit",
+                "test-secret",
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
             )?);
             let journal = AdmissionReconnectJournal::from_root(root.clone());
             let (_flow, request) = ReconnectDurabilityFlowV1::begin(
@@ -202,6 +348,51 @@ fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
             assert!(!root.is_ready());
             assert!(root.has_ready_demand());
             Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
+
+#[test]
+fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use durability::{DB_PASS_DEADLINE, DurabilityRoot};
+
+            let database = postgres::IsolatedPostgres::create("wp3_shared_root_deadline").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let root = DurabilityRoot::connect_test_runtime(&url).await?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+
+                let issued = root.try_issue_semantic_pass()?;
+                let result = issued
+                    .run(|_holder, _deadline| {
+                        Box::pin(async move {
+                            tokio::time::sleep(DB_PASS_DEADLINE + Duration::from_millis(50)).await;
+                            Ok(())
+                        })
+                    })
+                    .await;
+
+                assert!(matches!(
+                    result,
+                    Err(DurabilityError::RootPassDeadlineExceeded)
+                ));
+                assert!(!root.is_ready());
+                assert!(root.has_ready_demand());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
         })
 }
 

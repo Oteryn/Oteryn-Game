@@ -34,8 +34,8 @@ impl MigrationExecutor {
         })
     }
 
-    /// This is the only runtime path in this module allowed to execute DDL.
-    /// Normal game-server startup must use `inspect` through `connect_runtime`.
+    /// This is the only migration path in this module allowed to execute DDL.
+    /// Runtime compatibility inspection remains read-only; the URL connector below is test-only.
     pub async fn apply_embedded_ledger(&self) -> Result<(), DurabilityError> {
         GAME_MIGRATOR
             .run(&self.pool)
@@ -48,6 +48,7 @@ impl MigrationExecutor {
     }
 }
 
+#[cfg(test)]
 pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, DurabilityError> {
     let pool = db::connect(database_url, 4).await?;
     let compatibility = inspect(&pool).await?;

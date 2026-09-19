@@ -306,6 +306,7 @@ pub struct AdmissionReconnectJournalV2 {
 }
 
 impl AdmissionReconnectJournalV2 {
+    #[cfg(test)]
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
             legacy: AdmissionReconnectJournal::connect_runtime(database_url).await?,
@@ -1948,11 +1949,11 @@ mod terminal_replacement_foundation_red_tests {
                     super::DurabilityRootConfig::new(
                         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
                         5432,
-                        "db.example".to_owned(),
-                        "oteryn".to_owned(),
-                        "explicit".to_owned(),
-                        "test-secret".to_owned(),
-                        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+                        "db.example",
+                        "oteryn",
+                        "explicit",
+                        "test-secret",
+                        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
                     )
                     .expect("root config"),
                 );
