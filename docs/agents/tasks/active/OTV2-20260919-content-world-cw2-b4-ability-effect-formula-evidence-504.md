@@ -14,7 +14,7 @@ base_sha: 03a821edd828e24ccff6e2cb7fc819a776cbd238
 head_sha: null
 owner: Oteryn: content world import
 created_at: 2026-09-19T14:00:00Z
-updated_at: 2026-09-19T14:00:00Z
+updated_at: 2026-09-19T14:45:00Z
 owned_paths:
   - tools/reference-world-corridor-census/ability_effect_formula_evidence_catalog.py
   - tools/reference-world-corridor-census/ability_effect_formula_evidence_catalog_self_test.py
@@ -91,9 +91,12 @@ allocation to mutate the shared model and not evidence for target behavior.
 - silently dropped records: **0**.
 
 Mapper revision: `OTERYN_CW2_ABILITY_EFFECT_FORMULA_EVIDENCE_MAPPER/v1`.
-Product digest: `e19bdf8eb3538685a4d806bdedd8a90e17127666fe22e8ea1785d5c194028e5e`.
+Exact mapper blob: `e6d98aadd352ad36b466970e1f7182e1bf93643b`.
+LF-canonicalized mapper SHA-256:
+`bc68f0f63a5dd6ea5ee7a3c20b708d6ea78c6033a2f5dddb518c49d6f45f8666`.
+Product digest: `56cef2d78442a37c00daa4cb737007e8a069e10ae3d4a298c0d38c38976f8289`.
 Canonical evidence SHA-256:
-`d86f5d5eb35343b834db987969624b1bdd18216cd5b12b8bfe3c5b4fc9f157bd`.
+`97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491`.
 
 ## Acceptance criteria
 
@@ -105,21 +108,24 @@ Canonical evidence SHA-256:
 - [x] No quantitative formula, coefficient, RNG or rounding rule is invented.
 - [x] Existing Effect families are referenced only as candidate classification.
 - [x] Product closure is candidate-only with no runtime or production authority.
-- [ ] Published immutable head passes focused and reused extractor self-tests.
-- [ ] Published immutable head passes governance, diff and exact-path checks.
+- [x] Published immutable head passes focused and reused extractor self-tests.
+- [x] Published immutable head passes governance, diff and exact-path checks.
 - [ ] Exact-head hosted repository CI and aggregate game-gate pass.
 
 ## Validation
 
-Planned on the API-published immutable head:
+Passed on API-published immutable head
+`ce7a789710431da778bb7b5389357d317ac57d69`:
 
-- `python -B tools/reference-world-corridor-census/ability_effect_formula_evidence_catalog_self_test.py`;
-- repeat and input-order determinism within that focused self-test;
-- protected blob/digest fail-closed negatives within that focused self-test;
-- relevant existing corridor census extractor self-tests;
-- `python -B tools/agents/validate_governance.py`;
-- `git diff --check` and exact four-path readback;
-- hosted exact-head CI/game-gate.
+- `python -B tools/reference-world-corridor-census/ability_effect_formula_evidence_catalog_self_test.py`
+  — PASS, including repeat/input permutation, protected blob/digest negatives,
+  exact tracked evidence regeneration and exact mapper binding;
+- `python -B tools/reference-world-corridor-census/self_test.py` — PASS;
+- `python -B tools/reference-world-corridor-census/content_source_batch_self_test.py`
+  — PASS;
+- `python -B tools/agents/validate_governance.py` — PASS;
+- `git diff --check` and exact four-path readback — PASS;
+- hosted exact-head CI/game-gate — pending final PR head.
 
 E2E is `NOT_APPLICABLE`: this batch has no executable gameplay/runtime path.
 
@@ -132,7 +138,8 @@ parity claim, native identity promotion, executable formula or fixture PASS.
 
 ## Self-review
 
-Whole-product review confirms that the output contains no `oteryn:ability.*`
+Whole-product review confirms that the mapper revision is bound to exact Git
+blob and LF-canonicalized bytes without a self-SHA loop, and that the output contains no `oteryn:ability.*`
 key, no non-null quantitative formula and no promoted target/provenance/parity
 state. Open material findings before published-head qualification: **0**.
 
