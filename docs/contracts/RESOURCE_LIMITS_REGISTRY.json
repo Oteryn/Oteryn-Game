@@ -183,6 +183,54 @@
       "consumers": ["server session ingress"]
     },
     {
+      "id": "FND02-RETAINED-TERMINAL-RECORDS",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Foundation-owned retained terminal semantic records for one GameSession",
+      "unit": "records per GameSession",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Before gameplay mutation whose accepted semantics require replayable retained evidence, either admit the bounded terminal semantic record within the session limit or fail closed. Pending commands are not retention entries and cannot be evicted. A second simultaneously retained terminal record may exist only after deterministic eviction of an eligible terminal record; otherwise admission fails before mutation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 retained terminal semantic record is accepted",
+        "2 simultaneously retained terminal semantic records are never admitted",
+        "pending command state is never evicted to satisfy terminal-retention capacity",
+        "terminal eviction never lowers next_command_id or makes a CommandRef reservable again"
+      ],
+      "consumers": [
+        "server GameSession command lifecycle"
+      ],
+      "notes": "Current first-playable hard maximum established by protected #665 evidence; not derived from FND02 outstanding-command, NET03, fixture or TTL limits."
+    },
+    {
+      "id": "FND02-RETAINED-TERMINAL-CHARGED-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Aggregate charged bytes of Foundation-owned retained terminal semantic records for one GameSession",
+      "unit": "charged bytes per GameSession",
+      "hard_maximum": 3116,
+      "configurable_range": {
+        "minimum": 3116,
+        "maximum": 3116
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Compute the complete retained semantic-record charge with checked arithmetic before retaining it or performing gameplay mutation whose accepted semantics require replayability. Reject over-bound or overflowed admission before mutation. Charge every simultaneously owned retained component exactly once.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3116 charged bytes are accepted when every nested semantic bound passes",
+        "3117 charged bytes are rejected before gameplay mutation requiring replayability",
+        "checked charge arithmetic overflow is rejected",
+        "eviction preserves the ingress high-water mark and later duplicate lookup resolves expired rather than fresh"
+      ],
+      "consumers": [
+        "server GameSession command lifecycle"
+      ],
+      "notes": "Charged-byte authority is a deterministic semantic ownership envelope, not allocator RSS, Rust ABI size, wire payload size or persistence size. Protected #665 evidence establishes the current first-playable aggregate bound."
+    },
+    {
       "id": "FND02-STATE-DOMAINS-PER-SYNC",
       "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
       "resource": "State domains in one ResyncRequest or SnapshotBody",

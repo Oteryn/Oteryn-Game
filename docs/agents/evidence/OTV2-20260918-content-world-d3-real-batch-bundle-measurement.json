@@ -1,0 +1,262 @@
+{
+  "carriers": [
+    {
+      "aggregate_source_placements": 2463,
+      "artifact_bytes": 2106802,
+      "artifact_sha256": "2539e2c07f074ac02935a4e4c8f30a2c59f0cf6972d8f2c60e23956dde868cce",
+      "build_ms": 680.778,
+      "build_peak_bytes": 8746522,
+      "carrier": "indexed-uncompressed-baseline",
+      "cell_count": 2048,
+      "cell_load_peak_bytes": 5510030,
+      "changed_manifest_index_units": 1,
+      "changed_storage_unit_count": 2,
+      "changed_storage_units_after_one_source_placement_edit": [
+        "chunks/z-7/c997_997.bin",
+        "manifest.json"
+      ],
+      "chunk_count": 2,
+      "chunk_size": 32,
+      "client_artifact_bytes": 2106123,
+      "client_artifact_sha256": "b99f0599e4cea509190abd580e19c2c31397f509db5fd5eaa44b6270f9f1e1bf",
+      "client_logical_index_signature": "c10eedd1ed7e3f6259a557778437f27f77fe44d3c24ab3df65557422a3ef50b0",
+      "client_projection_equivalent": true,
+      "client_server_only_absent": true,
+      "compression": "none",
+      "compression_configuration": "none",
+      "compression_ratio_raw_to_stored": 1.0,
+      "corruption_rejected": true,
+      "decoded_field_count": 51042,
+      "definition_load_peak_bytes": 1205318,
+      "deterministic_repeat_exact_bytes": true,
+      "logical_identity_sha256": "662b3ed148aff5646b95114c5859eac72355cb25b8ec8af6eb2d77abe88cd333",
+      "logical_index_bytes": 157616,
+      "logical_index_signature": "c10eedd1ed7e3f6259a557778437f27f77fe44d3c24ab3df65557422a3ef50b0",
+      "manifest_bytes": 190582,
+      "max_raw_chunk_bytes": 982068,
+      "max_source_placements_per_cell": 5,
+      "max_stored_chunk_bytes": 982068,
+      "median_cell_load_ms": 75.678,
+      "median_definition_load_ms": 18.362,
+      "median_placement_load_ms": 74.719,
+      "placement_load_peak_bytes": 5509054,
+      "random_access_probe": {
+        "cell": [
+          32512,
+          32512,
+          -7
+        ],
+        "source_definition_key": "source-appearance:103",
+        "source_occurrence_ref": "presentation:2c3ce90d794969f1258a7458051285a7",
+        "without_full_bundle_interpretation": true
+      },
+      "raw_chunk_bytes": 1916220,
+      "rebuilt_or_patch_bytes_after_one_source_placement_edit": 1172666,
+      "server_client_logical_index_equal": true,
+      "source_definition_count": 183,
+      "source_model_encode_decode_equivalent": true,
+      "stored_chunk_bytes": 1916220,
+      "truncation_rejected": true
+    },
+    {
+      "aggregate_source_placements": 2463,
+      "artifact_bytes": 265659,
+      "artifact_sha256": "43eadd9e76678e192259285763ca8e7e4948983ed1f296ec094271a1597384e1",
+      "build_ms": 703.895,
+      "build_peak_bytes": 8885014,
+      "carrier": "indexed-zlib",
+      "cell_count": 2048,
+      "cell_load_peak_bytes": 5545621,
+      "changed_manifest_index_units": 1,
+      "changed_storage_unit_count": 2,
+      "changed_storage_units_after_one_source_placement_edit": [
+        "chunks/z-7/c997_997.bin",
+        "manifest.json"
+      ],
+      "chunk_count": 2,
+      "chunk_size": 32,
+      "client_artifact_bytes": 264980,
+      "client_artifact_sha256": "a2eba0c127b0ae055701652b52a74952f665d1fb4fbe0525507f474fb9681e79",
+      "client_logical_index_signature": "c10eedd1ed7e3f6259a557778437f27f77fe44d3c24ab3df65557422a3ef50b0",
+      "client_projection_equivalent": true,
+      "client_server_only_absent": true,
+      "compression": "zlib",
+      "compression_configuration": "zlib level 6",
+      "compression_ratio_raw_to_stored": 25.522716,
+      "corruption_rejected": true,
+      "decoded_field_count": 51042,
+      "definition_load_peak_bytes": 1205297,
+      "deterministic_repeat_exact_bytes": true,
+      "logical_identity_sha256": "662b3ed148aff5646b95114c5859eac72355cb25b8ec8af6eb2d77abe88cd333",
+      "logical_index_bytes": 157616,
+      "logical_index_signature": "c10eedd1ed7e3f6259a557778437f27f77fe44d3c24ab3df65557422a3ef50b0",
+      "manifest_bytes": 190580,
+      "max_raw_chunk_bytes": 982068,
+      "max_source_placements_per_cell": 5,
+      "max_stored_chunk_bytes": 38812,
+      "median_cell_load_ms": 74.854,
+      "median_definition_load_ms": 18.344,
+      "median_placement_load_ms": 74.611,
+      "placement_load_peak_bytes": 5545269,
+      "random_access_probe": {
+        "cell": [
+          32512,
+          32512,
+          -7
+        ],
+        "source_definition_key": "source-appearance:103",
+        "source_occurrence_ref": "presentation:2c3ce90d794969f1258a7458051285a7",
+        "without_full_bundle_interpretation": true
+      },
+      "raw_chunk_bytes": 1916220,
+      "rebuilt_or_patch_bytes_after_one_source_placement_edit": 229427,
+      "server_client_logical_index_equal": true,
+      "source_definition_count": 183,
+      "source_model_encode_decode_equivalent": true,
+      "stored_chunk_bytes": 75079,
+      "truncation_rejected": true
+    }
+  ],
+  "classification": "MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY",
+  "configuration": {
+    "carrier_types": 2,
+    "compressions": [
+      "none",
+      "zlib level 6"
+    ],
+    "load_iterations": 9,
+    "max_artifact_bytes": 67108864,
+    "max_chunk_raw_bytes": 2097152,
+    "max_decompression_ratio": 64.0,
+    "measured_chunk_size": 32,
+    "measured_chunk_size_is_production_maximum": false
+  },
+  "determinism": {
+    "per_carrier_repeat_exact_bytes": true,
+    "rechunk_identity_independent": true,
+    "source_enumeration_order_independent": true,
+    "source_shard_identity_independent": true,
+    "two_carriers_same_logical_index": true
+  },
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.0",
+    "zlib": "1.2.13"
+  },
+  "logical_input": {
+    "aggregate_source_placements": 2463,
+    "canonical_bytes": 1953208,
+    "canonical_sha256": "6f2df596271d58c08c26c2d3a65be10a48f41704bdbaa723228afea73b90b2fa",
+    "decoded_field_count": 51042,
+    "logical_identity_sha256": "662b3ed148aff5646b95114c5859eac72355cb25b8ec8af6eb2d77abe88cd333",
+    "max_source_cell_encoded_bytes": 3737,
+    "max_source_definition_encoded_bytes": 162,
+    "max_source_placement_encoded_bytes": 738,
+    "max_source_placements_per_cell": 5,
+    "source_cell_count": 2048,
+    "source_definition_count": 183
+  },
+  "measurement_head": "6ba0e9964f3e1182f4bf6da12e478ee3bfa70f88",
+  "negative_evidence": {
+    "decompression_ratio_rejected": true,
+    "malformed_placement_index_rejected": true,
+    "oversized_raw_chunk_rejected": true,
+    "unknown_critical_feature_rejected": true,
+    "wrong_carrier_version_rejected": true,
+    "wrong_source_profile_rejected": true
+  },
+  "owner_format_decision": "NOT_MADE",
+  "production_authority": "NONE",
+  "reference_parity_claim": "NONE",
+  "registry_maxima_selected": false,
+  "schema": "OTV2_CONTENT_WORLD_D3_REAL_BATCH_BUNDLE_MEASUREMENT/v1",
+  "source_provenance": {
+    "asset_appearance_sha256": "dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075",
+    "asset_catalog_sha256": "35639e000c4c108665a091cfbdf699d549d995b37670bc08de575ab6cd380d85",
+    "asset_zip_sha256": "1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f",
+    "game_measurement_head": "6ba0e9964f3e1182f4bf6da12e478ee3bfa70f88",
+    "game_readonly_code": {
+      "tools/game-atlas-fullworld-source/producer.py": {
+        "blob": "740a96fe1b1d97f32c56e278725ab9c2de6e724b",
+        "last_commit": "5f8146e2d4fce7b1c0f8cabe9bd49e937ee7ea3d"
+      },
+      "tools/reference-world-corridor-census/content_source_batch.py": {
+        "blob": "80e418f3e0ac651f417d70e2eb57632d9d2bae48",
+        "last_commit": "824d9f0b248cff91265ddd420a513042da7cbebd"
+      }
+    },
+    "parser_repository": "blakinio/Otheryn",
+    "parser_repository_sha": "e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+    "source_generation_profile_id": "oteryn-crystalserver-fresh-source-generation-v2",
+    "source_generation_profile_revision": 2,
+    "source_repository": "zimbadev/crystalserver",
+    "source_repository_sha": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "world_otbm_bytes": 52267895,
+    "world_otbm_git_blob": "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b",
+    "world_otbm_sha256": "09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb"
+  },
+  "source_selection": {
+    "stream_counts": {
+      "map_header": 1,
+      "tile": 18997668,
+      "town": 33,
+      "waypoint": 18
+    },
+    "windows": [
+      {
+        "bounds": [
+          32512,
+          32544,
+          32512,
+          32544
+        ],
+        "floor": -7,
+        "name": "newhaven",
+        "ordered_stream_bytes": 899694,
+        "ordered_stream_sha256": "bebce3eca44dfcf3ab4044fd7a4a66bf6c1f7a80e2b0d375de14c3eb3898faac",
+        "retained_shard": "f-7-r1016-c1016",
+        "source_occurrences": 1199,
+        "tile_records": 1024
+      },
+      {
+        "bounds": [
+          31904,
+          31936,
+          31904,
+          31936
+        ],
+        "floor": -7,
+        "name": "targuna",
+        "ordered_stream_bytes": 939759,
+        "ordered_stream_sha256": "5e9a498a37570662f57d24ec8ca020c521ccf56091b03e33970aa6e2a1394438",
+        "retained_shard": "f-7-r997-c997",
+        "source_occurrences": 1264,
+        "tile_records": 1024
+      }
+    ]
+  },
+  "spike_invariant": "SPIKE_RESULT != OWNER_FORMAT_DECISION",
+  "typed_input": {
+    "canonical_bytes": 1321309,
+    "canonical_sha256": "4838be7abf70a390b61f4a7578626c1a0b61725c1313e2046606110065d47ec7",
+    "counts": {
+      "bound_definitions": 0,
+      "bound_placements": 0,
+      "source_occurrences": 2463,
+      "source_tile_records": 2048,
+      "unresolved_source_occurrences": 2463
+    },
+    "deferred_requires_phase_b": [
+      "canonical_target_spatial_address",
+      "canonical_target_floor_mapping",
+      "target_ordered_placement_sequence",
+      "target_collision_walkability",
+      "target_presentation_footprint",
+      "target_collision_footprint",
+      "target_geometry_transition_endpoints"
+    ],
+    "production_authority": "NONE",
+    "reference_parity_claim": "NONE",
+    "schema": "OTERYN_REFERENCE_CONTENT_SOURCE_BATCH/v1"
+  }
+}
