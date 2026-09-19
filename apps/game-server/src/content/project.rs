@@ -190,19 +190,16 @@ impl ProjectSnapshot {
         let mut total = 0_usize;
         for (locator, bytes) in documents {
             validate_locator(&locator, limits)?;
-            let document_count = admitted
-                .len()
-                .checked_add(1)
-                .ok_or(ProjectError::LimitExceeded {
-                    resource: "project documents",
-                    actual: usize::MAX,
-                    limit: limits.max_documents,
-                })?;
-            limits.check(
-                "project documents",
-                document_count,
-                limits.max_documents,
-            )?;
+            let document_count =
+                admitted
+                    .len()
+                    .checked_add(1)
+                    .ok_or(ProjectError::LimitExceeded {
+                        resource: "project documents",
+                        actual: usize::MAX,
+                        limit: limits.max_documents,
+                    })?;
+            limits.check("project documents", document_count, limits.max_documents)?;
             limits.check(
                 "project document bytes",
                 bytes.len(),
@@ -935,7 +932,6 @@ fn parse_snapshot(
     let expected_provenance = package.package_provenance_digest()?;
     let entry = content_lock
         .entries
-        .iter()
         .first()
         .ok_or(ProjectError::InvalidProject(
             "Content Lock root package missing",
@@ -1584,9 +1580,7 @@ impl JsonBudget {
             .checked_add(1)
             .ok_or_else(|| E::custom("project decoded field count overflow"))?;
         if self.values > self.limits.max_decoded_fields {
-            return Err(E::custom(
-                "project decoded fields exceed evidence limit",
-            ));
+            return Err(E::custom("project decoded fields exceed evidence limit"));
         }
         Ok(())
     }
@@ -1597,9 +1591,7 @@ impl JsonBudget {
             .checked_add(bytes)
             .ok_or_else(|| E::custom("project JSON string byte count overflow"))?;
         if self.string_bytes > self.limits.max_string_bytes {
-            return Err(E::custom(
-                "project JSON string bytes exceed evidence limit",
-            ));
+            return Err(E::custom("project JSON string bytes exceed evidence limit"));
         }
         Ok(())
     }
@@ -1613,10 +1605,7 @@ struct BudgetedValueSeed<'a> {
 impl<'de> DeserializeSeed<'de> for BudgetedValueSeed<'_> {
     type Value = StrictJsonValue;
 
-    fn deserialize<D: Deserializer<'de>>(
-        self,
-        deserializer: D,
-    ) -> Result<Self::Value, D::Error> {
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
         self.budget.admit_value(self.depth)?;
         deserializer.deserialize_any(BudgetedValueVisitor {
             budget: self.budget,
@@ -1727,10 +1716,7 @@ struct BudgetedKeySeed<'a> {
 impl<'de> DeserializeSeed<'de> for BudgetedKeySeed<'_> {
     type Value = String;
 
-    fn deserialize<D: Deserializer<'de>>(
-        self,
-        deserializer: D,
-    ) -> Result<Self::Value, D::Error> {
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
         deserializer.deserialize_string(BudgetedKeyVisitor {
             budget: self.budget,
         })
