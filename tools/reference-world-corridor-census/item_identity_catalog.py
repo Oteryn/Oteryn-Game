@@ -380,6 +380,7 @@ def build_semantic_catalog(
     nested_source_counts: Counter[str] = Counter()
     disposition_expanded_counts: Counter[str] = Counter()
     conflict_records: list[dict[str, Any]] = []
+    semantic_node_records: dict[str, dict[str, Any]] = {}
     direct_nodes = 0
     range_nodes = 0
     reversed_ranges = 0
@@ -407,6 +408,7 @@ def build_semantic_catalog(
         field_summary = Counter()
         field_keys = set()
         field_key_counts: Counter[str] = Counter()
+        candidate_observations: list[dict[str, Any]] = []
 
         for child in field_children:
             source_key = child.attrib.get("key")
@@ -428,7 +430,35 @@ def build_semantic_catalog(
             nested_source_counts[normalized_key] += len(list(child))
             if disposition["native_field"]:
                 per_native[str(disposition["native_field"])].add(_observation_signature(child))
+            if disposition["disposition"] == "GAME_ITEM_CANDIDATE":
+                candidate_observations.append(
+                    {
+                        "source_key": source_key,
+                        "normalized_source_key": normalized_key,
+                        "semantic_family": disposition["semantic_family"],
+                        "native_field": disposition["native_field"],
+                        "source_value": child.attrib.get("value"),
+                        "nested_values": sorted(
+                            (
+                                {key: grand.attrib[key] for key in sorted(grand.attrib)}
+                                for grand in list(child)
+                            ),
+                            key=canonical_bytes,
+                        ),
+                    }
+                )
             field_summary[str(disposition["disposition"])] += 1
+
+        candidate_observations.sort(key=canonical_bytes)
+        if candidate_observations:
+            semantic_record = {
+                "source_node_digest": node_digest,
+                "candidate_fields": candidate_observations,
+            }
+            previous_semantic = semantic_node_records.get(node_digest)
+            if previous_semantic is not None and previous_semantic != semantic_record:
+                raise CatalogError("SOURCE_NODE_SEMANTIC_PROFILE_CONFLICT")
+            semantic_node_records[node_digest] = semantic_record
 
         conflicting_native_fields = {
             native_field for native_field, values in per_native.items() if len(values) > 1
@@ -535,10 +565,14 @@ def build_semantic_catalog(
         "excluded_by_policy_field_observations": disposition_expanded_counts["EXCLUDED_BY_POLICY"],
         "field_conflict_records": len(conflict_records),
         "name_collision_groups": len(name_collisions),
+        "semantic_candidate_node_records": len(semantic_node_records),
     }
 
     return {
         "identity_records": records,
+        "semantic_candidate_node_records": [
+            semantic_node_records[key] for key in sorted(semantic_node_records)
+        ],
         "field_disposition_records": field_records,
         "range_exclusion_records": exclusions,
         "field_conflict_records": conflict_records,
@@ -605,6 +639,7 @@ def compact_semantic_catalog_for_evidence(semantic: dict[str, Any]) -> dict[str,
         },
         "identity_records": compact_records,
         "field_profiles": [profiles[key] for key in sorted(profiles)],
+        "semantic_candidate_node_records": semantic["semantic_candidate_node_records"],
         "field_disposition_records": semantic["field_disposition_records"],
         "range_exclusion_records": semantic["range_exclusion_records"],
         "field_conflict_records": semantic["field_conflict_records"],

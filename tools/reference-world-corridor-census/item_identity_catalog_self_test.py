@@ -44,6 +44,15 @@ def test_no_auto_mint_and_supported_field_mapping() -> None:
     assert fields["weapontype"]["disposition"] == "GAME_ITEM_CANDIDATE"
     assert fields["attack"]["native_field"] == "attack"
     assert fields["imbuementslot"]["semantic_family"] == "imbuement"
+    semantic = result["semantic_candidate_node_records"]
+    assert len(semantic) == 1
+    candidates = {entry["native_field"]: entry for entry in semantic[0]["candidate_fields"]}
+    assert candidates["weapon_type"]["source_value"] == "sword"
+    assert candidates["attack"]["source_value"] == "42"
+    assert candidates["slot_and_allowed_family_tier"]["source_value"] == "1"
+    assert candidates["slot_and_allowed_family_tier"]["nested_values"] == [
+        {"key": "critical hit", "value": "3"}
+    ]
 
 def test_duplicate_id_and_overlapping_range_fail_closed() -> None:
     duplicate = xml(item(100, "A") + item(100, "B"))
@@ -103,6 +112,7 @@ def test_unsupported_and_excluded_attributes_are_explicit() -> None:
     assert result["counts"]["unsupported_field_observations"] == 1
     assert result["counts"]["unknown_field_observations"] == 1
     assert result["counts"]["excluded_by_policy_field_observations"] == 1
+    assert result["semantic_candidate_node_records"] == []
 
 def test_binding_resolution_ambiguous_and_conflict_classes() -> None:
     resolved = catalog.resolve_native_mapping(
