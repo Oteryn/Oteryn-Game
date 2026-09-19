@@ -314,6 +314,70 @@ No production `PG*` inheritance, OS username fallback, `.pgpass`, arbitrary `opt
 
 All retained configuration bytes/capacities are reserved against the same root before copy and stay charged for their actual lifetime. No independent config allowance is created.
 
+### 9.1 Retained-config hard limits — P1-2 owner amendment (2026-09-19)
+
+This amendment closes only the retained-configuration authority gap identified by the
+independent HIGH review of WP3-A PR #673. It does not change the selected root/pool
+architecture, add a second allowance, or increase the accepted DFR total.
+
+The first-slice production profile fixes these **input-byte** hard maxima:
+
+| retained field | hard maximum | unit / grammar | owner evidence |
+| --- | ---: | --- | --- |
+| `tls_server_name` | **253** | ASCII bytes in DNS presentation form; each label 1–63 octets, no trailing root dot | RFC 1035 §2.3.4 caps a DNS wire name at 255 octets; the uncompressed presentation form is two octets shorter because dots replace label-length octets and the terminal root byte is omitted |
+| `database` | **63** | UTF-8 bytes | PostgreSQL 17 default `max_identifier_length=63` bytes; the selected first-slice target is PostgreSQL 17.6 and does not rely on a recompiled larger `NAMEDATALEN` |
+| `username` | **63** | UTF-8 bytes | same PostgreSQL identifier bound; role names are not allowed to rely on silent server truncation |
+| `password` | **1,024** | UTF-8 bytes, non-empty | first-slice Oteryn product ceiling. PostgreSQL 17 SCRAM does not publish a smaller password-length contract; protected Oteryn Platform password ingress already applies a 1,024-unit string ceiling (for example `Oteryn/Oteryn-Platform@623435ec1b907d6d9770b767806c90300252a71c:app/Http/Requests/Identity/LoginIdentityRequest.php`). This decision deliberately adopts the stricter allocation unit **UTF-8 bytes** for the DB secret; it does not inherit Platform authority or claim a PostgreSQL universal limit |
+| `root_ca_pem` | **22,768** | ASCII bytes; 1–4 RFC-7468 `CERTIFICATE` blocks, LF or CRLF only, no unrelated text; each decoded certificate <=4,096 DER bytes and aggregate DER <=16,384 bytes | adopts, by this owner decision, the already-protected Oteryn conservative PKI envelope `NSRC-TLS-CERTS` (4 roots, 4,096 DER bytes each) for this separate PostgreSQL trust input. RFC 7468's 64-character generated base64 lines give 5,464 base64 characters and 86 lines for 4,096 DER bytes; worst-case CRLF canonical text is 5,692 bytes per certificate, hence 4 × 5,692 = 22,768 bytes |
+
+The five variable fields therefore have one checked aggregate input ceiling:
+
+```text
+253 + 63 + 63 + 1,024 + 22,768 = 24,171 bytes
+```
+
+`DFR-PG-RETAINED-CONFIG-BYTES = 24,171` is a **conjunctive input bound**,
+not another memory budget. The fixed `IpAddr`/port/profile fields, struct backing,
+allocator capacity/metadata and every retained clone still count in `I` through
+their actual qualified resident charge.
+
+The implementation boundary is fail-closed:
+
+1. inspect length/grammar from borrowed or otherwise already-bounded source bytes;
+2. reject any field above its hard maximum and use checked addition to reject an
+   aggregate above 24,171 **before** an owned `String`/`Vec`, PEM parse, or
+   retained copy is created for this configuration;
+3. only after those checks, reserve the actual retained capacity against the same
+   root `I` ledger and create the owned backing; allocated capacity may not exceed
+   what was reserved;
+4. for `root_ca_pem`, enforce the raw 22,768-byte bound before decoding, then
+   enforce certificate count, per-certificate DER and aggregate DER bounds inside
+   that already-bounded input;
+5. retain the charge through the last configuration-dependent owner and release it
+   only when the backing is actually final.
+
+A constructor that first accepts arbitrary already-owned `String`/`Vec<u8>`
+values and only then checks their lengths does **not** satisfy this boundary.
+
+Exceeding any of these internal configuration bounds maps to the existing DFR
+failure category `UNAVAILABLE` and is not client-visible. There is no truncation,
+fallback to ambient/libpq configuration, secret logging, or partial root creation.
+
+Qualification must include, for every field, an exact-maximum and first-byte-above
+case, plus checked aggregate 24,171 / 24,172 cases and arithmetic-overflow denial.
+The CA tests additionally cover fifth-root, 4,097-byte decoded certificate,
+16,385-byte aggregate DER, malformed/noncanonical text and both LF/CRLF accepted
+canonical encodings. Where a semantic fixture cannot realize an exact byte size,
+the generic pre-copy length comparison still tests the exact maximum/max+1 and
+the largest valid representable value at or below the maximum is tested
+semantically.
+
+These maxima do **not** change `DFR-TOTAL-RESIDENT-BYTES = 12,582,912`, the
+`I + max(R,T) + Q + A <= 12 MiB` equation, or the strict R/T non-overlap rule.
+If exact implementation evidence cannot reserve/retain the selected representation
+inside that existing root equation, A4 must escalate; it may not enlarge these
+limits or mint another allowance.
+
 A minimal no-ambient `PgConnectOptions` constructor/profile is authorized if the pinned public API cannot express this without first consulting ambient sources.
 
 ## 10. Transport, TLS and provider profile
