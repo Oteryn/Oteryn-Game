@@ -110,6 +110,61 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
     })
 }
 
+fn source_with_typed_item(
+    client_projection: ClientProjectionClass,
+) -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source()?;
+    candidate.definitions.push(ReferenceDefinition {
+        definition: TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new("oteryn:reference.item.cw3-b1-probe")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        ),
+        kind: ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Physical,
+            materializable: true,
+            stack_class: ReferenceItemStackClass::StackCapable,
+            legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+        }),
+        client_projection,
+    });
+    Ok(candidate)
+}
+
+fn typed_item_definition(
+    definitions: &[ReferenceDefinition],
+) -> Result<&ReferenceDefinition, ContentError> {
+    definitions
+        .iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Item)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed item probe missing",
+        ))
+}
+
+fn typed_item_definition_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceDefinition, ContentError> {
+    source
+        .definitions
+        .iter_mut()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Item)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed item probe missing",
+        ))
+}
+
+fn typed_item_kind_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceItemDefinition, ContentError> {
+    match &mut typed_item_definition_mut(source)?.kind {
+        ReferenceDefinitionKind::Item(item) => Ok(item),
+        _ => Err(ContentError::InvalidArtifact(
+            "reference-playable typed item probe changed kind",
+        )),
+    }
+}
+
 fn source_with_target_claim(
     evidence: EvidenceBindingRef,
 ) -> Result<ReferencePlayableContentSource, ContentError> {
@@ -195,6 +250,129 @@ fn valid_reference_model_without_unproven_target_claims_links() -> Result<(), Co
         client[0].kind,
         ClientSafeDefinitionKind::LocalObjectStates(_)
     ));
+    Ok(())
+}
+
+#[test]
+fn typed_item_static_semantics_link_deterministically() -> Result<(), ContentError> {
+    let left_source = source_with_typed_item(ClientProjectionClass::ServerOnly)?;
+    let mut right_source = left_source.clone();
+    right_source.definitions.reverse();
+
+    let left = link_reference_playable(left_source)?;
+    let right = link_reference_playable(right_source)?;
+    assert_eq!(left, right);
+
+    let definition = typed_item_definition(&left.definitions)?;
+    assert_eq!(
+        definition.definition.key().as_str(),
+        "oteryn:reference.item.cw3-b1-probe"
+    );
+    assert_eq!(definition.definition.revision().as_str(), "definition-r1");
+    let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable typed item probe changed kind",
+        ));
+    };
+    assert_eq!(item.physical_class, ReferenceItemPhysicalClass::Physical);
+    assert!(item.materializable);
+    assert_eq!(item.stack_class, ReferenceItemStackClass::StackCapable);
+    assert_eq!(
+        item.legal_destinations,
+        vec![ReferenceItemDestination::CharacterInventory]
+    );
+    Ok(())
+}
+
+#[test]
+fn item_family_requires_typed_supported_capabilities() -> Result<(), ContentError> {
+    let mut undeclared = source()?;
+    undeclared.definitions.push(ReferenceDefinition {
+        definition: TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new("oteryn:reference.item.cw3-b1-undeclared")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        ),
+        kind: ReferenceDefinitionKind::Generic,
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+    assert!(matches!(
+        link_reference_playable(undeclared),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable item requires typed static item semantics"
+        ))
+    ));
+
+    let mut missing_destination = source_with_typed_item(ClientProjectionClass::ServerOnly)?;
+    typed_item_kind_mut(&mut missing_destination)?
+        .legal_destinations
+        .clear();
+    assert!(matches!(
+        link_reference_playable(missing_destination),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable materializable item requires CharacterInventory destination capability"
+        ))
+    ));
+
+    let mut impossible_destination = source_with_typed_item(ClientProjectionClass::ServerOnly)?;
+    typed_item_kind_mut(&mut impossible_destination)?.materializable = false;
+    assert!(matches!(
+        link_reference_playable(impossible_destination),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable non-materializable item cannot declare CharacterInventory destination capability"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn item_kind_wrong_family_fails_closed() -> Result<(), ContentError> {
+    let mut candidate = source_with_typed_item(ClientProjectionClass::ServerOnly)?;
+    let definition = typed_item_definition_mut(&mut candidate)?;
+    definition.definition = TypedDefinitionRef::new(
+        DefinitionFamily::Creature,
+        definition.definition.key().clone(),
+        definition.definition.revision().clone(),
+    );
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable definition kind does not match definition family"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn item_client_projection_omits_server_legality_fields() -> Result<(), ContentError> {
+    let canonical =
+        link_reference_playable(source_with_typed_item(ClientProjectionClass::ClientSafe)?)?;
+    let full_definition = typed_item_definition(&canonical.definitions)?;
+    let ReferenceDefinitionKind::Item(full_item) = &full_definition.kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable typed item probe changed kind",
+        ));
+    };
+    assert!(full_item.materializable);
+    assert_eq!(
+        full_item.legal_destinations,
+        vec![ReferenceItemDestination::CharacterInventory]
+    );
+
+    let client_definition = canonical
+        .client_safe_definitions()
+        .into_iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Item)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable client typed item probe missing",
+        ))?;
+    assert_eq!(
+        client_definition.kind,
+        ClientSafeDefinitionKind::Item(ClientSafeItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Physical,
+            stack_class: ReferenceItemStackClass::StackCapable,
+        })
+    );
     Ok(())
 }
 

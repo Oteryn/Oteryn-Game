@@ -76,10 +76,35 @@ pub enum ReferenceEffectFamily {
     Heal,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReferenceItemPhysicalClass {
+    Physical,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReferenceItemStackClass {
+    NonStackable,
+    StackCapable,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ReferenceItemDestination {
+    CharacterInventory,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceItemDefinition {
+    pub physical_class: ReferenceItemPhysicalClass,
+    pub materializable: bool,
+    pub stack_class: ReferenceItemStackClass,
+    pub legal_destinations: Vec<ReferenceItemDestination>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReferenceDefinitionKind {
     Generic,
     Effect(ReferenceEffectFamily),
+    Item(ReferenceItemDefinition),
     LocalObjectStates(Vec<ProductionKey>),
 }
 
@@ -539,10 +564,17 @@ pub struct ReferencePlayableContentSource {
     pub transitions: Vec<TransitionBinding>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ClientSafeItemDefinition {
+    pub physical_class: ReferenceItemPhysicalClass,
+    pub stack_class: ReferenceItemStackClass,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientSafeDefinitionKind {
     Generic,
     Effect(ReferenceEffectFamily),
+    Item(ClientSafeItemDefinition),
     LocalObjectStates(Vec<ProductionKey>),
 }
 
@@ -577,6 +609,12 @@ impl CanonicalReferencePlayableContent {
                     ReferenceDefinitionKind::Generic => ClientSafeDefinitionKind::Generic,
                     ReferenceDefinitionKind::Effect(family) => {
                         ClientSafeDefinitionKind::Effect(*family)
+                    }
+                    ReferenceDefinitionKind::Item(item) => {
+                        ClientSafeDefinitionKind::Item(ClientSafeItemDefinition {
+                            physical_class: item.physical_class,
+                            stack_class: item.stack_class,
+                        })
                     }
                     ReferenceDefinitionKind::LocalObjectStates(states) => {
                         ClientSafeDefinitionKind::LocalObjectStates(states.clone())
@@ -616,9 +654,36 @@ fn validate_content_lock(
     Ok(())
 }
 
+fn validate_item_definition(item: &ReferenceItemDefinition) -> Result<(), ContentError> {
+    let mut destinations = BTreeSet::new();
+    for destination in &item.legal_destinations {
+        if !destinations.insert(*destination) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable item duplicates legal destination capability",
+            ));
+        }
+    }
+
+    let inventory_legal = destinations.contains(&ReferenceItemDestination::CharacterInventory);
+    if item.materializable && !inventory_legal {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable materializable item requires CharacterInventory destination capability",
+        ));
+    }
+    if !item.materializable && inventory_legal {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable non-materializable item cannot declare CharacterInventory destination capability",
+        ));
+    }
+    Ok(())
+}
+
 fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), ContentError> {
     match (&definition.definition.family, &definition.kind) {
         (DefinitionFamily::Effect, ReferenceDefinitionKind::Effect(_)) => Ok(()),
+        (DefinitionFamily::Item, ReferenceDefinitionKind::Item(item)) => {
+            validate_item_definition(item)
+        }
         (DefinitionFamily::LocalObject, ReferenceDefinitionKind::LocalObjectStates(states)) => {
             if states.is_empty() {
                 return Err(ContentError::InvalidArtifact(
@@ -636,10 +701,14 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
         (DefinitionFamily::Effect, _) => Err(ContentError::InvalidArtifact(
             "reference-playable effect definition requires typed effect family",
         )),
+        (DefinitionFamily::Item, _) => Err(ContentError::InvalidArtifact(
+            "reference-playable item requires typed static item semantics",
+        )),
         (DefinitionFamily::LocalObject, _) => Err(ContentError::InvalidArtifact(
             "reference-playable local object requires finite state vocabulary",
         )),
         (_, ReferenceDefinitionKind::Effect(_))
+        | (_, ReferenceDefinitionKind::Item(_))
         | (_, ReferenceDefinitionKind::LocalObjectStates(_)) => Err(ContentError::InvalidArtifact(
             "reference-playable definition kind does not match definition family",
         )),
