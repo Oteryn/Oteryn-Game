@@ -315,6 +315,22 @@ def test_ambiguous_source_never_reaches_native_resolution() -> None:
     assert native["reason_code"] == "NO_SINGLE_RESOLVED_B1_SOURCE_IDENTITY"
 
 
+def test_mapper_fingerprint_is_checkout_line_ending_invariant() -> None:
+    lf = b"line one\nline two\n"
+    crlf = b"line one\r\nline two\r\n"
+    assert catalog.canonical_repository_text_bytes(lf) == lf
+    assert catalog.canonical_repository_text_bytes(crlf) == lf
+    assert catalog.sha256_bytes(catalog.canonical_repository_text_bytes(lf)) == catalog.sha256_bytes(
+        catalog.canonical_repository_text_bytes(crlf)
+    )
+    try:
+        catalog.canonical_repository_text_bytes(b"line one\rline two\n")
+    except catalog.CatalogError as exc:
+        assert "UNSUPPORTED_MAPPER_LINE_ENDING" in str(exc)
+    else:
+        raise AssertionError("lone CR line ending was accepted")
+
+
 def test_input_order_does_not_change_canonical_output() -> None:
     rows = [
         {"loot_row_identity": "b", "value": 2},
@@ -345,6 +361,7 @@ def main() -> int:
     test_fake_native_key_minting_fails_closed()
     test_b1_unresolved_cannot_be_promoted()
     test_ambiguous_source_never_reaches_native_resolution()
+    test_mapper_fingerprint_is_checkout_line_ending_invariant()
     test_input_order_does_not_change_canonical_output()
     test_protected_b1_b2_products_are_exact()
     print("loot-item-binding-catalog self-test: PASS")

@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-cw2-b3-loot-item-bindings-504
 issue: 162
-pr: null
+pr: 676
 base_sha: c7688069bc22ac3cde46e48e6b05d8051418fed1
 head_sha: null
 final_head_sha: null
@@ -153,12 +153,17 @@ Runtime registry census:
 - 4,569 XML members skipped by the pinned missing-appearance rule;
 - 0 reversed XML ranges in the pinned Otheryn source.
 
-B3 product digest:
-`ae159c6a3b839389b96f6f167d35db8187d6c7278beb5302c8dd9c142fc693d4`.
+Mapper canonical SHA-256:
+`0155337520b5af64f45bc2685e71d02f20f0c2d6468253f57f56b6856b2d56a8`.
+Mapper fingerprint semantics are repository text bytes with CRLF canonicalized
+to LF; lone-CR checkout line endings fail closed.
 
-Canonical tracked evidence bytes: **17,151,662**.
+B3 product digest:
+`5251d211b531481f340a4093a2e70af473ea721f6b51c7109ee7e516b33b1460`.
+
+Canonical tracked evidence bytes: **17,151,735**.
 Canonical evidence file SHA-256:
-`126cefe4510521e24a83b15d34a50dfc5243a4f1afe5cc4094e0997a3576daa0`.
+`be5d523b642caf10163f6e520aeec77517bbf3d59cedbb0e373d5da87dd792d1`.
 
 Two clean complete generations over identical protected/pinned inputs produced
 the same product digest, identical byte size and identical evidence-file
@@ -244,8 +249,8 @@ Focused and component checks passed on the local candidate:
 
 - exact candidate: final repair head recorded externally after commit;
 - method/reviewer: implementing agent, whole-diff adversarial review;
-- pre-freeze material finding: tracked evidence carried stale mapper SHA-256 `88fd5b44e1f399694efa17a95ceae93b18ece691a6230652780b27ba528e5308` while the frozen mapper bytes were `dd444c33c344a1efc901aad95bdb247cee788fd17f5bfd6022accd2f4b51cbaa`; all 17,086 binding records were unchanged;
-- repair: regenerated tracked evidence from the exact mapper bytes and recomputed the product/evidence digests;
+- pre-freeze material finding: PR #676 head `e2b883ce8ad10bacf886f282eef281aa1fc1732f` committed mapper SHA-256 `88fd5b44e1f399694efa17a95ceae93b18ece691a6230652780b27ba528e5308` while its tracked evidence fingerprint referenced unpublished mapper bytes; repair head `9092205c40dd54812d9564f210dd4cd9ac8328cc` refreshed evidence/task data but still left mapper fingerprint dependent on checkout line endings;
+- repair: canonicalize mapper fingerprint input to repository-LF bytes, fail closed on lone CR, add focused checkout-line-ending coverage, and regenerate evidence. Current mapper SHA-256 is `0155337520b5af64f45bc2685e71d02f20f0c2d6468253f57f56b6856b2d56a8`, evidence SHA-256 is `be5d523b642caf10163f6e520aeec77517bbf3d59cedbb0e373d5da87dd792d1`, and all 17,086 binding records/resolution counts remain unchanged;
 - open material findings after repair: 0;
 - verdict after repair: `PASS_ZERO_MATERIAL_FINDINGS`;
 - evidence checks: exact mapper/evidence SHA binding, product-digest recomputation, 17,086-row source/native partitions, no native content key in the protected current product, exact custody.
@@ -267,11 +272,11 @@ Focused and component checks passed on the local candidate:
 ## Context checkpoint
 
 ```yaml
-last_progress: stale mapper fingerprint repaired by deterministic evidence regeneration; requalification in progress
+last_progress: checkout-line-ending-invariant mapper fingerprint repair and regenerated evidence locally qualified
 status: validating
 branch: agent/content-world-cw2-b3-loot-item-bindings-504
 head_sha: null
-pr: null
+pr: 676
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -282,5 +287,5 @@ ci_job_ids: []
 runner_assignment_state: unknown
 owner_action_required: null
 blocker: null
-next_action: re-run full deterministic/local proof, commit and non-force push the evidence-fingerprint repair, then requalify exact-head CI
+next_action: commit and non-force push the four-path EOL-invariant repair, then qualify exact-head CI
 ```

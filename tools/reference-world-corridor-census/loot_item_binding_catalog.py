@@ -106,6 +106,14 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def canonical_repository_text_bytes(value: bytes) -> bytes:
+    """Canonicalize checkout line endings to repository LF bytes."""
+    without_crlf = value.replace(b"\r\n", b"")
+    if b"\r" in without_crlf:
+        raise CatalogError("UNSUPPORTED_MAPPER_LINE_ENDING")
+    return value.replace(b"\r\n", b"\n")
+
+
 def canonical_record_list(
     records: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -1121,7 +1129,7 @@ def build_evidence(source_repo: Path, game_root: Path) -> dict[str, Any]:
     }:
         raise CatalogError("B3_NATIVE_FAIL_CLOSED_INVARIANT_FAILED")
 
-    mapper_payload = Path(__file__).read_bytes()
+    mapper_payload = canonical_repository_text_bytes(Path(__file__).read_bytes())
     value: dict[str, Any] = {
         "schema": SCHEMA,
         "task": TASK,
@@ -1141,6 +1149,7 @@ def build_evidence(source_repo: Path, game_root: Path) -> dict[str, Any]:
                 "loot_item_binding_catalog.py"
             ),
             "sha256": sha256_bytes(mapper_payload),
+            "sha256_semantics": "repository text bytes with CRLF canonicalized to LF",
             "final_pr_head": "RECORDED_EXTERNALLY_BY_LIVE_PR_READBACK",
             "final_pr_head_note": (
                 "a tracked Git object cannot contain its own final commit SHA "
