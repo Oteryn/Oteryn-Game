@@ -475,7 +475,9 @@ impl LocalObjectRuntime {
                 Err(WorldRuntimeError::ConflictChangedInput)
             }
             DuplicateDisposition::OutcomeExpired => Err(WorldRuntimeError::OutcomeExpired),
-            DuplicateDisposition::NotDuplicate => Err(WorldRuntimeError::PendingContinuationMissing),
+            DuplicateDisposition::NotDuplicate => {
+                Err(WorldRuntimeError::PendingContinuationMissing)
+            }
         }
     }
 
@@ -1093,8 +1095,8 @@ mod tests {
     }
 
     #[test]
-    fn content_generation_binding_stays_within_foundation_component_bound(
-    ) -> Result<(), WorldRuntimeError> {
+    fn content_generation_binding_stays_within_foundation_component_bound()
+    -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let generation = ReferenceContentGeneration::from_content(&content)?;
         assert_eq!(generation.as_str().len(), 64);
