@@ -77,6 +77,23 @@ pub enum ReferenceEffectFamily {
     Heal,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceAbilityDefinition {
+    /// Authored structural references. Order and repeated entries are preserved, but this field
+    /// does not define execution order or multi-hit behavior.
+    pub effects: Vec<TypedDefinitionRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceEffectDefinition {
+    pub family: ReferenceEffectFamily,
+    /// Opaque authored formula endpoint. Formula evaluation semantics are outside this profile.
+    pub formula: TypedDefinitionRef,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReferenceFormulaDefinition;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReferenceItemPhysicalClass {
     Physical,
@@ -135,7 +152,9 @@ pub struct ReferenceLootDefinition {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReferenceDefinitionKind {
     Generic,
-    Effect(ReferenceEffectFamily),
+    Ability(ReferenceAbilityDefinition),
+    Effect(ReferenceEffectDefinition),
+    Formula(ReferenceFormulaDefinition),
     Item(ReferenceItemDefinition),
     Creature(ReferenceCreatureDefinition),
     Loot(ReferenceLootDefinition),
@@ -646,8 +665,8 @@ impl CanonicalReferencePlayableContent {
             .filter_map(|definition| {
                 let kind = match &definition.kind {
                     ReferenceDefinitionKind::Generic => ClientSafeDefinitionKind::Generic,
-                    ReferenceDefinitionKind::Effect(family) => {
-                        ClientSafeDefinitionKind::Effect(*family)
+                    ReferenceDefinitionKind::Effect(effect) => {
+                        ClientSafeDefinitionKind::Effect(effect.family)
                     }
                     ReferenceDefinitionKind::Item(item) => {
                         ClientSafeDefinitionKind::Item(ClientSafeItemDefinition {
@@ -660,7 +679,9 @@ impl CanonicalReferencePlayableContent {
                             presentation: creature.presentation.clone(),
                         })
                     }
-                    ReferenceDefinitionKind::Loot(_) => return None,
+                    ReferenceDefinitionKind::Ability(_)
+                    | ReferenceDefinitionKind::Formula(_)
+                    | ReferenceDefinitionKind::Loot(_) => return None,
                     ReferenceDefinitionKind::LocalObjectStates(states) => {
                         ClientSafeDefinitionKind::LocalObjectStates(states.clone())
                     }
@@ -809,7 +830,23 @@ fn validate_loot_definition(
 
 fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), ContentError> {
     match (&definition.definition.family, &definition.kind) {
+        (DefinitionFamily::Ability, ReferenceDefinitionKind::Ability(_)) => {
+            if definition.client_projection != ClientProjectionClass::ServerOnly {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable ability structure must remain server-only",
+                ));
+            }
+            Ok(())
+        }
         (DefinitionFamily::Effect, ReferenceDefinitionKind::Effect(_)) => Ok(()),
+        (DefinitionFamily::Formula, ReferenceDefinitionKind::Formula(_)) => {
+            if definition.client_projection != ClientProjectionClass::ServerOnly {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable formula endpoint must remain server-only",
+                ));
+            }
+            Ok(())
+        }
         (DefinitionFamily::Item, ReferenceDefinitionKind::Item(item)) => {
             validate_item_definition(item)
         }
@@ -831,8 +868,14 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
             }
             Ok(())
         }
+        (DefinitionFamily::Ability, _) => Err(ContentError::InvalidArtifact(
+            "reference-playable ability requires typed effect references",
+        )),
         (DefinitionFamily::Effect, _) => Err(ContentError::InvalidArtifact(
-            "reference-playable effect definition requires typed effect family",
+            "reference-playable effect definition requires typed family and formula reference",
+        )),
+        (DefinitionFamily::Formula, _) => Err(ContentError::InvalidArtifact(
+            "reference-playable formula requires opaque typed endpoint",
         )),
         (DefinitionFamily::Item, _) => Err(ContentError::InvalidArtifact(
             "reference-playable item requires typed static item semantics",
@@ -840,7 +883,9 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
         (DefinitionFamily::LocalObject, _) => Err(ContentError::InvalidArtifact(
             "reference-playable local object requires finite state vocabulary",
         )),
-        (_, ReferenceDefinitionKind::Effect(_))
+        (_, ReferenceDefinitionKind::Ability(_))
+        | (_, ReferenceDefinitionKind::Effect(_))
+        | (_, ReferenceDefinitionKind::Formula(_))
         | (_, ReferenceDefinitionKind::Item(_))
         | (_, ReferenceDefinitionKind::Creature(_))
         | (_, ReferenceDefinitionKind::Loot(_))
@@ -901,6 +946,26 @@ fn validate_definition_references(
     definition: &ReferenceDefinition,
 ) -> Result<(), ContentError> {
     match &definition.kind {
+        ReferenceDefinitionKind::Ability(ability) => {
+            for effect in &ability.effects {
+                resolve_expected_definition(
+                    definitions,
+                    effect,
+                    DefinitionFamily::Effect,
+                    "reference-playable ability effect reference must target Effect",
+                )?;
+            }
+            Ok(())
+        }
+        ReferenceDefinitionKind::Effect(effect) => {
+            resolve_expected_definition(
+                definitions,
+                &effect.formula,
+                DefinitionFamily::Formula,
+                "reference-playable effect formula reference must target Formula",
+            )?;
+            Ok(())
+        }
         ReferenceDefinitionKind::Creature(creature) => {
             let presentation = resolve_expected_definition(
                 definitions,

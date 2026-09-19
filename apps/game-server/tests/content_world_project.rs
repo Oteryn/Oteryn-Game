@@ -82,6 +82,41 @@ fn project_records() -> Vec<ProjectReferenceRecord> {
     ]
 }
 
+fn structural_project_records() -> Vec<ProjectReferenceRecord> {
+    let heal = "oteryn:reference.effect.project-owned-heal";
+    let damage = "oteryn:reference.effect.project-owned-damage";
+    let heal_formula = "oteryn:reference.formula.project-owned-heal";
+    let damage_formula = "oteryn:reference.formula.project-owned-damage";
+    vec![
+        ProjectReferenceRecord::Ability {
+            identity: identity("Ability", "oteryn:reference.ability.project-owned-closure"),
+            effects: vec![
+                reference("Effect", heal),
+                reference("Effect", damage),
+                reference("Effect", heal),
+            ],
+        },
+        ProjectReferenceRecord::Effect {
+            identity: identity("Effect", heal),
+            client_projection: ProjectionDocument::ClientSafe,
+            effect_family: EffectFamilyDocument::Heal,
+            formula: reference("Formula", heal_formula),
+        },
+        ProjectReferenceRecord::Effect {
+            identity: identity("Effect", damage),
+            client_projection: ProjectionDocument::ServerOnly,
+            effect_family: EffectFamilyDocument::Damage,
+            formula: reference("Formula", damage_formula),
+        },
+        ProjectReferenceRecord::Formula {
+            identity: identity("Formula", heal_formula),
+        },
+        ProjectReferenceRecord::Formula {
+            identity: identity("Formula", damage_formula),
+        },
+    ]
+}
+
 fn b4_batch() -> ImportBatch {
     let evidence: Value = serde_json::from_str(B4_EVIDENCE).expect("protected B4 evidence parses");
     let candidates = evidence["ability_effect_formula_candidates"]
@@ -204,6 +239,19 @@ fn draft() -> ProjectDraft {
     }
 }
 
+fn structural_draft() -> ProjectDraft {
+    let mut candidate = draft();
+    candidate.records.extend(structural_project_records());
+    candidate.metadata.push(AuthorMetadataEntry {
+        stable_identity: "oteryn:reference.ability.project-owned-closure".to_owned(),
+        display_name: "Project-owned structural ability".to_owned(),
+        description: "Non-authoritative editor text".to_owned(),
+        categories: vec!["author-category".to_owned()],
+        notes: vec!["No execution semantics".to_owned()],
+    });
+    candidate
+}
+
 fn documents(candidate: ProjectDraft) -> BTreeMap<String, Vec<u8>> {
     CanonicalProjectDocuments::from_draft(candidate, limits())
         .expect("canonical project")
@@ -254,6 +302,160 @@ fn minimal_project_owned_closure_uses_the_existing_reference_linker() {
     assert!(linked.definitions.iter().any(|definition| {
         definition.definition.key().as_str() == "oteryn:reference.item.project-owned-token"
     }));
+}
+
+#[test]
+fn structural_project_round_trip_links_through_the_existing_reference_graph() {
+    let expected = documents(structural_draft());
+    let project = parse(expected.clone()).expect("structural project parses");
+    assert_eq!(
+        project
+            .canonical_documents(limits())
+            .expect("canonical structural rewrite")
+            .documents(),
+        &expected
+    );
+    let linked = project.link().expect("structural Reference closure links");
+    let ability = linked
+        .definitions
+        .iter()
+        .find_map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::Ability(ability) => Some(ability),
+            _ => None,
+        })
+        .expect("typed structural ability");
+    assert_eq!(ability.effects.len(), 3);
+    assert_eq!(ability.effects[0], ability.effects[2]);
+    assert_eq!(
+        ability.effects[0].key().as_str(),
+        "oteryn:reference.effect.project-owned-heal"
+    );
+    assert_eq!(
+        ability.effects[1].key().as_str(),
+        "oteryn:reference.effect.project-owned-damage"
+    );
+
+    let mut permuted = structural_draft();
+    permuted.records.reverse();
+    assert_eq!(documents(permuted), expected);
+}
+
+#[test]
+fn structural_project_fails_closed_on_shape_and_exact_reference_errors() {
+    let mut generic = draft();
+    generic.records.push(ProjectReferenceRecord::Generic {
+        identity: identity("Ability", "oteryn:reference.ability.project-owned-generic"),
+        client_projection: ProjectionDocument::ServerOnly,
+    });
+    assert!(CanonicalProjectDocuments::from_draft(generic, limits()).is_err());
+
+    let mut wrong_edge = structural_draft();
+    let ProjectReferenceRecord::Ability { effects, .. } = wrong_edge
+        .records
+        .iter_mut()
+        .find(|record| matches!(record, ProjectReferenceRecord::Ability { .. }))
+        .expect("ability record")
+    else {
+        panic!("ability record shape")
+    };
+    effects[0].family = "Formula".to_owned();
+    assert!(CanonicalProjectDocuments::from_draft(wrong_edge, limits()).is_err());
+
+    let mut missing_effect = structural_draft();
+    missing_effect.records.retain(|record| {
+        !matches!(record, ProjectReferenceRecord::Effect { identity, .. }
+            if identity.key == "oteryn:reference.effect.project-owned-heal")
+    });
+    let project = parse(documents(missing_effect)).expect("missing edge project parses");
+    assert!(matches!(
+        project.link(),
+        Err(ProjectError::Content(ContentError::MissingReference { .. }))
+    ));
+
+    let mut stale_formula = structural_draft();
+    let ProjectReferenceRecord::Effect { formula, .. } = stale_formula
+        .records
+        .iter_mut()
+        .find(|record| {
+            matches!(
+                record,
+                ProjectReferenceRecord::Effect {
+                    effect_family: EffectFamilyDocument::Damage,
+                    ..
+                }
+            )
+        })
+        .expect("damage effect")
+    else {
+        panic!("damage effect shape")
+    };
+    formula.revision = "definition-r2".to_owned();
+    let project = parse(documents(stale_formula)).expect("stale edge project parses");
+    assert!(matches!(
+        project.link(),
+        Err(ProjectError::Content(ContentError::RevisionMismatch(
+            "reference-playable definition revision"
+        )))
+    ));
+}
+
+#[test]
+fn opaque_formula_rejects_payload_and_project_metadata_cannot_redirect_edges() {
+    let formula_with_payload = json!({
+        "kind": "Formula",
+        "identity": {
+            "family": "Formula",
+            "key": "oteryn:reference.formula.project-owned-opaque",
+            "revision": "definition-r1"
+        },
+        "expression": "not-authorized"
+    });
+    assert!(serde_json::from_value::<ProjectReferenceRecord>(formula_with_payload).is_err());
+
+    let first = parse(documents(structural_draft())).expect("first structural project");
+    let first_source = first
+        .lower_reference_source()
+        .expect("first structural source");
+    let mut changed = structural_draft();
+    let metadata = changed
+        .metadata
+        .iter_mut()
+        .find(|entry| entry.stable_identity == "oteryn:reference.ability.project-owned-closure")
+        .expect("ability metadata");
+    metadata.display_name = "Pretend redirected ability".to_owned();
+    metadata.notes = vec!["oteryn:reference.effect.unrelated".to_owned()];
+    let second = parse(documents(changed)).expect("second structural project");
+    assert_eq!(
+        first_source.definitions,
+        second
+            .lower_reference_source()
+            .expect("second structural source")
+            .definitions
+    );
+}
+
+#[test]
+fn structural_proof_corpus_uses_measured_finite_boundaries() {
+    let emitted = documents(structural_draft());
+    let largest = emitted.values().map(Vec::len).max().expect("documents");
+    let total: usize = emitted.values().map(Vec::len).sum();
+    let mut exact = limits();
+    exact.max_documents = emitted.len();
+    exact.max_document_bytes = largest;
+    exact.max_total_bytes = total;
+    exact.max_reference_records = structural_draft().records.len();
+    CanonicalProjectDocuments::from_draft(structural_draft(), exact)
+        .expect("exact structural corpus boundaries");
+
+    let mut below_records = exact;
+    below_records.max_reference_records -= 1;
+    assert!(CanonicalProjectDocuments::from_draft(structural_draft(), below_records).is_err());
+    let mut below_document = exact;
+    below_document.max_document_bytes -= 1;
+    assert!(CanonicalProjectDocuments::from_draft(structural_draft(), below_document).is_err());
+    let mut below_total = exact;
+    below_total.max_total_bytes -= 1;
+    assert!(CanonicalProjectDocuments::from_draft(structural_draft(), below_total).is_err());
 }
 
 #[test]
