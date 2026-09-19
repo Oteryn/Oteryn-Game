@@ -15,10 +15,11 @@ use super::{
     Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
 };
 use crate::foundation::WorldId;
-use serde::de::{self, MapAccess, SeqAccess, Visitor};
+use serde::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
+use std::io::{self, Write};
 
 pub const WORLD_PROJECT_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v1";
 pub const WORLD_PROJECT_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v1";
@@ -34,6 +35,7 @@ const LOCK_LOCATOR: &str = "content.lock.json";
 const RECORDS_LOCATOR: &str = "records/reference.json";
 const IMPORTS_LOCATOR: &str = "imports/candidates.json";
 const METADATA_LOCATOR: &str = "metadata/author.json";
+const CANONICAL_DOCUMENT_COUNT: usize = 6;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProjectError {
@@ -150,6 +152,29 @@ impl ProjectEvidenceLimits {
     }
 }
 
+fn checked_limit_sum(
+    resource: &'static str,
+    current: usize,
+    increment: usize,
+    limit: usize,
+) -> Result<usize, ProjectError> {
+    let actual = current
+        .checked_add(increment)
+        .ok_or(ProjectError::LimitExceeded {
+            resource,
+            actual: usize::MAX,
+            limit,
+        })?;
+    if actual > limit {
+        return Err(ProjectError::LimitExceeded {
+            resource,
+            actual,
+            limit,
+        });
+    }
+    Ok(actual)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectSnapshot {
     documents: BTreeMap<String, Vec<u8>>,
@@ -165,24 +190,39 @@ impl ProjectSnapshot {
         let mut total = 0_usize;
         for (locator, bytes) in documents {
             validate_locator(&locator, limits)?;
+            let document_count = admitted
+                .len()
+                .checked_add(1)
+                .ok_or(ProjectError::LimitExceeded {
+                    resource: "project documents",
+                    actual: usize::MAX,
+                    limit: limits.max_documents,
+                })?;
+            limits.check(
+                "project documents",
+                document_count,
+                limits.max_documents,
+            )?;
             limits.check(
                 "project document bytes",
                 bytes.len(),
                 limits.max_document_bytes,
             )?;
-            total = total
-                .checked_add(bytes.len())
-                .ok_or(ProjectError::LimitExceeded {
-                    resource: "project total bytes",
-                    actual: usize::MAX,
-                    limit: limits.max_total_bytes,
-                })?;
-            limits.check("project total bytes", total, limits.max_total_bytes)?;
-            if admitted.insert(locator.clone(), bytes).is_some() {
-                return Err(ProjectError::DuplicateLocator(locator));
+            total = checked_limit_sum(
+                "project total bytes",
+                total,
+                bytes.len(),
+                limits.max_total_bytes,
+            )?;
+            match admitted.entry(locator) {
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    entry.insert(bytes);
+                }
+                std::collections::btree_map::Entry::Occupied(entry) => {
+                    return Err(ProjectError::DuplicateLocator(entry.key().clone()));
+                }
             }
         }
-        limits.check("project documents", admitted.len(), limits.max_documents)?;
         Ok(Self {
             documents: admitted,
         })
@@ -212,6 +252,22 @@ impl CanonicalProjectDocuments {
         draft.imports = sorted_imports(draft.imports);
         draft.metadata = sorted_metadata(draft.metadata);
         draft.validate(limits)?;
+        limits.check(
+            "project documents",
+            CANONICAL_DOCUMENT_COUNT,
+            limits.max_documents,
+        )?;
+        for locator in [
+            PROJECT_LOCATOR,
+            MANIFEST_LOCATOR,
+            LOCK_LOCATOR,
+            RECORDS_LOCATOR,
+            IMPORTS_LOCATOR,
+            METADATA_LOCATOR,
+        ] {
+            validate_locator(locator, limits)?;
+        }
+        let mut write_budget = CanonicalWriteBudget::new(limits);
         let record_document = ReferenceDocument {
             schema: WORLD_PROJECT_REFERENCE_SCHEMA.to_owned(),
             world_id: draft.world_id,
@@ -230,15 +286,15 @@ impl CanonicalProjectDocuments {
         let mut managed = BTreeMap::new();
         managed.insert(
             RECORDS_LOCATOR.to_owned(),
-            canonical_json(&record_document)?,
+            write_budget.encode(&record_document)?,
         );
         managed.insert(
             IMPORTS_LOCATOR.to_owned(),
-            canonical_json(&import_document)?,
+            write_budget.encode(&import_document)?,
         );
         managed.insert(
             METADATA_LOCATOR.to_owned(),
-            canonical_json(&metadata_document)?,
+            write_budget.encode(&metadata_document)?,
         );
 
         let roles = [
@@ -284,7 +340,7 @@ impl CanonicalProjectDocuments {
             optional_features: Vec::new(),
             documents: inventory,
         };
-        let manifest_bytes = canonical_json(&manifest)?;
+        let manifest_bytes = write_budget.encode(&manifest)?;
         let package = package_binding(&manifest, &manifest_bytes)?;
         let lock = LockDocument {
             schema: WORLD_PROJECT_LOCK_SCHEMA.to_owned(),
@@ -298,7 +354,7 @@ impl CanonicalProjectDocuments {
                 dependency: false,
             }],
         };
-        let lock_bytes = canonical_json(&lock)?;
+        let lock_bytes = write_budget.encode(&lock)?;
         let root = RootDocument {
             schema: WORLD_PROJECT_ROOT_SCHEMA.to_owned(),
             source_profile: WORLD_PROJECT_SOURCE_PROFILE.to_owned(),
@@ -312,7 +368,7 @@ impl CanonicalProjectDocuments {
         let mut documents = managed;
         documents.insert(MANIFEST_LOCATOR.to_owned(), manifest_bytes);
         documents.insert(LOCK_LOCATOR.to_owned(), lock_bytes);
-        documents.insert(PROJECT_LOCATOR.to_owned(), canonical_json(&root)?);
+        documents.insert(PROJECT_LOCATOR.to_owned(), write_budget.encode(&root)?);
         let snapshot = ProjectSnapshot::new(documents.into_iter(), limits)?;
         snapshot.parse(limits)?;
         Ok(Self {
@@ -871,21 +927,16 @@ fn parse_snapshot(
     }
     let package = package_binding(&manifest, manifest_bytes)?;
     let content_lock = content_lock_binding(&lock)?;
-    let root_entry = content_lock
-        .entries
-        .iter()
-        .filter(|entry| entry.package_key == package.package_key)
-        .count();
-    if root_entry != 1 {
+    if content_lock.entries.len() != 1 {
         return Err(ProjectError::InvalidProject(
-            "Content Lock must bind one root package",
+            "v1 Content Lock must contain exactly one root entry",
         ));
     }
     let expected_provenance = package.package_provenance_digest()?;
     let entry = content_lock
         .entries
         .iter()
-        .find(|entry| entry.package_key == package.package_key)
+        .first()
         .ok_or(ProjectError::InvalidProject(
             "Content Lock root package missing",
         ))?;
@@ -1373,11 +1424,101 @@ fn digest_hex(bytes: &[u8]) -> String {
     world_project_sha256(bytes)
 }
 
-fn canonical_json<T: Serialize>(value: &T) -> Result<Vec<u8>, ProjectError> {
-    let mut bytes =
-        serde_json::to_vec(value).map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
-    bytes.push(b'\n');
-    Ok(bytes)
+struct CanonicalWriteBudget {
+    limits: ProjectEvidenceLimits,
+    total_bytes: usize,
+}
+
+impl CanonicalWriteBudget {
+    fn new(limits: ProjectEvidenceLimits) -> Self {
+        Self {
+            limits,
+            total_bytes: 0,
+        }
+    }
+
+    fn encode<T: Serialize>(&mut self, value: &T) -> Result<Vec<u8>, ProjectError> {
+        let mut writer = BoundedDocumentWriter {
+            bytes: Vec::new(),
+            limits: self.limits,
+            prior_total: self.total_bytes,
+            failure: None,
+        };
+        if let Err(error) = serde_json::to_writer(&mut writer, value) {
+            return Err(writer
+                .failure
+                .unwrap_or_else(|| ProjectError::InvalidJson(error.to_string())));
+        }
+        if let Err(error) = writer.write_all(b"\n") {
+            return Err(writer
+                .failure
+                .unwrap_or_else(|| ProjectError::InvalidJson(error.to_string())));
+        }
+        self.total_bytes = checked_limit_sum(
+            "project total bytes",
+            self.total_bytes,
+            writer.bytes.len(),
+            self.limits.max_total_bytes,
+        )?;
+        Ok(writer.bytes)
+    }
+}
+
+struct BoundedDocumentWriter {
+    bytes: Vec<u8>,
+    limits: ProjectEvidenceLimits,
+    prior_total: usize,
+    failure: Option<ProjectError>,
+}
+
+impl Write for BoundedDocumentWriter {
+    fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
+        let document_bytes = self.bytes.len().checked_add(buffer.len()).ok_or_else(|| {
+            self.failure = Some(ProjectError::LimitExceeded {
+                resource: "project document bytes",
+                actual: usize::MAX,
+                limit: self.limits.max_document_bytes,
+            });
+            io::Error::other("project document byte count overflow")
+        })?;
+        if document_bytes > self.limits.max_document_bytes {
+            self.failure = Some(ProjectError::LimitExceeded {
+                resource: "project document bytes",
+                actual: document_bytes,
+                limit: self.limits.max_document_bytes,
+            });
+            return Err(io::Error::other(
+                "project document bytes exceed evidence limit",
+            ));
+        }
+        let total_bytes = self
+            .prior_total
+            .checked_add(document_bytes)
+            .ok_or_else(|| {
+                self.failure = Some(ProjectError::LimitExceeded {
+                    resource: "project total bytes",
+                    actual: usize::MAX,
+                    limit: self.limits.max_total_bytes,
+                });
+                io::Error::other("project total byte count overflow")
+            })?;
+        if total_bytes > self.limits.max_total_bytes {
+            self.failure = Some(ProjectError::LimitExceeded {
+                resource: "project total bytes",
+                actual: total_bytes,
+                limit: self.limits.max_total_bytes,
+            });
+            return Err(io::Error::other(
+                "project total bytes exceed evidence limit",
+            ));
+        }
+        self.bytes.extend_from_slice(buffer);
+        Ok(buffer.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 fn decode_world_id(value: &str) -> Result<WorldId, ProjectError> {
@@ -1419,59 +1560,207 @@ enum StrictJsonValue {
     Object(BTreeMap<String, StrictJsonValue>),
 }
 
-impl<'de> Deserialize<'de> for StrictJsonValue {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct StrictVisitor;
-        impl<'de> Visitor<'de> for StrictVisitor {
-            type Value = StrictJsonValue;
-            fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-                formatter.write_str("strict JSON value")
-            }
-            fn visit_bool<E: de::Error>(self, value: bool) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::Bool(value))
-            }
-            fn visit_i64<E: de::Error>(self, value: i64) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::I64(value))
-            }
-            fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::U64(value))
-            }
-            fn visit_f64<E: de::Error>(self, _value: f64) -> Result<Self::Value, E> {
-                Err(E::custom("floating point numbers are unsupported"))
-            }
-            fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::String(value.to_owned()))
-            }
-            fn visit_string<E: de::Error>(self, value: String) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::String(value))
-            }
-            fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::Null)
-            }
-            fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
-                Ok(StrictJsonValue::Null)
-            }
-            fn visit_seq<A: SeqAccess<'de>>(
-                self,
-                mut sequence: A,
-            ) -> Result<Self::Value, A::Error> {
-                let mut values = Vec::new();
-                while let Some(value) = sequence.next_element()? {
-                    values.push(value);
+struct JsonBudget {
+    limits: ProjectEvidenceLimits,
+    values: usize,
+    string_bytes: usize,
+}
+
+impl JsonBudget {
+    fn new(limits: ProjectEvidenceLimits) -> Self {
+        Self {
+            limits,
+            values: 0,
+            string_bytes: 0,
+        }
+    }
+
+    fn admit_value<E: de::Error>(&mut self, depth: usize) -> Result<(), E> {
+        if depth > self.limits.max_json_depth {
+            return Err(E::custom("project JSON depth exceeds evidence limit"));
+        }
+        self.values = self
+            .values
+            .checked_add(1)
+            .ok_or_else(|| E::custom("project decoded field count overflow"))?;
+        if self.values > self.limits.max_decoded_fields {
+            return Err(E::custom(
+                "project decoded fields exceed evidence limit",
+            ));
+        }
+        Ok(())
+    }
+
+    fn admit_string<E: de::Error>(&mut self, bytes: usize) -> Result<(), E> {
+        self.string_bytes = self
+            .string_bytes
+            .checked_add(bytes)
+            .ok_or_else(|| E::custom("project JSON string byte count overflow"))?;
+        if self.string_bytes > self.limits.max_string_bytes {
+            return Err(E::custom(
+                "project JSON string bytes exceed evidence limit",
+            ));
+        }
+        Ok(())
+    }
+}
+
+struct BudgetedValueSeed<'a> {
+    budget: &'a mut JsonBudget,
+    depth: usize,
+}
+
+impl<'de> DeserializeSeed<'de> for BudgetedValueSeed<'_> {
+    type Value = StrictJsonValue;
+
+    fn deserialize<D: Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        self.budget.admit_value(self.depth)?;
+        deserializer.deserialize_any(BudgetedValueVisitor {
+            budget: self.budget,
+            depth: self.depth,
+        })
+    }
+}
+
+struct BudgetedValueVisitor<'a> {
+    budget: &'a mut JsonBudget,
+    depth: usize,
+}
+
+impl<'de> Visitor<'de> for BudgetedValueVisitor<'_> {
+    type Value = StrictJsonValue;
+
+    fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter.write_str("strict bounded JSON value")
+    }
+
+    fn visit_bool<E: de::Error>(self, value: bool) -> Result<Self::Value, E> {
+        Ok(StrictJsonValue::Bool(value))
+    }
+
+    fn visit_i64<E: de::Error>(self, value: i64) -> Result<Self::Value, E> {
+        Ok(StrictJsonValue::I64(value))
+    }
+
+    fn visit_u64<E: de::Error>(self, value: u64) -> Result<Self::Value, E> {
+        Ok(StrictJsonValue::U64(value))
+    }
+
+    fn visit_f64<E: de::Error>(self, _value: f64) -> Result<Self::Value, E> {
+        Err(E::custom("floating point numbers are unsupported"))
+    }
+
+    fn visit_borrowed_str<E: de::Error>(self, value: &'de str) -> Result<Self::Value, E> {
+        self.budget.admit_string(value.len())?;
+        Ok(StrictJsonValue::String(value.to_owned()))
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        self.budget.admit_string(value.len())?;
+        Ok(StrictJsonValue::String(value.to_owned()))
+    }
+
+    fn visit_string<E: de::Error>(self, value: String) -> Result<Self::Value, E> {
+        self.budget.admit_string(value.len())?;
+        Ok(StrictJsonValue::String(value))
+    }
+
+    fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
+        Ok(StrictJsonValue::Null)
+    }
+
+    fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+        Ok(StrictJsonValue::Null)
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Self::Value, A::Error> {
+        let child_depth = self
+            .depth
+            .checked_add(1)
+            .ok_or_else(|| de::Error::custom("project JSON depth overflow"))?;
+        let mut values = Vec::new();
+        while let Some(value) = sequence.next_element_seed(BudgetedValueSeed {
+            budget: &mut *self.budget,
+            depth: child_depth,
+        })? {
+            values.push(value);
+        }
+        Ok(StrictJsonValue::Array(values))
+    }
+
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+        let child_depth = self
+            .depth
+            .checked_add(1)
+            .ok_or_else(|| de::Error::custom("project JSON depth overflow"))?;
+        let mut values = BTreeMap::new();
+        while let Some(key) = map.next_key_seed(BudgetedKeySeed {
+            budget: &mut *self.budget,
+        })? {
+            match values.entry(key) {
+                std::collections::btree_map::Entry::Occupied(entry) => {
+                    return Err(de::Error::custom(format!(
+                        "duplicate JSON member:{}",
+                        entry.key()
+                    )));
                 }
-                Ok(StrictJsonValue::Array(values))
-            }
-            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-                let mut values = BTreeMap::new();
-                while let Some((key, value)) = map.next_entry::<String, StrictJsonValue>()? {
-                    if values.insert(key.clone(), value).is_some() {
-                        return Err(de::Error::custom(format!("duplicate JSON member:{key}")));
-                    }
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    let value = map.next_value_seed(BudgetedValueSeed {
+                        budget: &mut *self.budget,
+                        depth: child_depth,
+                    })?;
+                    entry.insert(value);
                 }
-                Ok(StrictJsonValue::Object(values))
             }
         }
-        deserializer.deserialize_any(StrictVisitor)
+        Ok(StrictJsonValue::Object(values))
+    }
+}
+
+struct BudgetedKeySeed<'a> {
+    budget: &'a mut JsonBudget,
+}
+
+impl<'de> DeserializeSeed<'de> for BudgetedKeySeed<'_> {
+    type Value = String;
+
+    fn deserialize<D: Deserializer<'de>>(
+        self,
+        deserializer: D,
+    ) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_string(BudgetedKeyVisitor {
+            budget: self.budget,
+        })
+    }
+}
+
+struct BudgetedKeyVisitor<'a> {
+    budget: &'a mut JsonBudget,
+}
+
+impl<'de> Visitor<'de> for BudgetedKeyVisitor<'_> {
+    type Value = String;
+
+    fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter.write_str("bounded JSON object member")
+    }
+
+    fn visit_borrowed_str<E: de::Error>(self, value: &'de str) -> Result<Self::Value, E> {
+        self.budget.admit_string(value.len())?;
+        Ok(value.to_owned())
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        self.budget.admit_string(value.len())?;
+        Ok(value.to_owned())
+    }
+
+    fn visit_string<E: de::Error>(self, value: String) -> Result<Self::Value, E> {
+        self.budget.admit_string(value.len())?;
+        Ok(value)
     }
 }
 
@@ -1485,21 +1774,14 @@ fn parse_strict<T: for<'de> Deserialize<'de>>(
         ));
     }
     let mut deserializer = serde_json::Deserializer::from_slice(bytes);
-    let strict = StrictJsonValue::deserialize(&mut deserializer).map_err(map_json_error)?;
+    let mut budget = JsonBudget::new(limits);
+    let strict = BudgetedValueSeed {
+        budget: &mut budget,
+        depth: 1,
+    }
+    .deserialize(&mut deserializer)
+    .map_err(map_json_error)?;
     deserializer.end().map_err(map_json_error)?;
-    let mut metrics = JsonMetrics::default();
-    measure_json(&strict, 1, &mut metrics)?;
-    limits.check("project JSON depth", metrics.depth, limits.max_json_depth)?;
-    limits.check(
-        "project decoded fields",
-        metrics.fields,
-        limits.max_decoded_fields,
-    )?;
-    limits.check(
-        "project JSON string bytes",
-        metrics.string_bytes,
-        limits.max_string_bytes,
-    )?;
     let value = strict.into_serde_value();
     serde_json::from_value(value).map_err(|error| ProjectError::InvalidJson(error.to_string()))
 }
@@ -1536,58 +1818,19 @@ impl StrictJsonValue {
     }
 }
 
-#[derive(Default)]
-struct JsonMetrics {
-    depth: usize,
-    fields: usize,
-    string_bytes: usize,
-}
+#[cfg(test)]
+mod project_resource_tests {
+    use super::*;
 
-fn measure_json(
-    value: &StrictJsonValue,
-    depth: usize,
-    metrics: &mut JsonMetrics,
-) -> Result<(), ProjectError> {
-    metrics.depth = metrics.depth.max(depth);
-    match value {
-        StrictJsonValue::String(value) => {
-            metrics.string_bytes = metrics.string_bytes.checked_add(value.len()).ok_or(
-                ProjectError::InvalidProject("JSON string byte count overflow"),
-            )?
-        }
-        StrictJsonValue::Array(values) => {
-            for value in values {
-                measure_json(
-                    value,
-                    depth
-                        .checked_add(1)
-                        .ok_or(ProjectError::InvalidProject("JSON depth overflow"))?,
-                    metrics,
-                )?;
-            }
-        }
-        StrictJsonValue::Object(values) => {
-            metrics.fields = metrics
-                .fields
-                .checked_add(values.len())
-                .ok_or(ProjectError::InvalidProject("JSON field count overflow"))?;
-            for (key, value) in values {
-                metrics.string_bytes = metrics.string_bytes.checked_add(key.len()).ok_or(
-                    ProjectError::InvalidProject("JSON string byte count overflow"),
-                )?;
-                measure_json(
-                    value,
-                    depth
-                        .checked_add(1)
-                        .ok_or(ProjectError::InvalidProject("JSON depth overflow"))?,
-                    metrics,
-                )?;
-            }
-        }
-        StrictJsonValue::Null
-        | StrictJsonValue::Bool(_)
-        | StrictJsonValue::I64(_)
-        | StrictJsonValue::U64(_) => {}
+    #[test]
+    fn checked_resource_accumulation_rejects_machine_overflow() {
+        assert!(matches!(
+            checked_limit_sum("overflow probe", usize::MAX, 1, usize::MAX),
+            Err(ProjectError::LimitExceeded {
+                resource: "overflow probe",
+                actual: usize::MAX,
+                limit: usize::MAX,
+            })
+        ));
     }
-    Ok(())
 }
