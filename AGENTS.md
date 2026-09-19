@@ -7,7 +7,7 @@
 - Prefer repository-native GitHub APIs and repository CI for remote evidence and execution. Use an isolated checkout or worktree for tracked-file mutation. Remote Desktop is denied unless the owner explicitly authorizes the exact invocation.
 - Before releasing a mutating worker, prove its execution and publication route. Ordinary material mutation requires an isolated checkout or worktree plus normal non-force Git publication to the exact allocated branch. If that capability is unavailable, fail closed with `BLOCKED_CAPABILITY_UNAVAILABLE` before worker release. Missing repository workspace, Git CLI, test-runner or push capability is not a Remote Desktop exception; do not request Remote Desktop merely to obtain those capabilities. An independently authorized API-native edit remains allowed only when the intended operation is itself the API write and it is not reconstructing a selected local Git candidate.
 
-- Before consuming owner-funded, personal-quota or metered AI/API resources, read `docs/agents/OWNER_FUNDED_AI_POLICY.md`; policy selection does not authorize spending, and existing session authorization remains effective.
+- Before consuming owner-funded, personal-quota or metered AI/API resources, read `docs/agents/OWNER_FUNDED_AI_POLICY.md`. That file contains the repository's bounded standing authorization for required external review; it remains effective across chats/workers/task phases until revoked. Do not ask the owner again for a covered review, and do not emit a duplicate review trigger when live PR state already shows the same exact head requested, running or completed. Outside that standing scope, policy selection does not authorize spending.
 
 ## Durable Game invariants
 
