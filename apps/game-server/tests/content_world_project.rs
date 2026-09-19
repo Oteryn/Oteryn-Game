@@ -44,7 +44,10 @@ fn reference(family: &str, key: &str) -> DefinitionReferenceDocument {
 fn project_records() -> Vec<ProjectReferenceRecord> {
     vec![
         ProjectReferenceRecord::Creature {
-            identity: identity("Creature", "oteryn:reference.creature.project-owned-courier"),
+            identity: identity(
+                "Creature",
+                "oteryn:reference.creature.project-owned-courier",
+            ),
             client_projection: ProjectionDocument::ClientSafe,
             presentation: reference(
                 "Presentation",
@@ -152,13 +155,10 @@ fn b4_batch() -> ImportBatch {
             .as_str()
             .expect("revision")
             .to_owned(),
-        source_artifact_sha256:
-            "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".to_owned(),
-        access_disposition: "PENDING".to_owned(),
-        source_generation_profile: evidence["schema"]
-            .as_str()
-            .expect("schema")
+        source_artifact_sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491"
             .to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: evidence["schema"].as_str().expect("schema").to_owned(),
         importer: "repository-protected-cw2-b4-evidence".to_owned(),
         mapper: evidence["mapper_profile"]
             .as_str()
@@ -240,7 +240,9 @@ fn canonical_project_round_trip_is_byte_stable_and_permutation_independent() {
 #[test]
 fn minimal_project_owned_closure_uses_the_existing_reference_linker() {
     let project = parse(documents(draft())).expect("project parses");
-    let linked = project.link().expect("existing Reference linker accepts closure");
+    let linked = project
+        .link()
+        .expect("existing Reference linker accepts closure");
     assert_eq!(linked.definitions.len(), 4);
     assert!(linked.definitions.iter().any(|definition| {
         definition.definition.key().as_str() == "oteryn:reference.item.project-owned-token"
@@ -254,18 +256,43 @@ fn real_b4_candidates_retain_exact_provenance_without_native_promotion() {
     assert_eq!(imports.len(), 1);
     let batch = &imports[0];
     assert_eq!(batch.source_repository, "Oteryn/Oteryn-Game");
-    assert_eq!(batch.source_revision, "03a821edd828e24ccff6e2cb7fc819a776cbd238");
-    assert_eq!(batch.source_artifact_sha256, "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491");
-    assert_eq!(batch.mapper_sha256, "bc68f0f63a5dd6ea5ee7a3c20b708d6ea78c6033a2f5dddb518c49d6f45f8666");
+    assert_eq!(
+        batch.source_revision,
+        "03a821edd828e24ccff6e2cb7fc819a776cbd238"
+    );
+    assert_eq!(
+        batch.source_artifact_sha256,
+        "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491"
+    );
+    assert_eq!(
+        batch.mapper_sha256,
+        "bc68f0f63a5dd6ea5ee7a3c20b708d6ea78c6033a2f5dddb518c49d6f45f8666"
+    );
     assert_eq!(batch.candidates.len(), 2);
-    assert!(batch.candidates.iter().all(|candidate| candidate.source_numeric_id.is_none()));
-    assert!(batch.candidates.iter().all(|candidate| candidate.closure_disposition == CandidateDisposition::Blocked));
+    assert!(
+        batch
+            .candidates
+            .iter()
+            .all(|candidate| candidate.source_numeric_id.is_none())
+    );
+    assert!(
+        batch
+            .candidates
+            .iter()
+            .all(|candidate| candidate.closure_disposition == CandidateDisposition::Blocked)
+    );
 
-    let source = project.lower_reference_source().expect("project-owned records lower");
+    let source = project
+        .lower_reference_source()
+        .expect("project-owned records lower");
     assert_eq!(source.definitions.len(), 4);
     assert!(!source.definitions.iter().any(|definition| {
         definition.definition.key().as_str().contains("ice_strike")
-            || definition.definition.key().as_str().contains("light_healing")
+            || definition
+                .definition
+                .key()
+                .as_str()
+                .contains("light_healing")
     }));
 }
 
@@ -304,7 +331,10 @@ fn locator_aliases_and_control_collisions_fail_before_parse() {
         "records/a.json.",
     ] {
         let result = ProjectSnapshot::new([(locator.to_owned(), b"{}\n".to_vec())], limits());
-        assert!(matches!(result, Err(ProjectError::InvalidLocator(_))), "{locator}");
+        assert!(
+            matches!(result, Err(ProjectError::InvalidLocator(_))),
+            "{locator}"
+        );
     }
     let duplicate = ProjectSnapshot::new(
         [
@@ -321,15 +351,24 @@ fn inventory_digest_and_complete_document_set_are_enforced() {
     let base = documents(draft());
     let mut changed = base.clone();
     changed.get_mut("records/reference.json").expect("records")[0] ^= 1;
-    assert!(matches!(parse(changed), Err(ProjectError::DigestMismatch(_))));
+    assert!(matches!(
+        parse(changed),
+        Err(ProjectError::DigestMismatch(_))
+    ));
 
     let mut missing = base.clone();
     missing.remove("metadata/author.json");
-    assert!(matches!(parse(missing), Err(ProjectError::MissingDocument(_))));
+    assert!(matches!(
+        parse(missing),
+        Err(ProjectError::MissingDocument(_))
+    ));
 
     let mut extra = base;
     extra.insert("metadata/unlisted.json".to_owned(), b"{}\n".to_vec());
-    assert!(matches!(parse(extra), Err(ProjectError::UnexpectedDocument(_))));
+    assert!(matches!(
+        parse(extra),
+        Err(ProjectError::UnexpectedDocument(_))
+    ));
 }
 
 #[test]
@@ -346,13 +385,19 @@ fn measured_byte_limits_accept_exact_max_and_reject_max_plus_one() {
     below_document.max_document_bytes = largest - 1;
     assert!(matches!(
         ProjectSnapshot::new(emitted.clone(), below_document),
-        Err(ProjectError::LimitExceeded { resource: "project document bytes", .. })
+        Err(ProjectError::LimitExceeded {
+            resource: "project document bytes",
+            ..
+        })
     ));
     let mut below_total = exact;
     below_total.max_total_bytes = total - 1;
     assert!(matches!(
         ProjectSnapshot::new(emitted, below_total),
-        Err(ProjectError::LimitExceeded { resource: "project total bytes", .. })
+        Err(ProjectError::LimitExceeded {
+            resource: "project total bytes",
+            ..
+        })
     ));
 }
 
@@ -367,9 +412,15 @@ fn reimport_rules_cover_unchanged_upstream_local_converged_conflict_and_deletes(
     assert_eq!(decide_reimport(&b, &b, &l), ReimportDecision::RetainLocal);
     assert_eq!(decide_reimport(&b, &x, &x), ReimportDecision::Converged);
     assert_eq!(decide_reimport(&b, &u, &l), ReimportDecision::Conflict);
-    assert_eq!(decide_reimport(&b, &None, &b), ReimportDecision::AdoptUpstream);
+    assert_eq!(
+        decide_reimport(&b, &None, &b),
+        ReimportDecision::AdoptUpstream
+    );
     assert_eq!(decide_reimport(&b, &None, &l), ReimportDecision::Conflict);
-    assert_eq!(decide_reimport(&b, &None, &None), ReimportDecision::Converged);
+    assert_eq!(
+        decide_reimport(&b, &None, &None),
+        ReimportDecision::Converged
+    );
 }
 
 #[test]
@@ -378,7 +429,9 @@ fn inconsistent_stored_reimport_decision_fails_closed() {
     candidate.imports[0].reimport_states[0].decision = ReimportDecision::Conflict;
     assert!(matches!(
         CanonicalProjectDocuments::from_draft(candidate, limits()),
-        Err(ProjectError::InvalidProject("stored reimport decision is inconsistent"))
+        Err(ProjectError::InvalidProject(
+            "stored reimport decision is inconsistent"
+        ))
     ));
 }
 
@@ -421,7 +474,9 @@ fn regrouped_record_documents_preserve_semantic_identity() {
     let original = parse(documents(draft())).expect("original project");
     let original_source = original.lower_reference_source().expect("original source");
     let mut grouped = documents(draft());
-    let record_value: Value = serde_json::from_slice(&grouped.remove("records/reference.json").expect("records")).expect("record JSON");
+    let record_value: Value =
+        serde_json::from_slice(&grouped.remove("records/reference.json").expect("records"))
+            .expect("record JSON");
     let records = record_value["records"].as_array().expect("records array");
     let first = canonical_value(&json!({
         "schema": record_value["schema"],
@@ -456,13 +511,33 @@ fn regrouped_record_documents_preserve_semantic_identity() {
 
     let package = PackageManifestBinding::new(
         ProductionKey::new(manifest["package_key"].as_str().expect("package key")).expect("key"),
-        ProductionAtom::new("package revision", manifest["package_revision"].as_str().expect("revision")).expect("revision"),
-        ProductionAtom::new("schema", manifest["semantic_schema_version"].as_str().expect("schema")).expect("schema"),
-        ProductionAtom::new("license", manifest["licensing_metadata"].as_str().expect("license")).expect("license"),
+        ProductionAtom::new(
+            "package revision",
+            manifest["package_revision"].as_str().expect("revision"),
+        )
+        .expect("revision"),
+        ProductionAtom::new(
+            "schema",
+            manifest["semantic_schema_version"]
+                .as_str()
+                .expect("schema"),
+        )
+        .expect("schema"),
+        ProductionAtom::new(
+            "license",
+            manifest["licensing_metadata"].as_str().expect("license"),
+        )
+        .expect("license"),
         Sha256HexDigest::new(&world_project_sha256(&manifest_bytes)).expect("manifest digest"),
     );
     let mut lock: Value = serde_json::from_slice(&grouped["content.lock.json"]).expect("lock");
-    lock["entries"][0]["package_provenance_digest"] = Value::String(package.package_provenance_digest().expect("provenance").as_str().to_owned());
+    lock["entries"][0]["package_provenance_digest"] = Value::String(
+        package
+            .package_provenance_digest()
+            .expect("provenance")
+            .as_str()
+            .to_owned(),
+    );
     let lock_bytes = canonical_value(&lock);
     grouped.insert("content.lock.json".to_owned(), lock_bytes.clone());
     let mut root: Value = serde_json::from_slice(&grouped["project.json"]).expect("root");
@@ -471,6 +546,8 @@ fn regrouped_record_documents_preserve_semantic_identity() {
     grouped.insert("project.json".to_owned(), canonical_value(&root));
 
     let regrouped = parse(grouped).expect("regrouped project");
-    let regrouped_source = regrouped.lower_reference_source().expect("regrouped source");
+    let regrouped_source = regrouped
+        .lower_reference_source()
+        .expect("regrouped source");
     assert_eq!(regrouped_source.definitions, original_source.definitions);
 }
