@@ -131,6 +131,145 @@ fn source_with_typed_item(
     Ok(candidate)
 }
 
+fn source_with_creature_loot() -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source_with_typed_item(ClientProjectionClass::ClientSafe)?;
+
+    let second_item = TypedDefinitionRef::new(
+        DefinitionFamily::Item,
+        ProductionKey::new("oteryn:reference.item.cw3-b2-secondary-probe")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    candidate.definitions.push(ReferenceDefinition {
+        definition: second_item.clone(),
+        kind: ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Physical,
+            materializable: true,
+            stack_class: ReferenceItemStackClass::NonStackable,
+            legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+        }),
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+
+    let presentation = TypedDefinitionRef::new(
+        DefinitionFamily::Presentation,
+        ProductionKey::new("oteryn:reference.presentation.cw3-b2-creature-probe")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    candidate.definitions.push(ReferenceDefinition {
+        definition: presentation.clone(),
+        kind: ReferenceDefinitionKind::Generic,
+        client_projection: ClientProjectionClass::ClientSafe,
+    });
+
+    let behavior = TypedDefinitionRef::new(
+        DefinitionFamily::Behavior,
+        ProductionKey::new("oteryn:reference.behavior.cw3-b2-creature-probe")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    candidate.definitions.push(ReferenceDefinition {
+        definition: behavior.clone(),
+        kind: ReferenceDefinitionKind::Generic,
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+
+    let primary_item = candidate
+        .definitions
+        .iter()
+        .find(|definition| {
+            definition.definition.family() == DefinitionFamily::Item
+                && definition.definition.key().as_str() == "oteryn:reference.item.cw3-b1-probe"
+        })
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable primary item probe missing",
+        ))?
+        .definition
+        .clone();
+
+    let loot = TypedDefinitionRef::new(
+        DefinitionFamily::Loot,
+        ProductionKey::new("oteryn:reference.loot.cw3-b2-creature-probe")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    candidate.definitions.push(ReferenceDefinition {
+        definition: loot.clone(),
+        kind: ReferenceDefinitionKind::Loot(ReferenceLootDefinition {
+            algorithm: ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: vec![
+                ReferenceLootEntry {
+                    item: second_item,
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(125_000),
+                },
+                ReferenceLootEntry {
+                    item: primary_item,
+                    min_count: 1,
+                    max_count: 3,
+                    probability_ppm: Some(750_000),
+                },
+            ],
+        }),
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+
+    candidate.definitions.push(ReferenceDefinition {
+        definition: TypedDefinitionRef::new(
+            DefinitionFamily::Creature,
+            ProductionKey::new("oteryn:reference.creature.cw3-b2-probe")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        ),
+        kind: ReferenceDefinitionKind::Creature(ReferenceCreatureDefinition {
+            presentation,
+            behavior,
+            loot: Some(loot),
+        }),
+        client_projection: ClientProjectionClass::ClientSafe,
+    });
+
+    Ok(candidate)
+}
+
+fn typed_creature_kind_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceCreatureDefinition, ContentError> {
+    let definition = source
+        .definitions
+        .iter_mut()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Creature)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed creature probe missing",
+        ))?;
+    match &mut definition.kind {
+        ReferenceDefinitionKind::Creature(creature) => Ok(creature),
+        _ => Err(ContentError::InvalidArtifact(
+            "reference-playable typed creature probe changed kind",
+        )),
+    }
+}
+
+fn typed_loot_definition_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceDefinition, ContentError> {
+    source
+        .definitions
+        .iter_mut()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Loot)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed loot probe missing",
+        ))
+}
+
+fn typed_loot_kind_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceLootDefinition, ContentError> {
+    match &mut typed_loot_definition_mut(source)?.kind {
+        ReferenceDefinitionKind::Loot(loot) => Ok(loot),
+        _ => Err(ContentError::InvalidArtifact(
+            "reference-playable typed loot probe changed kind",
+        )),
+    }
+}
+
 fn typed_item_definition(
     definitions: &[ReferenceDefinition],
 ) -> Result<&ReferenceDefinition, ContentError> {
@@ -373,6 +512,403 @@ fn item_client_projection_omits_server_legality_fields() -> Result<(), ContentEr
             stack_class: ReferenceItemStackClass::StackCapable,
         })
     );
+    Ok(())
+}
+
+#[test]
+fn typed_creature_and_loot_semantics_link_deterministically() -> Result<(), ContentError> {
+    let left_source = source_with_creature_loot()?;
+    let mut right_source = left_source.clone();
+    right_source.definitions.reverse();
+    typed_loot_kind_mut(&mut right_source)?.entries.reverse();
+
+    let left = link_reference_playable(left_source)?;
+    let right = link_reference_playable(right_source)?;
+    assert_eq!(left, right);
+
+    let creature = left
+        .definitions
+        .iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Creature)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed creature probe missing",
+        ))?;
+    let ReferenceDefinitionKind::Creature(creature) = &creature.kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable typed creature probe changed kind",
+        ));
+    };
+    assert_eq!(
+        creature.presentation.family(),
+        DefinitionFamily::Presentation
+    );
+    assert_eq!(creature.behavior.family(), DefinitionFamily::Behavior);
+    assert_eq!(
+        creature
+            .loot
+            .as_ref()
+            .ok_or(ContentError::InvalidArtifact(
+                "reference-playable typed creature loot probe missing",
+            ))?
+            .family(),
+        DefinitionFamily::Loot
+    );
+
+    let loot = left
+        .definitions
+        .iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Loot)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed loot probe missing",
+        ))?;
+    let ReferenceDefinitionKind::Loot(loot) = &loot.kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable typed loot probe changed kind",
+        ));
+    };
+    assert_eq!(
+        loot.algorithm,
+        ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
+    );
+    assert_eq!(loot.entries.len(), 2);
+    assert_eq!(
+        loot.entries[0].item.key().as_str(),
+        "oteryn:reference.item.cw3-b1-probe"
+    );
+    assert_eq!(loot.entries[0].probability_ppm, Some(750_000));
+    Ok(())
+}
+
+#[test]
+fn creature_and_loot_families_require_typed_kinds() -> Result<(), ContentError> {
+    let mut creature = source()?;
+    creature.definitions.push(ReferenceDefinition {
+        definition: TypedDefinitionRef::new(
+            DefinitionFamily::Creature,
+            ProductionKey::new("oteryn:reference.creature.cw3-b2-undeclared")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        ),
+        kind: ReferenceDefinitionKind::Generic,
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+    assert!(matches!(
+        link_reference_playable(creature),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable creature requires typed static creature semantics"
+        ))
+    ));
+
+    let mut loot = source()?;
+    loot.definitions.push(ReferenceDefinition {
+        definition: TypedDefinitionRef::new(
+            DefinitionFamily::Loot,
+            ProductionKey::new("oteryn:reference.loot.cw3-b2-undeclared")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        ),
+        kind: ReferenceDefinitionKind::Generic,
+        client_projection: ClientProjectionClass::ServerOnly,
+    });
+    assert!(matches!(
+        link_reference_playable(loot),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable loot requires typed loot table semantics"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn creature_typed_references_fail_closed() -> Result<(), ContentError> {
+    let mut missing = source_with_creature_loot()?;
+    typed_creature_kind_mut(&mut missing)?.presentation = TypedDefinitionRef::new(
+        DefinitionFamily::Presentation,
+        ProductionKey::new("oteryn:reference.presentation.missing")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(missing),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut wrong_family = source_with_creature_loot()?;
+    let behavior = typed_creature_kind_mut(&mut wrong_family)?.behavior.clone();
+    typed_creature_kind_mut(&mut wrong_family)?.behavior = TypedDefinitionRef::new(
+        DefinitionFamily::Presentation,
+        behavior.key().clone(),
+        behavior.revision().clone(),
+    );
+    assert!(matches!(
+        link_reference_playable(wrong_family),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable creature behavior reference must target Behavior"
+        ))
+    ));
+
+    let mut wrong_revision = source_with_creature_loot()?;
+    let loot = typed_creature_kind_mut(&mut wrong_revision)?
+        .loot
+        .clone()
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed creature loot probe missing",
+        ))?;
+    typed_creature_kind_mut(&mut wrong_revision)?.loot = Some(TypedDefinitionRef::new(
+        DefinitionFamily::Loot,
+        loot.key().clone(),
+        DefinitionRevisionRef::new("definition-r2")?,
+    ));
+    assert!(matches!(
+        link_reference_playable(wrong_revision),
+        Err(ContentError::RevisionMismatch(
+            "reference-playable definition revision"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn loot_entries_resolve_only_to_typed_items() -> Result<(), ContentError> {
+    let mut wrong_family = source_with_creature_loot()?;
+    let item = typed_loot_kind_mut(&mut wrong_family)?.entries[0]
+        .item
+        .clone();
+    typed_loot_kind_mut(&mut wrong_family)?.entries[0].item = TypedDefinitionRef::new(
+        DefinitionFamily::Creature,
+        item.key().clone(),
+        item.revision().clone(),
+    );
+    assert!(matches!(
+        link_reference_playable(wrong_family),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable loot entry must target Item"
+        ))
+    ));
+
+    let mut missing = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut missing)?.entries[0].item = TypedDefinitionRef::new(
+        DefinitionFamily::Item,
+        ProductionKey::new("oteryn:reference.item.missing")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(missing),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut wrong_revision = source_with_creature_loot()?;
+    let item = typed_loot_kind_mut(&mut wrong_revision)?.entries[0]
+        .item
+        .clone();
+    typed_loot_kind_mut(&mut wrong_revision)?.entries[0].item = TypedDefinitionRef::new(
+        DefinitionFamily::Item,
+        item.key().clone(),
+        DefinitionRevisionRef::new("definition-r2")?,
+    );
+    assert!(matches!(
+        link_reference_playable(wrong_revision),
+        Err(ContentError::RevisionMismatch(
+            "reference-playable definition revision"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn loot_algorithm_probability_and_count_domains_fail_closed() -> Result<(), ContentError> {
+    let mut missing_probability = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut missing_probability)?.entries[0].probability_ppm = None;
+    assert!(matches!(
+        link_reference_playable(missing_probability),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable Bernoulli loot entry requires explicit probability_ppm"
+        ))
+    ));
+
+    let mut oversized_probability = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut oversized_probability)?.entries[0].probability_ppm =
+        Some(REFERENCE_LOOT_PROBABILITY_PPM_SCALE + 1);
+    assert!(matches!(
+        link_reference_playable(oversized_probability),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable loot probability_ppm exceeds one million"
+        ))
+    ));
+
+    let mut zero_count = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut zero_count)?.entries[0].min_count = 0;
+    assert!(matches!(
+        link_reference_playable(zero_count),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable loot entry requires a positive ordered count range"
+        ))
+    ));
+
+    let mut reversed_count = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut reversed_count)?.entries[0].min_count = 3;
+    typed_loot_kind_mut(&mut reversed_count)?.entries[0].max_count = 2;
+    assert!(matches!(
+        link_reference_playable(reversed_count),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable loot entry requires a positive ordered count range"
+        ))
+    ));
+
+    let mut guaranteed = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut guaranteed)?.algorithm =
+        ReferenceLootSelectionAlgorithm::GuaranteedEntries;
+    for entry in &mut typed_loot_kind_mut(&mut guaranteed)?.entries {
+        entry.probability_ppm = None;
+    }
+    let guaranteed = link_reference_playable(guaranteed)?;
+    let guaranteed_loot = guaranteed
+        .definitions
+        .iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Loot)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed loot probe missing",
+        ))?;
+    assert!(matches!(
+        guaranteed_loot.kind,
+        ReferenceDefinitionKind::Loot(ReferenceLootDefinition {
+            algorithm: ReferenceLootSelectionAlgorithm::GuaranteedEntries,
+            ..
+        })
+    ));
+
+    let mut mixed_guaranteed = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut mixed_guaranteed)?.algorithm =
+        ReferenceLootSelectionAlgorithm::GuaranteedEntries;
+    assert!(matches!(
+        link_reference_playable(mixed_guaranteed),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable guaranteed loot entry cannot also declare probability_ppm"
+        ))
+    ));
+
+    let mut weighted = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut weighted)?.algorithm =
+        ReferenceLootSelectionAlgorithm::WeightedSingleSelection;
+    assert!(matches!(
+        link_reference_playable(weighted),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable weighted loot entries require separately accepted typed weight semantics"
+        ))
+    ));
+
+    let mut nested = source_with_creature_loot()?;
+    typed_loot_kind_mut(&mut nested)?.algorithm = ReferenceLootSelectionAlgorithm::NestedGroups;
+    assert!(matches!(
+        link_reference_playable(nested),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable nested loot groups require separately accepted typed group references"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn creature_projection_exposes_presentation_only_and_loot_stays_server_only()
+-> Result<(), ContentError> {
+    let canonical = link_reference_playable(source_with_creature_loot()?)?;
+    let client = canonical.client_safe_definitions();
+    assert!(
+        !client
+            .iter()
+            .any(|definition| definition.definition.family() == DefinitionFamily::Loot)
+    );
+
+    let client_creature = client
+        .iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Creature)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable client creature probe missing",
+        ))?;
+    let ClientSafeDefinitionKind::Creature(client_creature) = &client_creature.kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable client creature probe changed kind",
+        ));
+    };
+    assert_eq!(
+        client_creature.presentation.family(),
+        DefinitionFamily::Presentation
+    );
+
+    let full_creature = canonical
+        .definitions
+        .iter()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Creature)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable typed creature probe missing",
+        ))?;
+    let ReferenceDefinitionKind::Creature(full_creature) = &full_creature.kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable typed creature probe changed kind",
+        ));
+    };
+    assert_eq!(full_creature.behavior.family(), DefinitionFamily::Behavior);
+    assert_eq!(
+        full_creature
+            .loot
+            .as_ref()
+            .ok_or(ContentError::InvalidArtifact(
+                "reference-playable typed creature loot probe missing",
+            ))?
+            .family(),
+        DefinitionFamily::Loot
+    );
+
+    let mut loot_leak = source_with_creature_loot()?;
+    typed_loot_definition_mut(&mut loot_leak)?.client_projection =
+        ClientProjectionClass::ClientSafe;
+    assert!(matches!(
+        link_reference_playable(loot_leak),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable loot selection authority must remain server-only"
+        ))
+    ));
+
+    let mut server_only_presentation = source_with_creature_loot()?;
+    server_only_presentation
+        .definitions
+        .iter_mut()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Presentation)
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable presentation probe missing",
+        ))?
+        .client_projection = ClientProjectionClass::ServerOnly;
+    assert!(matches!(
+        link_reference_playable(server_only_presentation),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable client-safe creature requires client-safe presentation target"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn cw3_b2_model_tests_do_not_promote_cw2_source_identity() -> Result<(), ContentError> {
+    let canonical = link_reference_playable(source_with_creature_loot()?)?;
+    for definition in &canonical.definitions {
+        assert!(
+            definition
+                .definition
+                .key()
+                .as_str()
+                .starts_with("oteryn:reference.")
+        );
+        assert!(
+            !definition
+                .definition
+                .key()
+                .as_str()
+                .starts_with("oteryn:item.")
+        );
+        if let ReferenceDefinitionKind::Loot(loot) = &definition.kind {
+            for entry in &loot.entries {
+                assert!(entry.item.key().as_str().starts_with("oteryn:reference."));
+                assert!(!entry.item.key().as_str().starts_with("oteryn:item."));
+            }
+        }
+    }
     Ok(())
 }
 
