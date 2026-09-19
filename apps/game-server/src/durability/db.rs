@@ -184,6 +184,19 @@ impl DurabilityRoot {
     }
 }
 
+pub(crate) async fn await_root_task<T>(
+    task: tokio::task::JoinHandle<Result<T, DurabilityError>>,
+) -> Result<T, DurabilityError>
+where
+    T: Send + 'static,
+{
+    match task.await {
+        Ok(result) => result,
+        Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
+        Err(_) => Err(DurabilityError::RootTaskFailed),
+    }
+}
+
 pub(crate) struct IssuedSemanticPass {
     root: DurabilityRoot,
     holder: PoolConnection<Postgres>,

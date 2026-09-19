@@ -131,19 +131,6 @@ async fn commit_pass_transaction(
     }
 }
 
-async fn await_root_task<T>(
-    task: tokio::task::JoinHandle<Result<T, DurabilityError>>,
-) -> Result<T, DurabilityError>
-where
-    T: Send + 'static,
-{
-    match task.await {
-        Ok(result) => result,
-        Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
-        Err(_) => Err(DurabilityError::RootTaskFailed),
-    }
-}
-
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
     backend: JournalBackend,
@@ -170,7 +157,7 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return await_root_task(tokio::spawn(async move {
+            return db::await_root_task(tokio::spawn(async move {
                 journal.prepare_internal(request, false, Some(issued)).await
             }))
             .await;
@@ -185,7 +172,7 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return await_root_task(tokio::spawn(async move {
+            return db::await_root_task(tokio::spawn(async move {
                 journal.prepare_internal(request, true, Some(issued)).await
             }))
             .await;
@@ -559,7 +546,7 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return await_root_task(tokio::spawn(async move {
+            return db::await_root_task(tokio::spawn(async move {
                 journal.commit_internal(request, Some(issued)).await
             }))
             .await;
@@ -783,7 +770,7 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return await_root_task(tokio::spawn(async move {
+            return db::await_root_task(tokio::spawn(async move {
                 journal.reconcile_internal(request, Some(issued)).await
             }))
             .await;
