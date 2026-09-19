@@ -864,6 +864,17 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Additive Content/World task profile; it supersedes no existing coordinator, domain worker or accepted contract. Alias resolution never grants allocation, lease, production or merge authority."
+    },
+    {
+      "prompt_id": "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT",
+      "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "independent-audit-role",
+      "scope": "Read-only independent end-to-end Content/World architecture, data-model, import, project-storage, compiler/bundle/loader, runtime/client and evidence audit; proposes bounded corrective packets but has no implementation, allocation, control-plane, merge, production or cross-repository authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Content/World-specialized audit profile. It supersedes neither the broad independent programme architecture audit, the Work auditor, nor any Content/World coordinator or worker; only an explicit replacement registered in this lifecycle registry may supersede it."
     }
   ]
 }
