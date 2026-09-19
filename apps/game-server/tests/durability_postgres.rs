@@ -83,6 +83,55 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+const WP3_HOSTILE_PG_CHILD: &str = "OTERYN_WP3_HOSTILE_PG_CHILD";
+
+#[test]
+fn wp3_deterministic_pg_options_ignore_ambient_sources() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::var_os(WP3_HOSTILE_PG_CHILD).is_some() {
+        use sqlx::ConnectOptions;
+        use sqlx::postgres::{PgConnectOptions, PgSslMode};
+
+        let options = PgConnectOptions::from_str_without_environment(
+            "postgresql://explicit@db.example/oteryn?hostaddr=127.0.0.1&sslmode=verify-full",
+        )?;
+        assert_eq!(options.get_host(), "db.example");
+        assert_eq!(options.get_host_addr(), Some("127.0.0.1"));
+        assert_eq!(options.get_port(), 5432);
+        assert_eq!(options.get_username(), "explicit");
+        assert_eq!(options.get_database(), Some("oteryn"));
+        assert!(matches!(options.get_ssl_mode(), PgSslMode::VerifyFull));
+        assert_eq!(options.to_url_lossy().password(), None);
+        return Ok(());
+    }
+
+    let pgpass =
+        std::env::temp_dir().join(format!("oteryn-wp3-hostile-pgpass-{}", std::process::id()));
+    std::fs::write(&pgpass, "db.example:5432:oteryn:ambient:ambient-secret\n")?;
+    let output = Command::new(std::env::current_exe()?)
+        .arg("--exact")
+        .arg("wp3_deterministic_pg_options_ignore_ambient_sources")
+        .arg("--nocapture")
+        .env(WP3_HOSTILE_PG_CHILD, "1")
+        .env("PGHOST", "hostile.example")
+        .env("PGHOSTADDR", "203.0.113.99")
+        .env("PGPORT", "6543")
+        .env("PGUSER", "ambient")
+        .env("PGPASSWORD", "ambient-secret")
+        .env("PGDATABASE", "ambient_db")
+        .env("PGSSLMODE", "disable")
+        .env("PGPASSFILE", &pgpass)
+        .output()?;
+    let _ = std::fs::remove_file(pgpass);
+    if !output.status.success() {
+        return Err(format!(
+            "hostile PG child failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    Ok(())
+}
+
 type CrossEpochSessionRow = (
     i64,
     i64,
