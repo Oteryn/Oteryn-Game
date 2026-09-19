@@ -25,6 +25,20 @@ Before material action:
 
 For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` remains the active mutating control plane. Another reusable control-plane prompt is not concurrent mutation authority. If exactly one active profile cannot be proven, return `POLICY_CONFLICT` and do not allocate, lease, integrate or close out.
 
+## Execution-capability preflight
+
+Before dispatching any mutating worker, resolve the selected execution surface and prove the publication route up front.
+
+- Ordinary material mutation requires an isolated checkout or worktree, normal local Git commit capability, and a normal non-force push path to the exact allocated branch.
+- An explicitly authorized API-native authoring task is allowed only when the intended operation is itself the repository-native API write, no selected local Git candidate is being reconstructed, and the task does not claim local build/test evidence that was not actually run.
+- A read-only/evidence worker needs no publication route.
+
+If an ordinary mutating lane cannot prove the isolated Git workspace or normal non-force push path, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
+
+Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, test runner, commit capability or push path. Missing ordinary repository execution capability is not a Remote Desktop exception. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
+
+Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, per-file Contents reconstruction, or a Remote Desktop convenience fallback.
+
 ## Thin-dispatcher rule
 
 The coordinator is a scheduler, integrator and gate owner, not a substitute implementation worker. Keep coordinator context compact and dispatch one bounded task per worker. Parallel workers are allowed only when exact paths/custody are non-overlapping.
@@ -42,6 +56,9 @@ issue: <governing issue>
 task_id: <unique task>
 lane_id: <lane>
 branch: <existing or allocated branch>
+execution_route: <isolated_git | api_native | read_only>
+execution_surface: <proven surface or locator>
+publication_route: <normal_non_force_git | api_native | none>
 objective: <one bounded outcome>
 owned_paths: []
 prerequisite_merges: []
