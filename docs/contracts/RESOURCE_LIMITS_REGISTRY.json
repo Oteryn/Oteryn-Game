@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-09T11:29:31+00:00",
+  "updated_at": "2026-09-19T15:33:37+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -2632,6 +2632,126 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "One shared executor; caller creation cannot mint budget",
       "unit": "executors"
+    },
+    {
+      "id": "DFR-PG-TLS-SERVER-NAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL TLS DNS server identity",
+      "unit": "ASCII bytes",
+      "hard_maximum": 253,
+      "configurable_range": {
+        "minimum": 253,
+        "maximum": 253
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate DNS presentation grammar and byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "253-byte valid DNS presentation name accepted when every label is 1..63 octets and all coupled retained-config checks pass",
+        "254 bytes rejected as UNAVAILABLE before retained allocation or TLS-name parsing/copy",
+        "A 64-octet label and checked aggregate arithmetic overflow are rejected before retained allocation"
+      ],
+      "notes": "First-slice owner decision derived from RFC 1035's 255-octet DNS wire-name maximum: an uncompressed presentation name without the trailing root dot is at most 253 ASCII bytes. No ambient PGHOST/PGHOSTADDR fallback is authorized."
+    },
+    {
+      "id": "DFR-PG-DATABASE-NAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL database name",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 63,
+      "configurable_range": {
+        "minimum": 63,
+        "maximum": 63
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate UTF-8 byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "63 UTF-8 bytes accepted when the name is otherwise valid and all coupled retained-config checks pass",
+        "64 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or PgConnectOptions construction",
+        "No silent PostgreSQL identifier truncation is accepted"
+      ],
+      "notes": "First-slice product cap matches PostgreSQL 17's default max_identifier_length of 63 bytes. A server recompiled for a larger NAMEDATALEN does not widen this Oteryn profile."
+    },
+    {
+      "id": "DFR-PG-USERNAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL username/role name",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 63,
+      "configurable_range": {
+        "minimum": 63,
+        "maximum": 63
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate UTF-8 byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "63 UTF-8 bytes accepted when the role name is otherwise valid and all coupled retained-config checks pass",
+        "64 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or authentication setup",
+        "No silent PostgreSQL identifier truncation is accepted"
+      ],
+      "notes": "First-slice product cap matches PostgreSQL 17's default max_identifier_length of 63 bytes for identifiers. A server recompiled for a larger NAMEDATALEN does not widen this Oteryn profile."
+    },
+    {
+      "id": "DFR-PG-PASSWORD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL SCRAM password/secret material",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate non-empty UTF-8 byte length from borrowed/already-bounded secret input before any retained String copy, formatting or SCRAM setup; checked aggregate arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1024 UTF-8 bytes accepted when the secret is otherwise valid and all coupled retained-config checks pass",
+        "1025 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or SCRAM work",
+        "Checked aggregate arithmetic overflow is rejected without logging secret bytes"
+      ],
+      "notes": "This is an Oteryn first-slice product ceiling, not a claim that PostgreSQL universally limits passwords to 1024 bytes. PostgreSQL 17 SCRAM supplies no smaller password-length contract; existing protected Oteryn password ingress uses a 1024-unit string ceiling, while this DB boundary deliberately uses the stricter allocation unit UTF-8 bytes."
+    },
+    {
+      "id": "DFR-PG-ROOT-CA-PEM-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL root-CA PEM bundle",
+      "unit": "ASCII bytes",
+      "hard_maximum": 22768,
+      "configurable_range": {
+        "minimum": 22768,
+        "maximum": 22768
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reject raw input above 22768 bytes before PEM parsing or retained copy; inside the bounded input accept only 1..4 CERTIFICATE blocks, at most 4096 decoded DER bytes each and 16384 aggregate DER bytes, then reserve actual retained capacity against the same root I ledger before ownership.",
+      "client_visible": false,
+      "boundary_tests": [
+        "22768 raw ASCII bytes pass the generic pre-copy length boundary when the canonical certificate-bundle grammar and all nested/coupled limits also pass; semantic qualification uses an exact valid fixture when representable or the largest valid value at/below together with this exact length comparison",
+        "22769 raw bytes rejected as UNAVAILABLE before PEM parsing or retained allocation",
+        "A fifth certificate, 4097 decoded DER bytes for one certificate, 16385 aggregate DER bytes, malformed/noncanonical text, and checked arithmetic overflow are rejected fail-closed"
+      ],
+      "notes": "Owner decision adopts the protected Oteryn NSRC-TLS-CERTS conservative PKI envelope for this separate PostgreSQL trust input: 4 roots, 4096 DER bytes each. RFC 7468 generated base64 is 64 characters per line; 4096 DER bytes become 5464 base64 characters over 86 lines. Allowing LF or worst-case CRLF canonical text gives 5692 bytes per certificate and 22768 for four. No unrelated PEM text or ambient root-file discovery is admitted."
+    },
+    {
+      "id": "DFR-PG-RETAINED-CONFIG-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Aggregate variable input bytes retained by the explicit PostgreSQL root configuration",
+      "unit": "input bytes across tls_server_name + database + username + password + root_ca_pem",
+      "hard_maximum": 24171,
+      "configurable_range": {
+        "minimum": 24171,
+        "maximum": 24171
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Use checked addition over all five already-length-validated borrowed inputs and reject above 24171 before any retained copy/parse. This input bound creates no allowance: actual owned capacities, fixed config backing and allocator overhead are separately charged to the existing same-root I budget before allocation and for their full lifetime.",
+      "client_visible": false,
+      "boundary_tests": [
+        "24171 aggregate input bytes accepted only when every per-field maximum and semantic rule also passes",
+        "24172 aggregate input bytes rejected as UNAVAILABLE before any retained configuration copy",
+        "Checked-add overflow, any per-field overflow, or inability to reserve actual retained capacity in the existing root ledger rejects before partial root/config construction"
+      ],
+      "notes": "Exact arithmetic is 253 + 63 + 63 + 1024 + 22768 = 24171 input bytes. This is conjunctive with DFR-TOTAL-RESIDENT-BYTES=12582912 and does not change I + max(R,T) + Q + A <= 12 MiB or create a separate configuration budget."
     },
     {
       "id": "FND04-GAMESESSION-USED-IDS-PER-CHARACTER",
