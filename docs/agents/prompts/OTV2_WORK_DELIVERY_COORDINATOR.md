@@ -27,17 +27,19 @@ For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_D
 
 ## Execution-capability preflight
 
-Before dispatching any mutating worker, resolve the selected execution surface and prove the publication route up front.
+Before dispatching any mutating worker, resolve the selected execution surface and prove the publication **and required-validation** routes up front.
 
 - Ordinary material mutation requires an isolated checkout or worktree, normal local Git commit capability, and a normal non-force push path to the exact allocated branch.
+- For every concrete entry in `required_validation`, bind an authorized executable route before worker release. The route may be the isolated workspace, repository-native hosted CI when the governing task accepts hosted proof, or a separately valid host-specific surface required by the task.
+- A required compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` or be deferred as "we will find a surface later". If its route cannot be proven now, the lane is blocked before mutation.
 - An explicitly authorized API-native authoring task is allowed only when the intended operation is itself the repository-native API write, no selected local Git candidate is being reconstructed, and the task does not claim local build/test evidence that was not actually run.
-- A read-only/evidence worker needs no publication route.
+- A read-only/evidence worker needs no publication route, but any validation it promises still needs a truthful executable/read-only evidence route.
 
-If an ordinary mutating lane cannot prove the isolated Git workspace or normal non-force push path, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
+If an ordinary mutating lane cannot prove the isolated Git workspace, normal non-force push path, **or every required-validation route**, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
 
-Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, test runner, commit capability or push path. Missing ordinary repository execution capability is not a Remote Desktop exception. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
+Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing ordinary repository execution/validation capability is not a Remote Desktop exception. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
 
-Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, per-file Contents reconstruction, or a Remote Desktop convenience fallback.
+Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, per-file Contents reconstruction, a Remote Desktop convenience fallback, or an unproven required-validation surface.
 
 ## Thin-dispatcher rule
 
@@ -70,7 +72,11 @@ governing_contracts: []
 accepted_decisions: []
 relevant_findings: []
 excluded_scope: []
-required_validation: []
+required_validation:
+  - check: <exact command/gate/proof>
+    route: <isolated_workspace | repository_ci | host_specific>
+    surface: <proven surface or locator>
+    capability: <PROVEN | UNKNOWN>
 lazy_refs: []
 terminal_states:
   - DONE
