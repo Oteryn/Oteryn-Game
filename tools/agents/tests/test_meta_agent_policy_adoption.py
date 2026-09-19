@@ -84,6 +84,83 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         ):
             self.assertIn(value, text)
 
+    def test_work_coordinator_preflights_mutating_execution_before_dispatch(self):
+        root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "BLOCKED_CAPABILITY_UNAVAILABLE",
+            "Missing repository workspace, Git CLI, compiler/test-runner/validator or push capability is not a Remote Desktop exception",
+            "independently authorized API-native edit",
+        ):
+            self.assertIn(value, root_text)
+
+        coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "## Execution-capability preflight",
+            "Before dispatching any mutating worker",
+            "isolated checkout or worktree",
+            "normal non-force push path",
+            "BLOCKED_CAPABILITY_UNAVAILABLE",
+            "Do not ask the owner for Remote Desktop merely to obtain",
+            "execution_route: <isolated_git | api_native | read_only>",
+            "publication_route: <normal_non_force_git | api_native | none>",
+            "required-validation",
+            "For every concrete entry in `required_validation`",
+            "capability: <PROVEN | UNKNOWN>",
+            "or every required-validation route",
+        ):
+            self.assertIn(value, coordinator)
+
+        lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
+        entry = next(
+            prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
+        )
+        self.assertEqual(entry["version"], "1.7")
+
+    def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
+        policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")
+        for value in (
+            "## Standing repository review authorization",
+            "one external independent",
+            "survives chat, worker, coordinator and task-phase handoffs",
+            "Do not ask the owner again for a covered review",
+            "already requested, running or completed",
+            "does **not** cover optional/speculative extra reviews",
+            "### Single review-dispatch owner",
+            "only the unique active",
+            "must not emit the trigger itself",
+        ):
+            self.assertIn(value, policy)
+
+        root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "bounded standing authorization for required external review",
+            "Do not ask the owner again for a covered review",
+            "one-writer control-plane action",
+            "direct workers return a review packet instead of emitting it",
+        ):
+            self.assertIn(value, root_text)
+
+        coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "review_authorization: <standing_required_review | task_specific | none>",
+            "review_trigger_owner: <control_plane | standalone_task_owner | none>",
+            "review_request_state: <not_requested | running | completed | stale>",
+            "## Review authorization, ownership and de-duplication",
+            "do **not** ask the owner again",
+            "Workers may return a complete review packet, but they must not emit",
+            "Ambiguous/slow provider response is a readback problem",
+        ):
+            self.assertIn(value, coordinator)
+
+        readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
+        self.assertIn("survives chat/worker handoffs", readme)
+        self.assertIn("A direct worker never emits the owner-funded review trigger", readme)
+        self.assertIn("unique active control plane", readme)
+
     def test_local_routing_extensions_use_bound_states_and_runtime_configuration(self):
         contract = json.loads((ROOT / "docs/agents/GOVERNANCE_CONTRACT.json").read_text(encoding="utf-8"))
         self.assertEqual(
