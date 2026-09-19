@@ -388,7 +388,7 @@ fn replace_lock_and_rebind_root(documents: &mut BTreeMap<String, Vec<u8>>, lock:
 
 #[test]
 fn content_lock_requires_exactly_one_immutable_root_entry() {
-    for mutation in 0..3 {
+    for mutation in 0..4 {
         let mut emitted = documents(draft());
         let mut lock: Value =
             serde_json::from_slice(&emitted["content.lock.json"]).expect("Content Lock");
@@ -402,6 +402,10 @@ fn content_lock_requires_exactly_one_immutable_root_entry() {
             }
             1 => lock["entries"][0]["floating"] = Value::Bool(true),
             2 => lock["entries"][0]["dependency"] = Value::Bool(true),
+            3 => {
+                lock["entries"][0]["package_key"] =
+                    Value::String("oteryn:content.wrong-package".to_owned());
+            }
             _ => return,
         }
         replace_lock_and_rebind_root(&mut emitted, &lock);
