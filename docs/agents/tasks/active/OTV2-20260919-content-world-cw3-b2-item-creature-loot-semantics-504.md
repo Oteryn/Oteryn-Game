@@ -16,7 +16,7 @@ final_head_sha: pending
 final_head_frozen_at: pending
 owner: "Oteryn: content world build"
 created_at: 2026-09-19T19:37:00+02:00
-updated_at: 2026-09-19T19:56:59+02:00
+updated_at: 2026-09-19T20:07:57+02:00
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -78,6 +78,7 @@ No CW2 importer/evidence mutation; no migration of B2 health/speed/armor/defense
 - Client projection omits Loot entirely and projects only Creature presentation; Item materialization/destination authority remains omitted as in CW3-B1.
 - Definition and loot-entry enumeration is canonicalized before linked output.
 - First focused run exposed one existing CW3-B1 error-contract regression caused only by match-arm precedence; reordered validation to preserve the prior wrong-family result while retaining Creature/Loot Generic fail-closed behavior.
+- Independent HIGH whole-diff review of historical candidate `a70bc9f96701787163f68fed6ff928dae9f478a0` found one accepted P2: unsupported weighted/nested algorithms were rejected only while iterating entries, so an empty table could bypass the fail-closed rejection. The repair validates unsupported algorithms before entry iteration and adds explicit empty-weighted/empty-nested negative coverage; the historical review is superseded by this material repair.
 
 ## Validation
 
@@ -102,27 +103,27 @@ No CW2 importer/evidence mutation; no migration of B2 health/speed/armor/defense
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending PR publication
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: pending successor to reviewed historical `a70bc9f96701787163f68fed6ff928dae9f478a0`
+- trigger source: PR #680 exact-head pull_request generation
+- workflow/run/job: first generation Merge Gate `35459726687`; routing job `105941314354`
+- runner assignment: GitHub hosted
+- classification: first generation blocked by inherited routing snapshot drift: `ROUTING_CONTRACT_STALE health=stale-inherited`, declared `ba36d790...`, actual `c04bf8e0...`; CW3-B2 changes zero audited routing inputs. Upstream PR #679 carries that exact snapshot refresh outside this task custody.
+- result: pending successor-head generation; first generation not qualifying because aggregate `game-gate` cannot pass while inherited routing drift remains
 
 ## Self-review
 
-- exact head: final staged candidate; immutable commit SHA recorded externally after commit
+- exact head: repaired successor staged candidate; immutable commit SHA recorded externally after commit
 - method/reviewer: Oteryn: content world build, whole-diff adversarial review
-- material findings: 0 open; one pre-freeze B1 match-precedence regression was repaired and requalified
+- material findings: 0 open; pre-freeze B1 match-precedence regression repaired and requalified; accepted external P2 empty weighted/nested bypass repaired and requalified
 - verdict: `PASS_ZERO_MATERIAL_FINDINGS`
 
 ## Independent review
 
 - required: YES — shared Reference Content semantic/API extension per #162 allocation
-- exact head: pending
-- method/auditor: one independent HIGH whole-diff review; current standing owner authorization covers this single stable-head request
-- material findings: pending
-- verdict: pending
+- exact head: historical `a70bc9f96701787163f68fed6ff928dae9f478a0` reviewed; repaired successor pending exact SHA
+- method/auditor: independent Codex `gpt-5.6-sol` HIGH, read-only; standing owner authorization covers the required successor exact-head re-review after the accepted material repair
+- material findings: historical head: one accepted P2 empty-table bypass for unsupported weighted/nested algorithms; repaired in successor candidate
+- verdict: historical generation superseded; fresh successor exact-head review required
 
 ## PR and closeout
 
@@ -136,7 +137,7 @@ No CW2 importer/evidence mutation; no migration of B2 health/speed/armor/defense
 ## Context checkpoint
 
 ```yaml
-last_progress: local candidate fully qualified, governance/custody/self-review pass, exactly three allocated paths staged
+last_progress: accepted independent-review P2 repaired test-first; post-repair focused/first-production/strict-Clippy/full-game-server qualification passes
 status: validating
 branch: agent/content-world-cw3-b2-item-creature-loot-semantics-504
 head_sha: pending
@@ -153,10 +154,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: commit and non-force push the exact staged candidate, then open PR and qualify exact-head CI
+blocker: inherited protected-main routing snapshot drift blocks aggregate game-gate until its separately owned repair integrates
+next_action: rerun governance/custody/whole-diff self-review, commit and non-force push the P2 repair, then obtain fresh independent HIGH review on the immutable successor head
 ```

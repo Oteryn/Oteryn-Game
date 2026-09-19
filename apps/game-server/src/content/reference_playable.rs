@@ -751,6 +751,21 @@ fn validate_loot_definition(
         ));
     }
 
+    match loot.algorithm {
+        ReferenceLootSelectionAlgorithm::WeightedSingleSelection => {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable weighted loot entries require separately accepted typed weight semantics",
+            ));
+        }
+        ReferenceLootSelectionAlgorithm::NestedGroups => {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable nested loot groups require separately accepted typed group references",
+            ));
+        }
+        ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
+        | ReferenceLootSelectionAlgorithm::GuaranteedEntries => {}
+    }
+
     for entry in &loot.entries {
         if entry.min_count == 0 || entry.max_count < entry.min_count {
             return Err(ContentError::InvalidArtifact(

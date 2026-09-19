@@ -794,10 +794,32 @@ fn loot_algorithm_probability_and_count_domains_fail_closed() -> Result<(), Cont
         ))
     ));
 
+    let mut empty_weighted = source_with_creature_loot()?;
+    let empty_weighted_loot = typed_loot_kind_mut(&mut empty_weighted)?;
+    empty_weighted_loot.algorithm = ReferenceLootSelectionAlgorithm::WeightedSingleSelection;
+    empty_weighted_loot.entries.clear();
+    assert!(matches!(
+        link_reference_playable(empty_weighted),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable weighted loot entries require separately accepted typed weight semantics"
+        ))
+    ));
+
     let mut nested = source_with_creature_loot()?;
     typed_loot_kind_mut(&mut nested)?.algorithm = ReferenceLootSelectionAlgorithm::NestedGroups;
     assert!(matches!(
         link_reference_playable(nested),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable nested loot groups require separately accepted typed group references"
+        ))
+    ));
+
+    let mut empty_nested = source_with_creature_loot()?;
+    let empty_nested_loot = typed_loot_kind_mut(&mut empty_nested)?;
+    empty_nested_loot.algorithm = ReferenceLootSelectionAlgorithm::NestedGroups;
+    empty_nested_loot.entries.clear();
+    assert!(matches!(
+        link_reference_playable(empty_nested),
         Err(ContentError::InvalidArtifact(
             "reference-playable nested loot groups require separately accepted typed group references"
         ))
