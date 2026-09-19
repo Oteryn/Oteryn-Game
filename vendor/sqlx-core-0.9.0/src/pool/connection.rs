@@ -358,7 +358,9 @@ impl<DB: Database> Floating<DB, Live<DB>> {
                     return false;
                 }
                 Err(error) => {
-                    tracing::warn!(%error, "error from `after_release`");
+                    let failure_class = redacted_release_failure_class(&error);
+                    drop(error);
+                    tracing::warn!(failure_class, "error from `after_release`");
                     // Connection is broken, don't try to gracefully close as
                     // something weird might happen.
                     self.close_hard().await;
@@ -375,8 +377,10 @@ impl<DB: Database> Floating<DB, Live<DB>> {
         // this is simply a band-aid as SQLx-next connections should be able
         // to recover from cancellations
         if let Err(error) = self.raw.ping().await {
+            let failure_class = redacted_release_failure_class(&error);
+            drop(error);
             tracing::warn!(
-                %error,
+                failure_class,
                 "error occurred while testing the connection on-release",
             );
 
@@ -515,7 +519,12 @@ impl<DB: Database> Floating<DB, Idle<DB>> {
 
     pub async fn close(self) -> DecrementSizeGuard<DB> {
         if let Err(error) = self.inner.live.raw.close().await {
-            tracing::debug!(%error, "error occurred while closing the pool connection");
+            let failure_class = redacted_release_failure_class(&error);
+            drop(error);
+            tracing::debug!(
+                failure_class,
+                "error occurred while closing the pool connection"
+            );
         }
         self.guard
     }
