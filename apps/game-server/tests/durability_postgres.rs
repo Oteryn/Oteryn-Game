@@ -83,6 +83,179 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+const WP3_HOSTILE_PG_CHILD: &str = "OTERYN_WP3_HOSTILE_PG_CHILD";
+
+#[test]
+fn wp3_deterministic_pg_options_ignore_ambient_sources() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::var_os(WP3_HOSTILE_PG_CHILD).is_some() {
+        use sqlx::ConnectOptions;
+        use sqlx::postgres::{PgConnectOptions, PgSslMode};
+
+        let options = PgConnectOptions::from_str_without_environment(
+            "postgresql://explicit@db.example/oteryn?hostaddr=127.0.0.1&sslmode=verify-full",
+        )?;
+        assert_eq!(options.get_host(), "db.example");
+        assert_eq!(options.get_host_addr(), Some("127.0.0.1"));
+        assert_eq!(options.get_port(), 5432);
+        assert_eq!(options.get_username(), "explicit");
+        assert_eq!(options.get_database(), Some("oteryn"));
+        assert!(matches!(options.get_ssl_mode(), PgSslMode::VerifyFull));
+        assert_eq!(options.to_url_lossy().password(), None);
+        return Ok(());
+    }
+
+    let pgpass =
+        std::env::temp_dir().join(format!("oteryn-wp3-hostile-pgpass-{}", std::process::id()));
+    std::fs::write(&pgpass, "db.example:5432:oteryn:ambient:ambient-secret\n")?;
+    let output = Command::new(std::env::current_exe()?)
+        .arg("--exact")
+        .arg("wp3_deterministic_pg_options_ignore_ambient_sources")
+        .arg("--nocapture")
+        .env(WP3_HOSTILE_PG_CHILD, "1")
+        .env("PGHOST", "hostile.example")
+        .env("PGHOSTADDR", "203.0.113.99")
+        .env("PGPORT", "6543")
+        .env("PGUSER", "ambient")
+        .env("PGPASSWORD", "ambient-secret")
+        .env("PGDATABASE", "ambient_db")
+        .env("PGSSLMODE", "disable")
+        .env("PGPASSFILE", &pgpass)
+        .output()?;
+    let _ = std::fs::remove_file(pgpass);
+    if !output.status.success() {
+        return Err(format!(
+            "hostile PG child failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn std::error::Error>>
+{
+    use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let root = DurabilityRoot::new(DurabilityRootConfig::new(
+                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                5432,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "test-secret".to_owned(),
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+            )?);
+
+            assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+            assert!(!root.is_ready());
+            assert!(root.has_ready_demand());
+            assert!(matches!(
+                root.try_acquire_ready(),
+                Err(DurabilityError::RootUnavailable)
+            ));
+            assert!(root.has_ready_demand());
+            tokio::task::yield_now().await;
+            assert!(
+                !root.is_ready(),
+                "ready-only miss must not establish a connection in the background"
+            );
+
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
+
+#[test]
+fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let root = DurabilityRoot::new(DurabilityRootConfig::new(
+                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                5432,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "test-secret".to_owned(),
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+            )?);
+            let journal = AdmissionReconnectJournal::from_root(root.clone());
+            let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+                record(201, 1, 0xa1, unix_now().map_err(foundation_error)?)
+                    .map_err(foundation_error)?,
+            );
+
+            assert!(matches!(
+                journal.prepare(&request).await,
+                Err(DurabilityError::RootUnavailable)
+            ));
+            assert!(!root.is_ready());
+            assert!(root.has_ready_demand());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
+
+#[test]
+fn wp3_return_finality_deadline_hard_retires_exact_holder() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use sqlx::pool::PoolConnectionReturnDisposition;
+            use sqlx::postgres::PgPoolOptions;
+            use std::time::Instant;
+
+            let database = postgres::IsolatedPostgres::create("wp3_return_finality_deadline").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let pool = PgPoolOptions::new()
+                    .max_connections(1)
+                    .min_connections(0)
+                    .after_release(|_connection, _metadata| {
+                        Box::pin(async {
+                            std::future::pending::<()>().await;
+                            Ok(true)
+                        })
+                    })
+                    .connect(&url)
+                    .await?;
+
+                let mut holder = pool.acquire().await?;
+                let deadline = Instant::now() + Duration::from_millis(100);
+                let disposition = holder.return_to_pool_observed_until(deadline).await;
+
+                assert_eq!(
+                    disposition,
+                    PoolConnectionReturnDisposition::RetiredClosed,
+                    "deadline expiry must retire the exact holder before reporting terminal finality"
+                );
+                assert_eq!(pool.num_idle(), 0);
+                assert_eq!(pool.size(), 0, "retired generation must release pool capacity");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
+        })
+}
+
 type CrossEpochSessionRow = (
     i64,
     i64,

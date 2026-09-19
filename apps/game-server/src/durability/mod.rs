@@ -9,6 +9,7 @@ mod db;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
+pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
 use oteryn_game_server::foundation::{
@@ -20,7 +21,7 @@ use oteryn_game_server::foundation::{
     TerminalGameSessionReplacementAuthorizationV1,
 };
 use serde_json::json;
-use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 use std::fmt::{self, Display, Formatter};
 
 const V2_PREPARED: i16 = 1;
@@ -40,27 +41,124 @@ const V2_PROTECTION_REARM_READY: i16 = 1;
 const V2_PROTECTION_REARM_PENDING: i16 = 2;
 type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SqlxFailureClass {
+    Configuration,
+    Database,
+    Transport,
+    Tls,
+    Protocol,
+    Data,
+    Pool,
+    Runtime,
+    Migration,
+    Transaction,
+    Other,
+}
+
+impl SqlxFailureClass {
+    fn classify(error: &sqlx::Error) -> Self {
+        match error {
+            sqlx::Error::Configuration(_) | sqlx::Error::InvalidArgument(_) => Self::Configuration,
+            sqlx::Error::Database(_) => Self::Database,
+            sqlx::Error::Io(_) => Self::Transport,
+            sqlx::Error::Tls(_) => Self::Tls,
+            sqlx::Error::Protocol(_) => Self::Protocol,
+            sqlx::Error::RowNotFound
+            | sqlx::Error::TypeNotFound { .. }
+            | sqlx::Error::ColumnIndexOutOfBounds { .. }
+            | sqlx::Error::ColumnNotFound(_)
+            | sqlx::Error::ColumnDecode { .. }
+            | sqlx::Error::Encode(_)
+            | sqlx::Error::Decode(_)
+            | sqlx::Error::AnyDriverError(_) => Self::Data,
+            sqlx::Error::PoolTimedOut | sqlx::Error::PoolClosed => Self::Pool,
+            sqlx::Error::WorkerCrashed => Self::Runtime,
+            sqlx::Error::Migrate(_) => Self::Migration,
+            sqlx::Error::InvalidSavePointStatement | sqlx::Error::BeginFailed => Self::Transaction,
+            _ => Self::Other,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MigrationFailureClass {
+    Execute(SqlxFailureClass),
+    Source,
+    Version,
+    Dirty,
+    Unsupported,
+    Other,
+}
+
+impl MigrationFailureClass {
+    fn classify(error: &sqlx::migrate::MigrateError) -> Self {
+        match error {
+            sqlx::migrate::MigrateError::Execute(error)
+            | sqlx::migrate::MigrateError::ExecuteMigration(error, _) => {
+                Self::Execute(SqlxFailureClass::classify(error))
+            }
+            sqlx::migrate::MigrateError::Source(_) => Self::Source,
+            sqlx::migrate::MigrateError::VersionMissing(_)
+            | sqlx::migrate::MigrateError::VersionMismatch(_)
+            | sqlx::migrate::MigrateError::VersionNotPresent(_)
+            | sqlx::migrate::MigrateError::VersionTooOld(_, _)
+            | sqlx::migrate::MigrateError::VersionTooNew(_, _) => Self::Version,
+            sqlx::migrate::MigrateError::Dirty(_) => Self::Dirty,
+            sqlx::migrate::MigrateError::ForceNotSupported
+            | sqlx::migrate::MigrateError::CreateSchemasNotSupported(_)
+            | sqlx::migrate::MigrateError::SkipNotSupported() => Self::Unsupported,
+            _ => Self::Other,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum DurabilityError {
-    Database(sqlx::Error),
-    Migration(sqlx::migrate::MigrateError),
+    Database(SqlxFailureClass),
+    Migration(MigrationFailureClass),
     SchemaIncompatible(SchemaCompatibility),
+    InvalidConfiguration,
+    RootUnavailable,
+    RootPassDeadlineExceeded,
+    CommitRejected,
+    CommitOutcomeUnknown,
+    RootTaskFailed,
     InvalidStoredState,
 }
 
 impl Display for DurabilityError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Database(error) => {
-                write!(formatter, "PostgreSQL durability operation failed: {error}")
+            Self::Database(class) => {
+                write!(
+                    formatter,
+                    "PostgreSQL durability operation failed ({class:?})"
+                )
             }
-            Self::Migration(error) => write!(formatter, "game migration operation failed: {error}"),
+            Self::Migration(class) => {
+                write!(formatter, "game migration operation failed ({class:?})")
+            }
             Self::SchemaIncompatible(state) => {
                 write!(
                     formatter,
                     "game durability schema is not runtime-compatible: {state:?}"
                 )
             }
+            Self::InvalidConfiguration => {
+                formatter.write_str("game durability root configuration is invalid")
+            }
+            Self::RootUnavailable => formatter.write_str("game durability root is not ready"),
+            Self::RootPassDeadlineExceeded => {
+                formatter.write_str("game durability semantic pass deadline expired")
+            }
+            Self::CommitRejected => {
+                formatter.write_str("PostgreSQL rejected durability transaction commit")
+            }
+            Self::CommitOutcomeUnknown => {
+                formatter.write_str("game durability commit outcome is unknown")
+            }
+            Self::RootTaskFailed => formatter.write_str("game durability root task failed"),
             Self::InvalidStoredState => {
                 formatter.write_str("durability journal contains invalid state")
             }
@@ -70,15 +168,130 @@ impl Display for DurabilityError {
 
 impl std::error::Error for DurabilityError {}
 
+impl DurabilityError {
+    pub(crate) fn from_commit_error(error: sqlx::Error) -> Self {
+        let class = SqlxFailureClass::classify(&error);
+        drop(error);
+        if class == SqlxFailureClass::Database {
+            Self::CommitRejected
+        } else {
+            Self::CommitOutcomeUnknown
+        }
+    }
+}
+
 impl From<sqlx::Error> for DurabilityError {
     fn from(error: sqlx::Error) -> Self {
-        Self::Database(error)
+        let class = SqlxFailureClass::classify(&error);
+        drop(error);
+        Self::Database(class)
     }
 }
 
 impl From<sqlx::migrate::MigrateError> for DurabilityError {
     fn from(error: sqlx::migrate::MigrateError) -> Self {
-        Self::Migration(error)
+        let class = MigrationFailureClass::classify(&error);
+        drop(error);
+        Self::Migration(class)
+    }
+}
+
+#[cfg(test)]
+mod wp3_error_classification_tests {
+    use super::{DurabilityError, SqlxFailureClass};
+    use std::fmt;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[derive(Clone, Default)]
+    struct Observations {
+        drops: Arc<AtomicUsize>,
+        formats: Arc<AtomicUsize>,
+    }
+
+    struct PayloadProbe(Observations);
+
+    impl Drop for PayloadProbe {
+        fn drop(&mut self) {
+            self.0.drops.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    impl fmt::Display for PayloadProbe {
+        fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            self.0.formats.fetch_add(1, Ordering::SeqCst);
+            formatter.write_str("WP3_TEST_UNTRUSTED_PAYLOAD")
+        }
+    }
+
+    impl fmt::Debug for PayloadProbe {
+        fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fmt::Display::fmt(self, formatter)
+        }
+    }
+
+    impl std::error::Error for PayloadProbe {}
+
+    impl sqlx::error::DatabaseError for PayloadProbe {
+        fn message(&self) -> &str {
+            "redacted-test-database-error"
+        }
+
+        fn as_error(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
+            self
+        }
+
+        fn as_error_mut(&mut self) -> &mut (dyn std::error::Error + Send + Sync + 'static) {
+            self
+        }
+
+        fn into_error(self: Box<Self>) -> Box<dyn std::error::Error + Send + Sync + 'static> {
+            self
+        }
+
+        fn kind(&self) -> sqlx::error::ErrorKind {
+            sqlx::error::ErrorKind::Other
+        }
+    }
+
+    #[test]
+    fn sqlx_payload_is_classified_then_destroyed_without_formatting() {
+        let seen = Observations::default();
+        let error = DurabilityError::from(sqlx::Error::Tls(Box::new(PayloadProbe(seen.clone()))));
+
+        assert!(matches!(
+            error,
+            DurabilityError::Database(SqlxFailureClass::Tls)
+        ));
+        assert_eq!(seen.drops.load(Ordering::SeqCst), 1);
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+        assert!(!format!("{error}").contains("WP3_TEST_UNTRUSTED_PAYLOAD"));
+        assert!(!format!("{error:?}").contains("WP3_TEST_UNTRUSTED_PAYLOAD"));
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn database_commit_rejection_is_definitive_without_payload_retention() {
+        let seen = Observations::default();
+        let error = DurabilityError::from_commit_error(sqlx::Error::Database(Box::new(
+            PayloadProbe(seen.clone()),
+        )));
+
+        assert!(matches!(error, DurabilityError::CommitRejected));
+        assert_eq!(seen.drops.load(Ordering::SeqCst), 1);
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn non_database_commit_error_stays_ambiguous_without_payload_retention() {
+        let seen = Observations::default();
+        let error = DurabilityError::from_commit_error(sqlx::Error::Tls(Box::new(PayloadProbe(
+            seen.clone(),
+        ))));
+
+        assert!(matches!(error, DurabilityError::CommitOutcomeUnknown));
+        assert_eq!(seen.drops.load(Ordering::SeqCst), 1);
+        assert_eq!(seen.formats.load(Ordering::SeqCst), 0);
     }
 }
 
@@ -89,16 +302,21 @@ impl From<sqlx::migrate::MigrateError> for DurabilityError {
 /// replay/reconciliation surface; ordinary V1 behavior is delegated unchanged.
 #[derive(Clone)]
 pub struct AdmissionReconnectJournalV2 {
-    pool: PgPool,
     legacy: AdmissionReconnectJournal,
 }
 
 impl AdmissionReconnectJournalV2 {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
             legacy: AdmissionReconnectJournal::connect_runtime(database_url).await?,
         })
+    }
+
+    #[must_use]
+    pub fn from_root(root: DurabilityRoot) -> Self {
+        Self {
+            legacy: AdmissionReconnectJournal::from_root(root),
+        }
     }
 
     #[must_use]
@@ -114,14 +332,47 @@ impl AdmissionReconnectJournalV2 {
         let Some(authorization) = request.terminal_replacement() else {
             return self.prepare_legacy_typed(request).await;
         };
-        let record = request.record();
-        if !replacement_authorization_matches_record(authorization, record) {
+        if !replacement_authorization_matches_record(authorization, request.record()) {
             return Err(DurabilityError::InvalidStoredState);
         }
 
+        if let Some(issued) = self.legacy.try_issue_root_pass()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return db::await_root_task(tokio::spawn(async move {
+                journal
+                    .prepare_replacement_internal(request, Some(issued))
+                    .await
+            }))
+            .await;
+        }
+        self.prepare_replacement_internal(request.clone(), None)
+            .await
+    }
+
+    async fn prepare_replacement_internal(
+        &self,
+        request: ReconnectPrepareRequestV2,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        enum ReplacementPassResult {
+            Disposition(ReconnectPrepareDispositionV2),
+            ReplayReceipt,
+        }
+
+        let pass_request = request.clone();
+        let pass_result = self
+            .legacy
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let authorization = pass_request
+                        .terminal_replacement()
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let record = pass_request.record();
         let candidate_session_id = record.identity().game_session_id().as_bytes().to_vec();
         let character_id = record.identity().character_id().as_bytes().to_vec();
-        let mut transaction = self.pool.begin().await?;
+                    let mut transaction =
+                        admission_journal::begin_pass_transaction(holder, deadline).await?;
 
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
@@ -129,8 +380,8 @@ impl AdmissionReconnectJournalV2 {
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            transaction.commit().await?;
-            return self.prepare_legacy_typed_receipt_authorized(request).await;
+            admission_journal::commit_pass_transaction(transaction, deadline).await?;
+            return Ok(ReplacementPassResult::ReplayReceipt);
         }
 
         if replacement_receipt_for_candidate_exists(
@@ -162,8 +413,8 @@ impl AdmissionReconnectJournalV2 {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
                 && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
-                transaction.commit().await?;
-                return self.prepare_legacy_typed_receipt_authorized(request).await;
+                admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                return Ok(ReplacementPassResult::ReplayReceipt);
             }
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -185,7 +436,9 @@ impl AdmissionReconnectJournalV2 {
         let retained_attempt_count =
             retained_actor_epoch_attempt_count_v2(&mut transaction, record).await?;
         if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
-            return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
+            return Ok(ReplacementPassResult::Disposition(
+                ReconnectPrepareDispositionV2::AttemptCapacityExceeded,
+            ));
         }
         ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
@@ -313,63 +566,119 @@ impl AdmissionReconnectJournalV2 {
         let disposition =
             prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
                 .await?;
-        transaction.commit().await?;
-        Ok(disposition)
+                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    Ok(ReplacementPassResult::Disposition(disposition))
+                })
+            })
+            .await?;
+
+        match pass_result {
+            ReplacementPassResult::Disposition(disposition) => Ok(disposition),
+            ReplacementPassResult::ReplayReceipt => {
+                self.prepare_legacy_typed_receipt_authorized(&request).await
+            }
+        }
     }
 
     pub async fn reconcile(
         &self,
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
-        let record = request.record();
-        let mut transaction = self.pool.begin().await?;
-        if let Some(authorization) = request.terminal_replacement()
-            && (!replacement_authorization_matches_record(authorization, record)
-                || !replacement_receipt_matches(&mut transaction, authorization, record).await?)
-        {
-            return Err(DurabilityError::InvalidStoredState);
+        if let Some(issued) = self.legacy.try_issue_root_pass()? {
+            let journal = self.clone();
+            let request = request.clone();
+            return db::await_root_task(tokio::spawn(async move {
+                journal.reconcile_internal(request, Some(issued)).await
+            }))
+            .await;
         }
+        self.reconcile_internal(request.clone(), None).await
+    }
 
-        let (legacy, state) =
-            AdmissionReconnectJournal::reconcile_record_in_transaction(&mut transaction, record)
-                .await?;
-        if request.terminal_replacement().is_none()
-            && admission_journal::replacement_receipt_matches_record(&mut transaction, record)
-                .await?
-        {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        let outcome = match state {
-            V2_PREPARED => {
-                if legacy != ReconnectDurableReconciliationSnapshotV1::prepared(record.clone()) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                ReconnectDurableOutcomeV2::Prepared
-            }
-            V2_COMMITTED => {
-                if legacy != ReconnectDurableReconciliationSnapshotV1::committed(record.clone()) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                ReconnectDurableOutcomeV2::Committed {
-                    current_generation: record.connection().candidate(),
-                    current_transport_ref: record.connection().transport_ref(),
-                }
-            }
-            V2_COLLISION_TERMINAL | V2_CONCURRENT_TERMINAL | V2_STALE_TERMINAL => {
-                if legacy != ReconnectDurableReconciliationSnapshotV1::terminal(record.clone()) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                ReconnectDurableOutcomeV2::Terminal {
-                    disposition: terminal_disposition_from_state(state)?,
-                }
-            }
-            _ => return Err(DurabilityError::InvalidStoredState),
-        };
-        transaction.commit().await?;
-        Ok(ReconnectDurableReconciliationSnapshotV2::new(
-            record.clone(),
-            outcome,
-        ))
+    async fn reconcile_internal(
+        &self,
+        request: ReconnectPrepareRequestV2,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
+        self.legacy
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let record = request.record();
+                    let mut transaction =
+                        admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    if let Some(authorization) = request.terminal_replacement()
+                        && (!replacement_authorization_matches_record(authorization, record)
+                            || !replacement_receipt_matches(
+                                &mut transaction,
+                                authorization,
+                                record,
+                            )
+                            .await?)
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+
+                    let (legacy, state) =
+                        AdmissionReconnectJournal::reconcile_record_in_transaction(
+                            &mut transaction,
+                            record,
+                        )
+                        .await?;
+                    if request.terminal_replacement().is_none()
+                        && admission_journal::replacement_receipt_matches_record(
+                            &mut transaction,
+                            record,
+                        )
+                        .await?
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let outcome = match state {
+                        V2_PREPARED => {
+                            if legacy
+                                != ReconnectDurableReconciliationSnapshotV1::prepared(
+                                    record.clone(),
+                                )
+                            {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            ReconnectDurableOutcomeV2::Prepared
+                        }
+                        V2_COMMITTED => {
+                            if legacy
+                                != ReconnectDurableReconciliationSnapshotV1::committed(
+                                    record.clone(),
+                                )
+                            {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            ReconnectDurableOutcomeV2::Committed {
+                                current_generation: record.connection().candidate(),
+                                current_transport_ref: record.connection().transport_ref(),
+                            }
+                        }
+                        V2_COLLISION_TERMINAL | V2_CONCURRENT_TERMINAL | V2_STALE_TERMINAL => {
+                            if legacy
+                                != ReconnectDurableReconciliationSnapshotV1::terminal(
+                                    record.clone(),
+                                )
+                            {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            ReconnectDurableOutcomeV2::Terminal {
+                                disposition: terminal_disposition_from_state(state)?,
+                            }
+                        }
+                        _ => return Err(DurabilityError::InvalidStoredState),
+                    };
+                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    Ok(ReconnectDurableReconciliationSnapshotV2::new(
+                        record.clone(),
+                        outcome,
+                    ))
+                })
+            })
+            .await
     }
 
     async fn prepare_legacy_typed(
@@ -439,30 +748,58 @@ impl AdmissionReconnectJournalV2 {
         &self,
         record: &ReconnectDurabilityRecordV1,
     ) -> Result<i16, DurabilityError> {
-        let row = sqlx::query(
-            "SELECT state, record_json FROM game_durability_reconnect_attempts \
-             WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
-        )
-        .bind(record.identity().game_session_id().as_bytes().as_slice())
-        .bind(
-            record
-                .identity()
-                .reconnect_attempt_ref()
-                .to_be_bytes()
-                .as_slice(),
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-        let Some(row) = row else {
-            return Err(DurabilityError::InvalidStoredState);
-        };
-        let stored_record = row.try_get::<String, _>("record_json")?;
-        let stored_record: serde_json::Value = serde_json::from_str(&stored_record)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
-        if stored_record != encode_record_v2(record) {
-            return Err(DurabilityError::InvalidStoredState);
+        let record = record.clone();
+        if let Some(issued) = self.legacy.try_issue_root_pass()? {
+            let journal = self.clone();
+            return db::await_root_task(tokio::spawn(async move {
+                journal
+                    .terminal_state_for_record_internal(record, Some(issued))
+                    .await
+            }))
+            .await;
         }
-        row.try_get("state").map_err(DurabilityError::from)
+        self.terminal_state_for_record_internal(record, None).await
+    }
+
+    async fn terminal_state_for_record_internal(
+        &self,
+        record: ReconnectDurabilityRecordV1,
+        issued: Option<db::IssuedSemanticPass>,
+    ) -> Result<i16, DurabilityError> {
+        self.legacy
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut transaction =
+                        admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    let row = sqlx::query(
+                        "SELECT state, record_json FROM game_durability_reconnect_attempts \
+                         WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+                    )
+                    .bind(record.identity().game_session_id().as_bytes().as_slice())
+                    .bind(
+                        record
+                            .identity()
+                            .reconnect_attempt_ref()
+                            .to_be_bytes()
+                            .as_slice(),
+                    )
+                    .fetch_optional(&mut *transaction)
+                    .await?;
+                    let Some(row) = row else {
+                        return Err(DurabilityError::InvalidStoredState);
+                    };
+                    let stored_record = row.try_get::<String, _>("record_json")?;
+                    let stored_record: serde_json::Value = serde_json::from_str(&stored_record)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    if stored_record != encode_record_v2(&record) {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let state = row.try_get("state").map_err(DurabilityError::from)?;
+                    admission_journal::commit_pass_transaction(transaction, deadline).await?;
+                    Ok(state)
+                })
+            })
+            .await
     }
 }
 
@@ -1585,6 +1922,54 @@ mod terminal_replacement_foundation_red_tests {
             snapshot,
             candidate,
         )
+    }
+
+    #[test]
+    fn v2_replacement_root_ready_miss_is_fail_closed_without_connect() {
+        use std::net::{IpAddr, Ipv4Addr};
+
+        let candidate =
+            candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("candidate record");
+        let authorization = authorize(
+            predecessor_snapshot(GameSessionState::Terminal, None, 10).expect("snapshot"),
+            &candidate,
+            game_session(10).expect("predecessor session"),
+            game_session(20).expect("candidate session"),
+        )
+        .expect("replacement authorization");
+        let request = ReconnectDurabilityFlowV2::begin(candidate, Some(authorization)).1;
+
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime")
+            .block_on(async {
+                let root = super::DurabilityRoot::new(
+                    super::DurabilityRootConfig::new(
+                        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                        5432,
+                        "db.example".to_owned(),
+                        "oteryn".to_owned(),
+                        "explicit".to_owned(),
+                        "test-secret".to_owned(),
+                        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+                    )
+                    .expect("root config"),
+                );
+                let journal = super::AdmissionReconnectJournalV2::from_root(root.clone());
+
+                assert!(matches!(
+                    journal.prepare(&request).await,
+                    Err(super::DurabilityError::RootUnavailable)
+                ));
+                assert!(!root.is_ready());
+                assert!(root.has_ready_demand());
+                tokio::task::yield_now().await;
+                assert!(
+                    !root.is_ready(),
+                    "V2 replacement ready miss must not establish a connection in the background"
+                );
+            });
     }
 
     #[test]
