@@ -6,9 +6,9 @@ use crate::content::{
 };
 use crate::foundation::{
     CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
-    CommandSemanticIdentity, ConnectionGeneration, DuplicateDisposition, GameSessionAuthoritySnapshot,
-    GameSessionState,
-    IngressDecision, NormalizedSemanticIntentIdentity, RetainedBindingIdentity, RuntimeScopeRefV1,
+    CommandSemanticIdentity, ConnectionGeneration, DuplicateDisposition,
+    GameSessionAuthoritySnapshot, GameSessionState, IngressDecision,
+    NormalizedSemanticIntentIdentity, RetainedBindingIdentity, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, TerminalSemanticOutcome,
 };
 use std::collections::BTreeSet;
@@ -25,8 +25,7 @@ const LOCAL_OBJECT_TRANSITION_CAPABILITY: &str =
     "oteryn:runtime.capability.local-object-transition";
 const LOCAL_OBJECT_OPEN_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-open";
 const LOCAL_OBJECT_CLOSE_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-close";
-const REFERENCE_CONTENT_GENERATION_DOMAIN: &[u8] =
-    b"OTERYN/CW4/REFERENCE_CONTENT_GENERATION/v1";
+const REFERENCE_CONTENT_GENERATION_DOMAIN: &[u8] = b"OTERYN/CW4/REFERENCE_CONTENT_GENERATION/v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ReferenceContentGeneration {
@@ -54,7 +53,11 @@ impl ReferenceContentGeneration {
         append_reference_generation_component(&mut preimage, provenance.as_str().as_bytes())?;
         append_reference_generation_component(
             &mut preimage,
-            content.content_lock.revision_digest_token.as_str().as_bytes(),
+            content
+                .content_lock
+                .revision_digest_token
+                .as_str()
+                .as_bytes(),
         )?;
         let world_bytes = content.world_id.as_bytes();
         append_reference_generation_component(&mut preimage, world_bytes.as_ref())?;
@@ -64,9 +67,9 @@ impl ReferenceContentGeneration {
         )?;
 
         Ok(Self {
-            semantic_identity: encode_reference_generation_digest(
-                sha256_reference_generation(&preimage),
-            ),
+            semantic_identity: encode_reference_generation_digest(sha256_reference_generation(
+                &preimage,
+            )),
         })
     }
 
@@ -74,8 +77,6 @@ impl ReferenceContentGeneration {
     fn as_str(&self) -> &str {
         &self.semantic_identity
     }
-}
-
 
 fn append_reference_generation_component(
     preimage: &mut Vec<u8>,
@@ -694,8 +695,7 @@ impl LocalObjectRuntime {
                 "current character lease does not match Foundation authority",
             ));
         }
-        if authority.current_connection_generation().get()
-            < committed.connection_generation().get()
+        if authority.current_connection_generation().get() < committed.connection_generation().get()
         {
             return Err(WorldRuntimeError::InvalidSessionAuthority(
                 "current connection generation predates the committed GameSession",
