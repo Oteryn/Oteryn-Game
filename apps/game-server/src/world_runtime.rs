@@ -5,8 +5,9 @@ use crate::content::{
     TransitionKey,
 };
 use crate::foundation::{
-    CommandId, CommandIngress, CommandLifecycleError, CommandRef, CommandSemanticIdentity,
-    ConnectionGeneration, DuplicateDisposition, GameSessionAuthoritySnapshot, GameSessionState,
+    CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
+    CommandSemanticIdentity, ConnectionGeneration, DuplicateDisposition, GameSessionAuthoritySnapshot,
+    GameSessionState,
     IngressDecision, NormalizedSemanticIntentIdentity, RetainedBindingIdentity, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, TerminalSemanticOutcome,
 };
@@ -22,6 +23,10 @@ const DISPOSITION_STALE_STATE: &str = "STALE_STATE";
 const DISPOSITION_REVISION_EXHAUSTED: &str = "REVISION_EXHAUSTED";
 const LOCAL_OBJECT_TRANSITION_CAPABILITY: &str =
     "oteryn:runtime.capability.local-object-transition";
+const LOCAL_OBJECT_OPEN_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-open";
+const LOCAL_OBJECT_CLOSE_INTENT_FAMILY: &str = "oteryn:reference.intent.local-object-close";
+const REFERENCE_CONTENT_GENERATION_DOMAIN: &[u8] =
+    b"OTERYN/CW4/REFERENCE_CONTENT_GENERATION/v1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ReferenceContentGeneration {
@@ -32,14 +37,36 @@ impl ReferenceContentGeneration {
     pub(crate) fn from_content(
         content: &CanonicalReferencePlayableContent,
     ) -> Result<Self, WorldRuntimeError> {
-        // The Reference successor has one exact locked root package. Its provenance digest
-        // already binds package key/revision/schema/licensing/source-manifest identity, while
-        // profile/capability and WorldId are fenced separately by bind(). Keep the Foundation
-        // retained binding component at this fixed 64-byte identity instead of concatenating
-        // individually bounded atoms into a new hidden aggregate limit.
+        // Foundation retains one bounded Content-generation component. Hash the complete
+        // Reference generation fence instead of aliasing it to package provenance: production
+        // generation identity treats the Content Lock token as a distinct identity component.
         let provenance = content.package_manifest.package_provenance_digest()?;
+        let mut preimage = Vec::new();
+        append_reference_generation_component(&mut preimage, REFERENCE_CONTENT_GENERATION_DOMAIN)?;
+        append_reference_generation_component(
+            &mut preimage,
+            content.profile_revision.as_str().as_bytes(),
+        )?;
+        append_reference_generation_component(
+            &mut preimage,
+            content.capability_profile.as_str().as_bytes(),
+        )?;
+        append_reference_generation_component(&mut preimage, provenance.as_str().as_bytes())?;
+        append_reference_generation_component(
+            &mut preimage,
+            content.content_lock.revision_digest_token.as_str().as_bytes(),
+        )?;
+        let world_bytes = content.world_id.as_bytes();
+        append_reference_generation_component(&mut preimage, world_bytes.as_ref())?;
+        append_reference_generation_component(
+            &mut preimage,
+            content.coordinate_frame.as_str().as_bytes(),
+        )?;
+
         Ok(Self {
-            semantic_identity: provenance.as_str().to_owned().into_boxed_str(),
+            semantic_identity: encode_reference_generation_digest(
+                sha256_reference_generation(&preimage),
+            ),
         })
     }
 
@@ -47,6 +74,127 @@ impl ReferenceContentGeneration {
     fn as_str(&self) -> &str {
         &self.semantic_identity
     }
+}
+
+
+fn append_reference_generation_component(
+    preimage: &mut Vec<u8>,
+    value: &[u8],
+) -> Result<(), WorldRuntimeError> {
+    let length = u32::try_from(value.len()).map_err(|_error| {
+        WorldRuntimeError::InvalidBinding("Reference Content-generation component is too large")
+    })?;
+    preimage.extend_from_slice(&length.to_be_bytes());
+    preimage.extend_from_slice(value);
+    Ok(())
+}
+
+fn encode_reference_generation_digest(bytes: [u8; 32]) -> Box<str> {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut encoded = String::with_capacity(64);
+    for byte in bytes {
+        encoded.push(char::from(HEX[usize::from(byte >> 4)]));
+        encoded.push(char::from(HEX[usize::from(byte & 0x0f)]));
+    }
+    encoded.into_boxed_str()
+}
+
+fn sha256_reference_generation(input: &[u8]) -> [u8; 32] {
+    const K: [u32; 64] = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+        0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+        0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+        0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+        0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+        0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+        0xc67178f2,
+    ];
+    let mut state = [
+        0x6a09e667_u32,
+        0xbb67ae85,
+        0x3c6ef372,
+        0xa54ff53a,
+        0x510e527f,
+        0x9b05688c,
+        0x1f83d9ab,
+        0x5be0cd19,
+    ];
+    let bit_len = (input.len() as u64).wrapping_mul(8);
+    let mut padded = Vec::with_capacity(input.len().saturating_add(72));
+    padded.extend_from_slice(input);
+    padded.push(0x80);
+    while padded.len() % 64 != 56 {
+        padded.push(0);
+    }
+    padded.extend_from_slice(&bit_len.to_be_bytes());
+
+    for block in padded.chunks_exact(64) {
+        let mut words = [0_u32; 64];
+        for (index, chunk) in block.chunks_exact(4).enumerate() {
+            words[index] = u32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+        }
+        for index in 16..64 {
+            let s0 = words[index - 15].rotate_right(7)
+                ^ words[index - 15].rotate_right(18)
+                ^ (words[index - 15] >> 3);
+            let s1 = words[index - 2].rotate_right(17)
+                ^ words[index - 2].rotate_right(19)
+                ^ (words[index - 2] >> 10);
+            words[index] = words[index - 16]
+                .wrapping_add(s0)
+                .wrapping_add(words[index - 7])
+                .wrapping_add(s1);
+        }
+
+        let mut a = state[0];
+        let mut b = state[1];
+        let mut c = state[2];
+        let mut d = state[3];
+        let mut e = state[4];
+        let mut f = state[5];
+        let mut g = state[6];
+        let mut h = state[7];
+
+        for (&constant, &word) in K.iter().zip(words.iter()) {
+            let sigma1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+            let choose = (e & f) ^ ((!e) & g);
+            let temp1 = h
+                .wrapping_add(sigma1)
+                .wrapping_add(choose)
+                .wrapping_add(constant)
+                .wrapping_add(word);
+            let sigma0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+            let majority = (a & b) ^ (a & c) ^ (b & c);
+            let temp2 = sigma0.wrapping_add(majority);
+
+            h = g;
+            g = f;
+            f = e;
+            e = d.wrapping_add(temp1);
+            d = c;
+            c = b;
+            b = a;
+            a = temp1.wrapping_add(temp2);
+        }
+
+        state[0] = state[0].wrapping_add(a);
+        state[1] = state[1].wrapping_add(b);
+        state[2] = state[2].wrapping_add(c);
+        state[3] = state[3].wrapping_add(d);
+        state[4] = state[4].wrapping_add(e);
+        state[5] = state[5].wrapping_add(f);
+        state[6] = state[6].wrapping_add(g);
+        state[7] = state[7].wrapping_add(h);
+    }
+
+    let mut output = [0_u8; 32];
+    for (chunk, value) in output.chunks_exact_mut(4).zip(state) {
+        chunk.copy_from_slice(&value.to_be_bytes());
+    }
+    output
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -153,6 +301,7 @@ pub(crate) enum WorldRuntimeError {
     OutcomeExpired,
     IngressClassificationMismatch,
     PendingContinuationMissing,
+    InvalidSessionAuthority(&'static str),
 }
 
 impl Display for WorldRuntimeError {
@@ -194,6 +343,9 @@ impl Display for WorldRuntimeError {
                 .write_str("Foundation duplicate classification is internally inconsistent"),
             Self::PendingContinuationMissing => {
                 formatter.write_str("pending local-object continuation is no longer pending")
+            }
+            Self::InvalidSessionAuthority(reason) => {
+                write!(formatter, "invalid current GameSession authority: {reason}")
             }
         }
     }
@@ -325,6 +477,14 @@ impl LocalObjectRuntime {
         if open_transition.normalized_intent_family == close_transition.normalized_intent_family {
             return Err(WorldRuntimeError::InvalidBinding(
                 "OPEN and CLOSE must have distinct normalized intent families",
+            ));
+        }
+        if open_transition.normalized_intent_family.as_str() != LOCAL_OBJECT_OPEN_INTENT_FAMILY
+            || close_transition.normalized_intent_family.as_str()
+                != LOCAL_OBJECT_CLOSE_INTENT_FAMILY
+        {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition intent families do not match runtime operations",
             ));
         }
         if open_transition.owner_capability.capability_key.as_str()
@@ -507,6 +667,46 @@ impl LocalObjectRuntime {
         if authority.current_game_session_id() != command.command_ref.game_session_id() {
             return Err(WorldRuntimeError::StaleGameSession);
         }
+
+        let committed = authority.commit();
+        if authority.current_transport().is_none() {
+            return Err(WorldRuntimeError::InvalidSessionAuthority(
+                "active GameSession has no current authenticated transport",
+            ));
+        }
+        if authority.current_character_world_eligibility()
+            != Some(CharacterWorldEligibilityClaimV1::new(
+                committed.character_id(),
+                committed.world_id(),
+            ))
+        {
+            return Err(WorldRuntimeError::InvalidSessionAuthority(
+                "current character/world eligibility does not match the committed GameSession",
+            ));
+        }
+        let lease = authority.current_character_lease();
+        if lease.character_id() != committed.character_id()
+            || lease.generation() < committed.character_lease_generation()
+            || (authority.current_game_session_id() == committed.game_session_id()
+                && lease.generation() != committed.character_lease_generation())
+        {
+            return Err(WorldRuntimeError::InvalidSessionAuthority(
+                "current character lease does not match Foundation authority",
+            ));
+        }
+        if authority.current_connection_generation().get()
+            < committed.connection_generation().get()
+        {
+            return Err(WorldRuntimeError::InvalidSessionAuthority(
+                "current connection generation predates the committed GameSession",
+            ));
+        }
+        if authority.current_scope_generation().get() < committed.scope_ownership_generation() {
+            return Err(WorldRuntimeError::InvalidSessionAuthority(
+                "current scope generation predates the committed GameSession",
+            ));
+        }
+
         if authority.current_connection_generation() != command.connection_generation {
             return Err(WorldRuntimeError::StaleConnectionGeneration);
         }
@@ -1076,6 +1276,66 @@ mod tests {
     }
 
     #[test]
+    fn swapped_open_close_intents_fail_closed_before_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let content = synthetic_content("package-r1")?;
+        let (_authority, _session, scope) = authority(22, 4, 1, 1)?;
+        let error = LocalObjectRuntime::bind(
+            &content,
+            scope,
+            ScopeOwnershipGeneration::new(1)
+                .map_err(|_error: GenerationError| fixture_error("scope generation"))?,
+            &PlacementKey::new(PLACEMENT_A)?,
+            1,
+            &TransitionKey::new(CLOSE_TRANSITION)?,
+            &TransitionKey::new(OPEN_TRANSITION)?,
+        )
+        .expect_err("swapped OPEN/CLOSE semantic intents must fail closed");
+        assert!(matches!(
+            error,
+            WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition intent families do not match runtime operations"
+            )
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_active_authority_is_rejected_before_ingress_or_mutation()
+    -> Result<(), WorldRuntimeError> {
+        let content = synthetic_content("package-r1")?;
+        let (authority, session, scope) = authority(23, 4, 1, 1)?;
+        let invalid = GameSessionAuthoritySnapshot::from_current_facts(
+            authority.commit(),
+            GameSessionState::Active,
+            authority.current_connection_generation(),
+            None,
+            authority.current_character_lease(),
+            authority.current_character_world_eligibility(),
+            authority.current_runtime_scope(),
+            authority.current_scope_generation(),
+        )
+        .map_err(|_error| fixture_error("invalid current authority fixture"))?;
+        let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
+        let command = command(&runtime, session, 1, 1, LocalObjectOperation::Open, 0)?;
+        let before_state = runtime.state_key().clone();
+        let before_blocking = runtime.blocking_cells().clone();
+        let mut ingress = CommandIngress::new();
+
+        assert!(matches!(
+            runtime.apply(&invalid, &command, &mut ingress, &BTreeSet::new()),
+            Err(WorldRuntimeError::InvalidSessionAuthority(
+                "active GameSession has no current authenticated transport"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(runtime.state_key(), &before_state);
+        assert_eq!(runtime.revision(), 0);
+        assert_eq!(runtime.blocking_cells(), &before_blocking);
+        Ok(())
+    }
+
+    #[test]
     fn authored_capability_cannot_grant_runtime_authority() -> Result<(), WorldRuntimeError> {
         let mut content = synthetic_content("package-r1")?;
         let unsupported = OwnerCapabilityRequirement {
@@ -1099,7 +1359,13 @@ mod tests {
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let generation = ReferenceContentGeneration::from_content(&content)?;
+        let mut changed_lock = content.clone();
+        changed_lock.content_lock.revision_digest_token =
+            ProductionAtom::new("cw4 test content lock", "lock:changed")?;
+        let changed_generation = ReferenceContentGeneration::from_content(&changed_lock)?;
         assert_eq!(generation.as_str().len(), 64);
+        assert_eq!(changed_generation.as_str().len(), 64);
+        assert_ne!(generation, changed_generation);
         Ok(())
     }
 
@@ -1224,7 +1490,9 @@ mod tests {
     fn different_content_generation_is_terminally_rejected_while_scope_stays_live()
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
-        let other_content = synthetic_content("package-r2")?;
+        let mut other_content = synthetic_content("package-r1")?;
+        other_content.content_lock.revision_digest_token =
+            ProductionAtom::new("cw4 test content lock", "lock:other-generation")?;
         let (authority, session, scope) = authority(70, 10, 1, 1)?;
         let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
         let mut ingress = CommandIngress::new();
