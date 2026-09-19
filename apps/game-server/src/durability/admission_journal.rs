@@ -111,7 +111,7 @@ impl JournalBackend {
     }
 }
 
-async fn begin_pass_transaction<'a>(
+pub(super) async fn begin_pass_transaction<'a>(
     holder: &'a mut PoolConnection<Postgres>,
     deadline: Option<Instant>,
 ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
@@ -121,7 +121,7 @@ async fn begin_pass_transaction<'a>(
     }
 }
 
-async fn commit_pass_transaction(
+pub(super) async fn commit_pass_transaction(
     transaction: Transaction<'_, Postgres>,
     deadline: Option<Instant>,
 ) -> Result<(), DurabilityError> {
@@ -148,6 +148,29 @@ impl AdmissionReconnectJournal {
         Self {
             backend: JournalBackend::Root(root),
         }
+    }
+
+    pub(super) fn try_issue_root_pass(
+        &self,
+    ) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
+        self.backend.try_issue_root()
+    }
+
+    pub(super) async fn run_pass<T, F>(
+        &self,
+        issued: Option<db::IssuedSemanticPass>,
+        operation: F,
+    ) -> Result<T, DurabilityError>
+    where
+        T: Send,
+        F: for<'a> FnOnce(
+                &'a mut PoolConnection<Postgres>,
+                Option<Instant>,
+            )
+                -> Pin<Box<dyn Future<Output = Result<T, DurabilityError>> + Send + 'a>>
+            + Send,
+    {
+        self.backend.run_pass(issued, operation).await
     }
 
     pub async fn prepare(
