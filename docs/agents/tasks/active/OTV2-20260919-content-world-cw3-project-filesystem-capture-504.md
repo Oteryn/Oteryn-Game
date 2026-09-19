@@ -171,8 +171,9 @@ patch entry.
 - `cargo run --locked -p oteryn-synthetic-client-harness`: PASS.
 - A local `x86_64-pc-windows-msvc` check reached the existing `ring` build and
   stopped because this Linux environment has no MSVC `lib.exe`. It did not
-  exercise the application stub and is not Windows runtime evidence. Hosted
-  compilation remains the applicable non-Linux gate.
+  exercise the application stub and supplies no non-Linux compile or runtime
+  evidence. No existing hosted job is assumed to compile this game-server
+  target.
 - `cargo-deny` is not installed in this environment; dependency review and
   supply-chain policy remain hosted exact-head gates.
 
