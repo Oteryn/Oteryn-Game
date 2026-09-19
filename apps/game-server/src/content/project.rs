@@ -30,9 +30,9 @@ pub const WORLD_PROJECT_REFERENCE_SCHEMA: &str = "OTERYN_WORLD_PROJECT_REFERENCE
 pub const WORLD_PROJECT_IMPORT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_IMPORT_CANDIDATES/v1";
 pub const WORLD_PROJECT_METADATA_SCHEMA: &str = "OTERYN_WORLD_PROJECT_AUTHOR_METADATA/v1";
 
-const PROJECT_LOCATOR: &str = "project.json";
-const MANIFEST_LOCATOR: &str = "manifest.json";
-const LOCK_LOCATOR: &str = "content.lock.json";
+pub(super) const PROJECT_LOCATOR: &str = "project.json";
+pub(super) const MANIFEST_LOCATOR: &str = "manifest.json";
+pub(super) const LOCK_LOCATOR: &str = "content.lock.json";
 const RECORDS_LOCATOR: &str = "records/reference.json";
 const IMPORTS_LOCATOR: &str = "imports/candidates.json";
 const METADATA_LOCATOR: &str = "metadata/author.json";
@@ -958,67 +958,218 @@ struct MetadataDocument {
     entries: Vec<AuthorMetadataEntry>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct ProjectCaptureDocument {
+    pub(super) locator: String,
+    pub(super) byte_length: usize,
+    pub(super) sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct ProjectCapturePlan {
+    root: RootDocument,
+    manifest: ManifestDocumentRoot,
+    lock: LockDocument,
+    documents: Vec<ProjectCaptureDocument>,
+}
+
+impl ProjectCapturePlan {
+    pub(super) fn from_control_documents(
+        root_bytes: &[u8],
+        manifest_bytes: &[u8],
+        lock_bytes: &[u8],
+        limits: ProjectEvidenceLimits,
+    ) -> Result<Self, ProjectError> {
+        let limits = limits.validate()?;
+        for bytes in [root_bytes, manifest_bytes, lock_bytes] {
+            limits.check(
+                "project document bytes",
+                bytes.len(),
+                limits.max_document_bytes,
+            )?;
+        }
+
+        let root: RootDocument = parse_strict(root_bytes, limits)?;
+        if root.schema != WORLD_PROJECT_ROOT_SCHEMA
+            || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE
+        {
+            return Err(ProjectError::InvalidProject(
+                "unsupported project root profile",
+            ));
+        }
+        if root.manifest_locator != MANIFEST_LOCATOR || root.content_lock_locator != LOCK_LOCATOR {
+            return Err(ProjectError::InvalidProject("v1 control locator mismatch"));
+        }
+        require_digest(MANIFEST_LOCATOR, manifest_bytes, &root.manifest_sha256)?;
+        require_digest(LOCK_LOCATOR, lock_bytes, &root.content_lock_sha256)?;
+
+        let manifest: ManifestDocumentRoot = parse_strict(manifest_bytes, limits)?;
+        let lock: LockDocument = parse_strict(lock_bytes, limits)?;
+        if manifest.schema != WORLD_PROJECT_MANIFEST_SCHEMA
+            || lock.schema != WORLD_PROJECT_LOCK_SCHEMA
+        {
+            return Err(ProjectError::InvalidProject(
+                "unsupported control document schema",
+            ));
+        }
+        if root.project_revision != manifest.package_revision
+            || root.project_revision != lock.project_revision
+        {
+            return Err(ProjectError::InvalidProject("mixed project revision"));
+        }
+        if !manifest.required_features.is_empty() || !manifest.optional_features.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "unsupported project feature declaration",
+            ));
+        }
+        let package = package_binding(&manifest, manifest_bytes)?;
+        let content_lock = content_lock_binding(&lock)?;
+        if content_lock.entries.len() != 1 {
+            return Err(ProjectError::InvalidProject(
+                "v1 Content Lock must contain exactly one root entry",
+            ));
+        }
+        let expected_provenance = package.package_provenance_digest()?;
+        let entry = content_lock
+            .entries
+            .first()
+            .ok_or(ProjectError::InvalidProject(
+                "Content Lock root package missing",
+            ))?;
+        if entry.package_key != package.package_key
+            || entry.package_revision != package.package_revision
+            || entry.package_provenance_digest != expected_provenance
+            || entry.floating
+            || entry.dependency
+        {
+            return Err(ProjectError::InvalidProject(
+                "Content Lock root provenance mismatch",
+            ));
+        }
+
+        let document_count =
+            manifest
+                .documents
+                .len()
+                .checked_add(3)
+                .ok_or(ProjectError::LimitExceeded {
+                    resource: "project documents",
+                    actual: usize::MAX,
+                    limit: limits.max_documents,
+                })?;
+        limits.check("project documents", document_count, limits.max_documents)?;
+        let mut total_bytes = 0_usize;
+        for bytes in [root_bytes, manifest_bytes, lock_bytes] {
+            total_bytes = checked_limit_sum(
+                "project total bytes",
+                total_bytes,
+                bytes.len(),
+                limits.max_total_bytes,
+            )?;
+        }
+
+        let mut expected = BTreeSet::from([
+            PROJECT_LOCATOR.to_owned(),
+            MANIFEST_LOCATOR.to_owned(),
+            LOCK_LOCATOR.to_owned(),
+        ]);
+        let mut by_role: BTreeMap<String, Vec<&ManifestDocument>> = BTreeMap::new();
+        let mut previous_locator: Option<&str> = None;
+        let mut documents = Vec::new();
+        documents
+            .try_reserve_exact(manifest.documents.len())
+            .map_err(|_| ProjectError::LimitExceeded {
+                resource: "project documents",
+                actual: manifest.documents.len(),
+                limit: limits.max_documents,
+            })?;
+        for document in &manifest.documents {
+            validate_locator(&document.locator, limits)?;
+            if matches!(
+                document.locator.as_str(),
+                PROJECT_LOCATOR | MANIFEST_LOCATOR | LOCK_LOCATOR
+            ) {
+                return Err(ProjectError::InvalidProject(
+                    "control document appears in manifest inventory",
+                ));
+            }
+            if previous_locator.is_some_and(|previous| previous >= document.locator.as_str()) {
+                return Err(ProjectError::InvalidProject(
+                    "manifest inventory is not identity sorted",
+                ));
+            }
+            previous_locator = Some(&document.locator);
+            if !expected.insert(document.locator.clone()) {
+                return Err(ProjectError::DuplicateLocator(document.locator.clone()));
+            }
+            limits.check(
+                "project document bytes",
+                document.byte_length,
+                limits.max_document_bytes,
+            )?;
+            total_bytes = checked_limit_sum(
+                "project total bytes",
+                total_bytes,
+                document.byte_length,
+                limits.max_total_bytes,
+            )?;
+            Sha256HexDigest::new(&document.sha256)?;
+            by_role
+                .entry(document.role.clone())
+                .or_default()
+                .push(document);
+            documents.push(ProjectCaptureDocument {
+                locator: document.locator.clone(),
+                byte_length: document.byte_length,
+                sha256: document.sha256.clone(),
+            });
+        }
+        require_role(
+            &by_role,
+            "reference-records",
+            "records/",
+            WORLD_PROJECT_REFERENCE_SCHEMA,
+        )?;
+        require_role(
+            &by_role,
+            "import-candidates",
+            "imports/",
+            WORLD_PROJECT_IMPORT_SCHEMA,
+        )?;
+        require_role(
+            &by_role,
+            "author-metadata",
+            "metadata/",
+            WORLD_PROJECT_METADATA_SCHEMA,
+        )?;
+        if by_role.len() != 3 {
+            return Err(ProjectError::InvalidProject(
+                "unsupported manifest document role",
+            ));
+        }
+
+        Ok(Self {
+            root,
+            manifest,
+            lock,
+            documents,
+        })
+    }
+
+    pub(super) fn documents(&self) -> &[ProjectCaptureDocument] {
+        &self.documents
+    }
+}
+
 fn parse_snapshot(
     snapshot: &ProjectSnapshot,
     limits: ProjectEvidenceLimits,
 ) -> Result<WorldProject, ProjectError> {
-    let root: RootDocument = parse_strict(required(snapshot, PROJECT_LOCATOR)?, limits)?;
-    if root.schema != WORLD_PROJECT_ROOT_SCHEMA
-        || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE
-    {
-        return Err(ProjectError::InvalidProject(
-            "unsupported project root profile",
-        ));
-    }
-    if root.manifest_locator != MANIFEST_LOCATOR || root.content_lock_locator != LOCK_LOCATOR {
-        return Err(ProjectError::InvalidProject("v1 control locator mismatch"));
-    }
+    let root_bytes = required(snapshot, PROJECT_LOCATOR)?;
     let manifest_bytes = required(snapshot, MANIFEST_LOCATOR)?;
     let lock_bytes = required(snapshot, LOCK_LOCATOR)?;
-    require_digest(MANIFEST_LOCATOR, manifest_bytes, &root.manifest_sha256)?;
-    require_digest(LOCK_LOCATOR, lock_bytes, &root.content_lock_sha256)?;
-    let manifest: ManifestDocumentRoot = parse_strict(manifest_bytes, limits)?;
-    let lock: LockDocument = parse_strict(lock_bytes, limits)?;
-    if manifest.schema != WORLD_PROJECT_MANIFEST_SCHEMA || lock.schema != WORLD_PROJECT_LOCK_SCHEMA
-    {
-        return Err(ProjectError::InvalidProject(
-            "unsupported control document schema",
-        ));
-    }
-    if root.project_revision != manifest.package_revision
-        || root.project_revision != lock.project_revision
-    {
-        return Err(ProjectError::InvalidProject("mixed project revision"));
-    }
-    if !manifest.required_features.is_empty() || !manifest.optional_features.is_empty() {
-        return Err(ProjectError::InvalidProject(
-            "unsupported project feature declaration",
-        ));
-    }
-    let package = package_binding(&manifest, manifest_bytes)?;
-    let content_lock = content_lock_binding(&lock)?;
-    if content_lock.entries.len() != 1 {
-        return Err(ProjectError::InvalidProject(
-            "v1 Content Lock must contain exactly one root entry",
-        ));
-    }
-    let expected_provenance = package.package_provenance_digest()?;
-    let entry = content_lock
-        .entries
-        .first()
-        .ok_or(ProjectError::InvalidProject(
-            "Content Lock root package missing",
-        ))?;
-    if entry.package_key != package.package_key
-        || entry.package_revision != package.package_revision
-        || entry.package_provenance_digest != expected_provenance
-        || entry.floating
-        || entry.dependency
-    {
-        return Err(ProjectError::InvalidProject(
-            "Content Lock root provenance mismatch",
-        ));
-    }
+    let plan =
+        ProjectCapturePlan::from_control_documents(root_bytes, manifest_bytes, lock_bytes, limits)?;
 
     let mut expected = BTreeSet::from([
         PROJECT_LOCATOR.to_owned(),
@@ -1026,26 +1177,8 @@ fn parse_snapshot(
         LOCK_LOCATOR.to_owned(),
     ]);
     let mut by_role: BTreeMap<String, Vec<&ManifestDocument>> = BTreeMap::new();
-    let mut previous_locator: Option<&str> = None;
-    for document in &manifest.documents {
-        validate_locator(&document.locator, limits)?;
-        if matches!(
-            document.locator.as_str(),
-            PROJECT_LOCATOR | MANIFEST_LOCATOR | LOCK_LOCATOR
-        ) {
-            return Err(ProjectError::InvalidProject(
-                "control document appears in manifest inventory",
-            ));
-        }
-        if previous_locator.is_some_and(|previous| previous >= document.locator.as_str()) {
-            return Err(ProjectError::InvalidProject(
-                "manifest inventory is not identity sorted",
-            ));
-        }
-        previous_locator = Some(&document.locator);
-        if !expected.insert(document.locator.clone()) {
-            return Err(ProjectError::DuplicateLocator(document.locator.clone()));
-        }
+    for document in &plan.manifest.documents {
+        expected.insert(document.locator.clone());
         by_role
             .entry(document.role.clone())
             .or_default()
@@ -1086,11 +1219,7 @@ fn parse_snapshot(
         "metadata/",
         WORLD_PROJECT_METADATA_SCHEMA,
     )?;
-    if by_role.len() != 3 {
-        return Err(ProjectError::InvalidProject(
-            "unsupported manifest document role",
-        ));
-    }
+    debug_assert_eq!(by_role.len(), 3);
     let mut reference: Option<ReferenceDocument> = None;
     for info in reference_infos {
         let parsed: ReferenceDocument = parse_strict(required(snapshot, &info.locator)?, limits)?;
@@ -1182,9 +1311,9 @@ fn parse_snapshot(
     validate_imports(&imports.batches)?;
     validate_metadata(&metadata.entries)?;
     Ok(WorldProject {
-        root,
-        manifest,
-        lock,
+        root: plan.root,
+        manifest: plan.manifest,
+        lock: plan.lock,
         reference,
         imports,
         metadata,
