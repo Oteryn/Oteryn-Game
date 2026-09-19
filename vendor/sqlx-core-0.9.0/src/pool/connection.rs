@@ -24,6 +24,17 @@ pub struct PoolConnection<DB: Database> {
     pub(crate) pool: Arc<PoolInner<DB>>,
 }
 
+/// Terminal evidence observed while explicitly returning a checked-out connection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PoolConnectionReturnDisposition {
+    /// The exact checked-out connection passed the release checks and became idle.
+    ReturnedToIdle,
+    /// The exact checked-out connection was closed or hard-closed instead of being reused.
+    RetiredClosed,
+    /// This handle no longer owned a live connection, so no terminal evidence was produced.
+    NoEvidence,
+}
+
 pub(super) struct Live<DB: Database> {
     pub(super) raw: DB::Connection,
     pub(super) created_at: Instant,
@@ -132,13 +143,23 @@ impl<DB: Database> PoolConnection<DB> {
     /// This effectively runs the drop handler eagerly instead of spawning a task to do it.
     #[doc(hidden)]
     pub fn return_to_pool(&mut self) -> impl Future<Output = ()> + Send + 'static {
-        // float the connection in the pool before we move into the task
-        // in case the returned `Future` isn't executed, like if it's spawned into a dying runtime
-        // https://github.com/launchbadge/sqlx/issues/1396
-        // Type hints seem to be broken by `Option` combinators in IntelliJ Rust right now (6/22).
+        let observed = self.return_to_pool_observed();
+        async move {
+            let _ = observed.await;
+        }
+    }
+
+    /// Test and explicitly return the exact checked-out connection while preserving
+    /// whether it became idle, was retired, or had already been consumed.
+    #[doc(hidden)]
+    pub fn return_to_pool_observed(
+        &mut self,
+    ) -> impl Future<Output = PoolConnectionReturnDisposition> + Send + 'static {
+        // Float the connection before moving into the future so dropping the
+        // returned future cannot make the pool believe the holder is idle.
         let floating: Option<Floating<DB, Live<DB>>> =
             self.live.take().map(|live| live.float(self.pool.clone()));
-
+        let had_live = floating.is_some();
         let pool = self.pool.clone();
 
         async move {
@@ -150,6 +171,14 @@ impl<DB: Database> PoolConnection<DB> {
 
             if !returned_to_pool {
                 pool.min_connections_maintenance(None).await;
+            }
+
+            if !had_live {
+                PoolConnectionReturnDisposition::NoEvidence
+            } else if returned_to_pool {
+                PoolConnectionReturnDisposition::ReturnedToIdle
+            } else {
+                PoolConnectionReturnDisposition::RetiredClosed
             }
         }
     }

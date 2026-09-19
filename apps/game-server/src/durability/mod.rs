@@ -10,6 +10,8 @@ mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+#[cfg(test)]
+pub(crate) use db::{DurabilityRootConfig, build_root_pool};
 
 use oteryn_game_server::foundation::{
     PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectDurabilityFlowV1,

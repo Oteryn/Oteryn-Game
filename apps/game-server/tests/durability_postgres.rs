@@ -132,6 +132,67 @@ fn wp3_deterministic_pg_options_ignore_ambient_sources() -> Result<(), Box<dyn s
     Ok(())
 }
 
+#[test]
+fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DurabilityRootConfig, build_root_pool};
+    use sqlx::postgres::PgSslMode;
+    use std::net::{IpAddr, Ipv4Addr};
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let pool = build_root_pool(DurabilityRootConfig::new(
+                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                5432,
+                "db.example".to_owned(),
+                "oteryn".to_owned(),
+                "explicit".to_owned(),
+                "test-secret".to_owned(),
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n".to_vec(),
+            ));
+
+            assert_eq!(pool.options().get_max_connections(), 1);
+            assert_eq!(pool.options().get_min_connections(), 0);
+            assert_eq!(
+                pool.options().get_acquire_timeout(),
+                std::time::Duration::from_secs(5)
+            );
+            assert_eq!(
+                pool.options().get_idle_timeout(),
+                Some(std::time::Duration::from_secs(10 * 60))
+            );
+            assert_eq!(
+                pool.options().get_max_lifetime(),
+                Some(std::time::Duration::from_secs(30 * 60))
+            );
+            assert_eq!(pool.size(), 0);
+            assert_eq!(pool.num_idle(), 0);
+
+            let connect = pool.connect_options();
+            assert_eq!(connect.get_host(), "db.example");
+            assert_eq!(connect.get_host_addr(), Some("203.0.113.7"));
+            assert_eq!(connect.get_port(), 5432);
+            assert_eq!(connect.get_username(), "explicit");
+            assert_eq!(connect.get_database(), Some("oteryn"));
+            assert!(matches!(connect.get_ssl_mode(), PgSslMode::VerifyFull));
+
+            assert!(
+                pool.try_acquire().is_none(),
+                "ready-only miss must not establish a connection"
+            );
+            tokio::task::yield_now().await;
+            assert_eq!(
+                pool.size(),
+                0,
+                "lazy min-zero profile must not connect in the background"
+            );
+
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
+
 type CrossEpochSessionRow = (
     i64,
     i64,

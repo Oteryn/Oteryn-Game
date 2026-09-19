@@ -71,7 +71,7 @@ use crate::error::Error;
 use crate::sql_str::SqlSafeStr;
 use crate::transaction::Transaction;
 
-pub use self::connection::PoolConnection;
+pub use self::connection::{PoolConnection, PoolConnectionReturnDisposition};
 use self::inner::PoolInner;
 #[doc(hidden)]
 pub use self::maybe::MaybePoolConnection;

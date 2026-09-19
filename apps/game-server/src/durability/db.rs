@@ -1,9 +1,87 @@
 use crate::durability::DurabilityError;
 use sqlx::PgPool;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::postgres::{
+    PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode,
+};
+use std::net::IpAddr;
 use std::time::Duration;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+pub(crate) const DB_PASS_DEADLINE: Duration = Duration::from_secs(2);
+pub(crate) const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
+const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
+const STATEMENT_CACHE_CAPACITY: usize = 100;
+
+/// Explicit first-slice configuration for the process durability root.
+///
+/// Every identity- and secret-bearing field is supplied by the caller. Building
+/// the SQLx profile from this value never consults `PG*`, passfiles, OS-user
+/// defaults, Unix-domain-socket discovery, client certificates, or implicit
+/// trust roots.
+pub(crate) struct DurabilityRootConfig {
+    transport_ip: IpAddr,
+    port: u16,
+    tls_server_name: String,
+    database: String,
+    username: String,
+    password: String,
+    root_ca_pem: Vec<u8>,
+}
+
+impl DurabilityRootConfig {
+    pub(crate) fn new(
+        transport_ip: IpAddr,
+        port: u16,
+        tls_server_name: String,
+        database: String,
+        username: String,
+        password: String,
+        root_ca_pem: Vec<u8>,
+    ) -> Self {
+        Self {
+            transport_ip,
+            port,
+            tls_server_name,
+            database,
+            username,
+            password,
+            root_ca_pem,
+        }
+    }
+
+    fn into_connect_options(self) -> PgConnectOptions {
+        PgConnectOptions::new_without_environment()
+            .host(&self.tls_server_name)
+            .host_addr(self.transport_ip)
+            .port(self.port)
+            .database(&self.database)
+            .username(&self.username)
+            .password(&self.password)
+            .ssl_mode(PgSslMode::VerifyFull)
+            .ssl_root_cert_from_pem(self.root_ca_pem)
+            .ssl_use_default_roots(false)
+            .ssl_client_auth_none()
+            .ssl_tls13_only(true)
+            .ssl_session_resumption(false)
+            .authentication_policy(PgAuthenticationPolicy::ScramSha256)
+            .statement_cache_capacity(STATEMENT_CACHE_CAPACITY)
+    }
+}
+
+/// Build the accepted lazy max-one pool without establishing a connection.
+///
+/// Connection establishment is deliberately left to serialized root
+/// maintenance; active work must use a ready-only `try_begin()` path.
+pub(crate) fn build_root_pool(config: DurabilityRootConfig) -> PgPool {
+    PgPoolOptions::new()
+        .max_connections(1)
+        .min_connections(0)
+        .acquire_timeout(ROOT_RECOVERY_WINDOW)
+        .idle_timeout(HOLDER_IDLE_TIMEOUT)
+        .max_lifetime(HOLDER_MAX_LIFETIME)
+        .connect_lazy_with(config.into_connect_options())
+}
 
 pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool, DurabilityError> {
     PgPoolOptions::new()
