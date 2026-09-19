@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "manifest_revision": 3,
+  "manifest_revision": 4,
   "canonical_digest": null,
   "status": "ACCEPTED",
   "reference_target": {
@@ -50,7 +50,7 @@
   "domains": [
     {
       "domain": "CHARACTER",
-      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+      "coverage_status": "MECHANIC_CASES_REGISTERED"
     },
     {
       "domain": "ITEM",
@@ -62,7 +62,7 @@
     },
     {
       "domain": "CONTENT_WORLD",
-      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+      "coverage_status": "MECHANIC_CASES_REGISTERED"
     },
     {
       "domain": "SIMULATION",
@@ -74,11 +74,11 @@
     },
     {
       "domain": "AI_SPAWN",
-      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+      "coverage_status": "MECHANIC_CASES_REGISTERED"
     },
     {
       "domain": "WORLD_INTERACTION",
-      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+      "coverage_status": "MECHANIC_CASES_REGISTERED"
     },
     {
       "domain": "ECONOMY",
@@ -313,6 +313,515 @@
           "reason": "Issue #254; target continuity is unproven and direct official-page verification was unavailable, so provenance cannot be marked CLEARED for promotion."
         }
       ]
+    },
+    {
+      "case_id": "content_world.newhaven_targuna.level8_route.v1",
+      "domain": "CONTENT_WORLD",
+      "title": "Newhaven to Targuna level-8 route chronology",
+      "scope": {
+        "summary": "Product-route chronology for characters continuing from Newhaven at level 8 or above; coordinates, geometry, transition protocol, NPC identity, and starter templates are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "The character is in the production Newhaven onboarding flow and has reached at least level 8."
+        },
+        {
+          "id": "precondition-2",
+          "description": "Only the destination/product chronology is evaluated; no spatial or protocol mechanism is asserted."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "By the target cut, characters at level 8 or above continue from Newhaven to Targuna rather than travelling directly from Newhaven to Thais Peninsula.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=8733&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s1-newhaven-to-targuna-route",
+            "effective_date": "2026-03-17",
+            "observed_at": null,
+            "retrieved_at": "2026-09-10T05:53:03Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official pre-target product change; supports destination chronology only."
+          },
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=8747&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s2-targuna-production-fix",
+            "effective_date": "2026-03-31",
+            "observed_at": null,
+            "retrieved_at": "2026-09-09T21:55:09Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official pre-target follow-up corroborates that the Targuna flow was live; it does not prove exact geometry."
+          },
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=8757&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s3-targuna-production-fix",
+            "effective_date": "2026-04-08",
+            "observed_at": null,
+            "retrieved_at": "2026-09-09T21:55:09Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official pre-target follow-up corroborates production continuity; exact transition semantics remain excluded."
+          }
+        ],
+        "confidence_notes": "Dated official release and follow-up fixes establish the route chronology before the immutable cut.",
+        "uncertainty_notes": "Exact map coordinates, floor geometry, transition/teleport protocol, NPC identity, vocation transaction, and starter inventory remain UNKNOWN.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
+    },
+    {
+      "case_id": "movement.discovery.completed_area_speed_bonus_range.v1",
+      "domain": "WORLD_INTERACTION",
+      "title": "Discovery completed-area movement speed bonus range",
+      "scope": {
+        "summary": "Evidence-taxonomy case for the completed-area Discovery movement reward; WORLD_INTERACTION is the accepted schema-v1 bucket and does not transfer runtime ownership from GAME-MOVEMENT.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "The traversed area is fully discovered under the production Discovery system."
+        },
+        {
+          "id": "precondition-2",
+          "description": "Only the numeric reward envelope is evaluated; overall-progress mapping and rounding are excluded."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "Before the target cut, moving in a fully discovered area grants an additional speed bonus within the inclusive +100 through +195 envelope, with the value depending on overall Discovery progress.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=8834&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s4-discovery-speed-envelope",
+            "effective_date": "2026-06-11",
+            "observed_at": null,
+            "retrieved_at": "2026-09-09T21:55:09Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official pre-target feature material supports the +100..+195 envelope; it does not disclose the complete mapping function."
+          },
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=8845&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s5-summer-update-production-presence",
+            "effective_date": "2026-07-13",
+            "observed_at": null,
+            "retrieved_at": "2026-09-10T05:53:03Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official release confirms the improved Discovery system entered production before the target cut."
+          }
+        ],
+        "confidence_notes": "The official feature description supplies the bounded range and the official release supplies pre-target production presence.",
+        "uncertainty_notes": "The progress/count-to-speed mapping, interpolation, rounding, stacking, activation timing, and step scheduling remain UNKNOWN.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
+    },
+    {
+      "case_id": "character.death.low_level_base_xp_skill_loss.v1",
+      "domain": "CHARACTER",
+      "title": "Low-level death progression loss and Oteryn Reference difference",
+      "scope": {
+        "summary": "A bounded level-7, PvE, no-promotion, no-blessing progression-loss case covering Global experience-loss and skill-loss semantics only; respawn destination, item/equipment loss, PvP modifiers, and unrelated death behavior are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "The character is level 7, unpromoted, has no blessings, and dies in PvE."
+        },
+        {
+          "id": "precondition-2",
+          "description": "Respawn destination, item/equipment loss, PvP modifiers, exact XP basis/rate, skill/magic arithmetic, ordering, and rounding are excluded from the Global target claim."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "Global target behavior includes experience loss and skill loss on death.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s6-global-death-family",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Current official manual supports the bounded qualitative experience-loss and skill-loss family; exact target-cut arithmetic, thresholds, and related death behavior are not promoted."
+          }
+        ],
+        "confidence_notes": "Official continuity supports the bounded Global progression-loss family.",
+        "uncertainty_notes": "Exact Global XP basis/rate, thresholds, blessing/promotion transforms, skill/magic arithmetic, ordering, rounding, level transition, item loss, respawn destination, and other death behavior remain UNKNOWN for this case.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "DECLARED_DIFFERENCE",
+        "accepted_difference_reference": "docs/architecture/OTERYN_REFERENCE_DEATH_XP_SPAN_OWNER_BASELINE_2026-09-09.md"
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public Global target facts are paraphrased from the official source; the accepted Oteryn progression-loss difference is referenced only through the parity-side accepted-difference contract. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED Global progression-loss target case with an accepted Oteryn declared-difference reference; no parity is confirmed.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
+    },
+    {
+      "case_id": "ability_combat.corpse_loot.authority_window_10s.v1",
+      "domain": "ABILITY_COMBAT",
+      "title": "Corpse loot authority and immovability window",
+      "scope": {
+        "summary": "The qualitative first-ten-seconds corpse authorization and immovability family; exact timer-boundary scheduling, attribution edges, quick loot, and loot-table RNG are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "A non-player creature has died and produced a corpse."
+        },
+        {
+          "id": "precondition-2",
+          "description": "The highest-damage living character and that character's party membership are known."
+        },
+        {
+          "id": "precondition-3",
+          "description": "Natural loot selection and probabilities are not evaluated."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "For the first 10 seconds after creature death, the highest-damage living character and that character's party members are authorized to loot the corpse, and the corpse cannot be moved during that window.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=399&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s8-corpse-authority-introduction",
+            "effective_date": "2006-08-01",
+            "observed_at": null,
+            "retrieved_at": "2026-09-09T21:55:09Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official introduction establishes the ten-second highest-damage/party authorization and immovability family."
+          },
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/gameguides/?section=controls&subtopic=manual",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s9-corpse-authority-continuity",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Current official controls documentation supports continuity of the authorization family; exact target tick semantics remain excluded."
+          }
+        ],
+        "confidence_notes": "Official introduction plus official current continuity support the bounded family at DERIVED.",
+        "uncertainty_notes": "Exact 10.000-second boundary tick, tie breaking, summon attribution, party-change timing, nested containers, quick-loot behavior, and dead-character edge handling remain UNKNOWN.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public official facts are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
+    },
+    {
+      "case_id": "world_interaction.newhaven_npc.trade_widget_flow.v1",
+      "domain": "WORLD_INTERACTION",
+      "title": "Newhaven NPC dialogue and trade-widget product flow",
+      "scope": {
+        "summary": "Newhaven NPC dialogue/trade product shape only; exact NPC identity, dialogue graph, catalogue, prices, and transaction semantics are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "The player is interacting with a Newhaven NPC that exposes a trade service."
+        },
+        {
+          "id": "precondition-2",
+          "description": "Only the dialogue UI and trade-widget transition are evaluated."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "The Newhaven NPC interaction product shape includes clickable dialogue keywords or shortcut buttons, and selecting the trade shortcut opens the trade widget.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=8543&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s10-newhaven-npc-trade-widget",
+            "effective_date": "2025-10-15",
+            "observed_at": null,
+            "retrieved_at": "2026-09-10T05:53:03Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official pre-target Newhaven feature material directly supports the bounded dialogue/trade-widget product shape."
+          }
+        ],
+        "confidence_notes": "The dated official feature predates the target and directly describes the bounded UI/service flow.",
+        "uncertainty_notes": "Exact trader identity, complete keyword set, dialogue ordering, catalogue, prices, stock, currency, authorization, and transaction behavior remain UNKNOWN.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
+    },
+    {
+      "case_id": "ai_spawn.newhaven.goblin_intruder_retaliates_when_attacked.v1",
+      "domain": "AI_SPAWN",
+      "title": "Goblin Intruder retaliates when attacked",
+      "scope": {
+        "summary": "Qualitative tutorial-creature retaliation only; stats, target selection, threat, timing, pathfinding, spawn, and loot are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "A Goblin Intruder in the Newhaven tutorial is attacked by the player."
+        },
+        {
+          "id": "precondition-2",
+          "description": "No assertion is made about behavior before the attack or after target changes."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "The Newhaven tutorial Goblin Intruder fights back after it is attacked.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/gameguides/?subtopic=quickstart",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s11-goblin-intruder-retaliation",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Current official Quickstart supports the qualitative retaliation statement; dated Newhaven production chronology supports continuity only at DERIVED."
+          }
+        ],
+        "confidence_notes": "Official tutorial material states the qualitative response and protected evidence separately establishes Newhaven as pre-target production content.",
+        "uncertainty_notes": "Exact HP, XP, attacks, damage, retarget/threat algorithm, reaction timer, pathfinding, spawn placement/interval, corpse, and loot remain UNKNOWN.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
+    },
+    {
+      "case_id": "content_world.rat.first_creature_static.v1",
+      "domain": "CONTENT_WORLD",
+      "title": "Rat bounded first-creature static tuple",
+      "scope": {
+        "summary": "Target-near Rat static fields needed for a first creature fixture: HP, base XP, semantic corpse family, and ordinary loot candidate item types; damage profile, AI breadth, numeric IDs, quantities, and RNG are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "The creature is an ordinary non-raid Rat."
+        },
+        {
+          "id": "precondition-2",
+          "description": "Base XP is a creature property and is not asserted as the final Character XP delta."
+        },
+        {
+          "id": "precondition-3",
+          "description": "Loot candidate membership does not assert that an item drops or with what probability."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "A Rat has 20 HP and 5 base XP, maps to the semantic corpse family Dead Rat, and its ordinary loot candidate item types are bounded to Gold Coin and Cheese.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://www.tibiawiki.com.br/index.php?oldid=441001&title=Rat",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s12-rat-target-near-structured-record",
+            "effective_date": "2026-07-25",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Schema-v1 serialization of STRUCTURED_REFERENCE_DATA selected by #162 comment 5711026915. The stable target-near revision supports DERIVED HIGH fields only, never PROVEN."
+          },
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://www.tibiawiki.com.br/index.php?stableid=45839&title=Dead_Rat",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s13-dead-rat-structured-record",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Schema-v1 serialization of STRUCTURED_REFERENCE_DATA selected by #162 comment 5711026915. Supports the semantic corpse-family name only; numeric item identity and decay fields are excluded."
+          },
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/library/?subtopic=creatures",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s14-official-creature-catalogue-anchor",
+            "effective_date": null,
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official terminology/catalogue anchor only; it does not independently prove the numeric Rat tuple."
+          }
+        ],
+        "confidence_notes": "A stable revision three days before the target, its field-stability diff, and official boundary reasoning support DERIVED HIGH confidence without upgrading to PROVEN.",
+        "uncertainty_notes": "Natural loot probabilities, guaranteed drops, quantities, numeric corpse/item IDs, final awarded Character XP, exact target-era primary confirmation, and all unlisted Rat fields remain UNKNOWN.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public structured-reference and official locator facts are paraphrased with bounded schema-v1 serialization; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+      },
+      "history": [
+        {
+          "date": "2026-09-17",
+          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+        }
+      ]
     }
   ],
   "policy": {
@@ -360,6 +869,12 @@
       "date": "2026-08-14",
       "summary": "Register first representative ABILITY_COMBAT cases for Light Healing and Ice Strike as UNKNOWN with provenance pending because indexed official post-boundary content lacks direct live-page verification and accepted target continuity; implementation remains not started and parity pending.",
       "issue": "#254"
+    },
+    {
+      "manifest_revision": 4,
+      "date": "2026-09-17",
+      "summary": "Register seven bounded DERIVED cases for Newhaven/Targuna chronology, Discovery movement reward range, the Global/Oteryn death progression distinction, corpse-loot authority, Newhaven trade and retaliation shapes, and target-near Rat static fields; preserve all revision-3 cases and fail-closed unknown boundaries; no parity is confirmed.",
+      "issue": "#514"
     }
   ]
 }
