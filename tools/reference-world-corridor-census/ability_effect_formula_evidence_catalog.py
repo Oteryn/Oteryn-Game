@@ -195,7 +195,6 @@ def verify_mapper_revision(game_root: Path) -> dict[str, Any]:
     status = str(_git(game_root, "status", "--porcelain=v1", "--", MAPPER_PATH))
     if status:
         raise CatalogError(f"MAPPER_DIRTY: {MAPPER_PATH}")
-    head = str(_git(game_root, "rev-parse", "HEAD^{commit}"))
     blob = str(_git(game_root, "rev-parse", f"HEAD:{MAPPER_PATH}"))
     payload = _git(game_root, "cat-file", "blob", blob, binary=True)
     assert isinstance(payload, bytes)
@@ -203,7 +202,6 @@ def verify_mapper_revision(game_root: Path) -> dict[str, Any]:
     return {
         "profile": MAPPER_PROFILE,
         "path": MAPPER_PATH,
-        "observed_at_head": head,
         "git_blob": blob,
         "canonicalization": "repository text bytes; CRLF normalized to LF; lone CR rejected",
         "canonical_size": len(canonical),
