@@ -1281,7 +1281,7 @@ mod tests {
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (_authority, _session, scope) = authority(22, 4, 1, 1)?;
-        let error = LocalObjectRuntime::bind(
+        let error = match LocalObjectRuntime::bind(
             &content,
             scope,
             ScopeOwnershipGeneration::new(1)
@@ -1290,8 +1290,14 @@ mod tests {
             1,
             &TransitionKey::new(CLOSE_TRANSITION)?,
             &TransitionKey::new(OPEN_TRANSITION)?,
-        )
-        .expect_err("swapped OPEN/CLOSE semantic intents must fail closed");
+        ) {
+            Ok(_runtime) => {
+                return Err(fixture_error(
+                    "swapped OPEN/CLOSE semantic intents unexpectedly bound",
+                ));
+            }
+            Err(error) => error,
+        };
         assert!(matches!(
             error,
             WorldRuntimeError::InvalidBinding(
