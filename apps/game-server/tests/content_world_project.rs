@@ -215,6 +215,13 @@ fn parse(documents: BTreeMap<String, Vec<u8>>) -> Result<WorldProject, ProjectEr
     ProjectSnapshot::new(documents, limits())?.parse(limits())
 }
 
+fn parse_with_limits(
+    documents: BTreeMap<String, Vec<u8>>,
+    evidence_limits: ProjectEvidenceLimits,
+) -> Result<WorldProject, ProjectError> {
+    ProjectSnapshot::new(documents, evidence_limits)?.parse(evidence_limits)
+}
+
 fn canonical_value(value: &Value) -> Vec<u8> {
     let mut bytes = serde_json::to_vec(value).expect("JSON encoding");
     bytes.push(b'\n');
@@ -371,20 +378,63 @@ fn inventory_digest_and_complete_document_set_are_enforced() {
     ));
 }
 
+fn replace_lock_and_rebind_root(
+    documents: &mut BTreeMap<String, Vec<u8>>,
+    lock: &Value,
+) {
+    let lock_bytes = canonical_value(lock);
+    let mut root: Value =
+        serde_json::from_slice(&documents["project.json"]).expect("project root");
+    root["content_lock_sha256"] = Value::String(world_project_sha256(&lock_bytes));
+    documents.insert("content.lock.json".to_owned(), lock_bytes);
+    documents.insert("project.json".to_owned(), canonical_value(&root));
+}
+
+#[test]
+fn content_lock_requires_exactly_one_immutable_root_entry() {
+    for mutation in 0..3 {
+        let mut emitted = documents(draft());
+        let mut lock: Value =
+            serde_json::from_slice(&emitted["content.lock.json"]).expect("Content Lock");
+        match mutation {
+            0 => {
+                let extra = lock["entries"][0].clone();
+                lock["entries"].as_array_mut().expect("lock entries").push(extra);
+            }
+            1 => lock["entries"][0]["floating"] = Value::Bool(true),
+            2 => lock["entries"][0]["dependency"] = Value::Bool(true),
+            _ => return,
+        }
+        replace_lock_and_rebind_root(&mut emitted, &lock);
+        assert!(matches!(parse(emitted), Err(ProjectError::InvalidProject(_))));
+    }
+}
+
 #[test]
 fn measured_byte_limits_accept_exact_max_and_reject_max_plus_one() {
     let emitted = documents(draft());
     let largest = emitted.values().map(Vec::len).max().expect("documents");
     let total: usize = emitted.values().map(Vec::len).sum();
+    assert_eq!(emitted.len(), 6);
+    assert_eq!(largest, 2_260);
+    assert_eq!(total, 5_314);
     let mut exact = limits();
     exact.max_document_bytes = largest;
     exact.max_total_bytes = total;
     ProjectSnapshot::new(emitted.clone(), exact).expect("exact measured boundary");
+    CanonicalProjectDocuments::from_draft(draft(), exact).expect("exact bounded writer boundary");
 
     let mut below_document = exact;
     below_document.max_document_bytes = largest - 1;
     assert!(matches!(
         ProjectSnapshot::new(emitted.clone(), below_document),
+        Err(ProjectError::LimitExceeded {
+            resource: "project document bytes",
+            ..
+        })
+    ));
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(draft(), below_document),
         Err(ProjectError::LimitExceeded {
             resource: "project document bytes",
             ..
@@ -399,6 +449,173 @@ fn measured_byte_limits_accept_exact_max_and_reject_max_plus_one() {
             ..
         })
     ));
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(draft(), below_total),
+        Err(ProjectError::LimitExceeded {
+            resource: "project total bytes",
+            ..
+        })
+    ));
+}
+
+#[test]
+fn every_used_count_and_locator_limit_has_a_measured_boundary() {
+    let emitted = documents(draft());
+    let longest_locator = emitted.keys().map(String::len).max().expect("locators");
+    let most_segments = emitted
+        .keys()
+        .map(|locator| locator.split('/').count())
+        .max()
+        .expect("locators");
+
+    let mut exact = limits();
+    exact.max_documents = emitted.len();
+    exact.max_locator_bytes = longest_locator;
+    exact.max_locator_segments = most_segments;
+    ProjectSnapshot::new(emitted.clone(), exact).expect("exact locator/count bounds");
+    CanonicalProjectDocuments::from_draft(draft(), exact)
+        .expect("exact writer locator/count bounds");
+
+    let mut below_documents = exact;
+    below_documents.max_documents -= 1;
+    assert!(matches!(
+        ProjectSnapshot::new(emitted.clone(), below_documents),
+        Err(ProjectError::LimitExceeded {
+            resource: "project documents",
+            ..
+        })
+    ));
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(draft(), below_documents),
+        Err(ProjectError::LimitExceeded {
+            resource: "project documents",
+            ..
+        })
+    ));
+    let mut below_locator = exact;
+    below_locator.max_locator_bytes -= 1;
+    assert!(matches!(
+        ProjectSnapshot::new(emitted.clone(), below_locator),
+        Err(ProjectError::LimitExceeded {
+            resource: "project locator bytes",
+            ..
+        })
+    ));
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(draft(), below_locator),
+        Err(ProjectError::LimitExceeded {
+            resource: "project locator bytes",
+            ..
+        })
+    ));
+    let mut below_segments = exact;
+    below_segments.max_locator_segments -= 1;
+    assert!(matches!(
+        ProjectSnapshot::new(emitted, below_segments),
+        Err(ProjectError::LimitExceeded {
+            resource: "project locator segments",
+            ..
+        })
+    ));
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(draft(), below_segments),
+        Err(ProjectError::LimitExceeded {
+            resource: "project locator segments",
+            ..
+        })
+    ));
+
+    let mut exact_records = limits();
+    exact_records.max_reference_records = 4;
+    exact_records.max_import_records = 2;
+    exact_records.max_reimport_states = 1;
+    CanonicalProjectDocuments::from_draft(draft(), exact_records)
+        .expect("exact semantic count bounds");
+
+    let mut too_many_records = exact_records;
+    too_many_records.max_reference_records = 3;
+    assert!(CanonicalProjectDocuments::from_draft(draft(), too_many_records).is_err());
+    let mut too_many_imports = exact_records;
+    too_many_imports.max_import_records = 1;
+    assert!(CanonicalProjectDocuments::from_draft(draft(), too_many_imports).is_err());
+    let mut reimport_overflow = draft();
+    reimport_overflow.imports[0]
+        .reimport_states
+        .push(ReimportFieldState {
+            stable_identity: "reference-source:ability:light_healing".to_owned(),
+            field_path: "candidate.formula-state".to_owned(),
+            baseline: Some(CandidateValue::Text("UNKNOWN".to_owned())),
+            upstream: None,
+            local: Some(CandidateValue::Text("UNKNOWN".to_owned())),
+            decision: ReimportDecision::AdoptUpstream,
+        });
+    assert!(CanonicalProjectDocuments::from_draft(reimport_overflow, exact_records).is_err());
+}
+
+fn minimum_passing_json_limit(
+    emitted: &BTreeMap<String, Vec<u8>>,
+    set_limit: impl Fn(&mut ProjectEvidenceLimits, usize),
+    upper: usize,
+) -> usize {
+    let mut low = 1_usize;
+    let mut high = upper;
+    while low < high {
+        let candidate = low + ((high - low) / 2);
+        let mut evidence_limits = limits();
+        set_limit(&mut evidence_limits, candidate);
+        if parse_with_limits(emitted.clone(), evidence_limits).is_ok() {
+            high = candidate;
+        } else {
+            low = candidate + 1;
+        }
+    }
+    low
+}
+
+#[test]
+fn json_depth_value_and_string_budgets_accept_max_and_reject_max_plus_one() {
+    let emitted = documents(draft());
+    let measured_depth = minimum_passing_json_limit(
+        &emitted,
+        |limits, value| limits.max_json_depth = value,
+        limits().max_json_depth,
+    );
+    let measured_values = minimum_passing_json_limit(
+        &emitted,
+        |limits, value| limits.max_decoded_fields = value,
+        limits().max_decoded_fields,
+    );
+    let measured_strings = minimum_passing_json_limit(
+        &emitted,
+        |limits, value| limits.max_string_bytes = value,
+        limits().max_string_bytes,
+    );
+    assert_eq!((measured_depth, measured_values, measured_strings), (9, 73, 1_866));
+    for (minimum, set_limit) in [
+        (
+            measured_depth,
+            (|limits: &mut ProjectEvidenceLimits, value| limits.max_json_depth = value)
+                as fn(&mut ProjectEvidenceLimits, usize),
+        ),
+        (
+            measured_values,
+            (|limits: &mut ProjectEvidenceLimits, value| limits.max_decoded_fields = value)
+                as fn(&mut ProjectEvidenceLimits, usize),
+        ),
+        (
+            measured_strings,
+            (|limits: &mut ProjectEvidenceLimits, value| limits.max_string_bytes = value)
+                as fn(&mut ProjectEvidenceLimits, usize),
+        ),
+    ] {
+        assert!(minimum > 1);
+        let mut exact = limits();
+        set_limit(&mut exact, minimum);
+        parse_with_limits(emitted.clone(), exact).expect("exact JSON budget");
+        let mut below = limits();
+        set_limit(&mut below, minimum - 1);
+        assert!(parse_with_limits(emitted.clone(), below).is_err());
+    }
 }
 
 #[test]
