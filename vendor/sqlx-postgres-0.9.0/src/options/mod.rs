@@ -93,6 +93,44 @@ impl PgConnectOptions {
         }
     }
 
+    /// Create deterministic connection options from already-owned identity backing.
+    ///
+    /// This is the allocation-preserving sibling of [`Self::new_without_environment`]:
+    /// it never consults ambient configuration and moves the supplied strings into the
+    /// options without cloning them.
+    #[doc(hidden)]
+    pub fn new_without_environment_owned(
+        host: String,
+        host_addr: String,
+        port: u16,
+        database: String,
+        username: String,
+        password: String,
+    ) -> Self {
+        Self {
+            host,
+            host_addr: Some(host_addr),
+            port,
+            socket: None,
+            username,
+            password: Some(password),
+            database: Some(database),
+            ssl_mode: Default::default(),
+            ssl_root_cert: None,
+            ssl_client_cert: None,
+            ssl_client_key: None,
+            statement_cache_capacity: 100,
+            application_name: None,
+            log_settings: Default::default(),
+            extra_float_digits: Some("2".into()),
+            options: None,
+            authentication_policy: PgAuthenticationPolicy::Any,
+            tls13_only: false,
+            tls_session_resumption: true,
+            tls_use_default_roots: true,
+        }
+    }
+
     /// Create a default set of connection options _without_ reading from `passfile`.
     ///
     /// Equivalent to [`PgConnectOptions::new()`] but `passfile` is ignored.

@@ -118,6 +118,108 @@ fn shared_root_positive_v1_v2_authority_matrix_is_configured_postgres_proof()
 }
 
 #[test]
+fn shared_root_caller_cancellation_preserves_detached_journal_custody()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use authority_matrix::{Seed, prepared_record};
+
+            let database =
+                postgres::IsolatedPostgres::create("shared_root_cancelled_caller").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let seed = Seed {
+                    now: unix_now().map_err(foundation_error)?,
+                    ..Seed::fixed()
+                };
+                let record = prepared_record(seed)?;
+                let (_flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                let journal = AdmissionReconnectJournal::from_root(root.clone());
+
+                let mut blocker = <sqlx::PgConnection as sqlx::Connection>::connect(&url).await?;
+                sqlx::query("BEGIN").execute(&mut blocker).await?;
+                sqlx::query(
+                    "LOCK TABLE game_durability_reconnect_attempts IN ACCESS EXCLUSIVE MODE",
+                )
+                .execute(&mut blocker)
+                .await?;
+
+                let caller_journal = journal.clone();
+                let caller_request = request.clone();
+                let caller =
+                    tokio::spawn(async move { caller_journal.prepare(&caller_request).await });
+
+                tokio::time::timeout(Duration::from_secs(1), async {
+                    while root.is_ready() {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await
+                .map_err(|_| std::io::Error::other("root holder was not checked out"))?;
+                assert!(!root.has_ready_demand());
+
+                caller.abort();
+                let cancelled = match caller.await {
+                    Ok(_) => {
+                        return Err(
+                            std::io::Error::other("caller task unexpectedly completed").into()
+                        );
+                    }
+                    Err(cancelled) => cancelled,
+                };
+                assert!(cancelled.is_cancelled());
+                assert!(
+                    !root.is_ready(),
+                    "caller cancellation released the root holder before detached work finished"
+                );
+                assert!(!root.has_ready_demand());
+
+                sqlx::query("ROLLBACK").execute(&mut blocker).await?;
+                blocker.close().await?;
+
+                tokio::time::timeout(Duration::from_secs(1), async {
+                    while !root.is_ready() {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await
+                .map_err(|_| {
+                    std::io::Error::other("detached journal task did not return holder")
+                })?;
+                assert!(!root.has_ready_demand());
+
+                assert_eq!(
+                    journal.prepare(&request).await?,
+                    ReconnectPrepareDispositionV1::ExistingPrepared
+                );
+                assert_eq!(
+                    journal.reconcile(&request).await?,
+                    ReconnectDurableReconciliationSnapshotV1::prepared(record)
+                );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn shared_root_positive_v2_terminal_replacement_is_configured_postgres_proof()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {

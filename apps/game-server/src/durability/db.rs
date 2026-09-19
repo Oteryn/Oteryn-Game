@@ -5,11 +5,12 @@ use sqlx::postgres::{
     PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
 };
 use sqlx::{Acquire, PgPool, Transaction};
+use std::fmt::{self, Write as _};
 use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
@@ -28,6 +29,208 @@ const RETAINED_CONFIG_MAX_BYTES: usize = 24_171;
 const ROOT_CA_MAX_CERTIFICATES: usize = 4;
 const ROOT_CA_MAX_DER_BYTES: usize = 4_096;
 const ROOT_CA_MAX_AGGREGATE_DER_BYTES: usize = 16_384;
+const ROOT_TOTAL_RESIDENT_BYTES: usize = 12_582_912;
+const TRANSPORT_IP_TEXT_MAX_BYTES: usize = 39;
+
+struct RootResidentLedger {
+    used: AtomicUsize,
+    limit: usize,
+}
+
+impl RootResidentLedger {
+    const fn new(limit: usize) -> Self {
+        Self {
+            used: AtomicUsize::new(0),
+            limit,
+        }
+    }
+
+    fn try_reserve(&self, bytes: usize) -> Result<(), DurabilityError> {
+        let mut current = self.used.load(Ordering::Acquire);
+        loop {
+            let next = current
+                .checked_add(bytes)
+                .ok_or(DurabilityError::RootUnavailable)?;
+            if next > self.limit {
+                return Err(DurabilityError::RootUnavailable);
+            }
+            match self.used.compare_exchange_weak(
+                current,
+                next,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(observed) => current = observed,
+            }
+        }
+    }
+
+    fn release(&self, bytes: usize) {
+        let released = self
+            .used
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |current| {
+                current.checked_sub(bytes)
+            });
+        debug_assert!(released.is_ok(), "root resident charge underflow");
+    }
+
+    #[cfg(test)]
+    fn used(&self) -> usize {
+        self.used.load(Ordering::Acquire)
+    }
+}
+
+static ROOT_RESIDENT_LEDGER: RootResidentLedger =
+    RootResidentLedger::new(ROOT_TOTAL_RESIDENT_BYTES);
+
+enum RootLedgerHandle {
+    Process(&'static RootResidentLedger),
+    #[cfg(test)]
+    Test(Arc<RootResidentLedger>),
+}
+
+impl RootLedgerHandle {
+    fn ledger(&self) -> &RootResidentLedger {
+        match self {
+            Self::Process(ledger) => ledger,
+            #[cfg(test)]
+            Self::Test(ledger) => ledger,
+        }
+    }
+}
+
+struct RootIReservation {
+    ledger: RootLedgerHandle,
+    bytes: usize,
+}
+
+impl RootIReservation {
+    fn try_new(ledger: RootLedgerHandle, bytes: usize) -> Result<Self, DurabilityError> {
+        ledger.ledger().try_reserve(bytes)?;
+        Ok(Self { ledger, bytes })
+    }
+
+    #[cfg(test)]
+    fn bytes(&self) -> usize {
+        self.bytes
+    }
+}
+
+impl Drop for RootIReservation {
+    fn drop(&mut self) {
+        self.ledger.ledger().release(self.bytes);
+    }
+}
+
+struct RootICharge {
+    _reservation: Option<RootIReservation>,
+}
+
+fn checked_charge_add(total: usize, additional: usize) -> Result<usize, DurabilityError> {
+    total
+        .checked_add(additional)
+        .ok_or(DurabilityError::RootUnavailable)
+}
+
+fn conservative_heap_resident_charge(requested: usize) -> Result<usize, DurabilityError> {
+    if requested == 0 {
+        return Ok(0);
+    }
+    let word = std::mem::size_of::<usize>();
+    let alignment = word
+        .checked_mul(2)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    let metadata = word
+        .checked_mul(2)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    let minimum = word
+        .checked_mul(4)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    let with_metadata = requested
+        .checked_add(metadata)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    let rounded = with_metadata
+        .checked_add(alignment - 1)
+        .and_then(|value| value.checked_div(alignment))
+        .and_then(|value| value.checked_mul(alignment))
+        .ok_or(DurabilityError::RootUnavailable)?;
+    Ok(rounded.max(minimum))
+}
+
+fn arc_allocation_request<T>() -> Result<usize, DurabilityError> {
+    use std::alloc::Layout;
+    let counters = Layout::array::<AtomicUsize>(2).map_err(|_| DurabilityError::RootUnavailable)?;
+    let (layout, _) = counters
+        .extend(Layout::new::<T>())
+        .map_err(|_| DurabilityError::RootUnavailable)?;
+    Ok(layout.pad_to_align().size())
+}
+
+fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityError> {
+    let mut total = std::mem::size_of::<DurabilityRootConfig>()
+        .checked_add(std::mem::size_of::<DurabilityRoot>())
+        .ok_or(DurabilityError::RootUnavailable)?;
+
+    for requested in lengths
+        .into_iter()
+        .chain(std::iter::once(TRANSPORT_IP_TEXT_MAX_BYTES))
+    {
+        total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
+    }
+
+    let pool_allocations = sqlx::pool::retained_pool_core_allocation_sizes::<Postgres>(1)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    for requested in pool_allocations {
+        total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
+    }
+
+    for requested in [
+        arc_allocation_request::<AtomicBool>()?,
+        arc_allocation_request::<Mutex<()>>()?,
+        arc_allocation_request::<RootICharge>()?,
+    ] {
+        total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
+    }
+
+    Ok(total)
+}
+
+struct FixedText<const N: usize> {
+    bytes: [u8; N],
+    len: usize,
+}
+
+impl<const N: usize> FixedText<N> {
+    const fn new() -> Self {
+        Self {
+            bytes: [0; N],
+            len: 0,
+        }
+    }
+
+    fn as_str(&self) -> Result<&str, DurabilityError> {
+        std::str::from_utf8(&self.bytes[..self.len]).map_err(|_| DurabilityError::RootUnavailable)
+    }
+}
+
+impl<const N: usize> fmt::Write for FixedText<N> {
+    fn write_str(&mut self, value: &str) -> fmt::Result {
+        let end = self.len.checked_add(value.len()).ok_or(fmt::Error)?;
+        if end > N {
+            return Err(fmt::Error);
+        }
+        self.bytes[self.len..end].copy_from_slice(value.as_bytes());
+        self.len = end;
+        Ok(())
+    }
+}
+
+fn retain_transport_ip_text(transport_ip: IpAddr) -> Result<String, DurabilityError> {
+    let mut text = FixedText::<TRANSPORT_IP_TEXT_MAX_BYTES>::new();
+    write!(&mut text, "{transport_ip}").map_err(|_| DurabilityError::RootUnavailable)?;
+    retain_exact_string(text.as_str()?)
+}
 
 fn checked_retained_config_input_len(lengths: [usize; 5]) -> Result<usize, DurabilityError> {
     lengths.into_iter().try_fold(0usize, |total, length| {
@@ -226,13 +429,14 @@ fn retain_exact_bytes(input: &[u8]) -> Result<Vec<u8>, DurabilityError> {
 /// defaults, Unix-domain-socket discovery, client certificates, or implicit
 /// trust roots.
 pub struct DurabilityRootConfig {
-    transport_ip: IpAddr,
     port: u16,
+    transport_ip_text: String,
     tls_server_name: String,
     database: String,
     username: String,
     password: String,
     root_ca_pem: Vec<u8>,
+    root_i_reservation: RootIReservation,
 }
 
 impl DurabilityRootConfig {
@@ -244,6 +448,29 @@ impl DurabilityRootConfig {
         username: &str,
         password: &str,
         root_ca_pem: &[u8],
+    ) -> Result<Self, DurabilityError> {
+        Self::new_with_ledger(
+            transport_ip,
+            port,
+            tls_server_name,
+            database,
+            username,
+            password,
+            root_ca_pem,
+            RootLedgerHandle::Process(&ROOT_RESIDENT_LEDGER),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn new_with_ledger(
+        transport_ip: IpAddr,
+        port: u16,
+        tls_server_name: &str,
+        database: &str,
+        username: &str,
+        password: &str,
+        root_ca_pem: &[u8],
+        ledger: RootLedgerHandle,
     ) -> Result<Self, DurabilityError> {
         let lengths = [
             tls_server_name.len(),
@@ -264,8 +491,12 @@ impl DurabilityRootConfig {
             return Err(DurabilityError::InvalidConfiguration);
         }
         validate_dns_server_name(tls_server_name)?;
+
+        let reservation_bytes = root_i_reservation_bytes(lengths)?;
+        let root_i_reservation = RootIReservation::try_new(ledger, reservation_bytes)?;
         validate_root_ca_pem(root_ca_pem)?;
 
+        let transport_ip_text = retain_transport_ip_text(transport_ip)?;
         let tls_server_name = retain_exact_string(tls_server_name)?;
         let database = retain_exact_string(database)?;
         let username = retain_exact_string(username)?;
@@ -278,37 +509,52 @@ impl DurabilityRootConfig {
             password.capacity(),
             root_ca_pem.capacity(),
         ])?;
-        if retained_capacity != aggregate {
+        if retained_capacity != aggregate
+            || transport_ip_text.capacity() > TRANSPORT_IP_TEXT_MAX_BYTES
+        {
             return Err(DurabilityError::RootUnavailable);
         }
 
         Ok(Self {
-            transport_ip,
             port,
+            transport_ip_text,
             tls_server_name,
             database,
             username,
             password,
             root_ca_pem,
+            root_i_reservation,
         })
     }
 
-    fn into_connect_options(self) -> PgConnectOptions {
-        PgConnectOptions::new_without_environment()
-            .host(&self.tls_server_name)
-            .host_addr(self.transport_ip)
-            .port(self.port)
-            .database(&self.database)
-            .username(&self.username)
-            .password(&self.password)
-            .ssl_mode(PgSslMode::VerifyFull)
-            .ssl_root_cert_from_pem(self.root_ca_pem)
-            .ssl_use_default_roots(false)
-            .ssl_client_auth_none()
-            .ssl_tls13_only(true)
-            .ssl_session_resumption(false)
-            .authentication_policy(PgAuthenticationPolicy::ScramSha256)
-            .statement_cache_capacity(STATEMENT_CACHE_CAPACITY)
+    fn into_connect_options(self) -> (PgConnectOptions, RootIReservation) {
+        let Self {
+            port,
+            transport_ip_text,
+            tls_server_name,
+            database,
+            username,
+            password,
+            root_ca_pem,
+            root_i_reservation,
+        } = self;
+        let options = PgConnectOptions::new_without_environment_owned(
+            tls_server_name,
+            transport_ip_text,
+            port,
+            database,
+            username,
+            password,
+        )
+        .ssl_mode(PgSslMode::VerifyFull)
+        .ssl_root_cert_from_pem(root_ca_pem)
+        .ssl_use_default_roots(false)
+        .ssl_client_auth_none()
+        .ssl_tls13_only(true)
+        .ssl_session_resumption(false)
+        .authentication_policy(PgAuthenticationPolicy::ScramSha256)
+        .statement_cache_capacity(STATEMENT_CACHE_CAPACITY);
+        (options, root_i_reservation)
     }
 }
 
@@ -316,14 +562,16 @@ impl DurabilityRootConfig {
 ///
 /// Connection establishment is deliberately left to serialized root
 /// maintenance; active work must use a ready-only `try_begin()` path.
-pub(crate) fn build_root_pool(config: DurabilityRootConfig) -> PgPool {
-    PgPoolOptions::new()
+fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
+    let (options, root_i_reservation) = config.into_connect_options();
+    let pool = PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
         .acquire_timeout(ROOT_RECOVERY_WINDOW)
         .idle_timeout(HOLDER_IDLE_TIMEOUT)
         .max_lifetime(HOLDER_MAX_LIFETIME)
-        .connect_lazy_with(config.into_connect_options())
+        .connect_lazy_with(options);
+    (pool, root_i_reservation)
 }
 
 /// Process-scoped owner of the accepted max-one durability holder.
@@ -337,15 +585,20 @@ pub struct DurabilityRoot {
     pool: PgPool,
     ready_demand: Arc<AtomicBool>,
     maintenance: Arc<Mutex<()>>,
+    _root_i_charge: Arc<RootICharge>,
 }
 
 impl DurabilityRoot {
     #[must_use]
     pub fn new(config: DurabilityRootConfig) -> Self {
+        let (pool, root_i_reservation) = build_root_pool(config);
         Self {
-            pool: build_root_pool(config),
+            pool,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
+            _root_i_charge: Arc::new(RootICharge {
+                _reservation: Some(root_i_reservation),
+            }),
         }
     }
 
@@ -362,6 +615,7 @@ impl DurabilityRoot {
                 .connect_lazy(database_url)?,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
+            _root_i_charge: Arc::new(RootICharge { _reservation: None }),
         })
     }
 
@@ -778,7 +1032,7 @@ mod wp3_root_contract_tests {
             .enable_all()
             .build()?;
         runtime.block_on(async {
-            let pool = build_root_pool(config);
+            let (pool, _root_i_reservation) = build_root_pool(config);
             let options = pool.connect_options();
 
             assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
@@ -803,6 +1057,66 @@ mod wp3_root_contract_tests {
             assert!(!options.has_ssl_client_auth());
             assert_eq!(pool.size(), 0);
             assert_eq!(pool.num_idle(), 0);
+        });
+        Ok(())
+    }
+
+    #[test]
+    fn retained_config_is_reserved_against_same_root_i_for_its_full_lifetime()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
+        let ca = pem_block(32, "\n");
+        let lengths = [
+            "db.example".len(),
+            "oteryn".len(),
+            "explicit".len(),
+            "test-secret".len(),
+            ca.len(),
+        ];
+        let required = root_i_reservation_bytes(lengths)?;
+        assert!(required < ROOT_TOTAL_RESIDENT_BYTES);
+
+        let denied = Arc::new(RootResidentLedger::new(required - 1));
+        assert!(matches!(
+            DurabilityRootConfig::new_with_ledger(
+                ip,
+                5432,
+                "db.example",
+                "oteryn",
+                "explicit",
+                "test-secret",
+                &ca,
+                RootLedgerHandle::Test(denied.clone()),
+            ),
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert_eq!(denied.used(), 0);
+
+        let ledger = Arc::new(RootResidentLedger::new(required));
+        let config = DurabilityRootConfig::new_with_ledger(
+            ip,
+            5432,
+            "db.example",
+            "oteryn",
+            "explicit",
+            "test-secret",
+            &ca,
+            RootLedgerHandle::Test(ledger.clone()),
+        )?;
+        assert_eq!(config.root_i_reservation.bytes(), required);
+        assert_eq!(ledger.used(), required);
+
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let root = DurabilityRoot::new(config);
+            let other_owner = root.clone();
+            assert_eq!(ledger.used(), required);
+            drop(root);
+            assert_eq!(ledger.used(), required);
+            drop(other_owner);
+            assert_eq!(ledger.used(), 0);
         });
         Ok(())
     }

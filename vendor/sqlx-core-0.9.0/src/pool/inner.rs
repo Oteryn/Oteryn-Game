@@ -22,6 +22,17 @@ use futures_util::FutureExt;
 use std::time::{Duration, Instant};
 use tracing::Level;
 
+fn redacted_idle_failure_class(error: &Error) -> &'static str {
+    match error {
+        Error::Database(_) => "database",
+        Error::Io(_) => "transport",
+        Error::Tls(_) => "tls",
+        Error::Protocol(_) => "protocol",
+        Error::PoolTimedOut | Error::PoolClosed => "pool",
+        _ => "other",
+    }
+}
+
 pub(crate) struct PoolInner<DB: Database> {
     pub(super) connect_options: RwLock<Arc<<DB::Connection as Connection>::Options>>,
     pub(super) idle_conns: ArrayQueue<Idle<DB>>,
@@ -476,7 +487,9 @@ async fn check_idle_conn<DB: Database>(
             // an error here means the other end has hung up or we lost connectivity
             // either way we're fine to just discard the connection
             // the error itself here isn't necessarily unexpected so WARN is too strong
-            tracing::info!(%error, "ping on idle connection returned error");
+            let failure_class = redacted_idle_failure_class(&error);
+            drop(error);
+            tracing::info!(failure_class, "ping on idle connection returned error");
             // connection is broken so don't try to close nicely
             return Err(conn.close_hard().await);
         }

@@ -87,6 +87,38 @@ mod connection;
 mod inner;
 mod options;
 
+/// Requested allocation sizes retained by a pool before any physical connection exists.
+///
+/// This is a representation helper only: it supplies no budget, allowance, or policy.
+/// Callers that own a resource ledger can conservatively charge these source-proved
+/// allocations before constructing a lazy pool.
+#[doc(hidden)]
+pub fn retained_pool_core_allocation_sizes<DB: crate::database::Database>(
+    max_connections: u32,
+) -> Option<[usize; 3]> {
+    use std::alloc::Layout;
+    use std::sync::atomic::AtomicUsize;
+
+    fn arc_allocation_size<T>() -> Option<usize> {
+        let counters = Layout::array::<AtomicUsize>(2).ok()?;
+        let (layout, _) = counters.extend(Layout::new::<T>()).ok()?;
+        Some(layout.pad_to_align().size())
+    }
+
+    let pool_inner = arc_allocation_size::<inner::PoolInner<DB>>()?;
+    let connect_options =
+        arc_allocation_size::<<DB::Connection as crate::connection::Connection>::Options>()?;
+    let (slot, _) = Layout::new::<AtomicUsize>()
+        .extend(Layout::new::<connection::Idle<DB>>())
+        .ok()?;
+    let idle_slots = slot
+        .pad_to_align()
+        .size()
+        .checked_mul(max_connections as usize)?;
+
+    Some([pool_inner, connect_options, idle_slots])
+}
+
 /// An asynchronous pool of SQLx database connections.
 ///
 /// Create a pool with [Pool::connect] or [Pool::connect_with] and then call [Pool::acquire]
