@@ -346,7 +346,8 @@ impl AdmissionReconnectJournalV2 {
             }))
             .await;
         }
-        self.prepare_replacement_internal(request.clone(), None).await
+        self.prepare_replacement_internal(request.clone(), None)
+            .await
     }
 
     async fn prepare_replacement_internal(
@@ -602,51 +603,74 @@ impl AdmissionReconnectJournalV2 {
         self.legacy
             .run_pass(issued, move |holder, deadline| {
                 Box::pin(async move {
-        let record = request.record();
+                    let record = request.record();
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
-        if let Some(authorization) = request.terminal_replacement()
-            && (!replacement_authorization_matches_record(authorization, record)
-                || !replacement_receipt_matches(&mut transaction, authorization, record).await?)
-        {
-            return Err(DurabilityError::InvalidStoredState);
-        }
+                    if let Some(authorization) = request.terminal_replacement()
+                        && (!replacement_authorization_matches_record(authorization, record)
+                            || !replacement_receipt_matches(
+                                &mut transaction,
+                                authorization,
+                                record,
+                            )
+                            .await?)
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
 
-        let (legacy, state) =
-            AdmissionReconnectJournal::reconcile_record_in_transaction(&mut transaction, record)
-                .await?;
-        if request.terminal_replacement().is_none()
-            && admission_journal::replacement_receipt_matches_record(&mut transaction, record)
-                .await?
-        {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        let outcome = match state {
-            V2_PREPARED => {
-                if legacy != ReconnectDurableReconciliationSnapshotV1::prepared(record.clone()) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                ReconnectDurableOutcomeV2::Prepared
-            }
-            V2_COMMITTED => {
-                if legacy != ReconnectDurableReconciliationSnapshotV1::committed(record.clone()) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                ReconnectDurableOutcomeV2::Committed {
-                    current_generation: record.connection().candidate(),
-                    current_transport_ref: record.connection().transport_ref(),
-                }
-            }
-            V2_COLLISION_TERMINAL | V2_CONCURRENT_TERMINAL | V2_STALE_TERMINAL => {
-                if legacy != ReconnectDurableReconciliationSnapshotV1::terminal(record.clone()) {
-                    return Err(DurabilityError::InvalidStoredState);
-                }
-                ReconnectDurableOutcomeV2::Terminal {
-                    disposition: terminal_disposition_from_state(state)?,
-                }
-            }
-            _ => return Err(DurabilityError::InvalidStoredState),
-        };
+                    let (legacy, state) =
+                        AdmissionReconnectJournal::reconcile_record_in_transaction(
+                            &mut transaction,
+                            record,
+                        )
+                        .await?;
+                    if request.terminal_replacement().is_none()
+                        && admission_journal::replacement_receipt_matches_record(
+                            &mut transaction,
+                            record,
+                        )
+                        .await?
+                    {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let outcome = match state {
+                        V2_PREPARED => {
+                            if legacy
+                                != ReconnectDurableReconciliationSnapshotV1::prepared(
+                                    record.clone(),
+                                )
+                            {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            ReconnectDurableOutcomeV2::Prepared
+                        }
+                        V2_COMMITTED => {
+                            if legacy
+                                != ReconnectDurableReconciliationSnapshotV1::committed(
+                                    record.clone(),
+                                )
+                            {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            ReconnectDurableOutcomeV2::Committed {
+                                current_generation: record.connection().candidate(),
+                                current_transport_ref: record.connection().transport_ref(),
+                            }
+                        }
+                        V2_COLLISION_TERMINAL | V2_CONCURRENT_TERMINAL | V2_STALE_TERMINAL => {
+                            if legacy
+                                != ReconnectDurableReconciliationSnapshotV1::terminal(
+                                    record.clone(),
+                                )
+                            {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            ReconnectDurableOutcomeV2::Terminal {
+                                disposition: terminal_disposition_from_state(state)?,
+                            }
+                        }
+                        _ => return Err(DurabilityError::InvalidStoredState),
+                    };
                     admission_journal::commit_pass_transaction(transaction, deadline).await?;
                     Ok(ReconnectDurableReconciliationSnapshotV2::new(
                         record.clone(),
@@ -777,7 +801,6 @@ impl AdmissionReconnectJournalV2 {
             })
             .await
     }
-
 }
 
 fn replacement_authorization_matches_record(
