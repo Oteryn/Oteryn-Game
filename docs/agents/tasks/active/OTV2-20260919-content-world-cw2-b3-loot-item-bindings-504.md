@@ -154,11 +154,11 @@ Runtime registry census:
 - 0 reversed XML ranges in the pinned Otheryn source.
 
 B3 product digest:
-`48921eca7cae98a43e425e3e042910bb99a602285025b126751f8c1e3563050d`.
+`ae159c6a3b839389b96f6f167d35db8187d6c7278beb5302c8dd9c142fc693d4`.
 
 Canonical tracked evidence bytes: **17,151,662**.
 Canonical evidence file SHA-256:
-`1a5bfe2c74a5cd0101d429f20da2233cfad3671a5dae27441988406672f19be5`.
+`126cefe4510521e24a83b15d34a50dfc5243a4f1afe5cc4094e0997a3576daa0`.
 
 Two clean complete generations over identical protected/pinned inputs produced
 the same product digest, identical byte size and identical evidence-file
@@ -234,18 +234,21 @@ Focused and component checks passed on the local candidate:
 
 ### Exact-head CI
 
-- final head: pending;
-- trigger source: pending PR;
-- workflow/run/job: pending;
-- result: pending.
+- PR: `#676`;
+- final repaired head: pending commit/push;
+- trigger source: existing PR `#676` after repaired head publication;
+- workflow/run/job: pending repaired-head generation;
+- result: pending repaired-head generation.
 
 ## Self-review
 
-- exact candidate: frozen staged four-path diff; final commit SHA recorded externally after commit;
+- exact candidate: final repair head recorded externally after commit;
 - method/reviewer: implementing agent, whole-diff adversarial review;
-- material findings: 0;
-- verdict: `PASS_ZERO_MATERIAL_FINDINGS`;
-- evidence checks: mapper/evidence SHA binding, product-digest recomputation, 17,086-row source/native partitions, no native content key in the protected current product, exact four-path custody.
+- pre-freeze material finding: tracked evidence carried stale mapper SHA-256 `88fd5b44e1f399694efa17a95ceae93b18ece691a6230652780b27ba528e5308` while the frozen mapper bytes were `dd444c33c344a1efc901aad95bdb247cee788fd17f5bfd6022accd2f4b51cbaa`; all 17,086 binding records were unchanged;
+- repair: regenerated tracked evidence from the exact mapper bytes and recomputed the product/evidence digests;
+- open material findings after repair: 0;
+- verdict after repair: `PASS_ZERO_MATERIAL_FINDINGS`;
+- evidence checks: exact mapper/evidence SHA binding, product-digest recomputation, 17,086-row source/native partitions, no native content key in the protected current product, exact custody.
 
 ## Independent review
 
@@ -264,8 +267,8 @@ Focused and component checks passed on the local candidate:
 ## Context checkpoint
 
 ```yaml
-last_progress: frozen four-path candidate qualified locally; governance and adversarial whole-diff review PASS
-status: ready
+last_progress: stale mapper fingerprint repaired by deterministic evidence regeneration; requalification in progress
+status: validating
 branch: agent/content-world-cw2-b3-loot-item-bindings-504
 head_sha: null
 pr: null
@@ -279,5 +282,5 @@ ci_job_ids: []
 runner_assignment_state: unknown
 owner_action_required: null
 blocker: null
-next_action: commit/push the frozen exact candidate, open PR, then require exact-head CI
+next_action: re-run full deterministic/local proof, commit and non-force push the evidence-fingerprint repair, then requalify exact-head CI
 ```
