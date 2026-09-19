@@ -818,7 +818,7 @@ mod tests {
             package_manifest,
             content_lock,
             world_id,
-            coordinate_frame,
+            coordinate_frame: coordinate_frame.clone(),
             definitions: vec![ReferenceDefinition {
                 definition: object_ref.clone(),
                 kind: ReferenceDefinitionKind::LocalObjectStates(vec![
