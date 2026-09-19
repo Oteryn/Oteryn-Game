@@ -87,8 +87,11 @@ pub(crate) struct ScopeContentGenerationFence {
 }
 
 impl ScopeContentGenerationFence {
+    // This CW4 child has no production owner-composition authority. Keep construction
+    // test-only until the current scope owner supplies this fence at a later allocated seam.
+    #[cfg(test)]
     #[must_use]
-    pub(crate) fn new(
+    pub(crate) fn for_test(
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
         content_generation: ReferenceContentGeneration,
@@ -1269,7 +1272,7 @@ mod tests {
     ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
         let scope_generation = ScopeOwnershipGeneration::new(scope_generation)
             .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
-        let active_content = ScopeContentGenerationFence::new(
+        let active_content = ScopeContentGenerationFence::for_test(
             scope,
             scope_generation,
             ReferenceContentGeneration::from_content(content)?,
@@ -1405,7 +1408,7 @@ mod tests {
         let (_authority, _session, scope) = authority(22, 4, 1, 1)?;
         let scope_generation = ScopeOwnershipGeneration::new(1)
             .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
-        let active_content = ScopeContentGenerationFence::new(
+        let active_content = ScopeContentGenerationFence::for_test(
             scope,
             scope_generation,
             ReferenceContentGeneration::from_content(&content)?,
@@ -1513,7 +1516,7 @@ mod tests {
         let (_authority, _session, scope) = authority(24, 4, 1, 1)?;
         let scope_generation = ScopeOwnershipGeneration::new(1)
             .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
-        let active_content = ScopeContentGenerationFence::new(
+        let active_content = ScopeContentGenerationFence::for_test(
             scope,
             scope_generation,
             ReferenceContentGeneration::from_content(&content_a)?,
