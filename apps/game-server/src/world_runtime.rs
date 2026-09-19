@@ -1,8 +1,8 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
     LogicalCell, PlacementKey, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
-    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, TransitionBinding,
-    TransitionKey,
+    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, ReferencePlayableContentSource,
+    TransitionBinding, TransitionKey, link_reference_playable,
 };
 use crate::foundation::{
     CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
@@ -76,6 +76,47 @@ impl ReferenceContentGeneration {
     #[must_use]
     fn as_str(&self) -> &str {
         &self.semantic_identity
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ScopeContentGenerationFence {
+    scope: RuntimeScopeRefV1,
+    scope_generation: ScopeOwnershipGeneration,
+    content_generation: ReferenceContentGeneration,
+}
+
+impl ScopeContentGenerationFence {
+    #[must_use]
+    pub(crate) fn new(
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        content_generation: ReferenceContentGeneration,
+    ) -> Self {
+        Self {
+            scope,
+            scope_generation,
+            content_generation,
+        }
+    }
+
+    fn validate_candidate(
+        &self,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        candidate_generation: &ReferenceContentGeneration,
+    ) -> Result<(), WorldRuntimeError> {
+        if self.scope != scope || self.scope_generation != scope_generation {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "active Content-generation fence does not match runtime scope ownership",
+            ));
+        }
+        if &self.content_generation != candidate_generation {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "different Content generation cannot activate while runtime scope is live",
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -197,6 +238,73 @@ fn sha256_reference_generation(input: &[u8]) -> [u8; 32] {
         chunk.copy_from_slice(&value.to_be_bytes());
     }
     output
+}
+
+fn validate_reference_semantic_core(
+    content: &CanonicalReferencePlayableContent,
+) -> Result<(), WorldRuntimeError> {
+    if !content.ordered_placements.is_empty() {
+        return Err(WorldRuntimeError::InvalidBinding(
+            "first CW4 child does not admit ordered placement claims",
+        ));
+    }
+
+    let linked = link_reference_playable(ReferencePlayableContentSource {
+        profile_revision: content.profile_revision.clone(),
+        capability_profile: content.capability_profile.clone(),
+        package_manifest: content.package_manifest.clone(),
+        content_lock: content.content_lock.clone(),
+        world_id: content.world_id,
+        coordinate_frame: content.coordinate_frame.clone(),
+        definitions: content.definitions.clone(),
+        placements: Vec::new(),
+        ordered_placements: Vec::new(),
+        transitions: content.transitions.clone(),
+    })?;
+
+    if linked.profile_revision != content.profile_revision
+        || linked.capability_profile != content.capability_profile
+        || linked.package_manifest != content.package_manifest
+        || linked.content_lock != content.content_lock
+        || linked.world_id != content.world_id
+        || linked.coordinate_frame != content.coordinate_frame
+        || linked.definitions != content.definitions
+        || linked.transitions != content.transitions
+    {
+        return Err(WorldRuntimeError::InvalidBinding(
+            "Reference playable semantic core is not canonical linker output",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_synthetic_placement_evidence(
+    placement: &crate::content::PlacementRef,
+) -> Result<(), WorldRuntimeError> {
+    if placement
+        .address
+        .evidence
+        .disposition()
+        .is_reference_promotable()
+    {
+        return Err(WorldRuntimeError::InvalidBinding(
+            "synthetic CW4 placement cannot claim Reference target promotion",
+        ));
+    }
+
+    for relation in [
+        &placement.presentation_footprint,
+        &placement.collision_footprint,
+    ] {
+        if let FootprintRelation::Qualified { evidence, .. } = relation
+            && evidence.disposition().is_reference_promotable()
+        {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "synthetic CW4 placement cannot claim Reference target promotion",
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -386,6 +494,7 @@ impl LocalObjectRuntime {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn bind(
         content: &CanonicalReferencePlayableContent,
+        active_content: &ScopeContentGenerationFence,
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
         placement_key: &PlacementKey,
@@ -393,6 +502,7 @@ impl LocalObjectRuntime {
         open_transition_key: &TransitionKey,
         close_transition_key: &TransitionKey,
     ) -> Result<Self, WorldRuntimeError> {
+        validate_reference_semantic_core(content)?;
         if incarnation == 0 {
             return Err(WorldRuntimeError::InvalidBinding(
                 "runtime incarnation must be non-zero",
@@ -410,6 +520,8 @@ impl LocalObjectRuntime {
                 "runtime scope world differs from Content world",
             ));
         }
+        let content_generation = ReferenceContentGeneration::from_content(content)?;
+        active_content.validate_candidate(scope, scope_generation, &content_generation)?;
 
         let mut placements = content
             .placements
@@ -430,6 +542,7 @@ impl LocalObjectRuntime {
                 "placement spatial address is outside the active Content frame",
             ));
         }
+        validate_synthetic_placement_evidence(placement)?;
         if placement.definition.family() != DefinitionFamily::LocalObject {
             return Err(WorldRuntimeError::InvalidBinding(
                 "placement definition is not a local object",
@@ -507,7 +620,6 @@ impl LocalObjectRuntime {
         }
 
         let collision_cells = absolute_collision_cells(placement)?;
-        let content_generation = ReferenceContentGeneration::from_content(content)?;
         Ok(Self {
             scope,
             scope_generation,
@@ -999,14 +1111,71 @@ mod tests {
         );
         let closed = ProductionKey::new("oteryn:reference.state.closed")?;
         let open = ProductionKey::new("oteryn:reference.state.open")?;
-        let evidence = EvidenceBindingRef::new(
-            ProductionAtom::new("reference manifest revision", "manifest-r1")?,
-            ProductionKey::new(
-                "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
-            )?,
-            EvidenceDisposition::Proven,
-        );
         let coordinate_frame = CoordinateFrameRef::new("global-target-2026-07-28")?;
+        let capability = OwnerCapabilityRequirement {
+            capability_key: ProductionKey::new(
+                "oteryn:runtime.capability.local-object-transition",
+            )?,
+        };
+
+        let mut canonical = link_reference_playable(ReferencePlayableContentSource {
+            profile_revision: ProductionAtom::new(
+                "cw4 test profile",
+                REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+            )?,
+            capability_profile: ProductionAtom::new(
+                "cw4 test capability profile",
+                REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
+            )?,
+            package_manifest,
+            content_lock,
+            world_id,
+            coordinate_frame: coordinate_frame.clone(),
+            definitions: vec![ReferenceDefinition {
+                definition: object_ref.clone(),
+                kind: ReferenceDefinitionKind::LocalObjectStates(vec![
+                    closed.clone(),
+                    open.clone(),
+                ]),
+                client_projection: ClientProjectionClass::ClientSafe,
+            }],
+            placements: vec![],
+            ordered_placements: vec![],
+            transitions: vec![
+                TransitionBinding {
+                    key: TransitionKey::new(OPEN_TRANSITION)?,
+                    definition: object_ref.clone(),
+                    source_state: closed.clone(),
+                    normalized_intent_family: ProductionKey::new(
+                        "oteryn:reference.intent.local-object-open",
+                    )?,
+                    target_state: open.clone(),
+                    owner_capability: capability.clone(),
+                    policy_guard_refs: vec![],
+                },
+                TransitionBinding {
+                    key: TransitionKey::new(CLOSE_TRANSITION)?,
+                    definition: object_ref.clone(),
+                    source_state: open,
+                    normalized_intent_family: ProductionKey::new(
+                        "oteryn:reference.intent.local-object-close",
+                    )?,
+                    target_state: closed,
+                    owner_capability: capability,
+                    policy_guard_refs: vec![],
+                },
+            ],
+        })?;
+
+        // Protected CW3 currently has no accepted CONTENT_WORLD target-sensitive
+        // evidence binding. The CW4 component is therefore a synthetic in-process
+        // runtime proof only: its placement witness is deliberately unpromoted
+        // and must never be interpreted as Reference target authority.
+        let evidence = EvidenceBindingRef::new(
+            ProductionAtom::new("reference manifest revision", "manifest-r0")?,
+            ProductionKey::new("oteryn:cw4.local-object-placement")?,
+            EvidenceDisposition::Unknown,
+        );
         let collision_members = vec![
             FootprintCell {
                 dx: 0,
@@ -1019,7 +1188,6 @@ mod tests {
                 dz: 0,
             },
         ];
-
         let placement = |key: &str| -> Result<PlacementRef, WorldRuntimeError> {
             Ok(PlacementRef {
                 key: PlacementKey::new(key)?,
@@ -1045,60 +1213,8 @@ mod tests {
                 },
             })
         };
-
-        let capability = OwnerCapabilityRequirement {
-            capability_key: ProductionKey::new(
-                "oteryn:runtime.capability.local-object-transition",
-            )?,
-        };
-        Ok(CanonicalReferencePlayableContent {
-            profile_revision: ProductionAtom::new(
-                "cw4 test profile",
-                REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
-            )?,
-            capability_profile: ProductionAtom::new(
-                "cw4 test capability profile",
-                REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
-            )?,
-            package_manifest,
-            content_lock,
-            world_id,
-            coordinate_frame: coordinate_frame.clone(),
-            definitions: vec![ReferenceDefinition {
-                definition: object_ref.clone(),
-                kind: ReferenceDefinitionKind::LocalObjectStates(vec![
-                    closed.clone(),
-                    open.clone(),
-                ]),
-                client_projection: ClientProjectionClass::ClientSafe,
-            }],
-            placements: vec![placement(PLACEMENT_A)?, placement(PLACEMENT_B)?],
-            ordered_placements: vec![],
-            transitions: vec![
-                TransitionBinding {
-                    key: TransitionKey::new(OPEN_TRANSITION)?,
-                    definition: object_ref.clone(),
-                    source_state: closed.clone(),
-                    normalized_intent_family: ProductionKey::new(
-                        "oteryn:reference.intent.local-object-open",
-                    )?,
-                    target_state: open.clone(),
-                    owner_capability: capability.clone(),
-                    policy_guard_refs: vec![],
-                },
-                TransitionBinding {
-                    key: TransitionKey::new(CLOSE_TRANSITION)?,
-                    definition: object_ref,
-                    source_state: open,
-                    normalized_intent_family: ProductionKey::new(
-                        "oteryn:reference.intent.local-object-close",
-                    )?,
-                    target_state: closed,
-                    owner_capability: capability,
-                    policy_guard_refs: vec![],
-                },
-            ],
-        })
+        canonical.placements = vec![placement(PLACEMENT_A)?, placement(PLACEMENT_B)?];
+        Ok(canonical)
     }
 
     fn authority(
@@ -1153,8 +1269,14 @@ mod tests {
     ) -> Result<LocalObjectRuntime, WorldRuntimeError> {
         let scope_generation = ScopeOwnershipGeneration::new(scope_generation)
             .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
+        let active_content = ScopeContentGenerationFence::new(
+            scope,
+            scope_generation,
+            ReferenceContentGeneration::from_content(content)?,
+        );
         LocalObjectRuntime::bind(
             content,
+            &active_content,
             scope,
             scope_generation,
             &PlacementKey::new(placement)?,
@@ -1281,11 +1403,18 @@ mod tests {
     -> Result<(), WorldRuntimeError> {
         let content = synthetic_content("package-r1")?;
         let (_authority, _session, scope) = authority(22, 4, 1, 1)?;
+        let scope_generation = ScopeOwnershipGeneration::new(1)
+            .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
+        let active_content = ScopeContentGenerationFence::new(
+            scope,
+            scope_generation,
+            ReferenceContentGeneration::from_content(&content)?,
+        );
         let error = match LocalObjectRuntime::bind(
             &content,
+            &active_content,
             scope,
-            ScopeOwnershipGeneration::new(1)
-                .map_err(|_error: GenerationError| fixture_error("scope generation"))?,
+            scope_generation,
             &PlacementKey::new(PLACEMENT_A)?,
             1,
             &TransitionKey::new(CLOSE_TRANSITION)?,
@@ -1373,6 +1502,116 @@ mod tests {
         assert_eq!(generation.as_str().len(), 64);
         assert_eq!(changed_generation.as_str().len(), 64);
         assert_ne!(generation, changed_generation);
+        Ok(())
+    }
+
+    #[test]
+    fn live_scope_rejects_different_content_generation_before_second_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let content_a = synthetic_content("package-r1")?;
+        let content_b = synthetic_content("package-r2")?;
+        let (_authority, _session, scope) = authority(24, 4, 1, 1)?;
+        let scope_generation = ScopeOwnershipGeneration::new(1)
+            .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
+        let active_content = ScopeContentGenerationFence::new(
+            scope,
+            scope_generation,
+            ReferenceContentGeneration::from_content(&content_a)?,
+        );
+
+        let runtime_a = LocalObjectRuntime::bind(
+            &content_a,
+            &active_content,
+            scope,
+            scope_generation,
+            &PlacementKey::new(PLACEMENT_A)?,
+            1,
+            &TransitionKey::new(OPEN_TRANSITION)?,
+            &TransitionKey::new(CLOSE_TRANSITION)?,
+        )?;
+        let before_state = runtime_a.state_key().clone();
+        let before_blocking = runtime_a.blocking_cells().clone();
+
+        let error = match LocalObjectRuntime::bind(
+            &content_b,
+            &active_content,
+            scope,
+            scope_generation,
+            &PlacementKey::new(PLACEMENT_B)?,
+            1,
+            &TransitionKey::new(OPEN_TRANSITION)?,
+            &TransitionKey::new(CLOSE_TRANSITION)?,
+        ) {
+            Ok(_runtime) => {
+                return Err(fixture_error(
+                    "second Content generation unexpectedly activated in live scope",
+                ));
+            }
+            Err(error) => error,
+        };
+        assert!(matches!(
+            error,
+            WorldRuntimeError::InvalidBinding(
+                "different Content generation cannot activate while runtime scope is live"
+            )
+        ));
+        assert_eq!(runtime_a.state_key(), &before_state);
+        assert_eq!(runtime_a.revision(), 0);
+        assert_eq!(runtime_a.blocking_cells(), &before_blocking);
+        Ok(())
+    }
+
+    #[test]
+    fn forged_proven_target_evidence_is_rejected_before_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let forged = EvidenceBindingRef::new(
+            ProductionAtom::new("reference manifest revision", "manifest-r1")?,
+            ProductionKey::new(
+                "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
+            )?,
+            EvidenceDisposition::Proven,
+        );
+        let placement = content
+            .placements
+            .first_mut()
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "CW4 test fixture has no placement",
+            ))?;
+        placement.address.evidence = forged;
+
+        let (_authority, _session, scope) = authority(25, 4, 1, 1)?;
+        assert!(matches!(
+            runtime_for(&content, scope, PLACEMENT_A, 1),
+            Err(WorldRuntimeError::InvalidBinding(
+                "synthetic CW4 placement cannot claim Reference target promotion"
+            ))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_content_lock_is_rejected_by_cw3_linker_before_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let entry =
+            content
+                .content_lock
+                .entries
+                .first_mut()
+                .ok_or(WorldRuntimeError::InvalidBinding(
+                    "CW4 test fixture has no Content Lock entry",
+                ))?;
+        entry.package_revision =
+            ProductionAtom::new("cw4 test package revision", "package-corrupted")?;
+
+        let (_authority, _session, scope) = authority(26, 4, 1, 1)?;
+        assert!(matches!(
+            runtime_for(&content, scope, PLACEMENT_A, 1),
+            Err(WorldRuntimeError::Content(ContentError::InvalidArtifact(
+                "reference-playable Content Lock does not bind exact root package provenance"
+            )))
+        ));
         Ok(())
     }
 
