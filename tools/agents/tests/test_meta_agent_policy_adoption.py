@@ -88,7 +88,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         for value in (
             "BLOCKED_CAPABILITY_UNAVAILABLE",
-            "Missing repository workspace, Git CLI, test-runner or push capability is not a Remote Desktop exception",
+            "Missing repository workspace, Git CLI, compiler/test-runner/validator or push capability is not a Remote Desktop exception",
             "independently authorized API-native edit",
         ):
             self.assertIn(value, root_text)
@@ -105,6 +105,10 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "Do not ask the owner for Remote Desktop merely to obtain",
             "execution_route: <isolated_git | api_native | read_only>",
             "publication_route: <normal_non_force_git | api_native | none>",
+            "required-validation",
+            "For every concrete entry in `required_validation`",
+            "capability: <PROVEN | UNKNOWN>",
+            "or every required-validation route",
         ):
             self.assertIn(value, coordinator)
 
@@ -112,7 +116,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "1.6")
+        self.assertEqual(entry["version"], "1.7")
 
     def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
         policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")
