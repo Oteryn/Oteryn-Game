@@ -59,6 +59,11 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
         ProductionKey::new("oteryn:reference.effect.heal")?,
         DefinitionRevisionRef::new("definition-r1")?,
     );
+    let formula_ref = TypedDefinitionRef::new(
+        DefinitionFamily::Formula,
+        ProductionKey::new("oteryn:reference.formula.project-owned-heal")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
 
     Ok(ReferencePlayableContentSource {
         profile_revision: ProductionAtom::new(
@@ -84,7 +89,15 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
             },
             ReferenceDefinition {
                 definition: effect_ref,
-                kind: ReferenceDefinitionKind::Effect(ReferenceEffectFamily::Heal),
+                kind: ReferenceDefinitionKind::Effect(ReferenceEffectDefinition {
+                    family: ReferenceEffectFamily::Heal,
+                    formula: formula_ref.clone(),
+                }),
+                client_projection: ClientProjectionClass::ServerOnly,
+            },
+            ReferenceDefinition {
+                definition: formula_ref,
+                kind: ReferenceDefinitionKind::Formula(ReferenceFormulaDefinition),
                 client_projection: ClientProjectionClass::ServerOnly,
             },
         ],
@@ -129,6 +142,81 @@ fn source_with_typed_item(
         client_projection,
     });
     Ok(candidate)
+}
+
+fn source_with_ability_effect_formula() -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source()?;
+    let heal = candidate.definitions[1].definition.clone();
+    let damage_formula = TypedDefinitionRef::new(
+        DefinitionFamily::Formula,
+        ProductionKey::new("oteryn:reference.formula.project-owned-damage")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    let damage = TypedDefinitionRef::new(
+        DefinitionFamily::Effect,
+        ProductionKey::new("oteryn:reference.effect.project-owned-damage")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    let ability = TypedDefinitionRef::new(
+        DefinitionFamily::Ability,
+        ProductionKey::new("oteryn:reference.ability.project-owned-closure")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    candidate.definitions.extend([
+        ReferenceDefinition {
+            definition: damage_formula.clone(),
+            kind: ReferenceDefinitionKind::Formula(ReferenceFormulaDefinition),
+            client_projection: ClientProjectionClass::ServerOnly,
+        },
+        ReferenceDefinition {
+            definition: damage.clone(),
+            kind: ReferenceDefinitionKind::Effect(ReferenceEffectDefinition {
+                family: ReferenceEffectFamily::Damage,
+                formula: damage_formula,
+            }),
+            client_projection: ClientProjectionClass::ClientSafe,
+        },
+        ReferenceDefinition {
+            definition: ability,
+            kind: ReferenceDefinitionKind::Ability(ReferenceAbilityDefinition {
+                effects: vec![heal.clone(), damage, heal],
+            }),
+            client_projection: ClientProjectionClass::ServerOnly,
+        },
+    ]);
+    Ok(candidate)
+}
+
+fn ability_kind_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceAbilityDefinition, ContentError> {
+    source
+        .definitions
+        .iter_mut()
+        .find_map(|definition| match &mut definition.kind {
+            ReferenceDefinitionKind::Ability(ability) => Some(ability),
+            _ => None,
+        })
+        .ok_or(ContentError::InvalidArtifact("structural ability missing"))
+}
+
+fn damage_effect_kind_mut(
+    source: &mut ReferencePlayableContentSource,
+) -> Result<&mut ReferenceEffectDefinition, ContentError> {
+    source
+        .definitions
+        .iter_mut()
+        .find_map(|definition| match &mut definition.kind {
+            ReferenceDefinitionKind::Effect(effect)
+                if effect.family == ReferenceEffectFamily::Damage =>
+            {
+                Some(effect)
+            }
+            _ => None,
+        })
+        .ok_or(ContentError::InvalidArtifact(
+            "structural damage effect missing",
+        ))
 }
 
 fn source_with_creature_loot() -> Result<ReferencePlayableContentSource, ContentError> {
@@ -379,7 +467,10 @@ fn valid_reference_model_without_unproven_target_claims_links() -> Result<(), Co
     assert!(canonical.ordered_placements.is_empty());
     assert!(matches!(
         canonical.definitions[1].kind,
-        ReferenceDefinitionKind::Effect(ReferenceEffectFamily::Heal)
+        ReferenceDefinitionKind::Effect(ReferenceEffectDefinition {
+            family: ReferenceEffectFamily::Heal,
+            ..
+        })
     ));
 
     let client = canonical.client_safe_definitions();
@@ -1177,5 +1268,195 @@ fn ordered_placement_relation_rejects_unknown_or_duplicate_members_before_eviden
         link_reference_playable(duplicate),
         Err(ContentError::DuplicateKey(_))
     ));
+    Ok(())
+}
+
+#[test]
+fn structural_ability_effect_formula_chain_links_without_rewriting_authored_effects()
+-> Result<(), ContentError> {
+    let left_source = source_with_ability_effect_formula()?;
+    let mut right_source = left_source.clone();
+    right_source.definitions.reverse();
+    let left = link_reference_playable(left_source)?;
+    let right = link_reference_playable(right_source)?;
+    assert_eq!(left, right);
+
+    let ability = left
+        .definitions
+        .iter()
+        .find_map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::Ability(ability) => Some(ability),
+            _ => None,
+        })
+        .ok_or(ContentError::InvalidArtifact("structural ability missing"))?;
+    assert_eq!(ability.effects.len(), 3);
+    assert_eq!(ability.effects[0], ability.effects[2]);
+    assert_eq!(
+        ability.effects[0].key().as_str(),
+        "oteryn:reference.effect.heal"
+    );
+    assert_eq!(
+        ability.effects[1].key().as_str(),
+        "oteryn:reference.effect.project-owned-damage"
+    );
+    Ok(())
+}
+
+#[test]
+fn both_structural_edges_reject_wrong_family_missing_and_stale_revision() -> Result<(), ContentError>
+{
+    let mut wrong_ability_family = source_with_ability_effect_formula()?;
+    ability_kind_mut(&mut wrong_ability_family)?.effects[0] = TypedDefinitionRef::new(
+        DefinitionFamily::Formula,
+        ProductionKey::new("oteryn:reference.formula.project-owned-heal")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(wrong_ability_family),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable ability effect reference must target Effect"
+        ))
+    ));
+
+    let mut missing_effect = source_with_ability_effect_formula()?;
+    ability_kind_mut(&mut missing_effect)?.effects[0] = TypedDefinitionRef::new(
+        DefinitionFamily::Effect,
+        ProductionKey::new("oteryn:reference.effect.project-owned-missing")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(missing_effect),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut stale_effect = source_with_ability_effect_formula()?;
+    let effect_key = ability_kind_mut(&mut stale_effect)?.effects[0]
+        .key()
+        .clone();
+    ability_kind_mut(&mut stale_effect)?.effects[0] = TypedDefinitionRef::new(
+        DefinitionFamily::Effect,
+        effect_key,
+        DefinitionRevisionRef::new("definition-r2")?,
+    );
+    assert!(matches!(
+        link_reference_playable(stale_effect),
+        Err(ContentError::RevisionMismatch(
+            "reference-playable definition revision"
+        ))
+    ));
+
+    let mut wrong_formula_family = source_with_ability_effect_formula()?;
+    damage_effect_kind_mut(&mut wrong_formula_family)?.formula = TypedDefinitionRef::new(
+        DefinitionFamily::Item,
+        ProductionKey::new("oteryn:reference.item.project-owned-formula-mismatch")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(wrong_formula_family),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable effect formula reference must target Formula"
+        ))
+    ));
+
+    let mut missing_formula = source_with_ability_effect_formula()?;
+    damage_effect_kind_mut(&mut missing_formula)?.formula = TypedDefinitionRef::new(
+        DefinitionFamily::Formula,
+        ProductionKey::new("oteryn:reference.formula.project-owned-missing")?,
+        DefinitionRevisionRef::new("definition-r1")?,
+    );
+    assert!(matches!(
+        link_reference_playable(missing_formula),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut stale_formula = source_with_ability_effect_formula()?;
+    let formula_key = damage_effect_kind_mut(&mut stale_formula)?
+        .formula
+        .key()
+        .clone();
+    damage_effect_kind_mut(&mut stale_formula)?.formula = TypedDefinitionRef::new(
+        DefinitionFamily::Formula,
+        formula_key,
+        DefinitionRevisionRef::new("definition-r2")?,
+    );
+    assert!(matches!(
+        link_reference_playable(stale_formula),
+        Err(ContentError::RevisionMismatch(
+            "reference-playable definition revision"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn typed_structural_families_cannot_use_generic_or_client_authority() -> Result<(), ContentError> {
+    for family in [
+        DefinitionFamily::Ability,
+        DefinitionFamily::Effect,
+        DefinitionFamily::Formula,
+    ] {
+        let mut candidate = source()?;
+        candidate.definitions.push(ReferenceDefinition {
+            definition: TypedDefinitionRef::new(
+                family,
+                ProductionKey::new(match family {
+                    DefinitionFamily::Ability => "oteryn:reference.ability.project-owned-generic",
+                    DefinitionFamily::Effect => "oteryn:reference.effect.project-owned-generic",
+                    DefinitionFamily::Formula => "oteryn:reference.formula.project-owned-generic",
+                    _ => return Err(ContentError::InvalidArtifact("unexpected family")),
+                })?,
+                DefinitionRevisionRef::new("definition-r1")?,
+            ),
+            kind: ReferenceDefinitionKind::Generic,
+            client_projection: ClientProjectionClass::ServerOnly,
+        });
+        assert!(matches!(
+            link_reference_playable(candidate),
+            Err(ContentError::InvalidArtifact(_))
+        ));
+    }
+
+    let mut client_ability = source_with_ability_effect_formula()?;
+    client_ability
+        .definitions
+        .iter_mut()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Ability)
+        .ok_or(ContentError::InvalidArtifact("structural ability missing"))?
+        .client_projection = ClientProjectionClass::ClientSafe;
+    assert!(matches!(
+        link_reference_playable(client_ability),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable ability structure must remain server-only"
+        ))
+    ));
+
+    let mut client_formula = source_with_ability_effect_formula()?;
+    client_formula
+        .definitions
+        .iter_mut()
+        .find(|definition| definition.definition.family() == DefinitionFamily::Formula)
+        .ok_or(ContentError::InvalidArtifact("structural formula missing"))?
+        .client_projection = ClientProjectionClass::ClientSafe;
+    assert!(matches!(
+        link_reference_playable(client_formula),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable formula endpoint must remain server-only"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn client_safe_effect_projection_exposes_only_the_effect_family() -> Result<(), ContentError> {
+    let canonical = link_reference_playable(source_with_ability_effect_formula()?)?;
+    let client = canonical.client_safe_definitions();
+    assert!(client.iter().any(|definition| matches!(
+        definition.kind,
+        ClientSafeDefinitionKind::Effect(ReferenceEffectFamily::Damage)
+    )));
+    assert!(!client.iter().any(|definition| matches!(
+        definition.definition.family(),
+        DefinitionFamily::Ability | DefinitionFamily::Formula
+    )));
     Ok(())
 }
