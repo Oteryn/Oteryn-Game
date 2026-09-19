@@ -351,9 +351,15 @@ impl DurabilityRoot {
 
     #[cfg(test)]
     #[allow(dead_code)]
-    pub(crate) async fn connect_test_runtime(database_url: &str) -> Result<Self, DurabilityError> {
+    pub(crate) fn connect_test_runtime(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
-            pool: connect(database_url, 1).await?,
+            pool: PgPoolOptions::new()
+                .max_connections(1)
+                .min_connections(0)
+                .acquire_timeout(ROOT_RECOVERY_WINDOW)
+                .idle_timeout(HOLDER_IDLE_TIMEOUT)
+                .max_lifetime(HOLDER_MAX_LIFETIME)
+                .connect_lazy(database_url)?,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
         })

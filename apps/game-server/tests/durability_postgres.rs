@@ -78,7 +78,7 @@ fn shared_root_positive_v1_v2_authority_matrix_is_configured_postgres_proof()
                 };
                 let record = prepared_record(seed)?;
                 let source = LiveSource::read(seed);
-                let root = durability::DurabilityRoot::connect_test_runtime(&url).await?;
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
                 assert!(root.is_ready());
                 assert!(!root.has_ready_demand());
@@ -143,7 +143,7 @@ fn shared_root_positive_v2_terminal_replacement_is_configured_postgres_proof()
                 seed_shared_root_replacement_predecessor(&url, seed).await?;
                 let record = prepared_record(seed)?;
                 let source = LiveSource::read(seed);
-                let root = durability::DurabilityRoot::connect_test_runtime(&url).await?;
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
                 assert!(root.is_ready());
                 assert!(!root.has_ready_demand());
@@ -367,7 +367,7 @@ fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
             let database = postgres::IsolatedPostgres::create("wp3_shared_root_deadline").await?;
             let result = async {
                 let url = database.database_url()?;
-                let root = DurabilityRoot::connect_test_runtime(&url).await?;
+                let root = DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
                 assert!(root.is_ready());
                 assert!(!root.has_ready_demand());
