@@ -54,10 +54,31 @@ The owner may revoke or narrow this standing authorization at any time by a late
 explicit instruction. A later protected policy may narrow execution further but
 cannot broaden this permission.
 
+### Single review-dispatch owner
+
+Standing funding permission is not permission for every worker to emit a provider
+trigger. A manual `@codex review` or equivalent owner-funded review invocation is a
+GitHub control-plane write and must obey one-writer routing.
+
+- For work governed by an active programme control plane, only the unique active
+  control-plane coordinator may emit the owner-funded review trigger.
+- A worker/reviewer may determine that review is required and return the exact
+  repository/PR/head review packet, but it must not emit the trigger itself.
+- For a standalone task with no programme control plane, only the exact task owner
+  named by the live allocation may trigger review.
+- If trigger ownership is ambiguous, fail closed and reconcile ownership; do not
+  ask the owner for funding permission and do not race another agent.
+- Provider-native automatic review already running for the same exact head counts
+  as the covered invocation and suppresses any manual trigger.
+
+Immediately before the single trigger, the trigger owner must refresh live PR
+comments/reviews/provider status for the exact head. Provider-side de-duplication is
+a safety backstop, not authority to send concurrent duplicate comments.
+
 Repository-native or platform-provided review must still be both available and
-authorized on the actual execution surface. The bound META policy may select an
-external review as useful, but that selection does not create funding, repository,
-candidate, mutation, production, secret or merge authority.
+authorized on the actual execution surface. Outside the standing authorization above,
+the bound META policy selecting an external review as useful does not create funding,
+repository, candidate, mutation, production, secret or merge authority.
 
 ## Execution boundary
 
