@@ -84,6 +84,36 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         ):
             self.assertIn(value, text)
 
+    def test_work_coordinator_preflights_mutating_execution_before_dispatch(self):
+        root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "BLOCKED_CAPABILITY_UNAVAILABLE",
+            "Missing repository workspace, Git CLI, test-runner or push capability is not a Remote Desktop exception",
+            "independently authorized API-native edit",
+        ):
+            self.assertIn(value, root_text)
+
+        coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "## Execution-capability preflight",
+            "Before dispatching any mutating worker",
+            "isolated checkout or worktree",
+            "normal non-force push path",
+            "BLOCKED_CAPABILITY_UNAVAILABLE",
+            "Do not ask the owner for Remote Desktop merely to obtain",
+            "execution_route: <isolated_git | api_native | read_only>",
+            "publication_route: <normal_non_force_git | api_native | none>",
+        ):
+            self.assertIn(value, coordinator)
+
+        lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
+        entry = next(
+            prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
+        )
+        self.assertEqual(entry["version"], "1.4")
+
     def test_local_routing_extensions_use_bound_states_and_runtime_configuration(self):
         contract = json.loads((ROOT / "docs/agents/GOVERNANCE_CONTRACT.json").read_text(encoding="utf-8"))
         self.assertEqual(
