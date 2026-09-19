@@ -25,7 +25,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "c59b30fde7538e738346eec03a602081dc4ac2d6"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "df22c9a40847ce759337ab63c84a28e1180892ba"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -150,6 +150,10 @@ jobs:
               '    name: Merge Queue / Rust Windows client\n',
               "          $ErrorActionPreference = 'Stop'\n",
               '          $PSNativeCommandUseErrorActionPreference = $true\n',
+              '          $client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"\n',
+              '          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {\n',
+              '          & $client --smoke\n',
+              '          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
               '        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
               f'          DURABILITY_POSTGRES: {durability_result_expression}\n',
               '            test "$result" = success\n',
