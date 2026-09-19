@@ -25,6 +25,22 @@ Before material action:
 
 For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` remains the active mutating control plane. Another reusable control-plane prompt is not concurrent mutation authority. If exactly one active profile cannot be proven, return `POLICY_CONFLICT` and do not allocate, lease, integrate or close out.
 
+## Execution-capability preflight
+
+Before dispatching any mutating worker, resolve the selected execution surface and prove the publication **and required-validation** routes up front.
+
+- Ordinary material mutation requires an isolated checkout or worktree, normal local Git commit capability, and a normal non-force push path to the exact allocated branch.
+- For every concrete entry in `required_validation`, bind an authorized executable route before worker release. The route may be the isolated workspace, repository-native hosted CI when the governing task accepts hosted proof, or a separately valid host-specific surface required by the task.
+- A required compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` or be deferred as "we will find a surface later". If its route cannot be proven now, the lane is blocked before mutation.
+- An explicitly authorized API-native authoring task is allowed only when the intended operation is itself the repository-native API write, no selected local Git candidate is being reconstructed, and the task does not claim local build/test evidence that was not actually run.
+- A read-only/evidence worker needs no publication route, but any validation it promises still needs a truthful executable/read-only evidence route.
+
+If an ordinary mutating lane cannot prove the isolated Git workspace, normal non-force push path, **or every required-validation route**, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
+
+Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing ordinary repository execution/validation capability is not a Remote Desktop exception. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
+
+Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, per-file Contents reconstruction, a Remote Desktop convenience fallback, or an unproven required-validation surface.
+
 ## Thin-dispatcher rule
 
 The coordinator is a scheduler, integrator and gate owner, not a substitute implementation worker. Keep coordinator context compact and dispatch one bounded task per worker. Parallel workers are allowed only when exact paths/custody are non-overlapping.
@@ -42,6 +58,13 @@ issue: <governing issue>
 task_id: <unique task>
 lane_id: <lane>
 branch: <existing or allocated branch>
+execution_route: <isolated_git | api_native | read_only>
+execution_surface: <proven surface or locator>
+publication_route: <normal_non_force_git | api_native | none>
+review_requirement: <none | required>
+review_authorization: <standing_required_review | task_specific | none>
+review_trigger_owner: <control_plane | standalone_task_owner | none>
+review_request_state: <not_requested | running | completed | stale>
 objective: <one bounded outcome>
 owned_paths: []
 prerequisite_merges: []
@@ -49,7 +72,11 @@ governing_contracts: []
 accepted_decisions: []
 relevant_findings: []
 excluded_scope: []
-required_validation: []
+required_validation:
+  - check: <exact command/gate/proof>
+    route: <isolated_workspace | repository_ci | host_specific>
+    surface: <proven surface or locator>
+    capability: <PROVEN | UNKNOWN>
 lazy_refs: []
 terminal_states:
   - DONE
@@ -74,6 +101,33 @@ Packet rules:
 - do not ask workers to read unrelated worker prompts or full historical PR threads;
 - accepted current decisions supersede historical exploration unless an exact contradiction must be investigated;
 - a direct worker alias without current write allocation is read-only.
+
+### Review authorization, ownership and de-duplication
+
+Before dispatching or triggering an external independent reviewer, resolve
+`docs/agents/OWNER_FUNDED_AI_POLICY.md`, the bound META review policy, the exact PR/head,
+the unique review-trigger owner and current live review state.
+
+- If a required review is covered by the repository standing authorization, record
+  `review_authorization: standing_required_review` and do **not** ask the owner again.
+- For this programme, the unique active control plane is the sole manual review-trigger
+  owner. Workers may return a complete review packet, but they must not emit
+  `@codex review` or an equivalent owner-funded invocation themselves.
+- A standalone task with no programme control plane may use only its exact live task owner
+  as `review_trigger_owner: standalone_task_owner`. Ambiguous ownership fails closed.
+- If review is optional and no separate task-specific authorization exists, skip it rather
+  than asking the owner merely to spend quota.
+- Immediately before the single trigger, the trigger owner must read live PR
+  comments/reviews/provider summary. If the same exact head is already requested, running
+  or completed, do not issue another invocation. An automatic provider review already
+  running for that head counts as the covered invocation.
+- A materially risk-bearing head change makes the old review historical; request at most
+  one new review for the new stable head only when the bound policy requires re-review.
+- Ambiguous/slow provider response is a readback problem, not permission to send a
+  duplicate trigger. Reconcile the existing request first.
+- Standing review permission grants reviewer consumption only. It never grants the
+  reviewer or worker implementation, tracked-file mutation, commit, push, merge/enqueue,
+  production or cross-repository authority.
 
 ## Worker terminal contract
 
