@@ -80,21 +80,30 @@ display names, descriptions, categories or notes.
 ## Evidence limits
 
 The implementation takes a non-zero finite `ProjectEvidenceLimits` value from
-the caller. It does not register product/full-world maxima. The focused corpus
-uses these non-production fences:
+the caller. It does not register product/full-world maxima. The exact canonical
+focused corpus contains 6 documents, 4 selected Reference records, 2 protected
+B4 candidates and 1 reimport state. Its measured dimensions are:
 
-- 12 documents, 16 KiB per document and 64 KiB aggregate;
-- JSON depth 20, 1,024 decoded object fields and 32 KiB aggregate decoded
-  string/key bytes per document;
-- 160-byte locator, 8 locator segments;
-- 16 selected Reference records, 8 import candidates and 32 reimport states.
+| Dimension | Exact corpus maximum |
+| --- | ---: |
+| Largest document | 2,260 bytes |
+| Aggregate document bytes | 5,314 bytes |
+| Longest locator | 23 bytes |
+| Most locator segments | 2 |
+| Deepest JSON document | 9 levels |
+| Most decoded JSON values in one document | 73 |
+| Most decoded JSON key/value string bytes in one document | 1,866 bytes |
 
-These fences cover the actual canonical project-owned closure plus the complete
-two-record protected B4 candidate batch. The boundary test derives the emitted
-corpus's exact largest-document and aggregate byte counts, proves equality is
-accepted, then proves max+1 fails. Arithmetic uses checked accumulation and maps
-overflow to fail-closed limit errors. These values remain evidence-only and
-cannot be promoted to production admission or D3 World Bundle limits.
+The broader values in the test helper are mutation-test headroom, not accepted
+corpus measurements or product limits. Boundary tests derive and assert the
+exact emitted byte dimensions and find the minimum passing JSON budgets, prove
+equality is accepted, then prove max+1 input fails for every used limit
+dimension. Document count is charged before map insertion; JSON depth/value and
+string budgets are charged by Serde seeds and visitors before collection growth
+or recursive admission; canonical writes use a bounded `Write` adapter. All
+aggregate arithmetic is checked and overflow fails closed. These measurements
+remain evidence-only and cannot be promoted to production admission or D3 World
+Bundle limits.
 
 ## Acceptance criteria
 
@@ -105,6 +114,8 @@ cannot be promoted to production admission or D3 World Bundle limits.
   spellings fail; duplicate locator bytes fail.
 - [x] Inventory, byte length, digest, root, manifest, lock and project revision
   coherence fail closed.
+- [x] The v1 Content Lock contains exactly one non-floating, non-dependency root
+  entry; extra or ignored entries fail.
 - [x] Canonical rewrite and input permutation are byte-identical; regrouped
   records lower to the same selected definitions.
 - [x] Real protected B4 source/mapper digests and identities survive while native
