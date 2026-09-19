@@ -112,7 +112,44 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "1.4")
+        self.assertEqual(entry["version"], "1.5")
+
+    def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
+        policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")
+        for value in (
+            "## Standing repository review authorization",
+            "one external independent",
+            "survives chat, worker, coordinator and task-phase handoffs",
+            "Do not ask the owner again for a covered review",
+            "already requested, running or completed",
+            "does **not** cover optional/speculative extra reviews",
+        ):
+            self.assertIn(value, policy)
+
+        root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "bounded standing authorization for required external review",
+            "Do not ask the owner again for a covered review",
+            "same exact head requested, running or completed",
+        ):
+            self.assertIn(value, root_text)
+
+        coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "review_authorization: <standing_required_review | task_specific | none>",
+            "review_request_state: <not_requested | running | completed | stale>",
+            "## Review authorization and de-duplication",
+            "do **not** ask the owner again",
+            "do not issue another `@codex review`",
+            "Ambiguous/slow provider response is a readback problem",
+        ):
+            self.assertIn(value, coordinator)
+
+        readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
+        self.assertIn("survives chat/worker handoffs", readme)
+        self.assertIn("deduplicate against live PR review state", readme)
 
     def test_local_routing_extensions_use_bound_states_and_runtime_configuration(self):
         contract = json.loads((ROOT / "docs/agents/GOVERNANCE_CONTRACT.json").read_text(encoding="utf-8"))
