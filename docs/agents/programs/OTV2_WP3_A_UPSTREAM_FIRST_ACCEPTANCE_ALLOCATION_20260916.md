@@ -1,7 +1,9 @@
 # OTV2 WP3-A upstream-first programme / acceptance / allocation amendment
 
 Date: 2026-09-16
+P1-A amendment date: 2026-09-19
 Status: `PROSPECTIVE_NOT_ACTIVE`
+P1-A amendment authority: #162 comment `5745227522`; supersedes the insufficient layout-only release `5744804452` and closes `5744812736`
 Repository: `Oteryn/Oteryn-Game`
 Owning control plane: `OTV2_WORK_DELIVERY_COORDINATOR` / #162
 Policy base: protected `main@1995bd97460774ea9fc136959d5548471b81c987` / #634
@@ -54,7 +56,7 @@ vendor changes.
 
 The default WP3-A production dependency set is:
 
-- upstream Tokio `1.53.1` from the normal dependency graph; no Tokio source fork;
+- pinned Tokio `1.53.1` keeps upstream runtime semantics except for one exact read-only task-allocation representation query authorized by #162 comment `5745227522`; production WP3 root qualification is `RuntimeFlavor::MultiThread`, and no generic Tokio owner/allocator/scheduler fork is admitted;
 - upstream rustls `0.23.45`; no rustls source fork. Protected security PR #623 supersedes the historical Gate-1 `0.23.43` pin; do not downgrade;
 - AWS-LC selected through supported features;
 - explicit `rustls/prefer-post-quantum` feature unification where required by
@@ -148,10 +150,44 @@ return `SHARED_LEASE_REQUIRED` with the exact path/symbol before expanding the
 dependency patch. Do not assume the old M05 transaction implementation is
 required merely because #356 contains it.
 
+### 3.7 Root-maintenance task backing: exact P1-A exception
+
+The protected P1-A owner decision in #162 comment `5745227522` supersedes the
+earlier both-flavors/layout-only formulation.
+
+For the exact SQLx `0.9.0` root-maintenance future only:
+
+- production WP3 root qualification is fixed to Tokio
+  `RuntimeFlavor::MultiThread`; wrong or unavailable runtime flavor fails closed
+  before root/pool acceptance;
+- current-thread runtimes remain test-only/non-production and cannot qualify the
+  production durability root;
+- pinned Tokio `1.53.1` may expose one read-only representation query for the
+  exact post-boxing future/task passed to `Handle::spawn`, limited to the existing
+  `BOX_FUTURE_THRESHOLD` optional future-box allocation request and the exact
+  MultiThread task-cell allocation request;
+- the query provides representation sizes only: no allowance, allocation, owner
+  identity, allocator interception, generic task accounting, scheduler accounting,
+  retry policy or lifetime policy;
+- SQLx may provide one root-specific maintenance construction that removes the
+  heap-allocating `CloseEvent/EventListener` dependency from this maintenance
+  future while preserving the accepted silent reaper/shutdown semantics;
+- Game must reserve all admitted source-derived maintenance backing against the
+  existing same-root `I` ledger before spawn/root acceptance and retain the charge
+  through complete maintenance-task/shared-tail finality;
+- denial is fail-closed before allocation/spawn; no second budget or resource-registry
+  value is introduced.
+
+The exact seam does not authorize reuse by other Tokio tasks, broad SQLx/Tokio
+resource-owner propagation, a generic allocator hook, a production current-thread
+scheduler path, rustls changes, or an alternate reaper policy. Any such need returns
+to architecture/lease discipline.
+
 ## 4. Oteryn-owned WP3-A execution model
 
-The application layer, not Tokio/rustls forks, owns semantic custody:
+The application layer owns semantic custody; the exact dependency seams below expose only the minimum representation/finality mechanics and do not own policy:
 
+- production WP3 durability root qualification requires Tokio `RuntimeFlavor::MultiThread`; current-thread runtimes are test-only/non-production;
 - one process-scoped durability root and lazy max-one holder pool;
 - ready-only active checkout; an active pass never establishes a new connection;
 - a miss returns the accepted unavailable classification and coalesces one
@@ -209,11 +245,16 @@ The initial allowed production surface is bounded to:
   root/finality/recovery/TLS-auth qualification modules and named tests;
 - clean exact-upstream SQLx 0.9.0 source/provenance needed to provide the seams
   in section 3, with authored changes restricted to the smallest affected
-  symbols in `sqlx-postgres` and `sqlx-core`.
+  symbols in `sqlx-postgres` and `sqlx-core`, including only the root-specific
+  maintenance construction required by section 3.7;
+- pinned Tokio 1.53.1 source/provenance only for the section-3.7 read-only
+  task-allocation representation query around the exact `Handle::spawn` path,
+  scheduler-flavor dispatch and task-cell representation sizing required for the
+  SQLx root-maintenance future.
 
 The implementation allocation explicitly excludes:
 
-- all Tokio source/vendor changes;
+- all Tokio source/vendor changes except the exact section-3.7 read-only representation query; generic task/allocator/scheduler/resource-owner instrumentation remains forbidden;
 - all rustls source/vendor changes;
 - broad SQLx resource-owner/decoder/cache rewrites unless a still-current hard
   requirement is newly reproduced and separately admitted;
@@ -269,12 +310,15 @@ individual maximum. Representative sizing/tuning is B, but does not waive the
 accepted safety bound.
 
 The required proof may use defensible finite reservations, bounded upstream APIs
-and focused source/boundary/failure evidence. It does not mandate a vendored
-Tokio/rustls per-allocation instrumented runtime. If the selected graph cannot
-meet an accepted bound, identify the exact gap and smallest necessary seam under
-normal lease discipline, or seek explicit owning contract supersession. This
-amendment does neither implicitly. The companion separates every relevant
-numeric limit, historical observation, profile pin and missing numeric proof.
+and focused source/boundary/failure evidence. It does not mandate a broad vendored
+Tokio/rustls per-allocation instrumented runtime. The P1-A amendment explicitly
+admits only the section-3.7 pinned-Tokio representation query and root-specific
+SQLx maintenance construction; no additional dependency seam may be inferred.
+If that exact selected graph cannot meet an accepted bound or preserve the frozen
+reaper/finality semantics, identify the gap and return to architecture/lease
+discipline rather than widening implementation custody. The companion separates
+every relevant numeric limit, historical observation, profile pin and missing
+numeric proof.
 
 ## 7. Mandatory WP3-A regressions and qualification
 
@@ -311,6 +355,20 @@ stand in for either the real WP3-A root or later composed production proof.
   genuine event during the first window authorizes exactly one later window;
 - third sequential operation only after exact completion/finality/owner ACK;
 - restart/takeover fencing and retained original identity.
+
+### Maintenance-task/runtime qualification
+
+- production root accepts the qualified MultiThread runtime and rejects
+  current-thread/unavailable runtime flavor before root/pool acceptance;
+- exact SQLx maintenance future uses source-derived optional future-box and
+  MultiThread task-cell allocation requests with no literal task-byte constant;
+- the root-specific SQLx maintenance path removes the
+  `CloseEvent/EventListener` heap dependency for this task without changing
+  shutdown/reaper/finality behavior;
+- same-root `I` reservation max/max+1 denial occurs before maintenance spawn and
+  the reservation remains charged through complete task/shared-tail finality;
+- 10-minute idle / 30-minute max-lifetime, max1/min0, ready-only active work and
+  coalesced demand/recovery behavior remain unchanged.
 
 ### Current resource and compatibility boundary
 
@@ -374,13 +432,16 @@ WP3_A_STRATEGY = UPSTREAM_FIRST_MINIMAL_PATCH_ON_PROVEN_NEED
 WP3_A_LINEAGE = CLEAN_FROM_PROTECTED_MAIN_AFTER_ACTIVATION
 WP3_A_IMPLEMENTATION_BRANCH = agent/wp3-a-upstream-first-351 (RESERVED_NOT_CREATED)
 WP3_356_DISPOSITION = PRESERVED_RESEARCH_EVIDENCE_NOT_TERMINAL_CANDIDATE
-TOKIO_SOURCE_FORK = NOT_ALLOCATED
+PRODUCTION_WP3_RUNTIME_FLAVOR = TOKIO_MULTI_THREAD_ONLY
+TOKIO_SOURCE_CUSTOMIZATION = EXACT_P1A_READ_ONLY_LAYOUT_QUERY_ONLY_AFTER_PROTECTED_AMENDMENT_AND_FRESH_LEASE
 RUSTLS_SOURCE_FORK = NOT_ALLOCATED
-SQLX_SOURCE_CUSTOMIZATION = MINIMUM_PROVEN_SEAMS_ONLY
+SQLX_SOURCE_CUSTOMIZATION = MINIMUM_PROVEN_SEAMS_PLUS_ROOT_SPECIFIC_P1A_MAINTENANCE_CONSTRUCTION_ONLY
+P1A_MAINTENANCE_I_CHARGE = SAME_ROOT_LEDGER_PREALLOCATION_THROUGH_SHARED_TAIL_FINALITY
 FRESH_ADMISSION_SHARED_CUSTODY = UNCHANGED_CHILD_B
 Q_ROUTING = EXPLICIT_PROPERTY_AUTHORITY_AND_MILESTONE_IN_COMPANION
 NUMERIC_ROUTING = N01_N32_AUTHORITY_AND_SCOPE_IN_COMPANION
 ALLOCATION_STATE = PROSPECTIVE_NOT_ACTIVE
+CURRENT_P1A_IMPLEMENTATION_AUTHORITY = NONE_UNTIL_REVISION4_PROTECTED_AND_FRESH_COORDINATOR_LEASE
 WORKER_STATE = NOT_ADMITTED
 TRUSTED_INTEGRATION_CAPABILITY = MUST_BE_FRESH_AT_WORKER_RELEASE
 WP4_CHILD_B = HOLD
