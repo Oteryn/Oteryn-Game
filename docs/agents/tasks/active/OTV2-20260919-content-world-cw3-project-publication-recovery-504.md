@@ -57,6 +57,7 @@ model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
   authority_invariants:
   - durable journal identity and checksum chain
   - one pinned and locked parent capability throughout transaction validation and mutation
+  - one pinned root capability throughout each journal-role verification
   - exact parent/root/child filesystem identity and ordinary entry type
   - bounded complete previous and replacement tree roles
 consumer_boundaries:
@@ -86,7 +87,7 @@ finding_family_sweep:
   fenced_durable_writes: file, directory, journal and parent synchronization
   restart_retry_replay_concurrency_pg_reload: restart/retry/replay applicable; concurrency races fail closed; PostgreSQL not applicable
   evidence:
-    - 11 private crash/concurrency/resource/capability unit tests in project_fs.rs
+    - 12 private crash/concurrency/resource/capability unit tests in project_fs.rs
     - 10 public publication/recovery integration tests
 finding_dispositions:
   p0_p1_accepted_and_repaired:
@@ -99,6 +100,7 @@ finding_dispositions:
     - transaction validation stays on the locked parent capability after ambient rename or substitution
     - committed, installed and previous roles require a complete canonical capture, not only identity and project.json digest
     - recovery synchronizes every observed renamed topology before appending the corresponding durable phase
+    - role verification binds the identity plan, canonical bytes and journal commitment to one opened root
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - caller byte/count limits are checked over borrowed canonical documents before cloning them
@@ -130,7 +132,10 @@ data are synchronized before `StageReady`; replacement uses `RENAME_EXCHANGE`, t
 root to the previous-backup role. Recovery classifies topology by recorded identities rather than
 content digest. Every transaction capture uses the original opened parent capability even if the
 ambient pathname is renamed and replaced. Installed, committed and previous roles are accepted
-only after a complete canonical capture plus the identity plan and journal-bound root digest.
+only after a complete canonical capture plus the identity plan and journal-bound root digest. Each
+role verification opens the named root once, performs all tree and canonical-byte checks through
+that handle, derives the root commitment from those captured bytes, and finally requires the role
+name still to bind the opened root identity.
 
 Recovery synchronizes an already-observed initial rename, root exchange or backup rename before it
 advances the journal phase. Canonical document count, individual byte length and checked aggregate
@@ -155,7 +160,7 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ### Component/integration
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_fs`; `cargo +1.94.0 test --locked -p oteryn-game-server --lib content::project_fs::linux::tests`; `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo +1.94.0 fmt --all -- --check`; `python3 tools/agents/validate_governance.py`; `git diff --check`
-- result: repaired candidate PASS — existing capture 9/9, private publication family 11/11,
+- result: repaired candidate PASS — existing capture 9/9, private publication family 12/12,
   strict Clippy, formatting, governance (26 documents, 9 lanes) and diff validation. Predecessor
   candidate broader parser 19/19, lib 452/452 and architecture boundary validation also passed.
 
@@ -190,15 +195,18 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ## Independent review
 
 - required: YES; persisted recovery and destructive cleanup interpretation are material
-- exact head: `edb8dc6da8bd1c3353d8a61f07114b5a31b93ce9`
+- exact heads: initial review `edb8dc6da8bd1c3353d8a61f07114b5a31b93ce9`; repaired-head
+  rereview `3636d9cacf7718496a62940617cf079d868d0349`
 - method/auditor: independent Sol High whole-diff security/durability review, control-plane evidence
-  comment `5748015463`
+  comments `5748015463` and `5748112226`
 - material findings: P0 0; P1 3 accepted — ambient parent reopen escaped the pinned capability,
   committed recovery validated only `project.json`, and recovered rename topologies advanced journal
   phases without first synchronizing the parent; P2 1 accepted — canonical documents were cloned
-  before caller byte/count admission
-- verdict: all four findings repaired in one consolidated local batch; new exact-head material
-  rereview is required before integration
+  before caller byte/count admission. The first four findings are confirmed closed. Re-review found
+  one additional P1: role verification reopened the role name between identity-plan, canonical-byte
+  and root-commitment checks, permitting exchanged roots to supply different evidence.
+- verdict: additional P1 repaired locally with one pinned root handle and deterministic exchanges at
+  both former boundaries; new exact-head targeted material rereview is required before integration
 
 ## PR and closeout
 
@@ -212,7 +220,7 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ## Context checkpoint
 
 ```yaml
-last_progress: independent 3 P1 / 1 P2 repair batch and all required repaired-candidate gates pass
+last_progress: repaired-head rereview additional P1 fixed; publication 10, capture 9, private 12, clippy/fmt/governance pass
 status: ready
 branch: agent/content-world-cw3-project-durable-cleanup-504
 head_sha: external_pr_evidence_after_final_publish
@@ -229,10 +237,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: complete repaired-candidate gates, publish one immutable head, and request parent-owned exact-head rereview
+next_action: publish one immutable head and request parent-owned targeted exact-head rereview
 ```
