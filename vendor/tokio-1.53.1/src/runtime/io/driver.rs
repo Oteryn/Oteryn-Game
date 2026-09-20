@@ -124,10 +124,10 @@ impl Driver {
             // here without depending on Mio private modules.
             #[repr(C)]
             struct OverlappedEntryLayout {
-                completion_key: usize,
-                overlapped: *mut std::ffi::c_void,
-                internal: usize,
-                bytes_transferred: u32,
+                _completion_key: usize,
+                _overlapped: *mut std::ffi::c_void,
+                _internal: usize,
+                _bytes_transferred: u32,
             }
             nevents.checked_mul(std::mem::size_of::<OverlappedEntryLayout>())?
         };
