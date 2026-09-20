@@ -325,6 +325,11 @@ mod linux {
         entries: Vec<PlannedEntry>,
     }
 
+    struct TreePlanIndex<'a> {
+        root: FileIdentity,
+        entries: BTreeMap<(FileIdentity, String), &'a PlannedEntry>,
+    }
+
     #[derive(Debug, Clone, Serialize, Deserialize)]
     #[serde(tag = "record", rename_all = "snake_case", deny_unknown_fields)]
     enum JournalRecord {
@@ -458,19 +463,28 @@ mod linux {
             ));
         }
 
-        capture_open_root(&root, limits, &mut scans).map(|captured| captured.project)
+        capture_open_root(&root, limits, &mut scans, None).map(|captured| captured.project)
     }
 
     fn capture_open_root(
         root: &Dir,
         limits: ProjectFilesystemLimits,
         scans: &mut ScanBudget,
+        durable_plan: Option<&TreePlan>,
     ) -> Result<CapturedProject, ProjectFilesystemError> {
+        let plan_index = durable_plan.map(index_tree_plan).transpose()?;
         let mut identities = BTreeSet::new();
         let mut controls = Vec::with_capacity(3);
         let mut control_total = 0_usize;
         for locator in [PROJECT_LOCATOR, MANIFEST_LOCATOR, LOCK_LOCATOR] {
-            let pinned = open_locator(root, locator, limits, scans, &mut identities)?;
+            let pinned = open_captured_locator(
+                root,
+                locator,
+                limits,
+                scans,
+                &mut identities,
+                plan_index.as_ref(),
+            )?;
             control_total =
                 checked_total(control_total, pinned.length, limits.project.max_total_bytes)?;
             controls.push(pinned);
@@ -492,7 +506,14 @@ mod linux {
 
         let mut documents = control_bytes;
         for expected in plan.documents() {
-            let pinned = open_locator(root, &expected.locator, limits, scans, &mut identities)?;
+            let pinned = open_captured_locator(
+                root,
+                &expected.locator,
+                limits,
+                scans,
+                &mut identities,
+                plan_index.as_ref(),
+            )?;
             if pinned.length != expected.byte_length {
                 return Err(unsafe_entry(
                     &expected.locator,
@@ -640,7 +661,7 @@ mod linux {
         journal.append(&JournalRecord::PreviousReady {
             previous_root: previous.as_ref().map(|plan| plan.root),
             previous_digest: previous_digest.clone(),
-            replacement_digest,
+            replacement_digest: replacement_digest.clone(),
         })?;
         sync_dir(&parent, "sync parent after durable publication plan")?;
         observer(PublicationCheckpoint::PlanDurable)?;
@@ -653,7 +674,13 @@ mod linux {
             &mut journal,
             observer,
         )?;
-        let staged = capture_in_parent(&parent, &names.stage, limits)?;
+        let staged = verify_canonical_role(
+            &parent,
+            &names.stage,
+            &stage_plan,
+            &replacement_digest,
+            limits,
+        )?;
         if staged != desired {
             return Err(conflict(
                 "staged project differs from validated replacement",
@@ -691,7 +718,13 @@ mod linux {
                     previous_plan.root,
                     "<publication-stage>",
                 )?;
-                let installed = capture_in_parent(&parent, root_basename, limits)?;
+                let installed = verify_canonical_role(
+                    &parent,
+                    root_basename,
+                    &stage_plan,
+                    &replacement_digest,
+                    limits,
+                )?;
                 if installed != desired {
                     return Err(conflict(
                         "installed project differs from validated replacement",
@@ -735,7 +768,13 @@ mod linux {
                 )?;
                 observer(PublicationCheckpoint::RootInstalledBeforeParentSync)?;
                 sync_dir(&parent, "sync parent after initial root install")?;
-                let installed = capture_in_parent(&parent, root_basename, limits)?;
+                let installed = verify_canonical_role(
+                    &parent,
+                    root_basename,
+                    &stage_plan,
+                    &replacement_digest,
+                    limits,
+                )?;
                 if installed != desired {
                     return Err(conflict(
                         "installed project differs from validated replacement",
@@ -2171,13 +2210,14 @@ mod linux {
 
         verify_tree_complete_open_root(&root, plan, limits)?;
         observer(RoleVerificationCheckpoint::IdentityPlanVerified)?;
-        let captured = capture_open_root(&root, limits, &mut ScanBudget::new(limits))?;
+        let captured = capture_open_root(&root, limits, &mut root_scans, Some(plan))?;
         observer(RoleVerificationCheckpoint::CanonicalCaptureComplete)?;
         if captured.root_digest != expected_root_digest {
             return Err(conflict(
                 "project root digest differs from the durable journal role",
             ));
         }
+        verify_tree_complete_open_root(&root, plan, limits)?;
         require_identity(
             parent,
             name,
@@ -2585,6 +2625,106 @@ mod linux {
             ));
         }
         Ok(())
+    }
+
+    fn index_tree_plan(plan: &TreePlan) -> Result<TreePlanIndex<'_>, ProjectFilesystemError> {
+        let mut entries = BTreeMap::new();
+        for entry in &plan.entries {
+            if entries
+                .insert((entry.parent, entry.name_hex.clone()), entry)
+                .is_some()
+            {
+                return Err(conflict(
+                    "durable tree plan repeats a parent and raw-name binding",
+                ));
+            }
+        }
+        Ok(TreePlanIndex {
+            root: plan.root,
+            entries,
+        })
+    }
+
+    fn open_captured_locator(
+        root: &Dir,
+        locator: &str,
+        limits: ProjectFilesystemLimits,
+        scans: &mut ScanBudget,
+        identities: &mut BTreeSet<FileIdentity>,
+        durable_plan: Option<&TreePlanIndex<'_>>,
+    ) -> Result<PinnedFile, ProjectFilesystemError> {
+        match durable_plan {
+            Some(plan) => open_locator_against_plan(root, locator, limits, scans, identities, plan),
+            None => open_locator(root, locator, limits, scans, identities),
+        }
+    }
+
+    fn open_locator_against_plan(
+        root: &Dir,
+        locator: &str,
+        limits: ProjectFilesystemLimits,
+        scans: &mut ScanBudget,
+        identities: &mut BTreeSet<FileIdentity>,
+        plan: &TreePlanIndex<'_>,
+    ) -> Result<PinnedFile, ProjectFilesystemError> {
+        let mut current = root
+            .try_clone()
+            .map_err(|source| io_error("clone opened root", locator, source))?;
+        let mut current_identity = plan.root;
+        let mut segments = locator.split('/').peekable();
+        while let Some(segment) = segments.next() {
+            let name = OsStr::new(segment);
+            let expected = plan
+                .entries
+                .get(&(current_identity, raw_hex(name)))
+                .copied()
+                .ok_or_else(|| {
+                    conflict("captured locator has no durable parent and raw-name binding")
+                })?;
+            if segments.peek().is_none() {
+                if expected.kind != PlannedKind::RegularFile {
+                    return Err(conflict(
+                        "captured locator file differs from its durable entry kind",
+                    ));
+                }
+                let pinned = open_regular_file(
+                    &current,
+                    name,
+                    locator,
+                    limits.project.max_document_bytes,
+                    scans,
+                    identities,
+                )?;
+                if pinned.identity != expected.identity {
+                    return Err(conflict(
+                        "captured file identity differs from its durable tree plan",
+                    ));
+                }
+                return Ok(pinned);
+            }
+            if expected.kind != PlannedKind::Directory {
+                return Err(conflict(
+                    "captured locator directory differs from its durable entry kind",
+                ));
+            }
+            let child = open_directory_component(&current, name, locator, scans)?;
+            let opened = child.dir_metadata().map_err(|source| {
+                io_error(
+                    "inspect captured directory against durable plan",
+                    locator,
+                    source,
+                )
+            })?;
+            let identity = FileIdentity::from_metadata(&opened);
+            if !opened.is_dir() || identity != expected.identity {
+                return Err(conflict(
+                    "captured directory identity differs from its durable tree plan",
+                ));
+            }
+            current = child;
+            current_identity = identity;
+        }
+        Err(unsafe_entry(locator, "locator has no file component"))
     }
 
     fn open_locator(
@@ -3256,7 +3396,7 @@ mod linux {
         }
 
         #[test]
-        fn committed_recovery_pins_one_root_across_role_exchange_boundaries() {
+        fn committed_recovery_binds_captured_children_across_exchange_boundaries() {
             for checkpoint in [
                 RoleVerificationCheckpoint::IdentityPlanVerified,
                 RoleVerificationCheckpoint::CanonicalCaptureComplete,
@@ -3266,20 +3406,30 @@ mod linux {
                 let documents = canonical_documents("role-exchange-r1");
                 fixture.publish(&documents);
                 donor.publish(&documents);
-                let alternate_name = OsStr::new("alternate-root");
-                let alternate_path = fixture.base.join(alternate_name);
-                fs::rename(donor.base.join("project-root"), &alternate_path)
-                    .expect("install alternate canonical root");
 
                 if checkpoint == RoleVerificationCheckpoint::IdentityPlanVerified {
                     corrupt_reference_document_in_place(&fixture.base.join("project-root"));
                 } else {
-                    corrupt_reference_document_in_place(&alternate_path);
+                    corrupt_reference_document_in_place(&donor.base.join("project-root"));
                 }
 
                 let parent = Dir::open_ambient_dir(&fixture.base, ambient_authority())
                     .expect("open role-exchange parent");
                 let _held = lock_parent(&parent).expect("lock role-exchange parent");
+                let root = parent
+                    .open_dir_nofollow("project-root")
+                    .expect("open planned project root");
+                let records = root
+                    .open_dir_nofollow("records")
+                    .expect("open planned records directory");
+                let donor_parent = Dir::open_ambient_dir(&donor.base, ambient_authority())
+                    .expect("open alternate project parent");
+                let donor_root = donor_parent
+                    .open_dir_nofollow("project-root")
+                    .expect("open alternate project root");
+                let donor_records = donor_root
+                    .open_dir_nofollow("records")
+                    .expect("open alternate records directory");
                 let names = internal_names(OsStr::new("project-root"))
                     .expect("derive role-exchange internal names");
                 let max_journal =
@@ -3293,7 +3443,20 @@ mod linux {
                     max_journal,
                     &mut |observed| {
                         if observed == checkpoint && !exchanged {
-                            atomic_exchange(&parent, OsStr::new("project-root"), alternate_name)?;
+                            rustix::fs::renameat_with(
+                                &records,
+                                "reference.json",
+                                &donor_records,
+                                "reference.json",
+                                RenameFlags::EXCHANGE,
+                            )
+                            .map_err(|source| {
+                                io_error(
+                                    "exchange canonical child during role verification",
+                                    "records/reference.json",
+                                    source.into(),
+                                )
+                            })?;
                             exchanged = true;
                         }
                         Ok(())
@@ -3306,8 +3469,14 @@ mod linux {
                 );
 
                 if checkpoint == RoleVerificationCheckpoint::IdentityPlanVerified {
-                    atomic_exchange(&parent, OsStr::new("project-root"), alternate_name)
-                        .expect("restore corrupted planned root to the live role");
+                    rustix::fs::renameat_with(
+                        &records,
+                        "reference.json",
+                        &donor_records,
+                        "reference.json",
+                        RenameFlags::EXCHANGE,
+                    )
+                    .expect("restore corrupted planned child to the live tree");
                 }
                 assert!(
                     capture_in_parent(&parent, OsStr::new("project-root"), publication_limits(),)
