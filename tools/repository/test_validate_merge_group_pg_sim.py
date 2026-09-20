@@ -17,7 +17,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "df22c9a40847ce759337ab63c84a28e1180892ba"
+APPROVED = "ad439cf3b04aaea084521f7be37761d3b1458cc5"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
@@ -30,6 +30,7 @@ WINDOWS_REQUIRED_FRAGMENTS = (
     "Test-Path -LiteralPath $client -PathType Leaf",
     "& $client --smoke",
     "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+    "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
 )
 
 
@@ -138,6 +139,7 @@ def main() -> int:
             mutations += 1
     for command in (
         "          cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+        "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
