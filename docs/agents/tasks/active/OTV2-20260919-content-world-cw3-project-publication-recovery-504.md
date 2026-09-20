@@ -4,11 +4,11 @@
 task_id: OTV2-20260919-content-world-cw3-project-publication-recovery-504
 title: Durable canonical World-project publication and recovery
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-cw3-project-durable-cleanup-504
-pr: pending
+pr: 692
 base_sha: 54869eb9db46d83beaaadfc557270d58a39cc6dd
 head_sha: pending
 final_head_sha: null
@@ -72,7 +72,7 @@ mutation_operators:
     - same-content previous and replacement revisions
   considered_not_applicable:
     - session generation, lease, credential and database authority; this adapter has none
-one_invariant_per_negative_case: pending final test sweep
+one_invariant_per_negative_case: complete for the applicable filesystem mutation matrix
 independent_current_fact_sources:
   - opened no-follow entry metadata and filesystem identity rechecked against the durable journal
 record_derived_matching_helper:
@@ -84,13 +84,17 @@ finding_family_sweep:
   direct_and_reconciled_paths: initial install, exchange, backup install, rollback, committed cleanup
   fenced_durable_writes: file, directory, journal and parent synchronization
   restart_retry_replay_concurrency_pg_reload: restart/retry/replay applicable; concurrency races fail closed; PostgreSQL not applicable
-  evidence: pending final validation
+  evidence:
+    - 8 private crash/concurrency/resource unit tests in project_fs.rs
+    - 9 public publication/recovery integration tests
 finding_dispositions:
   p0_p1_accepted_and_repaired:
     - bounded cleanup replaces recursive remove_dir_all
     - same-content recovery uses identity roles rather than equal digests
     - cleanup retains planned type/identity and opens directories no-follow
     - partial cleanup recovery accepts only a provable subset of the durable plan
+    - initial and backup install now use RENAME_NOREPLACE after self-review found replacement-permitting rename
+    - previous tree and root digest are reverified immediately before root exchange
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred: []
 ```
@@ -102,8 +106,8 @@ finding_dispositions:
 - [x] The append-only journal binds raw names, entry types and filesystem identities before later
   mutation and is bounded from the caller's existing scan limits plus Linux `NAME_MAX`.
 - [x] Successful replacement retains the prior root under the transaction's exact backup role.
-- [ ] Crash-point, tamper, addition/substitution, resource-boundary and repeat-recovery tests pass.
-- [ ] Focused tests, existing capture tests, lib tests, fmt and clippy pass on the frozen head.
+- [x] Crash-point, tamper, addition/substitution, resource-boundary and repeat-recovery tests pass.
+- [x] Focused tests, existing capture tests, lib tests, fmt and clippy pass locally.
 - [ ] Independent exact-head material review is accepted by the control plane.
 
 ## Excluded scope
@@ -113,7 +117,8 @@ filesystem implementation or activation behavior changes in this task.
 
 ## Implementation / findings
 
-The Linux adapter derives fixed sibling names from the raw project-root basename. A newly created,
+The Linux adapter derives fixed sibling names from the raw project-root basename and holds an
+exclusive nonblocking lock on the opened parent during publication or recovery. A newly created,
 single-link journal records a checksum-chained header, the complete previous-root deletion plan,
 each stage identity immediately after creation, and explicit install phases. File and directory
 data are synchronized before `StageReady`; replacement uses `RENAME_EXCHANGE`, then renames the old
@@ -131,18 +136,21 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ### Focused
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_publication`
-- result: PASS for initial, replacement, same-content repeat recovery and pre-I/O invalid limit;
-  adversarial/crash matrix still pending.
+- result: PASS, 9/9. Covers initial/replacement/same-content, repeat recovery, partial cleanup,
+  unknown addition, root/child substitution, symlink/hardlink/FIFO, journal tamper/torn suffix,
+  sparse journal admission and exact/max+1/overflow resource boundaries.
 
 ### Component/integration
 
-- command/run: pending final affected test sweep
-- result: pending
+- command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_fs`; `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project`; `cargo +1.94.0 test --locked -p oteryn-game-server --lib`; `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo +1.94.0 fmt --all -- --check`; `python3 tools/agents/validate_governance.py`; `cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .`
+- result: PASS — existing capture 9/9, existing parser 19/19, lib 452/452 including eight private
+  publication tests, strict Clippy, formatting, governance and workspace-boundary validation PASS.
 
 ### E2E
 
-- scenario: local filesystem transaction evidence only; no runtime activation is in scope
-- result: pending final transaction matrix
+- scenario: deterministic local filesystem interruption at plan, stage-ready, atomic install and
+  backup-install boundaries; repeat recovery validates the same public capture consumer
+- result: PASS; no runtime activation is in scope
 
 ### Exact-head CI
 
@@ -157,8 +165,11 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 
 - exact head: pending
 - method/reviewer: implementing agent
-- material findings: pending adversarial whole-diff review
-- verdict: pending
+- material findings: accepted/repaired — replacement-permitting initial/backup rename,
+  pre-exchange previous-tree revalidation and competing publication serialization
+- verdict: implementation now uses NOREPLACE, revalidates the previous tree/digest immediately
+  before exchange, and fails a competing operation before journal interpretation; whole-diff
+  read-through found no unresolved material issue
 
 ## Independent review
 
@@ -170,7 +181,7 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: exact three allocated paths confirmed locally and on draft PR #692
 - unresolved review threads: pending
 - related/superseded PRs: none known
 - protected auto-merge: parent control plane only; pending
@@ -180,11 +191,11 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ## Context checkpoint
 
 ```yaml
-last_progress: core journal/publication/recovery mechanism compiles and initial focused tests pass
-status: implementing
+last_progress: adversarial transaction matrix, whole-diff self-review and all selected local gates pass
+status: ready
 branch: agent/content-world-cw3-project-durable-cleanup-504
-head_sha: pending first coherent checkpoint
-pr: pending
+head_sha: external_pr_evidence_after_final_publish
+pr: 692
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -202,5 +213,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: add deterministic crash-state and exact-plan adversarial coverage
+next_action: freeze and publish the exact candidate for parent-owned independent review
 ```
