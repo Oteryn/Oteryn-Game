@@ -135,6 +135,41 @@ jobs:
           diff -rq /tmp/b6-a /tmp/b6-b
           diff -rq /tmp/b6-a /tmp/b6-reverse
 
+      - name: Verify tracked evidence is byte-identical to regenerated product
+        shell: bash
+        run: |
+          set -euo pipefail
+          GENERATED_ROOT='/tmp/b6-a'
+          TRACKED_ROOT='docs/agents/evidence'
+          INDEX='OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          FAMILY_DIR='OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          GENERATED_FAMILY="${GENERATED_ROOT}/${FAMILY_DIR}"
+          TRACKED_FAMILY="${TRACKED_ROOT}/${FAMILY_DIR}"
+
+          test -f "${GENERATED_ROOT}/${INDEX}"
+          test -f "${TRACKED_ROOT}/${INDEX}"
+          test -d "${GENERATED_FAMILY}"
+          test -d "${TRACKED_FAMILY}"
+
+          # Index bytes must match exactly.
+          cmp -s -- "${GENERATED_ROOT}/${INDEX}" "${TRACKED_ROOT}/${INDEX}"
+
+          # The family trees must contain exactly the same regular-file set:
+          # no missing files, no unexpected extras, no nested directories/symlinks.
+          test -z "$(find "${GENERATED_FAMILY}" -mindepth 1 -maxdepth 1 ! -type f -print -quit)"
+          test -z "$(find "${TRACKED_FAMILY}" -mindepth 1 -maxdepth 1 ! -type f -print -quit)"
+
+          GENERATED_FILES="$(mktemp)"
+          TRACKED_FILES="$(mktemp)"
+          trap 'rm -f "$GENERATED_FILES" "$TRACKED_FILES"' EXIT
+          find "${GENERATED_FAMILY}" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$GENERATED_FILES"
+          find "${TRACKED_FAMILY}" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$TRACKED_FILES"
+          cmp -s -- "$GENERATED_FILES" "$TRACKED_FILES"
+
+          while IFS= read -r NAME; do
+            cmp -s -- "${GENERATED_FAMILY}/${NAME}" "${TRACKED_FAMILY}/${NAME}"
+          done < "$GENERATED_FILES"
+
       - name: Verify evidence closure and record workflow result
         shell: bash
         env:
