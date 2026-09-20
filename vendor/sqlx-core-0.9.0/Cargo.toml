@@ -293,6 +293,7 @@ features = [
     "fs",
     "io-util",
     "rt",
+    "rt-multi-thread",
 ]
 optional = true
 default-features = false

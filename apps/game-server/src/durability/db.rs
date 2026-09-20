@@ -188,9 +188,11 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
 
-    let maintenance =
-        sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
-    for requested in [maintenance.future_box_request, maintenance.task_cell_request] {
+    let maintenance = sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
+    for requested in [
+        maintenance.future_box_request,
+        maintenance.task_cell_request,
+    ] {
         if requested != 0 {
             total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
         }
@@ -687,10 +689,7 @@ impl DurabilityRoot {
         })
     }
 
-    pub(crate) fn spawn_task<F>(
-        &self,
-        future: F,
-    ) -> tokio::task::JoinHandle<F::Output>
+    pub(crate) fn spawn_task<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static,
@@ -725,9 +724,9 @@ impl DurabilityRoot {
         match &self.runtime {
             RootRuntime::Dedicated(_) => {
                 let root = self.clone();
-                await_root_task(self.spawn_task(async move {
-                    root.maintain_ready_once_inner().await
-                }))
+                await_root_task(
+                    self.spawn_task(async move { root.maintain_ready_once_inner().await }),
+                )
                 .await
             }
             #[cfg(test)]
