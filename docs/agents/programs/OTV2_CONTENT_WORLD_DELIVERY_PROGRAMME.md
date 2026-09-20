@@ -138,6 +138,9 @@ Zasada wykonawcza:
 
 - CW2 (`Oteryn: content world import`) rozszerza candidate catalogue partiami i dostarcza provenance/mapping/loss report;
 - CW3 (`Oteryn: content world build`) jest jedynym writerem wspólnego modelu/compiler path dla executable promotion;
+- zakończony bootstrap single-item służy jako evidence/regression; **normalna dalsza native/executable promotion jest batchowa**, nie rekord-po-rekordzie;
+- pojedynczy rekord wolno przydzielić tylko jako fixture/regression/diagnostykę albo gdy świeży, konkretny blocker uniemożliwia bezpieczny batch; wyjątek musi nazwać blocker i warunek przejścia do partii oraz nie liczy się jako postęp katalogowy;
+- control plane nie powinien serializować kolejnych pojedynczych itemów/creatures/NPC, gdy dana rodzina jest technicznie i semantycznie gotowa do ograniczonego reprezentatywnego batcha lub całej partycji;
 - CW2 może działać równolegle z CW4/CW5 tylko przy live #162 allocation i faktycznie rozłącznych ścieżkach;
 - D6 oznacza kontynuację skali katalogu/mapy i Studio, **nie pierwszy moment rozpoczęcia bulk importu**;
 - nie uruchamiać osobnego `content catalog` subsystemu lub konkurencyjnego aliasu.

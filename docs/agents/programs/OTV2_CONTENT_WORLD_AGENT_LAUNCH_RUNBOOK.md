@@ -55,6 +55,8 @@ Nie tworzyć osobnego konkurencyjnego aliasu `content catalog`. Batch plan i kol
 
 Bez live #162 allocation alias wykonuje tylko preflight/propozycję exact batch + custody. Po przydziale CW2 może działać równolegle z CW4 wyłącznie na rozłącznych ścieżkach; mutacje wspólnego modelu pozostają serializowane przez CW3.
 
+Po zakończonym bootstrapie pojedynczego itemu control plane nie powinien przydzielać kolejnych zwykłych slice'ów typu „jeden item → native promotion”. Normalny następny przyrost CW2/CW3 ma być batchowy: ograniczona reprezentatywna partia lub cała gotowa partycja rodziny. Single-record pozostaje tylko fixture/regression/diagnostyką albo udokumentowanym wyjątkiem wymuszonym konkretnym blockerem; nie jest postępem katalogowym. Jeżeli batch jest technicznie i semantycznie możliwy, „mniejszy scope” nie jest wystarczającym powodem do powrotu do pracy rekord-po-rekordzie.
+
 Nie uruchamiać siedmiu agentów jednocześnie. Zalecane maksimum organizacyjne: trzy aktywne role łącznie, zwykle jeden lub dwóch writerów oraz niezależny read-only/QA. Gdy lead potrzebny jest do nadzoru, zajmuje jeden z tych slotów. Dwie implementacje są równoległe tylko przy faktycznie rozdzielonych ścieżkach i stabilnych interfejsach. Ta sama sesja może kolejno wykonać różne przydzielone przyrosty bez tworzenia nowej gałęzi tylko dla zmiany roli.
 
 ## 4. Istniejące aliasy pozostają
