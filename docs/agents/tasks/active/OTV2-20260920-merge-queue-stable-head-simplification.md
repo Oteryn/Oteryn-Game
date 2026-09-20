@@ -20,6 +20,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md
   - docs/agents/PROMPT_LIFECYCLE.json
+  - tools/agents/tests/test_meta_agent_policy_adoption.py
   - docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md
   - docs/agents/evidence/OTV2-20260920-merge-queue-stable-head-simplification-evaluation.md
   - docs/agents/tasks/active/OTV2-20260920-merge-queue-stable-head-simplification.md
@@ -68,7 +69,7 @@ No runtime/source/Cargo/schema/content mutation. No change to Merge Queue primit
 
 The change is deliberately narrow: it removes unnecessary mutation requirements rather than weakening mutation safety. It does not create a new execution route. If source reconciliation is actually necessary, the existing isolated-workspace, custody, validation and normal non-force publication requirements still apply.
 
-`PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from lifecycle metadata version `1.7` to `1.8` because the reusable prompt's dispatch/integration behavior changes materially. Identity, alias, owner, status and supersession relation remain unchanged.
+`PROMPT_LIFECYCLE.json` advances `OTV2_WORK_DELIVERY_COORDINATOR` from lifecycle metadata version `1.7` to `1.8` because the reusable prompt's dispatch/integration behavior changes materially. Identity, alias, owner, status and supersession relation remain unchanged. The META-adoption regression expectation advances with the registry version so the deterministic governance suite validates the new registered contract.
 
 ## Validation
 
