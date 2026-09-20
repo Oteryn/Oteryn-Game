@@ -54,8 +54,9 @@ entries. Non-Linux targets return `UnsupportedPlatform` before filesystem access
 ```yaml
 applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
-authority_invariants:
+  authority_invariants:
   - durable journal identity and checksum chain
+  - one pinned and locked parent capability throughout transaction validation and mutation
   - exact parent/root/child filesystem identity and ordinary entry type
   - bounded complete previous and replacement tree roles
 consumer_boundaries:
@@ -85,8 +86,8 @@ finding_family_sweep:
   fenced_durable_writes: file, directory, journal and parent synchronization
   restart_retry_replay_concurrency_pg_reload: restart/retry/replay applicable; concurrency races fail closed; PostgreSQL not applicable
   evidence:
-    - 8 private crash/concurrency/resource unit tests in project_fs.rs
-    - 9 public publication/recovery integration tests
+    - 11 private crash/concurrency/resource/capability unit tests in project_fs.rs
+    - 10 public publication/recovery integration tests
 finding_dispositions:
   p0_p1_accepted_and_repaired:
     - bounded cleanup replaces recursive remove_dir_all
@@ -95,8 +96,12 @@ finding_dispositions:
     - partial cleanup recovery accepts only a provable subset of the durable plan
     - initial and backup install now use RENAME_NOREPLACE after self-review found replacement-permitting rename
     - previous tree and root digest are reverified immediately before root exchange
+    - transaction validation stays on the locked parent capability after ambient rename or substitution
+    - committed, installed and previous roles require a complete canonical capture, not only identity and project.json digest
+    - recovery synchronizes every observed renamed topology before appending the corresponding durable phase
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - caller byte/count limits are checked over borrowed canonical documents before cloning them
 ```
 
 ## Acceptance criteria
@@ -123,7 +128,13 @@ single-link journal records a checksum-chained header, the complete previous-roo
 each stage identity immediately after creation, and explicit install phases. File and directory
 data are synchronized before `StageReady`; replacement uses `RENAME_EXCHANGE`, then renames the old
 root to the previous-backup role. Recovery classifies topology by recorded identities rather than
-content digest.
+content digest. Every transaction capture uses the original opened parent capability even if the
+ambient pathname is renamed and replaced. Installed, committed and previous roles are accepted
+only after a complete canonical capture plus the identity plan and journal-bound root digest.
+
+Recovery synchronizes an already-observed initial rename, root exchange or backup rename before it
+advances the journal phase. Canonical document count, individual byte length and checked aggregate
+bytes are admitted over borrowed data before the publication path clones the document map.
 
 Cleanup first proves that the current tree is a subset of the durable plan. It rejects additions,
 type changes, hard links, special files and identity substitution before unlinking any admitted
@@ -136,15 +147,17 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ### Focused
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_publication`
-- result: PASS, 9/9. Covers initial/replacement/same-content, repeat recovery, partial cleanup,
+- result: PASS, 10/10. Covers initial/replacement/same-content, repeat recovery, partial cleanup,
   unknown addition, root/child substitution, symlink/hardlink/FIFO, journal tamper/torn suffix,
-  sparse journal admission and exact/max+1/overflow resource boundaries.
+  sparse journal admission, same-identity/length child mutation, and exact/max+1/overflow resource
+  boundaries.
 
 ### Component/integration
 
-- command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_fs`; `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project`; `cargo +1.94.0 test --locked -p oteryn-game-server --lib`; `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo +1.94.0 fmt --all -- --check`; `python3 tools/agents/validate_governance.py`; `cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .`
-- result: PASS — existing capture 9/9, existing parser 19/19, lib 452/452 including eight private
-  publication tests, strict Clippy, formatting, governance and workspace-boundary validation PASS.
+- command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_fs`; `cargo +1.94.0 test --locked -p oteryn-game-server --lib content::project_fs::linux::tests`; `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo +1.94.0 fmt --all -- --check`; `python3 tools/agents/validate_governance.py`; `git diff --check`
+- result: repaired candidate PASS — existing capture 9/9, private publication family 11/11,
+  strict Clippy, formatting, governance (26 documents, 9 lanes) and diff validation. Predecessor
+  candidate broader parser 19/19, lib 452/452 and architecture boundary validation also passed.
 
 ### E2E
 
@@ -163,25 +176,33 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 
 ## Self-review
 
-- exact head: pending
+- exact head: `edb8dc6da8bd1c3353d8a61f07114b5a31b93ce9`
 - method/reviewer: implementing agent
 - material findings: accepted/repaired — replacement-permitting initial/backup rename,
-  pre-exchange previous-tree revalidation and competing publication serialization
+  pre-exchange previous-tree revalidation, competing publication serialization, parent capability
+  escape, incomplete committed-role validation, recovered-rename synchronization and pre-admission
+  clone
 - verdict: implementation now uses NOREPLACE, revalidates the previous tree/digest immediately
-  before exchange, and fails a competing operation before journal interpretation; whole-diff
-  read-through found no unresolved material issue
+  before exchange, holds transaction validation on one parent capability, requires complete
+  canonical role captures, fences recovered phase advances with parent sync, admits caller limits
+  before clone, and fails a competing operation before journal interpretation
 
 ## Independent review
 
 - required: YES; persisted recovery and destructive cleanup interpretation are material
-- exact head: pending
-- method/auditor: parent control plane
-- material findings: pending
-- verdict: pending
+- exact head: `edb8dc6da8bd1c3353d8a61f07114b5a31b93ce9`
+- method/auditor: independent Sol High whole-diff security/durability review, control-plane evidence
+  comment `5748015463`
+- material findings: P0 0; P1 3 accepted — ambient parent reopen escaped the pinned capability,
+  committed recovery validated only `project.json`, and recovered rename topologies advanced journal
+  phases without first synchronizing the parent; P2 1 accepted — canonical documents were cloned
+  before caller byte/count admission
+- verdict: all four findings repaired in one consolidated local batch; new exact-head material
+  rereview is required before integration
 
 ## PR and closeout
 
-- changed-file review: exact three allocated paths confirmed locally and on draft PR #692
+- changed-file review: exact three allocated paths confirmed locally and on PR #692
 - unresolved review threads: pending
 - related/superseded PRs: none known
 - protected auto-merge: parent control plane only; pending
@@ -191,7 +212,7 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ## Context checkpoint
 
 ```yaml
-last_progress: adversarial transaction matrix, whole-diff self-review and all selected local gates pass
+last_progress: independent 3 P1 / 1 P2 repair batch and all required repaired-candidate gates pass
 status: ready
 branch: agent/content-world-cw3-project-durable-cleanup-504
 head_sha: external_pr_evidence_after_final_publish
@@ -208,10 +229,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze and publish the exact candidate for parent-owned independent review
+next_action: complete repaired-candidate gates, publish one immutable head, and request parent-owned exact-head rereview
 ```
