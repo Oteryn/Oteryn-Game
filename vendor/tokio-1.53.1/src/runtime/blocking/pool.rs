@@ -251,7 +251,7 @@ impl BlockingPool {
         C: Send + 'static,
     {
         struct WorkerBlockingFuture<C> {
-            capture: Option<C>,
+            _capture: Option<C>,
         }
 
         impl<C> std::future::Future for WorkerBlockingFuture<C> {
