@@ -311,27 +311,15 @@ def build_catalog(observations: Iterable[dict[str, Any]], source_stream_counts: 
     }
     product_digest = sha256_bytes(canonical_bytes(product_basis))
 
-    files = []
     for family in FAMILIES:
         family_docs[family]["logical_product_digest_sha256"] = product_digest
-        payload = canonical_bytes(family_docs[family])
-        files.append(
-            {
-                "family": family,
-                "tracked_path": f"{FINAL_FAMILY_PREFIX}/{FAMILY_FILENAMES[family]}",
-                "bytes": len(payload),
-                "sha256": sha256_bytes(payload),
-                "records": family_docs[family]["counts"]["occurrences"],
-                "records_digest_sha256": family_docs[family]["records_digest_sha256"],
-            }
-        )
 
     index = {
         **product_basis,
         "logical_product_digest_sha256": product_digest,
         "storage": {
             "index_tracked_path": FINAL_INDEX_PATH,
-            "family_files": files,
+            "family_files": [],
         },
         "authority": {
             "reference_parity_claim": "NONE",
@@ -351,13 +339,134 @@ def validate_real_source_counts(counts: dict[str, int]) -> None:
         raise CatalogError(f"SOURCE_STREAM_COUNT_MISMATCH: expected {EXPECTED_STREAM_COUNTS}, got {counts}")
 
 
+def validate_real_family_counts(family_docs: dict[str, dict[str, Any]]) -> None:
+    actual = {family: int(family_docs[family]["counts"]["occurrences"]) for family in FAMILIES}
+    if actual != EXPECTED_FAMILY_COUNTS:
+        raise CatalogError(f"FAMILY_COUNT_MISMATCH: expected {EXPECTED_FAMILY_COUNTS}, got {actual}")
+
+
+def _shard_filename(family: str, ordinal: int) -> str:
+    stem = FAMILY_FILENAMES[family].removesuffix(".json")
+    return f"{stem}-{ordinal:04d}.json"
+
+
+def _build_family_shards(family_doc: dict[str, Any]) -> tuple[dict[str, Any], list[tuple[str, bytes]]]:
+    family = str(family_doc["family"])
+    records = list(family_doc["records"])
+    requested = SHARD_COUNTS[family]
+    shard_count = min(requested, len(records))
+    if shard_count < 1:
+        raise CatalogError(f"SHARDED_FAMILY_EMPTY: {family}")
+    chunk_size = (len(records) + shard_count - 1) // shard_count
+    shard_meta: list[dict[str, Any]] = []
+    shard_payloads: list[tuple[str, bytes]] = []
+    reconstructed: list[dict[str, Any]] = []
+
+    for zero_index in range(shard_count):
+        ordinal = zero_index + 1
+        chunk = records[zero_index * chunk_size : (zero_index + 1) * chunk_size]
+        if not chunk:
+            raise CatalogError(f"EMPTY_SHARD: {family}:{ordinal}")
+        records_digest = sha256_bytes(canonical_bytes(chunk))
+        shard = {
+            "schema": SHARD_SCHEMA,
+            "mapper_profile": MAPPER_PROFILE,
+            "family": family,
+            "closure": CLOSURE,
+            "evidence_status": EVIDENCE_STATUS,
+            "logical_product_digest_sha256": family_doc["logical_product_digest_sha256"],
+            "family_records_digest_sha256": family_doc["records_digest_sha256"],
+            "ordinal": ordinal,
+            "shard_count": shard_count,
+            "record_count": len(chunk),
+            "records_digest_sha256": records_digest,
+            "records": chunk,
+        }
+        payload = canonical_bytes(shard)
+        if len(payload) > MAX_SHARD_BYTES:
+            raise CatalogError(
+                f"SHARD_TOO_LARGE: {family}:{ordinal}: {len(payload)} > {MAX_SHARD_BYTES}"
+            )
+        filename = _shard_filename(family, ordinal)
+        tracked_path = f"{FINAL_FAMILY_PREFIX}/{filename}"
+        shard_meta.append(
+            {
+                "ordinal": ordinal,
+                "tracked_path": tracked_path,
+                "record_count": len(chunk),
+                "bytes": len(payload),
+                "sha256": sha256_bytes(payload),
+                "records_digest_sha256": records_digest,
+            }
+        )
+        shard_payloads.append((filename, payload))
+        reconstructed.extend(chunk)
+
+    if sha256_bytes(canonical_bytes(reconstructed)) != family_doc["records_digest_sha256"]:
+        raise CatalogError(f"SHARD_RECONSTRUCTION_DIGEST_MISMATCH: {family}")
+
+    manifest = {key: value for key, value in family_doc.items() if key != "records"}
+    manifest["schema"] = FAMILY_MANIFEST_SCHEMA
+    manifest["storage"] = {
+        "mode": "SHARDED",
+        "max_shard_bytes": MAX_SHARD_BYTES,
+        "shard_count": shard_count,
+        "shards": shard_meta,
+    }
+    return manifest, shard_payloads
+
+
+def storage_payloads(
+    index: dict[str, Any],
+    family_docs: dict[str, dict[str, Any]],
+) -> dict[str, bytes]:
+    payloads: dict[str, bytes] = {}
+    family_entries: list[dict[str, Any]] = []
+
+    for family in FAMILIES:
+        filename = FAMILY_FILENAMES[family]
+        tracked_path = f"{FINAL_FAMILY_PREFIX}/{filename}"
+        family_doc = family_docs[family]
+        if family in SHARD_COUNTS and family_doc["records"]:
+            stored_doc, shards = _build_family_shards(family_doc)
+            payload = canonical_bytes(stored_doc)
+            for shard_name, shard_payload in shards:
+                payloads[f"{FAMILY_DIR_NAME}/{shard_name}"] = shard_payload
+            storage_mode = "SHARDED"
+            shard_count = len(shards)
+        else:
+            payload = canonical_bytes(family_doc)
+            storage_mode = "INLINE"
+            shard_count = 0
+
+        payloads[f"{FAMILY_DIR_NAME}/{filename}"] = payload
+        family_entries.append(
+            {
+                "family": family,
+                "tracked_path": tracked_path,
+                "storage_mode": storage_mode,
+                "shard_count": shard_count,
+                "bytes": len(payload),
+                "sha256": sha256_bytes(payload),
+                "records": family_doc["counts"]["occurrences"],
+                "records_digest_sha256": family_doc["records_digest_sha256"],
+            }
+        )
+
+    index["storage"] = {
+        "index_tracked_path": FINAL_INDEX_PATH,
+        "family_files": family_entries,
+    }
+    payloads[INDEX_NAME] = canonical_bytes(index)
+    return payloads
+
+
 def write_catalog(output_dir: Path, index: dict[str, Any], family_docs: dict[str, dict[str, Any]]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    family_dir = output_dir / FAMILY_DIR_NAME
-    family_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / INDEX_NAME).write_bytes(canonical_bytes(index))
-    for family in FAMILIES:
-        (family_dir / FAMILY_FILENAMES[family]).write_bytes(canonical_bytes(family_docs[family]))
+    for relative, payload in storage_payloads(index, family_docs).items():
+        path = output_dir / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
 
 
 def collect_real_observations(
@@ -431,6 +540,7 @@ def main() -> int:
     if args.enumeration == "reverse":
         observations.reverse()
     index, family_docs = build_catalog(observations, counts)
+    validate_real_family_counts(family_docs)
     write_catalog(args.output.resolve(), index, family_docs)
     print(
         json.dumps(
