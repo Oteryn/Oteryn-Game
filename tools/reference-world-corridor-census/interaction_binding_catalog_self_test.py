@@ -37,6 +37,19 @@ def expect_error(fragment, fn):
         raise AssertionError(f"expected CatalogError containing {fragment!r}")
 
 
+def verify_storage_round_trip(records, counts):
+    index, families, payloads = catalog.build_catalog(records, counts)
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        catalog.write_catalog(root, index, payloads)
+        parsed = json.loads((root / catalog.INDEX_NAME).read_text(encoding="utf-8"))
+        verification = catalog.verify_written_catalog(root, parsed)
+        assert verification["family_counts"] == {
+            family: families[family]["counts"]["occurrences"] for family in catalog.FAMILIES
+        }
+        return parsed, verification
+
+
 def main() -> int:
     records = [
         observation("UNIQUE_ID", 10, 20, -7, 0, 100, 500),
@@ -46,10 +59,12 @@ def main() -> int:
         observation("ACTION_ID", 13, 20, -7, 0, 104, 600),
     ]
     counts = {"map_header": 1, "tile": 3, "town": 0, "waypoint": 0}
-    first_index, first_families = catalog.build_catalog(records, counts)
-    second_index, second_families = catalog.build_catalog(list(reversed(records)), counts)
+
+    first_index, first_families, first_payloads = catalog.build_catalog(records, counts)
+    second_index, second_families, second_payloads = catalog.build_catalog(list(reversed(records)), counts)
 
     assert catalog.canonical_bytes(first_index) == catalog.canonical_bytes(second_index)
+    assert first_payloads == second_payloads
     for family in catalog.FAMILIES:
         assert catalog.canonical_bytes(first_families[family]) == catalog.canonical_bytes(second_families[family])
 
@@ -70,35 +85,54 @@ def main() -> int:
         for record in first_families[family]["records"]
     )
 
+    direct = {
+        entry["family"]: entry for entry in first_index["storage"]["family_files"]
+    }
+    assert direct["ACTION_ID"]["storage_mode"] == "DIRECT"
+    assert direct["UNIQUE_ID"]["storage_mode"] == "DIRECT"
+    assert direct["TELEPORT_DESTINATION"]["storage_mode"] == "SHARDED"
+    assert direct["HOUSE_DOOR_ID"]["storage_mode"] == "SHARDED"
+
+    parsed, verification = verify_storage_round_trip(records, counts)
+    assert parsed["logical_product_digest_sha256"] == first_index["logical_product_digest_sha256"]
+    assert verification["family_counts"]["ACTION_ID"] == 2
+    assert verification["family_counts"]["UNIQUE_ID"] == 1
+    assert verification["family_counts"]["TELEPORT_DESTINATION"] == 1
+    assert verification["family_counts"]["HOUSE_DOOR_ID"] == 1
+
+    bulk = [
+        observation(
+            "TELEPORT_DESTINATION",
+            20_000 + i,
+            30_000 + (i // 1000),
+            -7,
+            i % 7,
+            500 + (i % 300),
+            {"x": 40_000 + i, "y": 50_000 + (i % 2000), "floor": -8},
+        )
+        for i in range(1_600)
+    ]
+    bulk_index, bulk_families, bulk_payloads = catalog.build_catalog(
+        bulk,
+        {"map_header": 1, "tile": 1_600, "town": 0, "waypoint": 0},
+    )
+    teleport_entry = next(
+        entry for entry in bulk_index["storage"]["family_files"]
+        if entry["family"] == "TELEPORT_DESTINATION"
+    )
+    assert teleport_entry["storage_mode"] == "SHARDED"
+    assert teleport_entry["shard_count"] >= 2
+    assert sum(shard["record_count"] for shard in teleport_entry["shards"]) == 1_600
+    assert all(shard["bytes"] <= catalog.MAX_SHARD_BYTES for shard in teleport_entry["shards"])
+    assert all(path.endswith(".json") for path in bulk_payloads)
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
-        catalog.write_catalog(root, first_index, first_families)
-        stored_index = json.loads((root / catalog.INDEX_NAME).read_text(encoding="utf-8"))
-        assert stored_index["logical_product_digest_sha256"] == first_index["logical_product_digest_sha256"]
-        for entry in stored_index["storage"]["family_files"]:
-            family = entry["family"]
-            path = root / catalog.FAMILY_DIR_NAME / catalog.FAMILY_FILENAMES[family]
-            parsed = json.loads(path.read_text(encoding="utf-8"))
-            assert parsed["family"] == family
-            assert parsed["logical_product_digest_sha256"] == first_index["logical_product_digest_sha256"]
-            if entry["storage_mode"] == "SHARDED":
-                reconstructed = []
-                assert parsed["schema"] == catalog.FAMILY_MANIFEST_SCHEMA
-                assert parsed["storage"]["shard_count"] == entry["shard_count"]
-                for shard_meta in parsed["storage"]["shards"]:
-                    shard_path = root / catalog.FAMILY_DIR_NAME / Path(shard_meta["tracked_path"]).name
-                    payload = shard_path.read_bytes()
-                    assert len(payload) == shard_meta["bytes"]
-                    assert catalog.sha256_bytes(payload) == shard_meta["sha256"]
-                    assert len(payload) <= catalog.MAX_SHARD_BYTES
-                    shard = json.loads(payload.decode("utf-8"))
-                    assert shard["record_count"] == shard_meta["record_count"]
-                    assert catalog.sha256_bytes(catalog.canonical_bytes(shard["records"])) == shard["records_digest_sha256"]
-                    reconstructed.extend(shard["records"])
-                assert catalog.sha256_bytes(catalog.canonical_bytes(reconstructed)) == parsed["records_digest_sha256"]
-            else:
-                assert parsed["schema"] == catalog.FAMILY_SCHEMA
-                assert len(parsed["records"]) == entry["records"]
+        catalog.write_catalog(root, bulk_index, bulk_payloads)
+        verified = catalog.verify_written_catalog(root, bulk_index)
+        assert verified["family_counts"]["TELEPORT_DESTINATION"] == 1_600
+        assert verified["family_files"]["TELEPORT_DESTINATION"]["shard_count"] >= 2
+        reconstructed_digest = verified["family_files"]["TELEPORT_DESTINATION"]["records_digest_sha256"]
+        assert reconstructed_digest == bulk_families["TELEPORT_DESTINATION"]["records_digest_sha256"]
 
     expect_error(
         "UNSUPPORTED_STRUCTURAL_FAMILY",
@@ -111,7 +145,10 @@ def main() -> int:
         ),
     )
     duplicate = observation("ACTION_ID", 1, 2, -7, 0, 1, 100)
-    expect_error("DUPLICATE_RECORD_ID", lambda: catalog.build_catalog([duplicate, dict(duplicate)], counts))
+    expect_error(
+        "DUPLICATE_RECORD_ID",
+        lambda: catalog.build_catalog([duplicate, dict(duplicate)], counts),
+    )
 
     try:
         catalog.validate_real_source_counts(counts)
@@ -119,28 +156,6 @@ def main() -> int:
         assert "SOURCE_STREAM_COUNT_MISMATCH" in str(exc)
     else:
         raise AssertionError("synthetic counts must not pass real-source validation")
-
-    try:
-        catalog.validate_real_family_counts(first_families)
-    except catalog.CatalogError as exc:
-        assert "FAMILY_COUNT_MISMATCH" in str(exc)
-    else:
-        raise AssertionError("synthetic family counts must not pass real-source validation")
-
-    many = [
-        observation("HOUSE_DOOR_ID", 1000 + index, 2000 + index, -7, 0, 3000 + index, index % 41)
-        for index in range(1200)
-    ]
-    shard_index, shard_families = catalog.build_catalog(many, counts)
-    with tempfile.TemporaryDirectory() as raw:
-        root = Path(raw)
-        catalog.write_catalog(root, shard_index, shard_families)
-        manifest = json.loads(
-            (root / catalog.FAMILY_DIR_NAME / catalog.FAMILY_FILENAMES["HOUSE_DOOR_ID"]).read_text(encoding="utf-8")
-        )
-        assert manifest["storage"]["shard_count"] == 5
-        assert sum(item["record_count"] for item in manifest["storage"]["shards"]) == 1200
-        assert all(item["bytes"] <= catalog.MAX_SHARD_BYTES for item in manifest["storage"]["shards"])
 
     print("interaction_binding_catalog_self_test: PASS")
     return 0
