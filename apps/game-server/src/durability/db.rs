@@ -1192,7 +1192,10 @@ mod wp3_root_contract_tests {
         assert_eq!(profile.additional_blocking_worker_limit, 1);
         assert_eq!(profile.worker_stack_request, 2 * 1024 * 1024);
         assert!(
-            profile.heap_requests.into_iter().all(|request| request != 0),
+            profile
+                .heap_requests
+                .into_iter()
+                .all(|request| request != 0),
             "every frozen retained runtime allocation must have a source-derived request"
         );
         Ok(())
