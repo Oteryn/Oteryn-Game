@@ -208,7 +208,8 @@ mod linux {
     };
     use cap_std::ambient_authority;
     use cap_std::fs::{Dir, File, Metadata, OpenOptions};
-    use rustix::fs::{Mode, OFlags, RenameFlags};
+    use rustix::fd::OwnedFd;
+    use rustix::fs::{FlockOperation, Mode, OFlags, RenameFlags};
     use serde::{Deserialize, Serialize};
     use std::collections::{BTreeMap, BTreeSet};
     use std::ffi::{OsStr, OsString};
@@ -393,6 +394,16 @@ mod linux {
         children: Vec<CurrentEntry>,
     }
 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum PublicationCheckpoint {
+        PlanDurable,
+        StageRootCreatedBeforePlan,
+        StageEntryCreatedBeforePlan,
+        StageReadyDurable,
+        RootInstalledBeforePhase,
+        BackupInstalledBeforePhase,
+    }
+
     pub(super) fn capture(
         ambient_parent: &Path,
         root_basename: &OsStr,
@@ -482,6 +493,22 @@ mod linux {
         documents: &CanonicalProjectDocuments,
         limits: ProjectFilesystemLimits,
     ) -> Result<ProjectPublicationOutcome, ProjectFilesystemError> {
+        publish_with_observer(
+            ambient_parent,
+            root_basename,
+            documents,
+            limits,
+            &mut |_| Ok(()),
+        )
+    }
+
+    fn publish_with_observer(
+        ambient_parent: &Path,
+        root_basename: &OsStr,
+        documents: &CanonicalProjectDocuments,
+        limits: ProjectFilesystemLimits,
+        observer: &mut dyn FnMut(PublicationCheckpoint) -> Result<(), ProjectFilesystemError>,
+    ) -> Result<ProjectPublicationOutcome, ProjectFilesystemError> {
         let limits = limits.validate()?;
         validate_root_basename(root_basename)?;
         let desired = ProjectSnapshot::new(documents.documents().clone(), limits.project)?
@@ -490,6 +517,7 @@ mod linux {
         let max_journal = journal_byte_limit(limits)?;
         let parent = Dir::open_ambient_dir(ambient_parent, ambient_authority())
             .map_err(|source| io_error("open ambient parent", "<project-parent>", source))?;
+        let _publication_lock = lock_parent(&parent)?;
 
         recover_in_parent(&parent, root_basename, &names, limits, max_journal)?;
         retire_committed_receipt(&parent, root_basename, &names, limits, max_journal)?;
@@ -536,12 +564,20 @@ mod linux {
         }
         journal.append(&JournalRecord::PreviousReady {
             previous_root: previous.as_ref().map(|plan| plan.root),
-            previous_digest,
+            previous_digest: previous_digest.clone(),
             replacement_digest,
         })?;
         sync_dir(&parent, "sync parent after durable publication plan")?;
+        observer(PublicationCheckpoint::PlanDurable)?;
 
-        let stage_plan = write_stage(&parent, &names.stage, documents, limits, &mut journal)?;
+        let stage_plan = write_stage(
+            &parent,
+            &names.stage,
+            documents,
+            limits,
+            &mut journal,
+            observer,
+        )?;
         let staged = capture(ambient_parent, &names.stage, limits)?;
         if staged != desired {
             return Err(conflict(
@@ -549,12 +585,18 @@ mod linux {
             ));
         }
         journal.append(&JournalRecord::StageReady)?;
+        observer(PublicationCheckpoint::StageReadyDurable)?;
 
         match previous {
             Some(previous_plan) => {
+                verify_tree_complete(&parent, root_basename, &previous_plan, limits)?;
+                let expected_previous_digest =
+                    existing_root_digest(&parent, root_basename, limits)?;
+                if Some(expected_previous_digest.as_str()) != previous_digest.as_deref() {
+                    return Err(conflict("previous root changed before atomic exchange"));
+                }
                 atomic_exchange(&parent, root_basename, &names.stage)?;
                 sync_dir(&parent, "sync parent after atomic root exchange")?;
-                journal.append(&JournalRecord::Installed)?;
                 require_identity(
                     &parent,
                     root_basename,
@@ -569,23 +611,29 @@ mod linux {
                     previous_plan.root,
                     "<publication-stage>",
                 )?;
-                parent
-                    .rename(&names.stage, &parent, &names.backup)
-                    .map_err(|source| {
-                        io_error("install previous backup", "<publication-backup>", source)
-                    })?;
+                observer(PublicationCheckpoint::RootInstalledBeforePhase)?;
+                journal.append(&JournalRecord::Installed)?;
+                atomic_rename_noreplace(
+                    &parent,
+                    &names.stage,
+                    &names.backup,
+                    "install previous backup",
+                )?;
                 sync_dir(&parent, "sync parent after previous backup install")?;
+                observer(PublicationCheckpoint::BackupInstalledBeforePhase)?;
                 journal.append(&JournalRecord::BackupInstalled)?;
                 journal.append(&JournalRecord::Committed)?;
                 Ok(ProjectPublicationOutcome::ReplacementRevisionPublished)
             }
             None => {
-                parent
-                    .rename(&names.stage, &parent, root_basename)
-                    .map_err(|source| {
-                        io_error("install initial project root", "<project-root>", source)
-                    })?;
+                atomic_rename_noreplace(
+                    &parent,
+                    &names.stage,
+                    root_basename,
+                    "install initial project root",
+                )?;
                 sync_dir(&parent, "sync parent after initial root install")?;
+                observer(PublicationCheckpoint::RootInstalledBeforePhase)?;
                 journal.append(&JournalRecord::Installed)?;
                 journal.append(&JournalRecord::Committed)?;
                 Ok(ProjectPublicationOutcome::InitialRevisionPublished)
@@ -604,6 +652,7 @@ mod linux {
         let max_journal = journal_byte_limit(limits)?;
         let parent = Dir::open_ambient_dir(ambient_parent, ambient_authority())
             .map_err(|source| io_error("open ambient parent", "<project-parent>", source))?;
+        let _publication_lock = lock_parent(&parent)?;
         recover_in_parent(&parent, root_basename, &names, limits, max_journal)
     }
 
@@ -651,7 +700,7 @@ mod linux {
 
     fn raw_hex(value: &OsStr) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
-        let mut encoded = String::with_capacity(value.as_bytes().len().saturating_mul(2));
+        let mut encoded = String::with_capacity(value.as_bytes().len() * 2);
         for byte in value.as_bytes() {
             encoded.push(char::from(HEX[usize::from(byte >> 4)]));
             encoded.push(char::from(HEX[usize::from(byte & 0x0f)]));
@@ -660,7 +709,7 @@ mod linux {
     }
 
     fn decode_raw_hex(value: &str) -> Result<OsString, ProjectFilesystemError> {
-        if value.len() % 2 != 0 || value.len() > LINUX_NAME_MAX * 2 {
+        if !value.len().is_multiple_of(2) || value.len() > LINUX_NAME_MAX * 2 {
             return Err(conflict("journal contains an invalid raw name"));
         }
         let mut bytes = Vec::new();
@@ -702,6 +751,30 @@ mod linux {
             .map_err(|source| io_error(operation, "<publication-directory>", source.into()))
     }
 
+    fn lock_parent(parent: &Dir) -> Result<OwnedFd, ProjectFilesystemError> {
+        let handle = rustix::fs::openat(
+            parent,
+            ".",
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|source| {
+            io_error(
+                "open project parent lock handle",
+                "<project-parent>",
+                source.into(),
+            )
+        })?;
+        rustix::fs::flock(&handle, FlockOperation::NonBlockingLockExclusive).map_err(|source| {
+            io_error(
+                "acquire exclusive project publication lock",
+                "<project-parent>",
+                source.into(),
+            )
+        })?;
+        Ok(handle)
+    }
+
     fn atomic_exchange(
         parent: &Dir,
         root_basename: &OsStr,
@@ -715,6 +788,16 @@ mod linux {
                     source.into(),
                 )
             })
+    }
+
+    fn atomic_rename_noreplace(
+        parent: &Dir,
+        from: &OsStr,
+        to: &OsStr,
+        operation: &'static str,
+    ) -> Result<(), ProjectFilesystemError> {
+        rustix::fs::renameat_with(parent, from, parent, to, RenameFlags::NOREPLACE)
+            .map_err(|source| io_error(operation, "<publication-rename>", source.into()))
     }
 
     fn optional_entry_identity(
@@ -899,8 +982,7 @@ mod linux {
             let digest = world_project_sha256(&chained);
             let line = JournalLine {
                 previous_sha256: self.last_digest.clone(),
-                payload: serde_json::from_slice(&payload_bytes)
-                    .map_err(|_| conflict("publication journal record round trip failed"))?,
+                payload: payload.clone(),
                 sha256: digest.clone(),
             };
             let mut encoded = serde_json::to_vec(&line)
@@ -1029,14 +1111,18 @@ mod linux {
             .rposition(|byte| *byte == b'\n')
             .map(|index| index + 1)
             .ok_or_else(|| conflict("publication journal has no durable header"))?;
+        let record_capacity = limits
+            .max_total_directory_entries_scanned
+            .checked_mul(2)
+            .and_then(|value| value.checked_add(8))
+            .ok_or(ProjectFilesystemError::LimitExceeded {
+                resource: "publication journal records",
+                actual: usize::MAX,
+                limit: limits.max_total_directory_entries_scanned,
+            })?;
         let mut records = Vec::new();
         records
-            .try_reserve(
-                limits
-                    .max_total_directory_entries_scanned
-                    .saturating_mul(2)
-                    .saturating_add(8),
-            )
+            .try_reserve(record_capacity)
             .map_err(|_| conflict("publication journal record allocation failed"))?;
         let mut last_digest = ZERO_DIGEST.to_owned();
         for raw_line in bytes[..complete_length].split(|byte| *byte == b'\n') {
@@ -1434,6 +1520,7 @@ mod linux {
         documents: &CanonicalProjectDocuments,
         limits: ProjectFilesystemLimits,
         journal: &mut JournalWriter,
+        observer: &mut dyn FnMut(PublicationCheckpoint) -> Result<(), ProjectFilesystemError>,
     ) -> Result<TreePlan, ProjectFilesystemError> {
         let locators: BTreeSet<_> = documents.documents().keys().cloned().collect();
         let expected = expected_paths(&locators)?;
@@ -1499,6 +1586,7 @@ mod linux {
         if FileIdentity::from_metadata(&opened_root) != root_identity {
             return Err(conflict("publication stage root changed while opening"));
         }
+        observer(PublicationCheckpoint::StageRootCreatedBeforePlan)?;
         journal.append(&JournalRecord::StageRoot {
             identity: root_identity,
         })?;
@@ -1523,6 +1611,7 @@ mod linux {
                 return Err(conflict("created stage directory has the wrong type"));
             }
             let identity = FileIdentity::from_metadata(&metadata);
+            observer(PublicationCheckpoint::StageEntryCreatedBeforePlan)?;
             let entry = PlannedEntry {
                 parent: identities[parent_path],
                 name_hex: raw_hex(OsStr::new(name)),
@@ -1567,6 +1656,7 @@ mod linux {
                 return Err(conflict("created stage file is not a unique regular file"));
             }
             let identity = FileIdentity::from_metadata(&metadata);
+            observer(PublicationCheckpoint::StageEntryCreatedBeforePlan)?;
             let entry = PlannedEntry {
                 parent: identities[parent_path],
                 name_hex: raw_hex(OsStr::new(name)),
@@ -1756,15 +1846,12 @@ mod linux {
                     if !state.installed {
                         journal.append(&JournalRecord::Installed)?;
                     }
-                    parent
-                        .rename(&names.stage, parent, &names.backup)
-                        .map_err(|source| {
-                            io_error(
-                                "finish previous backup install",
-                                "<publication-backup>",
-                                source,
-                            )
-                        })?;
+                    atomic_rename_noreplace(
+                        parent,
+                        &names.stage,
+                        &names.backup,
+                        "finish previous backup install",
+                    )?;
                     sync_dir(parent, "sync recovered previous backup install")?;
                     journal.append(&JournalRecord::BackupInstalled)?;
                     journal.append(&JournalRecord::Committed)?;
@@ -1854,6 +1941,19 @@ mod linux {
         expected: &str,
         limits: ProjectFilesystemLimits,
     ) -> Result<(), ProjectFilesystemError> {
+        if existing_root_digest(parent, name, limits)? != expected {
+            return Err(conflict(
+                "project root digest differs from the durable journal role",
+            ));
+        }
+        Ok(())
+    }
+
+    fn existing_root_digest(
+        parent: &Dir,
+        name: &OsStr,
+        limits: ProjectFilesystemLimits,
+    ) -> Result<String, ProjectFilesystemError> {
         let root = parent.open_dir_nofollow(name).map_err(|source| {
             io_error(
                 "open root for journal digest verification",
@@ -1865,12 +1965,7 @@ mod linux {
         let mut identities = BTreeSet::new();
         let pinned = open_locator(&root, PROJECT_LOCATOR, limits, &mut scans, &mut identities)?;
         let bytes = consume_pinned(pinned)?;
-        if world_project_sha256(&bytes) != expected {
-            return Err(conflict(
-                "project root digest differs from the durable journal role",
-            ));
-        }
-        Ok(())
+        Ok(world_project_sha256(&bytes))
     }
 
     fn verify_tree_complete(
@@ -2231,6 +2326,13 @@ mod linux {
     }
 
     fn validate_root_basename(root_basename: &OsStr) -> Result<(), ProjectFilesystemError> {
+        if root_basename.as_bytes().len() > LINUX_NAME_MAX {
+            return Err(ProjectFilesystemError::LimitExceeded {
+                resource: "project root basename bytes",
+                actual: root_basename.as_bytes().len(),
+                limit: LINUX_NAME_MAX,
+            });
+        }
         let path = Path::new(root_basename);
         let mut components = path.components();
         if !matches!(components.next(), Some(Component::Normal(name)) if name == root_basename)
@@ -2502,12 +2604,243 @@ mod linux {
     #[allow(clippy::expect_used)]
     mod tests {
         use super::*;
+        use crate::content::{
+            DefinitionIdentityDocument, ItemStackDocument, ProjectDraft, ProjectReferenceRecord,
+            ProjectionDocument,
+        };
         use rustix::fs::{Mode, mkfifoat};
         use std::fs;
         use std::sync::atomic::{AtomicU64, Ordering};
         use std::time::{Duration, Instant};
 
         static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+        fn evidence_limits() -> crate::content::ProjectEvidenceLimits {
+            crate::content::ProjectEvidenceLimits {
+                max_documents: 12,
+                max_document_bytes: 16_384,
+                max_total_bytes: 65_536,
+                max_json_depth: 20,
+                max_decoded_fields: 1_024,
+                max_string_bytes: 32_768,
+                max_locator_bytes: 160,
+                max_locator_segments: 8,
+                max_reference_records: 16,
+                max_import_records: 8,
+                max_reimport_states: 32,
+            }
+        }
+
+        fn publication_limits() -> ProjectFilesystemLimits {
+            ProjectFilesystemLimits {
+                project: evidence_limits(),
+                max_entries_per_directory_scan: 64,
+                max_total_directory_entries_scanned: 1_024,
+            }
+        }
+
+        fn canonical_documents(revision: &str) -> CanonicalProjectDocuments {
+            CanonicalProjectDocuments::from_draft(
+                ProjectDraft {
+                    project_revision: revision.to_owned(),
+                    package_key: "oteryn:content.publication-unit-proof".to_owned(),
+                    semantic_schema_version: "reference-schema-v1".to_owned(),
+                    licensing_metadata: "license:project-owned-v1".to_owned(),
+                    world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+                    coordinate_frame: "global-target-2026-07-28".to_owned(),
+                    records: vec![ProjectReferenceRecord::Item {
+                        identity: DefinitionIdentityDocument {
+                            family: "Item".to_owned(),
+                            key: "oteryn:reference.item.publication-unit-proof".to_owned(),
+                            revision: "definition-r1".to_owned(),
+                        },
+                        client_projection: ProjectionDocument::ClientSafe,
+                        materializable: true,
+                        stack_class: ItemStackDocument::StackCapable,
+                    }],
+                    imports: Vec::new(),
+                    metadata: Vec::new(),
+                },
+                evidence_limits(),
+            )
+            .expect("canonical unit publication project")
+        }
+
+        struct PublicationFixture {
+            base: std::path::PathBuf,
+        }
+
+        impl PublicationFixture {
+            fn new() -> Self {
+                let sequence = SEQUENCE.fetch_add(1, Ordering::Relaxed);
+                let base = std::env::temp_dir().join(format!(
+                    "oteryn-project-publication-unit-{}-{sequence}",
+                    std::process::id()
+                ));
+                fs::create_dir(&base).expect("create publication unit parent");
+                Self { base }
+            }
+
+            fn publish(&self, documents: &CanonicalProjectDocuments) {
+                publish(
+                    &self.base,
+                    OsStr::new("project-root"),
+                    documents,
+                    publication_limits(),
+                )
+                .expect("publish unit project");
+            }
+
+            fn interrupt(
+                &self,
+                documents: &CanonicalProjectDocuments,
+                target: PublicationCheckpoint,
+            ) {
+                let mut fired = false;
+                let result = publish_with_observer(
+                    &self.base,
+                    OsStr::new("project-root"),
+                    documents,
+                    publication_limits(),
+                    &mut |checkpoint| {
+                        if checkpoint == target && !fired {
+                            fired = true;
+                            Err(conflict("injected publication interruption"))
+                        } else {
+                            Ok(())
+                        }
+                    },
+                );
+                assert!(fired, "requested checkpoint was reached");
+                assert!(matches!(
+                    result,
+                    Err(ProjectFilesystemError::PublicationConflict(
+                        "injected publication interruption"
+                    ))
+                ));
+            }
+
+            fn recover(&self) -> Result<ProjectRecoveryOutcome, ProjectFilesystemError> {
+                recover(&self.base, OsStr::new("project-root"), publication_limits())
+            }
+
+            fn captured(&self) -> WorldProject {
+                capture(&self.base, OsStr::new("project-root"), publication_limits())
+                    .expect("capture unit project")
+            }
+        }
+
+        impl Drop for PublicationFixture {
+            fn drop(&mut self) {
+                let _ = fs::remove_dir_all(&self.base);
+            }
+        }
+
+        fn expected(documents: CanonicalProjectDocuments) -> WorldProject {
+            documents
+                .into_snapshot(evidence_limits())
+                .expect("unit snapshot")
+                .parse(evidence_limits())
+                .expect("unit project")
+        }
+
+        #[test]
+        fn initial_install_crash_is_completed_from_identity_topology() {
+            let fixture = PublicationFixture::new();
+            let replacement = canonical_documents("initial-crash-r1");
+            fixture.interrupt(
+                &replacement,
+                PublicationCheckpoint::RootInstalledBeforePhase,
+            );
+            assert_eq!(
+                fixture.recover().expect("recover initial install"),
+                ProjectRecoveryOutcome::ReplacementRevisionRecovered
+            );
+            assert_eq!(fixture.captured(), expected(replacement));
+            assert_eq!(
+                fixture.recover().expect("repeat initial recovery"),
+                ProjectRecoveryOutcome::CommittedRevisionVerified
+            );
+        }
+
+        #[test]
+        fn replacement_exchange_crash_completes_new_root_without_mixing() {
+            let fixture = PublicationFixture::new();
+            fixture.publish(&canonical_documents("exchange-old-r1"));
+            let replacement = canonical_documents("exchange-new-r2");
+            fixture.interrupt(
+                &replacement,
+                PublicationCheckpoint::RootInstalledBeforePhase,
+            );
+            assert_eq!(
+                fixture.recover().expect("recover exchanged root"),
+                ProjectRecoveryOutcome::ReplacementRevisionRecovered
+            );
+            assert_eq!(fixture.captured(), expected(replacement));
+        }
+
+        #[test]
+        fn same_content_backup_install_crash_is_committed_by_identity() {
+            let fixture = PublicationFixture::new();
+            let same = canonical_documents("same-content-crash");
+            fixture.publish(&same);
+            fixture.interrupt(&same, PublicationCheckpoint::BackupInstalledBeforePhase);
+            assert_eq!(
+                fixture.recover().expect("recover same-content backup"),
+                ProjectRecoveryOutcome::ReplacementRevisionRecovered
+            );
+            assert_eq!(fixture.captured(), expected(same));
+        }
+
+        #[test]
+        fn durable_stage_ready_without_install_rolls_back_to_previous() {
+            let fixture = PublicationFixture::new();
+            let previous = canonical_documents("stage-ready-old-r1");
+            fixture.publish(&previous);
+            fixture.interrupt(
+                &canonical_documents("stage-ready-new-r2"),
+                PublicationCheckpoint::StageReadyDurable,
+            );
+            assert_eq!(
+                fixture.recover().expect("roll back durable stage"),
+                ProjectRecoveryOutcome::PreviousRevisionPreserved
+            );
+            assert_eq!(fixture.captured(), expected(previous));
+        }
+
+        #[test]
+        fn creation_before_durable_plan_extension_is_an_explicit_conflict() {
+            for checkpoint in [
+                PublicationCheckpoint::StageRootCreatedBeforePlan,
+                PublicationCheckpoint::StageEntryCreatedBeforePlan,
+            ] {
+                let fixture = PublicationFixture::new();
+                let previous = canonical_documents("unplanned-old-r1");
+                fixture.publish(&previous);
+                fixture.interrupt(&canonical_documents("unplanned-new-r2"), checkpoint);
+                assert!(matches!(
+                    fixture.recover(),
+                    Err(ProjectFilesystemError::PublicationConflict(_))
+                ));
+                assert_eq!(fixture.captured(), expected(previous));
+            }
+        }
+
+        #[test]
+        fn concurrent_publication_fails_before_interpreting_recovery_state() {
+            let fixture = PublicationFixture::new();
+            fixture.publish(&canonical_documents("locked-r1"));
+            let parent = Dir::open_ambient_dir(&fixture.base, ambient_authority())
+                .expect("open parent for competing lock");
+            let _held = lock_parent(&parent).expect("hold publication lock");
+            assert!(matches!(
+                fixture.recover(),
+                Err(ProjectFilesystemError::Io {
+                    operation: "acquire exclusive project publication lock",
+                    ..
+                })
+            ));
+        }
 
         #[test]
         fn final_open_flags_do_not_wait_for_a_fifo_writer() {
