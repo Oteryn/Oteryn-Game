@@ -116,7 +116,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "1.7")
+        self.assertEqual(entry["version"], "1.8")
 
     def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
         policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")

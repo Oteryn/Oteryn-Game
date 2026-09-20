@@ -41,6 +41,16 @@ Do not ask the owner for Remote Desktop merely to obtain a repository checkout, 
 
 Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, per-file Contents reconstruction, a Remote Desktop convenience fallback, or an unproven required-validation surface.
 
+### Stable-head / Merge Queue freshness
+
+Protected `main` movement is not, by itself, a request to mutate an already-published candidate. Treat an upstream advance as a read-only reconciliation event first.
+
+- If the candidate head is already published and current accepted requirements do not require source reconciliation, preserve that exact head. Do not dispatch a writer merely to merge `main`, "inherit" a newer workflow generation, refresh a base SHA, retrigger CI or manufacture newer evidence.
+- Inspect the protected-main delta and classify only what changed. When the delta is path/semantics-disjoint, or changes only the implementation of repository gates while the accepted gate contract is unchanged, let the canonical Merge Queue build and qualify the synthetic `merge_group` candidate against current protected `main`.
+- A missing isolated Git workspace is not a blocker for a lane that requires no further source mutation. Continue permitted read-only review, qualification reconciliation and integration routing on the stable published head.
+- Require a normal non-force merge-up only when current evidence proves actual source reconciliation is necessary: a semantic/contract conflict, a dependency whose protected contents must exist in the source candidate before its own accepted validation can run, or a repository without canonical Merge Queue that has a live strict-base requirement.
+- If source reconciliation is genuinely required, all ordinary mutation preflight, custody, validation and publication rules remain unchanged. Never use this rule to bypass a real conflict, required check, review finding or Merge Queue.
+
 ## Thin-dispatcher rule
 
 The coordinator is a scheduler, integrator and gate owner, not a substitute implementation worker. Keep coordinator context compact and dispatch one bounded task per worker. Parallel workers are allowed only when exact paths/custody are non-overlapping.
@@ -272,7 +282,7 @@ For every integration candidate:
 2. verify exact changed paths against allocation and reject scope expansion;
 3. require applicable focused/component/E2E evidence and exact-head review;
 4. require exact-head repository CI and zero unresolved material threads;
-5. refresh `main` and eligibility without discarding valid history;
+5. refresh `main`, classify the upstream delta, and preserve the stable candidate head unless the stable-head rule proves source reconciliation is actually required;
 6. integrate only through the authenticated bound META 3.1 native exact-head Merge Queue contract using exact qualified `sha` and explicit `merge_action="merge_queue"`;
 7. treat HTTP `202` as acceptance only and require same-target/same-UUID later-sequence readback; reconcile documented `200/409` fail-closed;
 8. never substitute direct merge, generic auto-merge, bypass, force, default merge action, no-op/retrigger commits or ambiguous dequeue;
