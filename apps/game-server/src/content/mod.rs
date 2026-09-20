@@ -39,13 +39,14 @@ mod model;
 mod production;
 mod project;
 mod project_fs;
+mod reference_artifact;
 mod reference_playable;
 
 pub use activation::*;
 #[cfg(test)]
 pub(crate) use artifact::{ActivationSlot, ActiveContent};
 pub use artifact::{ArtifactExpectation, ProjectionClass, StagedArtifact, StagedContentPair};
-pub use compiler::{CompiledContent, compile};
+pub use compiler::{CompiledContent, compile, compile_reference_playable};
 pub use cw2_b1_import::*;
 pub use cw2_b4_import::*;
 pub use fixture::synthetic_vsl_fixture;
@@ -72,10 +73,17 @@ pub use production::{
     FirstProductionRevisionSet, FirstProductionRngContext, FirstProductionSpawn,
     FirstProductionTerrain, FirstProductionXpDefinition, GenerationIdentity,
     PackageManifestBinding, ProductionAtom, ProductionKey, Sha256HexDigest,
-    compile_first_production,
+    compile_first_production, load_reference_playable_artifact, stage_reference_playable,
 };
 pub use project::*;
 pub use project_fs::*;
+pub use reference_artifact::{
+    CompiledReferencePlayableContent, NonAuthoritativeReferenceStage,
+    OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID, REFERENCE_PLAYABLE_MAX_CLIENT_ARTIFACT_BYTES,
+    REFERENCE_PLAYABLE_MAX_GENERATION_PAIR_BYTES, REFERENCE_PLAYABLE_MAX_SERVER_ARTIFACT_BYTES,
+    ReferenceArtifactProjection, ReferenceClientItem, ReferencePlayableArtifactView,
+    ReferencePlayableExpectation, ReferencePlayableGenerationIdentity, ReferenceServerItem,
+};
 pub use reference_playable::*;
 
 #[cfg(test)]
