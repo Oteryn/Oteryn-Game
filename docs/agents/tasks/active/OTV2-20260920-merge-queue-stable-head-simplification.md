@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/merge-queue-stable-head-simplification-20260920
-pr: null
+pr: 702
 base_sha: e765a314ceb2b81e4260dd1dee1f1e547f6ce920
 head_sha: null
 final_head_sha: null
@@ -126,7 +126,7 @@ last_progress: provider stable-head rule implemented on dedicated branch
 status: validating
 branch: docs/merge-queue-stable-head-simplification-20260920
 head_sha: pending
-pr: null
+pr: 702
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
