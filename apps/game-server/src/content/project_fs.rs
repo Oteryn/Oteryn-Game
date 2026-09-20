@@ -200,7 +200,8 @@ mod linux {
         LOCK_LOCATOR, MANIFEST_LOCATOR, PROJECT_LOCATOR, ProjectCapturePlan,
     };
     use crate::content::{
-        CanonicalProjectDocuments, ProjectSnapshot, WorldProject, world_project_sha256,
+        CanonicalProjectDocuments, ProjectEvidenceLimits, ProjectSnapshot, WorldProject,
+        world_project_sha256,
     };
     use cap_fs_ext::{
         DirEntryExt, DirExt, FollowSymlinks, MetadataExt as IdentityMetadataExt,
@@ -396,11 +397,15 @@ mod linux {
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     enum PublicationCheckpoint {
+        DocumentsAdmittedBeforeClone,
+        ParentPinned,
         PlanDurable,
         StageRootCreatedBeforePlan,
         StageEntryCreatedBeforePlan,
         StageReadyDurable,
+        RootInstalledBeforeParentSync,
         RootInstalledBeforePhase,
+        BackupInstalledBeforeParentSync,
         BackupInstalledBeforePhase,
     }
 
@@ -411,11 +416,18 @@ mod linux {
     ) -> Result<WorldProject, ProjectFilesystemError> {
         let limits = limits.validate()?;
         validate_root_basename(root_basename)?;
-        let mut scans = ScanBudget::new(limits);
         let parent = Dir::open_ambient_dir(ambient_parent, ambient_authority())
             .map_err(|source| io_error("open ambient parent", "<project-parent>", source))?;
-        let root_entry =
-            exact_entry_metadata(&parent, root_basename, "<project-root>", &mut scans)?;
+        capture_in_parent(&parent, root_basename, limits)
+    }
+
+    fn capture_in_parent(
+        parent: &Dir,
+        root_basename: &OsStr,
+        limits: ProjectFilesystemLimits,
+    ) -> Result<WorldProject, ProjectFilesystemError> {
+        let mut scans = ScanBudget::new(limits);
+        let root_entry = exact_entry_metadata(parent, root_basename, "<project-root>", &mut scans)?;
         let root = parent.open_dir_nofollow(root_basename).map_err(|source| {
             io_error(
                 "open root without following links",
@@ -487,6 +499,48 @@ mod linux {
             .map_err(ProjectFilesystemError::from)
     }
 
+    fn preflight_canonical_document_allocation(
+        documents: &CanonicalProjectDocuments,
+        limits: ProjectEvidenceLimits,
+    ) -> Result<(), ProjectFilesystemError> {
+        let document_count = documents.documents().len();
+        if document_count > limits.max_documents {
+            return Err(crate::content::ProjectError::LimitExceeded {
+                resource: "project documents",
+                actual: document_count,
+                limit: limits.max_documents,
+            }
+            .into());
+        }
+        let mut total = 0_usize;
+        for bytes in documents.documents().values() {
+            if bytes.len() > limits.max_document_bytes {
+                return Err(crate::content::ProjectError::LimitExceeded {
+                    resource: "project document bytes",
+                    actual: bytes.len(),
+                    limit: limits.max_document_bytes,
+                }
+                .into());
+            }
+            total = total.checked_add(bytes.len()).ok_or_else(|| {
+                ProjectFilesystemError::from(crate::content::ProjectError::LimitExceeded {
+                    resource: "project total bytes",
+                    actual: usize::MAX,
+                    limit: limits.max_total_bytes,
+                })
+            })?;
+            if total > limits.max_total_bytes {
+                return Err(crate::content::ProjectError::LimitExceeded {
+                    resource: "project total bytes",
+                    actual: total,
+                    limit: limits.max_total_bytes,
+                }
+                .into());
+            }
+        }
+        Ok(())
+    }
+
     pub(super) fn publish(
         ambient_parent: &Path,
         root_basename: &OsStr,
@@ -511,6 +565,8 @@ mod linux {
     ) -> Result<ProjectPublicationOutcome, ProjectFilesystemError> {
         let limits = limits.validate()?;
         validate_root_basename(root_basename)?;
+        preflight_canonical_document_allocation(documents, limits.project)?;
+        observer(PublicationCheckpoint::DocumentsAdmittedBeforeClone)?;
         let desired = ProjectSnapshot::new(documents.documents().clone(), limits.project)?
             .parse(limits.project)?;
         let names = internal_names(root_basename)?;
@@ -518,6 +574,7 @@ mod linux {
         let parent = Dir::open_ambient_dir(ambient_parent, ambient_authority())
             .map_err(|source| io_error("open ambient parent", "<project-parent>", source))?;
         let _publication_lock = lock_parent(&parent)?;
+        observer(PublicationCheckpoint::ParentPinned)?;
 
         recover_in_parent(&parent, root_basename, &names, limits, max_journal)?;
         retire_committed_receipt(&parent, root_basename, &names, limits, max_journal)?;
@@ -530,7 +587,7 @@ mod linux {
             &mut ScanBudget::new(limits),
         )?;
         let (previous, previous_digest) = if previous_identity.is_some() {
-            let captured = capture(ambient_parent, root_basename, limits)?;
+            let captured = capture_in_parent(&parent, root_basename, limits)?;
             let (locators, digest) = existing_locators_and_digest(&parent, root_basename, limits)?;
             let plan = scan_exact_tree(&parent, root_basename, &locators, limits)?;
             if Some(plan.root) != previous_identity {
@@ -578,7 +635,7 @@ mod linux {
             &mut journal,
             observer,
         )?;
-        let staged = capture(ambient_parent, &names.stage, limits)?;
+        let staged = capture_in_parent(&parent, &names.stage, limits)?;
         if staged != desired {
             return Err(conflict(
                 "staged project differs from validated replacement",
@@ -589,13 +646,18 @@ mod linux {
 
         match previous {
             Some(previous_plan) => {
-                verify_tree_complete(&parent, root_basename, &previous_plan, limits)?;
-                let expected_previous_digest =
-                    existing_root_digest(&parent, root_basename, limits)?;
-                if Some(expected_previous_digest.as_str()) != previous_digest.as_deref() {
-                    return Err(conflict("previous root changed before atomic exchange"));
-                }
+                let expected_previous_digest = previous_digest
+                    .as_deref()
+                    .ok_or_else(|| conflict("previous root has no durable digest"))?;
+                verify_canonical_role(
+                    &parent,
+                    root_basename,
+                    &previous_plan,
+                    expected_previous_digest,
+                    limits,
+                )?;
                 atomic_exchange(&parent, root_basename, &names.stage)?;
+                observer(PublicationCheckpoint::RootInstalledBeforeParentSync)?;
                 sync_dir(&parent, "sync parent after atomic root exchange")?;
                 require_identity(
                     &parent,
@@ -611,6 +673,19 @@ mod linux {
                     previous_plan.root,
                     "<publication-stage>",
                 )?;
+                let installed = capture_in_parent(&parent, root_basename, limits)?;
+                if installed != desired {
+                    return Err(conflict(
+                        "installed project differs from validated replacement",
+                    ));
+                }
+                verify_canonical_role(
+                    &parent,
+                    &names.stage,
+                    &previous_plan,
+                    expected_previous_digest,
+                    limits,
+                )?;
                 observer(PublicationCheckpoint::RootInstalledBeforePhase)?;
                 journal.append(&JournalRecord::Installed)?;
                 atomic_rename_noreplace(
@@ -619,7 +694,15 @@ mod linux {
                     &names.backup,
                     "install previous backup",
                 )?;
+                observer(PublicationCheckpoint::BackupInstalledBeforeParentSync)?;
                 sync_dir(&parent, "sync parent after previous backup install")?;
+                verify_canonical_role(
+                    &parent,
+                    &names.backup,
+                    &previous_plan,
+                    expected_previous_digest,
+                    limits,
+                )?;
                 observer(PublicationCheckpoint::BackupInstalledBeforePhase)?;
                 journal.append(&JournalRecord::BackupInstalled)?;
                 journal.append(&JournalRecord::Committed)?;
@@ -632,7 +715,14 @@ mod linux {
                     root_basename,
                     "install initial project root",
                 )?;
+                observer(PublicationCheckpoint::RootInstalledBeforeParentSync)?;
                 sync_dir(&parent, "sync parent after initial root install")?;
+                let installed = capture_in_parent(&parent, root_basename, limits)?;
+                if installed != desired {
+                    return Err(conflict(
+                        "installed project differs from validated replacement",
+                    ));
+                }
                 observer(PublicationCheckpoint::RootInstalledBeforePhase)?;
                 journal.append(&JournalRecord::Installed)?;
                 journal.append(&JournalRecord::Committed)?;
@@ -1807,6 +1897,9 @@ mod linux {
                 if live == Some(stage_root) && stage.is_none() {
                     verify_replacement(parent, root_basename, &stage_plan, &state, limits)?;
                     let was_committed = state.committed;
+                    if !state.installed || !state.committed {
+                        sync_dir(parent, "sync recovered initial root install")?;
+                    }
                     let mut journal =
                         JournalWriter::open_existing(parent, &names.journal, &state, max_journal)?;
                     if !state.installed {
@@ -1841,6 +1934,9 @@ mod linux {
                 {
                     verify_replacement(parent, root_basename, &stage_plan, &state, limits)?;
                     verify_previous(parent, &names.stage, previous_plan, &state, limits)?;
+                    if !state.installed {
+                        sync_dir(parent, "sync recovered atomic root exchange")?;
+                    }
                     let mut journal =
                         JournalWriter::open_existing(parent, &names.journal, &state, max_journal)?;
                     if !state.installed {
@@ -1863,11 +1959,18 @@ mod linux {
                 {
                     verify_replacement(parent, root_basename, &stage_plan, &state, limits)?;
                     if backup.is_some() {
-                        verify_tree_subset(parent, &names.backup, previous_plan, limits)?;
+                        if state.committed {
+                            verify_tree_subset(parent, &names.backup, previous_plan, limits)?;
+                        } else {
+                            verify_previous(parent, &names.backup, previous_plan, &state, limits)?;
+                        }
                     } else if !state.committed {
                         return Err(conflict("previous root vanished before commit was durable"));
                     }
                     let was_committed = state.committed;
+                    if !state.installed || !state.backup_installed || !state.committed {
+                        sync_dir(parent, "sync recovered installed publication topology")?;
+                    }
                     let mut journal =
                         JournalWriter::open_existing(parent, &names.journal, &state, max_journal)?;
                     if !state.installed {
@@ -1912,12 +2015,11 @@ mod linux {
         state: &JournalState,
         limits: ProjectFilesystemLimits,
     ) -> Result<(), ProjectFilesystemError> {
-        verify_tree_complete(parent, name, plan, limits)?;
         let expected = state
             .replacement_digest
             .as_deref()
             .ok_or_else(|| conflict("publication journal has no replacement digest"))?;
-        verify_root_digest(parent, name, expected, limits)
+        verify_canonical_role(parent, name, plan, expected, limits).map(|_| ())
     }
 
     fn verify_previous(
@@ -1927,12 +2029,24 @@ mod linux {
         state: &JournalState,
         limits: ProjectFilesystemLimits,
     ) -> Result<(), ProjectFilesystemError> {
-        verify_tree_complete(parent, name, plan, limits)?;
         let expected = state
             .previous_digest
             .as_deref()
             .ok_or_else(|| conflict("publication journal has no previous digest"))?;
-        verify_root_digest(parent, name, expected, limits)
+        verify_canonical_role(parent, name, plan, expected, limits).map(|_| ())
+    }
+
+    fn verify_canonical_role(
+        parent: &Dir,
+        name: &OsStr,
+        plan: &TreePlan,
+        expected_root_digest: &str,
+        limits: ProjectFilesystemLimits,
+    ) -> Result<WorldProject, ProjectFilesystemError> {
+        verify_tree_complete(parent, name, plan, limits)?;
+        let captured = capture_in_parent(parent, name, limits)?;
+        verify_root_digest(parent, name, expected_root_digest, limits)?;
+        Ok(captured)
     }
 
     fn verify_root_digest(
@@ -2827,6 +2941,95 @@ mod linux {
         }
 
         #[test]
+        fn recovery_syncs_observed_namespace_before_advancing_the_journal() {
+            let initial = PublicationFixture::new();
+            let initial_replacement = canonical_documents("unsynced-initial-r1");
+            initial.interrupt(
+                &initial_replacement,
+                PublicationCheckpoint::RootInstalledBeforeParentSync,
+            );
+            assert_eq!(
+                initial.recover().expect("recover unsynced initial install"),
+                ProjectRecoveryOutcome::ReplacementRevisionRecovered
+            );
+            assert_eq!(initial.captured(), expected(initial_replacement));
+
+            let exchange = PublicationFixture::new();
+            exchange.publish(&canonical_documents("unsynced-exchange-old-r1"));
+            let exchange_replacement = canonical_documents("unsynced-exchange-new-r2");
+            exchange.interrupt(
+                &exchange_replacement,
+                PublicationCheckpoint::RootInstalledBeforeParentSync,
+            );
+            assert_eq!(
+                exchange
+                    .recover()
+                    .expect("recover unsynced replacement exchange"),
+                ProjectRecoveryOutcome::ReplacementRevisionRecovered
+            );
+            assert_eq!(exchange.captured(), expected(exchange_replacement));
+
+            let backup = PublicationFixture::new();
+            backup.publish(&canonical_documents("unsynced-backup-old-r1"));
+            let backup_replacement = canonical_documents("unsynced-backup-new-r2");
+            backup.interrupt(
+                &backup_replacement,
+                PublicationCheckpoint::BackupInstalledBeforeParentSync,
+            );
+            assert_eq!(
+                backup
+                    .recover()
+                    .expect("recover unsynced previous-backup install"),
+                ProjectRecoveryOutcome::ReplacementRevisionRecovered
+            );
+            assert_eq!(backup.captured(), expected(backup_replacement));
+        }
+
+        #[test]
+        fn canonical_document_limits_are_checked_before_the_clone_boundary() {
+            let documents = canonical_documents("preclone-resource-r1");
+            let largest = documents
+                .documents()
+                .values()
+                .map(Vec::len)
+                .max()
+                .expect("canonical documents");
+            let total: usize = documents.documents().values().map(Vec::len).sum();
+            let mut count_limited = publication_limits();
+            count_limited.project.max_documents = documents.documents().len() - 1;
+            let mut document_limited = publication_limits();
+            document_limited.project.max_document_bytes = largest - 1;
+            let mut total_limited = publication_limits();
+            total_limited.project.max_total_bytes = total - 1;
+
+            for limits in [count_limited, document_limited, total_limited] {
+                let mut clone_boundary_reached = false;
+                let result = publish_with_observer(
+                    Path::new("/ambient/parent/must/not/be/opened"),
+                    OsStr::new("project-root"),
+                    &documents,
+                    limits,
+                    &mut |checkpoint| {
+                        if checkpoint == PublicationCheckpoint::DocumentsAdmittedBeforeClone {
+                            clone_boundary_reached = true;
+                        }
+                        Ok(())
+                    },
+                );
+                assert!(matches!(
+                    result,
+                    Err(ProjectFilesystemError::Project(
+                        crate::content::ProjectError::LimitExceeded { .. }
+                    ))
+                ));
+                assert!(
+                    !clone_boundary_reached,
+                    "oversized canonical documents reached the clone boundary"
+                );
+            }
+        }
+
+        #[test]
         fn concurrent_publication_fails_before_interpreting_recovery_state() {
             let fixture = PublicationFixture::new();
             fixture.publish(&canonical_documents("locked-r1"));
@@ -2840,6 +3043,68 @@ mod linux {
                     ..
                 })
             ));
+        }
+
+        #[test]
+        fn publication_validation_and_commit_stay_on_the_pinned_parent() {
+            let fixture = PublicationFixture::new();
+            fixture.publish(&canonical_documents("pinned-parent-old-r1"));
+            let replacement = canonical_documents("pinned-parent-new-r2");
+            let substitute = canonical_documents("ambient-substitute-r1");
+            let displaced = fixture.base.with_file_name(format!(
+                "{}-displaced",
+                fixture
+                    .base
+                    .file_name()
+                    .expect("publication fixture basename")
+                    .to_string_lossy()
+            ));
+            let mut parent_replaced = false;
+
+            let outcome = publish_with_observer(
+                &fixture.base,
+                OsStr::new("project-root"),
+                &replacement,
+                publication_limits(),
+                &mut |checkpoint| {
+                    if checkpoint == PublicationCheckpoint::ParentPinned && !parent_replaced {
+                        parent_replaced = true;
+                        fs::rename(&fixture.base, &displaced)
+                            .expect("move the pinned parent away from its ambient path");
+                        fs::create_dir(&fixture.base).expect("create ambient parent substitute");
+                        publish(
+                            &fixture.base,
+                            OsStr::new("project-root"),
+                            &substitute,
+                            publication_limits(),
+                        )
+                        .expect("publish an unrelated project in the substitute parent");
+                    }
+                    Ok(())
+                },
+            )
+            .expect("publish through the originally pinned parent");
+
+            assert!(parent_replaced, "parent replacement checkpoint was reached");
+            assert_eq!(
+                outcome,
+                ProjectPublicationOutcome::ReplacementRevisionPublished
+            );
+            assert_eq!(
+                capture(&displaced, OsStr::new("project-root"), publication_limits(),)
+                    .expect("capture replacement from the pinned parent"),
+                expected(replacement)
+            );
+            assert_eq!(
+                capture(
+                    &fixture.base,
+                    OsStr::new("project-root"),
+                    publication_limits(),
+                )
+                .expect("capture unrelated ambient substitute"),
+                expected(substitute)
+            );
+            fs::remove_dir_all(displaced).expect("remove displaced publication parent");
         }
 
         #[test]
