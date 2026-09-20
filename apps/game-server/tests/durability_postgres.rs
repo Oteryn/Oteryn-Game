@@ -388,9 +388,10 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
     use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    let _process_root_guard = PROCESS_ROOT_LEDGER_TEST_LOCK
-        .lock()
-        .expect("process root ledger test lock poisoned");
+    let _process_root_guard = match PROCESS_ROOT_LEDGER_TEST_LOCK.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
     let root = DurabilityRoot::new(DurabilityRootConfig::new(
         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
         5432,
