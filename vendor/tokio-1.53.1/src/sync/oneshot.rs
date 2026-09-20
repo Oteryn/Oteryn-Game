@@ -494,6 +494,11 @@ struct State(usize);
 /// # }
 /// ```
 #[track_caller]
+#[doc(hidden)]
+pub(crate) fn oteryn_wp3_channel_inner_allocation_request<T>() -> Option<usize> {
+    crate::runtime::oteryn_wp3_arc_allocation_request::<Inner<T>>()
+}
+
 pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
     #[cfg(all(tokio_unstable, feature = "tracing"))]
     let resource_span = {
