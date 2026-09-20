@@ -536,9 +536,7 @@ impl DurabilityRootConfig {
             username,
             password,
             root_ca_pem,
-            RootLedgerHandle::Test(Arc::new(RootResidentLedger::new(
-                ROOT_TOTAL_RESIDENT_BYTES,
-            ))),
+            RootLedgerHandle::Test(Arc::new(RootResidentLedger::new(ROOT_TOTAL_RESIDENT_BYTES))),
         )
     }
 
