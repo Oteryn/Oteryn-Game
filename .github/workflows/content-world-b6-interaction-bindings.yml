@@ -265,6 +265,26 @@ jobs:
           print(json.dumps(result, indent=2, sort_keys=True))
           PY
 
+      - name: Emit bounded B6 publication payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='/tmp/b6-a'
+          INDEX='OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          FAMILY_DIR='OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          emit_file() {
+            local FILE="$1"
+            local REL="${FILE#${ROOT}/}"
+            echo "::CW2B6_FILE_BEGIN::${REL}"
+            base64 -w 76 "$FILE"
+            echo
+            echo "::CW2B6_FILE_END::${REL}"
+          }
+          emit_file "${ROOT}/${INDEX}"
+          while IFS= read -r FILE; do
+            emit_file "$FILE"
+          done < <(find "${ROOT}/${FAMILY_DIR}" -maxdepth 1 -type f -name '*.json' -print | sort)
+
       - name: Upload bounded B6 candidate evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
