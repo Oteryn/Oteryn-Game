@@ -58,6 +58,7 @@ model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
   - durable journal identity and checksum chain
   - one pinned and locked parent capability throughout transaction validation and mutation
   - one pinned root capability throughout each journal-role verification
+  - every canonical child consumed by role capture matches its durable parent/name/type/identity
   - exact parent/root/child filesystem identity and ordinary entry type
   - bounded complete previous and replacement tree roles
 consumer_boundaries:
@@ -101,6 +102,7 @@ finding_dispositions:
     - committed, installed and previous roles require a complete canonical capture, not only identity and project.json digest
     - recovery synchronizes every observed renamed topology before appending the corresponding durable phase
     - role verification binds the identity plan, canonical bytes and journal commitment to one opened root
+    - plan-aware capture rejects canonical child rebinding before and after byte consumption
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - caller byte/count limits are checked over borrowed canonical documents before cloning them
@@ -135,7 +137,9 @@ ambient pathname is renamed and replaced. Installed, committed and previous role
 only after a complete canonical capture plus the identity plan and journal-bound root digest. Each
 role verification opens the named root once, performs all tree and canonical-byte checks through
 that handle, derives the root commitment from those captured bytes, and finally requires the role
-name still to bind the opened root identity.
+name still to bind the opened root identity. Every canonical directory component and file opened by
+that capture must match the durable plan's parent identity, raw name, kind and filesystem identity;
+the complete plan is checked again through the pinned root after byte consumption.
 
 Recovery synchronizes an already-observed initial rename, root exchange or backup rename before it
 advances the journal phase. Canonical document count, individual byte length and checked aggregate
@@ -159,10 +163,10 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 
 ### Component/integration
 
-- command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_fs`; `cargo +1.94.0 test --locked -p oteryn-game-server --lib content::project_fs::linux::tests`; `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo +1.94.0 fmt --all -- --check`; `python3 tools/agents/validate_governance.py`; `git diff --check`
-- result: repaired candidate PASS — existing capture 9/9, private publication family 12/12,
-  strict Clippy, formatting, governance (26 documents, 9 lanes) and diff validation. Predecessor
-  candidate broader parser 19/19, lib 452/452 and architecture boundary validation also passed.
+- command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_fs`; `cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project`; `cargo +1.94.0 test --locked -p oteryn-game-server --lib`; `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo +1.94.0 fmt --all -- --check`; `python3 tools/agents/validate_governance.py`; `git diff --check`
+- result: repaired candidate PASS — existing capture 9/9, project 19/19, lib 456/456 including
+  private publication family 12/12, strict Clippy, formatting, governance (26 documents, 9 lanes)
+  and diff validation.
 
 ### E2E
 
@@ -196,7 +200,8 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 
 - required: YES; persisted recovery and destructive cleanup interpretation are material
 - exact heads: initial review `edb8dc6da8bd1c3353d8a61f07114b5a31b93ce9`; repaired-head
-  rereview `3636d9cacf7718496a62940617cf079d868d0349`
+  rereviews `3636d9cacf7718496a62940617cf079d868d0349` and
+  `2a21f5e0857491f76b07b5fb6979b95dd372b8ac`
 - method/auditor: independent Sol High whole-diff security/durability review, control-plane evidence
   comments `5748015463` and `5748112226`
 - material findings: P0 0; P1 3 accepted — ambient parent reopen escaped the pinned capability,
@@ -206,7 +211,10 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
   one additional P1: role verification reopened the role name between identity-plan, canonical-byte
   and root-commitment checks, permitting exchanged roots to supply different evidence.
 - verdict: additional P1 repaired locally with one pinned root handle and deterministic exchanges at
-  both former boundaries; new exact-head targeted material rereview is required before integration
+  both former boundaries. Final rereview found the coupled child-rebinding form: capture could consume
+  a substituted canonical child between plan checks. Plan-aware capture plus a post-capture plan
+  check and deterministic child exchanges repair it locally; new exact-head targeted material
+  rereview is required before integration
 
 ## PR and closeout
 
@@ -220,7 +228,7 @@ explicit conflict; recovery never creates a fresh ownership plan for residue.
 ## Context checkpoint
 
 ```yaml
-last_progress: repaired-head rereview additional P1 fixed; publication 10, capture 9, private 12, clippy/fmt/governance pass
+last_progress: final child-rebinding P1 fixed; publication 10, capture 9, project 19, lib 456, clippy/fmt/governance pass
 status: ready
 branch: agent/content-world-cw3-project-durable-cleanup-504
 head_sha: external_pr_evidence_after_final_publish
@@ -237,7 +245,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
