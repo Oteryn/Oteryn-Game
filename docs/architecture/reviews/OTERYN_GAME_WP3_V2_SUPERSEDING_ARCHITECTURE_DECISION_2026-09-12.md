@@ -71,7 +71,7 @@ I + max(R, T) + Q + A <= 12 MiB
 
 For this first slice the terms and overlap behind that equation are frozen, not left to A4:
 
-- `I` is root/process backing whose lifetime is independent of one physical connection generation: executor/pool control structures, explicit retained configuration, genuinely shared runtime/provider backing, and the source-derived SQLx root-maintenance task/shared-tail backing admitted by Revision 4. Per-connection socket/TLS/driver/reactor descendants do **not** migrate into `I` merely because their cleanup is asynchronous.
+- `I` is root/process backing whose lifetime is independent of one physical connection generation: executor/pool control structures, explicit retained configuration, genuinely shared runtime/provider backing, and all source-derived dedicated-runtime plus SQLx root-maintenance task/shared-tail backing admitted by Revisions 4 and 5. Per-connection socket/TLS/driver/reactor descendants do **not** migrate into `I` merely because their cleanup is asynchronous.
 - `T` is the complete charge for the single root-owned connection-establishment generation, beginning before the first controlled connect/TLS/auth allocation and ending only by either (a) charged ownership transfer into `R` after successful establishment plus awaited pool return/final ping, or (b) complete finality of every descendant after connect failure, timeout or cancellation. A failed/timed-out attempt remains `T` during its retirement tail.
 - `R` is the complete charge for the single established physical-connection generation from the successful `T -> R` transfer through ready/checked-out use and through any fenced, reaper, close, return or reactor retirement tail until every per-connection descendant is final. A logically removed/reaped connection remains `R` until that finality point.
 - `R` and `T` are mutually exclusive connection generations. Root maintenance must not begin a new `T` while any prior `R` or `T` retirement tail remains non-final. Successful establishment is an ownership transfer `T -> R`, never a double-charged overlap.
@@ -848,7 +848,7 @@ Selected-profile consequences include:
 
 ### HISTORICAL EVIDENCE ONLY / REMOVE AFTER REPLACEMENT PROOF
 
-- generic Tokio blocking-owner propagation and generic Tokio owner/allocator/scheduler instrumentation remain historical/not required; only the Revision-4 exact root-maintenance task-allocation representation query is retained;
+- generic Tokio blocking-owner propagation and generic Tokio owner/allocator/scheduler instrumentation remain historical/not required; only the Revision-5 read-only representation seam for the exact dedicated WP3 runtime plus exact root-maintenance future/task is retained;
 - broad rustls container ownership beyond retained AWS-LC exact seams;
 - generic DNS/UDS ownership work excluded by the literal-TCP first slice;
 - per-operation direct-connect architecture assumptions superseded by root ownership;
@@ -879,21 +879,22 @@ R01-R21 remain qualification constraints, including:
 
 ## 21. Candidate acceptance state
 
-Revision 4 preserves the Revision-3 `I/R/T` overlap/finality and demand-triggered recovery model and adds only the minimum P1-A closure authorized by #162 comment `5745227522`: production WP3 root qualification is MultiThread-only, the exact SQLx maintenance future may use a pinned-Tokio read-only allocation-representation query, and the root-specific SQLx maintenance construction removes the pre-spawn `CloseEvent/EventListener` heap dependency. It creates no new budget and grants no implementation authority by itself.
+Revision 5 preserves all Revision-3/4 overlap, finality, demand-recovery and maintenance semantics while closing independent-review P1 `4054801878` through the owner-accepted finite dedicated runtime in #162 comment `5748461271`. The production WP3 root now owns one Tokio 1.53.1 MultiThread runtime with `worker_threads=1`, `max_blocking_threads=1` and `thread_stack_size=2 MiB`; arbitrary ambient runtime ownership is forbidden. The narrow read-only representation seam covers only the exact dedicated runtime backing plus the exact SQLx maintenance future/task required for same-root `I` proof. No second budget, Game-wide topology or implementation authority is created by this amendment.
 
 Current amendment worker marker:
 
 ```text
-WP3_V2_P1A_MAINTENANCE_AMENDMENT_VALIDATING
-BASE_REVISION_3_AUTHORITY = PRESERVED
-REVISION_4_AMENDMENT_PROTECTED = NO
+WP3_V2_P1A_FINITE_RUNTIME_AMENDMENT_VALIDATING
+BASE_REVISION_3_4_AUTHORITY = PRESERVED
+REVISION_5_AMENDMENT_PROTECTED = NO
+OWNER_RUNTIME_DECISION = WP3_DEDICATED_BOUNDED_TOKIO_RUNTIME_V1
 IMPLEMENTATION_AUTHORITY = NONE
 PR673_IMPLEMENTATION = PAUSED
 ```
 
 Still required before PR #673 P1-A implementation may resume:
 
-1. exact three-path readback for this Revision-4 docs-only amendment;
+1. exact three-path readback for this Revision-5 docs-only amendment;
 2. Agent Governance, Architecture Semantic Audit and FULL Merge Gate / aggregate `game-gate` SUCCESS on the stable amendment head;
 3. one genuinely independent exact-head HIGH whole-diff architecture/resource/security review of this amendment;
 4. protected integration/readback through the coordinator-controlled governed route;
