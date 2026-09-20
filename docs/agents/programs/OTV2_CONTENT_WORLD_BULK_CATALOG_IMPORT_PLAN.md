@@ -13,6 +13,7 @@ parallel_with_cw4: CONDITIONALLY_YES_PATH_DISJOINT_ONLY
 implementation_authority: NONE_BY_THIS_DOCUMENT
 worker_release: NONE
 production_authority: NONE
+legal_access_metadata_readiness_gate: NO
 ```
 
 ## 1. Cel
@@ -47,7 +48,7 @@ Przed każdym mutującym batchem:
 
 - fresh-read protected main, #162, #504 i aktualne open-PR custody;
 - zinwentaryzować istniejące extractory/products zamiast powtarzać research;
-- przypiąć source revisions/digests i input rights;
+- przypiąć source revisions/digests i zweryfikować techniczną dostępność; status licensing/access zachować informacyjnie, ale nie używać go jako readiness gate;
 - określić exact write custody;
 - wskazać, czy batch jest candidate-only czy może zawierać executable closure.
 
@@ -121,6 +122,12 @@ Reuse istniejącej granicy NPC. Oddzielać definition, placement, dialogue, serv
 ### B6 — quests/interactions/remaining families
 
 Importować semantic candidates i jawne grafy/bindings. Nie promować legacy `storage[key]=integer` ani Lua runtime jako kanonicznego modelu Oteryn.
+
+## 3A. Operational owner decision — licensing/access is non-blocking
+
+Dla CW2/CW3 status prawny/licencyjny/redystrybucyjny źródła nie jest technicznym kryterium dopuszczenia batcha. Importer ma zachować exact provenance i zweryfikować, że źródło jest faktycznie dostępne i deterministycznie przypięte, ale `PENDING` / `NOT_CLEARED` w metadanych legal/access nie blokuje katalogowania, native binding, typed promotion ani późniejszej ścieżki build/runtime.
+
+Nie wolno używać tego wyjątku do obchodzenia jakości danych: evidence strength, identity ambiguity/conflict, unsupported/loss, target-sensitive unknowns oraz wymagania bezpieczeństwa/runtime pozostają obowiązujące.
 
 ## 4. Batch acceptance contract
 
