@@ -65,6 +65,8 @@ closure_head:
 
 Do not move this head merely to refresh prose, trigger CI, manufacture review evidence or copy status into tracked files.
 
+Protected-`main` movement after this freeze does not itself require or authorize a merge-up of the frozen candidate. Reconcile the upstream delta read-only first. If current accepted requirements and candidate semantics are unchanged, preserve the frozen head and let canonical Merge Queue qualification prove composition against current protected `main`. Only a proven current-gate contract/authority/semantic conflict or another explicit source-reconciliation requirement may require a new candidate head.
+
 ## Convergence dispatch descriptor
 
 The Work coordinator's mandatory minimal context packet remains authoritative. Convergence mode does **not** add unregistered top-level packet keys.
@@ -126,7 +128,7 @@ A missing identity, unavailable content, unsupported serialization, digest misma
 
 Independently of the inventory checks, the control plane immediately before dispatch and the reviewer immediately before review must resolve the live PR/branch target and require its exact current head to equal `qualified_head`. A live-target mismatch is fail-closed `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_QUALIFIED_HEAD`. Never review a newer live head under qualification evidence for an older candidate.
 
-The final reviewer must also independently resolve current protected `main` as `review_main_sha`. If `review_main_sha != audit_main_sha`, evaluate the protected-main/policy/accepted-contract movement under the novelty rule in Phase 6 before qualifying the candidate. Material movement is fail-closed `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_SWEEP_BASE` and requires a new Phase 1 + discovery sweep; proven immaterial movement may continue only with exact evidence recording why the frozen current-gate requirements remain unchanged. Never rewrite the frozen inventory merely to track a newer main SHA.
+The final reviewer must also independently resolve current protected `main` as `review_main_sha`. If `review_main_sha != audit_main_sha`, evaluate the protected-main/policy/accepted-contract movement under the novelty rule in Phase 6 before qualifying the candidate. Movement is material only when it changes an applicable accepted requirement, authority/contract assumption or candidate-relevant semantic dependency. A protected workflow/runner/gate implementation update with unchanged acceptance semantics is not, by itself, sweep-base invalidation; preserve the candidate and require the current canonical `merge_group` gate to qualify composition against that protected generation. Material movement is fail-closed `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_SWEEP_BASE` and requires a new Phase 1 + discovery sweep; proven immaterial or Merge-Queue-owned qualification movement may continue only with exact evidence recording why the frozen current-gate requirements remain unchanged. Never rewrite the frozen inventory merely to track a newer main SHA.
 
 These descriptors narrow how the requested audit is performed. They do not add authority and do not replace the normal `objective`, `relevant_findings`, `required_validation` or `lazy_refs` packet fields.
 
@@ -363,7 +365,7 @@ Dispatch the independent auditor through the convergence descriptor above with `
 
 The reviewer must repeat these checks against independently resolved evidence immediately before review, including the complete predecessor-chain validation for every successor generation. Inventory mismatch/drift, active-generation mismatch, sweep-target mismatch, broken predecessor locator/identity, invalid transition, or loss of a prior unresolved/still-binding root cause fails closed as `INSUFFICIENT_EVIDENCE` with convergence reason code `DRIFTED_INVENTORY`. If the live PR/branch head does not equal `qualified_head`, return `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_QUALIFIED_HEAD` and do not attach review conclusions to the newer generation. The pre-repair `closure_head` and post-repair `qualified_head` may legitimately differ; the required invariant is that the active inventory remains bound to the exact Phase 1 sweep generation while the review itself remains bound to the exact qualified candidate.
 
-Resolve current protected `main` as `review_main_sha`. If it differs from the frozen `audit_main_sha`, inspect the delta relevant to current accepted contracts/policy before applying the novelty rule below. Material movement invalidates the sweep base, requires overall disposition `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_SWEEP_BASE`, and requires a fresh Phase 1 + discovery sweep; proven immaterial movement must be recorded as exact evidence and does not mutate the active inventory.
+Resolve current protected `main` as `review_main_sha`. If it differs from the frozen `audit_main_sha`, inspect only the delta relevant to current accepted contracts/policy/candidate semantics before applying the novelty rule below. Material movement means an applicable accepted requirement, authority/contract assumption or candidate-relevant semantic dependency changed. A change limited to the implementation of protected CI/Merge Queue gates, with the same accepted gate semantics, is qualification movement owned by the current synthetic `merge_group` and does not require mutating the source candidate or refreezing the sweep. Material movement invalidates the sweep base, requires overall disposition `INSUFFICIENT_EVIDENCE` with convergence reason code `STALE_SWEEP_BASE`, and requires a fresh Phase 1 + discovery sweep; proven immaterial or Merge-Queue-owned qualification movement must be recorded as exact evidence and does not mutate the active inventory.
 
 The final review asks primarily:
 
@@ -376,7 +378,7 @@ The reviewer may still report a new material blocker, but after inventory freeze
 1. a new concrete CI/runtime failure on the candidate;
 2. a genuinely newly exposed dependency caused by the repair and not reasonably inspectable during the frozen sweep;
 3. an independent review finding whose material fact could not reasonably have been established from the frozen source/evidence;
-4. material protected-`main`, policy or accepted-contract movement.
+4. protected-`main`, policy or accepted-contract movement that materially changes an applicable accepted requirement, authority/contract assumption or candidate-relevant semantic dependency; a gate/workflow implementation change with unchanged acceptance semantics is handled by current Merge Queue qualification instead of becoming a new root cause.
 
 If trigger 1, 2 or 3 proves a genuinely new current-gate root cause, admit it through one immutable `LATE_BLOCKER_ADMISSION` successor before repair. Trigger 4 does not use a successor; it invalidates the sweep base and requires fresh Phase 1 + discovery.
 
