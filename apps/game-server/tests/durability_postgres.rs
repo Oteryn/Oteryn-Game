@@ -386,7 +386,7 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
     use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    let root = DurabilityRoot::new(DurabilityRootConfig::new(
+    let root = DurabilityRoot::new(DurabilityRootConfig::new_with_isolated_test_ledger(
         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
         5432,
         "db.example",
@@ -426,7 +426,7 @@ fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
     use durability::{DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    let root = DurabilityRoot::new(DurabilityRootConfig::new(
+    let root = DurabilityRoot::new(DurabilityRootConfig::new_with_isolated_test_ledger(
         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
         5432,
         "db.example",
@@ -464,7 +464,7 @@ fn wp3_process_scoped_root_keeps_final_runtime_owner_outside_async_tasks()
     use durability::{DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    let root = DurabilityRoot::new(DurabilityRootConfig::new(
+    let root = DurabilityRoot::new(DurabilityRootConfig::new_with_isolated_test_ledger(
         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
         5432,
         "db.example",
