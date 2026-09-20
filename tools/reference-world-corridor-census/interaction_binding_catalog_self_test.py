@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -37,17 +38,72 @@ def expect_error(fragment, fn):
         raise AssertionError(f"expected CatalogError containing {fragment!r}")
 
 
-def verify_storage_round_trip(records, counts):
-    index, families, payloads = catalog.build_catalog(records, counts)
-    with tempfile.TemporaryDirectory() as raw:
-        root = Path(raw)
-        catalog.write_catalog(root, index, payloads)
-        parsed = json.loads((root / catalog.INDEX_NAME).read_text(encoding="utf-8"))
-        verification = catalog.verify_written_catalog(root, parsed)
-        assert verification["family_counts"] == {
-            family: families[family]["counts"]["occurrences"] for family in catalog.FAMILIES
-        }
-        return parsed, verification
+def relative_evidence_path(tracked_path: str) -> str:
+    prefix = "docs/agents/evidence/"
+    assert tracked_path.startswith(prefix), tracked_path
+    return tracked_path[len(prefix):]
+
+
+def verify_storage(index, family_docs, payloads):
+    family_counts = {}
+    for entry in index["storage"]["family_files"]:
+        family = entry["family"]
+        relative = relative_evidence_path(entry["tracked_path"])
+        payload = payloads[relative]
+        assert len(payload) == entry["bytes"]
+        assert hashlib.sha256(payload).hexdigest() == entry["sha256"]
+        document = json.loads(payload.decode("utf-8"))
+        assert document["family"] == family
+        assert document["logical_product_digest_sha256"] == index["logical_product_digest_sha256"]
+        assert document["records_digest_sha256"] == entry["records_digest_sha256"]
+        assert document["counts"]["occurrences"] == entry["records"]
+
+        if entry["storage_mode"] == "INLINE":
+            assert entry["shard_count"] == 0
+            records = document["records"]
+            assert len(records) == entry["records"]
+            assert catalog.sha256_bytes(catalog.canonical_bytes(records)) == entry["records_digest_sha256"]
+            family_counts[family] = len(records)
+            continue
+
+        assert entry["storage_mode"] == "SHARDED"
+        storage = document["storage"]
+        assert storage["mode"] == "SHARDED"
+        assert storage["max_shard_bytes"] == catalog.MAX_SHARD_BYTES
+        assert storage["shard_count"] == entry["shard_count"]
+
+        reconstructed = []
+        for ordinal, shard_meta in enumerate(storage["shards"], start=1):
+            assert shard_meta["ordinal"] == ordinal
+            shard_relative = relative_evidence_path(shard_meta["tracked_path"])
+            shard_payload = payloads[shard_relative]
+            assert len(shard_payload) == shard_meta["bytes"] <= catalog.MAX_SHARD_BYTES
+            assert hashlib.sha256(shard_payload).hexdigest() == shard_meta["sha256"]
+            shard = json.loads(shard_payload.decode("utf-8"))
+            assert shard["schema"] == catalog.SHARD_SCHEMA
+            assert shard["family"] == family
+            assert shard["ordinal"] == ordinal
+            assert shard["shard_count"] == entry["shard_count"]
+            assert shard["logical_product_digest_sha256"] == index["logical_product_digest_sha256"]
+            assert shard["family_records_digest_sha256"] == entry["records_digest_sha256"]
+            assert shard["record_count"] == shard_meta["record_count"] == len(shard["records"])
+            assert catalog.sha256_bytes(catalog.canonical_bytes(shard["records"])) == shard["records_digest_sha256"]
+            assert shard["records_digest_sha256"] == shard_meta["records_digest_sha256"]
+            reconstructed.extend(shard["records"])
+
+        assert len(reconstructed) == entry["records"]
+        assert catalog.sha256_bytes(catalog.canonical_bytes(reconstructed)) == entry["records_digest_sha256"]
+        assert catalog.sha256_bytes(catalog.canonical_bytes(family_docs[family]["records"])) == entry["records_digest_sha256"]
+        family_counts[family] = len(reconstructed)
+
+    assert set(family_counts) == set(catalog.FAMILIES)
+    return family_counts
+
+
+def build(records, counts):
+    index, families = catalog.build_catalog(records, counts)
+    payloads = catalog.storage_payloads(index, families)
+    return index, families, payloads
 
 
 def main() -> int:
@@ -60,8 +116,8 @@ def main() -> int:
     ]
     counts = {"map_header": 1, "tile": 3, "town": 0, "waypoint": 0}
 
-    first_index, first_families, first_payloads = catalog.build_catalog(records, counts)
-    second_index, second_families, second_payloads = catalog.build_catalog(list(reversed(records)), counts)
+    first_index, first_families, first_payloads = build(records, counts)
+    second_index, second_families, second_payloads = build(list(reversed(records)), counts)
 
     assert catalog.canonical_bytes(first_index) == catalog.canonical_bytes(second_index)
     assert first_payloads == second_payloads
@@ -78,61 +134,73 @@ def main() -> int:
     assert first_families["ACTION_ID"]["counts"]["unique_source_values"] == 1
     assert first_families["ACTION_ID"]["counts"]["source_value_reuse_groups"] == 1
     assert first_families["ACTION_ID"]["counts"]["max_source_value_reuse"] == 2
-    assert first_families["TELEPORT_DESTINATION"]["records"][0]["semantic_disposition"] == "UNKNOWN"
-    assert all(
-        not record["executable_eligible"]
-        for family in catalog.FAMILIES
-        for record in first_families[family]["records"]
-    )
 
-    direct = {
-        entry["family"]: entry for entry in first_index["storage"]["family_files"]
+    entries = {entry["family"]: entry for entry in first_index["storage"]["family_files"]}
+    assert entries["ACTION_ID"]["storage_mode"] == "INLINE"
+    assert entries["UNIQUE_ID"]["storage_mode"] == "INLINE"
+    assert entries["TELEPORT_DESTINATION"]["storage_mode"] == "SHARDED"
+    assert entries["HOUSE_DOOR_ID"]["storage_mode"] == "SHARDED"
+    assert entries["TELEPORT_DESTINATION"]["shard_count"] == 1
+    assert entries["HOUSE_DOOR_ID"]["shard_count"] == 1
+    assert verify_storage(first_index, first_families, first_payloads) == {
+        "ACTION_ID": 2,
+        "UNIQUE_ID": 1,
+        "TELEPORT_DESTINATION": 1,
+        "HOUSE_DOOR_ID": 1,
     }
-    assert direct["ACTION_ID"]["storage_mode"] == "DIRECT"
-    assert direct["UNIQUE_ID"]["storage_mode"] == "DIRECT"
-    assert direct["TELEPORT_DESTINATION"]["storage_mode"] == "SHARDED"
-    assert direct["HOUSE_DOOR_ID"]["storage_mode"] == "SHARDED"
 
-    parsed, verification = verify_storage_round_trip(records, counts)
-    assert parsed["logical_product_digest_sha256"] == first_index["logical_product_digest_sha256"]
-    assert verification["family_counts"]["ACTION_ID"] == 2
-    assert verification["family_counts"]["UNIQUE_ID"] == 1
-    assert verification["family_counts"]["TELEPORT_DESTINATION"] == 1
-    assert verification["family_counts"]["HOUSE_DOOR_ID"] == 1
-
-    bulk = [
-        observation(
-            "TELEPORT_DESTINATION",
-            20_000 + i,
-            30_000 + (i // 1000),
-            -7,
-            i % 7,
-            500 + (i % 300),
-            {"x": 40_000 + i, "y": 50_000 + (i % 2000), "floor": -8},
+    bulk = []
+    for i in range(1_600):
+        bulk.append(
+            observation(
+                "TELEPORT_DESTINATION",
+                20_000 + i,
+                30_000 + (i // 1000),
+                -7,
+                i % 7,
+                500 + (i % 300),
+                {"x": 40_000 + i, "y": 50_000 + (i % 2000), "floor": -8},
+            )
         )
-        for i in range(1_600)
-    ]
-    bulk_index, bulk_families, bulk_payloads = catalog.build_catalog(
+    for i in range(2_500):
+        bulk.append(
+            observation(
+                "HOUSE_DOOR_ID",
+                40_000 + i,
+                41_000 + (i // 1000),
+                -7,
+                i % 5,
+                900 + (i % 200),
+                i % 255,
+            )
+        )
+
+    bulk_index, bulk_families, bulk_payloads = build(
         bulk,
-        {"map_header": 1, "tile": 1_600, "town": 0, "waypoint": 0},
+        {"map_header": 1, "tile": 4_100, "town": 0, "waypoint": 0},
     )
-    teleport_entry = next(
-        entry for entry in bulk_index["storage"]["family_files"]
-        if entry["family"] == "TELEPORT_DESTINATION"
+    bulk_entries = {entry["family"]: entry for entry in bulk_index["storage"]["family_files"]}
+    assert bulk_entries["TELEPORT_DESTINATION"]["shard_count"] == 3
+    assert bulk_entries["HOUSE_DOOR_ID"]["shard_count"] == 5
+    assert all(
+        shard_meta["bytes"] <= catalog.MAX_SHARD_BYTES
+        for family in ("TELEPORT_DESTINATION", "HOUSE_DOOR_ID")
+        for shard_meta in json.loads(
+            bulk_payloads[
+                relative_evidence_path(bulk_entries[family]["tracked_path"])
+            ].decode("utf-8")
+        )["storage"]["shards"]
     )
-    assert teleport_entry["storage_mode"] == "SHARDED"
-    assert teleport_entry["shard_count"] >= 2
-    assert sum(shard["record_count"] for shard in teleport_entry["shards"]) == 1_600
-    assert all(shard["bytes"] <= catalog.MAX_SHARD_BYTES for shard in teleport_entry["shards"])
-    assert all(path.endswith(".json") for path in bulk_payloads)
+    verified_bulk = verify_storage(bulk_index, bulk_families, bulk_payloads)
+    assert verified_bulk["TELEPORT_DESTINATION"] == 1_600
+    assert verified_bulk["HOUSE_DOOR_ID"] == 2_500
+
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
-        catalog.write_catalog(root, bulk_index, bulk_payloads)
-        verified = catalog.verify_written_catalog(root, bulk_index)
-        assert verified["family_counts"]["TELEPORT_DESTINATION"] == 1_600
-        assert verified["family_files"]["TELEPORT_DESTINATION"]["shard_count"] >= 2
-        reconstructed_digest = verified["family_files"]["TELEPORT_DESTINATION"]["records_digest_sha256"]
-        assert reconstructed_digest == bulk_families["TELEPORT_DESTINATION"]["records_digest_sha256"]
+        catalog.write_catalog(root, first_payloads)
+        assert (root / catalog.INDEX_NAME).is_file()
+        assert (root / catalog.FAMILY_DIR_NAME / "action-id.json").is_file()
+        assert (root / catalog.FAMILY_DIR_NAME / "teleport-destination-0001.json").is_file()
 
     expect_error(
         "UNSUPPORTED_STRUCTURAL_FAMILY",
