@@ -222,7 +222,16 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
             total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
         }
     }
-    total = checked_charge_add(total, runtime_profile.worker_stack_request)?;
+    // Tokio launches the mandatory scheduler worker through this same blocking
+    // pool, whose configured cap is worker_threads + max_blocking_threads. Every
+    // thread created by BlockingPool::spawn_thread inherits thread_stack_size,
+    // so root I must reserve stack backing for the full reachable pool cap rather
+    // than only the mandatory scheduler worker.
+    let runtime_stack_reservation = runtime_profile
+        .worker_stack_request
+        .checked_mul(runtime_profile.blocking_pool_thread_cap)
+        .ok_or(DurabilityError::RootUnavailable)?;
+    total = checked_charge_add(total, runtime_stack_reservation)?;
 
     for requested in [
         arc_allocation_request::<AtomicBool>()?,
@@ -1191,6 +1200,17 @@ mod wp3_root_contract_tests {
         assert_eq!(profile.blocking_pool_thread_cap, 2);
         assert_eq!(profile.additional_blocking_worker_limit, 1);
         assert_eq!(profile.worker_stack_request, 2 * 1024 * 1024);
+        assert_eq!(
+            profile.blocking_pool_thread_cap,
+            profile.scheduler_worker_count + profile.additional_blocking_worker_limit
+        );
+        assert_eq!(
+            profile
+                .worker_stack_request
+                .checked_mul(profile.blocking_pool_thread_cap)
+                .ok_or("runtime stack reservation overflow")?,
+            4 * 1024 * 1024
+        );
         #[cfg(windows)]
         assert_eq!(
             profile
