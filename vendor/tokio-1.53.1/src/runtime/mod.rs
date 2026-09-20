@@ -653,14 +653,20 @@ cfg_rt! {
         F::Output: Send + 'static,
     {
         let future_size = std::mem::size_of_val(future);
-        OterynWp3TaskAllocationProfile {
-            future_box_request: if future_size > BOX_FUTURE_THRESHOLD {
-                future_size
-            } else {
-                0
-            },
-            task_cell_request:
-                scheduler::multi_thread::oteryn_wp3_task_cell_allocation_size::<F>(),
+        if future_size > BOX_FUTURE_THRESHOLD {
+            OterynWp3TaskAllocationProfile {
+                future_box_request: future_size,
+                task_cell_request:
+                    scheduler::multi_thread::oteryn_wp3_task_cell_allocation_size::<
+                        std::pin::Pin<Box<F>>,
+                    >(),
+            }
+        } else {
+            OterynWp3TaskAllocationProfile {
+                future_box_request: 0,
+                task_cell_request:
+                    scheduler::multi_thread::oteryn_wp3_task_cell_allocation_size::<F>(),
+            }
         }
     }
 

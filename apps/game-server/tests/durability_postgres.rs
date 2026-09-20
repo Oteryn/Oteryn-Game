@@ -386,36 +386,38 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
     use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    tokio::runtime::Builder::new_current_thread()
+    let root = DurabilityRoot::new(DurabilityRootConfig::new(
+        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+        5432,
+        "db.example",
+        "oteryn",
+        "explicit",
+        "test-secret",
+        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+    )?)?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(async {
-            let root = DurabilityRoot::new(DurabilityRootConfig::new(
-                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
-                5432,
-                "db.example",
-                "oteryn",
-                "explicit",
-                "test-secret",
-                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
-            )?)?;
+        .build()?;
+    let result = runtime.block_on(async {
+        assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+        assert!(!root.is_ready());
+        assert!(root.has_ready_demand());
+        assert!(matches!(
+            root.try_acquire_ready(),
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert!(root.has_ready_demand());
+        tokio::task::yield_now().await;
+        assert!(
+            !root.is_ready(),
+            "ready-only miss must not establish a connection in the background"
+        );
 
-            assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
-            assert!(!root.is_ready());
-            assert!(root.has_ready_demand());
-            assert!(matches!(
-                root.try_acquire_ready(),
-                Err(DurabilityError::RootUnavailable)
-            ));
-            assert!(root.has_ready_demand());
-            tokio::task::yield_now().await;
-            assert!(
-                !root.is_ready(),
-                "ready-only miss must not establish a connection in the background"
-            );
-
-            Ok::<(), Box<dyn std::error::Error>>(())
-        })
+        Ok::<(), Box<dyn std::error::Error>>(())
+    });
+    drop(runtime);
+    drop(root);
+    result
 }
 
 #[test]
@@ -424,33 +426,66 @@ fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
     use durability::{DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    tokio::runtime::Builder::new_current_thread()
+    let root = DurabilityRoot::new(DurabilityRootConfig::new(
+        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+        5432,
+        "db.example",
+        "oteryn",
+        "explicit",
+        "test-secret",
+        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+    )?)?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(async {
-            let root = DurabilityRoot::new(DurabilityRootConfig::new(
-                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
-                5432,
-                "db.example",
-                "oteryn",
-                "explicit",
-                "test-secret",
-                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
-            )?)?;
-            let journal = AdmissionReconnectJournal::from_root(root.clone());
-            let (_flow, request) = ReconnectDurabilityFlowV1::begin(
-                record(201, 1, 0xa1, unix_now().map_err(foundation_error)?)
-                    .map_err(foundation_error)?,
-            );
+        .build()?;
+    let result = runtime.block_on(async {
+        let journal = AdmissionReconnectJournal::from_root(root.clone());
+        let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+            record(201, 1, 0xa1, unix_now().map_err(foundation_error)?)
+                .map_err(foundation_error)?,
+        );
 
-            assert!(matches!(
-                journal.prepare(&request).await,
-                Err(DurabilityError::RootUnavailable)
-            ));
-            assert!(!root.is_ready());
-            assert!(root.has_ready_demand());
-            Ok::<(), Box<dyn std::error::Error>>(())
-        })
+        assert!(matches!(
+            journal.prepare(&request).await,
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert!(!root.is_ready());
+        assert!(root.has_ready_demand());
+        Ok::<(), Box<dyn std::error::Error>>(())
+    });
+    drop(runtime);
+    drop(root);
+    result
+}
+
+#[test]
+fn wp3_process_scoped_root_keeps_final_runtime_owner_outside_async_tasks()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+
+    let root = DurabilityRoot::new(DurabilityRootConfig::new(
+        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+        5432,
+        "db.example",
+        "oteryn",
+        "explicit",
+        "test-secret",
+        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+    )?)?;
+    let async_owner = root.clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+
+    runtime.block_on(async move {
+        tokio::task::yield_now().await;
+        drop(async_owner);
+    });
+
+    drop(runtime);
+    drop(root);
+    Ok(())
 }
 
 #[test]
