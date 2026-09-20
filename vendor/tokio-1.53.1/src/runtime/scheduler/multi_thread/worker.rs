@@ -269,6 +269,61 @@ type Notified = task::Notified<Arc<Handle>>;
 /// improvements.
 const MAX_LIFO_POLLS_PER_TICK: usize = 3;
 
+pub(super) fn oteryn_wp3_runtime_allocation_requests(
+    worker_threads: usize,
+) -> Option<[usize; 12]> {
+    if worker_threads != 1 {
+        return None;
+    }
+
+    use crate::loom::sync::Mutex as LoomMutex;
+    use crate::runtime::task::Task;
+    use crate::util::linked_list::LinkedList;
+
+    let handle_arc = crate::runtime::oteryn_wp3_arc_allocation_request::<Handle>()?;
+    let worker_arc = crate::runtime::oteryn_wp3_arc_allocation_request::<Worker>()?;
+    let core_box = std::mem::size_of::<Core>();
+    let remotes_box = std::mem::size_of::<Remote>();
+    let worker_metrics_box = std::mem::size_of::<WorkerMetrics>();
+
+    // queue.rs fixes LOCAL_QUEUE_CAPACITY at 256 outside loom. The queue Arc
+    // owns Inner and a distinct Box<[Notified; 256]>.
+    let local_queue_inner_arc =
+        crate::runtime::oteryn_wp3_arc_allocation_request::<queue::Inner<Arc<Handle>>>()?;
+    let local_queue_buffer_box = 256usize
+        .checked_mul(std::mem::size_of::<task::Notified<Arc<Handle>>>())?;
+
+    // idle::Idle::new(1) retains Vec::with_capacity(1).
+    let idle_sleepers_vec = std::mem::size_of::<usize>();
+
+    // OwnedTasks::gen_shared_list_size(1) = min(1 << 16, 1.next_power_of_two() * 4) = 4.
+    // ShardedList::new allocates one boxed slice containing those four mutex/list shards.
+    let owned_tasks_shards_box = 4usize.checked_mul(std::mem::size_of::<
+        LoomMutex<LinkedList<Task<Arc<Handle>>>>,
+    >())?;
+
+    let parker_requests = Parker::oteryn_wp3_retained_allocation_requests(worker_threads)?;
+    let scheduler_worker_task_cell =
+        crate::runtime::blocking::BlockingPool::oteryn_wp3_scheduler_worker_task_cell_request::<
+            Arc<Worker>,
+        >();
+
+    Some([
+        handle_arc,
+        worker_arc,
+        core_box,
+        remotes_box,
+        worker_metrics_box,
+        local_queue_inner_arc,
+        local_queue_buffer_box,
+        idle_sleepers_vec,
+        owned_tasks_shards_box,
+        parker_requests[0],
+        parker_requests[1],
+        scheduler_worker_task_cell,
+    ])
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) fn create(
     size: usize,
