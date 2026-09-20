@@ -207,6 +207,75 @@ cfg_fs! {
 // ===== impl BlockingPool =====
 
 impl BlockingPool {
+    pub(crate) fn oteryn_wp3_retained_allocation_requests(
+        scheduler_workers: usize,
+    ) -> Option<[usize; 4]> {
+        if scheduler_workers != 1 {
+            return None;
+        }
+
+        let inner_arc = crate::runtime::oteryn_wp3_arc_allocation_request::<Inner>()?;
+
+        // shutdown::channel first allocates oneshot::Inner<()> and then wraps
+        // the oneshot Sender in a second Arc retained by blocking::Sender.
+        let shutdown_sender_arc =
+            crate::runtime::oteryn_wp3_arc_allocation_request::<crate::sync::oneshot::Sender<()>>()?;
+        let shutdown_oneshot_arc =
+            crate::sync::oneshot::oteryn_wp3_channel_inner_allocation_request::<()>()?;
+
+        // Rust 1.94.0 std::HashMap is hashbrown 0.16.1. For requested capacity
+        // one, capacity_to_buckets selects four buckets. RawTable allocates
+        // aligned data for four (K,V) entries plus buckets + Group::WIDTH
+        // control bytes. Group::WIDTH is 16 on the accepted x86_64 targets;
+        // using 16 is also a conservative bound for narrower groups.
+        const BUCKETS: usize = 4;
+        const GROUP_WIDTH: usize = 16;
+        type Entry = (usize, thread::JoinHandle<()>);
+        let entry_bytes = std::mem::size_of::<Entry>().checked_mul(BUCKETS)?;
+        let ctrl_align = std::mem::align_of::<Entry>().max(GROUP_WIDTH);
+        let ctrl_offset = entry_bytes
+            .checked_add(ctrl_align.checked_sub(1)?)?
+            & !ctrl_align.checked_sub(1)?;
+        let worker_threads_hashmap = ctrl_offset.checked_add(BUCKETS + GROUP_WIDTH)?;
+
+        Some([
+            inner_arc,
+            shutdown_sender_arc,
+            shutdown_oneshot_arc,
+            worker_threads_hashmap,
+        ])
+    }
+
+    pub(crate) fn oteryn_wp3_scheduler_worker_task_cell_request<C>() -> usize
+    where
+        C: Send + 'static,
+    {
+        struct WorkerBlockingFuture<C> {
+            capture: Option<C>,
+        }
+
+        impl<C> std::future::Future for WorkerBlockingFuture<C> {
+            type Output = ();
+
+            fn poll(
+                self: std::pin::Pin<&mut Self>,
+                _cx: &mut std::task::Context<'_>,
+            ) -> std::task::Poll<()> {
+                let _ = self;
+                unreachable!("representation-only future is never polled")
+            }
+        }
+
+        // Launch::launch submits a BlockingTask around a one-field closure that
+        // captures Arc<Worker>. This representation-only Future preserves the
+        // same Option<C> payload shape used by BlockingTask<F>; it is never
+        // constructed or scheduled.
+        task::oteryn_wp3_task_cell_allocation_size::<
+            WorkerBlockingFuture<C>,
+            BlockingSchedule,
+        >()
+    }
+
     pub(crate) fn new(builder: &Builder, thread_cap: usize) -> BlockingPool {
         let (shutdown_tx, shutdown_rx) = shutdown::channel();
         let keep_alive = builder.keep_alive.unwrap_or(KEEP_ALIVE);
