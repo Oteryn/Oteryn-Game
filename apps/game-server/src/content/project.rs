@@ -517,7 +517,8 @@ impl ProjectDraft {
             limits.max_reimport_states,
         )?;
         validate_reference_records(&self.records)?;
-        validate_imports(&self.imports)?;
+        validate_imports(&self.imports, &self.records)?;
+        validate_native_item_licensing(&self.imports, &self.licensing_metadata)?;
         validate_metadata(&self.metadata)?;
         Ok(())
     }
@@ -784,6 +785,14 @@ pub struct ImportBatch {
     pub reimport_states: Vec<ReimportFieldState>,
 }
 
+impl ImportBatch {
+    fn has_native_item_binding(&self) -> bool {
+        self.candidates
+            .iter()
+            .any(ImportCandidate::native_item_binding)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImportCandidate {
@@ -803,18 +812,21 @@ pub struct ImportCandidate {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImportCandidateFamily {
     AbilityEffectFormula,
+    Item,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImportCandidateOperation {
     Damage,
     Heal,
+    BindNativeItem,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CandidateDisposition {
     CandidateOnly,
     Blocked,
+    LocalNonProduction,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -831,6 +843,27 @@ pub enum CandidateValue {
     Integer(i64),
     Boolean(bool),
     SourceId(u64),
+    NativeItemBinding(NativeItemBindingDocument),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeItemBindingDocument {
+    pub identity: DefinitionIdentityDocument,
+    pub disposition: NativeItemBindingDisposition,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NativeItemBindingDisposition {
+    LocalNonProduction,
+}
+
+impl ImportCandidate {
+    fn native_item_binding(&self) -> bool {
+        self.normalized_fields
+            .iter()
+            .any(|field| matches!(&field.value, CandidateValue::NativeItemBinding(_)))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1308,7 +1341,8 @@ fn parse_snapshot(
         limits.max_reimport_states,
     )?;
     validate_reference_records(&reference.records)?;
-    validate_imports(&imports.batches)?;
+    validate_imports(&imports.batches, &reference.records)?;
+    validate_native_item_licensing(&imports.batches, &plan.manifest.licensing_metadata)?;
     validate_metadata(&metadata.entries)?;
     Ok(WorldProject {
         root: plan.root,
@@ -1416,8 +1450,24 @@ fn validate_reference_records(records: &[ProjectReferenceRecord]) -> Result<(), 
     Ok(())
 }
 
-fn validate_imports(imports: &[ImportBatch]) -> Result<(), ProjectError> {
+fn validate_native_item_licensing(
+    imports: &[ImportBatch],
+    licensing_metadata: &str,
+) -> Result<(), ProjectError> {
+    if imports.iter().any(ImportBatch::has_native_item_binding) && licensing_metadata != "PENDING" {
+        return Err(ProjectError::InvalidProject(
+            "local native item proof requires PENDING licensing metadata",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_imports(
+    imports: &[ImportBatch],
+    records: &[ProjectReferenceRecord],
+) -> Result<(), ProjectError> {
     let mut previous_batch: Option<&str> = None;
+    let mut native_item_bindings = BTreeSet::new();
     for batch in imports {
         if previous_batch.is_some_and(|prior| prior >= batch.batch_id.as_str()) {
             return Err(ProjectError::InvalidProject(
@@ -1427,6 +1477,12 @@ fn validate_imports(imports: &[ImportBatch]) -> Result<(), ProjectError> {
         previous_batch = Some(&batch.batch_id);
         Sha256HexDigest::new(&batch.source_artifact_sha256)?;
         Sha256HexDigest::new(&batch.mapper_sha256)?;
+        let has_native_item_binding = batch.has_native_item_binding();
+        if has_native_item_binding && batch.access_disposition != "PENDING" {
+            return Err(ProjectError::InvalidProject(
+                "local native item proof requires PENDING access disposition",
+            ));
+        }
         let mut previous_candidate: Option<&str> = None;
         for candidate in &batch.candidates {
             if previous_candidate
@@ -1438,11 +1494,74 @@ fn validate_imports(imports: &[ImportBatch]) -> Result<(), ProjectError> {
             }
             previous_candidate = Some(&candidate.source_candidate_id);
             let mut paths = BTreeSet::new();
+            let mut native_binding: Option<&NativeItemBindingDocument> = None;
             for field in &candidate.normalized_fields {
                 if !paths.insert(&field.field_path) {
                     return Err(ProjectError::InvalidProject(
                         "duplicate normalized import field",
                     ));
+                }
+                if let CandidateValue::NativeItemBinding(binding) = &field.value {
+                    if field.field_path != "binding.native-item" || native_binding.is_some() {
+                        return Err(ProjectError::InvalidProject(
+                            "native item import requires one typed binding field",
+                        ));
+                    }
+                    native_binding = Some(binding);
+                }
+            }
+            match candidate.candidate_family {
+                ImportCandidateFamily::AbilityEffectFormula => {
+                    if native_binding.is_some()
+                        || !matches!(
+                            candidate.candidate_operation,
+                            ImportCandidateOperation::Damage | ImportCandidateOperation::Heal
+                        )
+                        || candidate.closure_disposition == CandidateDisposition::LocalNonProduction
+                    {
+                        return Err(ProjectError::InvalidProject(
+                            "ability import cannot carry a native item binding",
+                        ));
+                    }
+                }
+                ImportCandidateFamily::Item => {
+                    let binding = native_binding.ok_or(ProjectError::InvalidProject(
+                        "item import is missing its typed native binding",
+                    ))?;
+                    require_family(&binding.identity.family, DefinitionFamily::Item)?;
+                    binding.identity.lower()?;
+                    if candidate.source_numeric_id.is_none()
+                        || candidate.candidate_operation != ImportCandidateOperation::BindNativeItem
+                        || candidate.candidate_formula != "NOT_APPLICABLE"
+                        || candidate.evidence_class != "OTS_HYPOTHESIS_ONLY"
+                        || candidate.closure_disposition != CandidateDisposition::LocalNonProduction
+                        || candidate.candidate_target
+                            != format!("{}@{}", binding.identity.key, binding.identity.revision)
+                    {
+                        return Err(ProjectError::InvalidProject(
+                            "native item import shape is inconsistent",
+                        ));
+                    }
+                    let record = records.iter().find(|record| {
+                        let identity = record.identity();
+                        identity.family == binding.identity.family
+                            && identity.key == binding.identity.key
+                            && identity.revision == binding.identity.revision
+                    });
+                    if !matches!(record, Some(ProjectReferenceRecord::Item { .. })) {
+                        return Err(ProjectError::InvalidProject(
+                            "native item binding target is missing",
+                        ));
+                    }
+                    if !native_item_bindings.insert((
+                        binding.identity.family.clone(),
+                        binding.identity.key.clone(),
+                        binding.identity.revision.clone(),
+                    )) {
+                        return Err(ProjectError::InvalidProject(
+                            "duplicate native item binding target",
+                        ));
+                    }
                 }
             }
         }
@@ -1458,6 +1577,11 @@ fn validate_imports(imports: &[ImportBatch]) -> Result<(), ProjectError> {
             if state.decision != decide_reimport(&state.baseline, &state.upstream, &state.local) {
                 return Err(ProjectError::InvalidProject(
                     "stored reimport decision is inconsistent",
+                ));
+            }
+            if has_native_item_binding && state.decision == ReimportDecision::Conflict {
+                return Err(ProjectError::InvalidProject(
+                    "local native item proof has an unresolved import conflict",
                 ));
             }
         }
