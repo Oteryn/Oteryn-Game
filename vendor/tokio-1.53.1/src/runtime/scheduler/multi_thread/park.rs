@@ -54,6 +54,23 @@ struct Shared {
 }
 
 impl Parker {
+    pub(super) fn oteryn_wp3_retained_allocation_requests(
+        worker_threads: usize,
+    ) -> Option<[usize; 2]> {
+        if worker_threads != 1 {
+            return None;
+        }
+
+        // The initial Parker::new Inner is transient. worker::create clones the
+        // Parker once for the sole worker; that clone owns the retained Inner,
+        // while both Inner instances share one Arc<Shared>. The initial Inner
+        // drops when worker::create returns.
+        Some([
+            crate::runtime::oteryn_wp3_arc_allocation_request::<Inner>()?,
+            crate::runtime::oteryn_wp3_arc_allocation_request::<Shared>()?,
+        ])
+    }
+
     pub(crate) fn new(driver: Driver) -> Parker {
         Parker {
             inner: Arc::new(Inner {
