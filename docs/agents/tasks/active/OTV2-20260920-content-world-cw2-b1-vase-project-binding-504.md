@@ -88,9 +88,9 @@ lineage. Fixture compilation is not an ordinary-release route.
 
 ## Validation
 
-Local candidate validation in progress with Rust 1.94:
+Local repaired-candidate validation completed with Rust 1.94:
 
-- `cargo test -p oteryn-game-server --test content_world_cw2_b1_import` — PASS, 5 tests.
+- `cargo test -p oteryn-game-server --test content_world_cw2_b1_import` — PASS, 6 tests, including a coherent canonical-document regression that recomputes manifest, package-provenance, lock and root digests before proving non-PENDING licensing fails strict parse.
 - `cargo test -p oteryn-game-server --test content_world_project` — PASS, 19 tests.
 - `cargo test -p oteryn-game-server --test content_reference_playable` — PASS, 31 tests.
 - `cargo test -p oteryn-game-server --test content_world_cw2_b4_import` — PASS, 4 tests; protected B4 remains candidate-only and byte-stable through its canonical round trip.
@@ -100,8 +100,8 @@ Local candidate validation in progress with Rust 1.94:
 - `cargo test --locked --workspace` — PASS.
 - `python -B tools/agents/validate_governance.py` — PASS.
 - `python -B tools/repository/validate_repository_policy.py` — PASS.
-- hosted Architecture semantic audit and Agent governance on the initial draft head — PASS.
-- hosted exact-head Merge gate on the final candidate — pending after this task-record update.
+- hosted Architecture semantic audit, Agent governance and Merge gate on the superseded pre-repair head — PASS.
+- hosted exact-head gates on the repaired candidate — pending after this task-record update.
 
 ## Review and integration
 
