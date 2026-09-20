@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used, clippy::panic)]
 
 use oteryn_game_server::content::*;
+use serde_json::Value;
 use std::collections::BTreeMap;
 
 const B1_EVIDENCE: &[u8] = include_bytes!(
@@ -50,6 +51,12 @@ fn binding_mut(batch: &mut ImportBatch) -> &mut NativeItemBindingDocument {
             _ => None,
         })
         .expect("typed native item binding")
+}
+
+fn canonical_json(value: &Value) -> Vec<u8> {
+    let mut bytes = serde_json::to_vec(value).expect("JSON encoding");
+    bytes.push(b'\n');
+    bytes
 }
 
 fn assert_authored_item(linked: &CanonicalReferencePlayableContent) {
@@ -289,6 +296,67 @@ fn conflicts_and_invalid_native_targets_fail_closed() {
     wrong_license.licensing_metadata = "CLEARED".to_owned();
     assert!(matches!(
         CanonicalProjectDocuments::from_draft(wrong_license, limits()),
+        Err(ProjectError::InvalidProject(
+            "local native item proof requires PENDING licensing metadata"
+        ))
+    ));
+}
+
+#[test]
+fn coherent_canonical_documents_with_non_pending_licensing_fail_closed() {
+    let mut documents = CanonicalProjectDocuments::from_draft(draft(import()), limits())
+        .expect("canonical project")
+        .documents()
+        .clone();
+
+    let mut manifest: Value =
+        serde_json::from_slice(&documents["manifest.json"]).expect("manifest JSON");
+    manifest["licensing_metadata"] = Value::String("CLEARED".to_owned());
+    let manifest_bytes = canonical_json(&manifest);
+    documents.insert("manifest.json".to_owned(), manifest_bytes.clone());
+
+    let package = PackageManifestBinding::new(
+        ProductionKey::new(manifest["package_key"].as_str().expect("package key"))
+            .expect("package key"),
+        ProductionAtom::new(
+            "package revision",
+            manifest["package_revision"].as_str().expect("revision"),
+        )
+        .expect("revision"),
+        ProductionAtom::new(
+            "schema",
+            manifest["semantic_schema_version"]
+                .as_str()
+                .expect("schema"),
+        )
+        .expect("schema"),
+        ProductionAtom::new(
+            "license",
+            manifest["licensing_metadata"].as_str().expect("license"),
+        )
+        .expect("license"),
+        Sha256HexDigest::new(&world_project_sha256(&manifest_bytes)).expect("manifest digest"),
+    );
+    let mut lock: Value =
+        serde_json::from_slice(&documents["content.lock.json"]).expect("lock JSON");
+    lock["entries"][0]["package_provenance_digest"] = Value::String(
+        package
+            .package_provenance_digest()
+            .expect("package provenance")
+            .as_str()
+            .to_owned(),
+    );
+    let lock_bytes = canonical_json(&lock);
+    documents.insert("content.lock.json".to_owned(), lock_bytes.clone());
+
+    let mut root: Value = serde_json::from_slice(&documents["project.json"]).expect("root JSON");
+    root["manifest_sha256"] = Value::String(world_project_sha256(&manifest_bytes));
+    root["content_lock_sha256"] = Value::String(world_project_sha256(&lock_bytes));
+    documents.insert("project.json".to_owned(), canonical_json(&root));
+
+    let snapshot = ProjectSnapshot::new(documents, limits()).expect("coherent snapshot");
+    assert!(matches!(
+        snapshot.parse(limits()),
         Err(ProjectError::InvalidProject(
             "local native item proof requires PENDING licensing metadata"
         ))
