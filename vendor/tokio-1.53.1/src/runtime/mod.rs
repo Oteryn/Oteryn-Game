@@ -670,6 +670,91 @@ cfg_rt! {
         }
     }
 
+    /// Source-derived retained heap requests for the exact WP3 dedicated runtime.
+    ///
+    /// Every non-zero entry is one allocator request and must be charged
+    /// independently by the owner. The profile describes representation only;
+    /// it does not grant resource budget or change runtime behavior.
+    #[cfg(feature = "rt-multi-thread")]
+    #[doc(hidden)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+    pub struct OterynWp3RuntimeAllocationProfile {
+        pub heap_requests: [usize; 21],
+        pub worker_stack_request: usize,
+        pub scheduler_worker_count: usize,
+        pub blocking_pool_thread_cap: usize,
+        pub additional_blocking_worker_limit: usize,
+    }
+
+    pub(crate) fn oteryn_wp3_arc_allocation_request<T>() -> Option<usize> {
+        use std::alloc::Layout;
+        use std::sync::atomic::AtomicUsize;
+
+        let counters = Layout::array::<AtomicUsize>(2).ok()?;
+        let (layout, _) = counters.extend(Layout::new::<T>()).ok()?;
+        Some(layout.pad_to_align().size())
+    }
+
+    /// Returns the retained allocation representation for the accepted WP3
+    /// topology only: one multi-thread worker, one additional blocking-thread
+    /// limit, caller-selected worker stack, I/O and time enabled.
+    #[cfg(feature = "rt-multi-thread")]
+    #[doc(hidden)]
+    pub fn oteryn_wp3_dedicated_runtime_allocation_profile(
+        worker_threads: usize,
+        max_blocking_threads: usize,
+        worker_stack_request: usize,
+    ) -> Option<OterynWp3RuntimeAllocationProfile> {
+        if worker_threads != 1 || max_blocking_threads != 1 || worker_stack_request == 0 {
+            return None;
+        }
+
+        // Tokio 1.53.1 Builder::new uses nevents = 1024. WP3 does not expose
+        // a builder mutation that changes this value.
+        let io_requests = io::Driver::oteryn_wp3_retained_allocation_requests(1024)?;
+        let scheduler_requests =
+            scheduler::multi_thread::oteryn_wp3_runtime_allocation_requests(worker_threads)?;
+        let blocking_requests =
+            blocking::BlockingPool::oteryn_wp3_retained_allocation_requests(worker_threads)?;
+        let timer_request = time::Driver::oteryn_wp3_wheel_allocation_request()?;
+
+        // Builder::new stores a ZST default thread-name closure in an Arc and
+        // BlockingPool retains a clone of that allocation.
+        let thread_name_arc = oteryn_wp3_arc_allocation_request::<()>()?;
+
+        let heap_requests = [
+            thread_name_arc,
+            scheduler_requests[0],
+            scheduler_requests[1],
+            scheduler_requests[2],
+            scheduler_requests[3],
+            scheduler_requests[4],
+            scheduler_requests[5],
+            scheduler_requests[6],
+            scheduler_requests[7],
+            scheduler_requests[8],
+            scheduler_requests[9],
+            scheduler_requests[10],
+            blocking_requests[0],
+            blocking_requests[1],
+            blocking_requests[2],
+            blocking_requests[3],
+            io_requests[0],
+            io_requests[1],
+            io_requests[2],
+            timer_request,
+            scheduler_requests[11],
+        ];
+
+        Some(OterynWp3RuntimeAllocationProfile {
+            heap_requests,
+            worker_stack_request,
+            scheduler_worker_count: worker_threads,
+            blocking_pool_thread_cap: worker_threads.checked_add(max_blocking_threads)?,
+            additional_blocking_worker_limit: max_blocking_threads,
+        })
+    }
+
     mod thread_id;
     pub(crate) use thread_id::ThreadId;
 
