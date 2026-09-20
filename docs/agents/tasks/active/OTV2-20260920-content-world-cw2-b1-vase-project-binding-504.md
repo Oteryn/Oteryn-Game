@@ -4,12 +4,12 @@
 task_id: OTV2-20260920-content-world-cw2-b1-vase-project-binding-504
 title: CW3 typed project binding for the approved CW2-B1 vase
 mode: BUILD
-status: validating
+status: reviewing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-cw2-b1-vase-project-binding-504
 issue: 162
-pr: pending
+pr: 691
 base_sha: 54869eb9db46d83beaaadfc557270d58a39cc6dd
 head_sha: pending
 owner: "Oteryn: content world build"
@@ -72,7 +72,8 @@ full-world promotion.
 - [x] Reimport conflict, missing/wrong binding target, wrong access and wrong licensing fail closed.
 - [x] Canonical project write/strict parse/rewrite is deterministic and reaches `ReferencePlayableContentSource`, `link_reference_playable`, server Item legality and client-safe projection.
 - [x] B4 retains its existing candidate-only representation and canonical shape.
-- [ ] Exact published head passes required focused, repository and hosted gates.
+- [x] Exact published candidate passes required local focused and repository gates.
+- [ ] Exact published candidate passes hosted Merge gate.
 - [ ] Parent-owned independent review and protected integration complete.
 
 ## Excluded scope
@@ -95,7 +96,12 @@ Local candidate validation in progress with Rust 1.94:
 - `cargo test -p oteryn-game-server --test content_world_cw2_b4_import` — PASS, 4 tests; protected B4 remains candidate-only and byte-stable through its canonical round trip.
 - `cargo check -p oteryn-game-server` — PASS.
 - `cargo fmt --all -- --check` — PASS.
-- strict Clippy, repository validators and exact-head CI — pending.
+- `cargo clippy --locked --workspace --all-targets -- -D warnings` — PASS.
+- `cargo test --locked --workspace` — PASS.
+- `python -B tools/agents/validate_governance.py` — PASS.
+- `python -B tools/repository/validate_repository_policy.py` — PASS.
+- hosted Architecture semantic audit and Agent governance on the initial draft head — PASS.
+- hosted exact-head Merge gate on the final candidate — pending after this task-record update.
 
 ## Review and integration
 
