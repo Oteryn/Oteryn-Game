@@ -2,8 +2,9 @@
 
 Date: 2026-09-16
 P1-A amendment date: 2026-09-19
+P1-A finite-topology amendment date: 2026-09-20
 Status: `PROSPECTIVE_NOT_ACTIVE`
-P1-A amendment authority: #162 comment `5745227522`; supersedes the insufficient layout-only release `5744804452` and closes `5744812736`
+P1-A amendment authority: #162 comments `5745227522` + `5748461271`; the latter accepts `WP3_DEDICATED_BOUNDED_TOKIO_RUNTIME/v1` and closes review P1 `4054801878` at the architecture-decision layer
 Repository: `Oteryn/Oteryn-Game`
 Owning control plane: `OTV2_WORK_DELIVERY_COORDINATOR` / #162
 Policy base: protected `main@1995bd97460774ea9fc136959d5548471b81c987` / #634
@@ -56,7 +57,7 @@ vendor changes.
 
 The default WP3-A production dependency set is:
 
-- pinned Tokio `1.53.1` keeps upstream runtime semantics except for one exact read-only task-allocation representation query authorized by #162 comment `5745227522`; production WP3 root qualification is `RuntimeFlavor::MultiThread`, and no generic Tokio owner/allocator/scheduler fork is admitted;
+- pinned Tokio `1.53.1` keeps upstream runtime semantics; #162 comment `5748461271` fixes one WP3-owned dedicated MultiThread runtime (`worker_threads=1`, `max_blocking_threads=1`, `thread_stack_size=2 MiB`) and admits only the exact read-only dedicated-runtime + maintenance representation proof required by section 3.7; no generic Tokio owner/allocator/scheduler fork is admitted;
 - upstream rustls `0.23.45`; no rustls source fork. Protected security PR #623 supersedes the historical Gate-1 `0.23.43` pin; do not downgrade;
 - AWS-LC selected through supported features;
 - explicit `rustls/prefer-post-quantum` feature unification where required by
@@ -271,9 +272,10 @@ The initial allowed production surface is bounded to:
   symbols in `sqlx-postgres` and `sqlx-core`, including only the root-specific
   maintenance construction required by section 3.7;
 - pinned Tokio 1.53.1 source/provenance only for the section-3.7 read-only
-  task-allocation representation query around the exact `Handle::spawn` path,
-  scheduler-flavor dispatch and task-cell representation sizing required for the
-  SQLx root-maintenance future.
+  representation proof of the exact accepted dedicated one-worker runtime and the
+  exact SQLx root-maintenance future/task, including only source facts needed for
+  scheduler/control/driver backing, configured stack topology, blocking reachability,
+  optional future-box and task-cell sizing.
 
 The implementation allocation explicitly excludes:
 
@@ -479,7 +481,7 @@ FRESH_ADMISSION_SHARED_CUSTODY = UNCHANGED_CHILD_B
 Q_ROUTING = EXPLICIT_PROPERTY_AUTHORITY_AND_MILESTONE_IN_COMPANION
 NUMERIC_ROUTING = N01_N32_AUTHORITY_AND_SCOPE_IN_COMPANION
 ALLOCATION_STATE = PROSPECTIVE_NOT_ACTIVE
-CURRENT_P1A_IMPLEMENTATION_AUTHORITY = NONE_UNTIL_REVISION4_PROTECTED_AND_FRESH_COORDINATOR_LEASE
+CURRENT_P1A_IMPLEMENTATION_AUTHORITY = NONE_UNTIL_REVISION5_PROTECTED_AND_FRESH_COORDINATOR_LEASE
 WORKER_STATE = NOT_ADMITTED
 TRUSTED_INTEGRATION_CAPABILITY = MUST_BE_FRESH_AT_WORKER_RELEASE
 WP4_CHILD_B = HOLD
