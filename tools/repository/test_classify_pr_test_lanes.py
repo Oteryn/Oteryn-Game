@@ -136,8 +136,9 @@ def test_reviewed_document_consumers(module):
         "669052b19bf8d067d949623ba566e087b43def40b2661f8c3feb16f3d62de180",
         "2dbc1273b54b4f63653bc6c5a92ee10a1c095e3bd05dac232751efc4d358fa9d",
         "ba36d790f37791495584f1f1d2a51f382a11d629085f786007cc88d04cdff5ac",
+        "c04bf8e0e010366170d76f23baa34b0abb2f69a9114157b0a6c6ebb880294594",
     )
-    reviewed_nonserver = "c04bf8e0e010366170d76f23baa34b0abb2f69a9114157b0a6c6ebb880294594"
+    reviewed_nonserver = "962dfe6c3c9fbe102a08b1040e3880589b6ee4cda52a4910feae3103225099fe"
     stale_reviewed_docs = (
         "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26",
         "742350c55587ab94d652e27a4196308f350afaf5140ed3633d33d5d165e807b6",
