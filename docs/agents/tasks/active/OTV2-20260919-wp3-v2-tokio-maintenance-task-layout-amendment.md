@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260919-wp3-v2-tokio-maintenance-task-layout-amendment
-title: WP3-v2 P1-A maintenance-task layout architecture amendment
+title: WP3-v2 P1-A finite dedicated-runtime architecture amendment
 mode: CONTRACT
 status: validating
 repository: Oteryn/Oteryn-Game
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: astra wp3-v2 architecture lead"
 created_at: 2026-09-19
-updated_at: 2026-09-19
+updated_at: 2026-09-20
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md
@@ -24,6 +24,8 @@ owned_paths:
 public_contracts: []
 depends_on:
   - "#162 comment 5745227522"
+  - "#162 comment 5748461271"
+  - "#162 comment 5748332099"
 blocks:
   - "PR #673 P1-A successor implementation lease"
 cross_repository_coordination_id: null
@@ -32,9 +34,11 @@ external_repositories: []
 
 ## Outcome
 
-Encode the superseding minimum-sufficient P1-A owner decision so PR #673 can later
-receive one bounded implementation lease without inventing a task-size constant,
-second budget or generic Tokio resource-accounting subsystem.
+Encode the final minimum-sufficient P1-A owner decision so PR #673 can later
+receive one bounded implementation lease with an exact finite WP3-owned Tokio
+runtime topology and complete same-root runtime/maintenance accounting, without
+inventing byte constants, a second budget or generic Tokio resource-accounting
+subsystem.
 
 This task is documentation-only. It grants no source/vendor/Cargo/runtime mutation
 authority and does not resume PR #673 by itself.
@@ -44,6 +48,17 @@ authority and does not resume PR #673 by itself.
 - **PROVEN** — #162 comment `5745227522` supersedes layout-only release
   `5744804452` and closes the two source-proof gaps reported by the architecture
   worker in `5744812736`.
+- **PROVEN** — independent HIGH review P1 `4054801878` proved that MultiThread
+  flavor alone does not bound worker topology/backing.
+- **PROVEN** — architecture qualification `5748151621` found no protected finite
+  server topology and returned `OWNER_DECISION_REQUIRED`.
+- **PROVEN** — owner-authorized host evidence `5748332099` classified the explicit
+  bounded builder as `BOUNDED_TOPOLOGY_EMPIRICALLY_STABLE` while preserving the
+  architecture decision as open.
+- **PROVEN** — owner decision `5748461271` accepts
+  `WP3_DEDICATED_BOUNDED_TOKIO_RUNTIME/v1`: Tokio 1.53.1 MultiThread,
+  `worker_threads=1`, `max_blocking_threads=1`, `thread_stack_size=2 MiB`,
+  dedicated WP3 ownership, no second budget and no DFR maximum increase.
 - **PROVEN** — protected base at release:
   `main@03a821edd828e24ccff6e2cb7fc819a776cbd238`.
 - **PROVEN** — predecessor architecture blob:
@@ -65,23 +80,29 @@ reason: "Documentation-only architecture amendment; no production mutation, PREP
 
 ## Acceptance criteria
 
-- [x] Production WP3 durability root is fixed to Tokio
-      `RuntimeFlavor::MultiThread`; wrong/unavailable flavor fails closed before
-      root/pool acceptance.
-- [x] Current-thread runtime is explicitly test-only/non-production and cannot
-      qualify the production root.
-- [x] Exactly one pinned Tokio 1.53.1 read-only representation query is admitted
-      for the SQLx root-maintenance future's optional boxed-future and exact
-      MultiThread task-cell allocation requests.
-- [x] The query grants no allowance, allocator interception, owner propagation,
-      generic scheduler/task accounting or lifetime policy.
-- [x] One root-specific SQLx 0.9.0 maintenance construction is admitted to remove
-      the heap-allocating `CloseEvent/EventListener` dependency while preserving
-      the silent 10m/30m reaper and max1/min0 semantics.
-- [x] All admitted source-derived maintenance backing remains charged to the same
-      root `I` ledger from pre-allocation reservation through complete
-      task/shared-tail finality.
-- [x] No new numeric limit, second budget or resource-registry change is introduced.
+- [x] Production WP3 durability root owns one dedicated Tokio `1.53.1`
+      `RuntimeFlavor::MultiThread` runtime.
+- [x] Exact finite topology is frozen to `worker_threads=1`,
+      `max_blocking_threads=1`, `thread_stack_size=2 MiB`.
+- [x] Arbitrary ambient Tokio `Handle` qualification is forbidden for the
+      production root; current-thread remains test-only/non-production.
+- [x] The narrow pinned-Tokio read-only representation seam is extended only far
+      enough to prove source-derived backing for the exact accepted dedicated
+      runtime plus the exact SQLx root-maintenance future/task.
+- [x] The seam grants no allowance, allocator interception, generic
+      scheduler/task accounting, owner propagation or lifetime policy.
+- [x] One root-specific SQLx 0.9.0 maintenance construction remains admitted to
+      remove the heap-allocating `CloseEvent/EventListener` dependency while
+      preserving the silent 10m/30m reaper and max1/min0 semantics.
+- [x] Every attributable source-derived dedicated-runtime and maintenance charge
+      remains in the same root `I` ledger from pre-allocation reservation through
+      complete runtime/task/shared-tail finality.
+- [x] `max_blocking_threads=1` is a finite cap only; implementation must prove
+      blocking-worker reachability rather than assume presence or absence.
+- [x] Virtual stack reservation and resident/committed DFR accounting remain
+      distinct; host RSS evidence is not promoted into a resource maximum.
+- [x] No new numeric limit, second budget or resource-registry increase is
+      introduced.
 - [ ] Exact branch readback contains only the three allocated paths.
 - [ ] Agent Governance exact-head SUCCESS.
 - [ ] Architecture Semantic Audit exact-head SUCCESS.
@@ -101,17 +122,29 @@ protected amendment integration/readback.
 
 ## Implementation / findings
 
-The earlier layout-only direction was insufficient for two independent reasons:
+The amendment now closes three successive P1-A gaps without widening to a generic
+Tokio ownership subsystem:
 
-1. SQLx `spawn_maintenance_tasks` creates `CloseEvent/EventListener` heap backing
-   before Tokio `Handle::spawn`.
-2. Tokio 1.53.1 current-thread scheduling may allocate queue backing after the
-   initial task allocation.
+1. SQLx `spawn_maintenance_tasks` created `CloseEvent/EventListener` heap backing
+   before Tokio task allocation.
+2. Tokio current-thread scheduling could grow queue backing after initial spawn.
+3. MultiThread flavor alone still left worker count, thread stacks and associated
+   scheduler/runtime backing host/config dependent.
 
-The superseding decision closes both without a generic scheduler fork by fixing the
-production root to MultiThread and removing the root-maintenance
-`CloseEvent/EventListener` dependency while retaining only the exact read-only
-task-allocation representation query.
+Revision 5 closes the third gap through the explicit owner decision
+`WP3_DEDICATED_BOUNDED_TOKIO_RUNTIME/v1`: one WP3-owned Tokio 1.53.1 MultiThread
+runtime with one worker, one blocking-thread cap and an explicit 2 MiB thread stack.
+The dedicated runtime replaces arbitrary ambient scheduler ownership for production
+WP3 root work.
+
+The host probe in `5748332099` is retained only as diagnostic support: it observed
+16 ambient workers on the tested 16-logical-CPU host and one stable worker for the
+explicit bounded builder. It does not supply final DFR byte accounting.
+
+Final implementation still must source-derive the candidate's complete attributable
+runtime/maintenance backing, prove blocking-worker reachability, reserve the charge
+against the same root `I` ledger before allocation/root acceptance, and fail closed
+if the frozen 12 MiB equation cannot be satisfied.
 
 ## Validation
 
@@ -167,7 +200,7 @@ task-allocation representation query.
 ## Context checkpoint
 
 ```yaml
-last_progress: "PR #681 opened; exact three-path pre-freeze readback clean; exact-head qualification in progress"
+last_progress: "Owner accepted finite dedicated runtime topology; Revision-5 three-path amendment authored on canonical PR #681 branch; final exact-head qualification pending"
 status: validating
 branch: agent/wp3-v2-tokio-maintenance-task-layout-amendment-351
 head_sha: null
@@ -189,5 +222,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: "qualify final head with exact three-path readback and repository CI; then hand the independent-review packet to the active control plane"
+next_action: "freeze the final stable head, verify exact three-path diff/readback and hosted governance/architecture/Merge Gate; then hand one fresh independent-HIGH review packet to the active control plane"
 ```
