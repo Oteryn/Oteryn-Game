@@ -19,7 +19,7 @@ The intended behavior is to remove refresh-only source mutations while preservin
 
 ## Delivery / authority checks
 
-- Prompt lifecycle identity and alias are unchanged; no lifecycle-registry mutation is required.
+- Prompt lifecycle identity and alias are unchanged, while the lifecycle metadata version advances from `1.7` to `1.8` so consumers can distinguish the materially changed coordinator contract.
 - Root and nearest Game instructions remain applicable.
 - META 3.1 remains the integration authority.
 - The canonical exact-head Merge Queue route, `merge_group` aggregate `game-gate`, protected-main readback and review rules are unchanged.
