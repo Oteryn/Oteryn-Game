@@ -31,6 +31,7 @@
 mod activation;
 mod artifact;
 mod compiler;
+mod cw2_b1_import;
 mod cw2_b4_import;
 mod digest;
 mod fixture;
@@ -45,6 +46,7 @@ pub use activation::*;
 pub(crate) use artifact::{ActivationSlot, ActiveContent};
 pub use artifact::{ArtifactExpectation, ProjectionClass, StagedArtifact, StagedContentPair};
 pub use compiler::{CompiledContent, compile};
+pub use cw2_b1_import::*;
 pub use cw2_b4_import::*;
 pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
