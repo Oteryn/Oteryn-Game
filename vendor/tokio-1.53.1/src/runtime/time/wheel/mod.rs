@@ -47,6 +47,12 @@ const NUM_LEVELS: usize = 6;
 /// The maximum duration of a `Sleep`.
 pub(super) const MAX_DURATION: u64 = (1 << (6 * NUM_LEVELS)) - 1;
 
+impl super::Driver {
+    pub(crate) fn oteryn_wp3_wheel_allocation_request() -> Option<usize> {
+        NUM_LEVELS.checked_mul(std::mem::size_of::<Level>())
+    }
+}
+
 impl Wheel {
     /// Creates a new timing wheel.
     pub(crate) fn new() -> Wheel {
