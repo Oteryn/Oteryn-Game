@@ -518,6 +518,30 @@ impl DurabilityRootConfig {
         )
     }
 
+    #[cfg(test)]
+    pub(crate) fn new_with_isolated_test_ledger(
+        transport_ip: IpAddr,
+        port: u16,
+        tls_server_name: &str,
+        database: &str,
+        username: &str,
+        password: &str,
+        root_ca_pem: &[u8],
+    ) -> Result<Self, DurabilityError> {
+        Self::new_with_ledger(
+            transport_ip,
+            port,
+            tls_server_name,
+            database,
+            username,
+            password,
+            root_ca_pem,
+            RootLedgerHandle::Test(Arc::new(RootResidentLedger::new(
+                ROOT_TOTAL_RESIDENT_BYTES,
+            ))),
+        )
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn new_with_ledger(
         transport_ip: IpAddr,
@@ -935,7 +959,7 @@ mod wp3_root_contract_tests {
     use std::net::{IpAddr, Ipv4Addr};
 
     fn config() -> Result<DurabilityRootConfig, DurabilityError> {
-        DurabilityRootConfig::new(
+        DurabilityRootConfig::new_with_isolated_test_ledger(
             IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
             5432,
             "db.example",
