@@ -5,7 +5,7 @@ use oteryn_game_server::content::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
-use std::os::unix::fs::symlink;
+use std::os::unix::fs::{MetadataExt, symlink};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -182,6 +182,46 @@ fn same_content_replacement_uses_identity_roles_instead_of_digest_guessing() {
         .parse(project_limits())
         .expect("same-content project");
     assert_eq!(fixture.capture(), expected);
+}
+
+#[test]
+fn committed_recovery_revalidates_every_canonical_document() {
+    let fixture = Fixture::new();
+    fixture.publish(&documents("mutated-child-r1"));
+    let child = fixture.base.join("project-root/records/reference.json");
+    let before = fs::metadata(&child).expect("inspect canonical child before mutation");
+    let mut bytes = fs::read(&child).expect("read canonical child");
+    let marker = b"publication-proof";
+    let offset = bytes
+        .windows(marker.len())
+        .position(|window| window == marker)
+        .expect("canonical child contains proof identity");
+    bytes[offset] = b'P';
+    fs::write(&child, &bytes).expect("mutate canonical child in place");
+    let after = fs::metadata(&child).expect("inspect canonical child after mutation");
+    assert_eq!(before.ino(), after.ino(), "mutation retains child identity");
+    assert_eq!(before.len(), after.len(), "mutation retains child length");
+
+    assert!(matches!(
+        recover_world_project_publication(
+            &fixture.base,
+            OsStr::new("project-root"),
+            filesystem_limits(),
+        ),
+        Err(ProjectFilesystemError::Project(
+            ProjectError::DigestMismatch(_)
+        ))
+    ));
+    assert!(matches!(
+        capture_world_project(
+            &fixture.base,
+            OsStr::new("project-root"),
+            filesystem_limits(),
+        ),
+        Err(ProjectFilesystemError::Project(
+            ProjectError::DigestMismatch(_)
+        ))
+    ));
 }
 
 #[test]
