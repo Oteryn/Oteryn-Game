@@ -59,6 +59,12 @@ where
     crate::runtime::task::oteryn_wp3_task_cell_allocation_size::<F, Arc<Handle>>()
 }
 
+pub(crate) fn oteryn_wp3_runtime_allocation_requests(
+    worker_threads: usize,
+) -> Option<[usize; 12]> {
+    worker::oteryn_wp3_runtime_allocation_requests(worker_threads)
+}
+
 // ===== impl MultiThread =====
 
 impl MultiThread {
