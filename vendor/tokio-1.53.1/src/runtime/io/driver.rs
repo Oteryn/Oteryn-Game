@@ -112,6 +112,40 @@ fn _assert_kinds() {
 // ===== impl Driver =====
 
 impl Driver {
+    pub(crate) fn oteryn_wp3_retained_allocation_requests(
+        nevents: usize,
+    ) -> Option<[usize; 3]> {
+        let primary_events = nevents.checked_mul(std::mem::size_of::<mio::event::Event>())?;
+
+        #[cfg(windows)]
+        let windows_statuses = {
+            // mio 1.2.2 sys/windows/iocp.rs defines CompletionStatus as
+            // repr(transparent) over OVERLAPPED_ENTRY. Reproduce that C layout
+            // here without depending on Mio private modules.
+            #[repr(C)]
+            struct OverlappedEntryLayout {
+                completion_key: usize,
+                overlapped: *mut std::ffi::c_void,
+                internal: usize,
+                bytes_transferred: u32,
+            }
+            nevents.checked_mul(std::mem::size_of::<OverlappedEntryLayout>())?
+        };
+        #[cfg(not(windows))]
+        let windows_statuses = 0usize;
+
+        // RegistrationSet::new retains Vec::with_capacity(NOTIFY_AFTER), where
+        // NOTIFY_AFTER is 16 and each slot is one Arc<ScheduledIo>.
+        let registration_pending_release = 16usize
+            .checked_mul(std::mem::size_of::<Arc<ScheduledIo>>())?;
+
+        Some([
+            primary_events,
+            windows_statuses,
+            registration_pending_release,
+        ])
+    }
+
     /// Creates a new event loop, returning any error that happened during the
     /// creation.
     pub(crate) fn new(nevents: usize) -> io::Result<(Driver, Handle)> {
