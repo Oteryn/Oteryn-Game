@@ -146,13 +146,18 @@ jobs:
           GENERATED_FAMILY="${GENERATED_ROOT}/${FAMILY_DIR}"
           TRACKED_FAMILY="${TRACKED_ROOT}/${FAMILY_DIR}"
 
-          test -f "${GENERATED_ROOT}/${INDEX}"
-          test -f "${TRACKED_ROOT}/${INDEX}"
+          GENERATED_INDEX="${GENERATED_ROOT}/${INDEX}"
+          TRACKED_INDEX="${TRACKED_ROOT}/${INDEX}"
+
+          test -f "${GENERATED_INDEX}"
+          test ! -L "${GENERATED_INDEX}"
+          test -f "${TRACKED_INDEX}"
+          test ! -L "${TRACKED_INDEX}"
           test -d "${GENERATED_FAMILY}"
           test -d "${TRACKED_FAMILY}"
 
-          # Index bytes must match exactly.
-          cmp -s -- "${GENERATED_ROOT}/${INDEX}" "${TRACKED_ROOT}/${INDEX}"
+          # Index bytes must match exactly, and neither index may be a symlink.
+          cmp -s -- "${GENERATED_INDEX}" "${TRACKED_INDEX}"
 
           # The family trees must contain exactly the same regular-file set:
           # no missing files, no unexpected extras, no nested directories/symlinks.
