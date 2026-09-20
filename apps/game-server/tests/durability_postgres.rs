@@ -8,6 +8,8 @@ mod durability;
 mod postgres;
 use sqlx::Connection;
 
+static PROCESS_ROOT_LEDGER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 async fn seed_shared_root_replacement_predecessor(
     url: &str,
     seed: authority_matrix::Seed,
@@ -386,7 +388,10 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
     use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
 
-    let root = DurabilityRoot::new(DurabilityRootConfig::new_with_isolated_test_ledger(
+    let _process_root_guard = PROCESS_ROOT_LEDGER_TEST_LOCK
+        .lock()
+        .expect("process root ledger test lock poisoned");
+    let root = DurabilityRoot::new(DurabilityRootConfig::new(
         IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
         5432,
         "db.example",
