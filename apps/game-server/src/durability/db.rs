@@ -202,7 +202,27 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         total,
         conservative_heap_resident_charge(arc_allocation_request::<tokio::runtime::Runtime>()?)?,
     )?;
-    total = checked_charge_add(total, WP3_RUNTIME_WORKER_STACK_BYTES)?;
+
+    let runtime_profile = tokio::runtime::oteryn_wp3_dedicated_runtime_allocation_profile(
+        WP3_RUNTIME_WORKER_THREADS,
+        WP3_RUNTIME_MAX_BLOCKING_THREADS,
+        WP3_RUNTIME_WORKER_STACK_BYTES,
+    )
+    .ok_or(DurabilityError::RootUnavailable)?;
+    if runtime_profile.scheduler_worker_count != WP3_RUNTIME_WORKER_THREADS
+        || runtime_profile.blocking_pool_thread_cap
+            != WP3_RUNTIME_WORKER_THREADS + WP3_RUNTIME_MAX_BLOCKING_THREADS
+        || runtime_profile.additional_blocking_worker_limit != WP3_RUNTIME_MAX_BLOCKING_THREADS
+        || runtime_profile.worker_stack_request != WP3_RUNTIME_WORKER_STACK_BYTES
+    {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    for requested in runtime_profile.heap_requests {
+        if requested != 0 {
+            total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
+        }
+    }
+    total = checked_charge_add(total, runtime_profile.worker_stack_request)?;
 
     for requested in [
         arc_allocation_request::<AtomicBool>()?,
@@ -1154,6 +1174,27 @@ mod wp3_root_contract_tests {
             assert_eq!(pool.size(), 0);
             assert_eq!(pool.num_idle(), 0);
         });
+        Ok(())
+    }
+
+    #[test]
+    fn dedicated_runtime_representation_is_complete_for_frozen_topology()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let profile = tokio::runtime::oteryn_wp3_dedicated_runtime_allocation_profile(
+            WP3_RUNTIME_WORKER_THREADS,
+            WP3_RUNTIME_MAX_BLOCKING_THREADS,
+            WP3_RUNTIME_WORKER_STACK_BYTES,
+        )
+        .ok_or("missing WP3 runtime profile")?;
+
+        assert_eq!(profile.scheduler_worker_count, 1);
+        assert_eq!(profile.blocking_pool_thread_cap, 2);
+        assert_eq!(profile.additional_blocking_worker_limit, 1);
+        assert_eq!(profile.worker_stack_request, 2 * 1024 * 1024);
+        assert!(
+            profile.heap_requests.into_iter().all(|request| request != 0),
+            "every frozen retained runtime allocation must have a source-derived request"
+        );
         Ok(())
     }
 
