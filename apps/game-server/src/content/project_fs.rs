@@ -298,6 +298,11 @@ mod linux {
         length: usize,
     }
 
+    struct CapturedProject {
+        project: WorldProject,
+        root_digest: String,
+    }
+
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
     #[serde(rename_all = "snake_case")]
     enum PlannedKind {
@@ -409,6 +414,12 @@ mod linux {
         BackupInstalledBeforePhase,
     }
 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum RoleVerificationCheckpoint {
+        IdentityPlanVerified,
+        CanonicalCaptureComplete,
+    }
+
     pub(super) fn capture(
         ambient_parent: &Path,
         root_basename: &OsStr,
@@ -447,11 +458,19 @@ mod linux {
             ));
         }
 
+        capture_open_root(&root, limits, &mut scans).map(|captured| captured.project)
+    }
+
+    fn capture_open_root(
+        root: &Dir,
+        limits: ProjectFilesystemLimits,
+        scans: &mut ScanBudget,
+    ) -> Result<CapturedProject, ProjectFilesystemError> {
         let mut identities = BTreeSet::new();
         let mut controls = Vec::with_capacity(3);
         let mut control_total = 0_usize;
         for locator in [PROJECT_LOCATOR, MANIFEST_LOCATOR, LOCK_LOCATOR] {
-            let pinned = open_locator(&root, locator, limits, &mut scans, &mut identities)?;
+            let pinned = open_locator(root, locator, limits, scans, &mut identities)?;
             control_total =
                 checked_total(control_total, pinned.length, limits.project.max_total_bytes)?;
             controls.push(pinned);
@@ -463,6 +482,7 @@ mod linux {
             let bytes = consume_pinned(pinned)?;
             control_bytes.insert(locator, bytes);
         }
+        let root_digest = world_project_sha256(&control_bytes[PROJECT_LOCATOR]);
         let plan = ProjectCapturePlan::from_control_documents(
             &control_bytes[PROJECT_LOCATOR],
             &control_bytes[MANIFEST_LOCATOR],
@@ -472,13 +492,7 @@ mod linux {
 
         let mut documents = control_bytes;
         for expected in plan.documents() {
-            let pinned = open_locator(
-                &root,
-                &expected.locator,
-                limits,
-                &mut scans,
-                &mut identities,
-            )?;
+            let pinned = open_locator(root, &expected.locator, limits, scans, &mut identities)?;
             if pinned.length != expected.byte_length {
                 return Err(unsafe_entry(
                     &expected.locator,
@@ -494,9 +508,13 @@ mod linux {
             documents.insert(expected.locator.clone(), bytes);
         }
 
-        ProjectSnapshot::new(documents, limits.project)?
+        let project = ProjectSnapshot::new(documents, limits.project)?
             .parse(limits.project)
-            .map_err(ProjectFilesystemError::from)
+            .map_err(ProjectFilesystemError::from)?;
+        Ok(CapturedProject {
+            project,
+            root_digest,
+        })
     }
 
     fn preflight_canonical_document_allocation(
@@ -1827,6 +1845,24 @@ mod linux {
         limits: ProjectFilesystemLimits,
         max_journal: usize,
     ) -> Result<ProjectRecoveryOutcome, ProjectFilesystemError> {
+        recover_in_parent_with_observer(
+            parent,
+            root_basename,
+            names,
+            limits,
+            max_journal,
+            &mut |_| Ok(()),
+        )
+    }
+
+    fn recover_in_parent_with_observer(
+        parent: &Dir,
+        root_basename: &OsStr,
+        names: &InternalNames,
+        limits: ProjectFilesystemLimits,
+        max_journal: usize,
+        observer: &mut dyn FnMut(RoleVerificationCheckpoint) -> Result<(), ProjectFilesystemError>,
+    ) -> Result<ProjectRecoveryOutcome, ProjectFilesystemError> {
         let Some(state) = read_journal(parent, &names.journal, root_basename, max_journal, limits)?
         else {
             if entry_exists(parent, &names.stage, limits)?
@@ -1859,7 +1895,7 @@ mod linux {
                     "publication stage exists without a durable root identity",
                 ));
             }
-            require_previous_live(parent, root_basename, &state, limits)?;
+            require_previous_live(parent, root_basename, &state, limits, observer)?;
             remove_journal(parent, &names.journal, &state)?;
             return Ok(ProjectRecoveryOutcome::PreviousRevisionPreserved);
         };
@@ -1869,7 +1905,7 @@ mod linux {
         };
 
         if !state.stage_ready {
-            require_previous_live(parent, root_basename, &state, limits)?;
+            require_previous_live(parent, root_basename, &state, limits, observer)?;
             if entry_exists(parent, &names.backup, limits)? {
                 return Err(conflict(
                     "backup appeared before the staged revision was durable",
@@ -1895,7 +1931,14 @@ mod linux {
                     return Ok(ProjectRecoveryOutcome::PreviousRevisionPreserved);
                 }
                 if live == Some(stage_root) && stage.is_none() {
-                    verify_replacement(parent, root_basename, &stage_plan, &state, limits)?;
+                    verify_replacement(
+                        parent,
+                        root_basename,
+                        &stage_plan,
+                        &state,
+                        limits,
+                        observer,
+                    )?;
                     let was_committed = state.committed;
                     if !state.installed || !state.committed {
                         sync_dir(parent, "sync recovered initial root install")?;
@@ -1925,15 +1968,36 @@ mod linux {
                     && backup.is_none()
                     && !state.installed
                 {
-                    verify_previous(parent, root_basename, previous_plan, &state, limits)?;
+                    verify_previous(
+                        parent,
+                        root_basename,
+                        previous_plan,
+                        &state,
+                        limits,
+                        observer,
+                    )?;
                     remove_tree_subset(parent, &names.stage, &stage_plan, limits)?;
                     remove_journal(parent, &names.journal, &state)?;
                     return Ok(ProjectRecoveryOutcome::PreviousRevisionPreserved);
                 }
                 if live == Some(stage_root) && stage == Some(previous_identity) && backup.is_none()
                 {
-                    verify_replacement(parent, root_basename, &stage_plan, &state, limits)?;
-                    verify_previous(parent, &names.stage, previous_plan, &state, limits)?;
+                    verify_replacement(
+                        parent,
+                        root_basename,
+                        &stage_plan,
+                        &state,
+                        limits,
+                        observer,
+                    )?;
+                    verify_previous(
+                        parent,
+                        &names.stage,
+                        previous_plan,
+                        &state,
+                        limits,
+                        observer,
+                    )?;
                     if !state.installed {
                         sync_dir(parent, "sync recovered atomic root exchange")?;
                     }
@@ -1957,12 +2021,26 @@ mod linux {
                     && stage.is_none()
                     && (backup == Some(previous_identity) || backup.is_none())
                 {
-                    verify_replacement(parent, root_basename, &stage_plan, &state, limits)?;
+                    verify_replacement(
+                        parent,
+                        root_basename,
+                        &stage_plan,
+                        &state,
+                        limits,
+                        observer,
+                    )?;
                     if backup.is_some() {
                         if state.committed {
                             verify_tree_subset(parent, &names.backup, previous_plan, limits)?;
                         } else {
-                            verify_previous(parent, &names.backup, previous_plan, &state, limits)?;
+                            verify_previous(
+                                parent,
+                                &names.backup,
+                                previous_plan,
+                                &state,
+                                limits,
+                                observer,
+                            )?;
                         }
                     } else if !state.committed {
                         return Err(conflict("previous root vanished before commit was durable"));
@@ -2000,9 +2078,10 @@ mod linux {
         root_basename: &OsStr,
         state: &JournalState,
         limits: ProjectFilesystemLimits,
+        observer: &mut dyn FnMut(RoleVerificationCheckpoint) -> Result<(), ProjectFilesystemError>,
     ) -> Result<(), ProjectFilesystemError> {
         match &state.previous {
-            Some(plan) => verify_previous(parent, root_basename, plan, state, limits),
+            Some(plan) => verify_previous(parent, root_basename, plan, state, limits, observer),
             None if directory_identity(parent, root_basename, limits)?.is_none() => Ok(()),
             None => Err(conflict("initial publication unexpectedly has a live root")),
         }
@@ -2014,12 +2093,14 @@ mod linux {
         plan: &TreePlan,
         state: &JournalState,
         limits: ProjectFilesystemLimits,
+        observer: &mut dyn FnMut(RoleVerificationCheckpoint) -> Result<(), ProjectFilesystemError>,
     ) -> Result<(), ProjectFilesystemError> {
         let expected = state
             .replacement_digest
             .as_deref()
             .ok_or_else(|| conflict("publication journal has no replacement digest"))?;
-        verify_canonical_role(parent, name, plan, expected, limits).map(|_| ())
+        verify_canonical_role_with_observer(parent, name, plan, expected, limits, observer)
+            .map(|_| ())
     }
 
     fn verify_previous(
@@ -2028,12 +2109,14 @@ mod linux {
         plan: &TreePlan,
         state: &JournalState,
         limits: ProjectFilesystemLimits,
+        observer: &mut dyn FnMut(RoleVerificationCheckpoint) -> Result<(), ProjectFilesystemError>,
     ) -> Result<(), ProjectFilesystemError> {
         let expected = state
             .previous_digest
             .as_deref()
             .ok_or_else(|| conflict("publication journal has no previous digest"))?;
-        verify_canonical_role(parent, name, plan, expected, limits).map(|_| ())
+        verify_canonical_role_with_observer(parent, name, plan, expected, limits, observer)
+            .map(|_| ())
     }
 
     fn verify_canonical_role(
@@ -2043,53 +2126,97 @@ mod linux {
         expected_root_digest: &str,
         limits: ProjectFilesystemLimits,
     ) -> Result<WorldProject, ProjectFilesystemError> {
-        verify_tree_complete(parent, name, plan, limits)?;
-        let captured = capture_in_parent(parent, name, limits)?;
-        verify_root_digest(parent, name, expected_root_digest, limits)?;
-        Ok(captured)
+        verify_canonical_role_with_observer(
+            parent,
+            name,
+            plan,
+            expected_root_digest,
+            limits,
+            &mut |_| Ok(()),
+        )
     }
 
-    fn verify_root_digest(
+    fn verify_canonical_role_with_observer(
         parent: &Dir,
         name: &OsStr,
-        expected: &str,
+        plan: &TreePlan,
+        expected_root_digest: &str,
         limits: ProjectFilesystemLimits,
-    ) -> Result<(), ProjectFilesystemError> {
-        if existing_root_digest(parent, name, limits)? != expected {
+        observer: &mut dyn FnMut(RoleVerificationCheckpoint) -> Result<(), ProjectFilesystemError>,
+    ) -> Result<WorldProject, ProjectFilesystemError> {
+        let mut root_scans = ScanBudget::new(limits);
+        let entry = exact_entry_metadata(parent, name, "<publication-role>", &mut root_scans)?;
+        if !entry.is_dir() || FileIdentity::from_metadata(&entry) != plan.root {
+            return Err(conflict(
+                "publication role root type or identity differs from its durable plan",
+            ));
+        }
+        let root = parent.open_dir_nofollow(name).map_err(|source| {
+            io_error(
+                "open publication role root without following links",
+                "<publication-role>",
+                source,
+            )
+        })?;
+        let opened = root.dir_metadata().map_err(|source| {
+            io_error(
+                "inspect opened publication role root",
+                "<publication-role>",
+                source,
+            )
+        })?;
+        if !opened.is_dir() || FileIdentity::from_metadata(&opened) != plan.root {
+            return Err(conflict("publication role root changed while opening"));
+        }
+
+        verify_tree_complete_open_root(&root, plan, limits)?;
+        observer(RoleVerificationCheckpoint::IdentityPlanVerified)?;
+        let captured = capture_open_root(&root, limits, &mut ScanBudget::new(limits))?;
+        observer(RoleVerificationCheckpoint::CanonicalCaptureComplete)?;
+        if captured.root_digest != expected_root_digest {
             return Err(conflict(
                 "project root digest differs from the durable journal role",
             ));
         }
-        Ok(())
+        require_identity(
+            parent,
+            name,
+            PlannedKind::Directory,
+            plan.root,
+            "<publication-role>",
+        )?;
+        Ok(captured.project)
     }
 
-    fn existing_root_digest(
-        parent: &Dir,
-        name: &OsStr,
-        limits: ProjectFilesystemLimits,
-    ) -> Result<String, ProjectFilesystemError> {
-        let root = parent.open_dir_nofollow(name).map_err(|source| {
-            io_error(
-                "open root for journal digest verification",
-                "<project-root>",
-                source,
-            )
-        })?;
-        let mut scans = ScanBudget::new(limits);
-        let mut identities = BTreeSet::new();
-        let pinned = open_locator(&root, PROJECT_LOCATOR, limits, &mut scans, &mut identities)?;
-        let bytes = consume_pinned(pinned)?;
-        Ok(world_project_sha256(&bytes))
-    }
-
-    fn verify_tree_complete(
-        parent: &Dir,
-        root_name: &OsStr,
+    fn verify_tree_complete_open_root(
+        root: &Dir,
         plan: &TreePlan,
         limits: ProjectFilesystemLimits,
     ) -> Result<(), ProjectFilesystemError> {
-        let current = current_tree_subset(parent, root_name, plan, limits)?
-            .ok_or_else(|| conflict("durable publication tree is absent"))?;
+        let opened = root.dir_metadata().map_err(|source| {
+            io_error(
+                "inspect opened publication role root",
+                "<publication-role>",
+                source,
+            )
+        })?;
+        if !opened.is_dir() || FileIdentity::from_metadata(&opened) != plan.root {
+            return Err(conflict(
+                "opened publication role differs from its durable root identity",
+            ));
+        }
+        let mut by_key = BTreeMap::new();
+        for entry in &plan.entries {
+            by_key.insert((entry.parent, entry.name_hex.clone()), entry);
+        }
+        let children =
+            inspect_subset_directory(root, plan.root, &by_key, &mut ScanBudget::new(limits))?;
+        let current = CurrentEntry {
+            name: OsString::new(),
+            kind: PlannedKind::Directory,
+            identity: plan.root,
+            children,
+        };
         let actual = count_current_entries(&current)?;
         if actual != plan.entries.len() {
             return Err(conflict(
@@ -2724,6 +2851,7 @@ mod linux {
         };
         use rustix::fs::{Mode, mkfifoat};
         use std::fs;
+        use std::os::unix::fs::MetadataExt as StdMetadataExt;
         use std::sync::atomic::{AtomicU64, Ordering};
         use std::time::{Duration, Instant};
 
@@ -2856,6 +2984,26 @@ mod linux {
                 .expect("unit snapshot")
                 .parse(evidence_limits())
                 .expect("unit project")
+        }
+
+        fn corrupt_reference_document_in_place(root: &Path) {
+            let child = root.join("records/reference.json");
+            let before = fs::metadata(&child).expect("inspect reference document before mutation");
+            let mut bytes = fs::read(&child).expect("read reference document");
+            let marker = b"publication-unit-proof";
+            let offset = bytes
+                .windows(marker.len())
+                .position(|window| window == marker)
+                .expect("reference document contains unit proof identity");
+            bytes[offset] = b'P';
+            fs::write(&child, &bytes).expect("mutate reference document in place");
+            let after = fs::metadata(&child).expect("inspect reference document after mutation");
+            assert_eq!(
+                StdMetadataExt::ino(&before),
+                StdMetadataExt::ino(&after),
+                "mutation retains the planned file identity"
+            );
+            assert_eq!(before.len(), after.len(), "mutation retains byte length");
         }
 
         #[test]
@@ -3105,6 +3253,79 @@ mod linux {
                 expected(substitute)
             );
             fs::remove_dir_all(displaced).expect("remove displaced publication parent");
+        }
+
+        #[test]
+        fn committed_recovery_pins_one_root_across_role_exchange_boundaries() {
+            for checkpoint in [
+                RoleVerificationCheckpoint::IdentityPlanVerified,
+                RoleVerificationCheckpoint::CanonicalCaptureComplete,
+            ] {
+                let fixture = PublicationFixture::new();
+                let donor = PublicationFixture::new();
+                let documents = canonical_documents("role-exchange-r1");
+                fixture.publish(&documents);
+                donor.publish(&documents);
+                let alternate_name = OsStr::new("alternate-root");
+                let alternate_path = fixture.base.join(alternate_name);
+                fs::rename(donor.base.join("project-root"), &alternate_path)
+                    .expect("install alternate canonical root");
+
+                if checkpoint == RoleVerificationCheckpoint::IdentityPlanVerified {
+                    corrupt_reference_document_in_place(&fixture.base.join("project-root"));
+                } else {
+                    corrupt_reference_document_in_place(&alternate_path);
+                }
+
+                let parent = Dir::open_ambient_dir(&fixture.base, ambient_authority())
+                    .expect("open role-exchange parent");
+                let _held = lock_parent(&parent).expect("lock role-exchange parent");
+                let names = internal_names(OsStr::new("project-root"))
+                    .expect("derive role-exchange internal names");
+                let max_journal =
+                    journal_byte_limit(publication_limits()).expect("bound recovery journal");
+                let mut exchanged = false;
+                let result = recover_in_parent_with_observer(
+                    &parent,
+                    OsStr::new("project-root"),
+                    &names,
+                    publication_limits(),
+                    max_journal,
+                    &mut |observed| {
+                        if observed == checkpoint && !exchanged {
+                            atomic_exchange(&parent, OsStr::new("project-root"), alternate_name)?;
+                            exchanged = true;
+                        }
+                        Ok(())
+                    },
+                );
+                assert!(exchanged, "targeted role-verification boundary was reached");
+                assert!(
+                    result.is_err(),
+                    "root exchange must not produce a committed recovery: {result:?}"
+                );
+
+                if checkpoint == RoleVerificationCheckpoint::IdentityPlanVerified {
+                    atomic_exchange(&parent, OsStr::new("project-root"), alternate_name)
+                        .expect("restore corrupted planned root to the live role");
+                }
+                assert!(
+                    capture_in_parent(&parent, OsStr::new("project-root"), publication_limits(),)
+                        .is_err(),
+                    "the corrupt live tree remains unverifiable"
+                );
+                assert!(
+                    recover_in_parent(
+                        &parent,
+                        OsStr::new("project-root"),
+                        &names,
+                        publication_limits(),
+                        max_journal,
+                    )
+                    .is_err(),
+                    "recovery must not certify the corrupt live tree"
+                );
+            }
         }
 
         #[test]
