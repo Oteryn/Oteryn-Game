@@ -78,16 +78,16 @@ The protected `main` ruleset requires only the stable `game-gate` context. Indiv
 
 ## Current Merge Queue gate
 
-The canonical `.github/workflows/merge-group-gate.yml` is pinned to exact reviewed blob `df22c9a40847ce759337ab63c84a28e1180892ba`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
+The canonical `.github/workflows/merge-group-gate.yml` is pinned to exact reviewed blob `ad439cf3b04aaea084521f7be37761d3b1458cc5`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
 
 | Exact queue classification | Selected additional jobs |
 |---|---|
 | Complete, valid diff only of Markdown paths under `docs/architecture/`, with eligible object modes for non-deleted changed paths (`architecture-docs`) | Rust Linux, PostgreSQL, Windows and supply-chain jobs may be skipped |
-| Other, mixed, special-mode, malformed or incomplete classification (`full`) | Linux workspace, real PostgreSQL 17.6, Windows client/SIM and supply chain |
+| Other, mixed, special-mode, malformed or incomplete classification (`full`) | Linux workspace, real PostgreSQL 17.6, Windows client/input-platform/SIM and supply chain |
 
 The inline queue classifier reads exact base/head Git evidence, including both sides of renames through `--no-renames`; it is not the PR/post-merge consumer-snapshot classifier. Its `architecture-docs` path predicate does not establish that no runtime consumer reads those documents. Do not describe it as a consumer-closure proof or extend the exception through this documentation. A relevant document-input dependency requires owning control-plane review of the admission assumption; this matrix does not repair or authorize routing changes.
 
-The aggregate accepts only coherent `true/true` or `false/false` selections. Selected jobs must succeed; only unselected jobs may report `skipped`. Missing/failed/cancelled mandatory or selected evidence cannot qualify the candidate. For FULL, PostgreSQL verifies the synthetic head and requires the durability test target; Windows verifies that same head before its build/smoke/SIM commands.
+The aggregate accepts only coherent `true/true` or `false/false` selections. Selected jobs must succeed; only unselected jobs may report `skipped`. Missing/failed/cancelled mandatory or selected evidence cannot qualify the candidate. For FULL, PostgreSQL verifies the synthetic head and requires the durability test target; Windows verifies that same head before its build/strict-Clippy/smoke/synthetic/input-platform/SIM commands.
 
 Issue #285/PR #296 records the earlier full-queue rollout, not a claim that the current pinned workflow has unconditional runtime jobs. Workflow or pin changes require their own reviewed control-plane change. Source presence and a docs-only queue PASS are not runtime execution evidence.
 
