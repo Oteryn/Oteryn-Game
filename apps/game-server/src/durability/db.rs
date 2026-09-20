@@ -136,6 +136,15 @@ fn checked_charge_add(total: usize, additional: usize) -> Result<usize, Durabili
         .ok_or(DurabilityError::RootUnavailable)
 }
 
+fn checked_runtime_stack_reservation(
+    worker_stack_request: usize,
+    blocking_pool_thread_cap: usize,
+) -> Result<usize, DurabilityError> {
+    worker_stack_request
+        .checked_mul(blocking_pool_thread_cap)
+        .ok_or(DurabilityError::RootUnavailable)
+}
+
 fn conservative_heap_resident_charge(requested: usize) -> Result<usize, DurabilityError> {
     if requested == 0 {
         return Ok(0);
@@ -227,10 +236,10 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
     // thread created by BlockingPool::spawn_thread inherits thread_stack_size,
     // so root I must reserve stack backing for the full reachable pool cap rather
     // than only the mandatory scheduler worker.
-    let runtime_stack_reservation = runtime_profile
-        .worker_stack_request
-        .checked_mul(runtime_profile.blocking_pool_thread_cap)
-        .ok_or(DurabilityError::RootUnavailable)?;
+    let runtime_stack_reservation = checked_runtime_stack_reservation(
+        runtime_profile.worker_stack_request,
+        runtime_profile.blocking_pool_thread_cap,
+    )?;
     total = checked_charge_add(total, runtime_stack_reservation)?;
 
     for requested in [
@@ -1205,12 +1214,16 @@ mod wp3_root_contract_tests {
             profile.scheduler_worker_count + profile.additional_blocking_worker_limit
         );
         assert_eq!(
-            profile
-                .worker_stack_request
-                .checked_mul(profile.blocking_pool_thread_cap)
-                .ok_or("runtime stack reservation overflow")?,
+            checked_runtime_stack_reservation(
+                profile.worker_stack_request,
+                profile.blocking_pool_thread_cap,
+            )?,
             4 * 1024 * 1024
         );
+        assert!(matches!(
+            checked_runtime_stack_reservation(usize::MAX, 2),
+            Err(DurabilityError::RootUnavailable)
+        ));
         #[cfg(windows)]
         assert_eq!(
             profile
