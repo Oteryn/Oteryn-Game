@@ -734,6 +734,7 @@ Consumer/query repairs do not close every peer-controlled driver allocation. Min
 
 - backend frame-length gate before receive-buffer reserve;
 - DataRow count/profile gate before vector allocation;
+- ParameterDescription count/profile gate before SmallVec allocation;
 - RowDescription count/name/profile gate before allocation;
 - bounded/allowlisted retained `ParameterStatus` count/bytes;
 - finite selected statement/type/table cache behavior;
@@ -742,6 +743,119 @@ Consumer/query repairs do not close every peer-controlled driver allocation. Min
 - only the cleanup/high-water observability needed to prove `R`/`T` retirement finality and the non-overlap gate.
 
 The exact source-visible settled connection lower bound remains at least 16 KiB from initial SQLx read/write socket backing before TLS/reactor/cache state. That is a lower bound, not complete lifecycle `R`.
+
+
+### 14.1 PostgreSQL first-slice receive/resident hard profile — owner amendment (2026-09-20)
+
+This amendment closes the missing externally-controlled profile authority for
+`RC-WP3-002-POSTGRES-FIRST-SLICE-RECEIVE-RESIDENT-PROFILE`. It is one
+indivisible first-slice contract. It does not create another DFR budget, increase
+`DFR-TOTAL-RESIDENT-BYTES = 12,582,912`, or change
+`I + max(R,T) + Q + A <= 12 MiB`.
+
+The production root profile fixes these hard boundaries:
+
+| boundary | hard rule | first-slice meaning |
+| --- | ---: | --- |
+| backend PostgreSQL message | **131,207 total wire bytes** | includes the one-byte backend type, four-byte PostgreSQL length field and body; therefore the announced length field is <= **131,206** and body is <= **131,202** |
+| DataRow fields | **32** | reject count 33 before vector allocation |
+| ParameterDescription parameters | **32** | reject count 33 before SmallVec allocation |
+| RowDescription fields | **32** | reject count 33 before vector or field-name allocation |
+| RowDescription single field name | **63 UTF-8 bytes** excluding NUL | selected stock PostgreSQL 17.6 compatibility ceiling, not a protocol-wide invariant |
+| RowDescription aggregate field-name bytes | **2,016** excluding NULs | derived as 32 x 63; reject 2,017 before owned field-name allocation |
+| retained raw ParameterStatus entries | **0** | no heap-backed raw key/value map; only normalized `server_version_num: Option<u32>` may survive |
+| retained raw ParameterStatus variable bytes | **0** | unknown/unneeded statuses are consumed from the bounded message and not retained |
+| reusable socket read scratch | **8,192 bytes** | no retained growth on the production root profile; larger admitted messages use separately owned, same-root-charged backing |
+
+The backend-message ceiling is a PostgreSQL-specific first-slice safety and
+compatibility cap. It is not `DFR-SQL-RESULT-BYTES` and does not reuse
+`FND02-WIRE-FRAME-BYTES`. For the admitted row-bearing representation its
+maximum is derived as:
+
+```text
+1 type + 4 length + 2 DataRow count + (32 * 4 field-length prefixes)
++ 131,072 admitted row-value bytes
+= 131,207 total wire bytes
+```
+
+The five-byte backend header is inspected first. A total size of 131,208 bytes
+(or an announced length above 131,206) fails closed before any reserve, growth
+or read target derived from the peer length. Structural truncation, checked
+arithmetic overflow, or a body inconsistent with its message-specific profile
+also fails closed.
+
+#### Row-bearing execution profile
+
+```text
+POSTGRES_FIRST_SLICE_ROW_RESULTS = PREPARED_BINARY_ONLY
+```
+
+Every production root-profile operation that can produce `DataRow` uses the
+extended-query Prepare/Bind path with binary result format. A simple/unprepared
+text query is admitted only where the production path cannot produce row data.
+If `DataRow` is observed on a simple/text root-profile path, the connection
+fails closed before row decoding or retention.
+
+This rule is part of the 131,207-byte decision: it prevents the binary-row
+derivation from being silently applied to arbitrary text-wire representations.
+Qualification must prove the current WP3/WP4 first-slice row-bearing corpus has
+no text-result bypass.
+
+#### Decoder and retained-state rules
+
+Before allocating decoded peer-driven collections:
+
+- `DataRow` validates count <=32 and the complete body before
+  `Vec::with_capacity`;
+- `ParameterDescription` validates count <=32 and exact
+  `2 + 4 * count` body structure before `SmallVec::with_capacity`;
+- `RowDescription` validates count <=32, each UTF-8 name <=63 bytes,
+  aggregate name bytes <=2,016 and complete body structure before vector or
+  owned-String allocation.
+
+The 63-byte field-name ceiling belongs specifically to the selected stock
+PostgreSQL 17.6 profile. A server built with a larger `NAMEDATALEN` /
+`max_identifier_length > 63` is outside this first slice and cannot silently
+widen the boundary; supporting it requires a successor owner decision.
+
+`ParameterStatus` keeps no raw heap-backed key/value entries. The existing
+`server_version` status may be parsed into `server_version_num: Option<u32>`;
+all raw status bytes are then released with the received message. Other
+unneeded statuses are ignored after bounded parsing, not accumulated.
+
+The reusable socket read scratch remains at exactly 8,192 retained bytes on the
+root profile. An admitted message larger than the scratch is read into separate
+backing only after the header gate and after reserving the actual allocation
+against the same owning R/T generation. Releasing that message must not leave
+the reusable scratch enlarged.
+
+#### Statement/type/table profile
+
+The statement-cache capacity remains **100**. This amendment does not create a
+new cache allowance.
+
+The production root profile accepts built-in PostgreSQL OIDs only. Every
+parameter or result OID must resolve through the built-in type table; an unknown
+OID fails closed before generic type resolution, catalog queries or custom
+type-cache insertion. Generic domain/enum/composite/range discovery is not
+authorized.
+
+Table-origin discovery is disabled on the production root profile.
+`ColumnResolver` catalog lookup is not entered and the generic custom
+type/table maps remain empty on this path.
+
+Actual receive-message backing, decoded vectors/strings, statement metadata,
+cache backing and socket backing remain conjunctively charged to the existing
+same-root R/T accounting before allocation/growth and through final backing
+destruction. These hard maxima are validity ceilings, not additional resident
+allowances. An otherwise valid maximum still fails closed when the existing
+12 MiB root cannot fund its actual representation.
+
+Qualification covers max/max+1 and malformed cases for every boundary above,
+configured stock PostgreSQL 17.6 startup/status behavior, built-in-only OID
+reachability, no table-origin/cache growth, statement-cache capacity 100,
+socket scratch high-water/finality, exact same-root charge lifetime, and the
+prepared/binary-only row-bearing corpus.
 
 ## 15. Cancellation, rollback and ambiguous COMMIT
 
