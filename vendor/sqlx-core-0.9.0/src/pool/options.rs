@@ -580,6 +580,24 @@ impl<DB: Database> PoolOptions<DB> {
         // `min_connections` is guaranteed by the idle reaper now.
         Pool(PoolInner::new_arc(self, options))
     }
+
+    /// WP3-only lazy construction bound to an explicit dedicated Tokio runtime.
+    ///
+    /// Ordinary SQLx pool construction remains unchanged. This constructor is a
+    /// narrow representation/finality seam for the accepted Oteryn durability root.
+    #[cfg(feature = "_rt-tokio")]
+    #[doc(hidden)]
+    pub fn connect_lazy_with_oteryn_wp3_runtime(
+        self,
+        options: <DB::Connection as Connection>::Options,
+        handle: &tokio::runtime::Handle,
+    ) -> (
+        Pool<DB>,
+        tokio::runtime::OterynWp3TaskAllocationProfile,
+    ) {
+        let (inner, profile) = PoolInner::new_arc_oteryn_wp3(self, options, handle);
+        (Pool(inner), profile)
+    }
 }
 
 impl<DB: Database> Debug for PoolOptions<DB> {

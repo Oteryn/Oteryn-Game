@@ -119,6 +119,15 @@ pub fn retained_pool_core_allocation_sizes<DB: crate::database::Database>(
     Some([pool_inner, connect_options, idle_slots])
 }
 
+/// Returns the source-derived allocation requests for the exact WP3 root-maintenance task.
+#[cfg(feature = "_rt-tokio")]
+#[doc(hidden)]
+pub fn oteryn_wp3_root_maintenance_task_allocation_profile<
+    DB: crate::database::Database,
+>() -> tokio::runtime::OterynWp3TaskAllocationProfile {
+    inner::oteryn_wp3_maintenance_task_allocation_profile::<DB>()
+}
+
 /// An asynchronous pool of SQLx database connections.
 ///
 /// Create a pool with [Pool::connect] or [Pool::connect_with] and then call [Pool::acquire]

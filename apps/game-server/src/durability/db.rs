@@ -19,6 +19,9 @@ pub const DB_PASS_DEADLINE: Duration = Duration::from_secs(2);
 pub(crate) const ROOT_RECOVERY_WINDOW: Duration = Duration::from_secs(5);
 const HOLDER_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const HOLDER_MAX_LIFETIME: Duration = Duration::from_secs(30 * 60);
+const WP3_RUNTIME_WORKER_THREADS: usize = 1;
+const WP3_RUNTIME_MAX_BLOCKING_THREADS: usize = 1;
+const WP3_RUNTIME_WORKER_STACK_BYTES: usize = 2 * 1024 * 1024;
 const STATEMENT_CACHE_CAPACITY: usize = 100;
 const TLS_SERVER_NAME_MAX_BYTES: usize = 253;
 const DATABASE_MAX_BYTES: usize = 63;
@@ -184,6 +187,20 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
     for requested in pool_allocations {
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
+
+    let maintenance =
+        sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
+    for requested in [maintenance.future_box_request, maintenance.task_cell_request] {
+        if requested != 0 {
+            total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
+        }
+    }
+
+    total = checked_charge_add(
+        total,
+        conservative_heap_resident_charge(arc_allocation_request::<tokio::runtime::Runtime>()?)?,
+    )?;
+    total = checked_charge_add(total, WP3_RUNTIME_WORKER_STACK_BYTES)?;
 
     for requested in [
         arc_allocation_request::<AtomicBool>()?,
@@ -562,6 +579,7 @@ impl DurabilityRootConfig {
 ///
 /// Connection establishment is deliberately left to serialized root
 /// maintenance; active work must use a ready-only `try_begin()` path.
+#[cfg(test)]
 fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
     let (options, root_i_reservation) = config.into_connect_options();
     let pool = PgPoolOptions::new()
@@ -574,6 +592,40 @@ fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
     (pool, root_i_reservation)
 }
 
+fn build_wp3_runtime() -> Result<Arc<tokio::runtime::Runtime>, DurabilityError> {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(WP3_RUNTIME_WORKER_THREADS)
+        .max_blocking_threads(WP3_RUNTIME_MAX_BLOCKING_THREADS)
+        .thread_stack_size(WP3_RUNTIME_WORKER_STACK_BYTES)
+        .enable_io()
+        .enable_time()
+        .build()
+        .map_err(|_| DurabilityError::RootUnavailable)?;
+    if runtime.handle().runtime_flavor() != tokio::runtime::RuntimeFlavor::MultiThread {
+        return Err(DurabilityError::RootUnavailable);
+    }
+    Ok(Arc::new(runtime))
+}
+
+fn build_production_root_pool(
+    config: DurabilityRootConfig,
+    handle: &tokio::runtime::Handle,
+) -> (
+    PgPool,
+    RootIReservation,
+    tokio::runtime::OterynWp3TaskAllocationProfile,
+) {
+    let (options, root_i_reservation) = config.into_connect_options();
+    let (pool, maintenance_profile) = PgPoolOptions::new()
+        .max_connections(1)
+        .min_connections(0)
+        .acquire_timeout(ROOT_RECOVERY_WINDOW)
+        .idle_timeout(HOLDER_IDLE_TIMEOUT)
+        .max_lifetime(HOLDER_MAX_LIFETIME)
+        .connect_lazy_with_oteryn_wp3_runtime(options, handle);
+    (pool, root_i_reservation, maintenance_profile)
+}
+
 /// Process-scoped owner of the accepted max-one durability holder.
 ///
 /// Active work may only take an already-idle holder through
@@ -581,25 +633,40 @@ fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
 /// to [`DurabilityRoot::maintain_ready_once`], which consumes one coalesced
 /// demand and never loops or self-retries.
 #[derive(Clone)]
+enum RootRuntime {
+    Dedicated(Arc<tokio::runtime::Runtime>),
+    #[cfg(test)]
+    AmbientTestFixture,
+}
+
+#[derive(Clone)]
 pub struct DurabilityRoot {
     pool: PgPool,
+    runtime: RootRuntime,
     ready_demand: Arc<AtomicBool>,
     maintenance: Arc<Mutex<()>>,
     _root_i_charge: Arc<RootICharge>,
 }
 
 impl DurabilityRoot {
-    #[must_use]
-    pub fn new(config: DurabilityRootConfig) -> Self {
-        let (pool, root_i_reservation) = build_root_pool(config);
-        Self {
+    pub fn new(config: DurabilityRootConfig) -> Result<Self, DurabilityError> {
+        let expected_maintenance =
+            sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
+        let runtime = build_wp3_runtime()?;
+        let (pool, root_i_reservation, actual_maintenance) =
+            build_production_root_pool(config, runtime.handle());
+        if actual_maintenance != expected_maintenance {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        Ok(Self {
             pool,
+            runtime: RootRuntime::Dedicated(runtime),
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
             _root_i_charge: Arc::new(RootICharge {
                 _reservation: Some(root_i_reservation),
             }),
-        }
+        })
     }
 
     #[cfg(test)]
@@ -613,10 +680,26 @@ impl DurabilityRoot {
                 .idle_timeout(HOLDER_IDLE_TIMEOUT)
                 .max_lifetime(HOLDER_MAX_LIFETIME)
                 .connect_lazy(database_url)?,
+            runtime: RootRuntime::AmbientTestFixture,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
             _root_i_charge: Arc::new(RootICharge { _reservation: None }),
         })
+    }
+
+    pub(crate) fn spawn_task<F>(
+        &self,
+        future: F,
+    ) -> tokio::task::JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        match &self.runtime {
+            RootRuntime::Dedicated(runtime) => runtime.handle().spawn(future),
+            #[cfg(test)]
+            RootRuntime::AmbientTestFixture => tokio::spawn(future),
+        }
     }
 
     /// Record a genuine event that permits one later maintenance window.
@@ -639,6 +722,20 @@ impl DurabilityRoot {
     /// A failed window does not re-arm itself. A demand arriving while this window
     /// is running remains recorded and may authorize one later call.
     pub async fn maintain_ready_once(&self) -> Result<bool, DurabilityError> {
+        match &self.runtime {
+            RootRuntime::Dedicated(_) => {
+                let root = self.clone();
+                await_root_task(self.spawn_task(async move {
+                    root.maintain_ready_once_inner().await
+                }))
+                .await
+            }
+            #[cfg(test)]
+            RootRuntime::AmbientTestFixture => self.maintain_ready_once_inner().await,
+        }
+    }
+
+    async fn maintain_ready_once_inner(&self) -> Result<bool, DurabilityError> {
         let _maintenance = self.maintenance.lock().await;
         if !self.ready_demand.swap(false, Ordering::AcqRel) {
             return Ok(self.pool.num_idle() > 0);
@@ -1106,32 +1203,25 @@ mod wp3_root_contract_tests {
         assert_eq!(config.root_i_reservation.bytes(), required);
         assert_eq!(ledger.used(), required);
 
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()?;
-        runtime.block_on(async {
-            let root = DurabilityRoot::new(config);
-            let other_owner = root.clone();
-            assert_eq!(ledger.used(), required);
-            drop(root);
-            assert_eq!(ledger.used(), required);
-            drop(other_owner);
-            assert_eq!(ledger.used(), 0);
-        });
+        let root = DurabilityRoot::new(config)?;
+        let other_owner = root.clone();
+        assert_eq!(ledger.used(), required);
+        drop(root);
+        assert_eq!(ledger.used(), required);
+        drop(other_owner);
+        assert_eq!(ledger.used(), 0);
         Ok(())
     }
 
     #[test]
     fn no_demand_maintenance_is_a_noop_and_never_connects() -> Result<(), Box<dyn std::error::Error>>
     {
-        let config = config()?;
+        let root = DurabilityRoot::new(config()?)?;
+        root.ready_demand.store(false, Ordering::Release);
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;
         runtime.block_on(async {
-            let root = DurabilityRoot::new(config);
-            root.ready_demand.store(false, Ordering::Release);
-
             let maintained = root.maintain_ready_once().await?;
             assert!(!maintained);
             assert!(!root.is_ready());
@@ -1139,6 +1229,7 @@ mod wp3_root_contract_tests {
             assert_eq!(root.pool.size(), 0);
             Ok::<(), DurabilityError>(())
         })?;
+        drop(root);
         Ok(())
     }
 }

@@ -398,7 +398,7 @@ fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn 
                 "explicit",
                 "test-secret",
                 b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
-            )?);
+            )?)?;
 
             assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
             assert!(!root.is_ready());
@@ -436,7 +436,7 @@ fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
                 "explicit",
                 "test-secret",
                 b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
-            )?);
+            )?)?;
             let journal = AdmissionReconnectJournal::from_root(root.clone());
             let (_flow, request) = ReconnectDurabilityFlowV1::begin(
                 record(201, 1, 0xa1, unix_now().map_err(foundation_error)?)

@@ -25,6 +25,7 @@ members = [
 exclude = [
     "vendor/sqlx-core-0.9.0",
     "vendor/sqlx-postgres-0.9.0",
+    "vendor/tokio-1.53.1",
 ]
 resolver = "3"
 
@@ -63,6 +64,7 @@ winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] 
 [patch.crates-io]
 sqlx-core = { path = "vendor/sqlx-core-0.9.0" }
 sqlx-postgres = { path = "vendor/sqlx-postgres-0.9.0" }
+tokio = { path = "vendor/tokio-1.53.1" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

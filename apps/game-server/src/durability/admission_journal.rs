@@ -85,6 +85,21 @@ impl JournalBackend {
         }
     }
 
+    fn spawn_root_task<F>(
+        &self,
+        future: F,
+    ) -> Result<tokio::task::JoinHandle<F::Output>, DurabilityError>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        match self {
+            #[cfg(test)]
+            Self::Legacy(_) => Err(DurabilityError::InvalidStoredState),
+            Self::Root(root) => Ok(root.spawn_task(future)),
+        }
+    }
+
     async fn run_pass<T, F>(
         &self,
         issued: Option<db::IssuedSemanticPass>,
@@ -164,6 +179,17 @@ impl AdmissionReconnectJournal {
         self.backend.try_issue_root()
     }
 
+    pub(super) fn spawn_root_task<F>(
+        &self,
+        future: F,
+    ) -> Result<tokio::task::JoinHandle<F::Output>, DurabilityError>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        self.backend.spawn_root_task(future)
+    }
+
     pub(super) async fn run_pass<T, F>(
         &self,
         issued: Option<db::IssuedSemanticPass>,
@@ -188,9 +214,9 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.spawn_root_task(async move {
                 journal.prepare_internal(request, false, Some(issued)).await
-            }))
+            })?)
             .await;
         }
         self.prepare_internal(request.clone(), false, None).await
@@ -203,9 +229,9 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.spawn_root_task(async move {
                 journal.prepare_internal(request, true, Some(issued)).await
-            }))
+            })?)
             .await;
         }
         self.prepare_internal(request.clone(), true, None).await
@@ -595,9 +621,9 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.spawn_root_task(async move {
                 journal.commit_internal(request, Some(issued)).await
-            }))
+            })?)
             .await;
         }
         self.commit_internal(request.clone(), None).await
@@ -827,9 +853,9 @@ impl AdmissionReconnectJournal {
         if let Some(issued) = self.backend.try_issue_root()? {
             let journal = self.clone();
             let request = request.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.spawn_root_task(async move {
                 journal.reconcile_internal(request, Some(issued)).await
-            }))
+            })?)
             .await;
         }
         self.reconcile_internal(request.clone(), None).await

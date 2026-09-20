@@ -51,6 +51,30 @@ impl<DB: Database> PoolInner<DB> {
         options: PoolOptions<DB>,
         connect_options: <DB::Connection as Connection>::Options,
     ) -> Arc<Self> {
+        let pool = Self::new_arc_without_maintenance(options, connect_options);
+        spawn_maintenance_tasks(&pool);
+        pool
+    }
+
+    #[cfg(feature = "_rt-tokio")]
+    pub(super) fn new_arc_oteryn_wp3(
+        options: PoolOptions<DB>,
+        connect_options: <DB::Connection as Connection>::Options,
+        handle: &tokio::runtime::Handle,
+    ) -> (
+        Arc<Self>,
+        tokio::runtime::OterynWp3TaskAllocationProfile,
+    ) {
+        let pool = Self::new_arc_without_maintenance(options, connect_options);
+        let profile = oteryn_wp3_maintenance_task_allocation_profile::<DB>();
+        spawn_oteryn_wp3_maintenance_task(&pool, handle);
+        (pool, profile)
+    }
+
+    fn new_arc_without_maintenance(
+        options: PoolOptions<DB>,
+        connect_options: <DB::Connection as Connection>::Options,
+    ) -> Arc<Self> {
         let capacity = options.max_connections as usize;
 
         let semaphore_capacity = if let Some(parent) = &options.parent_pool {
@@ -75,11 +99,7 @@ impl<DB: Database> PoolInner<DB> {
             options,
         };
 
-        let pool = Arc::new(pool);
-
-        spawn_maintenance_tasks(&pool);
-
-        pool
+        Arc::new(pool)
     }
 
     pub(super) fn size(&self) -> u32 {
@@ -515,6 +535,63 @@ async fn check_idle_conn<DB: Database>(
 
     // No need to re-connect; connection is alive or we don't care
     Ok(conn.into_live())
+}
+
+#[cfg(feature = "_rt-tokio")]
+pub(in crate::pool) fn oteryn_wp3_maintenance_task_allocation_profile<DB: Database>(
+) -> tokio::runtime::OterynWp3TaskAllocationProfile {
+    let future = oteryn_wp3_maintenance_task::<DB>(std::sync::Weak::new(), Duration::from_secs(1));
+    tokio::runtime::oteryn_wp3_multithread_task_allocation_profile(&future)
+}
+
+#[cfg(feature = "_rt-tokio")]
+fn spawn_oteryn_wp3_maintenance_task<DB: Database>(
+    pool: &Arc<PoolInner<DB>>,
+    handle: &tokio::runtime::Handle,
+) {
+    let period = match (pool.options.max_lifetime, pool.options.idle_timeout) {
+        (Some(it), None) | (None, Some(it)) => it,
+        (Some(a), Some(b)) => cmp::min(a, b),
+        (None, None) => return,
+    };
+    let future = oteryn_wp3_maintenance_task(Arc::downgrade(pool), period);
+    let _maintenance_task = handle.spawn(future);
+}
+
+#[cfg(feature = "_rt-tokio")]
+async fn oteryn_wp3_maintenance_task<DB: Database>(
+    pool_weak: std::sync::Weak<PoolInner<DB>>,
+    period: Duration,
+) {
+    while let Some(pool) = pool_weak.upgrade() {
+        if pool.is_closed() {
+            return;
+        }
+
+        let next_run = Instant::now() + period;
+        for _ in 0..pool.num_idle() {
+            if let Some(conn) = pool.try_acquire() {
+                if is_beyond_idle_timeout(&conn, &pool.options)
+                    || is_beyond_max_lifetime(&conn, &pool.options)
+                {
+                    let _ = conn.close().await;
+                    debug_assert_eq!(
+                        pool.options.min_connections, 0,
+                        "WP3 root-specific maintenance must never create replacement connections"
+                    );
+                } else {
+                    pool.release(conn.into_live());
+                }
+            }
+        }
+        drop(pool);
+
+        if let Some(duration) = next_run.checked_duration_since(Instant::now()) {
+            tokio::time::sleep(duration).await;
+        } else {
+            tokio::task::yield_now().await;
+        }
+    }
 }
 
 fn spawn_maintenance_tasks<DB: Database>(pool: &Arc<PoolInner<DB>>) {

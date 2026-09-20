@@ -340,11 +340,11 @@ impl AdmissionReconnectJournalV2 {
         if let Some(issued) = self.legacy.try_issue_root_pass()? {
             let journal = self.clone();
             let request = request.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.legacy.spawn_root_task(async move {
                 journal
                     .prepare_replacement_internal(request, Some(issued))
                     .await
-            }))
+            })?)
             .await;
         }
         self.prepare_replacement_internal(request.clone(), None)
@@ -588,9 +588,9 @@ impl AdmissionReconnectJournalV2 {
         if let Some(issued) = self.legacy.try_issue_root_pass()? {
             let journal = self.clone();
             let request = request.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.legacy.spawn_root_task(async move {
                 journal.reconcile_internal(request, Some(issued)).await
-            }))
+            })?)
             .await;
         }
         self.reconcile_internal(request.clone(), None).await
@@ -752,11 +752,11 @@ impl AdmissionReconnectJournalV2 {
         let record = record.clone();
         if let Some(issued) = self.legacy.try_issue_root_pass()? {
             let journal = self.clone();
-            return db::await_root_task(tokio::spawn(async move {
+            return db::await_root_task(self.legacy.spawn_root_task(async move {
                 journal
                     .terminal_state_for_record_internal(record, Some(issued))
                     .await
-            }))
+            })?)
             .await;
         }
         self.terminal_state_for_record_internal(record, None).await
@@ -1940,23 +1940,24 @@ mod terminal_replacement_foundation_red_tests {
         .expect("replacement authorization");
         let request = ReconnectDurabilityFlowV2::begin(candidate, Some(authorization)).1;
 
+        let root = super::DurabilityRoot::new(
+            super::DurabilityRootConfig::new(
+                IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+                5432,
+                "db.example",
+                "oteryn",
+                "explicit",
+                "test-secret",
+                b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+            )
+            .expect("root config"),
+        )
+        .expect("durability root");
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("runtime")
             .block_on(async {
-                let root = super::DurabilityRoot::new(
-                    super::DurabilityRootConfig::new(
-                        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
-                        5432,
-                        "db.example",
-                        "oteryn",
-                        "explicit",
-                        "test-secret",
-                        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
-                    )
-                    .expect("root config"),
-                );
                 let journal = super::AdmissionReconnectJournalV2::from_root(root.clone());
 
                 assert!(matches!(
@@ -1971,6 +1972,7 @@ mod terminal_replacement_foundation_red_tests {
                     "V2 replacement ready miss must not establish a connection in the background"
                 );
             });
+        drop(root);
     }
 
     #[test]
