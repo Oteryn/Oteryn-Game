@@ -9,6 +9,12 @@ on:
     paths:
       - 'tools/reference-world-corridor-census/interaction_binding_catalog.py'
       - 'tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py'
+      - 'tools/game-atlas-fullworld-source/producer.py'
+      - 'tools/reference-world-corridor-census/census.py'
+      - 'tools/game-atlas-thais-fixture/export.py'
+      - 'tools/reference-world-corridor-census/self_test.py'
+      - 'tools/reference-world-corridor-census/content_source_batch_self_test.py'
+      - 'tools/game-atlas-fullworld-source/self_test.py'
       - 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
       - 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/**'
       - 'docs/agents/tasks/active/OTV2-20260920-content-world-cw2-b6-interaction-bindings-504.md'
@@ -104,7 +110,8 @@ jobs:
             tools/reference-world-corridor-census/interaction_binding_catalog.py \
             tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py \
             tools/game-atlas-fullworld-source/producer.py \
-            tools/reference-world-corridor-census/census.py
+            tools/reference-world-corridor-census/census.py \
+            tools/game-atlas-thais-fixture/export.py
 
       - name: Run focused and existing regression self-tests
         shell: bash
@@ -202,12 +209,18 @@ jobs:
               'HOUSE_DOOR_ID': 4_527,
           }
           expected_shards = {'TELEPORT_DESTINATION': 3, 'HOUSE_DOOR_ID': 5}
-          expected_product = 'ae44555700628297e9e4e161928ee7b8bf246484cde402b0cfed342d445cd13e'
+          expected_product = '793ea8072e56a1070f29cab071e5d9b2c1e029522984a268f18c76d038c0616e'
+          expected_game_inputs = {
+              'tools/game-atlas-fullworld-source/producer.py': '740a96fe1b1d97f32c56e278725ab9c2de6e724b',
+              'tools/reference-world-corridor-census/census.py': 'f056063ad1ae1476fcb73d97e918553a977a0a15',
+              'tools/game-atlas-thais-fixture/export.py': '0e36ca9e43d78a919eb673f9dc423ed1c178c727',
+          }
 
           assert index['source_stream_counts'] == expected_stream
           assert index['source']['repository'] == 'zimbadev/crystalserver'
           assert index['source']['revision'] == 'ff7ede593c69d4c658b382c97443e8155926924a'
           assert index['source']['sha256'] == '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb'
+          assert index['game_inputs'] == expected_game_inputs
           assert index['logical_product_digest_sha256'] == expected_product
           assert index['silent_drop'] == 0
           assert index['unclassified'] == 0

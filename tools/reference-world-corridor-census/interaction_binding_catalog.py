@@ -14,6 +14,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import stat
 import subprocess
 import sys
 from typing import Any, Iterable
@@ -51,6 +52,7 @@ ASSET_APPEARANCE_SHA256 = "dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608
 GAME_INPUT_BLOBS = {
     "tools/game-atlas-fullworld-source/producer.py": "740a96fe1b1d97f32c56e278725ab9c2de6e724b",
     "tools/reference-world-corridor-census/census.py": "f056063ad1ae1476fcb73d97e918553a977a0a15",
+    "tools/game-atlas-thais-fixture/export.py": "0e36ca9e43d78a919eb673f9dc423ed1c178c727",
 }
 EXPECTED_STREAM_COUNTS = {"map_header": 1, "tile": 18_997_668, "town": 33, "waypoint": 18}
 EXPECTED_FAMILY_COUNTS = {
@@ -137,16 +139,71 @@ def verify_repository(repo: Path, expected_repository: str, expected_revision: s
         raise CatalogError(f"REPOSITORY_DIRTY: {expected_repository}")
 
 
-def verify_game_inputs(game_root: Path) -> None:
+def _git_blob_sha1_file(path: Path) -> str:
+    payload = path.read_bytes()
+    digest = hashlib.sha1(usedforsecurity=False)
+    digest.update(f"blob {len(payload)}\0".encode("ascii"))
+    digest.update(payload)
+    return digest.hexdigest()
+
+
+def _regular_game_input_path(game_root: Path, relative_path: str) -> Path:
+    current = game_root
+    parts = Path(relative_path).parts
+    if not parts:
+        raise CatalogError("PROTECTED_GAME_INPUT_EMPTY_PATH")
+
+    for part in parts:
+        current = current / part
+        try:
+            metadata = current.lstat()
+        except FileNotFoundError as exc:
+            raise CatalogError(f"PROTECTED_GAME_INPUT_MISSING: {relative_path}") from exc
+        if stat.S_ISLNK(metadata.st_mode):
+            raise CatalogError(f"PROTECTED_GAME_INPUT_SYMLINK: {relative_path}")
+
+    if not stat.S_ISREG(metadata.st_mode):
+        raise CatalogError(f"PROTECTED_GAME_INPUT_NOT_REGULAR: {relative_path}")
+    if metadata.st_nlink != 1:
+        raise CatalogError(f"PROTECTED_GAME_INPUT_HARDLINK: {relative_path}")
+    return current
+
+
+def _verify_game_input_file(game_root: Path, relative_path: str, expected_blob: str) -> Path:
+    path = _regular_game_input_path(game_root, relative_path)
+
+    committed_blob = _git(game_root, "rev-parse", f"HEAD:{relative_path}")
+    if committed_blob != expected_blob:
+        raise CatalogError(f"PROTECTED_GAME_INPUT_BLOB_MISMATCH: {relative_path}")
+
+    dirty = _git(
+        game_root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        "--",
+        relative_path,
+    )
+    if dirty:
+        raise CatalogError(f"PROTECTED_GAME_INPUT_DIRTY: {relative_path}")
+
+    working_blob = _git_blob_sha1_file(path)
+    if working_blob != expected_blob:
+        raise CatalogError(f"PROTECTED_GAME_INPUT_WORKTREE_BLOB_MISMATCH: {relative_path}")
+    return path
+
+
+def verify_game_inputs(game_root: Path) -> dict[str, Path]:
     game_root = game_root.resolve()
     if Path(_git(game_root, "rev-parse", "--show-toplevel")).resolve() != game_root:
         raise CatalogError("GAME_REPOSITORY_ROOT_MISMATCH")
     if _git(game_root, "rev-parse", ADMISSION_MAIN) != ADMISSION_MAIN:
         raise CatalogError("ADMISSION_MAIN_UNAVAILABLE")
-    for path, expected_blob in GAME_INPUT_BLOBS.items():
-        actual = _git(game_root, "rev-parse", f"HEAD:{path}")
-        if actual != expected_blob:
-            raise CatalogError(f"PROTECTED_GAME_INPUT_BLOB_MISMATCH: {path}")
+
+    return {
+        relative_path: _verify_game_input_file(game_root, relative_path, expected_blob)
+        for relative_path, expected_blob in GAME_INPUT_BLOBS.items()
+    }
 
 
 def verify_parser_pins(legacy_root: Path) -> None:
@@ -157,13 +214,45 @@ def verify_parser_pins(legacy_root: Path) -> None:
             raise CatalogError(f"PARSER_BLOB_MISMATCH: {path}")
 
 
-def _load_module(path: Path, name: str) -> Any:
+def _verify_loaded_game_module(
+    game_root: Path,
+    relative_path: str,
+    expected_blob: str,
+    module: Any,
+) -> Path:
+    path = _verify_game_input_file(game_root, relative_path, expected_blob)
+    expected_origin = path.resolve(strict=True)
+
+    file_origin = getattr(module, "__file__", None)
+    spec = getattr(module, "__spec__", None)
+    spec_origin = getattr(spec, "origin", None)
+    if not file_origin or not spec_origin:
+        raise CatalogError(f"PROTECTED_GAME_INPUT_MODULE_ORIGIN_MISSING: {relative_path}")
+
+    for origin in (file_origin, spec_origin):
+        try:
+            actual_origin = Path(origin).resolve(strict=True)
+        except (OSError, RuntimeError) as exc:
+            raise CatalogError(
+                f"PROTECTED_GAME_INPUT_MODULE_ORIGIN_INVALID: {relative_path}"
+            ) from exc
+        if actual_origin != expected_origin:
+            raise CatalogError(
+                f"PROTECTED_GAME_INPUT_MODULE_ORIGIN_MISMATCH: {relative_path}"
+            )
+    return path
+
+
+def _load_game_module(game_root: Path, relative_path: str, name: str) -> Any:
+    expected_blob = GAME_INPUT_BLOBS[relative_path]
+    path = _verify_game_input_file(game_root, relative_path, expected_blob)
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
         raise CatalogError(f"MODULE_LOAD_FAILED: {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
+    _verify_loaded_game_module(game_root, relative_path, expected_blob, module)
     return module
 
 
@@ -493,20 +582,35 @@ def collect_real_observations(
     if not map_path.is_file():
         raise CatalogError(f"SOURCE_MAP_MISSING: {map_path}")
 
-    producer = _load_module(
-        game_root / "tools/game-atlas-fullworld-source/producer.py",
+    producer_rel = "tools/game-atlas-fullworld-source/producer.py"
+    census_rel = "tools/reference-world-corridor-census/census.py"
+    bounded_export_rel = "tools/game-atlas-thais-fixture/export.py"
+
+    producer = _load_game_module(
+        game_root,
+        producer_rel,
         "cw2_b6_fullworld_producer",
     )
-    census = _load_module(
-        game_root / "tools/reference-world-corridor-census/census.py",
+    census = _load_game_module(
+        game_root,
+        census_rel,
         "cw2_b6_corridor_census",
     )
+    if Path(getattr(producer, "BOUNDED_EXPORT_REL", "")) != Path(bounded_export_rel):
+        raise CatalogError("PROTECTED_GAME_INPUT_TRANSITIVE_PATH_MISMATCH")
+
     runtime = producer.load_runtime(
         legacy_root=legacy_root,
         map_path=map_path,
         asset_zip=asset_zip,
         assets_dir=assets_dir,
         source_generation_profile_id=SOURCE_PROFILE,
+    )
+    _verify_loaded_game_module(
+        game_root,
+        bounded_export_rel,
+        GAME_INPUT_BLOBS[bounded_export_rel],
+        runtime.bounded,
     )
 
     counts = {"map_header": 0, "tile": 0, "town": 0, "waypoint": 0}

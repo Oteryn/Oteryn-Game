@@ -4,7 +4,9 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 
@@ -36,6 +38,47 @@ def expect_error(fragment, fn):
         assert fragment in str(exc), exc
     else:
         raise AssertionError(f"expected CatalogError containing {fragment!r}")
+
+
+def git(repo: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ("git", "-C", str(repo), *args),
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise RuntimeError(f"git {' '.join(args)} failed: {detail}")
+    return completed.stdout.strip()
+
+
+def create_game_input_repo(root: Path) -> tuple[str, dict[str, str]]:
+    git(root, "init")
+    git(root, "config", "user.email", "cw2-b6-self-test@example.invalid")
+    git(root, "config", "user.name", "CW2 B6 self test")
+    git(root, "config", "commit.gpgsign", "false")
+    git(root, "config", "core.autocrlf", "false")
+
+    payloads = {
+        "tools/game-atlas-fullworld-source/producer.py": b"VALUE = 'producer'\n",
+        "tools/reference-world-corridor-census/census.py": b"VALUE = 'census'\n",
+        "tools/game-atlas-thais-fixture/export.py": b"VALUE = 'export'\n",
+    }
+    for relative_path, payload in payloads.items():
+        path = root / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+
+    git(root, "add", ".")
+    git(root, "commit", "-m", "fixture")
+    head = git(root, "rev-parse", "HEAD")
+    blobs = {
+        relative_path: git(root, "rev-parse", f"HEAD:{relative_path}")
+        for relative_path in payloads
+    }
+    return head, blobs
 
 
 def relative_evidence_path(tracked_path: str) -> str:
@@ -106,6 +149,106 @@ def build(records, counts):
     return index, families, payloads
 
 
+def exercise_game_input_provenance() -> None:
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        head, blobs = create_game_input_repo(root)
+        original_main = catalog.ADMISSION_MAIN
+        original_blobs = catalog.GAME_INPUT_BLOBS
+        module_name = "cw2_b6_game_input_self_test"
+        producer_rel = "tools/game-atlas-fullworld-source/producer.py"
+        census_rel = "tools/reference-world-corridor-census/census.py"
+        export_rel = "tools/game-atlas-thais-fixture/export.py"
+        try:
+            catalog.ADMISSION_MAIN = head
+            catalog.GAME_INPUT_BLOBS = blobs
+            verified = catalog.verify_game_inputs(root)
+            assert set(verified) == set(blobs)
+
+            module = catalog._load_game_module(root, producer_rel, module_name)
+            original_origin = module.__file__
+            wrong_origin = root / "wrong-origin.py"
+            wrong_origin.write_bytes(b"VALUE = 'wrong origin'\n")
+            module.__file__ = str(wrong_origin)
+            expect_error(
+                "PROTECTED_GAME_INPUT_MODULE_ORIGIN_MISMATCH",
+                lambda: catalog._verify_loaded_game_module(
+                    root, producer_rel, blobs[producer_rel], module
+                ),
+            )
+            module.__file__ = original_origin
+            wrong_origin.unlink()
+
+            producer_path = root / producer_rel
+            git(root, "update-index", "--assume-unchanged", producer_rel)
+            producer_path.write_bytes(producer_path.read_bytes() + b"# stealth replacement\n")
+            expect_error(
+                "PROTECTED_GAME_INPUT_WORKTREE_BLOB_MISMATCH",
+                lambda: catalog._verify_loaded_game_module(
+                    root, producer_rel, blobs[producer_rel], module
+                ),
+            )
+            git(root, "update-index", "--no-assume-unchanged", producer_rel)
+            git(root, "checkout", "--", producer_rel)
+
+            census_path = root / census_rel
+            census_path.write_bytes(census_path.read_bytes() + b"# dirty\n")
+            expect_error(
+                "PROTECTED_GAME_INPUT_DIRTY",
+                lambda: catalog.verify_game_inputs(root),
+            )
+            git(root, "checkout", "--", census_rel)
+
+            export_path = root / export_rel
+            export_path.unlink()
+            export_path.mkdir()
+            expect_error(
+                "PROTECTED_GAME_INPUT_NOT_REGULAR",
+                lambda: catalog.verify_game_inputs(root),
+            )
+            export_path.rmdir()
+            git(root, "checkout", "--", export_rel)
+
+            hardlink_target = root / "hardlink-target.py"
+            hardlink_target.write_bytes(export_path.read_bytes())
+            export_path.unlink()
+            os.link(hardlink_target, export_path)
+            expect_error(
+                "PROTECTED_GAME_INPUT_HARDLINK",
+                lambda: catalog.verify_game_inputs(root),
+            )
+            export_path.unlink()
+            hardlink_target.unlink()
+            git(root, "checkout", "--", export_rel)
+
+            target = root / "symlink-target.py"
+            target.write_bytes(b"VALUE = 'replacement'\n")
+            export_path.unlink()
+            try:
+                os.symlink(target, export_path)
+            except OSError:
+                pass
+            else:
+                expect_error(
+                    "PROTECTED_GAME_INPUT_SYMLINK",
+                    lambda: catalog.verify_game_inputs(root),
+                )
+                export_path.unlink()
+            finally:
+                if export_path.is_symlink():
+                    export_path.unlink()
+                if target.exists():
+                    target.unlink()
+            if not export_path.exists():
+                git(root, "checkout", "--", export_rel)
+
+            catalog.verify_game_inputs(root)
+        finally:
+            sys.modules.pop(module_name, None)
+            catalog.ADMISSION_MAIN = original_main
+            catalog.GAME_INPUT_BLOBS = original_blobs
+
+
 def main() -> int:
     records = [
         observation("UNIQUE_ID", 10, 20, -7, 0, 100, 500),
@@ -125,6 +268,7 @@ def main() -> int:
         assert catalog.canonical_bytes(first_families[family]) == catalog.canonical_bytes(second_families[family])
 
     assert first_index["total_occurrences"] == 5
+    assert first_index["game_inputs"] == catalog.GAME_INPUT_BLOBS
     assert first_index["dispositions"] == {
         "UNKNOWN": 5, "UNSUPPORTED": 0, "AMBIGUOUS": 0, "CONFLICT": 0, "LOSS": 0
     }
@@ -224,6 +368,8 @@ def main() -> int:
         assert "SOURCE_STREAM_COUNT_MISMATCH" in str(exc)
     else:
         raise AssertionError("synthetic counts must not pass real-source validation")
+
+    exercise_game_input_provenance()
 
     print("interaction_binding_catalog_self_test: PASS")
     return 0
