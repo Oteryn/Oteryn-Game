@@ -147,39 +147,93 @@ jobs:
           import os
           from pathlib import Path
 
+          def canonical_bytes(value):
+              return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8')
+
           root = Path('/tmp/b6-a')
+          family_root = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings'
           index_path = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
           index = json.loads(index_path.read_text(encoding='utf-8'))
           expected_stream = {'map_header': 1, 'tile': 18_997_668, 'town': 33, 'waypoint': 18}
+          expected_families = {
+              'ACTION_ID': 0,
+              'UNIQUE_ID': 0,
+              'TELEPORT_DESTINATION': 2_405,
+              'HOUSE_DOOR_ID': 4_527,
+          }
+          expected_shards = {'TELEPORT_DESTINATION': 3, 'HOUSE_DOOR_ID': 5}
+          expected_product = 'ae44555700628297e9e4e161928ee7b8bf246484cde402b0cfed342d445cd13e'
+
           assert index['source_stream_counts'] == expected_stream
           assert index['source']['repository'] == 'zimbadev/crystalserver'
           assert index['source']['revision'] == 'ff7ede593c69d4c658b382c97443e8155926924a'
           assert index['source']['sha256'] == '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb'
+          assert index['logical_product_digest_sha256'] == expected_product
           assert index['silent_drop'] == 0
           assert index['unclassified'] == 0
           assert index['native_promotions'] == 0
           assert index['executable_promotions'] == 0
           assert index['quest_runtime_promotions'] == 0
-          assert index['dispositions']['UNKNOWN'] == index['total_occurrences']
+          assert index['dispositions']['UNKNOWN'] == index['total_occurrences'] == 6_932
           for name in ('UNSUPPORTED', 'AMBIGUOUS', 'CONFLICT', 'LOSS'):
               assert index['dispositions'][name] == 0
+
           family_counts = {}
           family_files = {}
           for item in index['storage']['family_files']:
-              path = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings' / Path(item['tracked_path']).name
+              family_name = item['family']
+              path = family_root / Path(item['tracked_path']).name
               payload = path.read_bytes()
               assert len(payload) == item['bytes']
               assert hashlib.sha256(payload).hexdigest() == item['sha256']
               family = json.loads(payload.decode('utf-8'))
-              assert family['logical_product_digest_sha256'] == index['logical_product_digest_sha256']
-              assert family['counts']['occurrences'] == item['records']
-              family_counts[item['family']] = item['records']
-              family_files[item['family']] = {
+              assert family['logical_product_digest_sha256'] == expected_product
+              assert family['counts']['occurrences'] == item['records'] == expected_families[family_name]
+              assert family['records_digest_sha256'] == item['records_digest_sha256']
+
+              entry = {
+                  'storage_mode': item['storage_mode'],
+                  'shard_count': item['shard_count'],
                   'bytes': len(payload),
                   'sha256': item['sha256'],
                   'records_digest_sha256': item['records_digest_sha256'],
+                  'shards': [],
               }
+              if item['storage_mode'] == 'SHARDED':
+                  assert item['shard_count'] == expected_shards[family_name]
+                  assert family['storage']['mode'] == 'SHARDED'
+                  assert family['storage']['max_shard_bytes'] == 600_000
+                  assert family['storage']['shard_count'] == item['shard_count']
+                  reconstructed = []
+                  for expected_ordinal, shard_meta in enumerate(family['storage']['shards'], start=1):
+                      assert shard_meta['ordinal'] == expected_ordinal
+                      shard_path = family_root / Path(shard_meta['tracked_path']).name
+                      shard_payload = shard_path.read_bytes()
+                      assert len(shard_payload) == shard_meta['bytes'] <= 600_000
+                      assert hashlib.sha256(shard_payload).hexdigest() == shard_meta['sha256']
+                      shard = json.loads(shard_payload.decode('utf-8'))
+                      assert shard['family'] == family_name
+                      assert shard['ordinal'] == expected_ordinal
+                      assert shard['shard_count'] == item['shard_count']
+                      assert shard['logical_product_digest_sha256'] == expected_product
+                      assert shard['family_records_digest_sha256'] == item['records_digest_sha256']
+                      assert shard['record_count'] == shard_meta['record_count'] == len(shard['records'])
+                      assert hashlib.sha256(canonical_bytes(shard['records'])).hexdigest() == shard['records_digest_sha256'] == shard_meta['records_digest_sha256']
+                      reconstructed.extend(shard['records'])
+                      entry['shards'].append(dict(shard_meta))
+                  assert len(reconstructed) == item['records']
+                  assert hashlib.sha256(canonical_bytes(reconstructed)).hexdigest() == item['records_digest_sha256']
+              else:
+                  assert item['storage_mode'] == 'INLINE'
+                  assert item['shard_count'] == 0
+                  assert hashlib.sha256(canonical_bytes(family['records'])).hexdigest() == item['records_digest_sha256']
+
+              family_counts[family_name] = item['records']
+              family_files[family_name] = entry
+
+          assert family_counts == expected_families
           assert sum(family_counts.values()) == index['total_occurrences']
+
           result = {
               'producer_repository': 'Oteryn/Oteryn-Game',
               'producer_head_sha': os.environ['PRODUCER_HEAD'],
@@ -217,10 +271,7 @@ jobs:
           name: cw2-b6-interaction-bindings-${{ github.event.pull_request.head.sha }}
           path: |
             /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json
-            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings/action-id.json
-            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings/unique-id.json
-            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings/teleport-destination.json
-            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id.json
+            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings/**
             /tmp/b6-workflow-result.json
           if-no-files-found: error
           compression-level: 9
