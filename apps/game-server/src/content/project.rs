@@ -518,16 +518,7 @@ impl ProjectDraft {
         )?;
         validate_reference_records(&self.records)?;
         validate_imports(&self.imports, &self.records)?;
-        if self
-            .imports
-            .iter()
-            .any(ImportBatch::has_native_item_binding)
-            && self.licensing_metadata != "PENDING"
-        {
-            return Err(ProjectError::InvalidProject(
-                "local native item proof requires PENDING licensing metadata",
-            ));
-        }
+        validate_native_item_licensing(&self.imports, &self.licensing_metadata)?;
         validate_metadata(&self.metadata)?;
         Ok(())
     }
@@ -1351,6 +1342,7 @@ fn parse_snapshot(
     )?;
     validate_reference_records(&reference.records)?;
     validate_imports(&imports.batches, &reference.records)?;
+    validate_native_item_licensing(&imports.batches, &plan.manifest.licensing_metadata)?;
     validate_metadata(&metadata.entries)?;
     Ok(WorldProject {
         root: plan.root,
@@ -1454,6 +1446,18 @@ fn validate_reference_records(records: &[ProjectReferenceRecord]) -> Result<(), 
             ));
         }
         record.lower()?;
+    }
+    Ok(())
+}
+
+fn validate_native_item_licensing(
+    imports: &[ImportBatch],
+    licensing_metadata: &str,
+) -> Result<(), ProjectError> {
+    if imports.iter().any(ImportBatch::has_native_item_binding) && licensing_metadata != "PENDING" {
+        return Err(ProjectError::InvalidProject(
+            "local native item proof requires PENDING licensing metadata",
+        ));
     }
     Ok(())
 }
