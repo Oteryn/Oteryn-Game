@@ -261,6 +261,10 @@ jobs:
         shell: pwsh
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
 
+      - name: Test Windows input platform
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
+
       - name: Verify deterministic simulation golden fixtures
         shell: pwsh
         run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc

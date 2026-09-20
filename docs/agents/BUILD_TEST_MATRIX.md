@@ -34,7 +34,7 @@ For full-risk changes, the same merge gate additionally requires:
 - Rust policy/metadata validation;
 - exact-head Linux workspace build, strict Clippy, tests and synthetic harness;
 - a pinned PostgreSQL 17.6 service plus deletion-safe routing for `oteryn-game-server --test durability_postgres` inside the required Linux job;
-- exact-head Windows production-client build, strict Clippy, smoke and synthetic harness;
+- exact-head Windows production-client build, strict Clippy, smoke and synthetic harness, plus `oteryn-input-platform` package tests;
 - deterministic Windows `oteryn-simulation-determinism` golden fixtures inside the required Windows job;
 - `cargo-deny` advisory/license/ban/source validation.
 
@@ -78,16 +78,16 @@ The protected `main` ruleset requires only the stable `game-gate` context. Indiv
 
 ## Current Merge Queue gate
 
-The canonical `.github/workflows/merge-group-gate.yml` is pinned to exact reviewed blob `df22c9a40847ce759337ab63c84a28e1180892ba`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
+The canonical `.github/workflows/merge-group-gate.yml` is pinned to exact reviewed blob `ad439cf3b04aaea084521f7be37761d3b1458cc5`. It validates the exact synthetic candidate and always requires candidate/governance, dependency review and CodeQL before publishing `game-gate`.
 
 | Exact queue classification | Selected additional jobs |
 |---|---|
 | Complete, valid diff only of Markdown paths under `docs/architecture/`, with eligible object modes for non-deleted changed paths (`architecture-docs`) | Rust Linux, PostgreSQL, Windows and supply-chain jobs may be skipped |
-| Other, mixed, special-mode, malformed or incomplete classification (`full`) | Linux workspace, real PostgreSQL 17.6, Windows client/SIM and supply chain |
+| Other, mixed, special-mode, malformed or incomplete classification (`full`) | Linux workspace, real PostgreSQL 17.6, Windows client/input-platform/SIM and supply chain |
 
 The inline queue classifier reads exact base/head Git evidence, including both sides of renames through `--no-renames`; it is not the PR/post-merge consumer-snapshot classifier. Its `architecture-docs` path predicate does not establish that no runtime consumer reads those documents. Do not describe it as a consumer-closure proof or extend the exception through this documentation. A relevant document-input dependency requires owning control-plane review of the admission assumption; this matrix does not repair or authorize routing changes.
 
-The aggregate accepts only coherent `true/true` or `false/false` selections. Selected jobs must succeed; only unselected jobs may report `skipped`. Missing/failed/cancelled mandatory or selected evidence cannot qualify the candidate. For FULL, PostgreSQL verifies the synthetic head and requires the durability test target; Windows verifies that same head before its build/smoke/SIM commands.
+The aggregate accepts only coherent `true/true` or `false/false` selections. Selected jobs must succeed; only unselected jobs may report `skipped`. Missing/failed/cancelled mandatory or selected evidence cannot qualify the candidate. For FULL, PostgreSQL verifies the synthetic head and requires the durability test target; Windows evidence includes the exact-head build, strict Clippy, release smoke and synthetic harness, the `oteryn-input-platform` package test, and the simulation-determinism test.
 
 Issue #285/PR #296 records the earlier full-queue rollout, not a claim that the current pinned workflow has unconditional runtime jobs. Workflow or pin changes require their own reviewed control-plane change. Source presence and a docs-only queue PASS are not runtime execution evidence.
 
@@ -118,14 +118,14 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
 - Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
 - Windows strict client Clippy plus `--smoke` executed from the exact previously built release client artifact;
-- `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
+- `cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc` and `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` in selected PR, Merge Queue and protected-main Windows lanes;
 - `cargo-deny check --all-features` through the pinned cargo-deny action.
 
 ### Client and architecture evidence boundaries
 
 At the inspected revision, `tools/architecture-check/src/lib.rs` validates workspace-local edges and release-role closure. Additional external registry/git and transitive closure evidence is needed when a foundation promises framework/platform/GPU neutrality. The host-default production `cargo tree` checks do not by themselves cover every target/feature combination. Bind such claims to exact package identities, manifests, lockfile, target and feature selection.
 
-The Windows jobs run the release client build, strict client Clippy, smoke against that exact release artifact, the synthetic harness on the explicit `x86_64-pc-windows-msvc` target, and simulation-determinism tests. They do not execute all client, input-platform or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The smoke still exits before renderer construction, so it remains pre-native shell evidence rather than renderer or gameplay E2E.
+The Windows jobs run the release client build, strict client Clippy, smoke against that exact release artifact, the synthetic harness on the explicit `x86_64-pc-windows-msvc` target, input-platform package tests and simulation-determinism tests. They do not execute all client or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The smoke still exits before renderer construction, so it remains pre-native shell evidence rather than renderer or gameplay E2E.
 
 The dedicated architecture semantic workflow selects explicit profiles, not arbitrary architecture Markdown. Record its semantic verdict and selected checks separately from workflow conclusion. On #560 head `db502e473bda60f7cdea2498f5138705c2cf0bea`, run `34562444300` / job `103147774477` passed its dispatcher tests but reported `SEMANTIC_AUDIT_NOT_APPLICABLE` with no UI profile/checks. This was workflow success, not semantic UI PASS or independent KEEP. New or changed coverage requires an allocated implementation change, not reinterpretation of an old green status.
 

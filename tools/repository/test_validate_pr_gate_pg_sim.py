@@ -113,6 +113,22 @@ def test_simulation_evidence_step_cannot_be_skipped() -> None:
     assert any("rust_windows" in error and "if" in error for error in errors), errors
 
 
+def test_input_platform_evidence_contract_is_mandatory() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    marker = "      - name: Test Windows input platform\n"
+    command = "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
+    assert baseline.count(marker) == baseline.count(command) == 1
+    mutations = (
+        baseline.replace(marker, "      - name: Optional Windows input platform\n", 1),
+        baseline.replace(marker, marker + "        if: false\n", 1),
+        baseline.replace(command, command.replace("oteryn-input-platform", "oteryn-client"), 1),
+        baseline.replace(marker + "        shell: pwsh\n" + command, "", 1),
+    )
+    for mutated in mutations:
+        errors = validate_mutated_gate(mutated)
+        assert any("rust_windows" in error and "input platform" in error for error in errors), errors
+
+
 def run_classifier(
     files,
     initial_change=None,
@@ -471,6 +487,7 @@ def test_evidence_step_condition_family() -> None:
     for job, name in (
         ("rust_linux", "Run Durability PostgreSQL E2E when allocated"),
         ("rust_windows", "Verify deterministic simulation golden fixtures"),
+        ("rust_windows", "Test Windows input platform"),
     ):
         marker = f"      - name: {name}\n"
         for condition in ('"if": false', "'if': false", "continue-on-error: true", '"continue-on-error": true', "'continue-on-error': true"):
@@ -516,6 +533,7 @@ def main() -> int:
     tests = (
         test_postgres_evidence_step_cannot_be_skipped,
         test_simulation_evidence_step_cannot_be_skipped,
+        test_input_platform_evidence_contract_is_mandatory,
         test_classifier_rejects_identity_races,
         test_classifier_rejects_unbound_base,
         test_classifier_exact_target_state_matrix,
