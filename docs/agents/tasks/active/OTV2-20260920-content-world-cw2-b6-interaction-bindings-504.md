@@ -16,6 +16,7 @@ owner: "Oteryn: content world import"
 allocation_comment: 5749276094
 capability_amendment_comment: 5749426934
 risk_addendum_comment: 5749431370
+shard_amendment_comment: 5749765639
 owned_paths:
   - tools/reference-world-corridor-census/interaction_binding_catalog.py
   - tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py
@@ -26,6 +27,14 @@ owned_paths:
   - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id.json
   - docs/agents/tasks/active/OTV2-20260920-content-world-cw2-b6-interaction-bindings-504.md
   - .github/workflows/content-world-b6-interaction-bindings.yml
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/teleport-destination-0001.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/teleport-destination-0002.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/teleport-destination-0003.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id-0001.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id-0002.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id-0003.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id-0004.json
+  - docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/house-door-id-0005.json
 public_contracts: []
 production_authority: NONE
 closure: CANDIDATE_ONLY
@@ -113,6 +122,29 @@ directly. The bounded repository-native route from #162 comment
 
 The bootstrap head is not catalogue completion and must not invent family
 counts, digests or success evidence before the real hosted pass.
+
+## Real-source checkpoint
+
+Hosted exact-source workflow run `35507934625` on bootstrap head
+`bddb0c80f988dca63bc95b73e83e9d6a05f3d69f` completed SUCCESS and proved:
+
+- exact strict stream: 1 MapHeader / 18,997,668 Tile / 33 Town / 18 Waypoint;
+- ACTION_ID: 0;
+- UNIQUE_ID: 0;
+- TELEPORT_DESTINATION: 2,405;
+- HOUSE_DOOR_ID: 4,527;
+- total: 6,932;
+- logical product digest:
+  `ae44555700628297e9e4e161928ee7b8bf246484cde402b0cfed342d445cd13e`;
+- normal/normal/reversed determinism: PASS;
+- `silent_drop=0`, `unclassified=0`;
+- no native/executable/quest-runtime promotion.
+
+The original monolithic TELEPORT and HOUSE_DOOR family files exceeded the
+high-level publication envelope. #162 comment `5749765639` grants deterministic
+storage-only sharding: 3 TELEPORT shards and 5 HOUSE_DOOR shards, each at most
+600,000 bytes, with compact family manifests at the original family paths.
+Sharding must not change the semantic/product or family records digests.
 
 ## Semantic boundaries
 
