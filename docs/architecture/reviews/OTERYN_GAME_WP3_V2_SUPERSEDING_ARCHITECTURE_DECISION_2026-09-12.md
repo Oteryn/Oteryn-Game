@@ -1,9 +1,11 @@
 # Oteryn Game — WP3-v2 superseding architecture decision
 
 - Decision ID: `WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`
-- Revision: **3 — independent-review P1/P2 closure; frozen lifecycle overlap and recovery trigger**
+- Revision: **5 — P1-A finite dedicated Tokio topology and complete root-runtime backing closure**
 - Date: 2026-09-12
-- Status: **CANDIDATE / SUCCESSOR EXACT-HEAD VALIDATION / NOT ACCEPTED**
+- Revision-4 amendment date: 2026-09-19
+- Revision-5 amendment date: 2026-09-20
+- Status: **CANDIDATE AMENDMENT / EXACT-HEAD VALIDATION / NOT YET PROTECTED**
 - Worker: `Oteryn: astra wp3-v2 architecture lead`
 - Protected admission: `main@489e3e390a1bce1ce3439c66521ab75f8a826cd8`
 - Canonical WP3 lineage: Issue #351 / Draft PR #356 @ `fe7891989b1247012e32c89c10cff6a10bacb943`
@@ -12,13 +14,16 @@
 - Retained audit: Draft PR #588
 - WP3-v2 programme: Draft PR #589
 - This candidate: Draft PR #590
-- Architecture authority: **none**. This revision repairs only the independent-review P1/P2 findings; A4 receives no write authority from this file.
+- Revision-4 amendment authority: #162 comment `5745227522`, superseding the insufficient layout-only release `5744804452` and closing the source-proof gaps recorded in `5744812736`.
+- Revision-5 finite-topology owner authority: #162 comment `5748461271`, consuming architecture qualification `5748151621`, host evidence `5748332099`, and control-plane packet `5748378407`.
+- Revision-4/5 amendment branch: `agent/wp3-v2-tokio-maintenance-task-layout-amendment-351`; Revision 5 continues the same PR #681 lineage and does not create a competing decision.
+- Implementation authority: **none from this file or amendment branch**. PR #673 remains paused until protected amendment integration/readback and a fresh coordinator source/vendor/Cargo lease.
 
 ## 1. Resolution
 
 Select **Option B** for the first safe production slice:
 
-> one process-scoped logical Durability executor, one accepted DFR root ledger, one lazy SQLx `PgPool` used as a **single-ready-connection holder**, root-owned serialized connection establishment outside active DFR work, `Pool::try_begin()` for active ready-only transactions, two logical active custody slots, at most one physical PostgreSQL transaction at a time, and only narrow SQLx/PostgreSQL/rustls seams required by the exact frozen profile.
+> one process-scoped logical Durability executor, one accepted DFR root ledger, one **WP3-owned dedicated Tokio 1.53.1 MultiThread runtime with an exact finite 1-worker / 1-blocking-thread / 2-MiB-stack topology**, one lazy SQLx `PgPool` used as a **single-ready-connection holder**, root-owned serialized connection establishment outside active DFR work, `Pool::try_begin()` for active ready-only transactions, two logical active custody slots, at most one physical PostgreSQL transaction at a time, and only the narrow SQLx/PostgreSQL/rustls/Tokio representation seams required to prove the frozen same-root envelope.
 
 First-slice topology:
 
@@ -26,6 +31,12 @@ First-slice topology:
 one Durability executor / one DFR root
 |
 +-- I: fixed executor/runtime/pool/provider/config/shared-tail residency
+|   +-- WP3-owned Tokio 1.53.1 MultiThread runtime
+|   +-- worker_threads = 1
+|   +-- max_blocking_threads = 1
+|   +-- thread_stack_size = 2 MiB
+|   +-- only the I/O/time capabilities required by the frozen literal-IP PostgreSQL slice
+|   +-- arbitrary ambient Handle/runtime qualification forbidden
 |
 +-- PgPool holder
 |   +-- max_connections = 1
@@ -60,7 +71,7 @@ I + max(R, T) + Q + A <= 12 MiB
 
 For this first slice the terms and overlap behind that equation are frozen, not left to A4:
 
-- `I` is root/process backing whose lifetime is independent of one physical connection generation: executor/pool control structures, explicit retained configuration, and genuinely shared runtime/provider backing. Per-connection socket/TLS/driver/reactor descendants do **not** migrate into `I` merely because their cleanup is asynchronous.
+- `I` is root/process backing whose lifetime is independent of one physical connection generation: executor/pool control structures, explicit retained configuration, genuinely shared runtime/provider backing, and all source-derived dedicated-runtime plus SQLx root-maintenance task/shared-tail backing admitted by Revisions 4 and 5. Per-connection socket/TLS/driver/reactor descendants do **not** migrate into `I` merely because their cleanup is asynchronous.
 - `T` is the complete charge for the single root-owned connection-establishment generation, beginning before the first controlled connect/TLS/auth allocation and ending only by either (a) charged ownership transfer into `R` after successful establishment plus awaited pool return/final ping, or (b) complete finality of every descendant after connect failure, timeout or cancellation. A failed/timed-out attempt remains `T` during its retirement tail.
 - `R` is the complete charge for the single established physical-connection generation from the successful `T -> R` transfer through ready/checked-out use and through any fenced, reaper, close, return or reactor retirement tail until every per-connection descendant is final. A logically removed/reaped connection remains `R` until that finality point.
 - `R` and `T` are mutually exclusive connection generations. Root maintenance must not begin a new `T` while any prior `R` or `T` retirement tail remains non-final. Successful establishment is an ownership transfer `T -> R`, never a double-charged overlap.
@@ -169,8 +180,9 @@ Exactly one production Durability executor exists per process in this first slic
 
 The root owns:
 
-- fixed executor/runtime structures;
-- pool structures and maintenance task state;
+- fixed executor structures plus the complete attributable backing of the dedicated WP3 Tokio runtime selected by Revision 5, including its one-worker scheduler topology and every reachable retained runtime allocation that must exist for the accepted first slice;
+- the explicit `2 MiB` worker-stack setting is a finite topology contract, not permission to equate process RSS with DFR accounting; exact implementation qualification must conservatively account the applicable stack/runtime backing under the accepted same-root `I` rules and may prove an unreachable blocking-worker stack only through exact reachability evidence, never by assumption;
+- pool structures and maintenance task state, including the source-derived optional boxed-future/task-cell backing for the exact SQLx root-maintenance task;
 - explicit bounded DB configuration and credential backing;
 - one established-or-retiring physical connection generation `R`;
 - the one serialized connect-or-failed-retirement generation `T`;
@@ -282,6 +294,192 @@ A4 may therefore implement **one narrow PostgreSQL-specific root-owner seam**:
 - no generic new SQLx-wide budget API or second ledger is authorized.
 
 This is the main reason B remains maintainable: it preserves the existing consumer transaction model while adding only the root ownership capability that ordinary pooling lacks.
+
+## 8A. Revision-5 P1-A finite dedicated-runtime amendment
+
+### Problem and timing
+
+**Must decide now? YES.** Revision 4 closed the pre-spawn
+`CloseEvent/EventListener` allocation and current-thread queue-growth gaps, but the
+independent HIGH review on PR #681 head
+`9b5c4717b59955b8a340d8bbf9d8ec707ddf5d66` found one remaining material P1:
+`RuntimeFlavor::MultiThread` bounds scheduler kind, not worker count, worker stacks,
+or the complete scheduler/runtime backing consumed through an ambient
+`Handle`.
+
+Pinned Tokio `1.53.1` source proves that an unspecified MultiThread builder derives
+worker count from ambient host/environment state, leaves thread stack size
+unspecified, and carries a separately configurable blocking-thread cap. The
+owner-authorized host probe in #162 comment `5748332099` independently observed
+that host/config dependence and showed the proposed bounded builder remains at one
+worker even under `TOKIO_WORKER_THREADS=16`. That probe is supporting evidence,
+not the final root-byte proof.
+
+Revision 5 therefore consumes the explicit owner decision in #162 comment
+`5748461271`. It does **not** reopen Options A/B/C and does not select a Game-wide
+Tokio topology.
+
+### Exact production topology
+
+The first-slice WP3 Durability root owns one dedicated Tokio `1.53.1` runtime with
+this exact topology:
+
+```text
+RuntimeFlavor = MultiThread
+worker_threads = 1
+max_blocking_threads = 1
+thread_stack_size = 2 MiB
+runtime owner = WP3 Durability root
+ambient Handle qualification = forbidden
+```
+
+Only the I/O/time capabilities already required by the frozen literal-IP
+PostgreSQL slice may be enabled. This is a WP3-local ownership decision, not a
+general FND-03/GameNode worker-count decision.
+
+Production root acceptance must fail closed when:
+- the dedicated runtime cannot be created with that exact topology;
+- runtime flavor is unavailable or is not `MultiThread`;
+- production code attempts to substitute an arbitrary ambient Tokio `Handle`;
+- exact prospective resource proof cannot fit the existing same-root envelope.
+
+`CurrentThread` remains test-only/non-production.
+
+### Dedicated-runtime custody
+
+All production WP3 root-owned spawned work that is part of the accepted Durability
+root lifecycle must be tied to the explicit root-owned runtime/handle. An ambient
+`tokio::spawn`, `Handle::current()`, or `Handle::try_current()` may not silently
+select production scheduler ownership for that work.
+
+SQLx pool construction/maintenance for the accepted root must therefore occur
+under the explicit dedicated-root runtime context/handle through the smallest
+implementation seam that preserves upstream Tokio semantics. This requirement
+does not authorize a global runtime wrapper, generic owner propagation, or a second
+work-ownership API.
+
+### Exact pinned-Tokio representation/accounting seam
+
+Pinned Tokio `1.53.1` may expose/read exact source-derived representation facts
+needed to prove the **selected dedicated runtime plus the exact SQLx root-maintenance
+task**, and nothing broader.
+
+The proof surface is limited to backing attributable to the exact accepted
+configuration, including as applicable:
+
+1. the one-worker MultiThread scheduler structures and fixed worker-local run queue;
+2. exact retained per-worker/shared scheduler structures, remotes/metrics/control
+   backing and runtime-owned driver/control structures that exist for the enabled
+   first-slice feature set;
+3. the existing `BOX_FUTURE_THRESHOLD` optional future box for the exact SQLx
+   maintenance future;
+4. the exact MultiThread task-cell representation allocated for that future;
+5. the configured worker stack bound and any blocking-pool backing actually
+   reachable by the selected first-slice graph.
+
+The representation seam supplies facts only. It creates no allowance, allocator
+interception, owner identity, generic task/scheduler API, second ledger, retry
+policy or lifetime policy.
+
+No literal scheduler/task byte constant may replace source-derived proof. Any
+candidate-specific size conversion must use the existing accepted
+allocator/backing-charge rule.
+
+### Blocking-thread and stack reachability
+
+`max_blocking_threads = 1` is the smallest finite accepted cap and prevents an
+ambient 512-thread default from remaining part of the topology.
+
+The first slice does not gain permission to call `spawn_blocking` merely because a
+cap exists. Qualification must prove either:
+- no blocking worker is reachable in the exact WP3 root graph, in which case no
+  blocking-worker stack may be silently materialized or charged as active backing;
+  or
+- one blocking worker is genuinely reachable/required, in which case its complete
+  attributable backing must be included in the same-root `I` proof before root
+  acceptance.
+
+The explicit `thread_stack_size = 2 MiB` removes `RUST_MIN_STACK`/platform
+selection from the WP3 contract. Virtual stack reservation and resident/committed
+bytes must remain distinguished in evidence; process RSS/working-set measurement
+is not a substitute for the frozen DFR accounting model.
+
+### Root-specific SQLx maintenance construction
+
+SQLx `0.9.0` retains the Revision-4 authority for one root-specific maintenance
+construction that removes the heap-allocating `CloseEvent/EventListener`
+dependency from this WP3 maintenance future before Tokio task allocation.
+
+It must preserve:
+
+- `idle_timeout = 10 minutes`;
+- `max_lifetime = 30 minutes`;
+- `max_connections = 1`;
+- `min_connections = 0`;
+- ready-only active work;
+- no reaper-created replacement connection;
+- the existing coalesced demand/recovery/finality state machine.
+
+### Same-root `I` reservation and finality
+
+Before production root acceptance and before any selected runtime/task backing is
+created, Game must derive the finite prospective charge for all attributable
+dedicated-runtime and maintenance backing admitted above and reserve it against the
+**same existing root `I` ledger**.
+
+The accepted maximum remains unchanged:
+
+```text
+DFR-TOTAL-RESIDENT-BYTES = 12,582,912
+I + max(R,T) + Q + A <= 12 MiB
+```
+
+There is:
+- no second runtime/task budget;
+- no resource-registry increase;
+- no early release merely because work is cancelled, a pool becomes empty, or a
+  maintenance future is logically complete while retained descendants remain;
+- no transfer of scheduler backing outside `I` to make the equation fit.
+
+If exact qualification cannot fit the frozen equation, root creation/acceptance
+fails closed and WP3 returns to architecture escalation. Implementation may not
+raise the budget.
+
+### Required successor proof
+
+A later coordinator-issued PR #673 implementation lease must prove on one exact
+candidate:
+
+1. the production root creates/owns exactly the accepted
+   `1 worker / 1 blocking / 2 MiB` MultiThread topology and rejects ambient
+   substitution;
+2. all production WP3 root-owned spawning uses the explicit root runtime/handle;
+3. the exact dedicated-runtime scheduler/control backing and exact SQLx maintenance
+   future/task backing are source-derived and prospectively reserved in the same
+   root `I` ledger before acceptance/allocation;
+4. blocking-thread reachability is explicitly proven rather than assumed;
+5. the root-specific SQLx maintenance path does not allocate
+   `CloseEvent/EventListener` backing for this task;
+6. max/max+1 same-root reservation boundaries reject before root/maintenance
+   allocation;
+7. reservation lifetime covers complete runtime/task/shared-tail finality;
+8. 10-minute idle / 30-minute max-lifetime reaping, max1/min0, ready-only activity,
+   strict R/T non-overlap and root demand/recovery/finality semantics remain
+   unchanged;
+9. configured PostgreSQL, caller-cancellation/finality, focused resource tests,
+   workspace tests, strict Clippy, governance, exact-head CI and the required
+   independent HIGH whole-diff review requalify the final successor.
+
+### Explicit exclusions
+
+Revision 5 does not authorize:
+- a Game-wide Tokio/FND-03 worker topology;
+- generic Tokio allocator/task/scheduler/resource-owner instrumentation;
+- a broad Tokio fork;
+- a second allocator/runtime budget;
+- rustls widening;
+- WP4/WP5/Server-Seam or `fresh_admission.rs` custody;
+- any increase to the accepted DFR maximum.
 
 ## 9. Explicit bounded configuration profile
 
@@ -650,7 +848,7 @@ Selected-profile consequences include:
 
 ### HISTORICAL EVIDENCE ONLY / REMOVE AFTER REPLACEMENT PROOF
 
-- generic Tokio blocking-owner propagation not required by the frozen profile;
+- generic Tokio blocking-owner propagation and generic Tokio owner/allocator/scheduler instrumentation remain historical/not required; only the Revision-5 read-only representation seam for the exact dedicated WP3 runtime plus exact root-maintenance future/task is retained;
 - broad rustls container ownership beyond retained AWS-LC exact seams;
 - generic DNS/UDS ownership work excluded by the literal-TCP first slice;
 - per-operation direct-connect architecture assumptions superseded by root ownership;
@@ -681,22 +879,26 @@ R01-R21 remain qualification constraints, including:
 
 ## 21. Candidate acceptance state
 
-Revision 3 changes only the two independent-review findings against the prior exact candidate: P1 freezes complete `I/R/T` overlap/retirement-tail semantics so the root equation is complete, and P2 freezes the exact demand-triggered root-maintenance recovery state machine after reaper absence or a failed connect window. No runtime or broader architecture scope is added.
+Revision 5 preserves all Revision-3/4 overlap, finality, demand-recovery and maintenance semantics while closing independent-review P1 `4054801878` through the owner-accepted finite dedicated runtime in #162 comment `5748461271`. The production WP3 root now owns one Tokio 1.53.1 MultiThread runtime with `worker_threads=1`, `max_blocking_threads=1` and `thread_stack_size=2 MiB`; arbitrary ambient runtime ownership is forbidden. The narrow read-only representation seam covers only the exact dedicated runtime backing plus the exact SQLx maintenance future/task required for same-root `I` proof. No second budget, Game-wide topology or implementation authority is created by this amendment.
 
-Current terminal worker marker:
+Current amendment worker marker:
 
 ```text
-WP3_V2_ARCHITECTURE_SUCCESSOR_VALIDATING
-ARCHITECTURE_ACCEPTED = NO
+WP3_V2_P1A_FINITE_RUNTIME_AMENDMENT_VALIDATING
+BASE_REVISION_3_4_AUTHORITY = PRESERVED
+REVISION_5_AMENDMENT_PROTECTED = NO
+OWNER_RUNTIME_DECISION = WP3_DEDICATED_BOUNDED_TOKIO_RUNTIME_V1
 IMPLEMENTATION_AUTHORITY = NONE
+PR673_IMPLEMENTATION = PAUSED
 ```
 
-Still required before material A4 work:
+Still required before PR #673 P1-A implementation may resume:
 
-1. fresh exact-head repository/governance checks on the Revision-3 successor head;
-2. genuinely independent exact-head HIGH-risk architecture/resource/security re-review of that successor, because the accepted P1 repair supersedes the reviewed generation;
-3. normal repository architecture acceptance/protected integration/readback only after that successor is clean;
-4. fresh #162/#364 allocation identifying canonical A4 lineage and exact owned paths/custody.
+1. exact three-path readback for this Revision-5 docs-only amendment;
+2. Agent Governance, Architecture Semantic Audit and FULL Merge Gate / aggregate `game-gate` SUCCESS on the stable amendment head;
+3. one genuinely independent exact-head HIGH whole-diff architecture/resource/security review of this amendment;
+4. protected integration/readback through the coordinator-controlled governed route;
+5. fresh #162 preflight granting the smallest exact source/vendor/Cargo successor lease to the PR #673 implementation writer.
 
 The remaining `I/R/T/active` **byte values** are implementation qualification obligations. Their lifecycle ownership, retirement classification, non-overlap and recovery trigger are no longer A4 architecture choices. If the measured exact candidate fails the frozen root equation, A4 must stop and escalate rather than changing those semantics or widening the envelope.
 
