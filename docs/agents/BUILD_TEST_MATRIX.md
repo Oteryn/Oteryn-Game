@@ -34,7 +34,7 @@ For full-risk changes, the same merge gate additionally requires:
 - Rust policy/metadata validation;
 - exact-head Linux workspace build, strict Clippy, tests and synthetic harness;
 - a pinned PostgreSQL 17.6 service plus deletion-safe routing for `oteryn-game-server --test durability_postgres` inside the required Linux job;
-- exact-head Windows production-client build, strict Clippy, smoke and synthetic harness;
+- exact-head Windows production-client build, strict Clippy, smoke and synthetic harness, plus `oteryn-input-platform` package tests;
 - deterministic Windows `oteryn-simulation-determinism` golden fixtures inside the required Windows job;
 - `cargo-deny` advisory/license/ban/source validation.
 
@@ -118,14 +118,14 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
 - Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
 - Windows strict client Clippy plus `--smoke` executed from the exact previously built release client artifact;
-- `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
+- `cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc` and `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` in selected PR, Merge Queue and protected-main Windows lanes;
 - `cargo-deny check --all-features` through the pinned cargo-deny action.
 
 ### Client and architecture evidence boundaries
 
 At the inspected revision, `tools/architecture-check/src/lib.rs` validates workspace-local edges and release-role closure. Additional external registry/git and transitive closure evidence is needed when a foundation promises framework/platform/GPU neutrality. The host-default production `cargo tree` checks do not by themselves cover every target/feature combination. Bind such claims to exact package identities, manifests, lockfile, target and feature selection.
 
-The Windows jobs run the release client build, strict client Clippy, smoke against that exact release artifact, the synthetic harness on the explicit `x86_64-pc-windows-msvc` target, and simulation-determinism tests. They do not execute all client, input-platform or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The smoke still exits before renderer construction, so it remains pre-native shell evidence rather than renderer or gameplay E2E.
+The Windows jobs run the release client build, strict client Clippy, smoke against that exact release artifact, the synthetic harness on the explicit `x86_64-pc-windows-msvc` target, input-platform package tests and simulation-determinism tests. They do not execute all client or renderer dependency test suites on Windows. Affected implementation slices must run their named platform-specific package tests and native fixtures; compilation is not test execution. The smoke still exits before renderer construction, so it remains pre-native shell evidence rather than renderer or gameplay E2E.
 
 The dedicated architecture semantic workflow selects explicit profiles, not arbitrary architecture Markdown. Record its semantic verdict and selected checks separately from workflow conclusion. On #560 head `db502e473bda60f7cdea2498f5138705c2cf0bea`, run `34562444300` / job `103147774477` passed its dispatcher tests but reported `SEMANTIC_AUDIT_NOT_APPLICABLE` with no UI profile/checks. This was workflow success, not semantic UI PASS or independent KEEP. New or changed coverage requires an allocated implementation change, not reinterpretation of an old green status.
 

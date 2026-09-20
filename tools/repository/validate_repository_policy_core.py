@@ -50,8 +50,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a19161638
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3c4be7c25993af41ab71255c53c23ced1097e40f9b6dcc33e76c921e52656c7f"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "99a898fd511f4b20024739f005f7b065f22c8d1d"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "df22c9a40847ce759337ab63c84a28e1180892ba"
-EXPECTED_POST_MERGE_RUST_SHA256 = "1da79740b5c8c938d654c8712575cd2549c91b2912eab42e475d8f882d73f3f9"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ad439cf3b04aaea084521f7be37761d3b1458cc5"
+EXPECTED_POST_MERGE_RUST_SHA256 = "9f894c3a23e780162a3db0878007118b0cba0cedc5aa64958457322ae8bb0314"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -497,6 +497,7 @@ def main() -> int:
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
                 "$ErrorActionPreference = 'Stop'",
                 "$PSNativeCommandUseErrorActionPreference = $true",
+                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
                 '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',

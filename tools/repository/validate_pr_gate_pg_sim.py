@@ -16,7 +16,7 @@ POSTGRES_IMAGE = (
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
     "rust_linux": "5f11db3a3126371d8138b579b0abc908eb9a93c72fa8ec4302a29c866b5e035e",
-    "rust_windows": "20959a694f0cb1d9203750cb9d14e573ce0f97049257c5b2ef30954497e983f9",
+    "rust_windows": "f28b0844ae3779d164cb85f5d8ef5bb4532b78baa2cd55e20cdff9e67c47f1d4",
 }
 
 
@@ -205,11 +205,23 @@ def validate() -> list[str]:
                 "Test-Path -LiteralPath $client -PathType Leaf",
                 "& $client --smoke",
                 "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
             ),
         )
     )
 
+    errors.extend(
+        require_unconditional_evidence_step(
+            windows,
+            "rust_windows",
+            "Test Windows input platform",
+            (
+                "        shell: pwsh\n",
+                "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n",
+            ),
+        )
+    )
     errors.extend(
         require_unconditional_evidence_step(
             linux,
