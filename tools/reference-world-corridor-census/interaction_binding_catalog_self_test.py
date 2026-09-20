@@ -73,12 +73,32 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
         catalog.write_catalog(root, first_index, first_families)
-        assert (root / catalog.INDEX_NAME).is_file()
-        for family in catalog.FAMILIES:
+        stored_index = json.loads((root / catalog.INDEX_NAME).read_text(encoding="utf-8"))
+        assert stored_index["logical_product_digest_sha256"] == first_index["logical_product_digest_sha256"]
+        for entry in stored_index["storage"]["family_files"]:
+            family = entry["family"]
             path = root / catalog.FAMILY_DIR_NAME / catalog.FAMILY_FILENAMES[family]
             parsed = json.loads(path.read_text(encoding="utf-8"))
             assert parsed["family"] == family
             assert parsed["logical_product_digest_sha256"] == first_index["logical_product_digest_sha256"]
+            if entry["storage_mode"] == "SHARDED":
+                reconstructed = []
+                assert parsed["schema"] == catalog.FAMILY_MANIFEST_SCHEMA
+                assert parsed["storage"]["shard_count"] == entry["shard_count"]
+                for shard_meta in parsed["storage"]["shards"]:
+                    shard_path = root / catalog.FAMILY_DIR_NAME / Path(shard_meta["tracked_path"]).name
+                    payload = shard_path.read_bytes()
+                    assert len(payload) == shard_meta["bytes"]
+                    assert catalog.sha256_bytes(payload) == shard_meta["sha256"]
+                    assert len(payload) <= catalog.MAX_SHARD_BYTES
+                    shard = json.loads(payload.decode("utf-8"))
+                    assert shard["record_count"] == shard_meta["record_count"]
+                    assert catalog.sha256_bytes(catalog.canonical_bytes(shard["records"])) == shard["records_digest_sha256"]
+                    reconstructed.extend(shard["records"])
+                assert catalog.sha256_bytes(catalog.canonical_bytes(reconstructed)) == parsed["records_digest_sha256"]
+            else:
+                assert parsed["schema"] == catalog.FAMILY_SCHEMA
+                assert len(parsed["records"]) == entry["records"]
 
     expect_error(
         "UNSUPPORTED_STRUCTURAL_FAMILY",
@@ -99,6 +119,28 @@ def main() -> int:
         assert "SOURCE_STREAM_COUNT_MISMATCH" in str(exc)
     else:
         raise AssertionError("synthetic counts must not pass real-source validation")
+
+    try:
+        catalog.validate_real_family_counts(first_families)
+    except catalog.CatalogError as exc:
+        assert "FAMILY_COUNT_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("synthetic family counts must not pass real-source validation")
+
+    many = [
+        observation("HOUSE_DOOR_ID", 1000 + index, 2000 + index, -7, 0, 3000 + index, index % 41)
+        for index in range(1200)
+    ]
+    shard_index, shard_families = catalog.build_catalog(many, counts)
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        catalog.write_catalog(root, shard_index, shard_families)
+        manifest = json.loads(
+            (root / catalog.FAMILY_DIR_NAME / catalog.FAMILY_FILENAMES["HOUSE_DOOR_ID"]).read_text(encoding="utf-8")
+        )
+        assert manifest["storage"]["shard_count"] == 5
+        assert sum(item["record_count"] for item in manifest["storage"]["shards"]) == 1200
+        assert all(item["bytes"] <= catalog.MAX_SHARD_BYTES for item in manifest["storage"]["shards"])
 
     print("interaction_binding_catalog_self_test: PASS")
     return 0
