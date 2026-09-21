@@ -2301,6 +2301,60 @@ fn reconnect_account_incumbent_is_a_stale_denial_without_candidate_effects()
 }
 
 #[test]
+fn reconnect_same_character_new_session_is_a_stale_denial_without_candidate_effects()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("same_character_incumbent_denial").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let (_, first) = ReconnectDurabilityFlowV1::begin(
+                    record(20, 1, 0x33, now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                let (_, candidate) = ReconnectDurabilityFlowV1::begin(
+                    record(21, 1, 0x34, now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&candidate).await?,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                );
+                let sessions: i64 =
+                    sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_reconnect_sessions")
+                        .fetch_one(&pool)
+                        .await?;
+                let references: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_transport_ref_reservations",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!((sessions, references), (1, 1));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn one_prepared_attempt_and_eight_attempt_epoch_limits_are_enforced_in_postgres()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
@@ -3310,10 +3364,10 @@ fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_ep
                 .map_err(foundation_error)?;
                 let (_second_flow, second_prepare) =
                     ReconnectDurabilityFlowV1::begin(second_record);
-                assert!(matches!(
-                    journal.prepare(&second_prepare).await,
-                    Err(DurabilityError::InvalidStoredState)
-                ));
+                assert_eq!(
+                    journal.prepare(&second_prepare).await?,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                );
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;

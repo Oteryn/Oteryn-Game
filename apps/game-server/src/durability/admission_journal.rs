@@ -279,11 +279,10 @@ impl AdmissionReconnectJournal {
                         return Ok(ReconnectPrepareDispositionV1::Unavailable);
                     }
                     let account_incumbent: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE account_id = $1::text::uuid AND session_state IN (1, 2) AND game_session_id <> encode($2, 'hex')::uuid AND character_id <> encode($3, 'hex')::uuid)",
+                        "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE account_id = $1::text::uuid AND session_state IN (1, 2) AND game_session_id <> encode($2, 'hex')::uuid)",
                     )
                     .bind(identity.account_id())
                     .bind(session_id.as_slice())
-                    .bind(identity.character_id().as_bytes().as_slice())
                     .fetch_one(&mut *transaction)
                     .await?;
                     if account_incumbent {
