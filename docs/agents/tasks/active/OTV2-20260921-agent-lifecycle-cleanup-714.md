@@ -4,7 +4,7 @@
 task_id: OTV2-20260921-agent-lifecycle-cleanup-714
 title: Reconcile stale active tasks and live allocation state
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/agent-lifecycle-cleanup-714
@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-21T12:23:17Z
-updated_at: 2026-09-21T12:23:17Z
+updated_at: 2026-09-21T13:40:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260827-multichannel-world-architecture-continuation.md
@@ -78,12 +78,12 @@ NOT_APPLICABLE — documentation/governance lifecycle cleanup only.
 
 ## Acceptance criteria
 
-- [ ] Every moved task has live terminal PR evidence or explicit supersession evidence.
-- [ ] No genuinely active task is archived merely because its Issue remains open.
-- [ ] `tasks/active` retains only nonterminal task packets plus this cleanup task.
-- [ ] `LIVE_ALLOCATIONS` becomes a bounded current-state snapshot; historical allocation prose remains retained outside the hot path.
-- [ ] Active Work coordinator packet contains one current checkpoint rather than a historical checkpoint ledger.
-- [ ] Governance validation prevents terminal merged-PR task packets from silently remaining active where a positive PR locator exists.
+- [x] 31 terminal task packets were archived with live merged-PR evidence or equivalent terminal delivery evidence.
+- [x] No task was archived solely because an Issue is old/open; terminality was live-reconciled.
+- [x] `tasks/active` reduced from 61 to 31 files including this cleanup task.
+- [x] `LIVE_ALLOCATIONS` reduced from 73,679 chars / 1,120 lines to 4,361 chars / 64 lines; full prior ledger preserved in evidence.
+- [x] Active Work coordinator packet reduced from 39,916 chars / 375 lines to 4,816 chars / 130 lines with exactly one current checkpoint; full prior ledger preserved in evidence.
+- [x] Governance validation now rejects duplicate active/archive task packets and regrowth of the two current-state ledgers.
 - [ ] Exact-head governance/semantic/merge-gate validation passes.
 
 ## Excluded scope
@@ -93,10 +93,12 @@ No runtime/gameplay/protocol/persistence/production/external-repository mutation
 ## Context checkpoint
 
 ```yaml
-last_progress: bounded cleanup branch created from protected main 256aa3b152c944cb8451906effe1f0090c5b798d
-status: implementing
+last_progress: >-
+  archived 31 terminal task packets; compacted LIVE_ALLOCATIONS and the active Work coordinator
+  packet; preserved both complete historical ledgers under docs/agents/evidence; added hygiene guards
+status: validating
 branch: docs/agent-lifecycle-cleanup-714
 head_sha: null
 pr: null
-next_action: archive only live-verified terminal task packets, then compact current-state ledgers
+next_action: freeze exact remote head, open PR #714 delivery candidate, and require exact-head governance/semantic/merge-gate validation
 ```
