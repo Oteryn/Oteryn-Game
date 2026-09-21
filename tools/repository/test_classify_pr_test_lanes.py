@@ -715,28 +715,60 @@ def main() -> int:
         "crates/simulation-determinism/src/lib.rs", "crates/simulation-determinism/fixtures/golden.json",
         "Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "apps/game-server/build.rs",
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
-        "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
+        "tools/repository/classify_pr_test_lanes.py",
         "tools/game-atlas-fullworld-source/animated.py", "tools/game-atlas-fullworld-source/README.md",
-        "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
+        "docs/agents/evidence/runtime-input.json", "docs/migration/input.json",
+        "unknown/input.dat", "apps/game-server/unknown.md",
     )
     for path in full_paths:
         result = classify([path])
         assert result["rust"] is True and result["windows"] is True, (path, result)
+
+    governance_paths = (
+        "AGENTS.md",
+        "docs/agents/AGENTS.md",
+        "docs/agents/PROJECT_LANES.json",
+        "docs/agents/PROMPT_LIFECYCLE.json",
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "docs/agents/tasks/active/task.md",
+        "tools/agents/tests/test_meta_agent_policy_adoption.py",
+    )
+    for path in governance_paths:
+        result = classify([path])
+        assert result == {
+            "rust": False,
+            "windows": False,
+            "surface": "agent-governance",
+            "reason": "agent-governance-only",
+        }, (path, result)
+        result = classify([path], digest="stale-runtime-snapshot", docs_digest="stale-doc-snapshot")
+        assert result["rust"] is False and result["windows"] is False, (path, result)
     for paths in ([server, "apps/client/src/lib.rs"], [server, "unknown/input.dat"],
                   [{"filename": server, "status": "renamed", "previous_filename": "apps/client/src/old.rs"}],
-                  [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}]):
+                  [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}],
+                  [{"filename": "AGENTS.md", "status": "renamed", "previous_filename": server}],
+                  [{"filename": server, "status": "renamed", "previous_filename": "AGENTS.md"}]):
         result = classify(paths)
         assert result["rust"] and result["windows"], result
-    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"],
-                  ["docs/agents/PROMPT_LIFECYCLE.json"]):
+    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/reference/example.md"],
+                  ["docs/agents/evidence/history.md"]):
         result = classify(paths)
         assert result["rust"] is False and result["windows"] is False, result
         result = classify(paths, digest="unreviewed-document-consumer")
         assert result["rust"] and result["windows"], "docs skip ignored changed input assumptions"
         result = classify(paths, docs_digest="server-started-reading-docs")
         assert result["rust"] and result["windows"], "docs skip ignored changed server input assumptions"
+
     result = classify([server, "docs/agents/tasks/active/task.md"])
     assert result["rust"] and not result["windows"], result
+    result = classify(["apps/client/src/lib.rs", "docs/agents/tasks/active/task.md"])
+    assert result["rust"] and result["windows"], result
+    result = classify(["AGENTS.md", "docs/architecture/example.md"])
+    assert result["rust"] is False and result["windows"] is False, result
+    assert result["surface"] == "agent-governance", result
+    assert result["reason"] == "agent-governance-plus-neutral-documentation", result
+    result = classify([{"filename": "docs/agents/AGENTS.md", "status": "renamed", "previous_filename": "AGENTS.md"}])
+    assert result["rust"] is False and result["windows"] is False, result
 
     invalid = (
         ([], {}), ([server], {"count": 2}), ([server], {"complete": False}),
