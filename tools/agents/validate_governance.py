@@ -184,6 +184,73 @@ def validate_active_task_packets(errors: list[str]) -> None:
                 errors.append(f"active task packet {relative} has terminal status {status}")
 
 
+
+def _markdown_section(text: str, heading: str) -> str:
+    marker = f"## {heading}\n"
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    body_start = start + len(marker)
+    next_heading = text.find("\n## ", body_start)
+    return text[body_start:] if next_heading < 0 else text[body_start:next_heading]
+
+
+def validate_context_economy(errors: list[str]) -> None:
+    routing_path = ROOT / "docs/agents/CONTEXT_ROUTING.md"
+    routing = routing_path.read_text(encoding="utf-8") if routing_path.is_file() else ""
+    for fragment in (
+        "do not bulk-read complete Issue or PR comment timelines",
+        "do not read the complete `PROMPT_LIFECYCLE.json` to invoke one known alias",
+        "prompt evaluation is for prompt authoring/material changes/lifecycle evaluation",
+    ):
+        if fragment not in routing:
+            errors.append(f"context routing missing context-economy rule: {fragment}")
+
+    worker_prompts = (
+        "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
+    )
+    for relative in worker_prompts:
+        path = ROOT / relative
+        if not path.is_file():
+            errors.append(f"missing context-economy worker prompt: {relative}")
+            continue
+        startup = _markdown_section(path.read_text(encoding="utf-8"), "Mandatory startup")
+        if "OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md" in startup:
+            errors.append(f"{relative} must not load owner operator runbook in technical startup")
+
+    implementation_path = ROOT / "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md"
+    if implementation_path.is_file():
+        startup = _markdown_section(
+            implementation_path.read_text(encoding="utf-8"), "Mandatory startup"
+        )
+        for legacy in (
+            "Read the accepted FND, DUR, SIM",
+            "Inspect exact live main SHA, open PRs, active tasks",
+        ):
+            if legacy in startup:
+                errors.append(
+                    "implementation coordinator reintroduced broad mandatory startup: "
+                    f"{legacy}"
+                )
+
+    work_path = ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md"
+    if work_path.is_file():
+        work = work_path.read_text(encoding="utf-8")
+        legacy = (
+            "fresh-read protected `main`, root/nearest `AGENTS.md`, META binding, "
+            "`PROMPT_LIFECYCLE.json`"
+        )
+        if legacy in work:
+            errors.append("Work coordinator reintroduced full-registry mandatory startup")
+
+    prompts_readme = ROOT / "docs/agents/prompts/README.md"
+    if prompts_readme.is_file() and "Before reuse, evaluate the selected prompt against" in prompts_readme.read_text(encoding="utf-8"):
+        errors.append("prompt README reintroduced per-invocation prompt evaluation")
+
 def main() -> int:
     errors: list[str] = []
     contract = load_json(CONTRACT_PATH, errors)
@@ -196,6 +263,7 @@ def main() -> int:
     validate_prompt_lifecycle(prompt_lifecycle, errors)
     validate_handover_lifecycle(handover_lifecycle, errors)
     validate_active_task_packets(errors)
+    validate_context_economy(errors)
 
     if contract.get("repository") != EXPECTED_REPOSITORY:
         errors.append("governance repository must be Oteryn/Oteryn-Game")

@@ -172,6 +172,6 @@ High-risk protocol/session/persistence/item/loot/value/multichannel/fencing work
 
 ## Reuse rule
 
-Before reuse, evaluate the selected prompt against `../PROMPT_EVAL_STANDARD.md`, read the canonical implementation DAG/scheduler and the operator runbook when owner-facing launch/status guidance is material, and verify all repository state named by the prompt against live GitHub state.
+For ordinary alias reuse, resolve only the selected lifecycle entry and prompt from protected `main`, then verify only repository facts material to the requested operation. `PROMPT_EVAL_STANDARD.md` applies when authoring, materially changing, activating/retiring or explicitly evaluating a prompt; it is not a per-invocation prerequisite. Read the canonical DAG/scheduler only when the dependency decision needs them, and read the operator runbook only when owner-facing launch/status guidance is material.
 
 A short invocation is only an alias for resolving the canonical prompt from live `main`; it is not permission to use a cached prompt body, bypass current repository instructions or activate a second control plane.

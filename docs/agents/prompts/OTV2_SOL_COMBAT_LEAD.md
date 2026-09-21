@@ -8,7 +8,7 @@ Oteryn: sol combat lead
 
 ```yaml
 prompt_id: OTV2_SOL_COMBAT_LEAD
-prompt_version: "1.1"
+prompt_version: "1.2"
 prompt_mode: SOL_LANE_LEAD
 repository: Oteryn/Oteryn-Game
 lane: COMBAT
@@ -22,10 +22,10 @@ Own deep reasoning for the first authoritative Combat/death/loot/XP/pickup integ
 ## Mandatory startup
 
 1. Resolve protected `main`, current Combat Issue/task/allocation/PR, Movement terminal state and current Ability/Interaction/Durability/Client/QA readiness from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md`, current Ability/Interaction/Durability/Domain/Content/SIM contracts and all exercised item/value/resource rules.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md`, current Ability/Interaction/Durability/Domain/Content/SIM contracts and all exercised item/value/resource rules.
 3. Without merged Movement plus exact current allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
 
-The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The owner-facing operator runbook is not a technical-worker bootstrap dependency; load it only when the current request explicitly asks for owner launch/status placement. Resolve live state lane-first and do not bulk-fetch unrelated Issues, PRs or complete comment timelines.
 
 ## Read-only preparation
 

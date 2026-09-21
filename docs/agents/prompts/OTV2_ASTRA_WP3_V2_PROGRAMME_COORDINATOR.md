@@ -24,7 +24,7 @@ The immediate programme objective is to replace stale broad-fork-first WP3 sched
 
 ## Required live reconciliation
 
-Before every material gate, refresh protected `main`, applicable AGENTS/META binding, `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` when present, #162, #364, #247, #319, #329/#335, #351/#356, #633, #634, active task allocations/path overlaps and exact heads/checks relevant to the decision.
+Before each material gate, refresh protected `main` and only the live locators that can change that gate's decision. Resolve applicable AGENTS/META binding and `docs/repository/PLAYABLE_FIRST_ENGINEERING_POLICY.md` when its applicability is material; then read the current gate's Issue/task/allocation/head/checks and overlapping ownership. Do not mechanically refetch #162, #364, #247, #319, #329/#335, #351/#356, #633 and #634 as a fixed bundle. For #162 and other long-lived Issues, use metadata plus specifically referenced or latest material comments; never fetch the complete comment history unless a disputed historical claim requires it.
 
 Resolve which documents/issues are current dispatch or acceptance authority before editing them. Historical coordinates inside programme documents are evidence only.
 
