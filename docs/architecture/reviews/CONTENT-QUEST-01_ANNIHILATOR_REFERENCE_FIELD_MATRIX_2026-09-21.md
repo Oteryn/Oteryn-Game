@@ -1,8 +1,8 @@
 # CONTENT-QUEST-01 r9 — Annihilator Reference field promotion matrix
 
-Status: **REFERENCE_EVIDENCE_MATRIX / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
-Tracking: #707 / PR #709  
+Status: **REFERENCE_EVIDENCE_MATRIX / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
+Tracking: #707 / PR #709
 Reference target: `global-tibia-observable-2026-07-28-post-server-save`
 
 ## Purpose

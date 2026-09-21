@@ -1,10 +1,10 @@
 # CONTENT-QUEST-01 r11 — Annihilator admission geometry witness
 
-Status: **OTS_HYPOTHESIS_ONLY / PHYSICAL_ADMISSION_SOURCE_BINDING / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
-Tracking: #707 / PR #709  
-Evidence head: `47482a0fca9bf3d3b7178fa8db222dd95e8aaaa2`  
-Workflow run: `35588149012`  
+Status: **OTS_HYPOTHESIS_ONLY / PHYSICAL_ADMISSION_SOURCE_BINDING / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
+Tracking: #707 / PR #709
+Evidence head: `47482a0fca9bf3d3b7178fa8db222dd95e8aaaa2`
+Workflow run: `35588149012`
 Workflow job: `106296213683`
 
 ## Purpose

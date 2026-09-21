@@ -1,8 +1,8 @@
 # CONTENT-QUEST-01 r10 — Annihilator source QuestLog / journal witness
 
-Status: **OTS_HYPOTHESIS_ONLY / SOURCE_PRESENTATION_FOOTPRINT / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
-Tracking: #707 / PR #709  
+Status: **OTS_HYPOTHESIS_ONLY / SOURCE_PRESENTATION_FOOTPRINT / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
+Tracking: #707 / PR #709
 Selected source: `zimbadev/crystalserver@ac447fef0935e6df52dc6b6376ae4c1534ecd73f`, `data-global`.
 
 ## Purpose

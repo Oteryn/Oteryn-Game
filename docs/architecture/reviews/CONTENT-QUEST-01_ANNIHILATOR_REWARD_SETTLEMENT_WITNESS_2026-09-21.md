@@ -1,7 +1,7 @@
 # CONTENT-QUEST-01 r13 — Annihilator source reward settlement ordering witness
 
-Status: **OTS_HYPOTHESIS_ONLY / SOURCE_SETTLEMENT_ORDERING / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
+Status: **OTS_HYPOTHESIS_ONLY / SOURCE_SETTLEMENT_ORDERING / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
 Tracking: #707 / PR #709
 
 ## Purpose

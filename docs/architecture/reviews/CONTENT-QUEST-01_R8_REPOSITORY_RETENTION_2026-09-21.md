@@ -1,7 +1,7 @@
 # CONTENT-QUEST-01 r8 repository retention
 
-Status: PROPOSED_NONCANONICAL  
-Date: 2026-09-21  
+Status: PROPOSED_NONCANONICAL
+Date: 2026-09-21
 Tracking: #707 / PR #709
 
 ## Current composition

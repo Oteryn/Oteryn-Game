@@ -1,10 +1,10 @@
 # CONTENT-QUEST-01 r12 — Annihilator source exit destination witness
 
-Status: **OTS_HYPOTHESIS_ONLY / PHYSICAL_SOURCE_RETURN_BINDING / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
-Tracking: #707 / PR #709  
-Evidence head: `f0d6b5f4da85d5eeea8969e22f7481961e0d0e56`  
-Workflow run: `35588746601`  
+Status: **OTS_HYPOTHESIS_ONLY / PHYSICAL_SOURCE_RETURN_BINDING / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
+Tracking: #707 / PR #709
+Evidence head: `f0d6b5f4da85d5eeea8969e22f7481961e0d0e56`
+Workflow run: `35588746601`
 Workflow job: `106298081624`
 
 ## Purpose

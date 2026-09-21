@@ -1,7 +1,7 @@
 # CONTENT-QUEST-01 r8 — Annihilator reward item binding witness
 
-Status: **OTS_HYPOTHESIS_ONLY / ITEM_BINDING_GAP / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
+Status: **OTS_HYPOTHESIS_ONLY / ITEM_BINDING_GAP / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
 Tracking: #707 / PR #709
 
 ## Purpose

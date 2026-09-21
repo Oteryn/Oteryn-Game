@@ -1,8 +1,8 @@
 # CONTENT-QUEST-01 r7 repository retention
 
-Status: PROPOSED_NONCANONICAL  
-Date: 2026-09-21  
-Tracking: #707 / PR #709  
+Status: PROPOSED_NONCANONICAL
+Date: 2026-09-21
+Tracking: #707 / PR #709
 Base main: `e4da44a86d006df623b7b234d7b3a879516b86cd`
 
 ## Composition

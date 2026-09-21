@@ -1,21 +1,21 @@
 # CONTENT-QUEST-01 r7 — Annihilator physical map binding witness
 
-Status: **OTS_HYPOTHESIS_ONLY / PHYSICAL_SOURCE_BINDING / PROPOSED_NONCANONICAL**  
-Date: 2026-09-21  
-Tracking: #707 / PR #709  
-Evidence head: `0e3d83bce0ed5358b6ac9ad8f5b108105b740d66`  
-Workflow run: `35585892692`  
+Status: **OTS_HYPOTHESIS_ONLY / PHYSICAL_SOURCE_BINDING / PROPOSED_NONCANONICAL**
+Date: 2026-09-21
+Tracking: #707 / PR #709
+Evidence head: `0e3d83bce0ed5358b6ac9ad8f5b108105b740d66`
+Workflow run: `35585892692`
 Workflow job: `106289013612`
 
 ## Purpose
 
 Close the binary-map precondition retained by r4/r6 for the selected Crystal Annihilator source without creating another OTBM parser.
 
-Existing parser pin: `blakinio/Otheryn@e417c5e7c22986bf4acef0495eb47f7b72c97cce`.  
-Selected source: `zimbadev/crystalserver@ac447fef0935e6df52dc6b6376ae4c1534ecd73f`.  
-Map path: `data-global/world/world.otbm`.  
-Map Git blob: `e95e8f7c7a95d1b634b49a5dea5a5dc76021406b`.  
-Map bytes: `52267895`.  
+Existing parser pin: `blakinio/Otheryn@e417c5e7c22986bf4acef0495eb47f7b72c97cce`.
+Selected source: `zimbadev/crystalserver@ac447fef0935e6df52dc6b6376ae4c1534ecd73f`.
+Map path: `data-global/world/world.otbm`.
+Map Git blob: `e95e8f7c7a95d1b634b49a5dea5a5dc76021406b`.
+Map bytes: `52267895`.
 Map SHA-256: `09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb`.
 
 The workflow checked out the exact Game PR head, exact existing parser and exact Crystal source, verified the identities above, and streamed the OTBM with `tools.otbm_atlas.semantic.iter_map_records(..., strict=True)`. The job completed **SUCCESS** with `problems=[]`.
