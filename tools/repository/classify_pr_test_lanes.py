@@ -17,7 +17,9 @@ import re
 import subprocess
 import sys
 
-AUDITED_INPUT_SHA256 = "962dfe6c3c9fbe102a08b1040e3880589b6ee4cda52a4910feae3103225099fe"
+ROOT = Path(__file__).resolve().parents[2]
+
+AUDITED_INPUT_SHA256 = "118afae45f3c8fd7692e2e61ffd286e4efc3d4bfc8290304b999f0bbc3ca29ba"
 AUDITED_DOC_INPUT_SHA256 = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
 AUDITED_DOC_CONSUMER_BASE_SHA = "256aa3b152c944cb8451906effe1f0090c5b798d"
 SERVER = "oteryn-game-server"
@@ -80,6 +82,41 @@ def routing_health(result: dict) -> str:
 def valid_path(value) -> bool:
     return isinstance(value, str) and bool(value) and not any(c in value for c in "\x00\n\r\\") and not value.startswith("/") and ".." not in value.split("/") and str(PurePosixPath(value)) == value
 
+
+def external_local_dependency_roots() -> tuple[str, ...]:
+    """Return root-manifest [patch.*] path trees consumed outside workspace membership.
+
+    Cargo accepts manifest constructs that Python's TOML 1.0 parser does not, so keep this
+    deliberately narrow: inspect only patch sections and extract literal path assignments.
+    The root Cargo.toml is already an audited BUILD_INPUT, so any patch-table shape change
+    invalidates the snapshot before a new path tree can be trusted.
+    """
+    roots: set[str] = set()
+    in_patch = False
+    header = re.compile(r"^\s*\[([^\]]+)\]\s*(?:#.*)?$")
+    path_assignment = re.compile(r'\bpath\s*=\s*"([^"]+)"')
+
+    for line in (ROOT / "Cargo.toml").read_text(encoding="utf-8").splitlines():
+        match = header.match(line)
+        if match is not None:
+            in_patch = match.group(1).startswith("patch.")
+            continue
+        if not in_patch:
+            continue
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        path_match = path_assignment.search(line)
+        if path_match is None:
+            continue
+        raw = path_match.group(1)
+        candidate = PurePosixPath(raw)
+        normalized = str(candidate)
+        if candidate.is_absolute() or normalized == "." or not valid_path(normalized):
+            raise ValueError("unsafe patched dependency path")
+        roots.add(normalized)
+
+    return tuple(sorted(roots))
 
 def neutral(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} or path.startswith("docs/migration/"):
@@ -178,12 +215,14 @@ def graph(metadata: dict):
 def audited_input_path(metadata: dict, path: str, include_server: bool = False) -> bool:
     roots, _ = graph(metadata)
     prefixes = tuple(root + "/" for name, root in roots.items() if include_server or name != SERVER)
+    prefixes += tuple(root + "/" for root in external_local_dependency_roots())
     return path in BUILD_INPUTS or path.startswith(".cargo/") or path.startswith(prefixes)
 
 
 def input_digest(metadata: dict, include_server: bool = False) -> str:
     roots, _ = graph(metadata)
     prefixes = tuple(path + "/" for name, path in roots.items() if include_server or name != SERVER)
+    prefixes += tuple(root + "/" for root in external_local_dependency_roots())
     records = subprocess.check_output(["git", "ls-tree", "-r", "-z", "HEAD"]).split(b"\0")
     selected = []
     for record in records:
