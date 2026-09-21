@@ -8,6 +8,7 @@ pub mod admission_authority_guards;
 mod admission_journal;
 mod db;
 pub mod fresh_admission;
+pub mod native_admission_source;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
