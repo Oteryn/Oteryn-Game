@@ -45,7 +45,7 @@ def validate_prompt_lifecycle(registry: dict, errors: list[str]) -> None:
     prompts_dir = ROOT / "docs/agents/prompts"
     actual = {
         path.relative_to(ROOT).as_posix()
-        for path in prompts_dir.glob("*.md")
+        for path in prompts_dir.rglob("*.md")
         if path.name != "README.md"
     }
     entries = registry.get("prompts", [])
