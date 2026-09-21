@@ -35,13 +35,16 @@ external_repositories: []
 
 ## Outcome
 
-Refresh only the reviewed non-server input fingerprint after protected WP3 changed audited workspace/build inputs. Preserve the previous fingerprint as a stale fail-closed fixture. Do not change classifier behavior.
+Repair the reviewed non-server input model after protected WP3 added path-patched dependencies outside workspace membership, then adopt the resulting reviewed fingerprint. Preserve every predecessor fingerprint as a stale fail-closed fixture.
 
 ## Proven input audit
 
 - Protected admission: `main@04f46b16e3b33c2ebab39edcf7e693a0a72c6301`.
 - Current declared snapshot: `962dfe6c3c9fbe102a08b1040e3880589b6ee4cda52a4910feae3103225099fe`.
-- Current protected-tree digest from routing validator: `6e6f7a9dafe5020cbfda968d49b97c47072c7ee471668d3d9e0cdc491a4af2f4`.
+- Pre-repair protected-tree digest from routing validator: `6e6f7a9dafe5020cbfda968d49b97c47072c7ee471668d3d9e0cdc491a4af2f4`.
+- Independent review P1 proved that digest omitted root `[patch.*]` path trees outside `workspace_members`.
+- Repair makes root-manifest patched dependency trees audited inputs; a focused regression proves `vendor/tokio-1.53.1/src/lib.rs` mutation changes the digest.
+- Post-repair RED routing run `35619359313` computed the new exact digest `118afae45f3c8fd7692e2e61ffd286e4efc3d4bfc8290304b999f0bbc3ca29ba`.
 - Protected PR #673 changed root audited build inputs:
   - `Cargo.toml`: SQLx TLS ring -> AWS-LC, exact path patches for vendored SQLx core/postgres and Tokio, vendor packages excluded from workspace membership;
   - `Cargo.lock`: protected path-patched resolution for those exact versions.
@@ -50,24 +53,28 @@ Refresh only the reviewed non-server input fingerprint after protected WP3 chang
 
 ## Acceptance
 
-- [x] Scope is limited to current fingerprint, predecessor stale fixture and this task record.
-- [x] No classifier algorithm/workflow/Cargo/runtime/protection change.
-- [ ] Exact-head routing contract reports `ROUTING_CONTRACT_HEALTHY snapshot=6e6f7a9d...`.
+- [x] P1 repaired: root `[patch.*]` path dependencies outside workspace membership are hashed as audited inputs.
+- [x] Focused regression proves current vendored SQLx/Tokio patch roots are audited and vendor-tree mutation changes the digest.
+- [x] Predecessor snapshots `962d...` and `6e6f...` remain stale/fail-closed fixtures.
+- [x] No workflow/Cargo/runtime/protection/Merge Queue primitive change.
+- [ ] Exact-head routing contract reports `ROUTING_CONTRACT_HEALTHY snapshot=118afae4...`.
 - [ ] Classifier/post-merge/repository/governance regressions pass.
 - [ ] Exact-head hosted Merge Gate and aggregate `game-gate` pass.
 - [ ] Normal Merge Queue integration and protected-main readback complete.
 
 ## Excluded scope
 
-No product source, dependency, manifest/lock, workflow, protection, queue primitive, prompt or lifecycle semantics change.
+No product source, dependency, manifest/lock, workflow, protection, queue primitive, prompt or lifecycle semantics change. Classifier behavior changes only to include root path-patched dependency trees in audited-input hashing.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: protected-tree drift independently identified and bounded to a reviewed snapshot refresh
+last_progress: >-
+  independent review P1 repaired by hashing root path-patched dependency trees; RED routing contract
+  computed final reviewed digest 118afae45f3c8fd7692e2e61ffd286e4efc3d4bfc8290304b999f0bbc3ca29ba
 status: validating
 branch: ci/routing-snapshot-refresh-725
 head_sha: null
 pr: null
-next_action: publish exact three-path candidate and require fresh full routing/control-plane qualification
+next_action: freeze this final repaired head and require fresh routing-health, full CI, and independent re-review
 ```
