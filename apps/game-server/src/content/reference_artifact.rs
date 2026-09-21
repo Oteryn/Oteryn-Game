@@ -858,6 +858,15 @@ fn validate_compile_source(
             "Reference artifact definitions are not strictly identity sorted",
         ));
     }
+    for pair in source.definitions.windows(2) {
+        if pair[0].definition.family() == pair[1].definition.family()
+            && pair[0].definition.key() == pair[1].definition.key()
+        {
+            return Err(ContentError::DuplicateKey(
+                pair[1].definition.key().as_str().to_owned(),
+            ));
+        }
+    }
     for definition in &source.definitions {
         if definition.definition.family() != DefinitionFamily::Item
             || definition.client_projection != ClientProjectionClass::ClientSafe
