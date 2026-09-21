@@ -748,3 +748,28 @@ fn configured_roots_are_four_not_five() -> Result<(), Box<dyn std::error::Error>
     }
     Ok(())
 }
+
+#[test]
+fn final_chunk_crlf_counts_toward_total_framing() -> Result<(), Box<dyn std::error::Error>> {
+    runtime()?.block_on(async {
+        for over in [false, true] {
+            let mut wire = b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n".to_vec();
+            for i in 0..62 {
+                let digits = if i == 0 && !over { 61 } else { 62 };
+                wire.extend(std::iter::repeat_n(b'0', digits - 1));
+                wire.extend_from_slice(b"1\r\nx\r\n");
+            }
+            wire.extend_from_slice(b"0\r\n\r\n");
+            let (mut writer, mut reader) = tokio::io::duplex(wire.len() + 1);
+            writer.write_all(&wire).await?;
+            drop(writer);
+            assert_eq!(
+                native_admission_source::http1_mtls::read_response(&mut reader)
+                    .await
+                    .is_ok(),
+                !over
+            );
+        }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+}

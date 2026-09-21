@@ -215,6 +215,13 @@ async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, S
         let text = std::str::from_utf8(&line).map_err(|_| SourceError::InvalidInput)?;
         let size = usize::from_str_radix(text, 16).map_err(|_| SourceError::InvalidInput)?;
         if size == 0 {
+            if framing
+                .checked_add(2)
+                .ok_or(SourceError::CapacityExceeded)?
+                > 4096
+            {
+                return Err(SourceError::CapacityExceeded);
+            }
             let trailer = read_crlf_line(stream, 2).await?;
             if !trailer.is_empty() {
                 return Err(SourceError::InvalidInput);
