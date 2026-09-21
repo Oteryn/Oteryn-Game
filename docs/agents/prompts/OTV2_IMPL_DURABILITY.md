@@ -59,14 +59,17 @@ A diagnostic-only allocation remains diagnostic-only. If the allocation authoriz
 
 Publish canonical material work only through the route explicitly allocated by the active control plane and permitted by current root/META policy:
 
-- guarded local-Git exact-candidate publication; or
+- guarded local-Git exact-candidate publication;
+- bounded `api_native_authoring` on the exact exclusively allocated task branch when the intended mutation is the repository-native API write and no selected local Git candidate is being reconstructed; or
 - atomic expected-head API **new-candidate** publication, where one server-side mutation fences the exact expected task-branch predecessor and creates the complete bounded delta as one successor commit.
 
-The API route must not reconstruct a selected local Git candidate. It creates a new exact candidate and therefore requires fresh candidate-specific validation/review evidence. A precondition mismatch must create no commit and move no branch.
+For `api_native_authoring`, sequential high-level file mutations are WIP and are allowed only before candidate freeze. Fresh-read the live branch head before each write and stop on unexpected movement. After the final write, fresh-read the exact branch head, verify the complete bounded delta and owned paths against the admission base, and freeze that exact remote head as the candidate. Candidate-specific validation/review starts only from that frozen head; intermediate WIP heads carry no reusable candidate evidence.
 
-If neither governed route is available, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
+The atomic API route must not reconstruct a selected local Git candidate. It creates a new exact candidate and therefore requires fresh candidate-specific validation/review evidence. A precondition mismatch must create no commit and move no branch.
 
-Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, emit sequential per-file API commits, force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
+If none of the governed routes is available, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
+
+Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, reconstruct a selected local candidate through sequential API writes, mutate a frozen candidate with sequential file commits, force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
 
 ## Acceptance / validation
 
