@@ -37,10 +37,9 @@ impl Operation {
 }
 pub struct ProducerDescriptor {
     pub(super) source_authority: String,
-    pub(super) connect_host: String,
+    pub(super) connect_addr: std::net::SocketAddr,
     pub(super) server_name: ServerName<'static>,
     pub(super) host_header: String,
-    pub(super) port: u16,
     pub(super) tls: Arc<rustls::ClientConfig>,
 }
 impl ProducerDescriptor {
@@ -70,6 +69,12 @@ impl ProducerDescriptor {
         {
             return Err(SourceError::InvalidDescriptor);
         }
+        let connect_addr = std::net::SocketAddr::new(
+            connect_host
+                .parse::<std::net::IpAddr>()
+                .map_err(|_| SourceError::InvalidDescriptor)?,
+            port,
+        );
         let total = roots
             .iter()
             .try_fold(0usize, |n, c| n.checked_add(c.as_ref().len()))
@@ -100,11 +105,10 @@ impl ProducerDescriptor {
         tls.alpn_protocols = vec![b"http/1.1".to_vec()];
         Ok(Self {
             source_authority,
-            connect_host,
+            connect_addr,
             server_name: ServerName::try_from(server_name)
                 .map_err(|_| SourceError::InvalidDescriptor)?,
             host_header,
-            port,
             tls: Arc::new(tls),
         })
     }

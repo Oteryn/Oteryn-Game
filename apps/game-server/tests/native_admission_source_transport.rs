@@ -773,3 +773,79 @@ fn final_chunk_crlf_counts_toward_total_framing() -> Result<(), Box<dyn std::err
         Ok::<(), Box<dyn std::error::Error>>(())
     })
 }
+
+#[test]
+fn descriptor_connect_address_is_fixed_ip_without_dns() -> Result<(), Box<dyn std::error::Error>> {
+    for (address, accepted) in [
+        ("127.0.0.1", true),
+        ("::1", true),
+        ("source.test", false),
+        ("localhost", false),
+    ] {
+        let result = ProducerDescriptor::new(
+            "platform-test".into(),
+            address.into(),
+            "source.test".into(),
+            "source.test".into(),
+            443,
+            vec![CertificateDer::from(CA.to_vec())],
+            vec![CertificateDer::from(CLIENT.to_vec())],
+            PrivateKeyDer::try_from(CLIENT_KEY.to_vec())?,
+        );
+        assert_eq!(result.is_ok(), accepted, "{address}");
+    }
+    Ok(())
+}
+#[test]
+fn strict_http_framing_rejects_ambiguous_names_controls_and_signed_lengths()
+-> Result<(), Box<dyn std::error::Error>> {
+    runtime()?.block_on(async {
+        for (wire, accepted) in [
+            (
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nX-Valid_Token: yes\r\n\r\n{}",
+                true,
+            ),
+            (
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nTransfer-Encoding : gzip\r\n\r\n{}",
+                false,
+            ),
+            ("HTTP/1.1 200 OK\r\nContent-Length: +2\r\n\r\n{}", false),
+            (
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n: empty\r\n\r\n{}",
+                false,
+            ),
+            (
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nX: a\rb\r\n\r\n{}",
+                false,
+            ),
+            (
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nX: a\nb\r\n\r\n{}",
+                false,
+            ),
+            (
+                "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nX: a\u{7f}b\r\n\r\n{}",
+                false,
+            ),
+            (
+                "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n+1\r\nx\r\n0\r\n\r\n",
+                false,
+            ),
+            (
+                "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n1\r\nx\r\n0\r\n\r\n",
+                true,
+            ),
+        ] {
+            let (mut writer, mut reader) = tokio::io::duplex(wire.len() + 1);
+            writer.write_all(wire.as_bytes()).await?;
+            drop(writer);
+            assert_eq!(
+                native_admission_source::http1_mtls::read_response(&mut reader)
+                    .await
+                    .is_ok(),
+                accepted,
+                "{wire:?}"
+            );
+        }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+}

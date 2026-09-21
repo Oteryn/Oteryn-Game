@@ -99,7 +99,7 @@ pub(crate) async fn exchange(
     let future = async {
         let tcp = tokio::time::timeout(
             Duration::from_millis(CONNECT_DEADLINE_MS),
-            tokio::net::TcpStream::connect((desc.connect_host.as_str(), desc.port)),
+            tokio::net::TcpStream::connect(desc.connect_addr),
         )
         .await
         .map_err(|_| SourceError::Unavailable)??;
@@ -168,7 +168,19 @@ pub(crate) async fn read_response<S: AsyncRead + Unpin>(
             return Err(SourceError::CapacityExceeded);
         }
         let (name, value) = line.split_once(':').ok_or(SourceError::InvalidInput)?;
+        if name.is_empty()
+            || !name
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_|~".contains(&b) || b == 96)
+            || value.bytes().any(|b| b.is_ascii_control() && b != b'\t')
+        {
+            return Err(SourceError::InvalidInput);
+        }
+        let value = value.trim_matches([' ', '\t']);
         if name.eq_ignore_ascii_case("content-length") {
+            if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
+                return Err(SourceError::InvalidInput);
+            }
             if length.is_some() || chunked {
                 return Err(SourceError::InvalidInput);
             }
@@ -213,6 +225,9 @@ async fn read_chunked<S: AsyncRead + Unpin>(stream: &mut S) -> Result<Vec<u8>, S
             return Err(SourceError::InvalidInput);
         }
         let text = std::str::from_utf8(&line).map_err(|_| SourceError::InvalidInput)?;
+        if !text.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Err(SourceError::InvalidInput);
+        }
         let size = usize::from_str_radix(text, 16).map_err(|_| SourceError::InvalidInput)?;
         if size == 0 {
             if framing
