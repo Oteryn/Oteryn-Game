@@ -1,5 +1,8 @@
 use super::artifact::*;
 use super::model::*;
+use super::reference_artifact;
+use super::reference_artifact::CompiledReferencePlayableContent;
+use super::reference_playable::CanonicalReferencePlayableContent;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -46,6 +49,16 @@ pub fn compile(
         server_digest: server.digest,
         client_digest: client.digest,
     })
+}
+
+/// Compile the linked one-Item Reference corpus through the production Content artifact lineage.
+///
+/// This is deliberately separate from [`compile`], whose source and artifact profile remain
+/// fixture-only evidence. The Reference path accepts only the bounded v1 successor grammar.
+pub fn compile_reference_playable(
+    source: &CanonicalReferencePlayableContent,
+) -> Result<CompiledReferencePlayableContent, ContentError> {
+    reference_artifact::compile(source)
 }
 
 fn canonicalize(

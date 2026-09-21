@@ -31,6 +31,7 @@ Po protected integracji rozwiązywać aliasy z aktualnego `docs/agents/PROMPT_LI
 | CW4 | `Oteryn: content world runtime` | [RUNTIME](../prompts/OTV2_CONTENT_WORLD_RUNTIME.md) | Realne operacje obiektów i kompozycja domen. |
 | CW5 | `Oteryn: content world client` | [CLIENT](../prompts/OTV2_CONTENT_WORLD_CLIENT.md) | Projekcja gry i późniejsze Studio na tym samym modelu. |
 | CW6 | `Oteryn: content world qa` | [QA](../prompts/OTV2_CONTENT_WORLD_QA.md) | Rzeczywiste E2E, regresje i prawdziwe granice dowodu. |
+| AUDIT | `Oteryn: content world audit` | [AUDIT](../prompts/OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md) | Niezależny read-only audyt kompletności architektury, danych i realnej implementacji całego Content/World. |
 
 ## 3. Start i fale
 
@@ -53,6 +54,8 @@ Oteryn: content world import
 Nie tworzyć osobnego konkurencyjnego aliasu `content catalog`. Batch plan i kolejność items -> creatures/spawns -> loot bindings -> dalsze rodziny opisuje [bulk catalogue import plan](OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md).
 
 Bez live #162 allocation alias wykonuje tylko preflight/propozycję exact batch + custody. Po przydziale CW2 może działać równolegle z CW4 wyłącznie na rozłącznych ścieżkach; mutacje wspólnego modelu pozostają serializowane przez CW3.
+
+Po zakończonym bootstrapie pojedynczego itemu control plane nie powinien przydzielać kolejnych zwykłych slice'ów typu „jeden item → native promotion”. Normalny następny przyrost CW2/CW3 ma być batchowy: ograniczona reprezentatywna partia lub cała gotowa partycja rodziny. Single-record pozostaje tylko fixture/regression/diagnostyką albo udokumentowanym wyjątkiem wymuszonym konkretnym blockerem; nie jest postępem katalogowym. Jeżeli batch jest technicznie i semantycznie możliwy, „mniejszy scope” nie jest wystarczającym powodem do powrotu do pracy rekord-po-rekordzie.
 
 Nie uruchamiać siedmiu agentów jednocześnie. Zalecane maksimum organizacyjne: trzy aktywne role łącznie, zwykle jeden lub dwóch writerów oraz niezależny read-only/QA. Gdy lead potrzebny jest do nadzoru, zajmuje jeden z tych slotów. Dwie implementacje są równoległe tylko przy faktycznie rozdzielonych ścieżkach i stabilnych interfejsach. Ta sama sesja może kolejno wykonać różne przydzielone przyrosty bez tworzenia nowej gałęzi tylko dla zmiany roli.
 
@@ -91,6 +94,8 @@ Przykładowy alias control plane musi zostać zastąpiony aktualnym, gdy live #1
 ## 6. Model i effort
 
 To wskazówki operatora, nie wymuszone ustawienia: lead zwykle medium, import i rutynowe prace medium, architektura i trudna kompozycja high tylko gdy problem tego wymaga. Ten sam profil może działać na kompetentnym dostępnym modelu. Nie zakładać, że słowo w aliasie ustawia model/effort, ani że brak opcji xhigh zatrzymuje pracę. Faktycznie wybrane ustawienia odczytać na powierzchni wykonawczej, gdy są dostępne. Nie uruchamiać płatnych API/reviews tylko dlatego, że prompt je wspomina.
+
+Dla pełnego niezależnego `Oteryn: content world audit` zalecana powierzchnia operatora to **GPT-5.6 Pro** (albo aktualny najwyższy zgodny model klasy Pro) z wysoką dostępną głębokością rozumowania, ponieważ zadanie wymaga jednoczesnego porównania architektury, danych, implementacji i evidence. To wyłącznie rekomendacja wykonawcza: alias nie wybiera modelu, a model/effort nie nadają żadnej authority. Audytor pozostaje read-only i nie zastępuje CW0–CW6 ani aktywnego control plane.
 
 ## 7. Minimalny wynik przyrostu
 

@@ -15,7 +15,7 @@ spec.loader.exec_module(adoption)
 
 SHA = "a" * 40
 MAIN = "b" * 40
-PUBLICATION_INTEGRITY_AUTHORITY = "d972e0f2dd37de265864fedf86615157d680275d"
+PUBLICATION_INTEGRITY_AUTHORITY = "e102056cc4b9219bc482ceb05afebeb4d62b7bc8"
 
 
 class CentralStatementView:
@@ -68,7 +68,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "ChannelId",
             "session-generation",
             "repository-native GitHub APIs",
-            "isolated checkout or worktree",
+            "isolated checkout or worktree for local-Git tracked-file mutation",
+            "only no-worktree tracked-file publication exception",
             "Remote Desktop is denied",
         ):
             self.assertIn(value, text)
@@ -78,11 +79,117 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertEqual(binding["authority_commit"], PUBLICATION_INTEGRITY_AUTHORITY)
         text = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
         for value in (
-            "fail closed and return custody",
+            "API-native publication may select a **new candidate**",
+            "one server-side mutation atomically fences the exact expected task-branch head",
+            "candidate-specific evidence from a superseded head is not reusable",
+            "ancestry-only `force=false` ref movement",
             "raw Git Data reconstruction",
-            "per-file API reconstruction",
+            "sequential per-file API reconstruction",
         ):
             self.assertIn(value, text)
+
+    def test_work_coordinator_preflights_mutating_execution_before_dispatch(self):
+        root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "BLOCKED_CAPABILITY_UNAVAILABLE",
+            "Missing repository workspace, Git CLI or push capability is not a Remote Desktop exception",
+            "API-native **new-candidate** route",
+            "single server-side mutation atomically fences the exact expected task-branch head",
+        ):
+            self.assertIn(value, root_text)
+
+        coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "## Execution-capability preflight",
+            "Before dispatching any mutating worker",
+            "isolated checkout/worktree",
+            "atomic expected-head API new-candidate publication",
+            "BLOCKED_CAPABILITY_UNAVAILABLE",
+            "Do not ask the owner for Remote Desktop merely to obtain",
+            "execution_route: <isolated_git | api_native | read_only>",
+            "publication_route: <guarded_git | atomic_expected_head_api | none>",
+            "required-validation",
+            "For every concrete entry in `required_validation`",
+            "capability: <PROVEN | UNKNOWN>",
+            "or every required-validation route",
+        ):
+            self.assertIn(value, coordinator)
+
+        lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
+        entry = next(
+            prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
+        )
+        self.assertEqual(entry["version"], "1.9")
+
+        durability = (ROOT / "docs/agents/prompts/OTV2_IMPL_DURABILITY.md").read_text(encoding="utf-8")
+        for value in (
+            "atomic expected-head API **new-candidate** publication",
+            "one server-side mutation fences the exact expected task-branch predecessor",
+            "fresh candidate-specific validation/review evidence",
+            "ancestry-only `force=false` ref movement",
+            "sequential per-file API commits",
+        ):
+            self.assertIn(value, durability)
+
+        closure = (ROOT / "docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md").read_text(encoding="utf-8")
+        for value in (
+            "atomic expected-head API **new-candidate** publication",
+            "candidate-specific validation/review evidence from any superseded head is not reusable",
+            "precondition mismatch must create no commit and move no branch",
+            "ancestry-only `force=false` ref movement",
+            "sequential per-file API commits",
+        ):
+            self.assertIn(value, closure)
+
+        durability_entry = next(
+            prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_IMPL_DURABILITY"
+        )
+        self.assertEqual(durability_entry["version"], "1.3")
+
+    def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
+        policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")
+        for value in (
+            "## Standing repository review authorization",
+            "one external independent",
+            "survives chat, worker, coordinator and task-phase handoffs",
+            "Do not ask the owner again for a covered review",
+            "already requested, running or completed",
+            "does **not** cover optional/speculative extra reviews",
+            "### Single review-dispatch owner",
+            "only the unique active",
+            "must not emit the trigger itself",
+        ):
+            self.assertIn(value, policy)
+
+        root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "bounded standing authorization for required external review",
+            "Do not ask the owner again for a covered review",
+            "one-writer control-plane action",
+            "direct workers return a review packet instead of emitting it",
+        ):
+            self.assertIn(value, root_text)
+
+        coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "review_authorization: <standing_required_review | task_specific | none>",
+            "review_trigger_owner: <control_plane | standalone_task_owner | none>",
+            "review_request_state: <not_requested | running | completed | stale>",
+            "## Review authorization, ownership and de-duplication",
+            "do **not** ask the owner again",
+            "Workers may return a complete review packet, but they must not emit",
+            "Ambiguous/slow provider response is a readback problem",
+        ):
+            self.assertIn(value, coordinator)
+
+        readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
+        self.assertIn("survives chat/worker handoffs", readme)
+        self.assertIn("A direct worker never emits the owner-funded review trigger", readme)
+        self.assertIn("unique active control plane", readme)
 
     def test_local_routing_extensions_use_bound_states_and_runtime_configuration(self):
         contract = json.loads((ROOT / "docs/agents/GOVERNANCE_CONTRACT.json").read_text(encoding="utf-8"))

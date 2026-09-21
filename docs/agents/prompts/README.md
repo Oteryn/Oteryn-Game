@@ -103,6 +103,14 @@ Alias invocation grants no tracked-file write, implementation, control-plane, me
 
 Resolve external-review decisions from the META policy named by `../META_AGENT_POLICY_BINDING.json`. Prompt aliases and compatibility metadata never create review or merge authority.
 
+### Independent Content / World audit
+
+- `OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md` — independent read-only end-to-end audit of Content/World design and merged implementation. **Short invocation: `Oteryn: content world audit`.**
+
+This auditor checks whether the complete native Content/World pipeline is architecturally sound and actually implemented: source/evidence admission, identity, canonical Content Project/storage, typed semantics, authoring metadata/tags, provenance, reimport/conflict handling, CW2/CW3 promotion, compiler/bundle/loader/activation, runtime/domain ownership, client/Studio path, resource scale, security and real E2E evidence. It explicitly separates `MERGED_IMPLEMENTATION`, `PROPOSED_PR_ONLY`, `DOCUMENTED_ONLY`, `HISTORICAL_ONLY`, `MISSING` and `UNKNOWN_STATE`.
+
+The profile is not a coordinator or implementation worker. It grants no tracked-file, allocation, control-plane, merge, production or cross-repository authority. Material findings are returned as proposed minimum corrective packets for the existing canonical Content/World or domain owners. It does not supersede the broad `Oteryn: audyt` programme audit or the execution-forensic `Oteryn: work auditor`.
+
 ### Independent Work delivery audit
 
 - `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — independent forensic audit of the live Work coordinator lifecycle with **bounded GitHub audit-evidence write** authority. **Short invocation: `Oteryn: work auditor`.**
@@ -156,7 +164,7 @@ The following files are retained only for provenance. Their lifecycle entries ar
 
 ## Safety / authority
 
-A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity or entitlement activation. External AI review follows current root `AGENTS.md` and the organization policy it adopts; policy selection does not authorize owner-funded, personal-quota or metered AI/API use. Before such use, apply `docs/agents/OWNER_FUNDED_AI_POLICY.md` and current task-specific authority, including authorization already established in the session.
+A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity or entitlement activation. External AI review follows current root `AGENTS.md`, the organization policy it adopts and `docs/agents/OWNER_FUNDED_AI_POLICY.md`. The repository standing authorization in that file covers only required review within its exact bounds and survives chat/worker handoffs; do not ask the owner again for a covered review. A direct worker never emits the owner-funded review trigger: it returns the exact review packet to the unique active control plane, which owns live same-head de-duplication and the single manual invocation. Optional or out-of-scope owner-funded AI remains unauthorized unless separately granted.
 
 High-risk protocol/session/persistence/item/loot/value/multichannel/fencing work still requires genuinely independent exact-head review when current root `AGENTS.md` selects it.
 

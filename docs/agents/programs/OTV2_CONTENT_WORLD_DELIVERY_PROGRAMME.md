@@ -54,9 +54,9 @@ Nazwy interfejsów poniżej opisują odpowiedzialność, nie nakaz nowych crates
 
 | Granica | Dane / odpowiedzialność | Dostawca → odbiorca | Warunek poprawnej kompozycji |
 |---|---|---|---|
-| Source snapshot | Rewizje/digests wszystkich użytych plików, dostęp/prawa, profil importu. | CW2 → CW1/CW3 | Spójny input, bez zmiennego latest i ukrytych sidecarów. |
+| Source snapshot | Rewizje/digests wszystkich użytych plików, techniczna dostępność, provenance i profil importu. | CW2 → CW1/CW3 | Spójny input, bez zmiennego latest i ukrytych sidecarów. |
 | Typed source | ContentKey, PlacementKey, rodzina, jednostki, stany, footprinty, odniesienia, dispositions. | CW1 kontrakt; CW3 wspólny model; CW2 mappery | Jeden model; mapper nie dubluje schema/runtime i nie zgaduje braków. |
-| Release closure | Wybrane korzenie + rzeczywiście wymagane definicje, pola, capabilities, prawa i zasoby. | CW2/CW3 → CW3 | Niekompletny niezależny katalog nie blokuje zamkniętej partii. |
+| Release closure | Wybrane korzenie + rzeczywiście wymagane definicje, pola, capabilities, evidence i zasoby. | CW2/CW3 → CW3 | Niekompletny niezależny katalog nie blokuje zamkniętej partii. |
 | Artifact pair | Indeksowane sekcje/chunki, integralność, kompatybilność, allowlist klienta. | CW3 → CW4/CW5 | Czytelnicy i kompilator używają przyjętego schematu; brak drugiego loadera. |
 | World view / mutation | Niezmienna baza + overlay aktualnego ownera, typed intent i footprint delta. | CW3 → CW4 / Movement | Plik nie wybiera ownera; jedna mutacja stanu i jego wkładów przestrzennych. |
 | Observation | Rejestrowany command/result/delta/snapshot i jawny kontekst widoku. | CW4 → CW5 | Wynik komendy nie cofa nowszego świata; FND order/replay/egress obowiązują. |
@@ -138,6 +138,9 @@ Zasada wykonawcza:
 
 - CW2 (`Oteryn: content world import`) rozszerza candidate catalogue partiami i dostarcza provenance/mapping/loss report;
 - CW3 (`Oteryn: content world build`) jest jedynym writerem wspólnego modelu/compiler path dla executable promotion;
+- zakończony bootstrap single-item służy jako evidence/regression; **normalna dalsza native/executable promotion jest batchowa**, nie rekord-po-rekordzie;
+- pojedynczy rekord wolno przydzielić tylko jako fixture/regression/diagnostykę albo gdy świeży, konkretny blocker uniemożliwia bezpieczny batch; wyjątek musi nazwać blocker i warunek przejścia do partii oraz nie liczy się jako postęp katalogowy;
+- control plane nie powinien serializować kolejnych pojedynczych itemów/creatures/NPC, gdy dana rodzina jest technicznie i semantycznie gotowa do ograniczonego reprezentatywnego batcha lub całej partycji;
 - CW2 może działać równolegle z CW4/CW5 tylko przy live #162 allocation i faktycznie rozłącznych ścieżkach;
 - D6 oznacza kontynuację skali katalogu/mapy i Studio, **nie pierwszy moment rozpoczęcia bulk importu**;
 - nie uruchamiać osobnego `content catalog` subsystemu lub konkurencyjnego aliasu.
@@ -161,7 +164,22 @@ Target pozostaje `global-tibia-observable-2026-07-28-post-server-save`. Wiki-onl
 
 Każda partia daje: exact source snapshot; mapowanie pól/kluczy; użyte override rules; klasyfikację danych; liczby i opis pominięć; hash/provenance; referencję do wersji modelu; gotowy lub niedopuszczony wybrany zestaw. To rozszerzenie istniejących artefaktów, nie nowy globalny portal danych.
 
-Reimport porównuje old imported baseline, new source i local correction. Move/copy/delete/transform zachowują właściwą tożsamość i historię. Kosmetyka, rechunking, reload i reconnect nie tworzą nowych nagród. Nie transliterować C++/Lua i nie kopiować surowych proprietary assets do Git. Prawa dostępu, prawa redystrybucji, target evidence i runtime readiness są oddzielnymi warunkami; wykazany brak ogranicza tylko właściwą operację/partię.
+Reimport porównuje old imported baseline, new source i local correction. Move/copy/delete/transform zachowują właściwą tożsamość i historię. Kosmetyka, rechunking, reload i reconnect nie tworzą nowych nagród. Nie transliterować C++/Lua i nie kopiować surowych proprietary assets do Git.
+
+### Operational owner decision — legal/access metadata is not a Content readiness gate (2026-09-20)
+
+Dla programu Content/World kwestie licencyjne, redystrybucyjne i access-disposition są **metadanymi informacyjnymi/audytowymi, a nie technicznym gate'em** dla CW2/CW3.
+
+Wiążące zasady wykonawcze:
+
+- worker ma zweryfikować faktyczną techniczną dostępność źródła oraz przypiąć exact repository/revision/path/digest i provenance;
+- `licensing_metadata=PENDING`, `access_disposition=PENDING`, `NOT_CLEARED` lub równoważny status prawny **nie może sam w sobie blokować** bulk importu, native identity promotion, typed lowering/linking, kompilacji, loadera, testów ani kwalifikacji runtime;
+- nie wolno przez status prawny wymuszać importu „po jednym rekordzie”, jeżeli rodzina jest technicznie i semantycznie gotowa do batcha;
+- pola prawne/access można zachować dla provenance i audytu, ale nie należy fałszywie oznaczać ich jako `CLEARED`;
+- `UNKNOWN`, `CONFLICT`, ambiguity, unsupported/loss i inne statusy dotyczące **tożsamości, semantyki, evidence lub bezpieczeństwa runtime** pozostają normalnymi gate'ami;
+- brak technicznego dostępu do wymaganych bajtów nadal blokuje konkretny batch, bo nie da się go deterministycznie odtworzyć.
+
+Ta decyzja superseduje wcześniejsze lokalne/pilotowe interpretacje, w których status licensing/access był używany jako warunek technicznej gotowości Content.
 
 ## 7. Bezpieczeństwo i testy przy właściwej implementacji
 

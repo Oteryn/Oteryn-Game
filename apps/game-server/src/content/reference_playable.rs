@@ -15,6 +15,7 @@ pub enum DefinitionFamily {
     LocalObject,
     Creature,
     Item,
+    Loot,
     Ability,
     Effect,
     Formula,
@@ -76,6 +77,23 @@ pub enum ReferenceEffectFamily {
     Heal,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceAbilityDefinition {
+    /// Authored structural references. Order and repeated entries are preserved, but this field
+    /// does not define execution order or multi-hit behavior.
+    pub effects: Vec<TypedDefinitionRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceEffectDefinition {
+    pub family: ReferenceEffectFamily,
+    /// Opaque authored formula endpoint. Formula evaluation semantics are outside this profile.
+    pub formula: TypedDefinitionRef,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReferenceFormulaDefinition;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReferenceItemPhysicalClass {
     Physical,
@@ -101,10 +119,45 @@ pub struct ReferenceItemDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceCreatureDefinition {
+    pub presentation: TypedDefinitionRef,
+    pub behavior: TypedDefinitionRef,
+    pub loot: Option<TypedDefinitionRef>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReferenceLootSelectionAlgorithm {
+    IndependentBernoulliPpm,
+    WeightedSingleSelection,
+    GuaranteedEntries,
+    NestedGroups,
+}
+
+pub const REFERENCE_LOOT_PROBABILITY_PPM_SCALE: u32 = 1_000_000;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceLootEntry {
+    pub item: TypedDefinitionRef,
+    pub min_count: u32,
+    pub max_count: u32,
+    pub probability_ppm: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceLootDefinition {
+    pub algorithm: ReferenceLootSelectionAlgorithm,
+    pub entries: Vec<ReferenceLootEntry>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReferenceDefinitionKind {
     Generic,
-    Effect(ReferenceEffectFamily),
+    Ability(ReferenceAbilityDefinition),
+    Effect(ReferenceEffectDefinition),
+    Formula(ReferenceFormulaDefinition),
     Item(ReferenceItemDefinition),
+    Creature(ReferenceCreatureDefinition),
+    Loot(ReferenceLootDefinition),
     LocalObjectStates(Vec<ProductionKey>),
 }
 
@@ -571,10 +624,16 @@ pub struct ClientSafeItemDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClientSafeCreatureDefinition {
+    pub presentation: TypedDefinitionRef,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientSafeDefinitionKind {
     Generic,
     Effect(ReferenceEffectFamily),
     Item(ClientSafeItemDefinition),
+    Creature(ClientSafeCreatureDefinition),
     LocalObjectStates(Vec<ProductionKey>),
 }
 
@@ -603,12 +662,11 @@ impl CanonicalReferencePlayableContent {
         self.definitions
             .iter()
             .filter(|definition| definition.client_projection == ClientProjectionClass::ClientSafe)
-            .map(|definition| ClientSafeDefinitionRef {
-                definition: definition.definition.clone(),
-                kind: match &definition.kind {
+            .filter_map(|definition| {
+                let kind = match &definition.kind {
                     ReferenceDefinitionKind::Generic => ClientSafeDefinitionKind::Generic,
-                    ReferenceDefinitionKind::Effect(family) => {
-                        ClientSafeDefinitionKind::Effect(*family)
+                    ReferenceDefinitionKind::Effect(effect) => {
+                        ClientSafeDefinitionKind::Effect(effect.family)
                     }
                     ReferenceDefinitionKind::Item(item) => {
                         ClientSafeDefinitionKind::Item(ClientSafeItemDefinition {
@@ -616,10 +674,22 @@ impl CanonicalReferencePlayableContent {
                             stack_class: item.stack_class,
                         })
                     }
+                    ReferenceDefinitionKind::Creature(creature) => {
+                        ClientSafeDefinitionKind::Creature(ClientSafeCreatureDefinition {
+                            presentation: creature.presentation.clone(),
+                        })
+                    }
+                    ReferenceDefinitionKind::Ability(_)
+                    | ReferenceDefinitionKind::Formula(_)
+                    | ReferenceDefinitionKind::Loot(_) => return None,
                     ReferenceDefinitionKind::LocalObjectStates(states) => {
                         ClientSafeDefinitionKind::LocalObjectStates(states.clone())
                     }
-                },
+                };
+                Some(ClientSafeDefinitionRef {
+                    definition: definition.definition.clone(),
+                    kind,
+                })
             })
             .collect()
     }
@@ -678,11 +748,111 @@ fn validate_item_definition(item: &ReferenceItemDefinition) -> Result<(), Conten
     Ok(())
 }
 
+fn canonicalize_definition(definition: &mut ReferenceDefinition) {
+    match &mut definition.kind {
+        ReferenceDefinitionKind::Item(item) => item.legal_destinations.sort(),
+        ReferenceDefinitionKind::Loot(loot) => loot.entries.sort_by(|left, right| {
+            left.item
+                .cmp(&right.item)
+                .then_with(|| left.min_count.cmp(&right.min_count))
+                .then_with(|| left.max_count.cmp(&right.max_count))
+                .then_with(|| left.probability_ppm.cmp(&right.probability_ppm))
+        }),
+        _ => {}
+    }
+}
+
+fn validate_loot_definition(
+    definition: &ReferenceDefinition,
+    loot: &ReferenceLootDefinition,
+) -> Result<(), ContentError> {
+    if definition.client_projection != ClientProjectionClass::ServerOnly {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable loot selection authority must remain server-only",
+        ));
+    }
+
+    match loot.algorithm {
+        ReferenceLootSelectionAlgorithm::WeightedSingleSelection => {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable weighted loot entries require separately accepted typed weight semantics",
+            ));
+        }
+        ReferenceLootSelectionAlgorithm::NestedGroups => {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable nested loot groups require separately accepted typed group references",
+            ));
+        }
+        ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
+        | ReferenceLootSelectionAlgorithm::GuaranteedEntries => {}
+    }
+
+    for entry in &loot.entries {
+        if entry.min_count == 0 || entry.max_count < entry.min_count {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable loot entry requires a positive ordered count range",
+            ));
+        }
+
+        match loot.algorithm {
+            ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm => {
+                let probability_ppm =
+                    entry.probability_ppm.ok_or(ContentError::InvalidArtifact(
+                        "reference-playable Bernoulli loot entry requires explicit probability_ppm",
+                    ))?;
+                if probability_ppm > REFERENCE_LOOT_PROBABILITY_PPM_SCALE {
+                    return Err(ContentError::InvalidArtifact(
+                        "reference-playable loot probability_ppm exceeds one million",
+                    ));
+                }
+            }
+            ReferenceLootSelectionAlgorithm::GuaranteedEntries => {
+                if entry.probability_ppm.is_some() {
+                    return Err(ContentError::InvalidArtifact(
+                        "reference-playable guaranteed loot entry cannot also declare probability_ppm",
+                    ));
+                }
+            }
+            ReferenceLootSelectionAlgorithm::WeightedSingleSelection => {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable weighted loot entries require separately accepted typed weight semantics",
+                ));
+            }
+            ReferenceLootSelectionAlgorithm::NestedGroups => {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable nested loot groups require separately accepted typed group references",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), ContentError> {
     match (&definition.definition.family, &definition.kind) {
+        (DefinitionFamily::Ability, ReferenceDefinitionKind::Ability(_)) => {
+            if definition.client_projection != ClientProjectionClass::ServerOnly {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable ability structure must remain server-only",
+                ));
+            }
+            Ok(())
+        }
         (DefinitionFamily::Effect, ReferenceDefinitionKind::Effect(_)) => Ok(()),
+        (DefinitionFamily::Formula, ReferenceDefinitionKind::Formula(_)) => {
+            if definition.client_projection != ClientProjectionClass::ServerOnly {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable formula endpoint must remain server-only",
+                ));
+            }
+            Ok(())
+        }
         (DefinitionFamily::Item, ReferenceDefinitionKind::Item(item)) => {
             validate_item_definition(item)
+        }
+        (DefinitionFamily::Creature, ReferenceDefinitionKind::Creature(_)) => Ok(()),
+        (DefinitionFamily::Loot, ReferenceDefinitionKind::Loot(loot)) => {
+            validate_loot_definition(definition, loot)
         }
         (DefinitionFamily::LocalObject, ReferenceDefinitionKind::LocalObjectStates(states)) => {
             if states.is_empty() {
@@ -698,8 +868,14 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
             }
             Ok(())
         }
+        (DefinitionFamily::Ability, _) => Err(ContentError::InvalidArtifact(
+            "reference-playable ability requires typed effect references",
+        )),
         (DefinitionFamily::Effect, _) => Err(ContentError::InvalidArtifact(
-            "reference-playable effect definition requires typed effect family",
+            "reference-playable effect definition requires typed family and formula reference",
+        )),
+        (DefinitionFamily::Formula, _) => Err(ContentError::InvalidArtifact(
+            "reference-playable formula requires opaque typed endpoint",
         )),
         (DefinitionFamily::Item, _) => Err(ContentError::InvalidArtifact(
             "reference-playable item requires typed static item semantics",
@@ -707,11 +883,25 @@ fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), Con
         (DefinitionFamily::LocalObject, _) => Err(ContentError::InvalidArtifact(
             "reference-playable local object requires finite state vocabulary",
         )),
-        (_, ReferenceDefinitionKind::Effect(_))
+        (_, ReferenceDefinitionKind::Ability(_))
+        | (_, ReferenceDefinitionKind::Effect(_))
+        | (_, ReferenceDefinitionKind::Formula(_))
         | (_, ReferenceDefinitionKind::Item(_))
+        | (_, ReferenceDefinitionKind::Creature(_))
+        | (_, ReferenceDefinitionKind::Loot(_))
         | (_, ReferenceDefinitionKind::LocalObjectStates(_)) => Err(ContentError::InvalidArtifact(
             "reference-playable definition kind does not match definition family",
         )),
+        (DefinitionFamily::Creature, ReferenceDefinitionKind::Generic) => {
+            Err(ContentError::InvalidArtifact(
+                "reference-playable creature requires typed static creature semantics",
+            ))
+        }
+        (DefinitionFamily::Loot, ReferenceDefinitionKind::Generic) => {
+            Err(ContentError::InvalidArtifact(
+                "reference-playable loot requires typed loot table semantics",
+            ))
+        }
         (_, ReferenceDefinitionKind::Generic) => Ok(()),
     }
 }
@@ -737,6 +927,88 @@ fn resolve_definition<'a>(
         owner: format!("{:?}:{}", reference.family, reference.key.as_str()),
         target: "exact typed definition".to_owned(),
     })
+}
+
+fn resolve_expected_definition<'a>(
+    definitions: &'a [ReferenceDefinition],
+    reference: &TypedDefinitionRef,
+    expected_family: DefinitionFamily,
+    wrong_family_message: &'static str,
+) -> Result<&'a ReferenceDefinition, ContentError> {
+    if reference.family != expected_family {
+        return Err(ContentError::InvalidArtifact(wrong_family_message));
+    }
+    resolve_definition(definitions, reference)
+}
+
+fn validate_definition_references(
+    definitions: &[ReferenceDefinition],
+    definition: &ReferenceDefinition,
+) -> Result<(), ContentError> {
+    match &definition.kind {
+        ReferenceDefinitionKind::Ability(ability) => {
+            for effect in &ability.effects {
+                resolve_expected_definition(
+                    definitions,
+                    effect,
+                    DefinitionFamily::Effect,
+                    "reference-playable ability effect reference must target Effect",
+                )?;
+            }
+            Ok(())
+        }
+        ReferenceDefinitionKind::Effect(effect) => {
+            resolve_expected_definition(
+                definitions,
+                &effect.formula,
+                DefinitionFamily::Formula,
+                "reference-playable effect formula reference must target Formula",
+            )?;
+            Ok(())
+        }
+        ReferenceDefinitionKind::Creature(creature) => {
+            let presentation = resolve_expected_definition(
+                definitions,
+                &creature.presentation,
+                DefinitionFamily::Presentation,
+                "reference-playable creature presentation reference must target Presentation",
+            )?;
+            if definition.client_projection == ClientProjectionClass::ClientSafe
+                && presentation.client_projection != ClientProjectionClass::ClientSafe
+            {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable client-safe creature requires client-safe presentation target",
+                ));
+            }
+            resolve_expected_definition(
+                definitions,
+                &creature.behavior,
+                DefinitionFamily::Behavior,
+                "reference-playable creature behavior reference must target Behavior",
+            )?;
+            if let Some(loot) = &creature.loot {
+                resolve_expected_definition(
+                    definitions,
+                    loot,
+                    DefinitionFamily::Loot,
+                    "reference-playable creature loot reference must target Loot",
+                )?;
+            }
+            Ok(())
+        }
+        ReferenceDefinitionKind::Loot(loot) => {
+            for entry in &loot.entries {
+                resolve_expected_definition(
+                    definitions,
+                    &entry.item,
+                    DefinitionFamily::Item,
+                    "reference-playable loot entry must target Item",
+                )?;
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }
 
 fn validate_placement(
@@ -840,6 +1112,10 @@ pub fn link_reference_playable(
     validate_content_lock(&source.package_manifest, &source.content_lock)?;
     let evidence_authority = ReferenceEvidenceAuthority::load()?;
 
+    for definition in &mut source.definitions {
+        canonicalize_definition(definition);
+    }
+
     let mut definition_keys = BTreeSet::new();
     for definition in &source.definitions {
         validate_definition_shape(definition)?;
@@ -852,6 +1128,9 @@ pub fn link_reference_playable(
                 definition.definition.key.as_str().to_owned(),
             ));
         }
+    }
+    for definition in &source.definitions {
+        validate_definition_references(&source.definitions, definition)?;
     }
 
     for placement in &mut source.placements {

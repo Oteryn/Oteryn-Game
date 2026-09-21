@@ -179,7 +179,7 @@ impl ProductionAtom {
         Ok(Self(value.to_owned()))
     }
 
-    fn from_artifact(field: &'static str, value: String) -> Result<Self, ContentError> {
+    pub(crate) fn from_artifact(field: &'static str, value: String) -> Result<Self, ContentError> {
         validate_atom(field, &value, FIRST_PRODUCTION_MAX_ATOM_BYTES, true)?;
         Ok(Self(value))
     }
@@ -230,7 +230,7 @@ fn hex_lower(bytes: &[u8; 32]) -> String {
     encoded
 }
 
-fn encode_world_id(world_id: WorldId) -> String {
+pub(crate) fn encode_world_id(world_id: WorldId) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut encoded = String::with_capacity(32);
     for byte in world_id.as_bytes() {
@@ -240,7 +240,7 @@ fn encode_world_id(world_id: WorldId) -> String {
     encoded
 }
 
-fn parse_world_id(value: &str) -> Result<WorldId, ContentError> {
+pub(crate) fn parse_world_id(value: &str) -> Result<WorldId, ContentError> {
     if value.len() != 32 {
         return Err(ContentError::InvalidArtifact(
             "first-production WorldId must be 32 lowercase hexadecimal UUIDv7 bytes",
@@ -821,6 +821,26 @@ pub fn compile_first_production(
             client.digest,
         )?,
     })
+}
+
+/// Load one bounded Reference artifact without decoding its body eagerly.
+///
+/// This extends the production Content loader lineage while keeping the fixture artifact loader
+/// and FIRST_PRODUCTION profile unchanged.
+pub fn load_reference_playable_artifact(
+    bytes: &[u8],
+    projection: super::ReferenceArtifactProjection,
+) -> Result<super::ReferencePlayableArtifactView<'_>, ContentError> {
+    super::ReferencePlayableArtifactView::load(bytes, projection)
+}
+
+/// Validate and stage a Reference server/client pair without granting activation authority.
+pub fn stage_reference_playable<'a>(
+    server_bytes: &'a [u8],
+    client_bytes: &'a [u8],
+    expected: &super::ReferencePlayableExpectation,
+) -> Result<super::NonAuthoritativeReferenceStage<'a>, ContentError> {
+    super::NonAuthoritativeReferenceStage::stage(server_bytes, client_bytes, expected)
 }
 
 fn canonicalize_first_production(

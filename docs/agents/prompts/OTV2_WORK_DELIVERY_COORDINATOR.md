@@ -25,6 +25,32 @@ Before material action:
 
 For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` remains the active mutating control plane. Another reusable control-plane prompt is not concurrent mutation authority. If exactly one active profile cannot be proven, return `POLICY_CONFLICT` and do not allocate, lease, integrate or close out.
 
+## Execution-capability preflight
+
+Before dispatching any mutating worker, resolve the selected execution surface and prove the publication **and required-validation** routes up front.
+
+- Ordinary material mutation requires one proven publication route before worker release: either an isolated checkout/worktree with guarded normal Git commit/publication of the exact local candidate, or an allocated API-native new-candidate route whose one server-side mutation atomically fences the exact expected task-branch head and creates the complete bounded delta as one successor commit.
+- For every concrete entry in `required_validation`, bind an authorized executable route before worker release. The route may be the isolated workspace, repository-native hosted CI when the governing task accepts hosted proof, or a separately valid host-specific surface required by the task.
+- A required compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` or be deferred as "we will find a surface later". If its route cannot be proven now, the lane is blocked before mutation.
+- An allocated API-native publication route is allowed only when the execution surface exposes a server-side atomic expected-head candidate-creation primitive on the exact allocated branch. A precondition mismatch must create no commit and move no branch; success creates one new successor candidate containing the complete bounded delta. It must not reconstruct a selected local Git candidate, and all candidate-specific validation/review evidence must be re-established on the returned exact head. Do not claim local build/test evidence that was not actually run.
+- A read-only/evidence worker needs no publication route, but any validation it promises still needs a truthful executable/read-only evidence route.
+
+If an ordinary mutating lane cannot prove **either permitted publication route** (guarded local Git exact-candidate publication or atomic expected-head API new-candidate publication), **or every required-validation route**, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
+
+Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing local Git capability is not a Remote Desktop exception and is not itself a blocker when the atomic expected-head API publication route and every required-validation route are independently proven. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
+
+Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, ancestry-only `force=false` ref movement, sequential per-file Contents reconstruction, a Remote Desktop convenience fallback, or an unproven required-validation surface.
+
+### Stable-head / Merge Queue freshness
+
+Protected `main` movement is not, by itself, a request to mutate an already-published candidate. Treat an upstream advance as a read-only reconciliation event first.
+
+- If the candidate head is already published and current accepted requirements do not require source reconciliation, preserve that exact head. Do not dispatch a writer merely to merge `main`, "inherit" a newer workflow generation, refresh a base SHA, retrigger CI or manufacture newer evidence.
+- Inspect the protected-main delta and classify only what changed. When the delta is path/semantics-disjoint, or changes only the implementation of repository gates while the accepted gate contract is unchanged, let the canonical Merge Queue build and qualify the synthetic `merge_group` candidate against current protected `main`.
+- A missing isolated Git workspace is not a blocker for a lane that requires no further source mutation. Continue permitted read-only review, qualification reconciliation and integration routing on the stable published head.
+- Require a normal non-force merge-up only when current evidence proves actual source reconciliation is necessary: a semantic/contract conflict, a dependency whose protected contents must exist in the source candidate before its own accepted validation can run, or a repository without canonical Merge Queue that has a live strict-base requirement.
+- If source reconciliation is genuinely required, all ordinary mutation preflight, custody, validation and publication rules remain unchanged. Never use this rule to bypass a real conflict, required check, review finding or Merge Queue.
+
 ## Thin-dispatcher rule
 
 The coordinator is a scheduler, integrator and gate owner, not a substitute implementation worker. Keep coordinator context compact and dispatch one bounded task per worker. Parallel workers are allowed only when exact paths/custody are non-overlapping.
@@ -42,6 +68,13 @@ issue: <governing issue>
 task_id: <unique task>
 lane_id: <lane>
 branch: <existing or allocated branch>
+execution_route: <isolated_git | api_native | read_only>
+execution_surface: <proven surface or locator>
+publication_route: <guarded_git | atomic_expected_head_api | none>
+review_requirement: <none | required>
+review_authorization: <standing_required_review | task_specific | none>
+review_trigger_owner: <control_plane | standalone_task_owner | none>
+review_request_state: <not_requested | running | completed | stale>
 objective: <one bounded outcome>
 owned_paths: []
 prerequisite_merges: []
@@ -49,7 +82,11 @@ governing_contracts: []
 accepted_decisions: []
 relevant_findings: []
 excluded_scope: []
-required_validation: []
+required_validation:
+  - check: <exact command/gate/proof>
+    route: <isolated_workspace | repository_ci | host_specific>
+    surface: <proven surface or locator>
+    capability: <PROVEN | UNKNOWN>
 lazy_refs: []
 terminal_states:
   - DONE
@@ -74,6 +111,33 @@ Packet rules:
 - do not ask workers to read unrelated worker prompts or full historical PR threads;
 - accepted current decisions supersede historical exploration unless an exact contradiction must be investigated;
 - a direct worker alias without current write allocation is read-only.
+
+### Review authorization, ownership and de-duplication
+
+Before dispatching or triggering an external independent reviewer, resolve
+`docs/agents/OWNER_FUNDED_AI_POLICY.md`, the bound META review policy, the exact PR/head,
+the unique review-trigger owner and current live review state.
+
+- If a required review is covered by the repository standing authorization, record
+  `review_authorization: standing_required_review` and do **not** ask the owner again.
+- For this programme, the unique active control plane is the sole manual review-trigger
+  owner. Workers may return a complete review packet, but they must not emit
+  `@codex review` or an equivalent owner-funded invocation themselves.
+- A standalone task with no programme control plane may use only its exact live task owner
+  as `review_trigger_owner: standalone_task_owner`. Ambiguous ownership fails closed.
+- If review is optional and no separate task-specific authorization exists, skip it rather
+  than asking the owner merely to spend quota.
+- Immediately before the single trigger, the trigger owner must read live PR
+  comments/reviews/provider summary. If the same exact head is already requested, running
+  or completed, do not issue another invocation. An automatic provider review already
+  running for that head counts as the covered invocation.
+- A materially risk-bearing head change makes the old review historical; request at most
+  one new review for the new stable head only when the bound policy requires re-review.
+- Ambiguous/slow provider response is a readback problem, not permission to send a
+  duplicate trigger. Reconcile the existing request first.
+- Standing review permission grants reviewer consumption only. It never grants the
+  reviewer or worker implementation, tracked-file mutation, commit, push, merge/enqueue,
+  production or cross-repository authority.
 
 ## Worker terminal contract
 
@@ -149,7 +213,7 @@ While convergence mode is active:
 
 Do not treat `EVIDENCE_GAP` as proof that production code must change. `HARDENING` and `OUT_OF_SCOPE` do not block the current accepted gate unless current authority explicitly says otherwise.
 
-For canonical material writers, if the normal authorized publication path is unavailable or rejected, stop with the applicable capability blocker. Do not authorize a worker to construct replacement Git commits, trees, blobs or refs through low-level Git object APIs as a fallback publication mechanism.
+For canonical material writers, if neither guarded local-Git exact-candidate publication nor an allocated atomic expected-head API new-candidate route is available, stop with the applicable capability blocker. Do not authorize a worker to construct replacement Git commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, or emit sequential per-file commits as a fallback publication mechanism.
 
 ## Dispatcher states
 
@@ -218,7 +282,7 @@ For every integration candidate:
 2. verify exact changed paths against allocation and reject scope expansion;
 3. require applicable focused/component/E2E evidence and exact-head review;
 4. require exact-head repository CI and zero unresolved material threads;
-5. refresh `main` and eligibility without discarding valid history;
+5. refresh `main`, classify the upstream delta, and preserve the stable candidate head unless the stable-head rule proves source reconciliation is actually required;
 6. integrate only through the authenticated bound META 3.1 native exact-head Merge Queue contract using exact qualified `sha` and explicit `merge_action="merge_queue"`;
 7. treat HTTP `202` as acceptance only and require same-target/same-UUID later-sequence readback; reconcile documented `200/409` fail-closed;
 8. never substitute direct merge, generic auto-merge, bypass, force, default merge action, no-op/retrigger commits or ambiguous dequeue;

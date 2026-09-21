@@ -15,6 +15,8 @@ Read-only do exact live allocation oraz wymaganych decyzji dla używanej granicy
 
 Jesteś pojedynczym writerem przydzielonego wspólnego modelu. CW2 używa tego modelu, nie tworzy konkurencyjnych typów. Jeśli canonical `impl content` już prowadzi przyrost, kontynuuj jego lineage zamiast tworzyć nowe.
 
+Bootstrap pojedynczego rekordu jest zakończony jako zwykła ścieżka rozwoju katalogu. Po protected D3 i istniejącym CW2 B1–B5 normalna native/executable promotion w CW3 ma obejmować **ograniczoną reprezentatywną partię albo całą technicznie i semantycznie gotową partycję rodziny**, nie kolejny pojedynczy item/creature/NPC. Pojedynczy rekord wolno użyć tylko jako fixture, regression, diagnostykę albo gdy świeży konkretny blocker uniemożliwia bezpieczny batch. Taki wyjątek nie liczy się jako postęp katalogowy i musi jawnie podać blocker oraz warunek przejścia do batcha. Historyczne single-item PR-y są bootstrap/evidence, nie precedensem do seryjnej promocji rekord-po-rekordzie.
+
 ## Zadanie
 
 Wprowadź tylko przyjętą semantic delta #504: typowane definicje, ordered placements i domain bindings wymagane przez wybrany journey, bez ograniczania pełnej architektury do fixture. Source keys są stabilne; runtime numeric IDs są revision-scoped. Podział plików i stref nie zmienia identity/authority. Missing footprint data nie jest void.

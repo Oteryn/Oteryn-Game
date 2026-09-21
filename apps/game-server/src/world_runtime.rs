@@ -1,8 +1,10 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LogicalCell, PlacementKey, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
-    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceDefinitionKind, ReferencePlayableContentSource,
-    TransitionBinding, TransitionKey, link_reference_playable,
+    LogicalCell, NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
+    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    ReferenceDefinitionKind, ReferencePlayableContentSource, ReferencePlayableGenerationIdentity,
+    ReferenceServerItem, TransitionBinding, TransitionKey, TypedDefinitionRef,
+    link_reference_playable,
 };
 use crate::foundation::{
     CharacterWorldEligibilityClaimV1, CommandId, CommandIngress, CommandLifecycleError, CommandRef,
@@ -120,6 +122,77 @@ impl ScopeContentGenerationFence {
             ));
         }
         Ok(())
+    }
+}
+
+/// Immutable, non-authoritative runtime projection of the one staged Reference Item.
+///
+/// This view carries no activation or controller capability. Its authoritative Item semantics
+/// are decoded exactly once through the staged server artifact's typed identity index.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct NonAuthoritativeReferenceItemRuntimeView {
+    scope: RuntimeScopeRefV1,
+    generation_identity: ReferencePlayableGenerationIdentity,
+    authoritative_item: ReferenceServerItem,
+}
+
+impl NonAuthoritativeReferenceItemRuntimeView {
+    pub(crate) fn bind(
+        stage: NonAuthoritativeReferenceStage<'_>,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<Self, WorldRuntimeError> {
+        if scope.world_id() != stage.identity().world_id() {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "Reference Item generation world does not match runtime scope",
+            ));
+        }
+
+        let generation_identity = stage.identity().clone();
+        let authoritative_item = stage
+            .server_artifact()
+            .lookup_server_item(generation_identity.item_identity())?
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "staged Reference Item identity is absent from its server artifact",
+            ))?;
+
+        Ok(Self {
+            scope,
+            generation_identity,
+            authoritative_item,
+        })
+    }
+
+    #[must_use]
+    pub(crate) const fn scope(&self) -> RuntimeScopeRefV1 {
+        self.scope
+    }
+
+    #[must_use]
+    pub(crate) fn generation_identity(&self) -> &ReferencePlayableGenerationIdentity {
+        &self.generation_identity
+    }
+
+    #[must_use]
+    pub(crate) fn item_identity(&self) -> &TypedDefinitionRef {
+        self.generation_identity.item_identity()
+    }
+
+    #[must_use]
+    pub(crate) fn server_artifact_digest(&self) -> [u8; 32] {
+        self.generation_identity.server_artifact_digest()
+    }
+
+    #[must_use]
+    pub(crate) fn client_artifact_digest(&self) -> [u8; 32] {
+        self.generation_identity.client_artifact_digest()
+    }
+
+    #[must_use]
+    pub(crate) fn lookup_item(
+        &self,
+        identity: &TypedDefinitionRef,
+    ) -> Option<&ReferenceServerItem> {
+        (identity == self.item_identity()).then_some(&self.authoritative_item)
     }
 }
 
@@ -1044,10 +1117,14 @@ impl PreparedMutation {
 mod tests {
     use super::*;
     use crate::content::{
-        ClientProjectionClass, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
+        CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, CanonicalProjectDocuments, ClientProjectionClass,
+        ContentActivationController, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
         DefinitionRevisionRef, EvidenceBindingRef, EvidenceDisposition, FootprintCell,
         MapRevisionRef, OwnerCapabilityRequirement, PackageManifestBinding, PlacementRef,
-        ProductionAtom, ReferenceDefinition, Sha256HexDigest, TypedDefinitionRef,
+        ProductionAtom, ProjectDraft, ProjectEvidenceLimits, ReferenceDefinition,
+        ReferenceItemDestination, ReferenceItemPhysicalClass, ReferenceItemStackClass,
+        Sha256HexDigest, TypedDefinitionRef, compile_reference_playable,
+        protected_cw2_b1_vase_import, stage_reference_playable,
     };
     use crate::foundation::{
         ChannelId, CharacterId, CharacterLease, CommandIdError, FoundationProtocolError,
@@ -1059,6 +1136,9 @@ mod tests {
     const CLOSE_TRANSITION: &str = "oteryn:reference.transition.local-object-close";
     const PLACEMENT_A: &str = "oteryn:reference.placement.local-object-a";
     const PLACEMENT_B: &str = "oteryn:reference.placement.local-object-b";
+    const B1_EVIDENCE: &[u8] = include_bytes!(
+        "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+    );
 
     fn fixture_error(_reason: &'static str) -> WorldRuntimeError {
         WorldRuntimeError::InvalidBinding("invalid CW4 test fixture")
@@ -1076,6 +1156,124 @@ mod tests {
     fn decode_world(seed: u8) -> Result<crate::foundation::WorldId, WorldRuntimeError> {
         crate::foundation::WorldId::decode(&uuid_v7(seed))
             .map_err(|_error: FoundationProtocolError| fixture_error("world"))
+    }
+
+    fn reference_project_limits() -> ProjectEvidenceLimits {
+        ProjectEvidenceLimits {
+            max_documents: 6,
+            max_document_bytes: 32_768,
+            max_total_bytes: 65_536,
+            max_json_depth: 20,
+            max_decoded_fields: 1_024,
+            max_string_bytes: 32_768,
+            max_locator_bytes: 160,
+            max_locator_segments: 8,
+            max_reference_records: 1,
+            max_import_records: 1,
+            max_reimport_states: 2,
+        }
+    }
+
+    fn canonical_b1_vase_content()
+    -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>> {
+        let imported = protected_cw2_b1_vase_import(B1_EVIDENCE)?;
+        let limits = reference_project_limits();
+        Ok(CanonicalProjectDocuments::from_draft(
+            ProjectDraft {
+                project_revision: "project-r1".to_owned(),
+                package_key: "oteryn:content.world-project".to_owned(),
+                semantic_schema_version: "reference-schema-v1".to_owned(),
+                licensing_metadata: "PENDING".to_owned(),
+                world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+                coordinate_frame: "global-target-2026-07-28".to_owned(),
+                records: vec![imported.record],
+                imports: vec![imported.batch],
+                metadata: Vec::new(),
+            },
+            limits,
+        )?
+        .into_snapshot(limits)?
+        .parse(limits)?
+        .link()?)
+    }
+
+    #[test]
+    fn protected_b1_vase_stage_binds_exact_runtime_item_view_without_controller_authority()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let linked = canonical_b1_vase_content()?;
+        let compiled = compile_reference_playable(&linked)?;
+        let staged = stage_reference_playable(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+        let exact_generation = staged.identity().clone();
+        let exact_item = exact_generation.item_identity().clone();
+        let channel = ChannelId::decode(&uuid_v7(91))?;
+        let scope = RuntimeScopeRefV1::channel(linked.world_id, channel);
+        let controller = ContentActivationController::new();
+
+        let view = NonAuthoritativeReferenceItemRuntimeView::bind(staged, scope)?;
+
+        assert_eq!(view.scope(), scope);
+        assert_eq!(view.generation_identity(), &exact_generation);
+        assert_eq!(view.item_identity(), &exact_item);
+        assert_eq!(view.item_identity().family(), DefinitionFamily::Item);
+        assert_eq!(view.item_identity().key().as_str(), CW2_B1_VASE_KEY);
+        assert_eq!(
+            view.item_identity().revision().as_str(),
+            CW2_B1_VASE_REVISION
+        );
+        assert_eq!(view.server_artifact_digest(), compiled.server_digest());
+        assert_eq!(view.client_artifact_digest(), compiled.client_digest());
+
+        let item = view
+            .lookup_item(&exact_item)
+            .ok_or(fixture_error("runtime Item lookup"))?;
+        assert_eq!(item.physical_class, ReferenceItemPhysicalClass::Physical);
+        assert!(item.materializable);
+        assert_eq!(item.stack_class, ReferenceItemStackClass::NonStackable);
+        assert_eq!(
+            item.legal_destinations,
+            [ReferenceItemDestination::CharacterInventory]
+        );
+
+        let unknown = TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new("oteryn:item.decor.unknown")?,
+            DefinitionRevisionRef::new("definition-r1")?,
+        );
+        assert_eq!(view.lookup_item(&unknown), None);
+        assert!(controller.staged_identity().is_none());
+        assert!(controller.active().is_none());
+        assert!(!controller.is_ready());
+        Ok(())
+    }
+
+    #[test]
+    fn reference_item_runtime_view_rejects_a_different_world()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let linked = canonical_b1_vase_content()?;
+        let compiled = compile_reference_playable(&linked)?;
+        let staged = stage_reference_playable(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+        let other_world = decode_world(99)?;
+        assert_ne!(other_world, linked.world_id);
+        let channel = ChannelId::decode(&uuid_v7(92))?;
+
+        assert!(matches!(
+            NonAuthoritativeReferenceItemRuntimeView::bind(
+                staged,
+                RuntimeScopeRefV1::channel(other_world, channel),
+            ),
+            Err(WorldRuntimeError::InvalidBinding(
+                "Reference Item generation world does not match runtime scope"
+            ))
+        ));
+        Ok(())
     }
 
     fn synthetic_content(
