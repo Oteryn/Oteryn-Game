@@ -98,7 +98,7 @@ The following remain immutable design/review history but are no longer current D
 - `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_DECISION_PACKAGE_20260816.md`;
 - `OTERYN_V2_STAGE_C_VSL_OWNER_DECISION_PACKAGE_20260816.md`.
 
-Do not rewrite historical artifacts merely to retrofit later labels or implementation progress. Use the current-status overlay to state what changed later.
+Do not rewrite historical artifacts merely to retrofit later labels or implementation progress. Use later accepted contracts and live lifecycle state to establish what changed.
 
 ## Reference evidence/parity
 
@@ -109,11 +109,11 @@ Do not rewrite historical artifacts merely to retrofit later labels or implement
 
 Architecture acceptance and implementation progress elsewhere do not change those facts.
 
-## Current implementation state
+## Historical implementation snapshot
 
-Implementation has started under the live coordinator programme.
+The following reconciliation records the early implementation generation at `main@79e2f3ba...`; it is not current execution authority. Resolve present progress from live Issue/active-task/PR/check state.
 
-Verified reconciliation snapshot:
+Historical reconciliation snapshot:
 
 ```text
 main: 79e2f3baf17bd3b2231ab71c5dc5019e9aa0441e
@@ -130,13 +130,13 @@ QA: implementing on worker branch
 
 PR #47 / `79e2f3baf17bd3b2231ab71c5dc5019e9aa0441e` added an independent read-only programme audit prompt and is disjoint from the implementation allocation/status semantics above.
 
-Active but unmerged worker code is not canonical merged implementation. Resolve exact progress from the live allocation and worker task/branch/PR/CI state.
+At this snapshot, active but unmerged worker code was not canonical merged implementation. Current progress must be resolved from live Issue/active-task/PR/check state.
 
-`SIM-DETERMINISM-01` current merged implementation status is `IMPLEMENTED` for the bounded executor-defined core only. Whole-contract `PROVEN` remains withheld until named downstream replay/consumer/VSL evidence exists.
+At this snapshot, `SIM-DETERMINISM-01` was `IMPLEMENTED` for the bounded executor-defined core only; the snapshot did not establish whole-contract `PROVEN`.
 
-## Stage-C architecture
+## Historical Stage-C architecture snapshot
 
-`VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01` are `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED` on merged main. Exact Reference values remain evidence-gated. Permanent World Project/World Bundle physical encoding remains undecided and still requires the DUR-04 format spike plus later owner decision. `QA-E2E-01` executable evidence remains required for terminal vertical-slice proof.
+At this historical snapshot, `VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01` were recorded as `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`. The accepted architecture and evidence boundaries remain in their owning contracts; current implementation status comes from live lifecycle evidence.
 
 ## FND-04 reconnect/disconnect timing precedence
 
