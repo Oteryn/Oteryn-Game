@@ -131,7 +131,15 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "2.0")
+        self.assertEqual(entry["version"], "2.1")
+        self.assertNotIn(
+            "compact execution profile over `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`",
+            coordinator,
+        )
+        self.assertIn(
+            "Authority comes directly from protected root/nearest `AGENTS.md`",
+            coordinator,
+        )
 
         durability = (ROOT / "docs/agents/prompts/OTV2_IMPL_DURABILITY.md").read_text(encoding="utf-8")
         for value in (
