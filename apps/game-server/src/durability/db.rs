@@ -1017,6 +1017,12 @@ impl IssuedSemanticPass {
                 Err(_) => Err(DurabilityError::RootPassDeadlineExceeded),
             };
 
+        if matches!(&result, Err(DurabilityError::CommitOutcomeUnknown)) {
+            self.holder.close_on_drop();
+            self.root.request_ready();
+            return result;
+        }
+
         match self
             .holder
             .return_to_pool_observed_until(self.deadline)

@@ -560,6 +560,73 @@ fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
 }
 
 #[test]
+fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use durability::{DurabilityError, DurabilityRoot};
+
+            let database = postgres::IsolatedPostgres::create("wp3_commit_outcome_unknown").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let root = DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+
+                let ambiguous: Result<(), DurabilityError> = root
+                    .try_issue_semantic_pass()?
+                    .run(|holder, _deadline| {
+                        Box::pin(async move {
+                            sqlx::query(
+                                "SELECT set_config('oteryn.wp3_holder_marker', 'ambiguous', false)",
+                            )
+                            .execute(&mut **holder)
+                            .await?;
+                            Err(DurabilityError::CommitOutcomeUnknown)
+                        })
+                    })
+                    .await;
+
+                assert!(matches!(
+                    ambiguous,
+                    Err(DurabilityError::CommitOutcomeUnknown)
+                ));
+                assert!(!root.is_ready(), "ambiguous holder must not return to idle");
+                assert!(root.has_ready_demand());
+                assert!(root.maintain_ready_once().await?);
+
+                let marker: Option<String> = root
+                    .try_issue_semantic_pass()?
+                    .run(|holder, _deadline| {
+                        Box::pin(async move {
+                            sqlx::query_scalar(
+                                "SELECT current_setting('oteryn.wp3_holder_marker', true)",
+                            )
+                            .fetch_one(&mut **holder)
+                            .await
+                            .map_err(DurabilityError::from)
+                        })
+                    })
+                    .await?;
+
+                assert_eq!(marker, None, "recovery must use a successor holder");
+                assert!(root.is_ready(), "successful pass must still return holder to idle");
+                assert!(!root.has_ready_demand());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn wp3_return_finality_deadline_hard_retires_exact_holder() -> Result<(), Box<dyn std::error::Error>>
 {
     if !postgres_e2e_is_configured()? {
