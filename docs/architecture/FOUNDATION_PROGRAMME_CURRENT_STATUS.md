@@ -31,13 +31,13 @@ Verified merged-main state at the reconciliation snapshot:
 - `IMPLEMENTED`: Domain Character/Item core PR #56 merged as `0facd7f89edc1b0685e67c5531839e8e6f04c466`; lifecycle/ownership release completed through PR #82.
 - `IMPLEMENTED` for bounded non-production evidence only: Content PR #58 merged as `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`. Its activation-boundary P0 was repaired by PR #87 (`db95bc720529b643531c79f708086f69dd612d22`) and terminally closed by #89. Production Content acceptance/activation remains separately owner-gated by Issue #54.
 - `IMPLEMENTED`: the QA evidence shell PR #98 merged as `dc22e0da8efcc6f4458416191261063b295af5b4`; Issue #91 is closed completed. This is test/evidence infrastructure only.
-- `NOT_EVALUATED`: real gameplay Tier 1 and native-client Tier 2 journeys. Current product state still lacks a production gameplay listener/client-entry seam.
+- `NOT_EVALUATED` at this snapshot: real gameplay Tier 1 and native-client Tier 2 journeys; the snapshot recorded no production gameplay listener/client-entry seam.
 - `NOT IMPLEMENTED`: Durability, Ability, Interaction, AI, native gameplay Client, Movement and Combat on merged `main`.
 - `BLOCKED`: production gameplay listener/client-entry remains absent pending the #96 preparation/allocation path; Client cannot be released before that seam is merged and qualified.
 
 No statement above promotes Reference parity, production Content activation, a permanent World Bundle format, production deployment or real gameplay E2E.
 
-## 3. Current three-axis status
+## 3. Snapshot three-axis status
 
 The table reports accepted architecture against merged implementation evidence. `IMPLEMENTED` means the named bounded merged scope exists; `PROVEN` is reserved for the exact evidence boundary stated here and does not imply whole-contract or production proof.
 
@@ -81,7 +81,7 @@ Foundation rows marked `IMPLEMENTED` are bounded to the merged PR #59 scope: typ
 
 ## 4. Reference evidence/parity
 
-Current `ABILITY_COMBAT` truth remains evidence-gated:
+At this snapshot, `ABILITY_COMBAT` remained evidence-gated:
 
 ```yaml
 registered_cases: 4
@@ -96,7 +96,7 @@ canonical_digest: null
 
 Merged Foundation/Domain/Content/QA work does not promote Reference evidence or parity.
 
-## 5. Current implementation and preparation state
+## 5. Snapshot implementation and preparation state
 
 ```text
 BOOTSTRAP:   COMPLETED + LIFECYCLE_CLOSED
