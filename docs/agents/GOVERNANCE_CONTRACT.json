@@ -28,7 +28,6 @@
     "docs/agents/DELIVERY_COMPLETENESS_AND_CLOSEOUT.md",
     "docs/agents/GITHUB_ONLY_EXECUTION.md",
     "docs/agents/END_TO_END_FEATURE_COMPLETENESS.md",
-    "docs/agents/TASK_CLOSEOUT_AUDIT_E2E.md",
     "docs/agents/PROMPTING_STANDARD.md",
     "docs/agents/PROMPTING_HANDOVER.md",
     "docs/agents/PROMPT_EVAL_STANDARD.md",
