@@ -922,7 +922,8 @@ fn stalled_eof_body_preserves_exchange_deadline() -> Result<(), Box<dyn std::err
             let (tcp, _) = listener.accept().await?;
             let mut tls = acceptor.accept(tcp).await?;
             let mut buf = [0u8; 2048];
-            tls.read(&mut buf).await?;
+            let request_bytes = tls.read(&mut buf).await?;
+            assert!(request_bytes > 0);
             tls.write_all(b"HTTP/1.1 200 OK\r\nContent-Encoding: identity\r\n\r\n{}")
                 .await?;
             let _ = tls.read(&mut buf).await;
