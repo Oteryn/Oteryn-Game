@@ -394,16 +394,19 @@ After clean final review and exact-head qualification, return to the normal repo
 
 ## Publication safety
 
-Canonical material work must use exactly one publication route already allocated by the active control plane and permitted by current root/META policy:
+Canonical material work must use exactly one mutation/publication route already allocated by the active control plane and permitted by current root/META policy:
 
-- guarded local-Git exact-candidate publication; or
+- guarded local-Git exact-candidate publication;
+- bounded `api_native_authoring` on the exact exclusively allocated task branch before candidate freeze, when the intended mutation is the repository-native API write and no selected local Git candidate is being reconstructed; or
 - atomic expected-head API **new-candidate** publication, where one server-side mutation fences the exact expected task-branch predecessor and creates the complete bounded delta as one successor commit.
 
-The API route does not reconstruct a selected local Git candidate. It creates a new candidate, so candidate-specific validation/review evidence from any superseded head is not reusable. A precondition mismatch must create no commit and move no branch.
+For `api_native_authoring`, sequential high-level file writes are WIP only. Fresh-read the live branch head before each write and stop on unexpected movement. After the final write, fresh-read the exact branch head, verify the complete bounded delta and owned paths against the admission base, then freeze that exact remote head as the candidate. Candidate-specific qualification/review begins only from that frozen head and intermediate WIP heads carry no reusable candidate evidence.
 
-If neither governed route is proven, return `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and hand custody back to the control plane.
+The atomic API route does not reconstruct a selected local Git candidate. It creates a new candidate, so candidate-specific validation/review evidence from any superseded head is not reusable. A precondition mismatch must create no commit and move no branch.
 
-Do **not** use direct Git object construction, ancestry-only `force=false` ref movement, sequential per-file API commits, reset, rebase, force or manufactured replacement history as emergency publication fallback.
+If none of the governed routes is proven, return `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and hand custody back to the control plane.
+
+Do **not** use direct Git object construction, ancestry-only `force=false` ref movement, sequential API writes to reconstruct a selected local candidate, post-freeze sequential file commits, reset, rebase, force or manufactured replacement history as emergency publication fallback.
 
 A separately authorized coordinator recovery operation may reconcile a damaged branch under current governance; an implementation worker must not improvise that authority.
 
