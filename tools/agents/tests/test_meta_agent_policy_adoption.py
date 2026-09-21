@@ -226,6 +226,12 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
 
         programme_audit = (ROOT / "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md").read_text(encoding="utf-8")
         self.assertIn("intentionally a **whole-programme audit**", programme_audit)
+        self.assertIn('prompt_version: "1.3"', programme_audit)
+
+        terra_prompt = (ROOT / "docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('prompt_version: "1.2"', terra_prompt)
 
     def test_api_native_authoring_never_escalates_missing_git_to_remote_desktop(self):
         root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
