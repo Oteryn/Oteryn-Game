@@ -384,6 +384,17 @@ impl AdmissionReconnectJournalV2 {
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
                     db::lock_admission_domain(&mut transaction, record).await?;
+                    if fresh_admission::has_owning_loss_receipt(
+                        &mut transaction,
+                        authorization.predecessor_game_session_id().as_bytes().as_slice(),
+                        authorization.predecessor_control_loss_epoch().get(),
+                    )
+                    .await?
+                    {
+                        return Ok(ReplacementPassResult::Disposition(
+                            ReconnectPrepareDispositionV2::Unavailable,
+                        ));
+                    }
 
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
@@ -618,6 +629,25 @@ impl AdmissionReconnectJournalV2 {
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
                     db::lock_admission_domain(&mut transaction, record).await?;
+                    let (loss_session, loss_epoch) = match request.terminal_replacement() {
+                        Some(authorization) => (
+                            authorization.predecessor_game_session_id(),
+                            authorization.predecessor_control_loss_epoch(),
+                        ),
+                        None => (
+                            record.identity().game_session_id(),
+                            record.continuity().control_loss_epoch(),
+                        ),
+                    };
+                    if fresh_admission::has_owning_loss_receipt(
+                        &mut transaction,
+                        loss_session.as_bytes().as_slice(),
+                        loss_epoch.get(),
+                    )
+                    .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     if let Some(authorization) = request.terminal_replacement()
                         && (!replacement_authorization_matches_record(authorization, record)
                             || !replacement_receipt_matches(
@@ -784,6 +814,15 @@ impl AdmissionReconnectJournalV2 {
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
                     db::lock_admission_domain(&mut transaction, &record).await?;
+                    if fresh_admission::has_owning_loss_receipt(
+                        &mut transaction,
+                        record.identity().game_session_id().as_bytes().as_slice(),
+                        record.continuity().control_loss_epoch().get(),
+                    )
+                    .await?
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
                     let row = sqlx::query(
                         "SELECT state, record_json FROM game_durability_reconnect_attempts \
                          WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",

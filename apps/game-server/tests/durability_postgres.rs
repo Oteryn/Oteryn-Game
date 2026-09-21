@@ -1019,6 +1019,54 @@ fn fresh_admission_forward_schema_supports_truthful_atomic_session()
 }
 
 #[test]
+fn owning_loss_fences_v2_replacement_and_reconciliation() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        use authority_matrix::{LiveSource, Seed, prepared_record};
+        use foundation::{ReconnectDurabilityFlowV2, ReconnectPrepareDispositionV2};
+        for replacement in [false, true] {
+            let database = postgres::IsolatedPostgres::create("owning_loss_v2_fence").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+                let seed = Seed { now: unix_now().map_err(foundation_error)?, ..Seed::fixed() };
+                let record = prepared_record(seed)?;
+                let source = LiveSource::read(seed);
+                if replacement { seed_shared_root_replacement_predecessor(&url, seed).await?; }
+                let authorization = if replacement { Some(source.authorize_replacement(&record)?) } else { None };
+                let (_, request) = ReconnectDurabilityFlowV2::begin(record.clone(), authorization);
+                let journal = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
+                assert_eq!(journal.prepare(&request).await?, ReconnectPrepareDispositionV2::Prepared);
+                let before = journal.reconcile(&request).await?;
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                // Change only the durable owning-loss discriminator. The independently
+                // valid legacy record and current authority remain unchanged.
+                let mut key = b"owning-loss-v1".to_vec();
+                let loss_session = if replacement { authority_matrix::session(10)? } else { record.identity().game_session_id() };
+                key.extend_from_slice(loss_session.as_bytes());
+                key.extend_from_slice(&record.continuity().control_loss_epoch().get().to_be_bytes());
+                sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key, operation_json, decided_at) VALUES ($1, '{}', $2)")
+                    .bind(key).bind(seed.now).execute(&mut connection).await?;
+                connection.close().await?;
+                assert_eq!(journal.prepare(&request).await?, ReconnectPrepareDispositionV2::Unavailable);
+                assert!(matches!(journal.reconcile(&request).await, Err(DurabilityError::Unavailable)), "owning loss must not be projected as legacy reconciliation: {before:?}");
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&mut connection).await?;
+                assert_eq!(attempts, 1, "rejected retry must not write another attempt");
+                connection.close().await?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }.await;
+            database.cleanup().await?;
+            result?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn shared_root_positive_v1_v2_authority_matrix_is_configured_postgres_proof()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {

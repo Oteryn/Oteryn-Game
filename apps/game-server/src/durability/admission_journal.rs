@@ -278,6 +278,16 @@ impl AdmissionReconnectJournal {
                     {
                         return Ok(ReconnectPrepareDispositionV1::Unavailable);
                     }
+                    let account_incumbent: bool = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE account_id = $1::text::uuid AND session_state IN (1, 2) AND game_session_id <> encode($2, 'hex')::uuid)",
+                    )
+                    .bind(identity.account_id())
+                    .bind(session_id.as_slice())
+                    .fetch_one(&mut *transaction)
+                    .await?;
+                    if account_incumbent {
+                        return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+                    }
                     let inserted_session = sqlx::query(
                         "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -317,6 +327,11 @@ impl AdmissionReconnectJournal {
                     else {
                         return Err(DurabilityError::InvalidStoredState);
                     };
+                    // Fresh ACTIVE sessions have no accepted loss epoch. A legacy
+                    // PREPARE must not invent one from its proposed record.
+                    if session.try_get::<Option<String>, _>("control_loss_epoch")?.is_none() {
+                        return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+                    }
                     if !session_binding_is_valid(&session, record)? {
                         return Err(DurabilityError::InvalidStoredState);
                     }
