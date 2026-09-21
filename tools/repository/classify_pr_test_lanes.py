@@ -16,7 +16,6 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
-import tomllib
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -85,45 +84,39 @@ def valid_path(value) -> bool:
 
 
 def external_local_dependency_roots() -> tuple[str, ...]:
-    """Return repository-local dependency trees that Cargo consumes outside workspace membership.
+    """Return root-manifest [patch.*] path trees consumed outside workspace membership.
 
-    Root manifest path dependencies and [patch.*] path overrides are build inputs even when
-    `cargo metadata --no-deps` omits those packages from `workspace_members`. Hash their
-    complete tracked trees so any later vendor edit invalidates reduced-lane snapshots.
+    Cargo accepts manifest constructs that Python's TOML 1.0 parser does not, so keep this
+    deliberately narrow: inspect only patch sections and extract literal path assignments.
+    The root Cargo.toml is already an audited BUILD_INPUT, so any patch-table shape change
+    invalidates the snapshot before a new path tree can be trusted.
     """
-    manifest = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
     roots: set[str] = set()
+    in_patch = False
+    header = re.compile(r"^\s*\[([^\]]+)\]\s*(?:#.*)?$")
+    path_assignment = re.compile(r'\bpath\s*=\s*"([^"]+)"')
 
-    tables: list[object] = []
-    workspace = manifest.get("workspace", {})
-    if not isinstance(workspace, dict):
-        raise ValueError("invalid workspace manifest")
-    tables.append(workspace.get("dependencies", {}))
-
-    patches = manifest.get("patch", {})
-    if not isinstance(patches, dict):
-        raise ValueError("invalid patch manifest")
-    tables.extend(patches.values())
-
-    for table in tables:
-        if table is None:
+    for line in (ROOT / "Cargo.toml").read_text(encoding="utf-8").splitlines():
+        match = header.match(line)
+        if match is not None:
+            in_patch = match.group(1).startswith("patch.")
             continue
-        if not isinstance(table, dict):
-            raise ValueError("invalid local dependency table")
-        for spec in table.values():
-            if not isinstance(spec, dict) or "path" not in spec:
-                continue
-            raw = spec["path"]
-            if not isinstance(raw, str) or not raw:
-                raise ValueError("invalid local dependency path")
-            candidate = PurePosixPath(raw)
-            normalized = str(candidate)
-            if candidate.is_absolute() or normalized == "." or not valid_path(normalized):
-                raise ValueError("unsafe local dependency path")
-            roots.add(normalized)
+        if not in_patch:
+            continue
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        path_match = path_assignment.search(line)
+        if path_match is None:
+            continue
+        raw = path_match.group(1)
+        candidate = PurePosixPath(raw)
+        normalized = str(candidate)
+        if candidate.is_absolute() or normalized == "." or not valid_path(normalized):
+            raise ValueError("unsafe patched dependency path")
+        roots.add(normalized)
 
     return tuple(sorted(roots))
-
 
 def neutral(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} or path.startswith("docs/migration/"):
