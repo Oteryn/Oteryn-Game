@@ -1122,7 +1122,7 @@ fn encode_artifact(
 fn encode_manifest(
     metadata: &ReferenceArtifactMetadata,
     profile: ReferenceArtifactProfile,
-) -> Result<Vec<u8>, ContentError> {fn encode_manifest(metadata: &ReferenceArtifactMetadata) -> Result<Vec<u8>, ContentError> {
+) -> Result<Vec<u8>, ContentError> {
     let world_id = encode_world_id(metadata.world_id);
     let fields = [
         profile.artifact_profile_id(),
@@ -1300,7 +1300,7 @@ fn parse_index(
     profile: ReferenceArtifactProfile,
     bytes: &[u8],
     expected_count: usize,
-) -> Result<Vec<IndexEntry>, ContentError> {fn parse_index(bytes: &[u8], expected_count: usize) -> Result<Vec<IndexEntry>, ContentError> {
+) -> Result<Vec<IndexEntry>, ContentError> {
     check_section_length(profile, SECTION_INDEX, bytes.len())?;
     let mut reader = SliceReader::new(bytes);
     let count =
