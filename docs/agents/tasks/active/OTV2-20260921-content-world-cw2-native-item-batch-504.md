@@ -1,5 +1,30 @@
 # OTV2-20260921 — Content World CW2 native Item batch 504
 
+```yaml
+task_id: OTV2-20260921-content-world-cw2-native-item-batch-504
+title: CW2 native Item binding batch 64
+mode: MIGRATE
+status: validating
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: agent/content-world-cw2-native-item-batch-504
+issue: 162
+pr: 719
+base_sha: 256aa3b152c944cb8451906effe1f0090c5b798d
+head_sha: null
+owner: Oteryn: content world import
+created_at: 2026-09-21T13:00:00Z
+updated_at: 2026-09-21T13:35:00Z
+owned_paths:
+  - apps/game-server/src/content/cw2_b1_import.rs
+  - apps/game-server/tests/content_world_cw2_b1_import.rs
+  - docs/agents/evidence/OTV2-20260921-content-world-cw2-native-item-batch.json
+  - docs/agents/tasks/active/OTV2-20260921-content-world-cw2-native-item-batch-504.md
+public_contracts: []
+production_authority: NONE
+closure: CANDIDATE_ONLY
+```
+
 Status: WIP — API-native authoring, pre-freeze hosted validation pending
 
 ## Scope and authority
