@@ -8,7 +8,7 @@ Oteryn: content world audit
 
 ```yaml
 prompt_id: OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT
-prompt_version: "1.0"
+prompt_version: "1.1"
 prompt_mode: AUDIT
 working_mode: READ_ONLY_INDEPENDENT_CONTENT_WORLD_AUDIT
 target_repository: Oteryn/Oteryn-Game
@@ -112,13 +112,12 @@ Fresh-read:
 
 - root and nearest applicable `AGENTS.md`;
 - `docs/agents/META_AGENT_POLICY_BINDING.json` when material;
-- `docs/agents/PROMPTING_STANDARD.md`;
-- `docs/agents/PROMPT_LIFECYCLE.json`;
-- current live Content/World control-plane state and relevant #162 allocations/dispositions;
+- the matching `OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT` lifecycle entry; load prompting/evaluation standards only when prompt/governance behavior is itself under audit;
+- the exact current Content/World target and only the #162 allocations/dispositions material to that target;
 - `docs/agents/programs/OTV2_CONTENT_WORLD_DELIVERY_PROGRAMME.md`;
 - `docs/agents/programs/OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md`;
 - `docs/agents/programs/OTV2_CONTENT_WORLD_AGENT_LAUNCH_RUNBOOK.md`;
-- retained owner synthesis, design dossier, execution design, coverage audit and current accepted successor decisions;
+- retained owner/design/coverage material only where it is required to judge the requested audit target;
 - ADR-0005 and DUR-04;
 - current first-production Content decisions and #504 successor/profile decisions;
 - GAME-ITEM, GAME-ABILITY, GAME-AI, GAME-INTERACTION, Movement, DUR and Foundation contracts only where Content consumes their authority;
