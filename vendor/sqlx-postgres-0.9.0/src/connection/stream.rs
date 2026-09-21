@@ -10,7 +10,7 @@ use crate::connection::tls::MaybeUpgradeTls;
 use crate::error::Error;
 use crate::message::{
     BackendMessage, BackendMessageFormat, EncodeMessage, FrontendMessage, Notice, Notification,
-    ParameterStatus, ReceivedMessage, validate_wp3_data_row_body,
+    ParameterStatus, ReceivedMessage, Startup, validate_wp3_data_row_body,
     validate_wp3_parameter_description_body, validate_wp3_row_description_body,
     wp3_borrowed_server_version,
 };
@@ -85,6 +85,16 @@ impl PgStream {
             self.write_precharged(EncodeMessage(message), encoded_size.0)
         } else {
             self.write(EncodeMessage(message))
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) fn write_startup(&mut self, message: Startup<'_>) -> Result<(), Error> {
+        if self.oteryn_wp3_first_slice_profile {
+            let encoded_size = message.encoded_size()?;
+            self.write_precharged(message, encoded_size)
+        } else {
+            self.write(message)
         }
     }
 

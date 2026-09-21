@@ -39,7 +39,7 @@ impl PgConnection {
             }
         }
 
-        stream.write_msg(Startup {
+        stream.write_startup(Startup {
             username: Some(&options.username),
             database: options.database.as_deref(),
             params: &params[..count],

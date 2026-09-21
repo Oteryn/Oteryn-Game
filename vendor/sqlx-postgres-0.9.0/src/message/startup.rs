@@ -19,6 +19,42 @@ pub struct Startup<'a> {
     pub params: &'a [(&'a str, &'a str)],
 }
 
+impl Startup<'_> {
+    pub(crate) fn encoded_size(&self) -> Result<usize, crate::Error> {
+        let add_param = |size: usize, name: &str, value: &str| -> Result<usize, crate::Error> {
+            let pair_size = name
+                .len()
+                .checked_add(value.len())
+                .and_then(|size| size.checked_add(2))
+                .ok_or_else(|| err_protocol!("startup message size overflow"))?;
+            size.checked_add(pair_size)
+                .ok_or_else(|| err_protocol!("startup message size overflow"))
+        };
+
+        // Four-byte length prefix followed by the four-byte protocol version.
+        let mut size = 8usize;
+
+        if let Some(username) = self.username {
+            size = add_param(size, "user", username)?;
+        }
+
+        if let Some(database) = self.database {
+            size = add_param(size, "database", database)?;
+        }
+
+        for (name, value) in self.params {
+            size = add_param(size, name, value)?;
+        }
+
+        size = size
+            .checked_add(1)
+            .ok_or_else(|| err_protocol!("startup message size overflow"))?;
+
+        i32::try_from(size).map_err(|_| err_protocol!("startup message size out of range"))?;
+        Ok(size)
+    }
+}
+
 // Startup cannot impl FrontendMessage because it doesn't have a format code.
 impl ProtocolEncode<'_> for Startup<'_> {
     fn encode_with(&self, buf: &mut Vec<u8>, _context: ()) -> Result<(), crate::Error> {
@@ -71,6 +107,7 @@ fn test_encode_startup() {
         params: &[],
     };
 
+    assert_eq!(m.encoded_size().unwrap(), EXPECTED.len());
     m.encode(&mut buf).unwrap();
 
     assert_eq!(buf, EXPECTED);

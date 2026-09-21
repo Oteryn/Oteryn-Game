@@ -1,5 +1,5 @@
 use crate::durability::DurabilityError;
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
     BudgetError, PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
@@ -10,8 +10,8 @@ use std::fmt::{self, Write as _};
 use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
@@ -836,9 +836,7 @@ impl DurabilityRoot {
                 return Err(DurabilityError::RootUnavailable);
             }
         };
-        let runtime_handle = runtime
-            .handle()
-            .ok_or(DurabilityError::RootUnavailable)?;
+        let runtime_handle = runtime.handle().ok_or(DurabilityError::RootUnavailable)?;
         let (pool, root_i_reservation, admission, actual_maintenance) =
             build_production_root_pool(config, runtime_handle);
         if actual_maintenance != expected_maintenance {
