@@ -2301,7 +2301,7 @@ fn reconnect_account_incumbent_is_a_stale_denial_without_candidate_effects()
 }
 
 #[test]
-fn reconnect_same_character_new_session_is_a_stale_denial_without_candidate_effects()
+fn existing_terminal_replay_precedes_cross_character_account_incumbent()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
         return Ok(());
@@ -2311,7 +2311,7 @@ fn reconnect_same_character_new_session_is_a_stale_denial_without_candidate_effe
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("same_character_incumbent_denial").await?;
+                postgres::IsolatedPostgres::create("terminal_replay_before_incumbent").await?;
             let result = async {
                 let url = database.database_url()?;
                 MigrationExecutor::connect_migration(&url)
@@ -2321,6 +2321,7 @@ fn reconnect_same_character_new_session_is_a_stale_denial_without_candidate_effe
                 let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
                 let pool = sqlx::PgPool::connect(&url).await?;
                 let now = postgres_clock(&pool).await?;
+
                 let (_, first) = ReconnectDurabilityFlowV1::begin(
                     record(20, 1, 0x33, now).map_err(foundation_error)?,
                 );
@@ -2328,23 +2329,87 @@ fn reconnect_same_character_new_session_is_a_stale_denial_without_candidate_effe
                     journal.prepare(&first).await?,
                     ReconnectPrepareDispositionV1::Prepared
                 );
-                let (_, candidate) = ReconnectDurabilityFlowV1::begin(
-                    record(21, 1, 0x34, now).map_err(foundation_error)?,
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts SET state = 4                      WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+                )
+                .bind(first.record().identity().game_session_id().as_bytes().as_slice())
+                .bind(first.record().identity().reconnect_attempt_ref().to_be_bytes().as_slice())
+                .execute(&pool)
+                .await?;
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_sessions SET session_state = 3                      WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(first.record().identity().game_session_id().as_bytes().as_slice())
+                .execute(&pool)
+                .await?;
+
+                let second =
+                    record_for_actor(21, 121, 1, 0x34, now).map_err(foundation_error)?;
+                let identity = second.identity();
+                let same_account = ReconnectIdentityV1::new(
+                    identity.game_session_id(),
+                    identity.reconnect_attempt_ref(),
+                    "123e4567-e89b-12d3-a456-426614174000",
+                    identity.character_id(),
+                    identity.world_id(),
+                    identity.runtime_scope(),
+                )
+                .map_err(foundation_error)?;
+                let second = ReconnectDurabilityRecordV1::new(
+                    same_account,
+                    second.connection(),
+                    second.authority(),
+                    second.continuity(),
+                    second.proof().clone(),
+                    second.fnd02().clone(),
+                    second.compatibility().clone(),
+                )
+                .map_err(foundation_error)?;
+                let (_, second) = ReconnectDurabilityFlowV1::begin(second);
+                assert_eq!(
+                    journal.prepare(&second).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+
+                assert_eq!(
+                    journal.prepare(&first).await?,
+                    ReconnectPrepareDispositionV1::ExistingTerminal
+                );
+
+                let (_, changed) = ReconnectDurabilityFlowV1::begin(
+                    record(20, 1, 0x35, now).map_err(foundation_error)?,
                 );
                 assert_eq!(
-                    journal.prepare(&candidate).await?,
-                    ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                    journal.prepare(&changed).await?,
+                    ReconnectPrepareDispositionV1::IdempotencyConflict
                 );
-                let sessions: i64 =
-                    sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_reconnect_sessions")
-                        .fetch_one(&pool)
-                        .await?;
-                let references: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM game_durability_transport_ref_reservations",
-                )
-                .fetch_one(&pool)
-                .await?;
-                assert_eq!((sessions, references), (1, 1));
+                // Reload persisted history through both compatibility entry points.
+                let reloaded = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
+                assert_eq!(
+                    reloaded.legacy().prepare(&first).await?,
+                    ReconnectPrepareDispositionV1::ExistingTerminal
+                );
+                assert_eq!(
+                    reloaded.legacy().prepare(&changed).await?,
+                    ReconnectPrepareDispositionV1::IdempotencyConflict
+                );
+                let (_, first_v2) = foundation::ReconnectDurabilityFlowV2::begin(first.record().clone(), None);
+                let (_, changed_v2) = foundation::ReconnectDurabilityFlowV2::begin(changed.record().clone(), None);
+                assert_eq!(
+                    reloaded.prepare(&first_v2).await?,
+                    foundation::ReconnectPrepareDispositionV2::ExistingTerminal {
+                        disposition: foundation::ReconnectDurableTerminalDispositionV1::StaleAuthority,
+                    }
+                );
+                assert_eq!(
+                    reloaded.prepare(&changed_v2).await?,
+                    foundation::ReconnectPrepareDispositionV2::IdempotencyConflict
+                );
+                let sessions: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_reconnect_sessions")
+                    .fetch_one(&pool).await?;
+                let memberships: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_session_use_memberships")
+                    .fetch_one(&pool).await?;
+                assert_eq!((sessions, memberships), (2, 2));
                 pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
@@ -3364,10 +3429,10 @@ fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_ep
                 .map_err(foundation_error)?;
                 let (_second_flow, second_prepare) =
                     ReconnectDurabilityFlowV1::begin(second_record);
-                assert_eq!(
-                    journal.prepare(&second_prepare).await?,
-                    ReconnectPrepareDispositionV1::RejectedStaleAuthority
-                );
+                assert!(matches!(
+                    journal.prepare(&second_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;

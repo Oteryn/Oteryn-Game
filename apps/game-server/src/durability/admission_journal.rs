@@ -278,19 +278,20 @@ impl AdmissionReconnectJournal {
                     {
                         return Ok(ReconnectPrepareDispositionV1::Unavailable);
                     }
-                    let account_incumbent: bool = sqlx::query_scalar(
-                        "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE account_id = $1::text::uuid AND session_state IN (1, 2) AND game_session_id <> encode($2, 'hex')::uuid)",
-                    )
-                    .bind(identity.account_id())
-                    .bind(session_id.as_slice())
-                    .fetch_one(&mut *transaction)
-                    .await?;
-                    if account_incumbent {
-                        return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
-                    }
                     let existing_session: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid)")
                         .bind(session_id.as_slice()).fetch_one(&mut *transaction).await?;
                     if !existing_session {
+                        let account_incumbent: bool = sqlx::query_scalar(
+                            "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE account_id = $1::text::uuid AND session_state IN (1, 2) AND game_session_id <> encode($2, 'hex')::uuid AND character_id <> encode($3, 'hex')::uuid)",
+                        )
+                        .bind(identity.account_id())
+                        .bind(session_id.as_slice())
+                        .bind(identity.character_id().as_bytes().as_slice())
+                        .fetch_one(&mut *transaction)
+                        .await?;
+                        if account_incumbent {
+                            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+                        }
                         let revision = super::fresh_admission::unused_session_revision(&mut transaction, identity.character_id(), identity.game_session_id()).await?;
                         super::fresh_admission::commit_session_use(&mut transaction, identity.character_id(), identity.game_session_id(), record.connection().transport_ref().to_bytes(), revision).await?;
                     }
