@@ -95,6 +95,10 @@ You MUST NOT:
 
 Do not turn audit findings into implementation during this task.
 
+## 1.2 Context breadth
+
+This alias is intentionally a **whole-programme audit**. A programme-wide Issue/PR/task/contract census is permitted only because the owner explicitly invoked this whole-programme audit surface. Do not export that breadth into ordinary coordinator, owner-status, investigator or bounded-audit prompts. When the requested audit is narrower than the whole programme, use the bounded target and load only material context.
+
 ## 1.1 Local validation safety
 
 When running local validation:
