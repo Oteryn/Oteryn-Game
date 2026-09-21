@@ -31,13 +31,13 @@ class GovernanceLifecycleTests(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
 
     def test_prompt_registry_covers_every_prompt_and_retires_with_successor(self) -> None:
-        self.write("docs/agents/prompts/A.md")
+        self.write("docs/agents/prompts/retired/A.md")
         self.write("docs/agents/prompts/B.md")
         registry = {
             "prompts": [
                 {
                     "prompt_id": "A",
-                    "path": "docs/agents/prompts/A.md",
+                    "path": "docs/agents/prompts/retired/A.md",
                     "version": "1.0",
                     "status": "retired",
                     "owner": "governance",
