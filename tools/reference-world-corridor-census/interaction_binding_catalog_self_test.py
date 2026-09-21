@@ -165,7 +165,43 @@ def exercise_game_input_provenance() -> None:
             verified = catalog.verify_game_inputs(root)
             assert set(verified) == set(blobs)
 
-            module = catalog._load_game_module(root, producer_rel, module_name)
+            producer_path = root / producer_rel
+            census_path = root / census_rel
+            export_path = root / export_rel
+
+            producer_cache = Path(importlib.util.cache_from_source(str(producer_path)))
+            producer_cache.parent.mkdir(parents=True, exist_ok=True)
+            producer_cache.write_bytes(b"unchecked producer bytecode")
+            expect_error(
+                "PROTECTED_GAME_INPUT_BYTECODE_CACHE",
+                lambda: catalog.verify_game_inputs(root),
+            )
+            producer_cache.unlink()
+            producer_cache.parent.rmdir()
+
+            census_cache = census_path.with_suffix(".pyc")
+            census_cache.write_bytes(b"unchecked census bytecode")
+            expect_error(
+                "PROTECTED_GAME_INPUT_BYTECODE_CACHE",
+                lambda: catalog.verify_game_inputs(root),
+            )
+            census_cache.unlink()
+
+            export_cache = export_path.with_suffix(".pyo")
+            export_cache.write_bytes(b"unchecked export bytecode")
+            expect_error(
+                "PROTECTED_GAME_INPUT_BYTECODE_CACHE",
+                lambda: catalog.verify_game_inputs(root),
+            )
+            export_cache.unlink()
+
+            previous_dont_write = sys.dont_write_bytecode
+            sys.dont_write_bytecode = False
+            try:
+                module = catalog._load_game_module(root, producer_rel, module_name)
+            finally:
+                sys.dont_write_bytecode = previous_dont_write
+            assert not Path(importlib.util.cache_from_source(str(producer_path))).exists()
             original_origin = module.__file__
             wrong_origin = root / "wrong-origin.py"
             wrong_origin.write_bytes(b"VALUE = 'wrong origin'\n")
@@ -179,7 +215,6 @@ def exercise_game_input_provenance() -> None:
             module.__file__ = original_origin
             wrong_origin.unlink()
 
-            producer_path = root / producer_rel
             git(root, "update-index", "--assume-unchanged", producer_rel)
             producer_path.write_bytes(producer_path.read_bytes() + b"# stealth replacement\n")
             expect_error(
@@ -191,7 +226,6 @@ def exercise_game_input_provenance() -> None:
             git(root, "update-index", "--no-assume-unchanged", producer_rel)
             git(root, "checkout", "--", producer_rel)
 
-            census_path = root / census_rel
             census_path.write_bytes(census_path.read_bytes() + b"# dirty\n")
             expect_error(
                 "PROTECTED_GAME_INPUT_DIRTY",
@@ -199,7 +233,6 @@ def exercise_game_input_provenance() -> None:
             )
             git(root, "checkout", "--", census_rel)
 
-            export_path = root / export_rel
             export_path.unlink()
             export_path.mkdir()
             expect_error(
