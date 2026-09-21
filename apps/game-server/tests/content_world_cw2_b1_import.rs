@@ -691,7 +691,6 @@ fn native_item_batch_rejects_any_protected_catalogue_drift() {
     ));
 }
 
-
 fn full_family_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         max_documents: 8,
@@ -709,8 +708,7 @@ fn full_family_limits() -> ProjectEvidenceLimits {
 }
 
 fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
-    protected_cw2_b1_full_item_family_import(B1_EVIDENCE)
-        .expect("protected B1 full Item family")
+    protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("protected B1 full Item family")
 }
 
 fn full_family_draft(imported: ProtectedCw2B1FullItemFamilyImport) -> ProjectDraft {
@@ -808,9 +806,11 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
 
 #[test]
 fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
-    let documents =
-        CanonicalProjectDocuments::from_draft(full_family_draft(full_family_import()), full_family_limits())
-            .expect("canonical full-family project");
+    let documents = CanonicalProjectDocuments::from_draft(
+        full_family_draft(full_family_import()),
+        full_family_limits(),
+    )
+    .expect("canonical full-family project");
     let project = documents
         .into_snapshot(full_family_limits())
         .expect("full-family snapshot")
@@ -837,7 +837,8 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
     assert_eq!(unresolved, CW2_B1_OPAQUE_ITEM_COUNT);
 
     let first = compile_reference_playable(&linked).expect("full-family v3 artifact");
-    let second = compile_reference_playable(&linked).expect("deterministic full-family v3 artifact");
+    let second =
+        compile_reference_playable(&linked).expect("deterministic full-family v3 artifact");
     assert_eq!(first.server_artifact, second.server_artifact);
     assert_eq!(first.client_artifact, second.client_artifact);
 
