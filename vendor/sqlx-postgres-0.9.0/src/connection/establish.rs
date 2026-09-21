@@ -1,6 +1,5 @@
 use crate::HashMap;
 
-use crate::common::StatementCache;
 use crate::connection::{sasl, stream::PgStream};
 use crate::error::Error;
 use crate::io::StatementId;
@@ -9,7 +8,7 @@ use crate::message::{
 };
 use crate::{PgAuthenticationPolicy, PgConnectOptions, PgConnection};
 
-use super::PgConnectionInner;
+use super::{PgConnectionInner, PgStatementCache};
 
 // https://www.postgresql.org/docs/current/protocol-flow.html#id-1.10.5.7.3
 // https://www.postgresql.org/docs/current/protocol-flow.html#id-1.10.5.7.11
@@ -22,33 +21,28 @@ impl PgConnection {
         // To begin a session, a frontend opens a connection to the server
         // and sends a startup message.
 
-        let mut params = vec![
-            // Sets the display format for date and time values,
-            // as well as the rules for interpreting ambiguous date input values.
+        let mut params = [("", ""); 6];
+        params[..3].copy_from_slice(&[
             ("DateStyle", "ISO, MDY"),
-            // Sets the client-side encoding (character set).
-            // <https://www.postgresql.org/docs/devel/multibyte.html#MULTIBYTE-CHARSET-SUPPORTED>
             ("client_encoding", "UTF8"),
-            // Sets the time zone for displaying and interpreting time stamps.
             ("TimeZone", "UTC"),
-        ];
-
-        if let Some(ref extra_float_digits) = options.extra_float_digits {
-            params.push(("extra_float_digits", extra_float_digits));
+        ]);
+        let mut count = 3;
+        for (key, value) in [
+            ("extra_float_digits", options.extra_float_digits.as_deref()),
+            ("application_name", options.application_name.as_deref()),
+            ("options", options.options.as_deref()),
+        ] {
+            if let Some(value) = value {
+                params[count] = (key, value);
+                count += 1;
+            }
         }
 
-        if let Some(ref application_name) = options.application_name {
-            params.push(("application_name", application_name));
-        }
-
-        if let Some(ref options) = options.options {
-            params.push(("options", options));
-        }
-
-        stream.write(Startup {
+        stream.write_msg(Startup {
             username: Some(&options.username),
             database: options.database.as_deref(),
-            params: &params,
+            params: &params[..count],
         })?;
 
         stream.flush().await?;
@@ -158,6 +152,12 @@ impl PgConnection {
             }
         }
 
+        let cache_statement = PgStatementCache::new(
+            options.statement_cache_capacity,
+            options.oteryn_wp3_first_slice_profile,
+            stream.resource_budget().cloned(),
+        )?;
+
         Ok(PgConnection {
             inner: Box::new(PgConnectionInner {
                 stream,
@@ -167,7 +167,7 @@ impl PgConnection {
                 transaction_depth: 0,
                 pending_ready_for_query_count: 0,
                 next_statement_id: StatementId::NAMED_START,
-                cache_statement: StatementCache::new(options.statement_cache_capacity),
+                cache_statement,
                 cache_type_oid: HashMap::new(),
                 cache_type_info: HashMap::new(),
                 cache_elem_type_to_array: HashMap::new(),

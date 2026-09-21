@@ -2,14 +2,15 @@ use crate::durability::DurabilityError;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
-    PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
+    BudgetError, PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
+    ResourceBudget,
 };
 use sqlx::{Acquire, PgPool, Transaction};
 use std::fmt::{self, Write as _};
 use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
@@ -86,7 +87,36 @@ impl RootResidentLedger {
 
 static ROOT_RESIDENT_LEDGER: RootResidentLedger =
     RootResidentLedger::new(ROOT_TOTAL_RESIDENT_BYTES);
+static PRODUCTION_ROOT_ADMITTED: AtomicBool = AtomicBool::new(false);
+static PRODUCTION_RUNTIME: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+static PRODUCTION_RUNTIME_INIT: StdMutex<()> = StdMutex::new(());
 
+struct ProductionRootAdmission {
+    committed: bool,
+}
+
+impl ProductionRootAdmission {
+    fn try_acquire() -> Result<Self, DurabilityError> {
+        PRODUCTION_ROOT_ADMITTED
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .map_err(|_| DurabilityError::RootUnavailable)?;
+        Ok(Self { committed: false })
+    }
+
+    fn commit(mut self) {
+        self.committed = true;
+    }
+}
+
+impl Drop for ProductionRootAdmission {
+    fn drop(&mut self) {
+        if !self.committed {
+            PRODUCTION_ROOT_ADMITTED.store(false, Ordering::Release);
+        }
+    }
+}
+
+#[derive(Clone)]
 enum RootLedgerHandle {
     Process(&'static RootResidentLedger),
     #[cfg(test)]
@@ -103,6 +133,23 @@ impl RootLedgerHandle {
     }
 }
 
+struct RootBudgetAdapter {
+    ledger: RootLedgerHandle,
+}
+
+impl ResourceBudget for RootBudgetAdapter {
+    fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
+        self.ledger
+            .ledger()
+            .try_reserve(bytes)
+            .map_err(|_| BudgetError::Unavailable)
+    }
+
+    fn release(&self, bytes: usize) {
+        self.ledger.ledger().release(bytes);
+    }
+}
+
 struct RootIReservation {
     ledger: RootLedgerHandle,
     bytes: usize,
@@ -112,6 +159,12 @@ impl RootIReservation {
     fn try_new(ledger: RootLedgerHandle, bytes: usize) -> Result<Self, DurabilityError> {
         ledger.ledger().try_reserve(bytes)?;
         Ok(Self { ledger, bytes })
+    }
+
+    fn resource_budget(&self) -> Arc<dyn ResourceBudget> {
+        Arc::new(RootBudgetAdapter {
+            ledger: self.ledger.clone(),
+        })
     }
 
     #[cfg(test)]
@@ -246,6 +299,7 @@ fn root_i_reservation_bytes(lengths: [usize; 5]) -> Result<usize, DurabilityErro
         arc_allocation_request::<AtomicBool>()?,
         arc_allocation_request::<Mutex<()>>()?,
         arc_allocation_request::<RootICharge>()?,
+        arc_allocation_request::<RootBudgetAdapter>()?,
     ] {
         total = checked_charge_add(total, conservative_heap_resident_charge(requested)?)?;
     }
@@ -494,6 +548,7 @@ pub struct DurabilityRootConfig {
     password: String,
     root_ca_pem: Vec<u8>,
     root_i_reservation: RootIReservation,
+    production_admission: Option<ProductionRootAdmission>,
 }
 
 impl DurabilityRootConfig {
@@ -570,10 +625,15 @@ impl DurabilityRootConfig {
             return Err(DurabilityError::InvalidConfiguration);
         }
         validate_dns_server_name(tls_server_name)?;
+        validate_root_ca_pem(root_ca_pem)?;
 
+        let production_admission = if matches!(&ledger, RootLedgerHandle::Process(_)) {
+            Some(ProductionRootAdmission::try_acquire()?)
+        } else {
+            None
+        };
         let reservation_bytes = root_i_reservation_bytes(lengths)?;
         let root_i_reservation = RootIReservation::try_new(ledger, reservation_bytes)?;
-        validate_root_ca_pem(root_ca_pem)?;
 
         let transport_ip_text = retain_transport_ip_text(transport_ip)?;
         let tls_server_name = retain_exact_string(tls_server_name)?;
@@ -603,10 +663,17 @@ impl DurabilityRootConfig {
             password,
             root_ca_pem,
             root_i_reservation,
+            production_admission,
         })
     }
 
-    fn into_connect_options(self) -> (PgConnectOptions, RootIReservation) {
+    fn into_connect_options(
+        self,
+    ) -> (
+        PgConnectOptions,
+        RootIReservation,
+        Option<ProductionRootAdmission>,
+    ) {
         let Self {
             port,
             transport_ip_text,
@@ -616,7 +683,9 @@ impl DurabilityRootConfig {
             password,
             root_ca_pem,
             root_i_reservation,
+            production_admission,
         } = self;
+        let resource_budget = root_i_reservation.resource_budget();
         let options = PgConnectOptions::new_without_environment_owned(
             tls_server_name,
             transport_ip_text,
@@ -632,8 +701,9 @@ impl DurabilityRootConfig {
         .ssl_tls13_only(true)
         .ssl_session_resumption(false)
         .authentication_policy(PgAuthenticationPolicy::ScramSha256)
+        .oteryn_wp3_resource_budget(resource_budget)
         .statement_cache_capacity(STATEMENT_CACHE_CAPACITY);
-        (options, root_i_reservation)
+        (options, root_i_reservation, production_admission)
     }
 }
 
@@ -643,7 +713,7 @@ impl DurabilityRootConfig {
 /// maintenance; active work must use a ready-only `try_begin()` path.
 #[cfg(test)]
 fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
-    let (options, root_i_reservation) = config.into_connect_options();
+    let (options, root_i_reservation, _admission) = config.into_connect_options();
     let pool = PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
@@ -654,7 +724,7 @@ fn build_root_pool(config: DurabilityRootConfig) -> (PgPool, RootIReservation) {
     (pool, root_i_reservation)
 }
 
-fn build_wp3_runtime() -> Result<Arc<tokio::runtime::Runtime>, DurabilityError> {
+fn build_wp3_runtime_owned() -> Result<tokio::runtime::Runtime, DurabilityError> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(WP3_RUNTIME_WORKER_THREADS)
         .max_blocking_threads(WP3_RUNTIME_MAX_BLOCKING_THREADS)
@@ -666,7 +736,30 @@ fn build_wp3_runtime() -> Result<Arc<tokio::runtime::Runtime>, DurabilityError> 
     if runtime.handle().runtime_flavor() != tokio::runtime::RuntimeFlavor::MultiThread {
         return Err(DurabilityError::RootUnavailable);
     }
-    Ok(Arc::new(runtime))
+    Ok(runtime)
+}
+
+fn production_runtime_handle() -> Result<tokio::runtime::Handle, DurabilityError> {
+    if let Some(runtime) = PRODUCTION_RUNTIME.get() {
+        return Ok(runtime.handle().clone());
+    }
+
+    let _init = match PRODUCTION_RUNTIME_INIT.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    if let Some(runtime) = PRODUCTION_RUNTIME.get() {
+        return Ok(runtime.handle().clone());
+    }
+
+    PRODUCTION_RUNTIME
+        .set(build_wp3_runtime_owned()?)
+        .map_err(|_| DurabilityError::RootUnavailable)?;
+    Ok(PRODUCTION_RUNTIME
+        .get()
+        .ok_or(DurabilityError::RootUnavailable)?
+        .handle()
+        .clone())
 }
 
 fn build_production_root_pool(
@@ -675,9 +768,10 @@ fn build_production_root_pool(
 ) -> (
     PgPool,
     RootIReservation,
+    Option<ProductionRootAdmission>,
     tokio::runtime::OterynWp3TaskAllocationProfile,
 ) {
-    let (options, root_i_reservation) = config.into_connect_options();
+    let (options, root_i_reservation, admission) = config.into_connect_options();
     let (pool, maintenance_profile) = PgPoolOptions::new()
         .max_connections(1)
         .min_connections(0)
@@ -685,7 +779,7 @@ fn build_production_root_pool(
         .idle_timeout(HOLDER_IDLE_TIMEOUT)
         .max_lifetime(HOLDER_MAX_LIFETIME)
         .connect_lazy_with_oteryn_wp3_runtime(options, handle);
-    (pool, root_i_reservation, maintenance_profile)
+    (pool, root_i_reservation, admission, maintenance_profile)
 }
 
 /// Process-scoped owner of the accepted max-one durability holder.
@@ -696,9 +790,23 @@ fn build_production_root_pool(
 /// demand and never loops or self-retries.
 #[derive(Clone)]
 enum RootRuntime {
-    Dedicated(Arc<tokio::runtime::Runtime>),
+    Dedicated(tokio::runtime::Handle),
+    #[cfg(test)]
+    OwnedTestFixture(Arc<tokio::runtime::Runtime>),
     #[cfg(test)]
     AmbientTestFixture,
+}
+
+impl RootRuntime {
+    fn handle(&self) -> Option<&tokio::runtime::Handle> {
+        match self {
+            Self::Dedicated(handle) => Some(handle),
+            #[cfg(test)]
+            Self::OwnedTestFixture(runtime) => Some(runtime.handle()),
+            #[cfg(test)]
+            Self::AmbientTestFixture => None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -707,27 +815,53 @@ pub struct DurabilityRoot {
     runtime: RootRuntime,
     ready_demand: Arc<AtomicBool>,
     maintenance: Arc<Mutex<()>>,
-    _root_i_charge: Arc<RootICharge>,
+    _root_i_charge: Option<Arc<RootICharge>>,
 }
 
 impl DurabilityRoot {
     pub fn new(config: DurabilityRootConfig) -> Result<Self, DurabilityError> {
+        let production = config.production_admission.is_some();
         let expected_maintenance =
             sqlx::pool::oteryn_wp3_root_maintenance_task_allocation_profile::<Postgres>();
-        let runtime = build_wp3_runtime()?;
-        let (pool, root_i_reservation, actual_maintenance) =
-            build_production_root_pool(config, runtime.handle());
+
+        let runtime = if production {
+            RootRuntime::Dedicated(production_runtime_handle()?)
+        } else {
+            #[cfg(test)]
+            {
+                RootRuntime::OwnedTestFixture(Arc::new(build_wp3_runtime_owned()?))
+            }
+            #[cfg(not(test))]
+            {
+                return Err(DurabilityError::RootUnavailable);
+            }
+        };
+        let runtime_handle = runtime
+            .handle()
+            .ok_or(DurabilityError::RootUnavailable)?;
+        let (pool, root_i_reservation, admission, actual_maintenance) =
+            build_production_root_pool(config, runtime_handle);
         if actual_maintenance != expected_maintenance {
             return Err(DurabilityError::RootUnavailable);
         }
+
+        let root_i_charge = if production {
+            std::mem::forget(root_i_reservation);
+            let admission = admission.ok_or(DurabilityError::RootUnavailable)?;
+            admission.commit();
+            None
+        } else {
+            Some(Arc::new(RootICharge {
+                _reservation: Some(root_i_reservation),
+            }))
+        };
+
         Ok(Self {
             pool,
-            runtime: RootRuntime::Dedicated(runtime),
+            runtime,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
-            _root_i_charge: Arc::new(RootICharge {
-                _reservation: Some(root_i_reservation),
-            }),
+            _root_i_charge: root_i_charge,
         })
     }
 
@@ -745,7 +879,7 @@ impl DurabilityRoot {
             runtime: RootRuntime::AmbientTestFixture,
             ready_demand: Arc::new(AtomicBool::new(true)),
             maintenance: Arc::new(Mutex::new(())),
-            _root_i_charge: Arc::new(RootICharge { _reservation: None }),
+            _root_i_charge: None,
         })
     }
 
@@ -755,7 +889,9 @@ impl DurabilityRoot {
         F::Output: Send + 'static,
     {
         match &self.runtime {
-            RootRuntime::Dedicated(runtime) => runtime.handle().spawn(future),
+            RootRuntime::Dedicated(handle) => handle.spawn(future),
+            #[cfg(test)]
+            RootRuntime::OwnedTestFixture(runtime) => runtime.handle().spawn(future),
             #[cfg(test)]
             RootRuntime::AmbientTestFixture => tokio::spawn(future),
         }
@@ -783,6 +919,14 @@ impl DurabilityRoot {
     pub async fn maintain_ready_once(&self) -> Result<bool, DurabilityError> {
         match &self.runtime {
             RootRuntime::Dedicated(_) => {
+                let root = self.clone();
+                await_root_task(
+                    self.spawn_task(async move { root.maintain_ready_once_inner().await }),
+                )
+                .await
+            }
+            #[cfg(test)]
+            RootRuntime::OwnedTestFixture(_) => {
                 let root = self.clone();
                 await_root_task(
                     self.spawn_task(async move { root.maintain_ready_once_inner().await }),

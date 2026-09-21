@@ -1,6 +1,8 @@
 use atoi::atoi;
 use memchr::memrchr;
 use sqlx_core::bytes::Bytes;
+use sqlx_core::net::ResourceReservation;
+use std::sync::Arc;
 
 use crate::error::Error;
 use crate::message::{BackendMessage, BackendMessageFormat};
@@ -10,13 +12,27 @@ pub struct CommandComplete {
     /// The command tag. This is usually a single word that identifies which SQL command
     /// was completed.
     tag: Bytes,
+    _allocation: Option<Arc<ResourceReservation>>,
 }
 
 impl BackendMessage for CommandComplete {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::CommandComplete;
 
     fn decode_body(bytes: Bytes) -> Result<Self, Error> {
-        Ok(CommandComplete { tag: bytes })
+        Ok(CommandComplete {
+            tag: bytes,
+            _allocation: None,
+        })
+    }
+
+    fn decode_body_charged(
+        bytes: Bytes,
+        allocation: Option<Arc<ResourceReservation>>,
+    ) -> Result<Self, Error> {
+        Ok(CommandComplete {
+            tag: bytes,
+            _allocation: allocation,
+        })
     }
 }
 

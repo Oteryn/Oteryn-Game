@@ -11,6 +11,7 @@ use sqlx_core::column::{ColumnOrigin, TableColumn};
 use sqlx_core::decode::Decode;
 use sqlx_core::error::BoxDynError;
 use sqlx_core::from_row::FromRow;
+use sqlx_core::net::ResourceReservation;
 use sqlx_core::raw_sql::raw_sql;
 use sqlx_core::row::Row;
 use sqlx_core::sql_str::AssertSqlSafe;
@@ -33,6 +34,10 @@ impl PgConnection {
         row_desc: Option<RowDescription>,
         resolve_column_origin: bool,
     ) -> Result<Arc<PgStatementMetadata>, Error> {
+        if self.inner.stream.oteryn_wp3_first_slice_profile {
+            return self.resolve_wp3_statement_metadata(param_desc, row_desc);
+        }
+
         let param_types = param_desc.map_or_else(Default::default, |desc| desc.types);
 
         let fields = row_desc.map_or_else(Default::default, |desc| desc.fields);
@@ -111,8 +116,127 @@ impl PgConnection {
 
         Ok(Arc::new(PgStatementMetadata {
             columns,
-            column_names: column_names.into(),
+            column_names: Some(column_names.into()),
+            first_slice_column_names: None,
             parameters,
+            _allocation: None,
+        }))
+    }
+
+    fn resolve_wp3_statement_metadata(
+        &mut self,
+        param_desc: Option<ParameterDescription>,
+        row_desc: Option<RowDescription>,
+    ) -> Result<Arc<PgStatementMetadata>, Error> {
+        if !self.inner.cache_type_info.is_empty()
+            || !self.inner.cache_type_oid.is_empty()
+            || !self.inner.cache_elem_type_to_array.is_empty()
+            || !self.inner.cache_table_data.is_empty()
+        {
+            return Err(err_protocol!(
+                "generic PostgreSQL metadata cache is outside the WP3 first-slice profile"
+            ));
+        }
+
+        let param_types = param_desc
+            .as_ref()
+            .map_or(&[][..], |desc| desc.types.as_slice());
+        let fields = row_desc.as_ref().map_or(&[][..], |desc| desc.fields.as_slice());
+
+        if param_types
+            .iter()
+            .chain(fields.iter().map(|field| &field.data_type_id))
+            .any(|oid| PgTypeInfo::try_from_oid(*oid).is_none())
+        {
+            return Err(err_protocol!(
+                "custom PostgreSQL OID is outside the WP3 first-slice profile"
+            ));
+        }
+
+        fn arc_allocation_size<T>() -> Result<usize, Error> {
+            use std::alloc::Layout;
+            let counters = Layout::array::<std::sync::atomic::AtomicUsize>(2)
+                .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            let (layout, _) = counters
+                .extend(Layout::new::<T>())
+                .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            Ok(layout.pad_to_align().size())
+        }
+
+        fn arc_str_allocation_size(len: usize) -> Result<usize, Error> {
+            use std::alloc::Layout;
+            let counters = Layout::array::<std::sync::atomic::AtomicUsize>(2)
+                .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            let bytes = Layout::array::<u8>(len)
+                .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            let (layout, _) = counters
+                .extend(bytes)
+                .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            Ok(layout.pad_to_align().size())
+        }
+
+        let mut backing = arc_allocation_size::<PgStatementMetadata>()?;
+        for bytes in [
+            param_types
+                .len()
+                .checked_mul(std::mem::size_of::<PgTypeInfo>()),
+            fields.len().checked_mul(std::mem::size_of::<PgColumn>()),
+            fields
+                .len()
+                .checked_mul(std::mem::size_of::<(UStr, usize)>()),
+        ] {
+            backing = backing
+                .checked_add(
+                    bytes.ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?,
+                )
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+        }
+        for field in fields {
+            backing = backing
+                .checked_add(arc_str_allocation_size(field.name.len())?)
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+        }
+
+        let budget = self
+            .inner
+            .stream
+            .resource_budget()
+            .cloned()
+            .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+        let allocation = ResourceReservation::try_new_shared(budget, backing)
+            .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+
+        let mut parameters = Vec::with_capacity(param_types.len());
+        for &oid in param_types {
+            parameters.push(
+                PgTypeInfo::try_from_oid(oid)
+                    .ok_or_else(|| err_protocol!("WP3 parameter OID is not built-in"))?,
+            );
+        }
+
+        let mut columns = Vec::with_capacity(fields.len());
+        let mut column_names = Vec::with_capacity(fields.len());
+        for field in fields {
+            let name = UStr::Shared(Arc::<str>::from(field.name.as_str()));
+            let ordinal = columns.len();
+            columns.push(PgColumn {
+                ordinal,
+                name: name.clone(),
+                type_info: PgTypeInfo::try_from_oid(field.data_type_id)
+                    .ok_or_else(|| err_protocol!("WP3 result OID is not built-in"))?,
+                origin: ColumnOrigin::Expression,
+                relation_id: field.relation_id,
+                relation_attribute_no: field.relation_attribute_no,
+            });
+            column_names.push((name, ordinal));
+        }
+
+        Ok(Arc::new(PgStatementMetadata {
+            columns,
+            column_names: None,
+            first_slice_column_names: Some(column_names),
+            parameters,
+            _allocation: Some(allocation),
         }))
     }
 
@@ -134,7 +258,57 @@ impl PgConnection {
             .is_some_and(|data| data.columns.contains_key(&attribute_no))
     }
 
-    pub(crate) async fn resolve_types(&mut self, types: &[PgTypeInfo]) -> Result<Vec<Oid>, Error> {
+    pub(crate) async fn resolve_types(
+        &mut self,
+        types: &[PgTypeInfo],
+    ) -> Result<ResolvedTypes, Error> {
+        if self.inner.stream.oteryn_wp3_first_slice_profile {
+            if !self.inner.cache_type_info.is_empty()
+                || !self.inner.cache_type_oid.is_empty()
+                || !self.inner.cache_elem_type_to_array.is_empty()
+                || !self.inner.cache_table_data.is_empty()
+            {
+                return Err(err_protocol!(
+                    "generic PostgreSQL metadata cache is outside the WP3 first-slice profile"
+                ));
+            }
+
+            let budget = self
+                .inner
+                .stream
+                .resource_budget()
+                .cloned()
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            let bytes = types
+                .len()
+                .checked_mul(std::mem::size_of::<Oid>())
+                .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+            let allocation = if bytes == 0 {
+                None
+            } else {
+                Some(
+                    ResourceReservation::try_new(budget, bytes)
+                        .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?,
+                )
+            };
+            let mut oids = Vec::with_capacity(types.len());
+            for ty in types {
+                let oid = self.try_type_to_oid(ty).ok_or_else(|| Error::TypeNotFound {
+                    type_name: ty.name().to_string(),
+                })?;
+                if PgTypeInfo::try_from_oid(oid).is_none() {
+                    return Err(Error::TypeNotFound {
+                        type_name: ty.name().to_string(),
+                    });
+                }
+                oids.push(oid);
+            }
+            return Ok(ResolvedTypes {
+                oids,
+                _allocation: allocation,
+            });
+        }
+
         let mut oids = Vec::with_capacity(types.len());
 
         let mut unresolved_types = types.iter().peekable();
@@ -151,7 +325,10 @@ impl PgConnection {
 
         // Fast-path: all types resolved
         if oids.len() == types.len() {
-            return Ok(oids);
+            return Ok(ResolvedTypes {
+                oids,
+                _allocation: None,
+            });
         }
 
         let mut resolver = TypeResolver::default();
@@ -192,7 +369,10 @@ impl PgConnection {
             );
         }
 
-        Ok(oids)
+        Ok(ResolvedTypes {
+            oids,
+            _allocation: None,
+        })
     }
 
     pub(crate) fn try_type_to_oid(&self, ty: &PgTypeInfo) -> Option<Oid> {
@@ -343,6 +523,20 @@ impl PgConnection {
         });
 
         Ok(ControlFlow::Continue(()))
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct ResolvedTypes {
+    oids: Vec<Oid>,
+    _allocation: Option<ResourceReservation>,
+}
+
+impl std::ops::Deref for ResolvedTypes {
+    type Target = [Oid];
+
+    fn deref(&self) -> &[Oid] {
+        &self.oids
     }
 }
 

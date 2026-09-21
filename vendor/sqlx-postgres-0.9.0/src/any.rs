@@ -135,7 +135,7 @@ impl AnyConnectionBackend for PgConnection {
     ) -> BoxFuture<'c, sqlx_core::Result<AnyStatement>> {
         Box::pin(async move {
             let statement = Executor::prepare_with(self, sql, &[]).await?;
-            let column_names = statement.metadata.column_names.clone();
+            let column_names = statement.metadata.any_column_names()?;
             AnyStatement::try_from_statement(statement, column_names)
         })
     }
@@ -232,7 +232,7 @@ impl<'a> TryFrom<&'a PgRow> for AnyRow {
     type Error = sqlx_core::Error;
 
     fn try_from(row: &'a PgRow) -> Result<Self, Self::Error> {
-        AnyRow::map_from(row, row.metadata.column_names.clone())
+        AnyRow::map_from(row, row.metadata.any_column_names()?)
     }
 }
 

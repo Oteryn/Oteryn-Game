@@ -1,5 +1,7 @@
 use sqlx_core::bytes::Bytes;
+use sqlx_core::net::ResourceReservation;
 use std::num::Saturating;
+use std::sync::Arc;
 
 use crate::error::Error;
 use crate::io::PgBufMutExt;
@@ -37,13 +39,16 @@ pub use close::Close;
 pub use command_complete::CommandComplete;
 pub use copy::{CopyData, CopyDone, CopyFail, CopyInResponse, CopyOutResponse, CopyResponseData};
 pub use data_row::DataRow;
+pub(crate) use data_row::{ChargedBytes, validate_wp3_first_slice_body as validate_wp3_data_row_body};
 pub use describe::Describe;
 pub use execute::Execute;
 #[allow(unused_imports)]
 pub use flush::Flush;
 pub use notification::Notification;
 pub use parameter_description::ParameterDescription;
+pub(crate) use parameter_description::validate_wp3_first_slice_body as validate_wp3_parameter_description_body;
 pub use parameter_status::ParameterStatus;
+pub(crate) use parameter_status::wp3_borrowed_server_version;
 pub use parse::Parse;
 pub use parse_complete::ParseComplete;
 pub use password::Password;
@@ -51,6 +56,7 @@ pub use query::Query;
 pub use ready_for_query::{ReadyForQuery, TransactionStatus};
 pub use response::{Notice, PgSeverity};
 pub use row_description::RowDescription;
+pub(crate) use row_description::validate_wp3_first_slice_body as validate_wp3_row_description_body;
 pub use sasl::{SaslInitialResponse, SaslResponse};
 use sqlx_core::io::ProtocolEncode;
 pub use ssl_request::SslRequest;
@@ -118,6 +124,7 @@ pub enum BackendMessageFormat {
 pub struct ReceivedMessage {
     pub format: BackendMessageFormat,
     pub contents: Bytes,
+    pub(crate) allocation: Option<Arc<ResourceReservation>>,
 }
 
 impl ReceivedMessage {
@@ -134,7 +141,7 @@ impl ReceivedMessage {
             ));
         }
 
-        T::decode_body(self.contents).map_err(|e| match e {
+        T::decode_body_charged(self.contents, self.allocation).map_err(|e| match e {
             Error::Protocol(s) => {
                 err_protocol!("Postgres protocol error (reading {:?}): {s}", self.format)
             }
@@ -204,6 +211,15 @@ pub(crate) trait BackendMessage: Sized {
     ///
     /// The format code and length prefix have already been read and are not at the start of `bytes`.
     fn decode_body(buf: Bytes) -> Result<Self, Error>;
+
+    fn decode_body_charged(
+        buf: Bytes,
+        allocation: Option<Arc<ResourceReservation>>,
+    ) -> Result<Self, Error> {
+        let decoded = Self::decode_body(buf);
+        drop(allocation);
+        decoded
+    }
 }
 
 pub struct EncodeMessage<F>(pub F);

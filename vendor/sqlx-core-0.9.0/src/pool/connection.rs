@@ -535,6 +535,12 @@ impl<DB: Database> Floating<DB, Idle<DB>> {
         self.guard
     }
 
+    pub(crate) fn retire_by_drop(self) {
+        let Floating { inner, guard } = self;
+        drop(inner.live.raw);
+        drop(guard);
+    }
+
     pub fn metadata(&self) -> PoolConnectionMetadata {
         // Use a single `now` value for consistency.
         let now = Instant::now();

@@ -42,10 +42,8 @@ impl Row for PgRow {
 impl ColumnIndex<PgRow> for &'_ str {
     fn index(&self, row: &PgRow) -> Result<usize, Error> {
         row.metadata
-            .column_names
-            .get(*self)
+            .column_index(self)
             .ok_or_else(|| Error::ColumnNotFound((*self).into()))
-            .copied()
     }
 }
 

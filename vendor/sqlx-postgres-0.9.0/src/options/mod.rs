@@ -3,8 +3,10 @@ use std::env::var;
 use std::fmt::{self, Display, Write};
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 pub use ssl_mode::PgSslMode;
+pub use sqlx_core::net::{BudgetError, ResourceBudget, ResourceReservation};
 
 use crate::{connection::LogSettings, net::tls::CertificateInput};
 
@@ -21,6 +23,21 @@ pub enum PgAuthenticationPolicy {
     Any,
     /// Require an authenticated SCRAM-SHA-256 exchange; reject trust, cleartext, and MD5.
     ScramSha256,
+}
+
+#[derive(Clone)]
+pub(crate) struct PgResourceBudget(Arc<dyn ResourceBudget>);
+
+impl PgResourceBudget {
+    pub(crate) fn clone_budget(&self) -> Arc<dyn ResourceBudget> {
+        self.0.clone()
+    }
+}
+
+impl fmt::Debug for PgResourceBudget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("PgResourceBudget(..)")
+    }
 }
 
 #[doc = include_str!("doc.md")]
@@ -46,6 +63,8 @@ pub struct PgConnectOptions {
     pub(crate) tls13_only: bool,
     pub(crate) tls_session_resumption: bool,
     pub(crate) tls_use_default_roots: bool,
+    pub(crate) oteryn_wp3_first_slice_profile: bool,
+    pub(crate) oteryn_wp3_resource_budget: Option<PgResourceBudget>,
 }
 
 impl Default for PgConnectOptions {
@@ -55,6 +74,19 @@ impl Default for PgConnectOptions {
 }
 
 impl PgConnectOptions {
+    #[doc(hidden)]
+    pub fn oteryn_wp3_resource_budget(mut self, budget: Arc<dyn ResourceBudget>) -> Self {
+        self.oteryn_wp3_first_slice_profile = true;
+        self.oteryn_wp3_resource_budget = Some(PgResourceBudget(budget));
+        self
+    }
+
+    pub(crate) fn wp3_resource_budget(&self) -> Option<Arc<dyn ResourceBudget>> {
+        self.oteryn_wp3_resource_budget
+            .as_ref()
+            .map(PgResourceBudget::clone_budget)
+    }
+
     /// Create a default set of connection options populated from the current environment.
     ///
     /// This behaves as if parsed from the connection string `postgres://`
@@ -90,6 +122,8 @@ impl PgConnectOptions {
             tls13_only: false,
             tls_session_resumption: true,
             tls_use_default_roots: true,
+            oteryn_wp3_first_slice_profile: false,
+            oteryn_wp3_resource_budget: None,
         }
     }
 
@@ -128,6 +162,8 @@ impl PgConnectOptions {
             tls13_only: false,
             tls_session_resumption: true,
             tls_use_default_roots: true,
+            oteryn_wp3_first_slice_profile: false,
+            oteryn_wp3_resource_budget: None,
         }
     }
 

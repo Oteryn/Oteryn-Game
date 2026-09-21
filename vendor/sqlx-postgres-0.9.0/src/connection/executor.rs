@@ -182,7 +182,7 @@ impl PgConnection {
         .await?;
 
         if persistent && self.inner.cache_statement.is_enabled() {
-            if let Some((id, _)) = self.inner.cache_statement.insert(sql, statement.clone()) {
+            if let Some((id, _)) = self.inner.cache_statement.insert(sql, statement.clone())? {
                 self.inner.stream.write_msg(Close::Statement(id))?;
                 self.write_sync();
 
@@ -218,6 +218,11 @@ impl PgConnection {
             // making the max number of parameters 65535, not 32767
             // https://github.com/launchbadge/sqlx/issues/3464
             // https://www.postgresql.org/docs/current/limits.html
+            if self.inner.stream.oteryn_wp3_first_slice_profile && arguments.len() > 32 {
+                return Err(err_protocol!(
+                    "WP3 first-slice parameter count exceeds 32"
+                ));
+            }
             let num_params = u16::try_from(arguments.len()).map_err(|_| {
                 err_protocol!(
                     "PgConnection::run(): too many arguments for query: {}",
@@ -284,7 +289,17 @@ impl PgConnection {
             self.queue_simple_query(sql)?;
 
             // metadata starts out as "nothing"
-            metadata = Arc::new(PgStatementMetadata::default());
+            metadata = if self.inner.stream.oteryn_wp3_first_slice_profile {
+                let budget = self
+                    .inner
+                    .stream
+                    .resource_budget()
+                    .cloned()
+                    .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+                PgStatementMetadata::empty_first_slice(budget)?
+            } else {
+                Arc::new(PgStatementMetadata::default())
+            };
 
             // and unprepared statements are text
             PgValueFormat::Text
@@ -343,6 +358,13 @@ impl PgConnection {
                     }
 
                     BackendMessageFormat::DataRow => {
+                        if self.inner.stream.oteryn_wp3_first_slice_profile
+                            && format == PgValueFormat::Text
+                        {
+                            return Err(err_protocol!(
+                                "text DataRow is outside the WP3 first-slice profile"
+                            ));
+                        }
                         logger.increment_rows_returned();
 
                         // one of the set of rows returned by a SELECT, FETCH, etc query

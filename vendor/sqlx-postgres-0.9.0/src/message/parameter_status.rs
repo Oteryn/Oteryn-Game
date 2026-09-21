@@ -10,6 +10,28 @@ pub struct ParameterStatus {
     pub value: String,
 }
 
+pub(crate) fn wp3_borrowed_server_version(buf: &[u8]) -> Result<Option<&str>, Error> {
+    let name_end = buf
+        .iter()
+        .position(|byte| *byte == 0)
+        .ok_or_else(|| err_protocol!("unterminated WP3 ParameterStatus name"))?;
+    let name = std::str::from_utf8(&buf[..name_end])
+        .map_err(|_| err_protocol!("WP3 ParameterStatus name is not UTF-8"))?;
+    let value_tail = buf
+        .get(name_end + 1..)
+        .ok_or_else(|| err_protocol!("truncated WP3 ParameterStatus value"))?;
+    let value_end = value_tail
+        .iter()
+        .position(|byte| *byte == 0)
+        .ok_or_else(|| err_protocol!("unterminated WP3 ParameterStatus value"))?;
+    if value_end + 1 != value_tail.len() {
+        return Err(err_protocol!("WP3 ParameterStatus has trailing bytes"));
+    }
+    let value = std::str::from_utf8(&value_tail[..value_end])
+        .map_err(|_| err_protocol!("WP3 ParameterStatus value is not UTF-8"))?;
+    Ok((name == "server_version").then_some(value))
+}
+
 impl BackendMessage for ParameterStatus {
     const FORMAT: BackendMessageFormat = BackendMessageFormat::ParameterStatus;
 
@@ -39,6 +61,20 @@ fn test_decode_empty_parameter_status() {
 
     assert!(m.name.is_empty());
     assert!(m.value.is_empty());
+}
+
+#[test]
+fn wp3_parameter_status_retains_only_normalized_server_version() {
+    assert_eq!(
+        wp3_borrowed_server_version(b"server_version\017.6\0").unwrap(),
+        Some("17.6")
+    );
+    assert_eq!(
+        wp3_borrowed_server_version(b"application_name\0peer-controlled\0").unwrap(),
+        None
+    );
+    assert!(wp3_borrowed_server_version(b"server_version\017.6\0trailing").is_err());
+    assert!(wp3_borrowed_server_version(b"server_version\0unterminated").is_err());
 }
 
 #[cfg(all(test, not(debug_assertions)))]

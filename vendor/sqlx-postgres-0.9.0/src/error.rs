@@ -4,7 +4,9 @@ use std::fmt::{self, Debug, Display, Formatter};
 use atoi::atoi;
 use smallvec::alloc::borrow::Cow;
 use sqlx_core::bytes::Bytes;
+use sqlx_core::net::ResourceReservation;
 pub(crate) use sqlx_core::error::*;
+use std::sync::Arc;
 
 use crate::message::{BackendMessage, BackendMessageFormat, Notice, PgSeverity};
 
@@ -231,6 +233,13 @@ impl BackendMessage for PgDatabaseError {
     #[inline(always)]
     fn decode_body(buf: Bytes) -> std::result::Result<Self, Error> {
         Ok(Self(Notice::decode_body(buf)?))
+    }
+
+    fn decode_body_charged(
+        buf: Bytes,
+        allocation: Option<Arc<ResourceReservation>>,
+    ) -> std::result::Result<Self, Error> {
+        Ok(Self(Notice::decode_body_charged(buf, allocation)?))
     }
 }
 

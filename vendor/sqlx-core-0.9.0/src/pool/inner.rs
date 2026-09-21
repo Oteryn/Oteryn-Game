@@ -574,7 +574,7 @@ async fn oteryn_wp3_maintenance_task<DB: Database>(
                 if is_beyond_idle_timeout(&conn, &pool.options)
                     || is_beyond_max_lifetime(&conn, &pool.options)
                 {
-                    let _ = conn.close().await;
+                    conn.retire_by_drop();
                     debug_assert_eq!(
                         pool.options.min_connections, 0,
                         "WP3 root-specific maintenance must never create replacement connections"

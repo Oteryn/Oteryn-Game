@@ -1,6 +1,7 @@
 use crate::error::{BoxDynError, UnexpectedNullError};
+use crate::message::ChargedBytes;
 use crate::{PgTypeInfo, Postgres};
-use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::bytes::Buf;
 pub(crate) use sqlx_core::value::{Value, ValueRef};
 use std::borrow::Cow;
 use std::str::from_utf8;
@@ -16,7 +17,7 @@ pub enum PgValueFormat {
 #[derive(Clone)]
 pub struct PgValueRef<'r> {
     pub(crate) value: Option<&'r [u8]>,
-    pub(crate) row: Option<&'r Bytes>,
+    pub(crate) row: Option<&'r ChargedBytes>,
     pub(crate) type_info: PgTypeInfo,
     pub(crate) format: PgValueFormat,
 }
@@ -24,7 +25,7 @@ pub struct PgValueRef<'r> {
 /// Implementation of [`Value`] for PostgreSQL.
 #[derive(Clone)]
 pub struct PgValue {
-    pub(crate) value: Option<Bytes>,
+    pub(crate) value: Option<ChargedBytes>,
     pub(crate) type_info: PgTypeInfo,
     pub(crate) format: PgValueFormat,
 }
@@ -80,7 +81,7 @@ impl Value for PgValue {
     fn as_ref(&self) -> PgValueRef<'_> {
         PgValueRef {
             value: self.value.as_deref(),
-            row: None,
+            row: self.value.as_ref(),
             type_info: self.type_info.clone(),
             format: self.format,
         }
@@ -102,7 +103,9 @@ impl<'r> ValueRef<'r> for PgValueRef<'r> {
         let value = match (self.row, self.value) {
             (Some(row), Some(value)) => Some(row.slice_ref(value)),
 
-            (None, Some(value)) => Some(Bytes::copy_from_slice(value)),
+            (None, Some(value)) => Some(ChargedBytes::unowned(
+                sqlx_core::bytes::Bytes::copy_from_slice(value),
+            )),
 
             _ => None,
         };

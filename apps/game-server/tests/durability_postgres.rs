@@ -383,47 +383,66 @@ fn wp3_deterministic_pg_options_ignore_ambient_sources() -> Result<(), Box<dyn s
 }
 
 #[test]
-fn wp3_root_pool_profile_is_lazy_max_one_and_ready_only() -> Result<(), Box<dyn std::error::Error>>
-{
+fn wp3_process_root_is_singleton_ready_only_and_detached_task_safe()
+-> Result<(), Box<dyn std::error::Error>> {
     use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
     use std::net::{IpAddr, Ipv4Addr};
+    use std::sync::mpsc;
+
+    fn production_config() -> Result<DurabilityRootConfig, DurabilityError> {
+        DurabilityRootConfig::new(
+            IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+            5432,
+            "db.example",
+            "oteryn",
+            "explicit",
+            "test-secret",
+            b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+        )
+    }
 
     let _process_root_guard = match PROCESS_ROOT_LEDGER_TEST_LOCK.lock() {
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner(),
     };
-    let root = DurabilityRoot::new(DurabilityRootConfig::new(
-        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
-        5432,
-        "db.example",
-        "oteryn",
-        "explicit",
-        "test-secret",
-        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
-    )?)?;
+
+    let config = production_config()?;
+    assert!(matches!(
+        production_config(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    let root = DurabilityRoot::new(config)?;
+
+    assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+    assert!(!root.is_ready());
+    assert!(root.has_ready_demand());
+    assert!(matches!(
+        root.try_acquire_ready(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+
+    let (started_tx, started_rx) = mpsc::channel();
+    let detached_root = root.clone();
+    let task = root.spawn_task(async move {
+        started_tx
+            .send(())
+            .expect("singleton test receiver must remain alive");
+        tokio::time::sleep(Duration::from_millis(25)).await;
+        drop(detached_root);
+        7u8
+    });
+    started_rx.recv_timeout(Duration::from_secs(2))?;
+    drop(root);
+
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    let result = runtime.block_on(async {
-        assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
-        assert!(!root.is_ready());
-        assert!(root.has_ready_demand());
-        assert!(matches!(
-            root.try_acquire_ready(),
-            Err(DurabilityError::RootUnavailable)
-        ));
-        assert!(root.has_ready_demand());
-        tokio::task::yield_now().await;
-        assert!(
-            !root.is_ready(),
-            "ready-only miss must not establish a connection in the background"
-        );
-
-        Ok::<(), Box<dyn std::error::Error>>(())
-    });
-    drop(runtime);
-    drop(root);
-    result
+    assert_eq!(runtime.block_on(task)?, 7);
+    assert!(matches!(
+        production_config(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    Ok(())
 }
 
 #[test]

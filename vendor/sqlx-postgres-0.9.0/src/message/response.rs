@@ -4,6 +4,8 @@ use std::str::from_utf8;
 use memchr::memchr;
 
 use sqlx_core::bytes::Bytes;
+use sqlx_core::net::ResourceReservation;
+use std::sync::Arc;
 
 use crate::error::Error;
 use crate::io::ProtocolDecode;
@@ -58,6 +60,7 @@ pub struct Notice {
     severity: PgSeverity,
     message: Range<usize>,
     code: Range<usize>,
+    _allocation: Option<Arc<ResourceReservation>>,
 }
 
 impl Notice {
@@ -176,6 +179,7 @@ impl ProtocolDecode<'_> for Notice {
             message,
             code,
             storage: buf,
+            _allocation: None,
         })
     }
 }
@@ -186,6 +190,15 @@ impl BackendMessage for Notice {
     fn decode_body(buf: Bytes) -> Result<Self, Error> {
         // Keeping both impls for now
         Self::decode_with(buf, ())
+    }
+
+    fn decode_body_charged(
+        buf: Bytes,
+        allocation: Option<Arc<ResourceReservation>>,
+    ) -> Result<Self, Error> {
+        let mut notice = Self::decode_with(buf, ())?;
+        notice._allocation = allocation;
+        Ok(notice)
     }
 }
 

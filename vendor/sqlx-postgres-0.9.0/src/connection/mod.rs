@@ -15,6 +15,7 @@ use crate::message::{
 };
 use crate::statement::PgStatementMetadata;
 use crate::transaction::Transaction;
+use sqlx_core::net::{ResourceBudget, ResourceReservation};
 use crate::types::Oid;
 use crate::{PgConnectOptions, PgTypeInfo, Postgres};
 
@@ -60,7 +61,7 @@ pub struct PgConnectionInner {
     next_statement_id: StatementId,
 
     // cache statement by query string to the id and columns
-    cache_statement: StatementCache<(StatementId, Arc<PgStatementMetadata>)>,
+    cache_statement: PgStatementCache,
 
     // cache user-defined types by id <-> info
     cache_type_info: HashMap<Oid, PgTypeInfo>,
@@ -76,6 +77,117 @@ pub struct PgConnectionInner {
     pub(crate) transaction_depth: usize,
 
     log_settings: LogSettings,
+}
+
+type CachedStatement = (StatementId, Arc<PgStatementMetadata>);
+
+struct Wp3CacheEntry {
+    key: String,
+    value: CachedStatement,
+    _allocation: ResourceReservation,
+}
+
+struct Wp3StatementCache {
+    entries: Vec<Wp3CacheEntry>,
+    _backing: ResourceReservation,
+    budget: Arc<dyn ResourceBudget>,
+    capacity: usize,
+}
+
+enum PgStatementCache {
+    Ordinary(StatementCache<CachedStatement>),
+    FirstSlice(Wp3StatementCache),
+}
+
+impl PgStatementCache {
+    fn new(
+        capacity: usize,
+        first_slice: bool,
+        budget: Option<Arc<dyn ResourceBudget>>,
+    ) -> Result<Self, Error> {
+        if !first_slice {
+            return Ok(Self::Ordinary(StatementCache::new(capacity)));
+        }
+        if capacity != 100 {
+            return Err(Error::Io(std::io::ErrorKind::InvalidInput.into()));
+        }
+        let budget = budget.ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+        let bytes = capacity
+            .checked_mul(std::mem::size_of::<Wp3CacheEntry>())
+            .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+        let backing = ResourceReservation::try_new(budget.clone(), bytes)
+            .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+        Ok(Self::FirstSlice(Wp3StatementCache {
+            entries: Vec::with_capacity(capacity),
+            _backing: backing,
+            budget,
+            capacity,
+        }))
+    }
+
+    fn get_mut(&mut self, key: &str) -> Option<&mut CachedStatement> {
+        match self {
+            Self::Ordinary(cache) => cache.get_mut(key),
+            Self::FirstSlice(cache) => {
+                let index = cache.entries.iter().position(|entry| entry.key == key)?;
+                cache.entries[index..].rotate_left(1);
+                cache.entries.last_mut().map(|entry| &mut entry.value)
+            }
+        }
+    }
+
+    fn insert(
+        &mut self,
+        key: &str,
+        value: CachedStatement,
+    ) -> Result<Option<CachedStatement>, Error> {
+        match self {
+            Self::Ordinary(cache) => Ok(cache.insert(key, value)),
+            Self::FirstSlice(cache) => {
+                let allocation = ResourceReservation::try_new(cache.budget.clone(), key.len())
+                    .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
+                let entry = Wp3CacheEntry {
+                    key: key.to_owned(),
+                    value,
+                    _allocation: allocation,
+                };
+                let replaced = if let Some(index) =
+                    cache.entries.iter().position(|entry| entry.key == key)
+                {
+                    Some(cache.entries.remove(index).value)
+                } else if cache.entries.len() == cache.capacity {
+                    Some(cache.entries.remove(0).value)
+                } else {
+                    None
+                };
+                cache.entries.push(entry);
+                Ok(replaced)
+            }
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            Self::Ordinary(cache) => cache.len(),
+            Self::FirstSlice(cache) => cache.entries.len(),
+        }
+    }
+
+    fn is_enabled(&self) -> bool {
+        match self {
+            Self::Ordinary(cache) => cache.is_enabled(),
+            Self::FirstSlice(cache) => cache.capacity > 0,
+        }
+    }
+
+    fn remove_lru(&mut self) -> Option<CachedStatement> {
+        match self {
+            Self::Ordinary(cache) => cache.remove_lru(),
+            Self::FirstSlice(cache) => {
+                (!cache.entries.is_empty()).then(|| cache.entries.remove(0).value)
+            }
+        }
+    }
 }
 
 pub(crate) struct TableData {
@@ -252,5 +364,45 @@ impl Connection for PgConnection {
 impl AsMut<PgConnection> for PgConnection {
     fn as_mut(&mut self) -> &mut PgConnection {
         self
+    }
+}
+
+
+#[cfg(test)]
+mod wp3_statement_cache_tests {
+    use super::*;
+    use sqlx_core::net::BudgetError;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    struct Ledger(AtomicUsize);
+
+    impl ResourceBudget for Ledger {
+        fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
+            self.0.fetch_add(bytes, Ordering::AcqRel);
+            Ok(())
+        }
+
+        fn release(&self, bytes: usize) {
+            self.0.fetch_sub(bytes, Ordering::AcqRel);
+        }
+    }
+
+    #[test]
+    fn wp3_statement_cache_is_exactly_100_and_charged_through_drop() {
+        let ledger = Arc::new(Ledger(AtomicUsize::new(0)));
+        let owner: Arc<dyn ResourceBudget> = ledger.clone();
+        let mut cache = PgStatementCache::new(100, true, Some(owner)).unwrap();
+        let base = ledger.0.load(Ordering::Acquire);
+        assert!(base > 0);
+        let denied_owner: Arc<dyn ResourceBudget> = ledger.clone();
+        assert!(PgStatementCache::new(99, true, Some(denied_owner)).is_err());
+        let metadata = Arc::new(PgStatementMetadata::default());
+        assert!(cache
+            .insert("SELECT 1", (StatementId::UNNAMED, metadata))
+            .unwrap()
+            .is_none());
+        assert!(ledger.0.load(Ordering::Acquire) > base);
+        drop(cache);
+        assert_eq!(ledger.0.load(Ordering::Acquire), 0);
     }
 }

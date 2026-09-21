@@ -2,6 +2,8 @@ use std::str::from_utf8;
 
 use memchr::memchr;
 use sqlx_core::bytes::{Buf, Bytes};
+use sqlx_core::net::ResourceReservation;
+use std::sync::Arc;
 
 use crate::error::Error;
 use crate::io::ProtocolDecode;
@@ -76,7 +78,10 @@ impl BackendMessage for Authentication {
                 Authentication::Md5Password(AuthenticationMd5Password { salt })
             }
 
-            10 => Authentication::Sasl(AuthenticationSasl(buf)),
+            10 => Authentication::Sasl(AuthenticationSasl {
+                bytes: buf,
+                _allocation: None,
+            }),
             11 => Authentication::SaslContinue(AuthenticationSaslContinue::decode(buf)?),
             12 => Authentication::SaslFinal(AuthenticationSaslFinal::decode(buf)?),
 
@@ -84,6 +89,47 @@ impl BackendMessage for Authentication {
                 return Err(err_protocol!("unknown authentication method: {}", ty));
             }
         })
+    }
+
+    fn decode_body_charged(
+        buf: Bytes,
+        allocation: Option<Arc<ResourceReservation>>,
+    ) -> Result<Self, Error> {
+        if buf.len() < 4 {
+            return Err(err_protocol!("truncated PostgreSQL authentication message"));
+        }
+        let ty = u32::from_be_bytes([buf[0], buf[1], buf[2], buf[3]]);
+        let decoded_allocation = if let Some(message_allocation) = allocation.as_ref() {
+            let multiplier = match ty {
+                11 => 3usize,
+                12 => 1usize,
+                _ => 0usize,
+            };
+            if multiplier == 0 {
+                None
+            } else {
+                let bytes = buf
+                    .len()
+                    .checked_sub(4)
+                    .and_then(|len| len.checked_mul(multiplier))
+                    .ok_or_else(|| err_protocol!("WP3 SCRAM allocation overflow"))?;
+                Some(
+                    ResourceReservation::try_new_shared(message_allocation.budget(), bytes)
+                        .map_err(|_| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?,
+                )
+            }
+        } else {
+            None
+        };
+
+        let mut auth = Self::decode_body(buf)?;
+        match &mut auth {
+            Authentication::Sasl(data) => data._allocation = allocation,
+            Authentication::SaslContinue(data) => data._allocation = decoded_allocation,
+            Authentication::SaslFinal(data) => data._allocation = decoded_allocation,
+            _ => {}
+        }
+        Ok(auth)
     }
 }
 
@@ -95,12 +141,15 @@ pub struct AuthenticationMd5Password {
 
 /// Body of [Authentication::Sasl].
 #[derive(Debug)]
-pub struct AuthenticationSasl(Bytes);
+pub struct AuthenticationSasl {
+    bytes: Bytes,
+    _allocation: Option<Arc<ResourceReservation>>,
+}
 
 impl AuthenticationSasl {
     #[inline]
     pub fn mechanisms(&self) -> SaslMechanisms<'_> {
-        SaslMechanisms(&self.0)
+        SaslMechanisms(&self.bytes)
     }
 }
 
@@ -129,6 +178,7 @@ pub struct AuthenticationSaslContinue {
     pub iterations: u32,
     pub nonce: String,
     pub message: String,
+    _allocation: Option<Arc<ResourceReservation>>,
 }
 
 impl ProtocolDecode<'_> for AuthenticationSaslContinue {
@@ -166,6 +216,7 @@ impl ProtocolDecode<'_> for AuthenticationSaslContinue {
             salt,
             nonce: from_utf8(&nonce).map_err(Error::protocol)?.to_owned(),
             message: from_utf8(&buf).map_err(Error::protocol)?.to_owned(),
+            _allocation: None,
         })
     }
 }
@@ -173,6 +224,7 @@ impl ProtocolDecode<'_> for AuthenticationSaslContinue {
 #[derive(Debug)]
 pub struct AuthenticationSaslFinal {
     pub verifier: Vec<u8>,
+    _allocation: Option<Arc<ResourceReservation>>,
 }
 
 impl ProtocolDecode<'_> for AuthenticationSaslFinal {
@@ -188,6 +240,9 @@ impl ProtocolDecode<'_> for AuthenticationSaslFinal {
             }
         }
 
-        Ok(Self { verifier })
+        Ok(Self {
+            verifier,
+            _allocation: None,
+        })
     }
 }
