@@ -7,7 +7,7 @@ This directory contains routed procedures and retained coordination evidence for
 This list is an index, not a mandatory reading bundle. Start with root and nearest instructions, then load only entries whose operation or domain applies.
 
 - `AGENTS.md` — rules for this directory and task records.
-- `REPOSITORY_MAP.md` — current/planned repository layout and source-of-truth boundaries.
+- `REPOSITORY_MAP.md` — current physical repository layout and source-of-truth boundaries.
 - `CONTEXT_ROUTING.md` — which documents to load for each task class.
 - `CONTEXT_HANDOFF.md` — durable task checkpoints and resume procedure.
 - `BUILD_TEST_MATRIX.md` — validation selection.
@@ -27,10 +27,10 @@ This list is an index, not a mandatory reading bundle. Start with root and neare
 
 - `prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — autonomous coordinator prompt for continuing the staged global architecture decision programme from the canonical foundation checkpoint and global decision register.
 - `prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` — independent read-only programme and architecture audit prompt for exact-SHA, phase-aware review of Game direction, active workstreams, evidence, legacy contamination and the next evidence-producing milestone; short invocation: `Oteryn: audyt`.
-- `prompts/OTV2_WP3_WRITER.md` — single mutating WP3 SQLx-driver-accounting writer; short invocation: `Oteryn: wp3 writer`.
-- `prompts/OTV2_WP3_TLS_AUDITOR.md` — strict read-only TLS allocation/custody auditor for the exact live WP3 candidate; short invocation: `Oteryn: wp3 tls audit`.
-- `prompts/OTV2_WP3_QUALIFICATION_AUDITOR.md` — strict read-only WP3 qualification/integration-prerequisite auditor; short invocation: `Oteryn: wp3 qualification audit`.
-- `programs/OTERYN_WP3_MULTIAGENT_LAUNCH_RUNBOOK_20260910.md` — one-writer + two-read-only launch order, packet relay and recommended model/effort guidance for the current WP3 lineage.
+- `prompts/OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md` — current upstream-first WP3-v2 programme routing; short invocation: `Oteryn: astra wp3-v2 programme coordinator`.
+- `prompts/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md` — current allocated upstream-first WP3-v2 implementation profile; short invocation: `Oteryn: astra wp3-v2 implementation lead`.
+- `prompts/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md` — current read-only exact-source/evidence support; short invocation: `Oteryn: sol wp3-v2 evidence auditor`.
+- `programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md` — current WP3-v2 launch order and gates.
 
 Reusable prompts are task deltas, not project state. Apply current authority, task checkpoints, ADRs/contracts and live PR/CI state when they are material to the requested operation.
 
@@ -46,4 +46,4 @@ Do not use chat history as project state. A replacement agent must be able to co
 
 ## Bootstrap note
 
-The repository is greenfield. Planned code paths in `REPOSITORY_MAP.md` are not proof that those paths already exist. Agents must inspect the exact tree before selecting commands or claiming implementation state.
+The repository contains active implementation. Plans remain non-authoritative for physical paths; inspect the exact tree and live lifecycle state before selecting commands or claiming implementation status.
