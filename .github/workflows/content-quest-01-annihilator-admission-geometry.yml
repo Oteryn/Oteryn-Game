@@ -1,0 +1,173 @@
+name: CONTENT-QUEST-01 Annihilator admission geometry witness
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/content-quest-01-annihilator-admission-geometry.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  admission-geometry:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Game head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Checkout exact existing OTBM parser
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          persist-credentials: false
+          sparse-checkout: |
+            tools/otbm_atlas
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout exact Crystal map source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zimbadev/crystalserver
+          ref: ac447fef0935e6df52dc6b6376ae4c1534ecd73f
+          path: crystal
+          persist-credentials: false
+          sparse-checkout: |
+            data-global/world/world.otbm
+          sparse-checkout-cone-mode: false
+
+      - name: Verify source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy rev-parse HEAD)" = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
+          test "$(git -C crystal rev-parse HEAD)" = "ac447fef0935e6df52dc6b6376ae4c1534ecd73f"
+          test "$(git -C crystal hash-object data-global/world/world.otbm)" = "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b"
+          test "$(stat -c %s crystal/data-global/world/world.otbm)" = "52267895"
+          test "$(sha256sum crystal/data-global/world/world.otbm | cut -d' ' -f1)" = "09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb"
+
+      - name: Inspect exact admission staging and room footprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -S - <<'PY'
+          import collections
+          import json
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path("legacy").resolve()))
+          from tools.otbm_atlas.semantic import Tile, iter_map_records, walk_items
+
+          map_path = Path("crystal/data-global/world/world.otbm")
+          targets = {
+              (33225, 31671, 13): "staging_slot_1",
+              (33224, 31671, 13): "staging_slot_2",
+              (33223, 31671, 13): "staging_slot_3",
+              (33222, 31671, 13): "staging_slot_4",
+              (33222, 31659, 13): "destination_slot_1",
+              (33221, 31659, 13): "destination_slot_2",
+              (33220, 31659, 13): "destination_slot_3",
+              (33219, 31659, 13): "destination_slot_4",
+              (33226, 31671, 13): "lever",
+          }
+          room_positions = {
+              (x, y, 13)
+              for x in range(33217, 33226)
+              for y in range(31655, 31664)
+          }
+
+          target_records = {}
+          room_records = {}
+          for record in iter_map_records(map_path, strict=True):
+              if not isinstance(record, Tile):
+                  continue
+              key = (record.position.x, record.position.y, record.position.z)
+              if key not in targets and key not in room_positions:
+                  continue
+              top = []
+              if record.ground is not None:
+                  top.append(record.ground)
+              top.extend(record.items)
+              items = list(walk_items(tuple(top)))
+              value = {
+                  "position": {"x": key[0], "y": key[1], "z": key[2]},
+                  "ground_server_id": record.ground.server_id if record.ground else None,
+                  "flags": record.flags,
+                  "house_id": record.house_id,
+                  "top_level_items": [
+                      {
+                          "server_id": item.server_id,
+                          "action_id": item.action_id,
+                          "unique_id": item.unique_id,
+                          "subtype": item.subtype,
+                      }
+                      for item in record.items
+                  ],
+                  "all_server_ids": [item.server_id for item in items],
+              }
+              if key in targets:
+                  target_records[key] = {"role": targets[key], **value}
+              if key in room_positions:
+                  room_records[key] = value
+
+          problems = []
+          for key, role in targets.items():
+              if key not in target_records:
+                  problems.append(f"missing target tile {role} {key}")
+          if (33226, 31671, 13) in target_records:
+              ids = set(target_records[(33226, 31671, 13)]["all_server_ids"])
+              if 2772 not in ids:
+                  problems.append(f"lever item 2772 absent at staging lever coordinate; got {sorted(ids)}")
+
+          missing_room = sorted(room_positions - set(room_records))
+          ground_counts = collections.Counter(
+              str(v["ground_server_id"]) for v in room_records.values()
+          )
+          flag_counts = collections.Counter(str(v["flags"]) for v in room_records.values())
+          non_ground = [
+              {
+                  "position": v["position"],
+                  "items": v["top_level_items"],
+              }
+              for _, v in sorted(room_records.items())
+              if v["top_level_items"]
+          ]
+
+          result = {
+              "schema": "CONTENT_QUEST_01_ANNIHILATOR_ADMISSION_GEOMETRY_WITNESS/v1",
+              "source": {
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "ac447fef0935e6df52dc6b6376ae4c1534ecd73f",
+                  "world_otbm_git_blob": "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b",
+              },
+              "parser": {
+                  "repository": "blakinio/Otheryn",
+                  "revision": "e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+              },
+              "targets": [target_records[k] for k in sorted(target_records)],
+              "room_query_box": {
+                  "center": {"x": 33221, "y": 31659, "z": 13},
+                  "range_x": 4,
+                  "range_y": 4,
+                  "candidate_position_count": len(room_positions),
+                  "tile_record_count": len(room_records),
+                  "missing_tile_positions": [
+                      {"x": x, "y": y, "z": z} for x, y, z in missing_room
+                  ],
+                  "ground_server_id_counts": dict(sorted(ground_counts.items())),
+                  "flag_counts": dict(sorted(flag_counts.items())),
+                  "non_ground_item_tiles": non_ground,
+              },
+              "problems": problems,
+          }
+          print("CONTENT_QUEST_01_ADMISSION_GEOMETRY_JSON_BEGIN")
+          print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+          print("CONTENT_QUEST_01_ADMISSION_GEOMETRY_JSON_END")
+          if problems:
+              raise SystemExit("\n".join(problems))
+          PY
