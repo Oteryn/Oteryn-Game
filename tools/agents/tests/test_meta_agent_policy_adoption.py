@@ -15,7 +15,7 @@ spec.loader.exec_module(adoption)
 
 SHA = "a" * 40
 MAIN = "b" * 40
-PUBLICATION_INTEGRITY_AUTHORITY = "d972e0f2dd37de265864fedf86615157d680275d"
+PUBLICATION_INTEGRITY_AUTHORITY = "e102056cc4b9219bc482ceb05afebeb4d62b7bc8"
 
 
 class CentralStatementView:
@@ -78,9 +78,12 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertEqual(binding["authority_commit"], PUBLICATION_INTEGRITY_AUTHORITY)
         text = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
         for value in (
-            "fail closed and return custody",
+            "API-native publication may select a **new candidate**",
+            "one server-side mutation atomically fences the exact expected task-branch head",
+            "candidate-specific evidence from a superseded head is not reusable",
+            "ancestry-only `force=false` ref movement",
             "raw Git Data reconstruction",
-            "per-file API reconstruction",
+            "sequential per-file API reconstruction",
         ):
             self.assertIn(value, text)
 
@@ -88,8 +91,9 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         for value in (
             "BLOCKED_CAPABILITY_UNAVAILABLE",
-            "Missing repository workspace, Git CLI, compiler/test-runner/validator or push capability is not a Remote Desktop exception",
-            "independently authorized API-native edit",
+            "Missing repository workspace, Git CLI or push capability is not a Remote Desktop exception",
+            "API-native **new-candidate** route",
+            "single server-side mutation atomically fences the exact expected task-branch head",
         ):
             self.assertIn(value, root_text)
 
@@ -99,12 +103,12 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         for value in (
             "## Execution-capability preflight",
             "Before dispatching any mutating worker",
-            "isolated checkout or worktree",
-            "normal non-force push path",
+            "isolated checkout/worktree",
+            "atomic expected-head API new-candidate publication",
             "BLOCKED_CAPABILITY_UNAVAILABLE",
             "Do not ask the owner for Remote Desktop merely to obtain",
             "execution_route: <isolated_git | api_native | read_only>",
-            "publication_route: <normal_non_force_git | api_native | none>",
+            "publication_route: <guarded_git | atomic_expected_head_api | none>",
             "required-validation",
             "For every concrete entry in `required_validation`",
             "capability: <PROVEN | UNKNOWN>",
@@ -116,7 +120,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "1.8")
+        self.assertEqual(entry["version"], "1.9")
 
     def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
         policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")
