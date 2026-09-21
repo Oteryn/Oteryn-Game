@@ -630,6 +630,39 @@ fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
 }
 
 #[test]
+fn wp3_root_readiness_requires_compatible_schema() -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use durability::DurabilityRoot;
+
+            let database = postgres::IsolatedPostgres::create("wp3_root_schema_gate").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let root = DurabilityRoot::connect_test_runtime(&url)?;
+
+                assert!(matches!(
+                    root.maintain_ready_once().await,
+                    Err(DurabilityError::SchemaIncompatible(
+                        SchemaCompatibility::MissingMigrationLedger
+                    ))
+                ));
+                assert!(!root.is_ready());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn wp3_return_finality_deadline_hard_retires_exact_holder() -> Result<(), Box<dyn std::error::Error>>
 {
     if !postgres_e2e_is_configured()? {

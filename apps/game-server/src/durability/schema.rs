@@ -1,5 +1,6 @@
 use crate::durability::{DurabilityError, db};
-use sqlx::{PgPool, Row};
+use sqlx::postgres::PgConnection;
+use sqlx::{Executor, PgPool, Postgres, Row};
 
 pub(crate) static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 
@@ -59,6 +60,19 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
 }
 
 async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> {
+    inspect_executor(pool).await
+}
+
+pub(crate) async fn inspect_connection(
+    connection: &mut PgConnection,
+) -> Result<SchemaCompatibility, DurabilityError> {
+    inspect_executor(connection).await
+}
+
+async fn inspect_executor<'e, E>(executor: E) -> Result<SchemaCompatibility, DurabilityError>
+where
+    E: Executor<'e, Database = Postgres>,
+{
     let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
     let expected_versions: Vec<i64> = expected.iter().map(|migration| migration.version).collect();
     let expected_checksum_lengths: Vec<i64> = expected
@@ -78,7 +92,7 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
         .bind(&expected_versions)
         .bind(&expected_checksum_lengths)
         .bind(row_limit)
-        .fetch_all(pool)
+        .fetch_all(executor)
         .await
     {
         Ok(rows) => rows,

@@ -1,4 +1,4 @@
-use crate::durability::DurabilityError;
+use crate::durability::{DurabilityError, SchemaCompatibility, schema};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
@@ -951,6 +951,24 @@ impl DurabilityRoot {
             Ok(holder) => holder,
             Err(error) => return Err(DurabilityError::from(error)),
         };
+
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let compatibility =
+            match tokio::time::timeout(remaining, schema::inspect_connection(&mut holder)).await {
+                Ok(Ok(compatibility)) => compatibility,
+                Ok(Err(error)) => {
+                    holder.close_on_drop();
+                    return Err(error);
+                }
+                Err(_) => {
+                    holder.close_on_drop();
+                    return Err(DurabilityError::RootUnavailable);
+                }
+            };
+        if compatibility != SchemaCompatibility::Compatible {
+            holder.close_on_drop();
+            return Err(DurabilityError::SchemaIncompatible(compatibility));
+        }
 
         match holder.return_to_pool_observed_until(deadline).await {
             PoolConnectionReturnDisposition::ReturnedToIdle => Ok(true),
