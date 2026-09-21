@@ -26,7 +26,7 @@ This advisor does not coordinate or mutate. It freshly resolves protected `main`
 Canonical implementation order and dependencies are defined by:
 
 - `../programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
-- `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` for the Terra + Sol execution profile;
+- `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` for the retained Work + Sol scheduler (path kept for compatibility);
 - `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/status guidance;
 - `../programs/OTERYN_DURABILITY_MULTIAGENT_LAUNCH_RUNBOOK.md` for the exact Durability one-writer + read-only analyst launch/resume procedure and packet/stale-head rules.
 
@@ -44,17 +44,13 @@ The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. 
 
 ### Single active control-plane rule
 
-`Oteryn: work coordinator` and `Oteryn: terra game coordinator` may both remain `reusable`, but they are **mutually exclusive for mutating control-plane work inside one programme lifecycle**. Reusability permits resolution from live `main`; it does not activate a second scheduler/integrator.
+`Oteryn: work coordinator` / `OTV2_WORK_DELIVERY_COORDINATOR` is the single reusable mutating Game control-plane profile. Resolve its live Issue/task/allocation before mutation. Alias invocation, chat instruction, model selection or tool availability never creates another control plane.
 
-The active profile is resolved from the current coordinator Issue/task. An explicit `active_control_plane_profile` wins. For a legacy task without that field, the profile already named as canonical coordinator prompt/owner remains active and every other reusable control-plane profile is read-only recovery. Switching profiles requires a durable docs/governance transition merged to protected `main`; alias invocation, chat instruction, model selection or tool availability is not a transfer.
-
-If exactly one active profile cannot be proven, all control-plane mutation fails closed as `POLICY_CONFLICT`. The inactive profile may inspect live state and prepare a recovery/transfer packet, but it may not allocate workers, grant shared leases, integrate/merge, mutate coordinator status or close/archive the programme.
+The former `Oteryn: terra game coordinator` profile is retired and retained only as historical provenance. Do not dispatch it for recovery, scheduling or integration; use Work in read-only reconciliation mode when mutation is not currently authorized.
 
 Historical coordinator Issue numbers in these prompts are provenance only; always resolve the current coordinator lifecycle from live GitHub before acting.
 
-### Deterministic control plane + specialist leads
-
-- `OTV2_TERRA_GAME_CONTROL_PLANE.md` — deterministic Game control plane with **zero technical or architecture discretion**. **Short invocation: `Oteryn: terra game coordinator`.**
+### Control plane + specialist leads
 - `OTV2_SOL_DURABILITY_LEAD.md` — deep Durability lane reasoning/implementation and the **single mutating writer** for its canonical Durability branch/PR. **`Oteryn: sol durability lead`.**
 - `OTV2_SOL_DURABILITY_AUTHORITY_ANALYST.md` — strict read-only Foundation/current-authority analysis for the live Durability candidate. **`Oteryn: sol durability authority analyst`.**
 - `OTV2_SOL_DURABILITY_CONTINUITY_ANALYST.md` — strict read-only continuity/protection and replacement-transaction analysis for the live Durability candidate. **`Oteryn: sol durability continuity analyst`.**
@@ -71,9 +67,7 @@ Historical coordinator Issue numbers in these prompts are provenance only; alway
 
 The three Durability analyst aliases are acceleration roles, not independent lanes. They may run concurrently with the active Durability Lead because they perform no tracked-file or GitHub mutation and consume no writer slot. They return explicit exact-head packets; the Durability Lead must refresh GitHub, reject stale packets, verify findings and synthesize all implementation itself. If they run in separate ChatGPT chats, cross-chat memory is not authority: only an explicit returned packet may be consumed.
 
-The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. When a programme has durably selected Terra as its unique active control plane, Terra may apply only deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
-
-Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
+The retained scheduler path now describes Work + Sol execution. Work routes technical findings to the owning Sol lead, material cross-lane decisions to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions to `OWNER_DECISION_REQUIRED`. Alias existence grants no write authority; every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
 
 ### Native UI programme
