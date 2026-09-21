@@ -81,10 +81,7 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for BoundedHandshakeIo<T> {
     }
 }
 fn limit_error() -> io::Error {
-    io::Error::new(
-        io::ErrorKind::Other,
-        "native source handshake ingress exceeded",
-    )
+    io::Error::other("native source handshake ingress exceeded")
 }
 pub(crate) async fn exchange(
     desc: &ProducerDescriptor,

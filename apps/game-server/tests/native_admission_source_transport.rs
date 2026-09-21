@@ -335,10 +335,9 @@ fn transient_capacity_is_two_active_and_eight_queued() -> Result<(), Box<dyn std
 fn descriptor(port: u16) -> Result<ProducerDescriptor, Box<dyn std::error::Error>> {
     Ok(ProducerDescriptor::new(
         "platform-test".into(),
-        "127.0.0.1".into(),
+        ("127.0.0.1".into(), port),
         "source.test".into(),
         "source.test".into(),
-        port,
         vec![CertificateDer::from(CA.to_vec())],
         vec![CertificateDer::from(CLIENT.to_vec())],
         PrivateKeyDer::try_from(CLIENT_KEY.to_vec())?,
@@ -508,10 +507,9 @@ fn descriptor_and_deadline_bounds_are_fixed() -> Result<(), Box<dyn std::error::
     assert!(
         ProducerDescriptor::new(
             "platform-test".into(),
-            "127.0.0.1".into(),
+            ("127.0.0.1".into(), 1),
             "source.test".into(),
             "other.test".into(),
-            1,
             vec![CertificateDer::from(CA.to_vec())],
             vec![CertificateDer::from(CLIENT.to_vec())],
             key()?
@@ -521,10 +519,9 @@ fn descriptor_and_deadline_bounds_are_fixed() -> Result<(), Box<dyn std::error::
     assert!(
         ProducerDescriptor::new(
             "platform-test".into(),
-            "127.0.0.1".into(),
+            ("127.0.0.1".into(), 1),
             "source.test".into(),
             "source.test".into(),
-            1,
             vec![CertificateDer::from(vec![0; 4097])],
             vec![CertificateDer::from(CLIENT.to_vec())],
             key()?
@@ -534,10 +531,9 @@ fn descriptor_and_deadline_bounds_are_fixed() -> Result<(), Box<dyn std::error::
     assert!(
         ProducerDescriptor::new(
             "platform-test".into(),
-            "127.0.0.1".into(),
+            ("127.0.0.1".into(), 1),
             "source.test".into(),
             "source.test".into(),
-            1,
             (0..17).map(|_| CertificateDer::from(CA.to_vec())).collect(),
             vec![CertificateDer::from(CLIENT.to_vec())],
             key()?
@@ -547,10 +543,9 @@ fn descriptor_and_deadline_bounds_are_fixed() -> Result<(), Box<dyn std::error::
     assert!(
         ProducerDescriptor::new(
             "platform-test".into(),
-            "127.0.0.1".into(),
+            ("127.0.0.1".into(), 1),
             "source.test".into(),
             "source.test".into(),
-            1,
             vec![CertificateDer::from(CA.to_vec())],
             vec![CertificateDer::from(vec![0; 16])],
             key()?
@@ -626,10 +621,9 @@ fn authenticated_peer_boundaries_reject_wrong_name_root_client_and_fifth_certifi
             let key = if case == 3 { SERVER_KEY } else { CLIENT_KEY };
             let desc = ProducerDescriptor::new(
                 "platform-test".into(),
-                "127.0.0.1".into(),
+                ("127.0.0.1".into(), port),
                 name.into(),
                 name.into(),
-                port,
                 vec![CertificateDer::from(roots.to_vec())],
                 vec![CertificateDer::from(client.to_vec())],
                 PrivateKeyDer::try_from(key.to_vec())?,
@@ -734,10 +728,9 @@ fn configured_roots_are_four_not_five() -> Result<(), Box<dyn std::error::Error>
     for count in [4, 5] {
         let result = ProducerDescriptor::new(
             "platform-test".into(),
-            "127.0.0.1".into(),
+            ("127.0.0.1".into(), 1),
             "source.test".into(),
             "source.test".into(),
-            1,
             (0..count)
                 .map(|_| CertificateDer::from(CA.to_vec()))
                 .collect(),
@@ -784,10 +777,9 @@ fn descriptor_connect_address_is_fixed_ip_without_dns() -> Result<(), Box<dyn st
     ] {
         let result = ProducerDescriptor::new(
             "platform-test".into(),
-            address.into(),
+            (address.into(), 443),
             "source.test".into(),
             "source.test".into(),
-            443,
             vec![CertificateDer::from(CA.to_vec())],
             vec![CertificateDer::from(CLIENT.to_vec())],
             PrivateKeyDer::try_from(CLIENT_KEY.to_vec())?,

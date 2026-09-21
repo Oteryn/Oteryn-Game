@@ -45,14 +45,14 @@ pub struct ProducerDescriptor {
 impl ProducerDescriptor {
     pub fn new(
         source_authority: String,
-        connect_host: String,
+        connect_endpoint: (String, u16),
         server_name: String,
         host_header: String,
-        port: u16,
         roots: Vec<CertificateDer<'static>>,
         client_chain: Vec<CertificateDer<'static>>,
         client_key: PrivateKeyDer<'static>,
     ) -> Result<Self, SourceError> {
+        let (connect_host, port) = connect_endpoint;
         if source_authority.is_empty()
             || source_authority.len() > 128
             || !source_authority
