@@ -1,5 +1,13 @@
 # Oteryn Game — WP3-v2 superseding architecture decision
 
+> **Accounting supersession:** Owner decision #162 comment `5759734485`, recorded
+> in
+> [`OTERYN_GAME_WP3_TLS_EXTERNAL_SUBRESOURCE_ACCOUNTING_AMENDMENT_2026-09-21.md`](OTERYN_GAME_WP3_TLS_EXTERNAL_SUBRESOURCE_ACCOUNTING_AMENDMENT_2026-09-21.md),
+> supersedes only this decision's dependency-internal byte-perfect TLS/socket
+> accounting clauses. Read the 12 MiB equation as applying to the controlled
+> graph defined by that amendment; all other topology, lifetime, security,
+> finality, hostile-input, and deadline requirements remain in force.
+
 - Decision ID: `WP3-V2-ROOT-OWNED-BOUNDED-PGPOOL-V1`
 - Revision: **5 — P1-A finite dedicated Tokio topology and complete root-runtime backing closure**
 - Date: 2026-09-12

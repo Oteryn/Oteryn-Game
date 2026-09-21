@@ -81,7 +81,7 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
     digest = module.AUDITED_INPUT_SHA256
     docs_digest = module.AUDITED_DOC_INPUT_SHA256
 
-    def classify(paths):
+    def classify(paths, *, docs_consumers_verified=None):
         records = [dict(filename=path, status="modified") for path in paths]
         return module.classify(
             records,
@@ -90,6 +90,7 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
             digest,
             docs_digest=docs_digest,
             candidate_modes_verified=True,
+            docs_consumers_verified=docs_consumers_verified,
         )
 
     server = f"{module.REQUIRED[module.SERVER]}/src/lib.rs"
@@ -137,6 +138,43 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
         and result["reason"] == "explicit-build-or-dependency-input"
     ):
         raise ValueError(f"build-input fail-closed contract changed: {result}")
+
+    result = classify(["AGENTS.md"], docs_consumers_verified=True)
+    if result != {
+        "rust": False,
+        "windows": False,
+        "surface": "agent-governance",
+        "reason": "agent-governance-only",
+    }:
+        raise ValueError(f"agent-governance routing contract changed: {result}")
+
+    result = classify(["AGENTS.md"], docs_consumers_verified=False)
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "unreviewed-document-consumer-inputs"
+    ):
+        raise ValueError(f"agent-governance consumer-proof contract changed: {result}")
+
+    result = classify([server, "AGENTS.md"], docs_consumers_verified=True)
+    if not (result["rust"] is True and result["windows"] is False and result["surface"] == "server"):
+        raise ValueError(f"server + governance routing contract changed: {result}")
+
+    result = classify([server, "AGENTS.md"], docs_consumers_verified=False)
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "unreviewed-document-consumer-inputs"
+    ):
+        raise ValueError(f"server + governance consumer-proof contract changed: {result}")
+
+    result = classify(["docs/agents/evidence/runtime-input.json"])
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "unmodelled-input"
+    ):
+        raise ValueError(f"runtime-consumed agent-evidence fail-closed contract changed: {result}")
 
 
 def write_summary(health: str, declared: str, actual: str, changed: list[str]) -> None:

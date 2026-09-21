@@ -54,7 +54,7 @@
     {
       "prompt_id": "OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Global architecture decision coordination and audit within approved repository authority.",
@@ -87,7 +87,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md",
-      "version": "1.3",
+      "version": "1.5",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Independent high-effort forensic audit of OTV2_WORK_DELIVERY_COORDINATOR or a uniquely identified requested Game delivery target, with bounded non-dispositive GitHub audit-evidence COMMENT write authority only; no tracked-file, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, architecture, production or cross-repository write authority.",
@@ -98,7 +98,7 @@
     {
       "prompt_id": "OTV2_OWNER_EXECUTION_STATUS_ADVISOR",
       "path": "docs/agents/prompts/OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "owner-execution-guidance",
       "scope": "Read-only live-GitHub owner execution/status guidance for Work-vs-chat launch, model/effort selection and DONE/ACTIVE/BLOCKED/READY_NEXT/DO_NOT_LAUNCH reconciliation; no coordinator, implementation, review, audit, merge, production or external-repository authority.",
@@ -296,7 +296,7 @@
     {
       "prompt_id": "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT",
       "path": "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Read-only independent programme architecture audit.",
@@ -373,13 +373,13 @@
     {
       "prompt_id": "OTV2_TERRA_GAME_CONTROL_PLANE",
       "path": "docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md",
-      "version": "1.1",
-      "status": "reusable",
-      "owner": "implementation-programme-control-plane",
-      "scope": "Deterministic Game control plane; zero technical/architecture discretion and no runtime implementation authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Additive Terra-specific profile; it does not supersede OTV2_WORK_DELIVERY_COORDINATOR or OTV2_IMPLEMENTATION_COORDINATOR unless a later explicit lifecycle change says so."
+      "version": "1.2",
+      "status": "retired",
+      "owner": "historical-implementation-programme-control-plane",
+      "scope": "Historical deterministic Terra control-plane profile retained for provenance; operational Game control-plane dispatch is Work-only.",
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "The live #162 lifecycle durably selects OTV2_WORK_DELIVERY_COORDINATOR and Terra has no unique remaining authority; do not dispatch Terra for current Game work."
     },
     {
       "prompt_id": "OTV2_SOL_SUPERVISING_ARCHITECT",
@@ -571,7 +571,7 @@
     {
       "prompt_id": "OTV2_REFERENCE_INVESTIGATOR",
       "path": "docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "reference-first-read-only-investigation",
       "scope": "Parameterized read-only Global Reference investigation across world, combat, character, NPC, movement, durability, evidence and QA lanes; may use public primary/structured/community/OTS sources according to the #486 source registry but grants no tracked-file, control-plane, implementation, merge, production or cross-repository write authority.",
@@ -747,7 +747,7 @@
     {
       "prompt_id": "OTV2_DEFECT_DISCOVERY_SUPERVISOR",
       "path": "docs/agents/prompts/OTV2_DEFECT_DISCOVERY_SUPERVISOR.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "defect-discovery-programme",
       "scope": "Read-only technical supervision and exact next-allocation proposal for OTERYN_DEFECT_DISCOVERY_V1; no second control plane or implementation authority.",
@@ -868,7 +868,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Read-only independent end-to-end Content/World architecture, data-model, import, project-storage, compiler/bundle/loader, runtime/client and evidence audit; proposes bounded corrective packets but has no implementation, allocation, control-plane, merge, production or cross-repository authority.",

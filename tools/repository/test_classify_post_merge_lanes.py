@@ -93,7 +93,7 @@ def main():
                     assert classify({"after": large_head, "commits": []})["windows"] is False
                 git("checkout", "-q", after)
                 # Independent Git history, not event commit arrays, determines every path.
-                for path in ("apps/client/src/lib.rs", "crates/simulation-determinism/src/lib.rs", "crates/foundation/src/lib.rs", "Cargo.lock", "apps/game-server/Cargo.toml", ".github/workflows/other.yml", "unknown.bin", "tools/repository/other.py"):
+                for path in ("apps/client/src/lib.rs", "crates/simulation-determinism/src/lib.rs", "crates/foundation/src/lib.rs", "Cargo.lock", "apps/game-server/Cargo.toml", ".github/workflows/other.yml", "unknown.bin", "tools/repository/other.py", "docs/agents/evidence/runtime-input.json"):
                     git("checkout", "-q", after)
                     target = root / path
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -109,6 +109,50 @@ def main():
                 head = git("rev-parse", "HEAD")
                 with patch.dict(os.environ, GITHUB_SHA=head):
                     assert classify({"after": head})["windows"] is True
+
+                git("checkout", "-q", after)
+                git("mv", "apps/game-server/src/main.rs", "AGENTS.md")
+                git("commit", "-qm", "rename runtime input to governance")
+                governance_rename_head = git("rev-parse", "HEAD")
+                with patch.dict(os.environ, GITHUB_SHA=governance_rename_head):
+                    result = classify({"before": after, "after": governance_rename_head})
+                    assert result["rust"] is True and result["windows"] is True, result
+                    assert result["reason"] == "cross-surface-rename", result
+
+                # Agent governance changes are validated by governance/policy gates and
+                # must not allocate product runtime builds on protected main.
+                for path in ("AGENTS.md", "tools/agents/probe.py", "docs/agents/PROJECT_LANES.json"):
+                    git("checkout", "-q", after)
+                    target = root / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text("governance-only change\n")
+                    git("add", ".")
+                    git("commit", "-qm", "agent governance")
+                    governance_head = git("rev-parse", "HEAD")
+                    with patch.dict(os.environ, GITHUB_SHA=governance_head):
+                        result = classify({"before": after, "after": governance_head, "commits": []})
+                        assert result["rust"] is False and result["windows"] is False, (path, result)
+                        assert result["surface"] == "agent-governance", (path, result)
+
+                # Once runtime source drift can introduce a new filesystem/document
+                # consumer, governance omission must fail closed until re-audited.
+                git("checkout", "-q", after)
+                consumer = root / "apps/client/src/governance_consumer.rs"
+                consumer.parent.mkdir(parents=True, exist_ok=True)
+                consumer.write_text('pub fn read() { let _ = std::fs::read_to_string("AGENTS.md"); }\n')
+                git("add", ".")
+                git("commit", "-qm", "introduce governance consumer")
+                consumer_head = git("rev-parse", "HEAD")
+                governance = root / "AGENTS.md"
+                governance.write_text("governance after consumer drift\n")
+                git("add", ".")
+                git("commit", "-qm", "governance after consumer drift")
+                governance_after_consumer = git("rev-parse", "HEAD")
+                with patch.dict(os.environ, GITHUB_SHA=governance_after_consumer):
+                    result = classify({"before": consumer_head, "after": governance_after_consumer})
+                    assert result["rust"] is True and result["windows"] is True, result
+                    assert result["reason"] == "unreviewed-document-consumer-inputs", result
+
                 git("checkout", "-q", after)
                 doc = root / "README.md"
                 doc.write_text("original documentation\n")
@@ -155,7 +199,7 @@ def main():
                         mixed = git("rev-parse", "HEAD")
                         with patch.dict(os.environ, GITHUB_SHA=mixed):
                             result = classify({"before": doc_before, "after": mixed})
-                            if path.startswith("apps/game-server/"):
+                            if path == "apps/game-server/src/main.rs":
                                 assert result["rust"] is True and result["windows"] is False, result
                             else:
                                 assert result["rust"] is True and result["windows"] is True, result

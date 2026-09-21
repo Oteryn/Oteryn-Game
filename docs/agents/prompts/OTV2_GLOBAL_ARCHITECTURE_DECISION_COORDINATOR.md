@@ -46,10 +46,10 @@ Before mutation or worker integration:
 2. read `docs/agents/AGENTS.md`;
 3. read `docs/agents/MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`;
 4. read `docs/agents/programs/OTERYN_V2_ARCHITECTURE_PARALLEL_WORK_ALLOCATION.md`;
-5. read `docs/agents/PROMPTING_STANDARD.md`, `ARCHITECTURE_DECISION_DISCIPLINE.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `ANTI_STALL_AND_EXECUTION_BUDGET.md` and applicable review policies;
+5. read `ARCHITECTURE_DECISION_DISCIPLINE.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md` and only operation-specific governance/review policy; load prompting/evaluation standards only when prompt/governance is itself being changed or audited;
 6. read `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`;
 7. read the current successor handoff and `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`;
-8. inspect live `main`, open PRs, worker issues/tasks/branches, reviews, CI and owned-path overlap;
+8. inspect live `main`, the exact allocated worker set under the current architecture task, and only PRs/issues/branches/reviews/CI needed to prove those workers plus material path overlap;
 9. read accepted ADR/contracts relevant to the worker PR under audit;
 10. classify drift, overlap and dependency changes before writing.
 

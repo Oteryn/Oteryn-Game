@@ -8,7 +8,7 @@ Oteryn: owner execution guide
 
 ```yaml
 prompt_id: OTV2_OWNER_EXECUTION_STATUS_ADVISOR
-prompt_version: "1.0"
+prompt_version: "1.1"
 prompt_mode: OWNER_EXECUTION_STATUS_ADVISOR
 working_mode: READ_ONLY_LIVE_GITHUB_EXECUTION_GUIDANCE
 repository: Oteryn/Oteryn-Game
@@ -38,7 +38,7 @@ Before giving a launch recommendation:
 1. Read root and nearest applicable `AGENTS.md`, then resolve protected `main` from live GitHub and freeze the observed SHA.
 2. Read `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` and `docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`.
 3. Resolve the bound META AI review policy only when review routing is material.
-4. Resolve the selected alias from `docs/agents/prompts/README.md` and `docs/agents/PROMPT_LIFECYCLE.json`.
+4. Resolve only the requested/selected alias and its matching lifecycle entry; do not load the full prompt registry merely to recommend one role.
 5. Resolve the live coordinator Issue/task and prove the uniquely active control-plane profile; do not infer it from execution configuration or alias invocation.
 6. Reconcile only affected active task packets and material dependencies with their live Issue, branch, PR, exact head, checks, reviews and unresolved review threads.
 7. Inspect only open or recently merged PRs needed to prove the requested dependency, corrective closeout or ownership decision.
@@ -72,7 +72,7 @@ Normally:
 - external AI review, when selected by bound META policy, is advisory and requested only by the owning candidate role;
 - do not use the owner as a manual message bus for review or auditor requests.
 
-Do not recommend simultaneous mutating Work and Terra control planes.
+Terra is retired. Recommend `Oteryn: work coordinator` as the only mutating Game control plane, and keep it read-only when live authority does not permit mutation.
 
 ## Review awareness
 
