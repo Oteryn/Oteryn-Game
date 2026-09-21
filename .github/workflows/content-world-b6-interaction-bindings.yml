@@ -102,16 +102,13 @@ jobs:
           test "$(sha256sum "$CATALOG" | awk '{print $1}')" = '35639e000c4c108665a091cfbdf699d549d995b37670bc08de575ab6cd380d85'
           test "$(sha256sum "$APPEARANCE" | awk '{print $1}')" = 'dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075'
 
-      - name: Compile B6 generator and existing read-only seams
+      - name: Compile B6 generator and focused self-test
         shell: bash
         run: |
           set -euo pipefail
           python -B -m py_compile \
             tools/reference-world-corridor-census/interaction_binding_catalog.py \
-            tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py \
-            tools/game-atlas-fullworld-source/producer.py \
-            tools/reference-world-corridor-census/census.py \
-            tools/game-atlas-thais-fixture/export.py
+            tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py
 
       - name: Run focused and existing regression self-tests
         shell: bash
