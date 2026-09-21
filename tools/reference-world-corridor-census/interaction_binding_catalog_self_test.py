@@ -319,7 +319,54 @@ def exercise_game_input_provenance() -> None:
             catalog.GAME_INPUT_BLOBS = original_blobs
 
 
+def exercise_parser_active_prefix_provenance() -> None:
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        active_prefix = root / "hostile-parser-pycache-prefix"
+        previous_prefix = sys.pycache_prefix
+        sys.pycache_prefix = str(active_prefix)
+        try:
+            for relative_path in catalog.PARSER_BLOBS:
+                parser_path = root / relative_path
+                parser_path.parent.mkdir(parents=True, exist_ok=True)
+                parser_path.write_text("VALUE = 'verified source'\n", encoding="utf-8")
+
+                marker = root / f"{parser_path.stem}-parser-hostile-executed"
+                hostile_source = root / f"{parser_path.stem}-parser-hostile.py"
+                hostile_body = (
+                    "from pathlib import Path\n"
+                    f"Path({str(marker)!r}).write_text('executed', encoding='utf-8')\n"
+                    "VALUE = 'hostile bytecode'\n"
+                )
+                if relative_path.endswith("/assets.py"):
+                    hostile_body += (
+                        "class ObjectAppearances:\n"
+                        "    hostile_parser_cache = True\n"
+                    )
+                hostile_source.write_text(hostile_body, encoding="utf-8")
+
+                active_cache = Path(importlib.util.cache_from_source(str(parser_path)))
+                active_cache.parent.mkdir(parents=True, exist_ok=True)
+                py_compile.compile(
+                    str(hostile_source),
+                    cfile=str(active_cache),
+                    doraise=True,
+                    invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
+                )
+
+                expect_error(
+                    "PARSER_ACTIVE_BYTECODE_CACHE",
+                    lambda: catalog._reject_parser_active_bytecode_caches(root),
+                )
+                assert not marker.exists()
+                active_cache.unlink()
+                hostile_source.unlink()
+        finally:
+            sys.pycache_prefix = previous_prefix
+
+
 def main() -> int:
+    exercise_parser_active_prefix_provenance()
     records = [
         observation("UNIQUE_ID", 10, 20, -7, 0, 100, 500),
         observation("ACTION_ID", 10, 20, -7, 1, 101, 600),

@@ -257,6 +257,21 @@ def verify_parser_pins(legacy_root: Path) -> None:
         actual = _git(legacy_root, "rev-parse", f"{PARSER_REVISION}:{path}")
         if actual != expected_blob:
             raise CatalogError(f"PARSER_BLOB_MISMATCH: {path}")
+    _reject_parser_active_bytecode_caches(legacy_root)
+
+
+def _reject_parser_active_bytecode_caches(legacy_root: Path) -> None:
+    """Reject configured-prefix caches that the protected parser import can read."""
+    for relative_path in PARSER_BLOBS:
+        source_path = legacy_root / relative_path
+        active_cache = Path(importlib.util.cache_from_source(str(source_path)))
+        try:
+            active_cache.lstat()
+        except FileNotFoundError:
+            continue
+        raise CatalogError(
+            f"PARSER_ACTIVE_BYTECODE_CACHE: {relative_path}: {active_cache}"
+        )
 
 
 def _verify_loaded_game_module(
