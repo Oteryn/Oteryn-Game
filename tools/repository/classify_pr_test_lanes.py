@@ -16,6 +16,9 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import sys
+import tomllib
+
+ROOT = Path(__file__).resolve().parents[2]
 
 AUDITED_INPUT_SHA256 = "6e6f7a9dafe5020cbfda968d49b97c47072c7ee471668d3d9e0cdc491a4af2f4"
 AUDITED_DOC_INPUT_SHA256 = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
@@ -79,6 +82,47 @@ def routing_health(result: dict) -> str:
 
 def valid_path(value) -> bool:
     return isinstance(value, str) and bool(value) and not any(c in value for c in "\x00\n\r\\") and not value.startswith("/") and ".." not in value.split("/") and str(PurePosixPath(value)) == value
+
+
+def external_local_dependency_roots() -> tuple[str, ...]:
+    """Return repository-local dependency trees that Cargo consumes outside workspace membership.
+
+    Root manifest path dependencies and [patch.*] path overrides are build inputs even when
+    `cargo metadata --no-deps` omits those packages from `workspace_members`. Hash their
+    complete tracked trees so any later vendor edit invalidates reduced-lane snapshots.
+    """
+    manifest = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))
+    roots: set[str] = set()
+
+    tables: list[object] = []
+    workspace = manifest.get("workspace", {})
+    if not isinstance(workspace, dict):
+        raise ValueError("invalid workspace manifest")
+    tables.append(workspace.get("dependencies", {}))
+
+    patches = manifest.get("patch", {})
+    if not isinstance(patches, dict):
+        raise ValueError("invalid patch manifest")
+    tables.extend(patches.values())
+
+    for table in tables:
+        if table is None:
+            continue
+        if not isinstance(table, dict):
+            raise ValueError("invalid local dependency table")
+        for spec in table.values():
+            if not isinstance(spec, dict) or "path" not in spec:
+                continue
+            raw = spec["path"]
+            if not isinstance(raw, str) or not raw:
+                raise ValueError("invalid local dependency path")
+            candidate = PurePosixPath(raw)
+            normalized = str(candidate)
+            if candidate.is_absolute() or normalized == "." or not valid_path(normalized):
+                raise ValueError("unsafe local dependency path")
+            roots.add(normalized)
+
+    return tuple(sorted(roots))
 
 
 def neutral(path: str) -> bool:
@@ -178,12 +222,14 @@ def graph(metadata: dict):
 def audited_input_path(metadata: dict, path: str, include_server: bool = False) -> bool:
     roots, _ = graph(metadata)
     prefixes = tuple(root + "/" for name, root in roots.items() if include_server or name != SERVER)
+    prefixes += tuple(root + "/" for root in external_local_dependency_roots())
     return path in BUILD_INPUTS or path.startswith(".cargo/") or path.startswith(prefixes)
 
 
 def input_digest(metadata: dict, include_server: bool = False) -> str:
     roots, _ = graph(metadata)
     prefixes = tuple(path + "/" for name, path in roots.items() if include_server or name != SERVER)
+    prefixes += tuple(root + "/" for root in external_local_dependency_roots())
     records = subprocess.check_output(["git", "ls-tree", "-r", "-z", "HEAD"]).split(b"\0")
     selected = []
     for record in records:
