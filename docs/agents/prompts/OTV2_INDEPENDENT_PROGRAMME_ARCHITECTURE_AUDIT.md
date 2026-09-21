@@ -2,7 +2,7 @@
 
 ```yaml
 prompt_id: OTERYN-GAME-INDEPENDENT-PROGRAMME-AUDIT
-prompt_version: "1.2"
+prompt_version: "1.3"
 prompt_mode: AUDIT
 working_mode: READ_ONLY_INDEPENDENT_AUDIT
 target_repository: Oteryn/Oteryn-Game
