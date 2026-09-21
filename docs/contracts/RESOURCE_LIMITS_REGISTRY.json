@@ -1276,12 +1276,12 @@
       "unit": "bytes"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
       "boundary_tests": [
-        "4 certificates accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "5 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
+      "4 certificates accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+      "5 certificates rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+      "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
+    ],
       "client_visible": false,
       "configurable_range": {
         "minimum": 4,
@@ -1290,18 +1290,18 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 4,
       "id": "NSRC-TLS-PEER-CERTIFICATES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Peer chain",
       "unit": "certificates"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
       "boundary_tests": [
-        "4096 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "4097 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
+      "4096 DER bytes accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+      "4097 DER bytes rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+      "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
+    ],
       "client_visible": false,
       "configurable_range": {
         "minimum": 4096,
@@ -1310,18 +1310,18 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 4096,
       "id": "NSRC-TLS-PEER-CERTIFICATE-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Each peer certificate",
       "unit": "DER bytes"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
       "boundary_tests": [
-        "16384 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "16385 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
+      "16384 DER bytes accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+      "16385 DER bytes rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+      "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
+    ],
       "client_visible": false,
       "configurable_range": {
         "minimum": 16384,
@@ -1330,7 +1330,7 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 16384,
       "id": "NSRC-TLS-PEER-CHAIN-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Aggregate peer chain",
       "unit": "DER bytes"
@@ -1396,72 +1396,12 @@
       "unit": "DER bytes"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "A thin caller-owned bounded ingress adapter uses checked cumulative accounting across all inbound handshake reads and rejects an increment that would overflow or raise the total above 65,536 bytes before supplying any bytes from that increment to stock rustls. Native rustls per-message and backing limits separately protect library-owned memory.",
       "boundary_tests": [
-        "16 levels accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "17 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
-      "client_visible": false,
-      "configurable_range": {
-        "minimum": 16,
-        "maximum": 16
-      },
-      "failure_category": "UNAVAILABLE",
-      "hard_maximum": 16,
-      "id": "NSRC-TLS-DER-DEPTH",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
-      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
-      "resource": "DER nesting",
-      "unit": "levels"
-    },
-    {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
-      "boundary_tests": [
-        "512 elements accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "513 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
-      "client_visible": false,
-      "configurable_range": {
-        "minimum": 512,
-        "maximum": 512
-      },
-      "failure_category": "UNAVAILABLE",
-      "hard_maximum": 512,
-      "id": "NSRC-TLS-DER-ELEMENTS",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
-      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
-      "resource": "Parsed DER elements per certificate",
-      "unit": "elements"
-    },
-    {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
-      "boundary_tests": [
-        "4 verifications accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "5 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
-      "client_visible": false,
-      "configurable_range": {
-        "minimum": 4,
-        "maximum": 4
-      },
-      "failure_category": "UNAVAILABLE",
-      "hard_maximum": 4,
-      "id": "NSRC-TLS-SIGNATURE-VERIFICATIONS",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
-      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
-      "resource": "Certificate signatures per handshake",
-      "unit": "verifications"
-    },
-    {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
-      "boundary_tests": [
-        "65536 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "65537 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
+      "65,536 cumulative inbound handshake bytes accepted where semantically valid and every coupled limit passes, including across multiple read segmentations",
+      "65,537 cumulative inbound handshake bytes rejected as UNAVAILABLE before any bytes from the over-limit increment are supplied to rustls",
+      "Checked-add overflow rejected before supplying the increment to rustls; native per-message/backing limits remain a separate library-owned-memory bound"
+    ],
       "client_visible": false,
       "configurable_range": {
         "minimum": 65536,
@@ -1470,7 +1410,7 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 65536,
       "id": "NSRC-TLS-HANDSHAKE-INBOUND-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. The caller-owned adapter enforces this cumulative bound before bytes enter stock rustls; proof of a native aggregate 65,536-byte rustls bound is not required. Native rustls per-message and backing limits remain separate. Exceeding the transport/PKI envelope makes the source unavailable. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Inbound handshake across all reads",
       "unit": "bytes"
