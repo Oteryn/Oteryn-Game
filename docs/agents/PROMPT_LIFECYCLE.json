@@ -65,7 +65,7 @@
     {
       "prompt_id": "OTV2_IMPLEMENTATION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "version": "1.2",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Implementation-wave coordination and allocation inside Oteryn/Oteryn-Game only.",
@@ -76,7 +76,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "1.10",
+      "version": "1.9",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "ChatGPT Work execution profile of the implementation coordinator with bounded subagent dispatch/integration and fail-closed material architecture escalation; no authority expansion.",
@@ -395,7 +395,7 @@
     {
       "prompt_id": "OTV2_SOL_DURABILITY_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
-      "version": "1.3",
+      "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Durability lane lead and single mutating writer for its canonical branch/PR; writes require the current exact merged Durability allocation and owned paths, and parallel analyst packets remain advisory.",
@@ -472,7 +472,7 @@
     {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
-      "version": "1.2",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Server Seam lane lead; read-only until exact prerequisites/allocation are proven, then writes only within owned paths.",
@@ -483,7 +483,7 @@
     {
       "prompt_id": "OTV2_SOL_CLIENT_QA_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
-      "version": "1.2",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol native Client/QA lane lead; writes require current compatible Server Seam and exact merged allocation.",
@@ -494,7 +494,7 @@
     {
       "prompt_id": "OTV2_SOL_MOVEMENT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
-      "version": "1.2",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Movement lane lead; writes require terminal current resource gate/prerequisites and exact merged allocation.",
@@ -505,7 +505,7 @@
     {
       "prompt_id": "OTV2_SOL_COMBAT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
-      "version": "1.2",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Combat lane lead; writes require merged Movement/current prerequisites and exact Combat allocation.",
@@ -670,7 +670,7 @@
     {
       "prompt_id": "OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md",
-      "version": "1.1",
+      "version": "1.0",
       "status": "reusable",
       "owner": "wp3-v2-programme-coordination",
       "scope": "Task-specific WP3-v2 through Child B/WP5/G0/Server-Seam programme routing under live #162/#364 authority; creates no independent control plane or write lease.",
