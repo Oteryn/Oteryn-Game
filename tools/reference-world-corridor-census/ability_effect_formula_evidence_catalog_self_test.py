@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import copy
+import argparse
 import importlib.util
-import json
 from pathlib import Path
 import sys
 
@@ -14,10 +13,10 @@ GAME_ROOT = HERE.parent.parent
 MODULE_PATH = HERE / "ability_effect_formula_evidence_catalog.py"
 EVIDENCE_PATH = (
     GAME_ROOT
-    / "docs/agents/evidence/OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
+    / "docs/agents/evidence/OTV2-20260921-content-world-cw2-ability-family-source-catalogue.json"
 )
 
-spec = importlib.util.spec_from_file_location("cw2_b4_catalog", MODULE_PATH)
+spec = importlib.util.spec_from_file_location("cw2_ability_source_catalog", MODULE_PATH)
 if spec is None or spec.loader is None:
     raise RuntimeError(f"cannot load {MODULE_PATH}")
 catalog = importlib.util.module_from_spec(spec)
@@ -25,122 +24,148 @@ sys.modules[spec.name] = catalog
 spec.loader.exec_module(catalog)
 
 
-def test_protected_inputs_and_tracked_product_are_exact() -> None:
-    value = catalog.build_catalog(GAME_ROOT)
+def test_tracked_product_is_exact(source_repo: Path) -> None:
+    value = catalog.build_catalog(source_repo, GAME_ROOT)
     assert catalog.canonical_bytes(value) == EVIDENCE_PATH.read_bytes()
     assert value["counts"] == {
-        "abilities": 2,
-        "reference_cases": 4,
-        "candidate_effect_bindings": 2,
-        "resolved_native_ability_identities": 0,
-        "resolved_exact_quantitative_formulas": 0,
-        "executable_promotions": 0,
+        "player_spells": 199,
+        "player_spell_subfamilies": {
+            "attack": 69,
+            "conjuring": 49,
+            "familiar": 5,
+            "healing": 28,
+            "house": 4,
+            "party": 5,
+            "support": 39,
+        },
+        "runes": 36,
+        "monster_spells": 590,
+        "abilities_total": 825,
+        "source_catalogued": 825,
+        "source_remaining": 0,
+        "historical_b4_overlay_joined": 2,
     }
+    assert value["loss_report"]["silently_dropped_records"] == 0
 
 
-def test_repeat_and_input_permutation_are_byte_deterministic() -> None:
-    first = catalog.build_catalog(GAME_ROOT)
-    second = catalog.build_catalog(GAME_ROOT)
-    reversed_cases = catalog.build_catalog(GAME_ROOT, case_ids=reversed(catalog.CASE_IDS))
-    assert catalog.canonical_bytes(first) == catalog.canonical_bytes(second)
-    assert catalog.canonical_bytes(first) == catalog.canonical_bytes(reversed_cases)
-
-
-def test_mapper_revision_binds_exact_published_bytes() -> None:
-    value = catalog.build_catalog(GAME_ROOT)
-    recorded = value["mapper_revision"]
-    recomputed = catalog.verify_mapper_revision(GAME_ROOT)
-    assert recorded == recomputed
-    mapper_payload = (
-        GAME_ROOT / catalog.MAPPER_PATH
-    ).read_bytes()
-    assert recorded["canonical_sha256"] == catalog.sha256_bytes(
-        catalog.canonical_repository_text_bytes(mapper_payload)
+def test_repeat_and_input_order_permutation_are_deterministic(source_repo: Path) -> None:
+    enumeration = catalog.enumerate_source_paths(source_repo)
+    first = catalog.build_catalog(source_repo, GAME_ROOT)
+    second = catalog.build_catalog(source_repo, GAME_ROOT)
+    reversed_input = catalog.build_catalog(
+        source_repo,
+        GAME_ROOT,
+        source_paths=reversed(enumeration["selected"]),
     )
+    assert catalog.canonical_bytes(first) == catalog.canonical_bytes(second)
+    assert catalog.canonical_bytes(first) == catalog.canonical_bytes(reversed_input)
+
+
+def test_duplicate_and_incomplete_selection_fail_closed(source_repo: Path) -> None:
+    enumeration = catalog.enumerate_source_paths(source_repo)
+    selected = list(enumeration["selected"])
+    try:
+        catalog.validate_selected_source_paths(selected, selected + [selected[0]])
+    except catalog.CatalogError as exc:
+        assert "DUPLICATE_SELECTED_SOURCE_PATH" in str(exc)
+    else:
+        raise AssertionError("duplicate source path was accepted")
+
+    try:
+        catalog.validate_selected_source_paths(selected, selected[:-1])
+    except catalog.CatalogError as exc:
+        assert "SOURCE_SELECTION_SET_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("incomplete source selection was accepted")
+
+
+def test_pinned_source_blob_drift_fails_closed(source_repo: Path) -> None:
+    try:
+        catalog._source_object(
+            source_repo,
+            "data/scripts/spells/attack/ice_strike.lua",
+            expected_blob="0" * 40,
+        )
+    except catalog.CatalogError as exc:
+        assert "SOURCE_BLOB_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("source blob drift was accepted")
+
+
+def test_exclusions_are_exact(source_repo: Path) -> None:
+    enumeration = catalog.enumerate_source_paths(source_repo)
+    exclusions = {row["path"]: row for row in enumeration["exclusions"]}
+    assert set(exclusions) == {
+        catalog.EXAMPLE_PATH,
+        catalog.MONSTER_HELPER_PATH,
+    }
+    selected = set(enumeration["selected"])
+    assert catalog.EXAMPLE_PATH not in selected
+    assert catalog.MONSTER_HELPER_PATH not in selected
+    for path, (expected_blob, reason) in catalog.EXPECTED_EXCLUSIONS.items():
+        assert exclusions[path]["blob"] == expected_blob
+        assert exclusions[path]["reason"] == reason
+        assert exclusions[path]["byte_size"] > 0
+
+
+def test_historical_b4_overlay_is_exact_and_nonpromoting(source_repo: Path) -> None:
+    value = catalog.build_catalog(source_repo, GAME_ROOT)
+    assert value["historical_b4_overlay"]["join_count"] == 2
+    overlays = [
+        row["historical_b4_overlay"]
+        for row in value["source_records"]
+        if "historical_b4_overlay" in row
+    ]
+    assert len(overlays) == 2
+    assert {row["source_candidate_id"] for row in overlays} == set(
+        catalog.OVERLAY_SOURCES
+    )
+    encoded = catalog.canonical_bytes(value).decode("utf-8")
+    assert "oteryn:ability." not in encoded
+    for overlay in overlays:
+        assert overlay["target_evidence"] == "UNKNOWN"
+        assert overlay["source_provenance"] == "PENDING"
+        assert overlay["legal_review"] == "PENDING"
+        assert overlay["parity"] == "PARITY_PENDING_EVIDENCE"
+        assert overlay["native_ability_identity"]["content_key"] is None
+        assert overlay["effect_to_formula"]["quantitative_formula"] is None
+        assert overlay["executable_promotion"]["disposition"] == "BLOCKED"
+
+
+def test_mapper_revision_binds_current_tool() -> None:
+    recorded = catalog.verify_mapper_revision(GAME_ROOT)
+    mapper_payload = (GAME_ROOT / catalog.MAPPER_PATH).read_bytes()
+    canonical = catalog.canonical_repository_text_bytes(mapper_payload)
+    assert recorded["canonical_size"] == len(canonical)
+    assert recorded["canonical_sha256"] == catalog.sha256_bytes(canonical)
     assert recorded["git_blob"] == catalog._git(
         GAME_ROOT, "rev-parse", f"HEAD:{catalog.MAPPER_PATH}"
     )
 
 
-def test_mapper_fingerprint_is_checkout_line_ending_invariant() -> None:
-    lf = b"line one\nline two\n"
-    crlf = b"line one\r\nline two\r\n"
-    assert catalog.canonical_repository_text_bytes(lf) == lf
-    assert catalog.canonical_repository_text_bytes(crlf) == lf
-    try:
-        catalog.canonical_repository_text_bytes(b"line one\rline two\n")
-    except catalog.CatalogError as exc:
-        assert "UNSUPPORTED_MAPPER_LINE_ENDING" in str(exc)
-    else:
-        raise AssertionError("lone CR mapper bytes were accepted")
-
-
-def test_protected_blob_mismatch_fails_closed() -> None:
-    altered = dict(catalog.PROTECTED_INPUTS)
-    _, role = altered[catalog.MANIFEST_PATH]
-    altered[catalog.MANIFEST_PATH] = ("0" * 40, role)
-    try:
-        catalog.build_catalog(GAME_ROOT, expected_inputs=altered)
-    except catalog.CatalogError as exc:
-        assert "GIT_BLOB_MISMATCH" in str(exc)
-    else:
-        raise AssertionError("protected input blob mismatch was accepted")
-
-
-def test_protected_digest_mismatch_fails_closed() -> None:
-    try:
-        catalog.build_catalog(
-            GAME_ROOT,
-            expected_sha256={catalog.MANIFEST_PATH: "0" * 64},
-        )
-    except catalog.CatalogError as exc:
-        assert "SHA256_MISMATCH" in str(exc)
-    else:
-        raise AssertionError("protected input digest mismatch was accepted")
-
-
-def test_manifest_promotion_or_formula_invention_fails_closed() -> None:
-    manifest = json.loads(
-        (
-            GAME_ROOT
-            / "docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json"
-        ).read_text(encoding="utf-8")
-    )
-    promoted = copy.deepcopy(manifest)
-    promoted["cases"][0]["target"]["evidence_class"] = "PROVEN"
-    try:
-        catalog.validate_manifest_cases(promoted)
-    except catalog.CatalogError as exc:
-        assert "FAIL_CLOSED_STATE_MISMATCH" in str(exc)
-    else:
-        raise AssertionError("promoted Reference target case was accepted")
-
-
-def test_no_native_identity_parity_or_formula_is_synthesized() -> None:
-    value = catalog.build_catalog(GAME_ROOT)
-    encoded = catalog.canonical_bytes(value).decode("utf-8")
-    assert "oteryn:ability." not in encoded
-    assert '"quantitative_formula":null' in encoded
-    for ability in value["ability_effect_formula_candidates"]:
-        assert ability["target_evidence"] == "UNKNOWN"
-        assert ability["source_provenance"] == "PENDING"
-        assert ability["legal_review"] == "PENDING"
-        assert ability["parity"] == "PARITY_PENDING_EVIDENCE"
-        assert ability["native_ability_identity"]["disposition"] == "UNRESOLVED"
-        assert ability["effect_to_formula"]["formula_state"] == "UNKNOWN"
-        assert ability["executable_promotion"]["disposition"] == "BLOCKED"
+def test_historical_mapper_is_pinned_not_rewritten() -> None:
+    historical = catalog.verify_historical_b4_overlay(GAME_ROOT)
+    mapper = historical["historical_mapper"]
+    assert mapper["blob"] == catalog.HISTORICAL_B4_MAPPER_BLOB
+    assert mapper["canonical_size"] == catalog.HISTORICAL_B4_MAPPER_CANONICAL_SIZE
+    assert mapper["canonical_sha256"] == catalog.HISTORICAL_B4_MAPPER_CANONICAL_SHA256
 
 
 def main() -> int:
-    test_protected_inputs_and_tracked_product_are_exact()
-    test_repeat_and_input_permutation_are_byte_deterministic()
-    test_mapper_revision_binds_exact_published_bytes()
-    test_mapper_fingerprint_is_checkout_line_ending_invariant()
-    test_protected_blob_mismatch_fails_closed()
-    test_protected_digest_mismatch_fails_closed()
-    test_manifest_promotion_or_formula_invention_fails_closed()
-    test_no_native_identity_parity_or_formula_is_synthesized()
-    print("ability-effect-formula-evidence-catalog self-test: PASS")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source-repo", type=Path, required=True)
+    args = parser.parse_args()
+    source_repo = args.source_repo.resolve()
+
+    test_tracked_product_is_exact(source_repo)
+    test_repeat_and_input_order_permutation_are_deterministic(source_repo)
+    test_duplicate_and_incomplete_selection_fail_closed(source_repo)
+    test_pinned_source_blob_drift_fails_closed(source_repo)
+    test_exclusions_are_exact(source_repo)
+    test_historical_b4_overlay_is_exact_and_nonpromoting(source_repo)
+    test_mapper_revision_binds_current_tool()
+    test_historical_mapper_is_pinned_not_rewritten()
+    print("ability-source-catalogue self-test: PASS")
     return 0
 
 
