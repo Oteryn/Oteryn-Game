@@ -258,7 +258,10 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             _: GameSessionId,
             _: i64,
         ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
-            Ok(self.0.lock().expect("loss source lock").clone())
+            Ok(match self.0.lock() {
+                Ok(observation) => observation.clone(),
+                Err(poisoned) => poisoned.into_inner().clone(),
+            })
         }
     }
     if !postgres_e2e_is_configured()? {
@@ -307,7 +310,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             // is 2 while owning entitlement/rearm generations are 1. They are
             // separate namespaces, never a lawful protection-fence conversion.
             assert_eq!(raw.connection().candidate().get(), 2);
-            assert!(not_entitled || matches!(source.0.lock().expect("loss source lock").protection.usage, RecoveryProtectionUseV1::Unused { entitlement_generation: 1 }));
+            assert!(not_entitled || matches!(source.0.lock().map_err(|_| "loss source lock poisoned")?.protection.usage, RecoveryProtectionUseV1::Unused { entitlement_generation: 1 }));
             let raw_v1 = ReconnectDurabilityFlowV1::begin(raw.clone()).1;
             let raw_v2 = ReconnectDurabilityFlowV2::begin(raw, None).1;
             let reconnect = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
@@ -334,16 +337,16 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 assert_eq!(guards.load(&[owner.rows[0].key.clone()]).await?, vec![Some(owner.rows[0].clone())]);
                 assert_eq!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Rejected);
                 assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(initial.clone()));
-                assert_eq!(source.0.lock().expect("loss source lock").session, session);
+                assert_eq!(source.0.lock().map_err(|_| "loss source lock poisoned")?.session, session);
                 let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool).await?;
                 assert_eq!(receipts, 0);
                 pool.close().await;
                 return Ok(());
             }
-            source.0.lock().expect("loss source lock").cause = ControlLossCauseV1::HealthyController;
+            source.0.lock().map_err(|_| "loss source lock poisoned")?.cause = ControlLossCauseV1::HealthyController;
             assert_eq!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Rejected);
             assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(initial.clone()));
-            source.0.lock().expect("loss source lock").cause = ControlLossCauseV1::AuthoritativeUnexpectedLoss;
+            source.0.lock().map_err(|_| "loss source lock poisoned")?.cause = ControlLossCauseV1::AuthoritativeUnexpectedLoss;
             // Force the final receipt effect to fail after tentative session write; complete loss truth must roll back together.
             sqlx::query("CREATE FUNCTION reject_test_loss_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'loss receipt test rollback' USING ERRCODE = '23514'; END; $$")
                 .execute(&pool).await?;
@@ -371,8 +374,8 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             assert_eq!(recovered_current, current);
             let mut durable_source = reopened.loss_completion_source(loss.operation()).await?.ok_or("missing durable completion source")?;
             assert_eq!(durable_source.current_snapshot(), current.as_ref());
-            assert_eq!(durable_source.take_loss_completion(loss.operation()).expect("durable completion"), Some(*completion.clone()));
-            assert_eq!(durable_source.take_loss_completion(loss.operation()).expect("durable completion"), None);
+            assert_eq!(durable_source.take_loss_completion(loss.operation()).map_err(|_| "durable completion failed")?, Some(*completion.clone()));
+            assert_eq!(durable_source.take_loss_completion(loss.operation()).map_err(|_| "durable completion failed")?, None);
             let mut historical = authority_matrix::checked(ControlLossFlowV1::restore(completion.operation.clone()))?;
             assert!(historical.take_request().is_err());
             let mut conflicting = loss.operation().clone();
