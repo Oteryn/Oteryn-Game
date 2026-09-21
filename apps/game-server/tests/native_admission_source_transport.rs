@@ -841,3 +841,15 @@ fn strict_http_framing_rejects_ambiguous_names_controls_and_signed_lengths()
         Ok::<(), Box<dyn std::error::Error>>(())
     })
 }
+
+#[test]
+fn four_operations_use_the_accepted_platform_endpoint() {
+    for operation in [
+        Operation::ReadAccountSecurityV1,
+        Operation::ReadFreshSigningTrustV1,
+        Operation::ReadRecoveryAccountSecurityV2,
+        Operation::ReadRecoverySigningTrustV2,
+    ] {
+        assert_eq!(operation.path(), "/internal/v1/game-auth/native-evidence");
+    }
+}

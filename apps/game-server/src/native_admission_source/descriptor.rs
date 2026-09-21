@@ -23,16 +23,9 @@ pub enum Operation {
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
-        match self {
-            Self::ReadAccountSecurityV1 => "/internal/game/native-source/account-security/v1",
-            Self::ReadFreshSigningTrustV1 => "/internal/game/native-source/signing-trust/v1",
-            Self::ReadRecoveryAccountSecurityV2 => {
-                "/internal/game/native-source/recovery/account-security/v2"
-            }
-            Self::ReadRecoverySigningTrustV2 => {
-                "/internal/game/native-source/recovery/signing-trust/v2"
-            }
-        }
+        // The four closed operation tags share the accepted Platform endpoint.
+        // Operation identity remains bound by the existing request/response codec.
+        "/internal/v1/game-auth/native-evidence"
     }
 }
 pub struct ProducerDescriptor {
