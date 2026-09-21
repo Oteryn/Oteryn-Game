@@ -1,5 +1,7 @@
 # OTV2 Terra Game Control Plane
 
+> **RETIRED / HISTORICAL PROVENANCE. DO NOT DISPATCH.** Operational Game control-plane work is owned by `OTV2_WORK_DELIVERY_COORDINATOR` / `Oteryn: work coordinator`. This file remains only to preserve the 2026-08-27 Terra+Sol execution-design history.
+
 Short invocation after canonical merge:
 
 ```text
