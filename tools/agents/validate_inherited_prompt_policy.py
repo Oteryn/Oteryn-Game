@@ -14,6 +14,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+try:
+    from tools.agents import validate_governance as game_governance
+except ModuleNotFoundError:  # Direct execution from outside the repository root.
+    import validate_governance as game_governance
+
 ROOT = Path(__file__).resolve().parents[2]
 BINDING_PATH = ROOT / "docs/agents/META_AGENT_POLICY_BINDING.json"
 LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
@@ -193,6 +198,7 @@ def validate() -> list[str]:
         ):
             if expected not in (ROOT / relative).read_text(encoding="utf-8"):
                 errors.append(f"{relative}: missing bound META source path {expected}")
+        errors.extend(game_governance.validate_active_task_live_state(_request))
         if not errors:
             print(
                 f"Validated META policy {binding['policy_version']} at {commit}: "

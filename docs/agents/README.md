@@ -6,20 +6,18 @@ This directory contains routed procedures and retained coordination evidence for
 
 This list is an index, not a mandatory reading bundle. Start with root and nearest instructions, then load only entries whose operation or domain applies.
 
+Shared execution, authority/trust, recovery, checkpoint/handoff and communication semantics come from the bound META policy plus root and nearest `AGENTS.md`. They are intentionally not copied into Game-local procedure files.
+
 - `AGENTS.md` — rules for this directory and task records.
 - `REPOSITORY_MAP.md` — current/planned repository layout and source-of-truth boundaries.
 - `CONTEXT_ROUTING.md` — which documents to load for each task class.
-- `CONTEXT_HANDOFF.md` — durable task checkpoints and resume procedure.
 - `BUILD_TEST_MATRIX.md` — validation selection.
 - `ANTI_STALL_AND_EXECUTION_BUDGET.md` — bounded autonomous execution.
 - `AUTONOMOUS_PROGRAM_CONTINUATION.md` — programme/coordinator continuation.
 - `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md` — completion and merge gate.
 - `GITHUB_ONLY_EXECUTION.md` — GitHub/Actions fallback execution.
-- `SESSION_RECOVERY_AND_ORPHANED_EXECUTION.md` — durable recovery and waiting state.
-- `TERMINAL_ONLY_COMMUNICATION.md` — low-noise autonomous communication.
-- `TRUST_AND_CONTEXT_BOUNDARIES.md` — authority and evidence boundaries.
 - `PROMPTING_STANDARD.md`, `PROMPTING_HANDOVER.md`, `PROMPT_EVAL_STANDARD.md` — prompt quality and handover.
-- `EXECUTION_PROTOCOL.md`, `END_TO_END_FEATURE_COMPLETENESS.md`, `TASK_CLOSEOUT_AUDIT_E2E.md` — execution and acceptance.
+- `END_TO_END_FEATURE_COMPLETENESS.md` — end-to-end feature acceptance.
 - `CROSS_REPO_CONTRACTS.md` — Oteryn Platform/Otheryn/otclient migration boundaries.
 - `GOVERNANCE_CONTRACT.json`, `PROJECT_LANES.json` — machine-readable policy.
 
