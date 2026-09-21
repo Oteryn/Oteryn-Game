@@ -396,7 +396,6 @@ fn exact_input_bound_and_digest_reject_any_catalogue_drift() {
     ));
 }
 
-
 fn batch_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
         max_documents: 8,
@@ -414,8 +413,7 @@ fn batch_limits() -> ProjectEvidenceLimits {
 }
 
 fn batch_import() -> ProtectedCw2B1NativeItemBatchImport {
-    protected_cw2_b1_native_item_batch_import(B1_EVIDENCE)
-        .expect("protected B1 native item batch")
+    protected_cw2_b1_native_item_batch_import(B1_EVIDENCE).expect("protected B1 native item batch")
 }
 
 fn batch_draft(imported: ProtectedCw2B1NativeItemBatchImport) -> ProjectDraft {
@@ -468,10 +466,7 @@ fn native_item_batch_matches_the_machine_readable_binding_product() {
     );
 
     let product: Value = serde_json::from_slice(BATCH_PRODUCT).expect("binding product JSON");
-    assert_eq!(
-        product["schema"],
-        "OTERYN_CW2_NATIVE_ITEM_BINDING_BATCH/v1"
-    );
+    assert_eq!(product["schema"], "OTERYN_CW2_NATIVE_ITEM_BINDING_BATCH/v1");
     assert_eq!(product["batch"]["item_count"], 64);
     assert_eq!(product["batch"]["resolved_native_bindings"], 64);
     assert_eq!(product["batch"]["unresolved"], 0);
@@ -617,10 +612,7 @@ fn native_item_batch_reimport_and_canonical_round_trip_are_deterministic() {
     );
 
     let linked = project.link().expect("linked batch");
-    assert_eq!(
-        linked.definitions.len(),
-        CW2_B1_NATIVE_ITEM_BATCH_COUNT
-    );
+    assert_eq!(linked.definitions.len(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
     assert_eq!(
         linked.client_safe_definitions().len(),
         CW2_B1_NATIVE_ITEM_BATCH_COUNT
@@ -653,10 +645,7 @@ fn native_item_batch_conflicts_missing_targets_and_duplicates_fail_closed() {
     let mut missing = batch_import();
     let first = &mut missing.batch.candidates[0];
     candidate_binding_mut_at(first).identity.revision = "definition-r2".to_owned();
-    first.candidate_target = format!(
-        "{}@definition-r2",
-        candidate_binding(first).identity.key
-    );
+    first.candidate_target = format!("{}@definition-r2", candidate_binding(first).identity.key);
     assert!(matches!(
         CanonicalProjectDocuments::from_draft(batch_draft(missing), batch_limits()),
         Err(ProjectError::InvalidProject(
@@ -670,10 +659,7 @@ fn native_item_batch_conflicts_missing_targets_and_duplicates_fail_closed() {
         .clone();
     let second = &mut duplicate.batch.candidates[1];
     candidate_binding_mut_at(second).identity = first_identity.clone();
-    second.candidate_target = format!(
-        "{}@{}",
-        first_identity.key, first_identity.revision
-    );
+    second.candidate_target = format!("{}@{}", first_identity.key, first_identity.revision);
     assert!(matches!(
         CanonicalProjectDocuments::from_draft(batch_draft(duplicate), batch_limits()),
         Err(ProjectError::InvalidProject(
