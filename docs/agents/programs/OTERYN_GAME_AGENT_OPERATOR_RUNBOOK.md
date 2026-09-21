@@ -24,7 +24,6 @@ Never treat this runbook, an alias, an old Issue number, a prior chat summary or
 | Alias / function | Where to run | Default mutation mode |
 | --- | --- | --- |
 | `Oteryn: work coordinator` | ChatGPT Work | CONTROL_PLANE only when live lifecycle selects it |
-| `Oteryn: terra game coordinator` | ChatGPT Work | CONTROL_PLANE only when live lifecycle selects it; otherwise recovery read-only |
 | `Oteryn: sol supervising architect` | separate chat | ON_DEMAND architecture decision only; no merge authority |
 | `Oteryn: sol durability lead` | separate chat | MUTATING only with exact current allocation; single writer for its Durability branch/PR |
 | `Oteryn: sol durability authority analyst` | separate chat | READ_ONLY analyst; no GitHub/tracked-file mutation |
@@ -47,7 +46,7 @@ Use the execution configuration actually exposed and authorized for the task. Th
 
 ## Work versus separate chats
 
-Use exactly one active mutating control plane in ChatGPT Work. Do not run Work Coordinator and Terra Game Coordinator as simultaneous mutating schedulers. The inactive profile may only prepare recovery/transfer analysis.
+Use exactly one active mutating control plane in ChatGPT Work: `Oteryn: work coordinator`. When mutation is blocked, the same Work profile performs read-only reconciliation; do not launch a second coordinator alias.
 
 Run technical Sol roles in separate chats so each lane has an independent context and clear ownership. A Sol chat may be open for read-only preparation before promotion, but it must not write until its exact prerequisite and allocation are canonical.
 
@@ -102,7 +101,7 @@ material risk-bearing repair after review -> re-review only if prior review is n
 
 External AI review is advisory. It is never a required GitHub status or merge authority and never replaces `game-gate`, repository protection or Merge Queue.
 
-For high-risk session/reconnect/fencing/durable-schema candidates, the owning lane lead stabilizes the material candidate before the selected deep review, consumes actionable findings inside existing authority, and revalidates any material repair. Work/Terra verify compliance with current policy and repository gates; they do not create stricter local tiers or become technical-review controllers.
+For high-risk session/reconnect/fencing/durable-schema candidates, the owning lane lead stabilizes the material candidate before the selected deep review, consumes actionable findings inside existing authority, and revalidates any material repair. Work verifies compliance with current policy and repository gates; it does not create stricter local tiers or become a technical-review controller.
 
 The Durability authority/continuity/qualification analyst packets are internal read-only reasoning aids. They are not formal independent AI review and cannot satisfy this policy gate.
 
