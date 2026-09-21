@@ -305,7 +305,7 @@ After protected-main readback, #162 must fresh-read:
 1. protected `main` and this exact allocation;
 2. open PRs, branches and active task records;
 3. current ownership of `foundation/mod.rs` and all future owned paths;
-4. current mutating-writer count under the Terra/Sol scheduler;
+4. current mutating-writer count under the retained Work + Sol scheduler;
 5. Issue #530/#540 state and any newer accepted architecture;
 6. the current status of the durable scope-assignment producer/consumer and whether the planned
    pre-production-only bootstrap can remain isolated from that authority;
