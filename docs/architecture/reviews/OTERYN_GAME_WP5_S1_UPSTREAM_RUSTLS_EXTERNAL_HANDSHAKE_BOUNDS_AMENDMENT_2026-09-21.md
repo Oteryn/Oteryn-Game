@@ -8,7 +8,7 @@
 
 ## Precedence
 
-This amendment supersedes only the earlier requirement in `OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md` and its active registry wording that the 65,536-byte cumulative handshake cap or peer-chain caps be enforced by stock rustls before lower-layer allocation or verification. All other requirements of that decision remain binding. The caller-owned cumulative ingress boundary and the configured verifier boundary specified here govern where these retained numeric caps are enforced.
+This amendment supersedes only the earlier requirement in `OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md` and its active registry wording that the 65,536-byte cumulative handshake cap or peer-chain caps be enforced by stock rustls before lower-layer allocation or verification. All requirements of that decision not expressly amended or deferred below remain binding. The caller-owned cumulative ingress boundary and the configured verifier boundary specified here govern where these retained numeric caps are enforced.
 
 ## Decision
 

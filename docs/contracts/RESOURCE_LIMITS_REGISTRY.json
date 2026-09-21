@@ -1395,9 +1395,6 @@
       "resource": "Aggregate configured roots",
       "unit": "DER bytes"
     },
-    
-    
-    
     {
       "allocation_impact": "A thin caller-owned bounded ingress adapter uses checked cumulative accounting across all inbound handshake reads and rejects an increment that would overflow or raise the total above 65,536 bytes before supplying any bytes from that increment to stock rustls. Native rustls per-message and backing limits separately protect library-owned memory.",
       "boundary_tests": [
