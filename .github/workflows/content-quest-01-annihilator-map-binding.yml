@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           test "$(git -C legacy rev-parse HEAD)" = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
           test "$(git -C crystal rev-parse HEAD)" = "ac447fef0935e6df52dc6b6376ae4c1534ecd73f"
-          test "$(git -C crystal hash-object crystal/data-global/world/world.otbm)" = "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b"
+          test "$(git -C crystal hash-object data-global/world/world.otbm)" = "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b"
           test "$(stat -c %s crystal/data-global/world/world.otbm)" = "52267895"
           test "$(sha256sum crystal/data-global/world/world.otbm | cut -d' ' -f1)" = "09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb"
 
