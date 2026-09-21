@@ -27,19 +27,24 @@ For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_D
 
 ## Execution-capability preflight
 
-Before dispatching any mutating worker, resolve the selected execution surface and prove the publication **and required-validation** routes up front.
+Before dispatching any mutating worker, resolve the selected execution surface and prove the authoring/publication **and required-validation** routes up front.
 
-- Ordinary material mutation requires one proven publication route before worker release: either an isolated checkout/worktree with guarded normal Git commit/publication of the exact local candidate, or an allocated API-native new-candidate route whose one server-side mutation atomically fences the exact expected task-branch head and creates the complete bounded delta as one successor commit.
+- Ordinary material mutation requires one proven route before worker release:
+  - `isolated_git`: an isolated checkout/worktree with guarded normal Git commit/publication of the exact local candidate;
+  - `api_native_authoring`: repository-native high-level file mutations on the exact exclusively allocated task branch when the intended mutation is the API write and no selected local Git candidate is being reconstructed; or
+  - `atomic_api_candidate`: an allocated API-native new-candidate route whose one server-side mutation atomically fences the exact expected task-branch head and creates the complete bounded delta as one successor commit.
+- For `api_native_authoring`, the branch must have one proven writer/custody owner. Fresh-read the live branch head before each mutation; unexpected movement is ownership/state drift and must be reconciled before another write. Bounded sequential high-level file mutations are allowed only before candidate freeze. After the final authoring write, fresh-read the exact branch head, compare the complete delta against the admission base, verify every changed path is owned/in-scope, and freeze that exact remote head as the candidate.
+- API-authoring commits before freeze are WIP, not candidate publications. Do not attach or reuse candidate-specific CI/review evidence from an intermediate head. Candidate-specific validation/review starts only after the final readback/freeze. Sequential API writes must never reconstruct a selected local Git candidate, mutate a frozen candidate, or work around shared/ambiguous branch custody.
 - For every concrete entry in `required_validation`, bind an authorized executable route before worker release. The route may be the isolated workspace, repository-native hosted CI when the governing task accepts hosted proof, or a separately valid host-specific surface required by the task.
 - A required compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` or be deferred as "we will find a surface later". If its route cannot be proven now, the lane is blocked before mutation.
-- An allocated API-native publication route is allowed only when the execution surface exposes a server-side atomic expected-head candidate-creation primitive on the exact allocated branch. A precondition mismatch must create no commit and move no branch; success creates one new successor candidate containing the complete bounded delta. It must not reconstruct a selected local Git candidate, and all candidate-specific validation/review evidence must be re-established on the returned exact head. Do not claim local build/test evidence that was not actually run.
+- An `atomic_api_candidate` route is allowed only when the execution surface exposes a server-side atomic expected-head candidate-creation primitive on the exact allocated branch. A precondition mismatch must create no commit and move no branch; success creates one new successor candidate containing the complete bounded delta. It must not reconstruct a selected local Git candidate, and all candidate-specific validation/review evidence must be re-established on the returned exact head. Do not claim local build/test evidence that was not actually run.
 - A read-only/evidence worker needs no publication route, but any validation it promises still needs a truthful executable/read-only evidence route.
 
-If an ordinary mutating lane cannot prove **either permitted publication route** (guarded local Git exact-candidate publication or atomic expected-head API new-candidate publication), **or every required-validation route**, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
+If an ordinary mutating lane cannot prove **one permitted mutation route** (`isolated_git`, `api_native_authoring`, or `atomic_api_candidate`), **or every required-validation route**, do **not** release the worker. Mark only that lane `LANE_BLOCKED` with reason `BLOCKED_CAPABILITY_UNAVAILABLE`, record the exact missing capability and recheck trigger, and continue the dependency DAG.
 
-Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing local Git capability is not a Remote Desktop exception and is not itself a blocker when the atomic expected-head API publication route and every required-validation route are independently proven. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
+Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing local Git capability is not a Remote Desktop exception and is not itself a blocker when either `api_native_authoring` or `atomic_api_candidate` and every required-validation route are independently proven. Remote Desktop remains exception-only for a separately valid host-specific requirement under the bound META gate and still requires exact owner authorization for the invocation.
 
-Never begin ordinary implementation on a surface that can only publish later by low-level Git Data reconstruction, ancestry-only `force=false` ref movement, sequential per-file Contents reconstruction, a Remote Desktop convenience fallback, or an unproven required-validation surface.
+Never begin ordinary implementation on a surface that can only finish by low-level Git Data reconstruction, ancestry-only `force=false` ref movement, reconstruction of an existing candidate through sequential per-file Contents writes, a Remote Desktop convenience fallback, or an unproven required-validation surface. Bounded sequential high-level Contents/API authoring is valid only before freeze on the exclusively allocated task branch under the rules above.
 
 ### Stable-head / Merge Queue freshness
 
@@ -68,9 +73,9 @@ issue: <governing issue>
 task_id: <unique task>
 lane_id: <lane>
 branch: <existing or allocated branch>
-execution_route: <isolated_git | api_native | read_only>
+execution_route: <isolated_git | api_native_authoring | atomic_api_candidate | read_only>
 execution_surface: <proven surface or locator>
-publication_route: <guarded_git | atomic_expected_head_api | none>
+publication_route: <guarded_git | frozen_api_authored_head | atomic_expected_head_api | none>
 review_requirement: <none | required>
 review_authorization: <standing_required_review | task_specific | none>
 review_trigger_owner: <control_plane | standalone_task_owner | none>
@@ -213,7 +218,7 @@ While convergence mode is active:
 
 Do not treat `EVIDENCE_GAP` as proof that production code must change. `HARDENING` and `OUT_OF_SCOPE` do not block the current accepted gate unless current authority explicitly says otherwise.
 
-For canonical material writers, if neither guarded local-Git exact-candidate publication nor an allocated atomic expected-head API new-candidate route is available, stop with the applicable capability blocker. Do not authorize a worker to construct replacement Git commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, or emit sequential per-file commits as a fallback publication mechanism.
+For canonical material writers, permit guarded local-Git exact-candidate publication, bounded pre-freeze `api_native_authoring` on an exclusively allocated branch with final exact-head/delta/owned-path readback and freeze, or an allocated atomic expected-head API new-candidate route. Stop with the applicable capability blocker only when none of those routes and the required validation are proven. Do not authorize low-level Git object reconstruction, ancestry-only `force=false` ref movement, sequential API reconstruction of a selected local candidate, or post-freeze sequential file commits as fallback publication mechanisms.
 
 ## Dispatcher states
 
