@@ -4,7 +4,7 @@
 task_id: OTV2-20260921-agent-prompt-cleanup-715
 title: Retire Terra and slim remaining broad-startup prompts
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/agent-prompt-cleanup-715
@@ -57,14 +57,14 @@ Remove the obsolete second control-plane choice, keep Work as the single active/
 
 ## Acceptance
 
-- [ ] Terra lifecycle entry is retired/non-reusable and superseded by Work for operational control-plane dispatch.
-- [ ] Historical Terra prompt/design remains provenance, not dispatch authority.
-- [ ] Operator runbook and scheduler expose one mutating control plane: Work.
-- [ ] Reference Investigator resolves requested lane before loading lane-specific sources.
-- [ ] Owner/status and Content audit aliases resolve only their selected lifecycle entry, not the full registry.
-- [ ] Broad `all relevant open Issues/PRs` startup wording is removed from ordinary coordinator/supervisor prompts; explicit whole-programme audit may expand only when requested.
-- [ ] Per-invocation prompt-eval reads are removed where the task is not prompt authoring/evaluation.
-- [ ] Regression tests cover retired Terra and targeted-startup invariants.
+- [x] Terra lifecycle entry is retired/non-reusable (`1.2`) and superseded by Work for operational control-plane dispatch.
+- [x] Historical Terra prompt/design remains provenance with an explicit DO NOT DISPATCH banner.
+- [x] Operator runbook and retained scheduler expose one mutating control plane: Work.
+- [x] Reference Investigator resolves requested lane before loading lane-specific sources.
+- [x] Owner/status and Content audit aliases resolve only their selected lifecycle entry, not the full registry.
+- [x] Ordinary supervisor/coordinator startup is target/allocated-worker bounded; explicit whole-programme audit carries a documented breadth exception.
+- [x] Per-invocation prompt-eval reads are removed where the task is not prompt authoring/evaluation.
+- [x] META adoption regressions cover retired Terra, Work-only scheduling and targeted startup.
 - [ ] Exact-head governance/META/merge-gate validation passes.
 
 ## Excluded
@@ -74,10 +74,12 @@ No runtime/gameplay/protocol/persistence/production/external-repository mutation
 ## Context checkpoint
 
 ```yaml
-last_progress: cleanup branch created from protected main 256aa3b152c944cb8451906effe1f0090c5b798d
-status: implementing
+last_progress: >-
+  retired Terra dispatchability, simplified the Work + Sol scheduler/runbook, bounded remaining
+  broad-startup prompts, and added regression coverage for Work-only control-plane routing
+status: validating
 branch: docs/agent-prompt-cleanup-715
 head_sha: null
 pr: null
-next_action: retire Terra operational dispatch, slim remaining broad-startup prompts, add regression coverage, then freeze exact head
+next_action: freeze exact remote head, open PR, and require exact-head governance/META/merge-gate validation
 ```
