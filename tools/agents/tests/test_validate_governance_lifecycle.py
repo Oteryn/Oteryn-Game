@@ -93,6 +93,47 @@ class GovernanceLifecycleTests(unittest.TestCase):
             errors,
         )
 
+    def test_active_task_live_state_rejects_terminal_canonical_authority(self) -> None:
+        self.write(
+            "docs/agents/tasks/active/OTV2-merged-pr.md",
+            "# task\n```yaml\nstatus: validating\nissue: 10\npr: 20\n```\n",
+        )
+        self.write(
+            "docs/agents/tasks/active/OTV2-closed-issue.md",
+            "# task\n```yaml\nstatus: waiting\nissue: 11\npr: null\n```\n",
+        )
+        payloads = {
+            "issues/10": {"state": "open"},
+            "issues/11": {"state": "closed"},
+            "pulls/20": {"state": "closed", "merged_at": "2026-09-21T00:00:00Z"},
+        }
+
+        def request(url: str) -> object:
+            return payloads[url.rsplit("/", 2)[-2] + "/" + url.rsplit("/", 1)[-1]]
+
+        errors = validator.validate_active_task_live_state(request)
+        self.assertIn(
+            "active task packet docs/agents/tasks/active/OTV2-merged-pr.md names terminal canonical PR #20 (merged)",
+            errors,
+        )
+        self.assertIn(
+            "active task packet docs/agents/tasks/active/OTV2-closed-issue.md names closed Issue #11 without an open canonical PR",
+            errors,
+        )
+
+    def test_active_task_live_state_accepts_open_pr_for_closed_issue(self) -> None:
+        self.write(
+            "docs/agents/tasks/active/OTV2-open-pr.md",
+            "# task\n```yaml\nstatus: validating\nissue: 12\npr: 21\n```\n",
+        )
+
+        def request(url: str) -> object:
+            if "/pulls/" in url:
+                return {"state": "open", "merged_at": None}
+            return {"state": "closed"}
+
+        self.assertEqual(validator.validate_active_task_live_state(request), [])
+
 
 if __name__ == "__main__":
     unittest.main()
