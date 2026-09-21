@@ -186,7 +186,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT": "1.1",
             "OTV2_DEFECT_DISCOVERY_SUPERVISOR": "1.1",
             "OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR": "1.2",
-            "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR": "1.4",
+            "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR": "1.5",
             "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT": "1.3",
         }.items():
             self.assertEqual(entries[prompt_id]["version"], version)
@@ -221,6 +221,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
 
         work_audit = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md").read_text(encoding="utf-8")
         self.assertIn("`PROMPT_EVAL_STANDARD.md` is needed only when prompt/harness behavior is an audit target", work_audit)
+        self.assertNotIn("Work/Terra", work_audit)
+        self.assertIn("Work-only Game control plane", work_audit)
 
         programme_audit = (ROOT / "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md").read_text(encoding="utf-8")
         self.assertIn("intentionally a **whole-programme audit**", programme_audit)
