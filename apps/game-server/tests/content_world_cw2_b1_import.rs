@@ -690,3 +690,171 @@ fn native_item_batch_rejects_any_protected_catalogue_drift() {
         ))
     ));
 }
+
+
+fn full_family_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_documents: 8,
+        max_document_bytes: 96_000_000,
+        max_total_bytes: 160_000_000,
+        max_json_depth: 24,
+        max_decoded_fields: 2_000_000,
+        max_string_bytes: 2_097_152,
+        max_locator_bytes: 160,
+        max_locator_segments: 8,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_import_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_reimport_states: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+    }
+}
+
+fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
+    protected_cw2_b1_full_item_family_import(B1_EVIDENCE)
+        .expect("protected B1 full Item family")
+}
+
+fn full_family_draft(imported: ProtectedCw2B1FullItemFamilyImport) -> ProjectDraft {
+    ProjectDraft {
+        project_revision: "project-r1".to_owned(),
+        package_key: "oteryn:content.world-project".to_owned(),
+        semantic_schema_version: "reference-schema-v1".to_owned(),
+        licensing_metadata: "PENDING".to_owned(),
+        world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+        coordinate_frame: "global-target-2026-07-28".to_owned(),
+        records: imported.records,
+        imports: vec![imported.batch],
+        metadata: Vec::new(),
+    }
+}
+
+#[test]
+fn full_item_family_registry_closes_the_exact_b1_denominator() {
+    let imported = full_family_import();
+    assert_eq!(imported.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    assert_eq!(
+        imported.batch.candidates.len(),
+        CW2_B1_FULL_ITEM_FAMILY_COUNT
+    );
+    assert_eq!(
+        imported.batch.reimport_states.len(),
+        CW2_B1_FULL_ITEM_FAMILY_COUNT
+    );
+    assert_eq!(imported.allocation_digest_sha256.len(), 64);
+    assert_eq!(
+        imported.allocation_digest_sha256,
+        full_family_import().allocation_digest_sha256
+    );
+
+    let native_keys = imported
+        .batch
+        .candidates
+        .iter()
+        .map(|candidate| candidate_binding(candidate).identity.key.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(native_keys.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+
+    let vase = imported
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(CW2_B1_SOURCE_ITEM_ID))
+        .expect("preserved vase binding");
+    assert_eq!(candidate_binding(vase).identity.key, CW2_B1_VASE_KEY);
+
+    let plate = imported
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(3357))
+        .expect("preserved plate armor binding");
+    assert_eq!(
+        candidate_binding(plate).identity.key,
+        "oteryn:item.armor.plate_armor"
+    );
+
+    let gold_coin = imported
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(3031))
+        .expect("full-family gold coin identity");
+    assert!(
+        candidate_binding(gold_coin)
+            .identity
+            .key
+            .starts_with("oteryn:item.registry.i")
+    );
+    assert_eq!(
+        gold_coin.disposition_reason,
+        "FAMILY_SCALE_IDENTITY_ONLY_GAMEPLAY_SEMANTICS_UNRESOLVED"
+    );
+
+    let identity_only = imported
+        .records
+        .iter()
+        .filter(|record| {
+            matches!(
+                record,
+                ProjectReferenceRecord::Item {
+                    materializable: false,
+                    stack_class: ItemStackDocument::Unknown,
+                    ..
+                }
+            )
+        })
+        .count();
+    assert_eq!(identity_only, CW2_B1_OPAQUE_ITEM_COUNT);
+}
+
+#[test]
+fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
+    let documents =
+        CanonicalProjectDocuments::from_draft(full_family_draft(full_family_import()), full_family_limits())
+            .expect("canonical full-family project");
+    let project = documents
+        .into_snapshot(full_family_limits())
+        .expect("full-family snapshot")
+        .parse(full_family_limits())
+        .expect("parsed full-family project");
+    let linked = project.link().expect("linked full-family Items");
+    assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+
+    let unresolved = linked
+        .definitions
+        .iter()
+        .filter(|definition| {
+            matches!(
+                &definition.kind,
+                ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+                    physical_class: ReferenceItemPhysicalClass::Unknown,
+                    materializable: false,
+                    stack_class: ReferenceItemStackClass::Unknown,
+                    legal_destinations,
+                }) if legal_destinations.is_empty()
+            )
+        })
+        .count();
+    assert_eq!(unresolved, CW2_B1_OPAQUE_ITEM_COUNT);
+
+    let first = compile_reference_playable(&linked).expect("full-family v3 artifact");
+    let second = compile_reference_playable(&linked).expect("deterministic full-family v3 artifact");
+    assert_eq!(first.server_artifact, second.server_artifact);
+    assert_eq!(first.client_artifact, second.client_artifact);
+
+    let mut above = linked.clone();
+    above.definitions.push(
+        above
+            .definitions
+            .last()
+            .expect("last full-family definition")
+            .clone(),
+    );
+    assert!(matches!(
+        compile_reference_playable(&above),
+        Err(ContentError::LimitExceeded {
+            resource: "Reference playable definitions",
+            actual: 38_158,
+            limit: 38_157,
+        })
+    ));
+}
