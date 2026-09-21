@@ -183,6 +183,18 @@ def validate_active_task_packets(errors: list[str]) -> None:
             if status in terminal_statuses:
                 errors.append(f"active task packet {relative} has terminal status {status}")
 
+    archive_dir = ROOT / "docs/agents/tasks/archive"
+    if archive_dir.is_dir():
+        active_names = {
+            path.name for path in active_dir.glob("*.md") if path.name != "README.md"
+        }
+        archive_names = {
+            path.name for path in archive_dir.glob("*.md") if path.name != "README.md"
+        }
+        for duplicate in sorted(active_names & archive_names):
+            errors.append(
+                f"task packet exists in both active and archive: {duplicate}"
+            )
 
 
 def _markdown_section(text: str, heading: str) -> str:
@@ -251,6 +263,50 @@ def validate_context_economy(errors: list[str]) -> None:
     if prompts_readme.is_file() and "Before reuse, evaluate the selected prompt against" in prompts_readme.read_text(encoding="utf-8"):
         errors.append("prompt README reintroduced per-invocation prompt evaluation")
 
+
+def validate_current_state_hygiene(errors: list[str]) -> None:
+    live_path = ROOT / "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md"
+    if not live_path.is_file():
+        errors.append("missing current implementation allocation snapshot")
+    else:
+        live = live_path.read_text(encoding="utf-8")
+        if "CURRENT-STATE ROUTING ONLY" not in live:
+            errors.append("live allocations must declare current-state-only routing")
+        if len(live.splitlines()) > 180 or len(live) > 12000:
+            errors.append("live allocations exceeded bounded current-state size")
+        for legacy_heading in (
+            "## Completed allocation",
+            "## Historical completed allocation",
+            "## Prior Work allocation checkpoint",
+            "## Current Work checkpoint",
+            "## Prospective allocation",
+        ):
+            if legacy_heading in live:
+                errors.append(
+                    f"live allocations reintroduced historical ledger heading: {legacy_heading}"
+                )
+
+    work_task = ROOT / "docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md"
+    if not work_task.is_file():
+        errors.append("missing active Work delivery coordinator task")
+    else:
+        text = work_task.read_text(encoding="utf-8")
+        if len(text.splitlines()) > 180 or len(text) > 12000:
+            errors.append("active Work coordinator task exceeded bounded current-state size")
+        if text.count("## Context checkpoint") != 1:
+            errors.append("active Work coordinator task must contain exactly one Context checkpoint")
+        for legacy_heading in (
+            "## Current Work checkpoint",
+            "## Prior Work allocation checkpoint",
+            "## Current continuation and",
+            "## Current prospective",
+        ):
+            if legacy_heading in text:
+                errors.append(
+                    f"active Work coordinator task reintroduced historical ledger heading: {legacy_heading}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     contract = load_json(CONTRACT_PATH, errors)
@@ -264,6 +320,7 @@ def main() -> int:
     validate_handover_lifecycle(handover_lifecycle, errors)
     validate_active_task_packets(errors)
     validate_context_economy(errors)
+    validate_current_state_hygiene(errors)
 
     if contract.get("repository") != EXPECTED_REPOSITORY:
         errors.append("governance repository must be Oteryn/Oteryn-Game")
