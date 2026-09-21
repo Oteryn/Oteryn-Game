@@ -70,14 +70,14 @@ pub(super) async fn replacement_receipt_matches_record(
 }
 
 #[derive(Clone)]
-enum JournalBackend {
+pub(super) enum JournalBackend {
     #[cfg(test)]
     Legacy(PgPool),
     Root(DurabilityRoot),
 }
 
 impl JournalBackend {
-    fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
+    pub(super) fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
             #[cfg(test)]
             Self::Legacy(_) => Ok(None),
@@ -100,7 +100,7 @@ impl JournalBackend {
         }
     }
 
-    async fn run_pass<T, F>(
+    pub(super) async fn run_pass<T, F>(
         &self,
         issued: Option<db::IssuedSemanticPass>,
         operation: F,
@@ -268,6 +268,16 @@ impl AdmissionReconnectJournal {
                         scope_storage(record);
 
                     let mut transaction = begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, record).await?;
+                    if super::fresh_admission::has_owning_loss_receipt(
+                        &mut transaction,
+                        &session_id,
+                        record.continuity().control_loss_epoch().get(),
+                    )
+                    .await?
+                    {
+                        return Ok(ReconnectPrepareDispositionV1::Unavailable);
+                    }
                     let inserted_session = sqlx::query(
                         "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -660,6 +670,7 @@ impl AdmissionReconnectJournal {
                         .to_string();
 
                     let mut transaction = begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, record).await?;
                     let Some(session) =
                         load_session_for_update(&mut transaction, session_id.as_slice()).await?
                     else {
@@ -870,6 +881,7 @@ impl AdmissionReconnectJournal {
             .run_pass(issued, |holder, deadline| {
                 Box::pin(async move {
                     let mut transaction = begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, request.record()).await?;
                     let (snapshot, _state) =
                         Self::reconcile_record_in_transaction(&mut transaction, request.record())
                             .await?;

@@ -308,18 +308,19 @@ impl FreshAdmissionStore {
         maximum_operation_bytes: usize,
         maximum_guard_bytes: usize,
     ) -> Result<Self> {
-        if maximum_operation_bytes != super::MAX_FRESH_OPERATION_BYTES {
+        if maximum_operation_bytes != super::MAX_FRESH_OPERATION_BYTES
+            || maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
-        Ok(Self {
-            guards: AdmissionGuardStore::connect_runtime(url, maximum_guard_bytes).await?,
-            maximum_operation_bytes,
-        })
+        let _ = url;
+        Err(DurabilityError::Unavailable)
     }
 
-    pub(super) fn from_backend(backend: std::sync::Arc<super::db::RuntimeBackend>) -> Self {
+    #[must_use]
+    pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
-            guards: AdmissionGuardStore::from_backend(backend),
+            guards: AdmissionGuardStore::from_root(root),
             maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
         }
     }
@@ -373,21 +374,27 @@ impl FreshAdmissionStore {
         &self,
         request: &FreshAdmissionCommitRequestV1,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
+        let store = (*self).clone();
+        let request = (*request).clone();
+        let issued = store.guards.backend.try_issue_root()?;
+        let backend = store.guards.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| Box::pin(async move {
         let operation = request.operation();
         let b = &operation.authorization;
-        let encoded = encode_operation(operation, self.maximum_operation_bytes)?;
+        let encoded = encode_operation(operation, store.maximum_operation_bytes)?;
         let encoded_successors: Vec<_> = operation
             .transition
             .successors
             .iter()
-            .map(|change| encode_guard(change, self.guards.maximum_guard_bytes))
+            .map(|change| encode_guard(change, store.guards.maximum_guard_bytes))
             .collect::<Result<_>>()?;
         let replay = b.facts.replay_key().to_bytes();
-        let mut tx = self.guards.backend.begin().await?;
+        let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
         super::db::lock_admission_relations(&mut tx).await?;
-        if let Some(receipt) = self.receipt_locked(&mut tx, &replay).await? {
+        if let Some(receipt) = store.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
-            tx.commit().await?;
+            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(outcome);
         }
         let initial = checked(b.initial_commit())?;
@@ -409,7 +416,7 @@ impl FreshAdmissionStore {
         }
         let mut current = Vec::with_capacity(b.expected_guards.len());
         for expected in &b.expected_guards {
-            current.push(self.guards.load_locked(&mut tx, &expected.key).await?);
+            current.push(store.guards.load_locked(&mut tx, &expected.key).await?);
         }
         let previous: Vec<_> = operation
             .transition
@@ -423,7 +430,7 @@ impl FreshAdmissionStore {
                     .cloned()
             })
             .collect();
-        if !self
+        if !store
             .guards
             .successor_history_available(&mut tx, &operation.transition.successors, &previous)
             .await?
@@ -443,7 +450,7 @@ impl FreshAdmissionStore {
             .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9)")
             .bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(replay.as_slice()).execute(&mut *tx).await?;
-        self.guards
+        store.guards
             .persist_locked(&mut tx, successors, &previous, &encoded_successors)
             .await?;
         sqlx::query("INSERT INTO game_durability_transport_ref_reservations (transport_ref, game_session_id, reconnect_attempt_ref, reservation_owner, fresh_replay_key) VALUES ($1, encode($2,'hex')::uuid, NULL, 2, $3)").bind(b.transport.to_bytes().as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(replay.as_slice()).execute(&mut *tx).await?;
@@ -457,6 +464,9 @@ impl FreshAdmissionStore {
             return Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable);
         }
         Ok(FreshAdmissionDurableOutcomeV1::Committed(receipt))
+
+            }))
+            .await
     }
 
     /// Initial supported owning-loss slice. Unsupported continuity shapes remain
@@ -466,109 +476,8 @@ impl FreshAdmissionStore {
         request: &ControlLossRequestV1,
         source: &dyn ControlLossSourceV1,
     ) -> Result<ControlLossOutcomeV1> {
-        use sqlx::Row;
-        let operation = request.operation();
-        let encoded = encode_fresh_loss(operation)?;
-        let observation = &operation.observation;
-        let session_id = observation.session.commit().game_session_id();
-        let mut key = b"owning-loss-v1".to_vec();
-        key.extend_from_slice(session_id.as_bytes());
-        key.extend_from_slice(&observation.loss_epoch.get().to_be_bytes());
-        let mut tx = self.guards.backend.begin().await?;
-        super::db::lock_admission_relations(&mut tx).await?;
-        if let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
-            .bind(&key).fetch_optional(&mut *tx).await? {
-            let stored: Option<String> = row.try_get("operation_json")?;
-            if stored.as_deref() != Some(encoded.as_str()) { return Err(DurabilityError::InvalidStoredState); }
-            let decided_at: i64 = row.try_get("decided_at")?;
-            if decided_at < operation.authorized_at { return Err(DurabilityError::InvalidStoredState); }
-            tx.commit().await?;
-            return Ok(ControlLossOutcomeV1::Committed { decided_at });
-        }
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
-            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
-        let Some(row) = row else {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        };
-        let original_json: Option<String> = row.try_get("operation_json")?;
-        let original = decode_operation(
-            &original_json.ok_or(DurabilityError::InvalidStoredState)?,
-            self.maximum_operation_bytes,
-        )?;
-        let FreshReconciliation::Committed(current) =
-            self.reconcile_locked(&mut tx, &original).await?
-        else {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        };
-        let expected_claims = &original.transition.successors;
-        let mut claims = Vec::with_capacity(2);
-        for expected in expected_claims {
-            claims.push(self.guards.load_locked(&mut tx, &expected.key).await?);
-        }
-        if original.authorization.account_id != observation.account_presence.account_id()
-            || validate_claim_preserving_session_v1(
-                &original.authorization.account_id,
-                observation.session,
-                current.current_session,
-                expected_claims,
-                &claims,
-            )
-            .is_err()
-        {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        }
-        // The sealed observation does not supersede the independently published
-        // current runtime owner. Load its complete guard under the same relation
-        // fence before taking L, so concurrent ownership/readiness publication
-        // cannot authorize loss against a superseded session observation.
-        let runtime = self
-            .guards
-            .load_locked(
-                &mut tx,
-                &AdmissionAuthorityGuardKeyV1::Runtime(observation.session.current_runtime_scope()),
-            )
-            .await?;
-        if !matches!(runtime.as_ref().map(|row| &row.state),
-            Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
-            if *ownership_generation == observation.session.current_scope_generation().get())
-        {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        }
-        let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
-            .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(session_id.as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?;
-        let epoch_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_control_loss_continuity WHERE character_id = encode($1,'hex')::uuid AND control_loss_epoch = $2::text::numeric(20,0))")
-            .bind(observation.session.commit().character_id().as_bytes().as_slice()).bind(observation.loss_epoch.get().to_string()).fetch_one(&mut *tx).await?;
-        if !reservation || epoch_exists {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        }
-        // Strong common relation fencing excludes every sibling semantic writer
-        // before this single final decision-time sample.
-        let decided_at: i64 =
-            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-                .fetch_one(&mut *tx)
-                .await?;
-        let Ok(effect) = request.validate_final(source, decided_at) else {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        };
-        if effect.predecessor() != current.current_session {
-            return Ok(ControlLossOutcomeV1::Rejected);
-        }
-        let successor = effect.successor();
-        let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 1, current_transport_ref = NULL, control_loss_epoch = $2::text::numeric(20,0), original_grace_deadline = $3, predecessor_generation = current_generation WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 2 AND control_loss_epoch IS NULL AND prepared_attempt_ref IS NULL AND attempt_count = 0")
-            .bind(session_id.as_bytes().as_slice()).bind(successor.current_control_loss_epoch().ok_or(DurabilityError::InvalidStoredState)?.get().to_string()).bind(successor.current_original_grace_deadline().ok_or(DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;
-        if changed.rows_affected() != 1 {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-        // The complete canonical loss/protection operation is retained below.
-        // Do not manufacture a legacy protection row: its connection-generation
-        // namespace is not this operation's entitlement/rearm namespace. Legacy
-        // prepare/replacement fail closed on this receipt until a typed bridge.
-        sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts(operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
-            .bind(&key).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
-        if tx.commit().await.is_err() {
-            return Ok(ControlLossOutcomeV1::Ambiguous);
-        }
-        Ok(ControlLossOutcomeV1::Committed { decided_at })
+        let _ = (request, source);
+        Err(DurabilityError::Unavailable)
     }
 
     /// Bind sealed delivery to an actual validated durable original. Absence or
@@ -596,17 +505,23 @@ impl FreshAdmissionStore {
         &self,
         original: &ControlLossOperationV1,
     ) -> Result<FreshLossReconciliation> {
+        let store = (*self).clone();
+        let original = (*original).clone();
+        let issued = store.guards.backend.try_issue_root()?;
+        let backend = store.guards.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| Box::pin(async move {
         use sqlx::Row;
-        let encoded = encode_fresh_loss(original)?;
+        let encoded = encode_fresh_loss(&original)?;
         let session_id = original.observation.session.commit().game_session_id();
         let mut key = b"owning-loss-v1".to_vec();
         key.extend_from_slice(session_id.as_bytes());
         key.extend_from_slice(&original.observation.loss_epoch.get().to_be_bytes());
-        let mut tx = self.guards.backend.begin().await?;
+        let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
         super::db::lock_admission_relations(&mut tx).await?;
         let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
             .bind(&key).fetch_optional(&mut *tx).await? else {
-                tx.commit().await?;
+                super::admission_journal::commit_pass_transaction(tx, deadline).await?;
                 return Ok(FreshLossReconciliation::Absent);
             };
         let stored: Option<String> = row.try_get("operation_json")?;
@@ -620,7 +535,7 @@ impl FreshAdmissionStore {
         let fresh_json: Option<String> = row.try_get("operation_json")?;
         let fresh = decode_operation(
             &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
-            self.maximum_operation_bytes,
+            store.maximum_operation_bytes,
         )?;
         let operation = decode_fresh_loss(&stored, checked(fresh.authorization.initial_commit())?)?;
         if operation.observation.session.commit().game_session_id() != session_id
@@ -631,11 +546,11 @@ impl FreshAdmissionStore {
             return Err(DurabilityError::InvalidStoredState);
         }
         if stored != encoded {
-            tx.commit().await?;
+            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(FreshLossReconciliation::Conflict);
         }
         let FreshReconciliation::Committed(current) =
-            self.reconcile_locked(&mut tx, &fresh).await?
+            store.reconcile_locked(&mut tx, &fresh).await?
         else {
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -686,7 +601,7 @@ impl FreshAdmissionStore {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        tx.commit().await?;
+        super::admission_journal::commit_pass_transaction(tx, deadline).await?;
         Ok(FreshLossReconciliation::Committed {
             completion: Box::new(ControlLossCompletionV1 {
                 operation,
@@ -694,17 +609,31 @@ impl FreshAdmissionStore {
             }),
             current,
         })
+
+            }))
+            .await
     }
 
     pub async fn reconcile(
         &self,
         original: &FreshAdmissionOperationV1,
     ) -> Result<FreshReconciliation> {
-        let mut tx = self.guards.backend.begin().await?;
-        super::db::lock_admission_relations(&mut tx).await?;
-        let result = self.reconcile_locked(&mut tx, original).await?;
-        tx.commit().await?;
-        Ok(result)
+        let store = (*self).clone();
+        let original = (*original).clone();
+        let issued = store.guards.backend.try_issue_root()?;
+        let backend = store.guards.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let result = store.reconcile_locked(&mut tx, &original).await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
     }
 
     async fn reconcile_locked(

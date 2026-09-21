@@ -499,7 +499,7 @@ pub enum GuardPublicationDisposition {
 /// Fixed accepted storage byte caps; shared executor integration remains required.
 #[derive(Clone)]
 pub struct AdmissionGuardStore {
-    pub(super) backend: std::sync::Arc<super::db::RuntimeBackend>,
+    pub(super) backend: super::admission_journal::JournalBackend,
     pub(super) maximum_guard_bytes: usize,
 }
 
@@ -663,18 +663,16 @@ fn key_predicate(query: &mut sqlx::QueryBuilder<sqlx::Postgres>, fields: Mirror)
 }
 
 impl AdmissionGuardStore {
-    pub async fn connect_runtime(database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
+    pub async fn connect_runtime(_database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
         if maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES {
             return invalid();
         }
-        Ok(Self::from_backend(
-            super::db::backend_for_constructor(database_url).await?,
-        ))
+        Err(DurabilityError::Unavailable)
     }
 
-    pub(super) fn from_backend(backend: std::sync::Arc<super::db::RuntimeBackend>) -> Self {
+    pub(super) fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
-            backend,
+            backend: super::admission_journal::JournalBackend::Root(root),
             maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
         }
     }
@@ -683,17 +681,29 @@ impl AdmissionGuardStore {
         &self,
         keys: &[AdmissionAuthorityGuardKeyV1],
     ) -> Result<Vec<Option<AdmissionAuthorityPublicationChangeV1>>> {
-        if keys.len() > 4 {
-            return invalid();
-        }
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_relations(&mut transaction).await?;
-        let mut rows = Vec::with_capacity(keys.len());
-        for key in keys {
-            rows.push(self.load_locked(&mut transaction, key).await?);
-        }
-        transaction.commit().await?;
-        Ok(rows)
+        let store = (*self).clone();
+        let keys = keys.to_vec();
+        let issued = store.backend.try_issue_root()?;
+        let backend = store.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
+                    if keys.len() > 4 {
+                        return invalid();
+                    }
+                    let mut transaction =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut transaction).await?;
+                    let mut rows = Vec::with_capacity(keys.len());
+                    for key in keys {
+                        rows.push(store.load_locked(&mut transaction, &key).await?);
+                    }
+                    super::admission_journal::commit_pass_transaction(transaction, deadline)
+                        .await?;
+                    Ok(rows)
+                })
+            })
+            .await
     }
 
     async fn guard_projection_locked(
@@ -723,15 +733,29 @@ impl AdmissionGuardStore {
         &self,
         key: &AdmissionAuthorityGuardKeyV1,
     ) -> Result<(bool, bool)> {
-        use sqlx::Row;
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_relations(&mut transaction).await?;
-        let (row, _) = self.guard_projection_locked(&mut transaction, key).await?;
-        let row = row.ok_or(DurabilityError::InvalidStoredState)?;
-        let payload: Option<String> = row.try_get("payload")?;
-        let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
-        transaction.commit().await?;
-        Ok((payload.is_some(), mirrors.is_some()))
+        let store = (*self).clone();
+        let key = (*key).clone();
+        let issued = store.backend.try_issue_root()?;
+        let backend = store.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
+                    use sqlx::Row;
+                    let mut transaction =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut transaction).await?;
+                    let (row, _) = store
+                        .guard_projection_locked(&mut transaction, &key)
+                        .await?;
+                    let row = row.ok_or(DurabilityError::InvalidStoredState)?;
+                    let payload: Option<String> = row.try_get("payload")?;
+                    let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
+                    super::admission_journal::commit_pass_transaction(transaction, deadline)
+                        .await?;
+                    Ok((payload.is_some(), mirrors.is_some()))
+                })
+            })
+            .await
     }
 
     pub(super) async fn load_locked(
@@ -780,46 +804,60 @@ impl AdmissionGuardStore {
         &self,
         request: &AdmissionAuthorityPublicationV1,
     ) -> Result<GuardPublicationDisposition> {
-        if request.changes().len() > 4 {
-            return invalid();
-        }
-        // Encode/validate explicit per-record allocation before transaction work.
-        let encoded: Vec<_> = request
-            .changes()
-            .iter()
-            .map(|row| encode_guard(row, self.maximum_guard_bytes))
-            .collect::<Result<_>>()?;
-        let mut transaction = self.backend.begin().await?;
-        super::db::lock_admission_relations(&mut transaction).await?;
-        let mut current = Vec::with_capacity(request.changes().len());
-        for change in request.changes() {
-            current.push(self.load_locked(&mut transaction, &change.key).await?);
-        }
-        if let Err(error) = request.validate_locked(&current) {
-            return Ok(if error == AdmissionAuthorityPublicationErrorV1::Stale {
-                GuardPublicationDisposition::Stale
-            } else {
-                GuardPublicationDisposition::Conflict
-            });
-        }
-        if current
-            .iter()
-            .zip(request.changes())
-            .all(|(old, new)| old.as_ref() == Some(new))
-        {
-            transaction.commit().await?;
-            return Ok(GuardPublicationDisposition::Existing);
-        }
-        if !self
-            .successor_history_available(&mut transaction, request.changes(), &current)
-            .await?
-        {
-            return Ok(GuardPublicationDisposition::Conflict);
-        }
-        self.persist_locked(&mut transaction, request.changes(), &current, &encoded)
-            .await?;
-        transaction.commit().await?;
-        Ok(GuardPublicationDisposition::Applied)
+        let store = (*self).clone();
+        let request = (*request).clone();
+        let issued = store.backend.try_issue_root()?;
+        let backend = store.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| {
+                Box::pin(async move {
+                    if request.changes().len() > 4 {
+                        return invalid();
+                    }
+                    // Encode/validate explicit per-record allocation before transaction work.
+                    let encoded: Vec<_> = request
+                        .changes()
+                        .iter()
+                        .map(|row| encode_guard(row, store.maximum_guard_bytes))
+                        .collect::<Result<_>>()?;
+                    let mut transaction =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut transaction).await?;
+                    let mut current = Vec::with_capacity(request.changes().len());
+                    for change in request.changes() {
+                        current.push(store.load_locked(&mut transaction, &change.key).await?);
+                    }
+                    if let Err(error) = request.validate_locked(&current) {
+                        return Ok(if error == AdmissionAuthorityPublicationErrorV1::Stale {
+                            GuardPublicationDisposition::Stale
+                        } else {
+                            GuardPublicationDisposition::Conflict
+                        });
+                    }
+                    if current
+                        .iter()
+                        .zip(request.changes())
+                        .all(|(old, new)| old.as_ref() == Some(new))
+                    {
+                        super::admission_journal::commit_pass_transaction(transaction, deadline)
+                            .await?;
+                        return Ok(GuardPublicationDisposition::Existing);
+                    }
+                    if !store
+                        .successor_history_available(&mut transaction, request.changes(), &current)
+                        .await?
+                    {
+                        return Ok(GuardPublicationDisposition::Conflict);
+                    }
+                    store
+                        .persist_locked(&mut transaction, request.changes(), &current, &encoded)
+                        .await?;
+                    super::admission_journal::commit_pass_transaction(transaction, deadline)
+                        .await?;
+                    Ok(GuardPublicationDisposition::Applied)
+                })
+            })
+            .await
     }
     pub(super) async fn successor_history_available(
         &self,

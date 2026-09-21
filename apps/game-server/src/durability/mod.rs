@@ -383,6 +383,7 @@ impl AdmissionReconnectJournalV2 {
         let character_id = record.identity().character_id().as_bytes().to_vec();
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, record).await?;
 
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
@@ -616,6 +617,7 @@ impl AdmissionReconnectJournalV2 {
                     let record = request.record();
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, record).await?;
                     if let Some(authorization) = request.terminal_replacement()
                         && (!replacement_authorization_matches_record(authorization, record)
                             || !replacement_receipt_matches(
@@ -781,6 +783,7 @@ impl AdmissionReconnectJournalV2 {
                 Box::pin(async move {
                     let mut transaction =
                         admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, &record).await?;
                     let row = sqlx::query(
                         "SELECT state, record_json FROM game_durability_reconnect_attempts \
                          WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
