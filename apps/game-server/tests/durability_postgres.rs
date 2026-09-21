@@ -57,6 +57,12 @@ async fn seed_shared_root_replacement_predecessor(
     .bind(seed.now + 120)
     .execute(&mut connection)
     .await?;
+    // This positive fixture explicitly supplies complete owning history; production
+    // migration never infers completeness from the predecessor row.
+    sqlx::query("INSERT INTO game_durability_session_use_ledgers (character_id, version, complete, revision, revision_floor) VALUES (encode($1,'hex')::uuid,1,TRUE,1,1)")
+        .bind(authority_matrix::uuid(seed.character).as_slice()).execute(&mut connection).await?;
+    sqlx::query("INSERT INTO game_durability_session_use_memberships (game_session_id, character_id, membership_revision, operation_binding) VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+        .bind(authority_matrix::uuid(10).as_slice()).bind(authority_matrix::uuid(seed.character).as_slice()).bind([1_u8;16].as_slice()).execute(&mut connection).await?;
     connection.close().await?;
     Ok(())
 }
@@ -590,6 +596,8 @@ fn fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation()
         // Fixed test-only SQL identifiers. Each trigger interrupts a different
         // tentative effect after an independently valid bootstrap publication.
         for table in [
+            "game_durability_session_use_ledgers",
+            "game_durability_session_use_memberships",
             "game_durability_fresh_admission_receipts",
             "game_durability_reconnect_sessions",
             "game_durability_admission_account_guards",
@@ -624,6 +632,8 @@ fn fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation()
                     return Err(format!("partial claims at {table}").into());
                 }
                 let counts: (i64, i64, i64, i64) = sqlx::query_as("SELECT (SELECT COUNT(*) FROM game_durability_fresh_admission_receipts), (SELECT COUNT(*) FROM game_durability_reconnect_sessions), (SELECT COUNT(*) FROM game_durability_transport_ref_reservations), (SELECT COUNT(*) FROM game_durability_admission_guard_history)").fetch_one(&pool).await?;
+                let membership_effects: (i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_durability_session_use_ledgers), (SELECT count(*) FROM game_durability_session_use_memberships)").fetch_one(&pool).await?;
+                assert_eq!(membership_effects,(0,0),"membership survived failure at {table}");
                 if counts != (0, 0, 0, 4) {
                     return Err(format!("partial durable effects at {table}: expected (0, 0, 0, 4), got {counts:?}").into());
                 }
@@ -4943,4 +4953,425 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
             database.cleanup().await?;
             result
         })
+}
+
+#[test]
+fn session_use_ledger_capacity_replay_and_sealed_reload() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        use foundation::admission_authority_publication::*;
+        use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+        use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+        for count in [65535_i64, 65536] {
+            let database = postgres::IsolatedPostgres::create("session_use_capacity").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let owner = postgres::fresh::Source::new(now)?;
+                let character = owner.current.character_id;
+                let guards = durability::admission_authority_guards::AdmissionGuardStore::connect_runtime(&url,8192).await?;
+                guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner,now))?).await?;
+                // Independent complete historical fixture, with every membership
+                // represented explicitly; no current-session inference.
+                sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES (encode($1,'hex')::uuid,1,TRUE,$2::text::numeric,$2::text::numeric)")
+                    .bind(character.as_bytes().as_slice()).bind(count.to_string()).execute(&pool).await?;
+                sqlx::query("INSERT INTO game_durability_session_use_memberships SELECT ('00000000-0000-7000-8000-' || lpad(to_hex(n + 100000),12,'0'))::uuid, encode($1,'hex')::uuid, n, decode(md5(n::text),'hex') FROM generate_series(1,$2::bigint) AS n")
+                    .bind(character.as_bytes().as_slice()).bind(count).execute(&pool).await?;
+                let store = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+                let request = owner.request()?;
+                let outcome = store.commit(&request).await;
+                if count == 65536 {
+                    assert!(matches!(outcome, Err(DurabilityError::AdmissionGameSessionLedgerExhausted)));
+                    let sessions: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions").fetch_one(&pool).await?;
+                    let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts").fetch_one(&pool).await?;
+                    assert_eq!((sessions,receipts),(0,0));
+                } else {
+                    assert!(matches!(outcome?,FreshAdmissionDurableOutcomeV1::Committed(_)));
+                    assert!(matches!(store.commit(&request).await?,FreshAdmissionDurableOutcomeV1::ExistingCommitted(_)));
+                    let FreshReconciliation::Committed(current) = store.reconcile(request.operation()).await? else { return Err("missing initial session".into()); };
+                    let reloaded = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+                    let lookup = GameSessionUseRequestV1::new_session(character,authority_matrix::session(900000)?,Some(current.current_session.current_game_session_id()),[9;16],65536,Some(GameSessionUseCurrentFenceV1::from_snapshot(current.current_session)));
+                    let source = reloaded.session_use_source(lookup).await?;
+                    let authority = GameSessionUseAuthorityV1::from_owning_source(&source);
+                    assert_eq!(authority.authorize_terminal_replacement(lookup),Err(GameSessionUseAuthorizationErrorV1::TerminalReplacementGameSessionLedgerExhausted));
+                    assert_eq!(authority.authorize_early_terminal_replacement(lookup),Err(GameSessionUseAuthorizationErrorV1::EarlyTerminalReplacementGameSessionLedgerExhausted));
+                    assert_eq!(authority.authorize_post_grace_recovery(lookup),Err(GameSessionUseAuthorizationErrorV1::PostGraceRecoveryGameSessionLedgerExhausted));
+                }
+                let members: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_session_use_memberships").fetch_one(&pool).await?;
+                assert_eq!(members,65536);
+                pool.close().await;
+                Ok::<(),Box<dyn std::error::Error>>(())
+            }.await;
+            database.cleanup().await?;
+            result?;
+        }
+        Ok(())
+    })
+}
+
+struct LifecycleOwner {
+    current: foundation::GameSessionAuthoritySnapshot<foundation::AuthenticatedTransportRefV1>,
+    transition: foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+}
+impl foundation::fnd04_verifier::fresh_source_sealed::Sealed for LifecycleOwner {}
+impl foundation::admission_authority_publication::AdmissionClaimOwningSourceV1 for LifecycleOwner {
+    fn prepare_fresh_claim(
+        &self,
+        _: &foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+        _: i64,
+    ) -> Result<
+        foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+        foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
+    > {
+        Err(foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1::Unavailable)
+    }
+    fn prepare_lifecycle_claim(
+        &self,
+        _: &foundation::admission_authority_publication::AdmissionClaimLifecycleOperationV1,
+        _: i64,
+    ) -> Result<
+        foundation::admission_authority_publication::AdmissionClaimLifecycleResolutionV1,
+        foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
+    > {
+        Ok(
+            foundation::admission_authority_publication::AdmissionClaimLifecycleResolutionV1 {
+                current_session: self.current,
+                evidence: self.transition.clone(),
+            },
+        )
+    }
+}
+
+#[test]
+fn terminal_release_claims_are_atomic_and_exactly_replayed_after_reload()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        use foundation::admission_authority_publication::*;
+        use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+        let database = postgres::IsolatedPostgres::create("terminal_release_claims").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let now = postgres_clock(&pool).await?;
+            let owner = postgres::fresh::Source::new(now)?;
+            let guards = durability::admission_authority_guards::AdmissionGuardStore::connect_runtime(&url,8192).await?;
+            guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner,now))?).await?;
+            let store = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+            let request = owner.request()?;
+            store.commit(&request).await?;
+            let FreshReconciliation::Committed(before) = store.reconcile(request.operation()).await? else { return Err("missing initial session".into()); };
+            let predecessors = request.operation().transition.successors.clone();
+            let mut successors = predecessors.clone();
+            for row in &mut successors {
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision: row.publication_revision };
+                row.publication_revision += 1;
+                row.source.source_revision += 1;
+                row.source.decision_identity = "release-3".into();
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account { security, presence } => { *presence = None; security.provenance.publication_revision = row.publication_revision; }
+                    AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = None,
+                    _ => return Err("unexpected lifecycle key".into()),
+                }
+            }
+            let lifecycle_owner = LifecycleOwner { current: before.current_session, transition: AdmissionClaimTransitionEvidenceV1 { predecessors: predecessors.clone(), successors: successors.clone(), prepared_at: now } };
+            let transition = authority_matrix::checked(TerminalReleaseClaimTransitionV1::prepare(&lifecycle_owner, &owner.current.account_id, before.current_session, now))?;
+            assert_eq!(store.reconcile_lifecycle(transition.evidence()).await?,None);
+            sqlx::query("CREATE FUNCTION reject_release_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'release rollback' USING ERRCODE = '23514'; END; $$").execute(&pool).await?;
+            sqlx::query("CREATE TRIGGER reject_release_receipt BEFORE INSERT ON game_durability_admission_lifecycle_receipts FOR EACH ROW EXECUTE FUNCTION reject_release_receipt()").execute(&pool).await?;
+            assert!(matches!(store.release(&transition).await,Err(DurabilityError::Database(_))));
+            assert_eq!(store.reconcile(request.operation()).await?,FreshReconciliation::Committed(before.clone()));
+            let keys: Vec<_> = predecessors.iter().map(|row|row.key.clone()).collect();
+            assert_eq!(guards.load(&keys).await?,predecessors.into_iter().map(Some).collect::<Vec<_>>());
+            sqlx::query("DROP TRIGGER reject_release_receipt ON game_durability_admission_lifecycle_receipts").execute(&pool).await?;
+            let decided_at = store.release(&transition).await?;
+            let reloaded = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+            assert_eq!(reloaded.release(&transition).await?,decided_at);
+            assert_eq!(reloaded.reconcile_lifecycle(transition.evidence()).await?,Some(decided_at));
+            assert_eq!(guards.load(&keys).await?,successors.into_iter().map(Some).collect::<Vec<_>>());
+            let FreshReconciliation::Committed(after) = store.reconcile(request.operation()).await? else { return Err("missing released session".into()); };
+            assert_eq!(after.current_session.session_state(),foundation::GameSessionState::Terminal);
+            assert_eq!(after.current_session.current_transport(),None);
+            assert_eq!(after.current_session.current_character_lease(),before.current_session.current_character_lease());
+            let members: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_session_use_memberships").fetch_one(&pool).await?;
+            assert_eq!(members,1);
+            pool.close().await;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
+}
+
+#[test]
+fn session_use_source_rejects_incomplete_corrupt_and_globally_reused_membership()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        use foundation::admission_authority_publication::*;
+        use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+        for scenario in 0..3 {
+            let database = postgres::IsolatedPostgres::create("session_use_negative").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let owner = postgres::fresh::Source::new(now)?;
+                let guards = durability::admission_authority_guards::AdmissionGuardStore::connect_runtime(&url,8192).await?;
+                guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner,now))?).await?;
+                let store = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+                let request = owner.request()?;
+                store.commit(&request).await?;
+                let FreshReconciliation::Committed(current) = store.reconcile(request.operation()).await? else { return Err("missing initial session".into()); };
+                let candidate = authority_matrix::session(900001)?;
+                let lookup = GameSessionUseRequestV1::new_session(owner.current.character_id,candidate,Some(current.current_session.current_game_session_id()),[9;16],1,Some(GameSessionUseCurrentFenceV1::from_snapshot(current.current_session)));
+                assert!(GameSessionUseAuthorityV1::from_owning_source(&store.session_use_source(lookup).await?).authorize_terminal_replacement(lookup).is_ok());
+                match scenario {
+                    0 => { sqlx::query("UPDATE game_durability_session_use_ledgers SET complete = FALSE").execute(&pool).await?; }
+                    1 => { sqlx::query("UPDATE game_durability_session_use_ledgers SET revision = 2, revision_floor = 2").execute(&pool).await?; }
+                    _ => {
+                        sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES (encode($1,'hex')::uuid,1,TRUE,1,1)")
+                            .bind(authority_matrix::uuid(999).as_slice()).execute(&pool).await?;
+                        sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+                            .bind(candidate.as_bytes().as_slice()).bind(authority_matrix::uuid(999).as_slice()).bind([9_u8;16].as_slice()).execute(&pool).await?;
+                    }
+                }
+                let reloaded = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+                if scenario == 1 {
+                    assert!(matches!(reloaded.session_use_source(lookup).await,Err(DurabilityError::InvalidStoredState)));
+                } else {
+                    let source = reloaded.session_use_source(lookup).await?;
+                    let expected = if scenario == 0 { GameSessionUseAuthorizationErrorV1::StaleAuthority } else { GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed };
+                    assert_eq!(GameSessionUseAuthorityV1::from_owning_source(&source).authorize_terminal_replacement(lookup),Err(expected));
+                }
+                pool.close().await;
+                Ok::<(),Box<dyn std::error::Error>>(())
+            }.await;
+            database.cleanup().await?;
+            result?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn session_use_migration_preserves_known_history_as_incomplete()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let database = postgres::IsolatedPostgres::create("session_use_migration").await?;
+        let result = async {
+            let url = database.database_url()?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            sqlx::raw_sql(include_str!("../migrations/0001_admission_reconnect_journal.sql")).execute(&pool).await?;
+            sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation) VALUES (encode($1,'hex')::uuid,$2::text::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,3,1000,7,9,10,7)")
+                .bind(authority_matrix::uuid(20).as_slice()).bind(authority_matrix::ACCOUNT).bind(authority_matrix::uuid(11).as_slice()).bind(authority_matrix::uuid(12).as_slice()).bind(authority_matrix::uuid(13).as_slice()).execute(&pool).await?;
+            sqlx::raw_sql(include_str!("../migrations/0002_fresh_admission_authority.sql")).execute(&pool).await?;
+            let state: (bool,String,String) = sqlx::query_as("SELECT complete, revision::text, revision_floor::text FROM game_durability_session_use_ledgers").fetch_one(&pool).await?;
+            assert_eq!(state,(false,"1".into(),"1".into()));
+            let ids: Vec<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(game_session_id) FROM game_durability_session_use_memberships").fetch_all(&pool).await?;
+            assert_eq!(ids,vec![authority_matrix::uuid(20).to_vec()]);
+            pool.close().await;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
+}
+
+#[test]
+fn lawful_legacy_claim_replacement_persists_lineage_and_releases_successor()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        use foundation::admission_authority_publication::*;
+        use foundation::*;
+        use durability::fresh_admission::FreshAdmissionStore;
+        use authority_matrix::checked;
+        let database = postgres::IsolatedPostgres::create("legacy_claim_replacement").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let now = postgres_clock(&pool).await?;
+            let owner = postgres::fresh::Source::new(now)?;
+            let guards = durability::admission_authority_guards::AdmissionGuardStore::connect_runtime(&url,8192).await?;
+            guards.publish(&checked(AdmissionAuthorityPublicationV1::prepare(&owner,now))?).await?;
+            let store = FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+            let fresh = owner.request()?;
+            store.commit(&fresh).await?;
+            let original_id = fresh.operation().authorization.candidate_session;
+            // Independent canonical legacy-loss fixture. This is deliberately not
+            // proof of an owning-fresh-loss bridge: that bridge remains unavailable.
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1,current_transport_ref=NULL,control_loss_epoch=1,original_grace_deadline=$1,predecessor_generation=1")
+                .bind(now+120).execute(&pool).await?;
+            sqlx::query("INSERT INTO game_durability_control_loss_continuity (character_id,control_loss_epoch,account_id,world_id,context_game_session_id,original_grace_deadline,protection_entitlement_state,protection_rearm_state) VALUES (encode($1,'hex')::uuid,1,$2::text::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,1,1)")
+                .bind(owner.current.character_id.as_bytes().as_slice()).bind(&owner.current.account_id).bind(owner.current.world_id.as_bytes().as_slice()).bind(original_id.as_bytes().as_slice()).bind(now+120).execute(&pool).await?;
+            let before = store.current_session(original_id).await?;
+            let terminal = checked(GameSessionAuthoritySnapshot::from_persisted_current_facts(original_id,before.commit(),GameSessionState::Terminal,before.current_connection_generation(),None,before.current_character_lease(),before.current_character_world_eligibility(),before.current_runtime_scope(),before.current_scope_generation()))?;
+            let terminal = checked(terminal.with_control_loss_continuity(checked(ControlLossEpochRefV1::new(1))?,now+120))?;
+            let template = authority_matrix::prepared_record(authority_matrix::Seed { now,generation:1,epoch:1,transport:44,..authority_matrix::Seed::fixed() })?;
+            let candidate_id = authority_matrix::session(900100)?;
+            let record = checked(ReconnectDurabilityRecordV1::new(
+                checked(ReconnectIdentityV1::new(candidate_id,template.identity().reconnect_attempt_ref(),&owner.current.account_id,owner.current.character_id,owner.current.world_id,before.current_runtime_scope()))?,
+                template.connection(),checked(ReconnectAuthorityFenceV1::new(before.current_character_lease().generation(),before.current_scope_generation()))?,template.continuity(),template.proof().clone(),template.fnd02().clone(),template.compatibility().clone()))?;
+            let presence = checked(AccountPresenceClaimV1::new(&owner.current.account_id,owner.current.character_id))?;
+            let authorization = checked(TerminalGameSessionReplacementAuthorizationV1::from_current_authority(&owner.current.account_id,Some(&presence),original_id,candidate_id,terminal,&record))?;
+            let predecessors = fresh.operation().transition.successors.clone();
+            let mut successors = predecessors.clone();
+            for row in &mut successors {
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision:row.publication_revision };
+                row.publication_revision += 1; row.source.source_revision += 1; row.source.decision_identity="replacement-3".into();
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account { security,presence } => { security.provenance.publication_revision=row.publication_revision; *presence=Some((owner.current.character_id,candidate_id)); }
+                    AdmissionAuthorityGuardStateV1::Character { holder,.. } => *holder=Some(candidate_id),
+                    _ => return Err("unexpected claim".into()),
+                }
+            }
+            let lifecycle_owner=LifecycleOwner { current:terminal,transition:AdmissionClaimTransitionEvidenceV1 { predecessors,successors:successors.clone(),prepared_at:now } };
+            let claims=checked(TerminalReplacementClaimTransitionV1::prepare(&lifecycle_owner,&authorization,terminal,&record,now))?;
+            let (_,request)=ReconnectDurabilityFlowV2::begin(record.clone(),Some(authorization));
+            let lookup=GameSessionUseRequestV1::new_session(owner.current.character_id,candidate_id,Some(original_id),record.connection().transport_ref().to_bytes(),1,Some(GameSessionUseCurrentFenceV1::from_snapshot(before)));
+            let journal=durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
+            assert!(matches!(journal.prepare(&request).await,Err(DurabilityError::Unavailable)));
+            sqlx::query("CREATE FUNCTION reject_replacement_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'replacement rollback' USING ERRCODE = '23514'; END; $$").execute(&pool).await?;
+            sqlx::query("CREATE TRIGGER reject_replacement_receipt BEFORE INSERT ON game_durability_admission_lifecycle_receipts FOR EACH ROW EXECUTE FUNCTION reject_replacement_receipt()").execute(&pool).await?;
+            assert!(matches!(journal.prepare_with_claims(&request,&claims,lookup).await,Err(DurabilityError::Database(_))));
+            assert_eq!(store.current_session(original_id).await?,before);
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_durability_session_use_memberships").fetch_one(&pool).await?,1);
+            assert_eq!(store.reconcile_lifecycle(claims.evidence()).await?,None);
+            sqlx::query("DROP TRIGGER reject_replacement_receipt ON game_durability_admission_lifecycle_receipts").execute(&pool).await?;
+            assert_eq!(journal.prepare_with_claims(&request,&claims,lookup).await?,ReconnectPrepareDispositionV2::Prepared);
+            let decided_at=store.reconcile_lifecycle(claims.evidence()).await?.ok_or("missing lifecycle receipt")?;
+            assert_eq!(journal.prepare_with_claims(&request,&claims,lookup).await?,ReconnectPrepareDispositionV2::ExistingPrepared);
+            assert_eq!(store.reconcile_lifecycle(claims.evidence()).await?,Some(decided_at));
+            let reloaded=FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+            let first_current=reloaded.current_session(candidate_id).await?;
+            assert_eq!(first_current.current_game_session_id(),candidate_id);
+            assert_eq!(first_current.commit().game_session_id(),original_id);
+            // A second replacement must preserve the initial binding and retain
+            // the intermediate ID permanently, including after another reload.
+            let mut stale_release_rows=successors.clone();
+            for row in &mut stale_release_rows {
+                row.precondition=AdmissionPublicationPreconditionV1::CompareAndSet {expected_publication_revision:row.publication_revision};
+                row.publication_revision+=1;row.source.source_revision+=1;row.source.decision_identity="stale-release-4".into();
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account {security,presence}=>{security.provenance.publication_revision=row.publication_revision;*presence=None;}
+                    AdmissionAuthorityGuardStateV1::Character {holder,..}=>*holder=None,
+                    _=>return Err("unexpected stale release key".into()),
+                }
+            }
+            let stale_owner=LifecycleOwner {current:first_current,transition:AdmissionClaimTransitionEvidenceV1 {predecessors:successors.clone(),successors:stale_release_rows,prepared_at:now}};
+            let stale_release=checked(TerminalReleaseClaimTransitionV1::prepare(&stale_owner,&owner.current.account_id,first_current,now))?;
+            let next_id=authority_matrix::session(900101)?;
+            let next_identity=checked(ReconnectIdentityV1::new(next_id,checked(ReconnectAttemptRef::new(2))?,&owner.current.account_id,owner.current.character_id,owner.current.world_id,first_current.current_runtime_scope()))?;
+            let next_connection=checked(ReconnectConnectionFenceV1::new(first_current.current_connection_generation(),checked(ConnectionGeneration::new(2))?,authority_matrix::transport(45)?))?;
+            let next_record=checked(ReconnectDurabilityRecordV1::new(next_identity,next_connection,record.authority(),record.continuity(),record.proof().clone(),record.fnd02().clone(),record.compatibility().clone()))?;
+            let next_terminal=checked(GameSessionAuthoritySnapshot::from_persisted_current_facts(candidate_id,first_current.commit(),GameSessionState::Terminal,first_current.current_connection_generation(),None,first_current.current_character_lease(),first_current.current_character_world_eligibility(),first_current.current_runtime_scope(),first_current.current_scope_generation()))?;
+            let next_terminal=checked(next_terminal.with_control_loss_continuity(checked(ControlLossEpochRefV1::new(1))?,now+120))?;
+            let next_authorization=checked(TerminalGameSessionReplacementAuthorizationV1::from_current_authority(&owner.current.account_id,Some(&presence),candidate_id,next_id,next_terminal,&next_record))?;
+            let mut next_successors=successors.clone();
+            for row in &mut next_successors {
+                row.precondition=AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision:row.publication_revision };
+                row.publication_revision+=1;row.source.source_revision+=1;row.source.decision_identity="replacement-4".into();
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account {security,presence}=>{security.provenance.publication_revision=row.publication_revision;*presence=Some((owner.current.character_id,next_id));}
+                    AdmissionAuthorityGuardStateV1::Character {holder,..}=>*holder=Some(next_id),
+                    _=>return Err("unexpected successor key".into()),
+                }
+            }
+            let next_owner=LifecycleOwner { current:next_terminal,transition:AdmissionClaimTransitionEvidenceV1 {predecessors:successors.clone(),successors:next_successors.clone(),prepared_at:now}};
+            let next_claims=checked(TerminalReplacementClaimTransitionV1::prepare(&next_owner,&next_authorization,next_terminal,&next_record,now))?;
+            let (_,next_request)=ReconnectDurabilityFlowV2::begin(next_record.clone(),Some(next_authorization));
+            let next_lookup=GameSessionUseRequestV1::new_session(owner.current.character_id,next_id,Some(candidate_id),next_record.connection().transport_ref().to_bytes(),2,Some(GameSessionUseCurrentFenceV1::from_snapshot(first_current)));
+            assert_eq!(journal.prepare_with_claims(&next_request,&next_claims,next_lookup).await?,ReconnectPrepareDispositionV2::Prepared);
+            assert!(reloaded.release(&stale_release).await.is_err());
+            let successor_keys:Vec<_>=next_successors.iter().map(|row|row.key.clone()).collect();
+            assert_eq!(guards.load(&successor_keys).await?,next_successors.iter().cloned().map(Some).collect::<Vec<_>>());
+            let current=reloaded.current_session(next_id).await?;
+            assert_eq!(current.commit().game_session_id(),original_id);
+            let retired=GameSessionUseRequestV1::new_session(owner.current.character_id,candidate_id,Some(next_id),[99;16],3,Some(GameSessionUseCurrentFenceV1::from_snapshot(current)));
+            let retired_source=reloaded.session_use_source(retired).await?;
+            let retired_authority=GameSessionUseAuthorityV1::from_owning_source(&retired_source);
+            assert_eq!(retired_authority.authorize_terminal_replacement(retired),Err(GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed));
+            assert_eq!(retired_authority.authorize_early_terminal_replacement(retired),Err(GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed));
+            assert_eq!(retired_authority.authorize_post_grace_recovery(retired),Err(GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed));
+            let successors=next_successors;
+            let candidate_id=next_id;
+            let mut released=successors.clone();
+            for row in &mut released {
+                row.precondition=AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision:row.publication_revision };
+                row.publication_revision+=1;row.source.source_revision+=1;row.source.decision_identity="release-5".into();
+                match &mut row.state {
+                    AdmissionAuthorityGuardStateV1::Account { security,presence } => {security.provenance.publication_revision=row.publication_revision;*presence=None;}
+                    AdmissionAuthorityGuardStateV1::Character {holder,..} => *holder=None,
+                    _=>return Err("unexpected release key".into()),
+                }
+            }
+            let release_owner=LifecycleOwner {current,transition:AdmissionClaimTransitionEvidenceV1 {predecessors:successors,successors:released.clone(),prepared_at:now}};
+            let release=checked(TerminalReleaseClaimTransitionV1::prepare(&release_owner,&owner.current.account_id,current,now))?;
+            reloaded.release(&release).await?;
+            assert_eq!(reloaded.current_session(candidate_id).await?.session_state(),GameSessionState::Terminal);
+            let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_session_use_memberships").fetch_one(&pool).await?;
+            assert_eq!(count,3);
+            pool.close().await;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
+}
+
+#[test]
+fn concurrent_fresh_replay_commits_exactly_one_membership() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        use foundation::admission_authority_publication::*;
+        use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+        use durability::fresh_admission::FreshAdmissionStore;
+        let database = postgres::IsolatedPostgres::create("concurrent_membership").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let owner=postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
+            let guards=durability::admission_authority_guards::AdmissionGuardStore::connect_runtime(&url,8192).await?;
+            guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner,owner.now))?).await?;
+            let first=FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+            let second=FreshAdmissionStore::connect_runtime(&url,65536,8192).await?;
+            let request=owner.request()?;
+            let second_request=request.clone();
+            let first_task=tokio::spawn(async move { first.commit(&request).await });
+            let b=second.commit(&second_request).await;
+            let a=first_task.await?;
+            assert!(matches!((a?,b?), (FreshAdmissionDurableOutcomeV1::Committed(_),FreshAdmissionDurableOutcomeV1::ExistingCommitted(_)) | (FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),FreshAdmissionDurableOutcomeV1::Committed(_))));
+            let (count,revision): (i64,String)=sqlx::query_as("SELECT (SELECT count(*) FROM game_durability_session_use_memberships),revision::text FROM game_durability_session_use_ledgers").fetch_one(&pool).await?;
+            assert_eq!((count,revision),(1,"1".into()));
+            assert!(sqlx::query("DELETE FROM game_durability_session_use_memberships").execute(&pool).await.is_err());
+            assert!(sqlx::query("DELETE FROM game_durability_session_use_ledgers").execute(&pool).await.is_err());
+            assert!(sqlx::query("UPDATE game_durability_session_use_ledgers SET revision=0,revision_floor=0").execute(&pool).await.is_err());
+            pool.close().await;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
 }

@@ -1,5 +1,20 @@
 ﻿# OTV2-20260906-durable-fresh-admission-child-b-329
 
+## 2026-09-21 owner-authorized completion checkpoint
+
+Status: **in progress; candidate qualification, independent review and protected integration pending**. Work162 [comment5766813795](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5766813795) activates the existing fourteen-path WP4 allocation, including the returned PostgreSQL target and unreleased `0002`; older prospective lease and local-database availability statements below are historical. Continue the same PR335 and canonical branch, preserving immutable admission and cumulative history. The owner authorized ordinary non-force Git on the owner PC; no replacement branch, Foundation/Cargo changes or protection bypass are included.
+
+The post-WP3 packet retains owning-loss receipt rejection in all three legacy V2 paths. Completion persists globally unique, immutable GameSession membership and per-character revision/floor/completeness, with the accepted 65536 ceiling and no eviction. Fresh and supported replacement effects share one transaction with membership; pre-contract known history migrates as incomplete. The existing sealed Foundation observation API reads independent SQL state and rechecks it at mutation. Additive claim replacement/release consume existing sealed owner transitions, reload actual persisted session/guard state, retain complete bounded historical evidence and original decision L, and preserve the initial fresh binding across successive replacements. Historical evidence is not a live capability.
+
+Configured local PostgreSQL 17.6 uses the canonical pinned image, the existing isolated harness and process-only synthetic credentials. The complete Rust 1.94.0 `--locked` PostgreSQL target passed 448/448 (0 failed or ignored, 19.46 seconds) after the final borrowed-field lifecycle-codec preflight tightening; workspace formatting and diff whitespace checks also pass. Required additional assertions passed for last-effect replacement rollback and stale release after replacement. Cases cover the 65535-to-65536 boundary, exact replay at capacity, all three Foundation nonreuse error families after reload, incomplete/corrupt/global membership rejection, migration incompleteness, concurrent exact fresh replay, immutable membership/revision protection, lifecycle replay/original L, two replacements retaining the initial binding, release, and rollback at fresh effects including ledger membership. These are actual configured SQL executions, not skipped local tests. Evidence is retained on the owner PC under `C:\Oteryn\evidence\wp4-*.log`.
+
+Canonical workspace Clippy on Windows currently reports two unrelated content dead-code errors (`ProjectCapturePlan::documents` and `ProjectFilesystemLimits::validate`); these paths are outside this allocation and are unchanged. Hosted canonical checks and exact-head review remain required.
+
+**Composition boundary retained:** owning fresh control-loss receipts are not a qualified bridge into legacy V2 replacement. Their rejection remains fail-closed under packet5764575587. Positive claim-replacement storage tests use an independently established canonical legacy-loss predecessor and do not prove a fresh-owning-loss bridge or release Server Seam247. Root must track that separate composition prerequisite; this checkpoint makes no Server Seam readiness or protected integration claim.
+
+Next action: finish the cohesive candidate checks, publish through ordinary non-force Git on the existing branch, then root performs exact-head independent review, CI qualification and normal Merge Queue/protected readback.
+
+
 Work admitted this allocation after protected PR #333 integration and readback at `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd` (tree `d7f5a1a07d2a27b81de75ad8c3264848981d4279`); issue #329 admission comment `5557972460` precedes worker mutation.
 ## Current prospective351 hosted-test lease ΓÇö Work162
 

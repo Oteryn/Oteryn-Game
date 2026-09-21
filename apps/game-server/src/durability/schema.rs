@@ -780,6 +780,11 @@ mod terminal_replacement_postgres_red_tests {
         .bind(now + 120)
         .execute(&mut connection)
         .await?;
+        // Independent complete history for this positive owning fixture.
+        sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES (encode($1,'hex')::uuid,1,TRUE,1,1)")
+            .bind(uuid_v7(11).as_slice()).execute(&mut connection).await?;
+        sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+            .bind(uuid_v7(session_raw).as_slice()).bind(uuid_v7(11).as_slice()).bind([1_u8;16].as_slice()).execute(&mut connection).await?;
         connection.close().await?;
         Ok(())
     }

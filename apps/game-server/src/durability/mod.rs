@@ -122,6 +122,8 @@ impl MigrationFailureClass {
 
 #[derive(Debug)]
 pub enum DurabilityError {
+    AdmissionGameSessionLedgerExhausted,
+    SessionUseAuthorization(oteryn_game_server::foundation::admission_authority_publication::GameSessionUseAuthorizationErrorV1),
     Unavailable,
     Database(SqlxFailureClass),
     Migration(MigrationFailureClass),
@@ -138,6 +140,12 @@ pub enum DurabilityError {
 impl Display for DurabilityError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::AdmissionGameSessionLedgerExhausted => {
+                formatter.write_str("ADMISSION_GAMESESSION_LEDGER_EXHAUSTED")
+            }
+            Self::SessionUseAuthorization(error) => {
+                write!(formatter, "session use authorization failed ({error:?})")
+            }
             Self::Unavailable => formatter.write_str("durability work is unavailable"),
             Self::Database(class) => {
                 write!(
@@ -339,7 +347,29 @@ impl AdmissionReconnectJournalV2 {
         &self,
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        self.prepare_owned(request, None).await
+    }
+
+    pub async fn prepare_with_claims(
+        &self,
+        request: &ReconnectPrepareRequestV2,
+        transition: &oteryn_game_server::foundation::admission_authority_publication::TerminalReplacementClaimTransitionV1,
+        membership: oteryn_game_server::foundation::admission_authority_publication::GameSessionUseRequestV1,
+    ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        fresh_admission::encode_lifecycle(transition.evidence())?;
+        self.prepare_owned(request, Some((transition.clone(), membership)))
+            .await
+    }
+
+    async fn prepare_owned(
+        &self,
+        request: &ReconnectPrepareRequestV2,
+        claims: Option<(oteryn_game_server::foundation::admission_authority_publication::TerminalReplacementClaimTransitionV1, oteryn_game_server::foundation::admission_authority_publication::GameSessionUseRequestV1)>,
+    ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
         let Some(authorization) = request.terminal_replacement() else {
+            if claims.is_some() {
+                return Err(DurabilityError::Unavailable);
+            }
             return self.prepare_legacy_typed(request).await;
         };
         if !replacement_authorization_matches_record(authorization, request.record()) {
@@ -351,12 +381,12 @@ impl AdmissionReconnectJournalV2 {
             let request = request.clone();
             return db::await_root_task(self.legacy.spawn_root_task(async move {
                 journal
-                    .prepare_replacement_internal(request, Some(issued))
+                    .prepare_replacement_internal(request, Some(issued), claims)
                     .await
             })?)
             .await;
         }
-        self.prepare_replacement_internal(request.clone(), None)
+        self.prepare_replacement_internal(request.clone(), None, claims)
             .await
     }
 
@@ -364,6 +394,7 @@ impl AdmissionReconnectJournalV2 {
         &self,
         request: ReconnectPrepareRequestV2,
         issued: Option<db::IssuedSemanticPass>,
+        claims: Option<(oteryn_game_server::foundation::admission_authority_publication::TerminalReplacementClaimTransitionV1, oteryn_game_server::foundation::admission_authority_publication::GameSessionUseRequestV1)>,
     ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
         enum ReplacementPassResult {
             Disposition(ReconnectPrepareDispositionV2),
@@ -371,6 +402,7 @@ impl AdmissionReconnectJournalV2 {
         }
 
         let pass_request = request.clone();
+        let claim_store = fresh_admission::FreshAdmissionStore::from_journal(&self.legacy);
         let pass_result = self
             .legacy
             .run_pass(issued, move |holder, deadline| {
@@ -396,9 +428,16 @@ impl AdmissionReconnectJournalV2 {
                         ));
                     }
 
+        let claim_replay = if let Some((transition, _)) = &claims {
+            claim_store.replacement_claim_replay(&mut transaction, transition).await?.is_some()
+        } else { false };
+        let claim_bearing: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid AND (fresh_replay_key IS NOT NULL OR initial_fresh_replay_key IS NOT NULL))")
+            .bind(authorization.predecessor_game_session_id().as_bytes().as_slice()).fetch_one(&mut *transaction).await?;
+        if claim_bearing && claims.is_none() { return Err(DurabilityError::Unavailable); }
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
         if candidate_exists {
+            if claims.is_some() && !claim_replay { return Err(DurabilityError::InvalidStoredState); }
             if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
@@ -426,9 +465,11 @@ impl AdmissionReconnectJournalV2 {
                     prepared_attempt_ref \
              FROM game_durability_reconnect_sessions \
              WHERE character_id = encode($1, 'hex')::uuid \
-               AND session_state IN (1, 2) FOR UPDATE",
+               AND (session_state IN (1, 2) OR ($2 AND session_state = 3 AND game_session_id = encode($3,'hex')::uuid)) FOR UPDATE",
         )
         .bind(character_id.as_slice())
+        .bind(claims.is_some())
+        .bind(authorization.predecessor_game_session_id().as_bytes().as_slice())
         .fetch_optional(&mut *transaction)
         .await?;
         let Some(predecessor) = predecessor else {
@@ -462,6 +503,7 @@ impl AdmissionReconnectJournalV2 {
                 ReconnectPrepareDispositionV2::AttemptCapacityExceeded,
             ));
         }
+        let membership_revision = fresh_admission::unused_session_revision(&mut transaction, record.identity().character_id(), record.identity().game_session_id()).await?;
         ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
         if let Some(prepared_attempt_ref) =
@@ -511,7 +553,7 @@ impl AdmissionReconnectJournalV2 {
                AND current_generation = $4::text::numeric(20, 0) \
                AND character_lease_generation = $5::text::numeric(20, 0) \
                AND scope_ownership_generation <= $2::text::numeric(20, 0) \
-               AND session_state IN (1, 2)",
+               AND (session_state IN (1, 2) OR ($6 AND session_state = 3))",
         )
         .bind(
             authorization
@@ -532,12 +574,17 @@ impl AdmissionReconnectJournalV2 {
                 .predecessor_character_lease_generation()
                 .to_string(),
         )
+        .bind(claims.is_some())
         .execute(&mut *transaction)
         .await?;
         if terminalized_session.rows_affected() != 1 {
             return Err(DurabilityError::InvalidStoredState);
         }
 
+        let prepared_claims = if let Some((transition, membership)) = &claims {
+            Some(claim_store.prepare_replacement_claims(&mut transaction, transition, *membership, record).await?)
+        } else { None };
+        fresh_admission::commit_session_use(&mut transaction, record.identity().character_id(), record.identity().game_session_id(), record.connection().transport_ref().to_bytes(), membership_revision).await?;
         let receipt = sqlx::query(
             "INSERT INTO game_durability_session_replacements (\
                 character_id, predecessor_game_session_id, candidate_game_session_id, \
@@ -584,10 +631,17 @@ impl AdmissionReconnectJournalV2 {
         }
 
         insert_candidate_session_v2(&mut transaction, record, retained_attempt_count).await?;
+        if claims.is_some() {
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET initial_fresh_replay_key = (SELECT COALESCE(fresh_replay_key,initial_fresh_replay_key) FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid) WHERE game_session_id = encode($2,'hex')::uuid")
+                .bind(authorization.predecessor_game_session_id().as_bytes().as_slice()).bind(record.identity().game_session_id().as_bytes().as_slice()).execute(&mut *transaction).await?;
+        }
 
         let disposition =
-            prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
+            prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count, prepared_claims.as_ref().map(|prepared| prepared.decided_at))
                 .await?;
+                    if let (Some((transition, _)), Some(prepared)) = (&claims, &prepared_claims) {
+                        claim_store.persist_replacement_claims(&mut transaction, transition, prepared).await?;
+                    }
                     admission_journal::commit_pass_transaction(transaction, deadline).await?;
                     Ok(ReplacementPassResult::Disposition(disposition))
                 })
@@ -1162,11 +1216,16 @@ async fn prepare_new_candidate_attempt_v2(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
     retained_attempt_count: i16,
+    decided_at: Option<i64>,
 ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
     if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
         return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
     }
-    if database_now_v2(transaction).await? > record.continuity().prepared_deadline() {
+    let now = match decided_at {
+        Some(now) => now,
+        None => database_now_v2(transaction).await?,
+    };
+    if now > record.continuity().prepared_deadline() {
         insert_attempt_v2(transaction, record, V2_STALE_TERMINAL).await?;
         set_candidate_attempt_v2(transaction, record, None, retained_attempt_count).await?;
         return Ok(ReconnectPrepareDispositionV2::RejectedStaleAuthority);

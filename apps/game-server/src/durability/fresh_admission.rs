@@ -402,6 +402,12 @@ impl FreshAdmissionStore {
             return Ok(outcome);
         }
         let initial = checked(b.initial_commit())?;
+        let use_state = session_use_state(&mut tx, initial.character_id()).await?;
+        if !use_state.complete { return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority); }
+        let used: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_session_use_memberships WHERE game_session_id = encode($1,'hex')::uuid)")
+            .bind(b.candidate_session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        if used { return Ok(FreshAdmissionDurableOutcomeV1::RejectedCollision(FreshAdmissionCollisionV1::CandidateSession)); }
+        if use_state.revision == GAME_SESSION_USE_LEDGER_CAPACITY_V1 { return Err(DurabilityError::AdmissionGameSessionLedgerExhausted); }
         let candidate_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1, 'hex')::uuid)").bind(b.candidate_session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
         if candidate_exists {
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedCollision(
@@ -450,6 +456,7 @@ impl FreshAdmissionStore {
         let Ok(successors) = request.validate_at_decision(&current, Some(decided_at)) else {
             return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         };
+        commit_session_use(&mut tx, initial.character_id(), b.candidate_session, b.transport.to_bytes(), use_state.revision).await?;
         sqlx::query("INSERT INTO game_durability_fresh_admission_receipts (replay_key, game_session_id, account_id, character_id, world_id, channel_id, character_lease_generation, scope_ownership_generation, connection_generation, transport_ref, semantic_version, operation_json, authorization_decided_at) VALUES ($1, encode($2,'hex')::uuid, $3::text::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), 1, $9, 1, $10, $11)")
             .bind(replay.as_slice()).bind(b.candidate_session.as_bytes().as_slice()).bind(&b.account_id).bind(initial.character_id().as_bytes().as_slice()).bind(initial.world_id().as_bytes().as_slice()).bind(initial.channel_id().as_bytes().as_slice()).bind(initial.character_lease_generation().to_string()).bind(initial.scope_ownership_generation().to_string()).bind(b.transport.to_bytes().as_slice()).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_durability_reconnect_sessions (game_session_id, account_id, character_id, world_id, runtime_scope_kind, runtime_scope_world_id, runtime_scope_channel_id, character_lease_generation, scope_ownership_generation, current_generation, current_transport_ref, session_state, fresh_replay_key) VALUES (encode($1,'hex')::uuid, $2::text::uuid, encode($3,'hex')::uuid, encode($4,'hex')::uuid, 1, encode($4,'hex')::uuid, encode($5,'hex')::uuid, $6::text::numeric(20,0), $7::text::numeric(20,0), 1, $8, 2, $9)")
@@ -755,6 +762,16 @@ impl FreshAdmissionStore {
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         original: &FreshAdmissionOperationV1,
     ) -> Result<FreshReconciliation> {
+        self.reconcile_session_locked(tx, original, original.authorization.candidate_session)
+            .await
+    }
+
+    async fn reconcile_session_locked(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        original: &FreshAdmissionOperationV1,
+        current_id: GameSessionId,
+    ) -> Result<FreshReconciliation> {
         use sqlx::Row;
         let replay = original.authorization.facts.replay_key().to_bytes();
         let Some(receipt) = self.receipt_locked(tx, &replay).await? else {
@@ -764,14 +781,17 @@ impl FreshAdmissionStore {
             return Ok(FreshReconciliation::Conflict);
         }
         let b = receipt.binding();
-        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(s)::text) <= $2 THEN to_jsonb(s) END AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(b.candidate_session.as_bytes().as_slice()).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
+        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(s)::text) <= $2 THEN to_jsonb(s) END AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(current_id.as_bytes().as_slice()).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
         let state: Option<serde_json::Value> = row.try_get("state")?;
         let state = state.ok_or(DurabilityError::InvalidStoredState)?;
         let initial = checked(b.initial_commit())?;
         if json_text(&state, "account_id")? != b.account_id
             || json_text(&state, "character_id")? != uuid_text(initial.character_id().as_bytes())
             || json_text(&state, "world_id")? != uuid_text(initial.world_id().as_bytes())
-            || json_text(&state, "fresh_replay_key")? != bytea_text(&replay)
+            || (state["fresh_replay_key"]
+                .as_str()
+                .or_else(|| state["initial_fresh_replay_key"].as_str())
+                != Some(bytea_text(&replay).as_str()))
         {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -824,25 +844,27 @@ impl FreshAdmissionStore {
             )),
             _ => None,
         };
-        let mut current_session = checked(GameSessionAuthoritySnapshot::from_current_facts(
-            initial,
-            session_state,
-            checked(ConnectionGeneration::new(json_u64(
-                &state,
-                "current_generation",
-            )?))?,
-            current_transport,
-            checked(CharacterLease::new(
-                initial.character_id(),
-                json_u64(&state, "character_lease_generation")?,
-            ))?,
-            eligibility,
-            scope,
-            checked(ScopeOwnershipGeneration::new(json_u64(
-                &state,
-                "scope_ownership_generation",
-            )?))?,
-        ))?;
+        let mut current_session =
+            checked(GameSessionAuthoritySnapshot::from_persisted_current_facts(
+                current_id,
+                initial,
+                session_state,
+                checked(ConnectionGeneration::new(json_u64(
+                    &state,
+                    "current_generation",
+                )?))?,
+                current_transport,
+                checked(CharacterLease::new(
+                    initial.character_id(),
+                    json_u64(&state, "character_lease_generation")?,
+                ))?,
+                eligibility,
+                scope,
+                checked(ScopeOwnershipGeneration::new(json_u64(
+                    &state,
+                    "scope_ownership_generation",
+                )?))?,
+            ))?;
         match (
             state.get("control_loss_epoch"),
             state.get("original_grace_deadline"),
@@ -1201,6 +1223,617 @@ fn json_bytea(value: &serde_json::Value, key: &str) -> Result<Vec<u8>> {
             .strip_prefix("\\x")
             .ok_or(DurabilityError::InvalidStoredState)?,
     )
+}
+
+struct SessionUseState {
+    revision: u64,
+    complete: bool,
+}
+
+async fn session_use_state(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> Result<SessionUseState> {
+    use sqlx::Row;
+    let row = sqlx::query("SELECT version, complete, revision::text, revision_floor::text FROM game_durability_session_use_ledgers WHERE character_id = encode($1, 'hex')::uuid FOR UPDATE")
+        .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let (revision, complete) = if let Some(row) = row {
+        let revision = checked(row.try_get::<String, _>("revision")?.parse::<u64>())?;
+        let floor = checked(row.try_get::<String, _>("revision_floor")?.parse::<u64>())?;
+        if row.try_get::<i16, _>("version")? != 1
+            || revision != floor
+            || revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        (revision, row.try_get::<bool, _>("complete")?)
+    } else {
+        let existing: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE character_id = encode($1, 'hex')::uuid)")
+            .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        if existing {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        (0, true)
+    };
+    let (count, maximum): (i64, Option<String>) = sqlx::query_as("SELECT count(*), max(membership_revision)::text FROM game_durability_session_use_memberships WHERE character_id = encode($1, 'hex')::uuid")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let maximum = maximum
+        .map(|n| checked(n.parse::<u64>()))
+        .transpose()?
+        .unwrap_or(0);
+    if checked(u64::try_from(count))? != revision || maximum != revision {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(SessionUseState { revision, complete })
+}
+
+/// Consumed only inside the caller's already serialized session transaction.
+/// No membership can survive a rollback of the corresponding session effects.
+pub(super) async fn commit_session_use(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    candidate: GameSessionId,
+    operation_binding: [u8; 16],
+    expected_revision: u64,
+) -> Result<()> {
+    let state = session_use_state(tx, character).await?;
+    if !state.complete || state.revision != expected_revision || operation_binding == [0; 16] {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let revision = state
+        .revision
+        .checked_add(1)
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    sqlx::query("INSERT INTO game_durability_session_use_ledgers (character_id, version, complete, revision, revision_floor) VALUES (encode($1,'hex')::uuid,1,TRUE,0,0) ON CONFLICT DO NOTHING")
+        .bind(character.as_bytes().as_slice()).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_durability_session_use_memberships (game_session_id, character_id, membership_revision, operation_binding) VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),$4)")
+        .bind(candidate.as_bytes().as_slice()).bind(character.as_bytes().as_slice()).bind(revision.to_string()).bind(operation_binding.as_slice()).execute(&mut **tx).await?;
+    let updated = sqlx::query("UPDATE game_durability_session_use_ledgers SET revision = $2::text::numeric(20,0), revision_floor = $2::text::numeric(20,0) WHERE character_id = encode($1,'hex')::uuid AND revision = $3::text::numeric(20,0) AND revision_floor = $3::text::numeric(20,0) AND complete")
+        .bind(character.as_bytes().as_slice()).bind(revision.to_string()).bind(expected_revision.to_string()).execute(&mut **tx).await?;
+    if updated.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+/// A candidate-specific owner read, not a caller-provided membership answer.
+pub struct DurableSessionUseSource {
+    request: GameSessionUseRequestV1,
+    observation: GameSessionUseObservationV1,
+}
+impl recovery_source_sealed::Sealed for DurableSessionUseSource {}
+impl GameSessionUseObservationSourceV1 for DurableSessionUseSource {
+    fn observe_candidate_use(
+        &self,
+        request: &GameSessionUseRequestV1,
+    ) -> std::result::Result<GameSessionUseObservationV1, GameSessionUseAuthorizationErrorV1> {
+        if request != &self.request {
+            return Err(GameSessionUseAuthorizationErrorV1::StaleAuthority);
+        }
+        Ok(self.observation.clone())
+    }
+}
+
+async fn load_session_use_source(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: GameSessionUseRequestV1,
+) -> Result<DurableSessionUseSource> {
+    use sqlx::Row;
+    let state = session_use_state(tx, request.character_id()).await?;
+    if let Some(fence) = request.current_fence() {
+        if request.expected_current() != Some(fence.current_session()) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let current: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid AND character_id = encode($2,'hex')::uuid AND current_generation = $3::text::numeric(20,0) AND character_lease_generation = $4::text::numeric(20,0) AND scope_ownership_generation = $5::text::numeric(20,0))")
+            .bind(fence.current_session().as_bytes().as_slice()).bind(request.character_id().as_bytes().as_slice()).bind(fence.connection_generation().to_string()).bind(fence.character_lease_generation().to_string()).bind(fence.scope_ownership_generation().to_string()).fetch_one(&mut **tx).await?;
+        if !current {
+            return Err(DurabilityError::Unavailable);
+        }
+    } else if request.expected_current().is_some() {
+        return Err(DurabilityError::Unavailable);
+    }
+    let member = sqlx::query("SELECT uuid_send(character_id) AS character_id, operation_binding, membership_revision::text FROM game_durability_session_use_memberships WHERE game_session_id = encode($1,'hex')::uuid")
+        .bind(request.candidate().as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let (membership, binding, committed_revision) = match member {
+        None => (GameSessionCandidateMembershipV1::Unused, None, None),
+        Some(row) => {
+            let binding = row
+                .try_get::<Option<Vec<u8>>, _>("operation_binding")?
+                .map(|v| checked(<[u8; 16]>::try_from(v)))
+                .transpose()?;
+            let owner: Vec<u8> = row.try_get("character_id")?;
+            let exact = owner.as_slice() == request.character_id().as_bytes()
+                && binding == Some(request.operation_binding());
+            let revision = checked(
+                row.try_get::<String, _>("membership_revision")?
+                    .parse::<u64>(),
+            )?;
+            (
+                if exact {
+                    GameSessionCandidateMembershipV1::UsedByExactOperation
+                } else {
+                    GameSessionCandidateMembershipV1::UsedByDifferentOperation
+                },
+                binding,
+                Some(revision),
+            )
+        }
+    };
+    let observation = GameSessionUseObservationV1::from_owner_results(
+        &request,
+        state.revision,
+        if state.complete {
+            GameSessionUseCompletenessV1::Complete
+        } else {
+            GameSessionUseCompletenessV1::Incomplete
+        },
+        membership,
+        binding,
+        committed_revision,
+        state.revision,
+    );
+    Ok(DurableSessionUseSource {
+        request,
+        observation,
+    })
+}
+
+impl FreshAdmissionStore {
+    pub async fn session_use_source(
+        &self,
+        request: GameSessionUseRequestV1,
+    ) -> Result<DurableSessionUseSource> {
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let source = load_session_use_source(&mut tx, request).await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(source)
+                })
+            })
+            .await
+    }
+}
+
+pub(super) async fn unused_session_revision(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    candidate: GameSessionId,
+) -> Result<u64> {
+    let state = session_use_state(tx, character).await?;
+    if !state.complete {
+        return Err(DurabilityError::Unavailable);
+    }
+    let used: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_session_use_memberships WHERE game_session_id = encode($1,'hex')::uuid)")
+        .bind(candidate.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if used {
+        return Err(DurabilityError::SessionUseAuthorization(
+            GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed,
+        ));
+    }
+    if state.revision == GAME_SESSION_USE_LEDGER_CAPACITY_V1 {
+        return Err(DurabilityError::SessionUseAuthorization(
+            GameSessionUseAuthorizationErrorV1::TerminalReplacementGameSessionLedgerExhausted,
+        ));
+    }
+    Ok(state.revision)
+}
+
+fn write_lifecycle(w: &mut Writer, evidence: &AdmissionClaimLifecycleEvidenceV1) -> Result<()> {
+    let s = evidence.operation.current_session();
+    let c = s.commit();
+    w.tag(match &evidence.operation {
+        AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => 1,
+        AdmissionClaimLifecycleOperationV1::TerminalReplacement { .. } => 2,
+    })?;
+    w.text(evidence.operation.account_id())?;
+    for id in [
+        c.game_session_id().as_bytes(),
+        c.character_id().as_bytes(),
+        c.world_id().as_bytes(),
+        c.channel_id().as_bytes(),
+        s.current_game_session_id().as_bytes(),
+    ] {
+        w.bytes(id)?;
+    }
+    w.u64(c.character_lease_generation())?;
+    w.u64(c.scope_ownership_generation())?;
+    w.u64(c.connection_generation().get())?;
+    w.bytes(&c.initial_transport().to_bytes())?;
+    w.tag(match s.session_state() {
+        GameSessionState::Active => 1,
+        GameSessionState::Reconnectable => 2,
+        GameSessionState::Terminal => 3,
+    })?;
+    w.u64(s.current_connection_generation().get())?;
+    w.boolean(s.current_transport().is_some())?;
+    if let Some(t) = s.current_transport() {
+        w.bytes(&t.to_bytes())?;
+    }
+    w.bytes(s.current_character_lease().character_id().as_bytes())?;
+    w.u64(s.current_character_lease().generation())?;
+    w.boolean(s.current_character_world_eligibility().is_some())?;
+    if let Some(e) = s.current_character_world_eligibility() {
+        w.bytes(e.character_id().as_bytes())?;
+        w.bytes(e.world_id().as_bytes())?;
+    }
+    write_scope(w, s.current_runtime_scope())?;
+    w.u64(s.current_scope_generation().get())?;
+    w.boolean(s.current_control_loss_epoch().is_some())?;
+    if let Some(epoch) = s.current_control_loss_epoch() {
+        w.u64(epoch.get())?;
+    }
+    w.boolean(s.current_original_grace_deadline().is_some())?;
+    if let Some(grace) = s.current_original_grace_deadline() {
+        w.i64(grace)?;
+    }
+    if let AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } =
+        &evidence.operation
+    {
+        // Traverse borrowed fields in both passes: no JSON tree or candidate clone
+        // may allocate ahead of the complete lifecycle envelope preflight.
+        let identity = candidate.identity();
+        w.u64(candidate.version().into())?;
+        w.bytes(identity.game_session_id().as_bytes())?;
+        w.bytes(&identity.reconnect_attempt_ref().to_be_bytes())?;
+        w.text(identity.account_id())?;
+        w.bytes(identity.character_id().as_bytes())?;
+        w.bytes(identity.world_id().as_bytes())?;
+        write_scope(w, identity.runtime_scope())?;
+        w.u64(candidate.connection().predecessor().get())?;
+        w.u64(candidate.connection().candidate().get())?;
+        w.bytes(&candidate.connection().transport_ref().to_bytes())?;
+        w.u64(candidate.authority().character_lease_generation())?;
+        w.u64(candidate.authority().scope_ownership_generation().get())?;
+        w.u64(candidate.continuity().control_loss_epoch().get())?;
+        w.i64(candidate.continuity().original_grace_deadline())?;
+        w.i64(candidate.continuity().prepared_deadline())?;
+        match candidate.continuity().protection_entitlement() {
+            ProtectionEntitlementV1::Unused => w.tag(1)?,
+            ProtectionEntitlementV1::Fenced { generation } => {
+                w.tag(2)?;
+                w.u64(generation)?;
+            }
+        }
+        match candidate.proof() {
+            ReconnectProofV1::FastReconnect {
+                reconnect_proof_generation,
+            } => {
+                w.tag(1)?;
+                w.u64(*reconnect_proof_generation)?;
+            }
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce,
+            } => {
+                w.tag(2)?;
+                w.bytes(recovery_grant_nonce)?;
+            }
+        }
+        let fnd02 = candidate.fnd02();
+        w.u64(fnd02.next_command_id().get())?;
+        w.u64(fnd02.pending().len() as u64)?;
+        for pending in fnd02.pending() {
+            w.u64(pending.command_id().get())?;
+            w.tag(match pending.disposition() {
+                PendingCommandDispositionV1::PendingOriginal => 1,
+                PendingCommandDispositionV1::TerminalOutcomeRetained => 2,
+            })?;
+        }
+        w.u64(fnd02.server_sequence())?;
+        w.u64(fnd02.domain_revisions().len() as u64)?;
+        for revision in fnd02.domain_revisions() {
+            w.u64(revision.domain_id().into())?;
+            w.u64(revision.revision())?;
+        }
+        let compatibility = candidate.compatibility();
+        w.u64(compatibility.protocol_major().into())?;
+        w.u64(compatibility.transport_profile().into())?;
+        for value in [
+            compatibility.ruleset_revision(),
+            compatibility.content_revision(),
+            compatibility.map_revision(),
+            compatibility.world_policy_revision(),
+        ] {
+            w.text(value)?;
+        }
+        w.u64(compatibility.account_security_generation())?;
+        for fence in [
+            compatibility.platform_security_evidence(),
+            compatibility.proof_trust_evidence(),
+        ] {
+            w.text(fence.authority())?;
+            w.text(fence.purpose())?;
+            w.text(fence.scope())?;
+            w.text(fence.source_revision())?;
+            w.text(fence.decision_identity())?;
+            w.i64(fence.source_observed_at())?;
+        }
+        w.boolean(compatibility.credential_expiration().is_some())?;
+        if let Some(expiration) = compatibility.credential_expiration() {
+            w.i64(expiration)?;
+        };
+    }
+    write_changes(w, &evidence.transition.predecessors)?;
+    write_changes(w, &evidence.transition.successors)?;
+    w.i64(evidence.transition.prepared_at)?;
+    Ok(())
+}
+
+pub(super) fn encode_lifecycle(evidence: &AdmissionClaimLifecycleEvidenceV1) -> Result<String> {
+    let mut size = Writer::counter(super::MAX_FRESH_OPERATION_BYTES);
+    write_lifecycle(&mut size, evidence)?;
+    envelope_size(size.measured(), super::MAX_FRESH_OPERATION_BYTES)?;
+    checked(evidence.validate_historical(evidence.transition.prepared_at))?;
+    let mut writer = Writer::new(super::MAX_FRESH_OPERATION_BYTES);
+    write_lifecycle(&mut writer, evidence)?;
+    encode_envelope(&writer.bytes, super::MAX_FRESH_OPERATION_BYTES)
+}
+
+fn lifecycle_key(evidence: &AdmissionClaimLifecycleEvidenceV1) -> Vec<u8> {
+    let mut key = b"claim-lifecycle-v1".to_vec();
+    key.extend_from_slice(
+        evidence
+            .operation
+            .current_session()
+            .current_game_session_id()
+            .as_bytes(),
+    );
+    match &evidence.operation {
+        AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => key.push(1),
+        AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } => {
+            key.push(2);
+            key.extend_from_slice(candidate.identity().game_session_id().as_bytes());
+        }
+    }
+    key
+}
+
+async fn lifecycle_replay(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    evidence: &AdmissionClaimLifecycleEvidenceV1,
+    encoded: &str,
+) -> Result<Option<i64>> {
+    use sqlx::Row;
+    let row = sqlx::query("SELECT CASE WHEN octet_length(operation_json) <= 65536 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts WHERE operation_key = $1")
+        .bind(lifecycle_key(evidence)).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    if row
+        .try_get::<Option<String>, _>("operation_json")?
+        .as_deref()
+        != Some(encoded)
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let decided_at = row.try_get::<i64, _>("decided_at")?;
+    checked(evidence.validate_historical(decided_at))?;
+    Ok(Some(decided_at))
+}
+
+impl FreshAdmissionStore {
+    async fn current_session_locked(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        session: GameSessionId,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        let payload: Option<String> = sqlx::query_scalar("SELECT CASE WHEN octet_length(r.operation_json) <= 65536 THEN r.operation_json END FROM game_durability_reconnect_sessions s JOIN game_durability_fresh_admission_receipts r ON r.replay_key = COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) WHERE s.game_session_id = encode($1,'hex')::uuid")
+            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.flatten();
+        let original = decode_operation(
+            &payload.ok_or(DurabilityError::Unavailable)?,
+            self.maximum_operation_bytes,
+        )?;
+        match self
+            .reconcile_session_locked(tx, &original, session)
+            .await?
+        {
+            FreshReconciliation::Committed(snapshot) => Ok(snapshot.current_session),
+            _ => Err(DurabilityError::InvalidStoredState),
+        }
+    }
+
+    pub async fn current_session(
+        &self,
+        session: GameSessionId,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>> {
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let current = store.current_session_locked(&mut tx, session).await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(current)
+                })
+            })
+            .await
+    }
+
+    pub async fn reconcile_lifecycle(
+        &self,
+        evidence: &AdmissionClaimLifecycleEvidenceV1,
+    ) -> Result<Option<i64>> {
+        let encoded = encode_lifecycle(evidence)?;
+        let evidence = evidence.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let result = lifecycle_replay(&mut tx, &evidence, &encoded).await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
+    }
+
+    /// A sealed owner transition is still revalidated against independently read
+    /// SQL current state at the one decision time of the serialized transaction.
+    pub async fn release(&self, transition: &TerminalReleaseClaimTransitionV1) -> Result<i64> {
+        let encoded = encode_lifecycle(transition.evidence())?;
+        let transition = transition.clone();
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend.run_pass(issued, move |holder, deadline| Box::pin(async move {
+            let evidence = transition.evidence();
+            let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            if let Some(prior) = lifecycle_replay(&mut tx, evidence, &encoded).await? {
+                super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                return Ok(prior);
+            }
+            let session_id = evidence.operation.current_session().current_game_session_id();
+            let current = store.current_session_locked(&mut tx, session_id).await?;
+            let mut rows = Vec::with_capacity(2);
+            for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
+            if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { return Err(DurabilityError::Unavailable); }
+            let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
+            let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
+            let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
+            let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
+                .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
+            if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
+            sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
+                .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+            store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;
+            sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key, operation_json, decided_at) VALUES ($1,$2,$3)")
+                .bind(lifecycle_key(evidence)).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
+            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+            Ok(decided_at)
+        })).await
+    }
+}
+
+pub(super) struct PreparedReplacementClaims {
+    rows: Vec<Option<AdmissionAuthorityPublicationChangeV1>>,
+    encoded_successors: Vec<String>,
+    encoded: String,
+    pub(super) decided_at: i64,
+}
+impl FreshAdmissionStore {
+    pub(super) fn from_journal(journal: &super::AdmissionReconnectJournal) -> Self {
+        Self {
+            guards: AdmissionGuardStore {
+                backend: journal.backend.clone(),
+                maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
+            },
+            maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+        }
+    }
+    pub(super) async fn replacement_claim_replay(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        transition: &TerminalReplacementClaimTransitionV1,
+    ) -> Result<Option<i64>> {
+        lifecycle_replay(
+            tx,
+            transition.evidence(),
+            &encode_lifecycle(transition.evidence())?,
+        )
+        .await
+    }
+    pub(super) async fn prepare_replacement_claims(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        transition: &TerminalReplacementClaimTransitionV1,
+        request: GameSessionUseRequestV1,
+        candidate: &ReconnectDurabilityRecordV1,
+    ) -> Result<PreparedReplacementClaims> {
+        let evidence = transition.evidence();
+        let current = self
+            .current_session_locked(
+                tx,
+                evidence
+                    .operation
+                    .current_session()
+                    .current_game_session_id(),
+            )
+            .await?;
+        if request.character_id() != candidate.identity().character_id()
+            || request.candidate() != candidate.identity().game_session_id()
+            || request.expected_current() != Some(current.current_game_session_id())
+            || request.operation_binding() != candidate.connection().transport_ref().to_bytes()
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        let source = load_session_use_source(tx, request).await?;
+        match GameSessionUseAuthorityV1::from_owning_source(&source)
+            .authorize_terminal_replacement(request)
+            .map_err(DurabilityError::SessionUseAuthorization)?
+        {
+            GameSessionUseDecisionV1::NewSession { .. } => {}
+            GameSessionUseDecisionV1::ExactCommittedReplay { .. } => {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        }
+        let mut rows = Vec::with_capacity(2);
+        for prior in &evidence.transition.predecessors {
+            rows.push(self.guards.load_locked(tx, &prior.key).await?);
+        }
+        if !self
+            .guards
+            .successor_history_available(tx, &evidence.transition.successors, &rows)
+            .await?
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        let encoded_successors = evidence
+            .transition
+            .successors
+            .iter()
+            .map(|row| encode_guard(row, self.guards.maximum_guard_bytes))
+            .collect::<Result<Vec<_>>>()?;
+        let encoded = encode_lifecycle(evidence)?;
+        let decided_at =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&mut **tx)
+                .await?;
+        transition
+            .validate_locked(&rows, current, candidate, decided_at)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        Ok(PreparedReplacementClaims {
+            rows,
+            encoded_successors,
+            encoded,
+            decided_at,
+        })
+    }
+    pub(super) async fn persist_replacement_claims(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        transition: &TerminalReplacementClaimTransitionV1,
+        prepared: &PreparedReplacementClaims,
+    ) -> Result<()> {
+        let evidence = transition.evidence();
+        self.guards
+            .persist_locked(
+                tx,
+                &evidence.transition.successors,
+                &prepared.rows,
+                &prepared.encoded_successors,
+            )
+            .await?;
+        sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
+            .bind(lifecycle_key(evidence)).bind(&prepared.encoded).bind(prepared.decided_at).execute(&mut **tx).await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

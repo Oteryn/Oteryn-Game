@@ -26,6 +26,7 @@ ALTER TABLE game_durability_reconnect_sessions
     ALTER COLUMN original_grace_deadline DROP NOT NULL,
     ALTER COLUMN predecessor_generation DROP NOT NULL,
     ADD COLUMN fresh_replay_key BYTEA NULL,
+    ADD COLUMN initial_fresh_replay_key BYTEA NULL REFERENCES game_durability_fresh_admission_receipts(replay_key),
     ADD CONSTRAINT game_fresh_session_origin FOREIGN KEY (fresh_replay_key, game_session_id)
         REFERENCES game_durability_fresh_admission_receipts (replay_key, game_session_id),
     ADD CONSTRAINT game_truthful_session_continuity CHECK (
@@ -162,3 +163,61 @@ CREATE TABLE game_durability_executor_custody (
     CHECK (slot <> 0 OR operation_json IS NULL)
 );
 INSERT INTO game_durability_executor_custody (slot, generation) VALUES (0, 0), (1, 0), (2, 0);
+
+-- Exact permanent membership. Existing rows are known history, never proof of
+-- complete pre-contract history. New characters begin at the explicit empty
+-- versioned state only when no prior canonical session exists.
+CREATE TABLE game_durability_session_use_ledgers (
+    character_id UUID PRIMARY KEY,
+    version SMALLINT NOT NULL CHECK (version = 1),
+    complete BOOLEAN NOT NULL,
+    revision NUMERIC(20, 0) NOT NULL CHECK (revision BETWEEN 0 AND 65536),
+    revision_floor NUMERIC(20, 0) NOT NULL CHECK (revision_floor = revision)
+);
+CREATE TABLE game_durability_session_use_memberships (
+    game_session_id UUID PRIMARY KEY,
+    character_id UUID NOT NULL REFERENCES game_durability_session_use_ledgers(character_id),
+    membership_revision NUMERIC(20, 0) NOT NULL CHECK (membership_revision BETWEEN 1 AND 65536),
+    operation_binding BYTEA NULL CHECK (operation_binding IS NULL OR octet_length(operation_binding) = 16),
+    UNIQUE(character_id, membership_revision)
+);
+INSERT INTO game_durability_session_use_ledgers
+    (character_id, version, complete, revision, revision_floor)
+SELECT character_id, 1, FALSE, count(*), count(*) FROM (
+    SELECT game_session_id, character_id FROM game_durability_reconnect_sessions
+    UNION SELECT predecessor_game_session_id, character_id FROM game_durability_session_replacements
+    UNION SELECT candidate_game_session_id, character_id FROM game_durability_session_replacements
+    UNION SELECT game_session_id, character_id FROM game_durability_fresh_admission_receipts
+) AS known_membership GROUP BY character_id;
+INSERT INTO game_durability_session_use_memberships
+    (game_session_id, character_id, membership_revision, operation_binding)
+SELECT game_session_id, character_id,
+    row_number() OVER (PARTITION BY character_id ORDER BY game_session_id), NULL
+FROM (
+    SELECT game_session_id, character_id FROM game_durability_reconnect_sessions
+    UNION SELECT predecessor_game_session_id, character_id FROM game_durability_session_replacements
+    UNION SELECT candidate_game_session_id, character_id FROM game_durability_session_replacements
+    UNION SELECT game_session_id, character_id FROM game_durability_fresh_admission_receipts
+) AS known_membership;
+CREATE TRIGGER game_session_use_membership_immutable BEFORE UPDATE OR DELETE
+    ON game_durability_session_use_memberships FOR EACH ROW
+    EXECUTE FUNCTION game_durability_reject_history_mutation();
+
+CREATE FUNCTION game_durability_guard_session_use_revision() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'permanent Game session ledger cannot be deleted' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.character_id <> OLD.character_id OR NEW.version <> OLD.version
+       OR NEW.revision < OLD.revision OR NEW.revision > OLD.revision + 1
+       OR NEW.revision_floor < OLD.revision_floor
+       OR (NOT OLD.complete AND NEW.complete) THEN
+        RAISE EXCEPTION 'Game session ledger revision or completeness cannot be reset' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER game_session_use_revision_guard BEFORE UPDATE OR DELETE
+    ON game_durability_session_use_ledgers FOR EACH ROW
+    EXECUTE FUNCTION game_durability_guard_session_use_revision();
