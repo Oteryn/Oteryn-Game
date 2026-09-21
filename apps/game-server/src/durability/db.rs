@@ -1,5 +1,5 @@
 use crate::durability::DurabilityError;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
 use sqlx::postgres::{
     BudgetError, PgAuthenticationPolicy, PgConnectOptions, PgPoolOptions, PgSslMode, Postgres,
