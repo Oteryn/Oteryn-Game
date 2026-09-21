@@ -10,7 +10,7 @@ Oteryn: terra game coordinator
 
 ```yaml
 prompt_id: OTV2_TERRA_GAME_CONTROL_PLANE
-prompt_version: "1.1"
+prompt_version: "1.2"
 prompt_mode: DETERMINISTIC_CONTROL_PLANE
 recommended_environment: ChatGPT Work
 repository: Oteryn/Oteryn-Game
