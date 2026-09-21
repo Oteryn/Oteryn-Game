@@ -2,7 +2,7 @@
 
 ```yaml
 prompt_id: OTERYN-GAME-INDEPENDENT-PROGRAMME-AUDIT
-prompt_version: "1.2"
+prompt_version: "1.3"
 prompt_mode: AUDIT
 working_mode: READ_ONLY_INDEPENDENT_AUDIT
 target_repository: Oteryn/Oteryn-Game
@@ -94,6 +94,10 @@ You MUST NOT:
 - invoke external AI as a nested reviewer under this independent-audit role; verify any advisory review evidence selected by the bound META policy without treating it as merge authority.
 
 Do not turn audit findings into implementation during this task.
+
+## 1.2 Context breadth
+
+This alias is intentionally a **whole-programme audit**. A programme-wide Issue/PR/task/contract census is permitted only because the owner explicitly invoked this whole-programme audit surface. Do not export that breadth into ordinary coordinator, owner-status, investigator or bounded-audit prompts. When the requested audit is narrower than the whole programme, use the bounded target and load only material context.
 
 ## 1.1 Local validation safety
 

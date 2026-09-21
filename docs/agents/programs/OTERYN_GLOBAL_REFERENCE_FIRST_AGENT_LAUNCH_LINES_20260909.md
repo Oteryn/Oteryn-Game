@@ -7,7 +7,7 @@
 
 ## How to use this packet
 
-Run the **coordinator line once** in the already active #162 control-plane lineage. Do not start a second mutating `work coordinator` or `terra game coordinator` for the same programme.
+Run the **coordinator line once** in the already active #162 Work-control-plane lineage. `Oteryn: work coordinator` is the sole reusable mutating Game control plane; the retired Terra alias is historical provenance and must not be launched.
 
 The specialist lines may run in separate chats/Work tasks. Every direct implementation alias already requires a live exact allocation before it may write. If the allocation is absent, the specialist remains read-only and returns readiness/evidence/allocation-gap output instead of creating its own branch or scope.
 
