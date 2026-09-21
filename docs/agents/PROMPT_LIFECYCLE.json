@@ -76,7 +76,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "1.7",
+      "version": "1.9",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "ChatGPT Work execution profile of the implementation coordinator with bounded subagent dispatch/integration and fail-closed material architecture escalation; no authority expansion.",
@@ -142,7 +142,7 @@
     {
       "prompt_id": "OTV2_IMPL_DURABILITY",
       "path": "docs/agents/prompts/OTV2_IMPL_DURABILITY.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded durability implementation worker; writes require a current merged allocation.",
