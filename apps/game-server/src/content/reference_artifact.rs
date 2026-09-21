@@ -48,14 +48,12 @@ const FAMILY_ITEM: u8 = 5;
 
 const BATCH_ARTIFACT_PROFILE_ID: &str = "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v2";
 const BATCH_COMPILER_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_COMPILER/v2";
-const BATCH_CANONICALIZATION_PROFILE: &str =
-    "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v2";
+const BATCH_CANONICALIZATION_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v2";
 const BATCH_MAGIC: [u8; 8] = *b"OTRPA02\0";
 const BATCH_PROFILE_VERSION: u16 = 2;
 const BATCH_MAX_INDEX_ENTRIES: usize = 64;
-const BATCH_MAX_INDEX_BYTES: usize = 4
-    + BATCH_MAX_INDEX_ENTRIES
-        * (1 + 2 + MAX_KEY_BYTES + 2 + MAX_ATOM_BYTES + 4 + 4 + 32);
+const BATCH_MAX_INDEX_BYTES: usize =
+    4 + BATCH_MAX_INDEX_ENTRIES * (1 + 2 + MAX_KEY_BYTES + 2 + MAX_ATOM_BYTES + 4 + 4 + 32);
 const BATCH_MAX_BODY_BYTES: usize = BATCH_MAX_INDEX_ENTRIES * MAX_BODY_RECORD_BYTES;
 const BATCH_MAX_ARTIFACT_BYTES: usize = HEADER_LEN
     + SECTION_ENTRY_LEN * SECTION_COUNT
@@ -87,10 +85,7 @@ impl ReferenceArtifactProfile {
         }
     }
 
-    fn detect(
-        bytes: &[u8],
-        projection: ReferenceArtifactProjection,
-    ) -> Result<Self, ContentError> {
+    fn detect(bytes: &[u8], projection: ReferenceArtifactProjection) -> Result<Self, ContentError> {
         if bytes.get(..BATCH_MAGIC.len()) == Some(BATCH_MAGIC.as_slice()) {
             let profile = Self::NativeItemBatchV2;
             check_artifact_length(profile, bytes.len(), projection)?;
@@ -457,8 +452,7 @@ impl<'a> ReferencePlayableArtifactView<'a> {
             }
         }
 
-        let metadata =
-            parse_manifest(profile, section_bytes(bytes, manifest_entry)?, projection)?;
+        let metadata = parse_manifest(profile, section_bytes(bytes, manifest_entry)?, projection)?;
         let index = parse_index(
             profile,
             section_bytes(bytes, index_entry)?,
@@ -494,9 +488,7 @@ impl<'a> ReferencePlayableArtifactView<'a> {
         self.index.len()
     }
 
-    pub fn indexed_identities(
-        &self,
-    ) -> impl ExactSizeIterator<Item = &TypedDefinitionRef> + '_ {
+    pub fn indexed_identities(&self) -> impl ExactSizeIterator<Item = &TypedDefinitionRef> + '_ {
         self.index.iter().map(|entry| &entry.identity)
     }
 
@@ -1283,7 +1275,11 @@ fn encode_index(
         check_body_record_length(record.body.len())?;
         bytes.push(FAMILY_ITEM);
         put_string(&mut bytes, record.identity.key().as_str(), MAX_KEY_BYTES)?;
-        put_string(&mut bytes, record.identity.revision().as_str(), MAX_ATOM_BYTES)?;
+        put_string(
+            &mut bytes,
+            record.identity.revision().as_str(),
+            MAX_ATOM_BYTES,
+        )?;
         put_u32(&mut bytes, to_u32(body_offset)?);
         put_u32(&mut bytes, to_u32(record.body.len())?);
         bytes.extend_from_slice(&sha256(&record.body));
@@ -1710,7 +1706,6 @@ impl<'a> SliceReader<'a> {
     }
 }
 
-
 #[cfg(test)]
 mod native_item_batch_tests {
     use super::*;
@@ -1782,8 +1777,14 @@ mod native_item_batch_tests {
         )?;
         assert_eq!(server.artifact_profile_id(), BATCH_ARTIFACT_PROFILE_ID);
         assert_eq!(client.artifact_profile_id(), BATCH_ARTIFACT_PROFILE_ID);
-        assert_eq!(server.indexed_identity_count(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
-        assert_eq!(client.indexed_identity_count(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+        assert_eq!(
+            server.indexed_identity_count(),
+            CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        );
+        assert_eq!(
+            client.indexed_identity_count(),
+            CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        );
         assert_eq!(
             server.indexed_identities().cloned().collect::<Vec<_>>(),
             linked
@@ -1796,10 +1797,10 @@ mod native_item_batch_tests {
         for definition in &linked.definitions {
             let authoritative = server
                 .lookup_server_item(&definition.definition)?
-                .expect("authoritative batch Item");
+                .ok_or(ContentError::InvalidArtifact("authoritative batch Item"))?;
             let projected = client
                 .lookup_client_item(&definition.definition)?
-                .expect("client batch Item");
+                .ok_or(ContentError::InvalidArtifact("client batch Item"))?;
             assert_eq!(authoritative.physical_class, projected.physical_class);
             assert_eq!(authoritative.stack_class, projected.stack_class);
         }
