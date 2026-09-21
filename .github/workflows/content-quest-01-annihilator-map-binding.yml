@@ -1,0 +1,149 @@
+name: CONTENT-QUEST-01 Annihilator map binding witness
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/content-quest-01-annihilator-map-binding.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  map-binding:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Game head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Checkout exact existing OTBM parser
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          persist-credentials: false
+          sparse-checkout: |
+            tools/otbm_atlas
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout exact Crystal map source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zimbadev/crystalserver
+          ref: ac447fef0935e6df52dc6b6376ae4c1534ecd73f
+          path: crystal
+          persist-credentials: false
+          sparse-checkout: |
+            data-global/world/world.otbm
+          sparse-checkout-cone-mode: false
+
+      - name: Verify source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy rev-parse HEAD)" = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
+          test "$(git -C crystal rev-parse HEAD)" = "ac447fef0935e6df52dc6b6376ae4c1534ecd73f"
+          test "$(git -C crystal hash-object crystal/data-global/world/world.otbm)" = "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b"
+          test "$(stat -c %s crystal/data-global/world/world.otbm)" = "52267895"
+          test "$(sha256sum crystal/data-global/world/world.otbm | cut -d' ' -f1)" = "09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb"
+
+      - name: Inspect exact Annihilator tiles with existing parser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -S - <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          legacy = Path("legacy").resolve()
+          sys.path.insert(0, str(legacy))
+          from tools.otbm_atlas.semantic import Tile, iter_map_records, walk_items
+
+          map_path = Path("crystal/data-global/world/world.otbm")
+          expected = {
+              (33226, 31671, 13): {"label": "lever", "required_item_ids": [2772]},
+              (33216, 31671, 13): {"label": "reward_access_door", "required_item_ids": [5113]},
+              (33227, 31656, 13): {"label": "reward_demon_armor", "required_item_ids": [2472]},
+              (33229, 31656, 13): {"label": "reward_magic_sword", "required_item_ids": [2472]},
+              (33231, 31656, 13): {"label": "reward_stonecutter_axe", "required_item_ids": [2472]},
+              (33233, 31656, 13): {"label": "reward_present", "required_item_ids": [2472]},
+              (33236, 31655, 13): {"label": "room_exit", "required_item_ids": [1949]},
+              (33219, 31657, 13): {"label": "spawn_1", "required_item_ids": []},
+              (33221, 31657, 13): {"label": "spawn_2", "required_item_ids": []},
+              (33223, 31659, 13): {"label": "spawn_3", "required_item_ids": []},
+              (33224, 31659, 13): {"label": "spawn_4", "required_item_ids": []},
+              (33220, 31661, 13): {"label": "spawn_5", "required_item_ids": []},
+              (33222, 31661, 13): {"label": "spawn_6", "required_item_ids": []},
+          }
+
+          found = {}
+          for record in iter_map_records(map_path, strict=True):
+              if not isinstance(record, Tile):
+                  continue
+              key = (record.position.x, record.position.y, record.position.z)
+              if key not in expected:
+                  continue
+              top = []
+              if record.ground is not None:
+                  top.append(record.ground)
+              top.extend(record.items)
+              all_items = list(walk_items(tuple(top)))
+              found[key] = {
+                  "label": expected[key]["label"],
+                  "position": {"x": key[0], "y": key[1], "z": key[2]},
+                  "house_id": record.house_id,
+                  "flags": record.flags,
+                  "ground_server_id": record.ground.server_id if record.ground else None,
+                  "top_level_items": [
+                      {
+                          "server_id": item.server_id,
+                          "action_id": item.action_id,
+                          "unique_id": item.unique_id,
+                          "subtype": item.subtype,
+                          "children": len(item.children),
+                      }
+                      for item in record.items
+                  ],
+                  "all_server_ids": [item.server_id for item in all_items],
+                  "all_action_ids": [item.action_id for item in all_items if item.action_id is not None],
+                  "all_unique_ids": [item.unique_id for item in all_items if item.unique_id is not None],
+              }
+              if len(found) == len(expected):
+                  break
+
+          problems = []
+          for key, spec in expected.items():
+              if key not in found:
+                  problems.append(f"missing tile {spec['label']} {key}")
+                  continue
+              ids = set(found[key]["all_server_ids"])
+              for required in spec["required_item_ids"]:
+                  if required not in ids:
+                      problems.append(f"{spec['label']} {key}: required item {required} absent; got {sorted(ids)}")
+
+          result = {
+              "schema": "CONTENT_QUEST_01_ANNIHILATOR_MAP_BINDING_WITNESS/v1",
+              "source": {
+                  "repository": "zimbadev/crystalserver",
+                  "revision": "ac447fef0935e6df52dc6b6376ae4c1534ecd73f",
+                  "world_otbm_git_blob": "e95e8f7c7a95d1b634b49a5dea5a5dc76021406b",
+                  "world_otbm_sha256": hashlib.sha256(map_path.read_bytes()).hexdigest(),
+              },
+              "parser": {
+                  "repository": "blakinio/Otheryn",
+                  "revision": "e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+              },
+              "tiles": [found[key] for key in sorted(found)],
+              "problems": problems,
+          }
+          print("CONTENT_QUEST_01_MAP_BINDING_JSON_BEGIN")
+          print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+          print("CONTENT_QUEST_01_MAP_BINDING_JSON_END")
+          if problems:
+              raise SystemExit("\n".join(problems))
+          PY
