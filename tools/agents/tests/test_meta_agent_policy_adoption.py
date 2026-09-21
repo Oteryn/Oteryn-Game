@@ -68,7 +68,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "ChannelId",
             "session-generation",
             "repository-native GitHub APIs",
-            "isolated checkout or worktree",
+            "isolated checkout or worktree for local-Git tracked-file mutation",
+            "only no-worktree tracked-file publication exception",
             "Remote Desktop is denied",
         ):
             self.assertIn(value, text)
