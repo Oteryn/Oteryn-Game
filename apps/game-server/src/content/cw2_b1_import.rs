@@ -806,7 +806,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
     let mut reimport_states = Vec::with_capacity(CW2_B1_NATIVE_ITEM_BATCH_COUNT);
 
     let mut specs = NATIVE_ITEM_BATCH;
-    specs.sort_by(|left, right| left.native_key.cmp(right.native_key));
+    specs.sort_by_key(|spec| spec.native_key);
     for spec in specs {
         if !source_ids.insert(spec.source_item_id) || !native_keys.insert(spec.native_key) {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
