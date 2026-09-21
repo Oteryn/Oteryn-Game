@@ -1883,14 +1883,23 @@ mod native_item_batch_tests {
     }
 
     #[test]
-    fn successor_profile_is_bounded_to_the_frozen_batch_cardinality() {
+    fn successor_profiles_preserve_v2_bound_and_select_v3_for_the_full_family() {
+        assert!(!ReferenceArtifactProfile::NativeItemBatchV2
+            .accepts_item_count(BATCH_MAX_INDEX_ENTRIES + 1));
+        assert_eq!(
+            ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1)
+                .expect("65 Items select family-scale profile"),
+            ReferenceArtifactProfile::NativeItemFamilyV3
+        );
+        assert!(ReferenceArtifactProfile::NativeItemFamilyV3
+            .accepts_item_count(FAMILY_MAX_INDEX_ENTRIES));
         assert!(matches!(
-            ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1),
+            ReferenceArtifactProfile::for_definition_count(FAMILY_MAX_INDEX_ENTRIES + 1),
             Err(ContentError::LimitExceeded {
                 resource: "Reference playable definitions",
                 actual,
-                limit: BATCH_MAX_INDEX_ENTRIES,
-            }) if actual == BATCH_MAX_INDEX_ENTRIES + 1
+                limit: FAMILY_MAX_INDEX_ENTRIES,
+            }) if actual == FAMILY_MAX_INDEX_ENTRIES + 1
         ));
     }
 
