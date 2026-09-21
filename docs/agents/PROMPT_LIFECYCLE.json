@@ -296,7 +296,7 @@
     {
       "prompt_id": "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT",
       "path": "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Read-only independent programme architecture audit.",
