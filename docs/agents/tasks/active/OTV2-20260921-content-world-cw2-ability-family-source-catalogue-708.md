@@ -8,6 +8,8 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-cw2-ability-family-source-catalogue-708
+issue: 708
+pr: 736
 pr: null
 base_sha: fd9dcb55a0ea55d2d20488f80abccf8f6c8ec875
 head_sha: null
