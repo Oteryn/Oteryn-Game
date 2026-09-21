@@ -10,7 +10,10 @@ use super::{
     NativeItemBindingDisposition, NativeItemBindingDocument, ProjectReferenceRecord,
     ProjectionDocument, ReimportDecision, ReimportFieldState, world_project_sha256,
 };
-use std::{collections::BTreeSet, fmt::{self, Display, Formatter}};
+use std::{
+    collections::BTreeSet,
+    fmt::{self, Display, Formatter},
+};
 
 pub const PROTECTED_CW2_B1_EVIDENCE_BYTES: usize = 16_877_870;
 pub const PROTECTED_CW2_B1_EVIDENCE_BLOB: &str = "2f0121f3ea6586477b4535840b9a1f1bc28c677c";
@@ -637,7 +640,6 @@ const NATIVE_ITEM_BATCH: [NativeItemSpec; CW2_B1_NATIVE_ITEM_BATCH_COUNT] = [
     },
 ];
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProtectedCw2B1ImportError {
     InputLimitExceeded { actual: usize, limit: usize },
@@ -781,7 +783,6 @@ pub fn protected_cw2_b1_vase_import(
     })
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtectedCw2B1NativeItemBatchImport {
     pub records: Vec<ProjectReferenceRecord>,
@@ -855,7 +856,10 @@ pub fn protected_cw2_b1_native_item_batch_import(
             ),
             text_field("loss.redistribution-grant", "NONE"),
             text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
-            field("source.item-id", CandidateValue::SourceId(spec.source_item_id)),
+            field(
+                "source.item-id",
+                CandidateValue::SourceId(spec.source_item_id),
+            ),
             text_field("source.item-identity", &source_candidate_id),
             text_field("source.item-label", spec.source_label),
             text_field("source.item-label-disposition", "PROVENANCE_ONLY"),
@@ -880,10 +884,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
             source_numeric_id: Some(spec.source_item_id),
             candidate_family: ImportCandidateFamily::Item,
             candidate_operation: ImportCandidateOperation::BindNativeItem,
-            candidate_target: format!(
-                "{}@{}",
-                spec.native_key, CW2_B1_NATIVE_ITEM_BATCH_REVISION
-            ),
+            candidate_target: format!("{}@{}", spec.native_key, CW2_B1_NATIVE_ITEM_BATCH_REVISION),
             candidate_formula: "NOT_APPLICABLE".to_owned(),
             evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
             closure_disposition: CandidateDisposition::LocalNonProduction,
@@ -932,9 +933,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
     })
 }
 
-fn validate_protected_evidence(
-    evidence_bytes: &[u8],
-) -> Result<(), ProtectedCw2B1ImportError> {
+fn validate_protected_evidence(evidence_bytes: &[u8]) -> Result<(), ProtectedCw2B1ImportError> {
     if evidence_bytes.len() > PROTECTED_CW2_B1_EVIDENCE_BYTES {
         return Err(ProtectedCw2B1ImportError::InputLimitExceeded {
             actual: evidence_bytes.len(),
