@@ -615,7 +615,10 @@ fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
                     .await?;
 
                 assert_eq!(marker, None, "recovery must use a successor holder");
-                assert!(root.is_ready(), "successful pass must still return holder to idle");
+                assert!(
+                    root.is_ready(),
+                    "successful pass must still return holder to idle"
+                );
                 assert!(!root.has_ready_demand());
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
