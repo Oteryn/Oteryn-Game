@@ -7,6 +7,9 @@ use std::collections::BTreeMap;
 const B1_EVIDENCE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
 );
+const BATCH_PRODUCT: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20260921-content-world-cw2-native-item-batch.json"
+);
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -387,6 +390,301 @@ fn exact_input_bound_and_digest_reject_any_catalogue_drift() {
     *last ^= 1;
     assert!(matches!(
         protected_cw2_b1_vase_import(&drifted),
+        Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "evidence byte digest"
+        ))
+    ));
+}
+
+fn batch_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_documents: 8,
+        max_document_bytes: 2_097_152,
+        max_total_bytes: 4_194_304,
+        max_json_depth: 24,
+        max_decoded_fields: 32_768,
+        max_string_bytes: 2_097_152,
+        max_locator_bytes: 160,
+        max_locator_segments: 8,
+        max_reference_records: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
+        max_import_records: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
+        max_reimport_states: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
+    }
+}
+
+fn batch_import() -> ProtectedCw2B1NativeItemBatchImport {
+    protected_cw2_b1_native_item_batch_import(B1_EVIDENCE).expect("protected B1 native item batch")
+}
+
+fn batch_draft(imported: ProtectedCw2B1NativeItemBatchImport) -> ProjectDraft {
+    ProjectDraft {
+        project_revision: "project-r1".to_owned(),
+        package_key: "oteryn:content.world-project".to_owned(),
+        semantic_schema_version: "reference-schema-v1".to_owned(),
+        licensing_metadata: "PENDING".to_owned(),
+        world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+        coordinate_frame: "global-target-2026-07-28".to_owned(),
+        records: imported.records,
+        imports: vec![imported.batch],
+        metadata: Vec::new(),
+    }
+}
+
+fn candidate_binding(candidate: &ImportCandidate) -> &NativeItemBindingDocument {
+    candidate
+        .normalized_fields
+        .iter()
+        .find_map(|field| match &field.value {
+            CandidateValue::NativeItemBinding(binding) => Some(binding),
+            _ => None,
+        })
+        .expect("typed native item binding")
+}
+
+fn candidate_binding_mut_at(candidate: &mut ImportCandidate) -> &mut NativeItemBindingDocument {
+    candidate
+        .normalized_fields
+        .iter_mut()
+        .find_map(|field| match &mut field.value {
+            CandidateValue::NativeItemBinding(binding) => Some(binding),
+            _ => None,
+        })
+        .expect("typed native item binding")
+}
+
+#[test]
+fn native_item_batch_matches_the_machine_readable_binding_product() {
+    let imported = batch_import();
+    assert_eq!(imported.records.len(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    assert_eq!(
+        imported.batch.candidates.len(),
+        CW2_B1_NATIVE_ITEM_BATCH_COUNT
+    );
+    assert_eq!(
+        imported.batch.reimport_states.len(),
+        CW2_B1_NATIVE_ITEM_BATCH_COUNT
+    );
+
+    let product: Value = serde_json::from_slice(BATCH_PRODUCT).expect("binding product JSON");
+    assert_eq!(product["schema"], "OTERYN_CW2_NATIVE_ITEM_BINDING_BATCH/v1");
+    assert_eq!(product["batch"]["item_count"], 64);
+    assert_eq!(product["batch"]["resolved_native_bindings"], 64);
+    assert_eq!(product["batch"]["unresolved"], 0);
+    assert_eq!(
+        product["overlay_projection"]["b3_selected_exact_crosswalk_rows"],
+        1_930
+    );
+
+    let rows = product["binding_map"]
+        .as_array()
+        .expect("binding map array");
+    assert_eq!(rows.len(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    let by_source = rows
+        .iter()
+        .map(|row| {
+            (
+                row["source_identity"]
+                    .as_str()
+                    .expect("source identity")
+                    .to_owned(),
+                row,
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    let mut prior_candidate = None;
+    let mut native_keys = std::collections::BTreeSet::new();
+    for candidate in &imported.batch.candidates {
+        if let Some(prior) = prior_candidate {
+            assert!(prior < candidate.source_candidate_id.as_str());
+        }
+        prior_candidate = Some(candidate.source_candidate_id.as_str());
+
+        let row = by_source
+            .get(&candidate.source_candidate_id)
+            .expect("candidate present in product");
+        assert_eq!(
+            candidate.source_label,
+            row["source_label"].as_str().expect("source label")
+        );
+        assert_eq!(
+            candidate.source_numeric_id,
+            Some(
+                candidate
+                    .source_candidate_id
+                    .strip_prefix("crystal:item:")
+                    .expect("source prefix")
+                    .parse()
+                    .expect("numeric source identity")
+            )
+        );
+
+        let binding = candidate_binding(candidate);
+        assert!(native_keys.insert(binding.identity.key.as_str()));
+        assert_eq!(binding.identity.family, "Item");
+        assert_eq!(
+            binding.identity.key,
+            row["native_identity"]["key"].as_str().expect("native key")
+        );
+        assert_eq!(
+            binding.identity.revision,
+            row["native_identity"]["revision"]
+                .as_str()
+                .expect("native revision")
+        );
+        assert_eq!(
+            candidate.candidate_target,
+            format!("{}@definition-r1", binding.identity.key)
+        );
+
+        let fields = candidate
+            .normalized_fields
+            .iter()
+            .map(|field| (field.field_path.as_str(), &field.value))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(
+            fields.get("evidence.node-sha256"),
+            Some(&&CandidateValue::Text(
+                row["source_node_sha256"]
+                    .as_str()
+                    .expect("node digest")
+                    .to_owned()
+            ))
+        );
+        assert_eq!(
+            fields.get("evidence.field-profile-sha256"),
+            Some(&&CandidateValue::Text(
+                row["field_profile_sha256"]
+                    .as_str()
+                    .expect("field profile")
+                    .to_owned()
+            ))
+        );
+        assert_eq!(
+            fields.get("source.native-key-authorship"),
+            Some(&&CandidateValue::Text(
+                "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED".to_owned()
+            ))
+        );
+        assert_eq!(
+            fields.get("loss.source-values-as-gameplay-truth"),
+            Some(&&CandidateValue::Text("REJECTED".to_owned()))
+        );
+    }
+
+    assert_eq!(by_source.len(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    assert_eq!(native_keys.len(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    assert!(by_source.contains_key("crystal:item:2876"));
+    assert_eq!(
+        by_source["crystal:item:2876"]["native_identity"]["key"],
+        CW2_B1_VASE_KEY
+    );
+    assert_eq!(
+        by_source["crystal:item:3357"]["native_identity"]["key"],
+        "oteryn:item.armor.plate_armor"
+    );
+    assert_eq!(
+        by_source["crystal:item:3155"]["native_identity"]["key"],
+        "oteryn:item.consumable.sudden_death_rune"
+    );
+}
+
+#[test]
+fn native_item_batch_reimport_and_canonical_round_trip_are_deterministic() {
+    let first = CanonicalProjectDocuments::from_draft(batch_draft(batch_import()), batch_limits())
+        .expect("canonical batch project");
+    let second = CanonicalProjectDocuments::from_draft(batch_draft(batch_import()), batch_limits())
+        .expect("repeated canonical batch project");
+    assert_eq!(first.documents(), second.documents());
+
+    let project = first
+        .clone()
+        .into_snapshot(batch_limits())
+        .expect("batch snapshot")
+        .parse(batch_limits())
+        .expect("parsed batch project");
+    assert_eq!(
+        project
+            .canonical_documents(batch_limits())
+            .expect("canonical rewrite")
+            .documents(),
+        first.documents()
+    );
+
+    let linked = project.link().expect("linked batch");
+    assert_eq!(linked.definitions.len(), CW2_B1_NATIVE_ITEM_BATCH_COUNT);
+    assert_eq!(
+        linked.client_safe_definitions().len(),
+        CW2_B1_NATIVE_ITEM_BATCH_COUNT
+    );
+    assert!(linked.definitions.iter().all(|definition| {
+        matches!(
+            &definition.kind,
+            ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+                physical_class: ReferenceItemPhysicalClass::Physical,
+                materializable: true,
+                ..
+            })
+        )
+    }));
+}
+
+#[test]
+fn native_item_batch_conflicts_missing_targets_and_duplicates_fail_closed() {
+    let mut conflicting = batch_import();
+    conflicting.batch.reimport_states[0].upstream = None;
+    conflicting.batch.reimport_states[0].local = Some(CandidateValue::SourceId(999_999));
+    conflicting.batch.reimport_states[0].decision = ReimportDecision::Conflict;
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(batch_draft(conflicting), batch_limits()),
+        Err(ProjectError::InvalidProject(
+            "local native item proof has an unresolved import conflict"
+        ))
+    ));
+
+    let mut missing = batch_import();
+    let first = &mut missing.batch.candidates[0];
+    candidate_binding_mut_at(first).identity.revision = "definition-r2".to_owned();
+    let missing_key = candidate_binding(first).identity.key.clone();
+    first.candidate_target = format!("{missing_key}@definition-r2");
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(batch_draft(missing), batch_limits()),
+        Err(ProjectError::InvalidProject(
+            "native item binding target is missing"
+        ))
+    ));
+
+    let mut duplicate = batch_import();
+    let first_identity = candidate_binding(&duplicate.batch.candidates[0])
+        .identity
+        .clone();
+    let second = &mut duplicate.batch.candidates[1];
+    candidate_binding_mut_at(second).identity = first_identity.clone();
+    second.candidate_target = format!("{}@{}", first_identity.key, first_identity.revision);
+    assert!(matches!(
+        CanonicalProjectDocuments::from_draft(batch_draft(duplicate), batch_limits()),
+        Err(ProjectError::InvalidProject(
+            "duplicate native item binding target"
+        ))
+    ));
+}
+
+#[test]
+fn native_item_batch_rejects_any_protected_catalogue_drift() {
+    let mut above = B1_EVIDENCE.to_vec();
+    above.push(b' ');
+    assert!(matches!(
+        protected_cw2_b1_native_item_batch_import(&above),
+        Err(ProtectedCw2B1ImportError::InputLimitExceeded {
+            actual,
+            limit: PROTECTED_CW2_B1_EVIDENCE_BYTES
+        }) if actual == PROTECTED_CW2_B1_EVIDENCE_BYTES + 1
+    ));
+
+    let mut drifted = B1_EVIDENCE.to_vec();
+    *drifted.last_mut().expect("nonempty evidence") ^= 1;
+    assert!(matches!(
+        protected_cw2_b1_native_item_batch_import(&drifted),
         Err(ProtectedCw2B1ImportError::EvidenceMismatch(
             "evidence byte digest"
         ))
