@@ -166,12 +166,11 @@ Before judging Work or a requested target:
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
    - `docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md` or its explicit canonical successor;
-   - `docs/agents/PROMPT_EVAL_STANDARD.md`;
    - `docs/agents/BUILD_TEST_MATRIX.md`;
    - `docs/agents/DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`;
    - `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`;
    - current resource registry and the lane-specific accepted contracts required by active work.
-4. For a bounded requested audit, read the same governance classes applicable to the target and all exact allocation/contract/review policy needed to judge it; do not expand into unrelated programme areas merely because the full Work audit checklist is broader.
+4. For a bounded requested audit, read only governance, allocation, contract and review material needed to judge that exact target; do not expand into unrelated programme areas merely because the full Work audit checklist is broader. `PROMPT_EVAL_STANDARD.md` is needed only when prompt/harness behavior is an audit target.
 5. Resolve the **current Work coordinator lifecycle from GitHub** when it is material to the audit, not from a hard-coded Issue number. Prefer the live Issue/task that explicitly invokes `OTV2_WORK_DELIVERY_COORDINATOR` / `Oteryn: work coordinator`. A historical Issue number such as #162 is evidence only if it is still the live coordinator lifecycle.
 6. For a full programme audit, inventory all active task packets under `docs/agents/tasks/active/` and reconcile each with its live Issue/branch/PR state.
 7. Inventory all open PRs and branches materially linked to the audit scope plus recent merged PRs needed to prove chronology.
