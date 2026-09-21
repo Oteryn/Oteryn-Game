@@ -52,15 +52,18 @@ The required governance job executes the focused PG/SIM regressions, including b
 
 The lane job checks out and verifies the exact protected base, then runs its classifier and pinned Cargo1.94 metadata there. Candidate labels/body/code do not determine selection. Every local normal/dev/build/optional/target-specific dependency participates in reverse closure. The trusted classifier also emits `surface`, `reason` and `routing_health` for observability; those fields never broaden a reduced lane.
 
-A separate required `Merge gate / routing contract` job checks out the exact candidate with complete history, builds real candidate Cargo metadata, verifies the classifier's server/server+Atlas/Atlas/client/unknown/build matrix, and recomputes the reviewed non-server snapshot from the exact candidate tree. If the candidate tree matches the declared snapshot, routing health is `healthy`. If the PR itself changes an audited non-server/build input, the gate records `degraded-candidate` and warns while the protected-base classifier keeps the PR FULL; this avoids forcing ordinary product work to edit control-plane constants. If the candidate inherits stale snapshot state without itself causing that drift, the routing-contract gate fails and blocks integration until a reviewed refresh repairs the assumption.
+A separate required `Merge gate / routing contract` job checks out the exact candidate with complete history, builds real candidate Cargo metadata, verifies the classifier's server/server+Atlas/Atlas/client/agent-governance/runtime-evidence/unknown/build matrix, and recomputes the reviewed non-server snapshot from the exact candidate tree. If the candidate tree matches the declared snapshot, routing health is `healthy`. If the PR itself changes an audited non-server/build input, the gate records `degraded-candidate` and warns while the protected-base classifier keeps the PR FULL; this avoids forcing ordinary product work to edit control-plane constants. If the candidate inherits stale snapshot state without itself causing that drift, the routing-contract gate fails and blocks integration until a reviewed refresh repairs the assumption.
 
 | Proven surface | Required Rust lanes |
 |---|---|
 | Neutral root/documentation Markdown | none; all always-required checks still run |
+| Agent governance (`AGENTS*.md`, `tools/agents/**`, `docs/agents/**` except `docs/agents/evidence/**`) | none; governance, repository-policy, security, routing-contract and aggregate checks still run |
 | Audited Atlas fullworld producer/self-test paths | exact-head Atlas fullworld producer + direct content-source consumer gate; Rust/Windows only when another changed path selects them |
 | Server-only, including durability/migrations/reconnect | Linux workspace + real PG17.6 + strict Clippy, policy and supply chain |
 | Client, shared or simulation | full Linux/PG + Windows production/SIM + policy and supply chain |
-| Control plane, dependencies/build inputs, unknown/mixed/incomplete evidence | full set |
+| CI/routing control (`.github/**`, `tools/repository/**`, `docs/migration/**`), dependencies/build inputs, unknown/mixed/incomplete evidence | full set |
+
+Agent-governance omission is likewise an explicit semantic surface, not a broad documentation whitelist. Governance paths are removed from runtime-impact closure before Cargo/package routing, so a server change accompanied by task/prompt/AGENTS maintenance stays server-only and a client/shared change remains FULL. `docs/agents/evidence/**` is deliberately excluded from agent-governance because current Rust source/tests consume some evidence JSON directly through `include_str!` / `include_bytes!`; non-Markdown evidence that is not separately modeled therefore remains fail-closed FULL. Renames crossing between non-runtime governance/documentation and runtime-material paths remain FULL. Protected-main post-merge routing uses the same proven agent-governance omission.
 
 The Atlas fullworld reduction is intentionally narrower than a directory whitelist. Only `tools/game-atlas-fullworld-source/producer.py` and `self_test.py` are modeled. An Atlas-only PR selects the dedicated exact-head Python gate without Rust/Windows; a server + Atlas PR keeps the proven server lane plus that gate; client/shared/simulation impact still selects FULL. Other files in the same directory, renames to unowned paths, malformed evidence and unknown tools remain FULL. The gate compiles and runs the producer self-test plus the direct `reference-world-corridor-census/content_source_batch` consumer self-test. Full Merge Queue qualification remains unchanged. Protected-main post-merge routing remains conservative for Atlas-only changes until separately qualified.
 
@@ -95,7 +98,7 @@ Issue #285/PR #296 records the earlier full-queue rollout, not a claim that the 
 
 | Change | Focused validation | Exact-head PR validation |
 |---|---|---|
-| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` → `game-gate` |
+| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | governance/policy/security/routing checks → `Merge gate / validate` → `game-gate`; no Linux/Windows product lanes unless another changed path selects them |
 | Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` | governance + dependency review + CodeQL + applicable Rust jobs → aggregate gate |
 | Architecture/contracts only | governance validator plus applicable link/JSON/schema checks | always-required merge-gate subchecks; runtime E2E may be `NOT_APPLICABLE` with reason |
 | Rust/workspace/client code | package-focused tests while editing | conservative trusted-base lanes above; selected predicates must all succeed |
