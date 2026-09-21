@@ -57,9 +57,10 @@ impl PgStream {
             let budget = options
                 .wp3_resource_budget()
                 .ok_or_else(|| Error::Io(std::io::ErrorKind::OutOfMemory.into()))?;
-            // Owner-approved WP3 accounting treats upstream connect/TLS construction as the
-            // external library-owned T subresource. Same-root ResourceBudget custody begins at
-            // this first Oteryn-controlled buffered-socket retention.
+            // Owner-approved WP3 accounting classifies upstream connect/TLS construction as
+            // external L_T, transferred to L_R on success and retained through every dependency
+            // descendant's finality. Same-root ResourceBudget custody begins at this first
+            // Oteryn-controlled buffered-socket retention.
             BufferedSocket::new_owned(socket, budget)?
         } else {
             BufferedSocket::new(socket)

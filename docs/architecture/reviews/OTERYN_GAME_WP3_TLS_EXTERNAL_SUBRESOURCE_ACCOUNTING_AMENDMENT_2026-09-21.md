@@ -34,14 +34,23 @@ release, and fail-closed requirements continue to apply to this controlled
 graph. No allocation may be removed from the controlled graph merely because it
 is inconvenient to measure.
 
-## 3. External library-owned T subresource
+## 3. External connection-generation lifecycle
 
-The dependency-internal backing created by the operating-system/reactor and by
-upstream rustls provider, configuration, trust store, `ServerName`,
-`ClientConnection`, handshake, and deframer implementation is one external,
-library-owned subresource of `T` where the pinned upstream public APIs provide no
-owner-aware allocation seam. It is not assigned a guessed byte charge and is
-not debited from the controlled same-root ledger.
+Where the pinned upstream public APIs provide no owner-aware allocation seam,
+`L_T` covers the dependency-internal backing created by the operating system,
+reactor, and upstream rustls provider, configuration, trust store, `ServerName`,
+`ClientConnection`, handshake, and deframer during connection establishment.
+Successful establishment transfers the retained upstream socket/TLS state into
+`L_R`. Failure, cancellation, or timeout keeps `L_T` live until every
+dependency-owned descendant is final; established or retiring state keeps
+`L_R` live until every retained upstream descendant is final.
+
+No new `L_T` may begin while any prior `L_T` or `L_R` retirement tail is live.
+`L_T` and `L_R` are cardinality and lifetime classifications only: they are not
+a second byte ledger, budget, or allowance. They are not assigned a guessed
+byte charge and are not debited from the controlled same-root ledger. Accounting
+for `T_controlled` and its successful transfer into `R_controlled` remains
+unchanged.
 
 This is an accounting-boundary decision, not an ownership or lifetime escape.
 The external subresource remains bounded by the already-frozen production
@@ -58,12 +67,30 @@ topology and lifecycle:
 - no client certificate; and
 - bounded retained configuration and trust input.
 
-The external subresource begins and ends with its owning connection-establishment
-generation. Failure, cancellation, timeout, successful `T` to `R` transition,
-and retirement retain the existing exact-generation finality rules. No new `T`
-may overlap a still-live external subresource from the prior generation.
+The external lifecycle begins and ends with its owning connection generation.
+Its `L_T` to `L_R` transition and retirement retain the existing
+exact-generation finality rules and do not relax controlled `T`/`R`
+non-overlap.
 
-## 4. Preserved requirements
+## 4. Pinned-upstream hard-bound evidence
+
+The retained upstream dependency is rustls tag `v/0.23.45`, commit
+`2976d90fd1c2db6b518700dd101b714069cfcb17`. Its dependency-native DoS bounds
+include:
+
+- `rustls/src/msgs/deframer/handshake.rs` defines
+  `MAX_HANDSHAKE_SIZE = 0xffff`, explicitly restricting TLS handshake messages
+  to 64 KiB for DoS resistance;
+- `rustls/src/msgs/deframer/buffers.rs` caps handshake read buffering to the
+  same 64 KiB maximum; and
+- `rustls/src/msgs/message/mod.rs` defines `MAX_PAYLOAD = 16_384 + 2048` and
+  `MAX_WIRE_SIZE = MAX_PAYLOAD + HEADER_SIZE` for ordinary records.
+
+These are upstream dependency-native DoS bounds, not DFR ledger charges. They
+complement the external connection-generation cardinality and lifetime bounds;
+they do not create another ledger or allowance.
+
+## 5. Preserved requirements
 
 This amendment creates neither a second ledger nor a second budget. It does not
 authorize an opaque TLS precharge, a resource-limit increase, post-allocation
