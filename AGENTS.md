@@ -29,6 +29,16 @@ Minimum effort never means lowering accepted correctness, security, durability, 
 
 Read the nearest `AGENTS.md` for a touched path. Use `docs/architecture/` for accepted architecture, `docs/contracts/` for durable integration contracts, and `docs/agents/` for routed specialist procedures and task records. Live GitHub Issue, PR and check state governs task lifecycle; historical prompts, handoffs and reports are evidence only.
 
+## Context economy and live-state reads
+
+Treat `docs/agents/CONTEXT_ROUTING.md` as a cost boundary as well as a correctness router. A requirement to read, refresh or resolve current state means the smallest authoritative slice needed for the current decision, not a recursive or full-history fetch.
+
+- Do not bulk-fetch complete Issue/PR comment timelines, all open PRs, whole live-allocation history, the full prompt lifecycle registry or every architecture/contract family merely because a reusable prompt names the container.
+- For long-lived coordinator Issues, use Issue metadata, the current task/checkpoint and specifically referenced or latest material comments. Read older comments only when a concrete historical claim is material and cannot be resolved from the current checkpoint.
+- Resolve one alias through its targeted lifecycle entry; ordinary alias invocation does not require loading the whole registry or re-running prompt evaluation.
+- `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` is owner-facing launch/status guidance, not a technical-worker bootstrap dependency unless the current request is owner-facing placement/status guidance.
+- Reuse already verified immutable exact-revision sources inside one coherent task. Refresh only changing facts that are material to the next mutation, lifecycle, review or integration decision.
+
 Do not write outside the current task's repository, branch and owned paths. Preserve unrelated work. Changes to protocol, identities, authority, persistence, public contracts or production trust require their accepted owning contract and applicable independent review. Production, protected-environment, live-account, credential and external-repository mutations require separate explicit authority.
 
 Run the checks selected by changed paths and preserve `game-gate`, repository protection and Merge Queue. Never weaken authorization, tests, provenance, compatibility or protection to make work pass. Do not expose secrets, private data or proprietary assets.

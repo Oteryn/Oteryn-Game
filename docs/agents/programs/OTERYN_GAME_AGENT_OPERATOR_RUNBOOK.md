@@ -1,6 +1,6 @@
 # Oteryn Game Agent Operator Runbook
 
-This runbook is the owner-facing operational map for launching and supervising the reusable Oteryn Game agent architecture. It is a coordination aid subordinate to root/nearest `AGENTS.md`, current protected `main`, live Issues/tasks/PRs, accepted contracts and the canonical scheduler.
+This runbook is the owner-facing operational map for launching and supervising the reusable Oteryn Game agent architecture. It is a coordination aid subordinate to root/nearest `AGENTS.md`, current protected `main`, live Issues/tasks/PRs, accepted contracts and the canonical scheduler. Technical lane workers do not load this runbook as routine bootstrap; load it only when the current request requires owner-facing launch/status placement.
 
 ## Material source resolution
 

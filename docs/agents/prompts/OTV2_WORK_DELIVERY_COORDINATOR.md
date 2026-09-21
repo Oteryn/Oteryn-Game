@@ -18,12 +18,12 @@ Material architecture interpretation remains owned by the owner-designated Super
 
 Before material action:
 
-1. fresh-read protected `main`, root/nearest `AGENTS.md`, META binding, `PROMPT_LIFECYCLE.json`, the canonical implementation coordinator, live programme/allocation/task records, and only the lane-specific contracts/evidence needed for the next decision;
+1. fresh-read protected `main` and root/nearest `AGENTS.md`; resolve the META binding, selected lifecycle entry, current coordinator task/checkpoint and only the lane-specific contracts/evidence needed for the next decision. Treat the canonical coordinator, full prompt registry, scheduler and historical programme/allocation prose as on-demand sources rather than mandatory full reads;
 2. resolve the programme to exactly one active mutating control-plane profile;
 3. classify live facts `PROVEN / DERIVED / UNKNOWN / CONFLICT`;
 4. detect active path/custody overlap before allocating a writer.
 
-For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` remains the active mutating control plane. Another reusable control-plane prompt is not concurrent mutation authority. If exactly one active profile cannot be proven, return `POLICY_CONFLICT` and do not allocate, lease, integrate or close out.
+For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` remains the active mutating control plane. Another reusable control-plane prompt is not concurrent mutation authority. If exactly one active profile cannot be proven, return `POLICY_CONFLICT` and do not allocate, lease, integrate or close out. Do not bulk-fetch #162 or any other long-lived Issue timeline: use Issue metadata, the current task/checkpoint and only specifically referenced or latest material comments needed for the current decision.
 
 ## Execution-capability preflight
 
