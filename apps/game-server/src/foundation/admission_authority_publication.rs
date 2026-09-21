@@ -10,6 +10,336 @@ use super::{
     TerminalGameSessionReplacementAuthorizationV1, WorldId,
 };
 
+pub const GAME_SESSION_USE_LEDGER_CAPACITY_V1: u64 = 65_536;
+const GAME_SESSION_USE_SOURCE_V1: &str = "game-session-use-ledger";
+const GAME_SESSION_USE_SOURCE_VERSION_V1: u16 = 1;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameSessionUseCompletenessV1 {
+    Complete,
+    Incomplete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameSessionCandidateMembershipV1 {
+    Unused,
+    UsedByExactOperation,
+    UsedByDifferentOperation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameSessionUseFamilyV1 {
+    TerminalReplacement,
+    EarlyTerminalReplacement,
+    PostGraceRecovery,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameSessionUseDecisionV1 {
+    NewSession { committed_revision: u64 },
+    ExactCommittedReplay { committed_revision: u64 },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameSessionUseAuthorizationErrorV1 {
+    StaleAuthority,
+    CandidateAlreadyUsed,
+    RevisionOverflow,
+    TerminalReplacementGameSessionLedgerExhausted,
+    EarlyTerminalReplacementGameSessionLedgerExhausted,
+    PostGraceRecoveryGameSessionLedgerExhausted,
+}
+
+/// Fenced current authority covered by one candidate-specific ledger read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GameSessionUseCurrentFenceV1 {
+    pub(super) current_session: GameSessionId,
+    pub(super) connection_generation: u64,
+    pub(super) character_lease_generation: u64,
+    pub(super) scope_ownership_generation: u64,
+}
+
+#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
+impl GameSessionUseCurrentFenceV1 {
+    #[must_use]
+    pub fn from_snapshot<T: Copy + Eq>(snapshot: GameSessionAuthoritySnapshot<T>) -> Self {
+        Self {
+            current_session: snapshot.current_game_session_id(),
+            connection_generation: snapshot.current_connection_generation().get(),
+            character_lease_generation: snapshot.current_character_lease().generation(),
+            scope_ownership_generation: snapshot.current_scope_generation().get(),
+        }
+    }
+
+    #[must_use]
+    pub(crate) const fn current_session(&self) -> GameSessionId {
+        self.current_session
+    }
+
+    #[must_use]
+    pub(crate) const fn connection_generation(&self) -> u64 {
+        self.connection_generation
+    }
+
+    #[must_use]
+    pub(crate) const fn character_lease_generation(&self) -> u64 {
+        self.character_lease_generation
+    }
+
+    #[must_use]
+    pub(crate) const fn scope_ownership_generation(&self) -> u64 {
+        self.scope_ownership_generation
+    }
+}
+
+/// Immutable request binding passed to the registered Game owner. It contains
+/// no membership answer and therefore cannot forge ledger authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GameSessionUseRequestV1 {
+    pub(super) character_id: CharacterId,
+    pub(super) candidate: GameSessionId,
+    pub(super) expected_current: Option<GameSessionId>,
+    pub(super) operation_binding: [u8; 16],
+    pub(super) expected_membership_revision: u64,
+    pub(super) current_fence: Option<GameSessionUseCurrentFenceV1>,
+}
+
+#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
+impl GameSessionUseRequestV1 {
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub const fn new_session(
+        character_id: CharacterId,
+        candidate: GameSessionId,
+        expected_current: Option<GameSessionId>,
+        operation_binding: [u8; 16],
+        expected_membership_revision: u64,
+        current_fence: Option<GameSessionUseCurrentFenceV1>,
+    ) -> Self {
+        Self {
+            character_id,
+            candidate,
+            expected_current,
+            operation_binding,
+            expected_membership_revision,
+            current_fence,
+        }
+    }
+
+    #[must_use]
+    pub(crate) const fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+
+    #[must_use]
+    pub(crate) const fn candidate(&self) -> GameSessionId {
+        self.candidate
+    }
+
+    #[must_use]
+    pub(crate) const fn expected_current(&self) -> Option<GameSessionId> {
+        self.expected_current
+    }
+
+    #[must_use]
+    pub(crate) const fn operation_binding(&self) -> [u8; 16] {
+        self.operation_binding
+    }
+
+    #[must_use]
+    pub(crate) const fn expected_membership_revision(&self) -> u64 {
+        self.expected_membership_revision
+    }
+
+    #[must_use]
+    pub(crate) const fn current_fence(&self) -> Option<GameSessionUseCurrentFenceV1> {
+        self.current_fence
+    }
+}
+
+/// Sealed, candidate-specific observation. Foundation deliberately stores no
+/// durable membership collection; only the registered owner can return this
+/// value through `GameSessionUseObservationSourceV1`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GameSessionUseObservationV1 {
+    pub(super) character_id: CharacterId,
+    pub(super) candidate: GameSessionId,
+    pub(super) expected_current: Option<GameSessionId>,
+    pub(super) source_identity: String,
+    pub(super) source_version: u16,
+    pub(super) membership_revision: u64,
+    pub(super) completeness: GameSessionUseCompletenessV1,
+    pub(super) membership: GameSessionCandidateMembershipV1,
+    pub(super) operation_binding: [u8; 16],
+    pub(super) committed_operation_binding: Option<[u8; 16]>,
+    pub(super) committed_membership_revision: Option<u64>,
+    pub(super) membership_count: u64,
+    pub(super) current_fence: Option<GameSessionUseCurrentFenceV1>,
+}
+
+#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
+impl GameSessionUseObservationV1 {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn from_owner_results(
+        request: &GameSessionUseRequestV1,
+        membership_revision: u64,
+        completeness: GameSessionUseCompletenessV1,
+        membership: GameSessionCandidateMembershipV1,
+        committed_operation_binding: Option<[u8; 16]>,
+        committed_membership_revision: Option<u64>,
+        membership_count: u64,
+    ) -> Self {
+        Self {
+            character_id: request.character_id(),
+            candidate: request.candidate(),
+            expected_current: request.expected_current(),
+            source_identity: GAME_SESSION_USE_SOURCE_V1.into(),
+            source_version: GAME_SESSION_USE_SOURCE_VERSION_V1,
+            membership_revision,
+            completeness,
+            membership,
+            operation_binding: request.operation_binding(),
+            committed_operation_binding,
+            committed_membership_revision,
+            membership_count,
+            current_fence: request.current_fence(),
+        }
+    }
+}
+
+/// Registered Game-owner lookup. Durable consumers will implement this only
+/// after WP4; Foundation's semantic consumers remain inactive in WP2.
+pub trait GameSessionUseObservationSourceV1:
+    super::fnd04_verifier::recovery_source_sealed::Sealed
+{
+    fn observe_candidate_use(
+        &self,
+        request: &GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseObservationV1, GameSessionUseAuthorizationErrorV1>;
+}
+
+pub struct GameSessionUseAuthorityV1<'a> {
+    source: Option<&'a dyn GameSessionUseObservationSourceV1>,
+}
+
+impl<'a> GameSessionUseAuthorityV1<'a> {
+    #[must_use]
+    pub const fn unavailable() -> Self {
+        Self { source: None }
+    }
+
+    #[must_use]
+    pub const fn from_owning_source(source: &'a dyn GameSessionUseObservationSourceV1) -> Self {
+        Self {
+            source: Some(source),
+        }
+    }
+
+    pub fn authorize_terminal_replacement(
+        &self,
+        request: GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseDecisionV1, GameSessionUseAuthorizationErrorV1> {
+        self.authorize(GameSessionUseFamilyV1::TerminalReplacement, request)
+    }
+
+    pub fn authorize_early_terminal_replacement(
+        &self,
+        request: GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseDecisionV1, GameSessionUseAuthorizationErrorV1> {
+        self.authorize(GameSessionUseFamilyV1::EarlyTerminalReplacement, request)
+    }
+
+    pub fn authorize_post_grace_recovery(
+        &self,
+        request: GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseDecisionV1, GameSessionUseAuthorizationErrorV1> {
+        self.authorize(GameSessionUseFamilyV1::PostGraceRecovery, request)
+    }
+
+    fn authorize(
+        &self,
+        family: GameSessionUseFamilyV1,
+        request: GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseDecisionV1, GameSessionUseAuthorizationErrorV1> {
+        use GameSessionCandidateMembershipV1::{
+            Unused, UsedByDifferentOperation, UsedByExactOperation,
+        };
+        use GameSessionUseAuthorizationErrorV1::{
+            CandidateAlreadyUsed, RevisionOverflow, StaleAuthority,
+        };
+        let Some(expected_current) = request.expected_current else {
+            return Err(StaleAuthority);
+        };
+        let Some(current_fence) = request.current_fence else {
+            return Err(StaleAuthority);
+        };
+        if current_fence.current_session != expected_current
+            || request.expected_membership_revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+        {
+            return Err(StaleAuthority);
+        }
+        let observation = self
+            .source
+            .ok_or(StaleAuthority)?
+            .observe_candidate_use(&request)?;
+        if observation.character_id != request.character_id
+            || observation.candidate != request.candidate
+            || observation.expected_current != request.expected_current
+            || observation.source_identity != GAME_SESSION_USE_SOURCE_V1
+            || observation.source_version != GAME_SESSION_USE_SOURCE_VERSION_V1
+            || observation.membership_revision != request.expected_membership_revision
+            || observation.completeness != GameSessionUseCompletenessV1::Complete
+            || observation.operation_binding != request.operation_binding
+            || observation.current_fence != request.current_fence
+            || observation.membership_count != observation.membership_revision
+            || observation.membership_revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+            || observation.membership_count > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+            || request.operation_binding == [0; 16]
+            || request.expected_membership_revision == 0
+        {
+            return Err(StaleAuthority);
+        }
+        match observation.membership {
+            UsedByExactOperation => {
+                if observation.committed_operation_binding != Some(request.operation_binding) {
+                    return Err(StaleAuthority);
+                }
+                observation
+                    .committed_membership_revision
+                    .filter(|revision| {
+                        *revision > 0 && *revision <= observation.membership_revision
+                    })
+                    .map(
+                        |committed_revision| GameSessionUseDecisionV1::ExactCommittedReplay {
+                            committed_revision,
+                        },
+                    )
+                    .ok_or(StaleAuthority)
+            }
+            UsedByDifferentOperation => Err(CandidateAlreadyUsed),
+            Unused => {
+                if observation.committed_operation_binding.is_some()
+                    || observation.committed_membership_revision.is_some()
+                {
+                    return Err(StaleAuthority);
+                }
+                if observation.membership_count >= GAME_SESSION_USE_LEDGER_CAPACITY_V1 {
+                    return Err(match family {
+                        GameSessionUseFamilyV1::TerminalReplacement => GameSessionUseAuthorizationErrorV1::TerminalReplacementGameSessionLedgerExhausted,
+                        GameSessionUseFamilyV1::EarlyTerminalReplacement => GameSessionUseAuthorizationErrorV1::EarlyTerminalReplacementGameSessionLedgerExhausted,
+                        GameSessionUseFamilyV1::PostGraceRecovery => GameSessionUseAuthorizationErrorV1::PostGraceRecoveryGameSessionLedgerExhausted,
+                    });
+                }
+                let committed_revision = observation
+                    .membership_revision
+                    .checked_add(1)
+                    .ok_or(RevisionOverflow)?;
+                Ok(GameSessionUseDecisionV1::NewSession { committed_revision })
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AdmissionAuthorityGuardKeyV1 {
     Account { account_id: String },
@@ -651,7 +981,7 @@ impl TerminalReplacementClaimTransitionV1 {
         let expected = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             authorization.account_id(),
             Some(&presence),
-            current_session.commit().game_session_id(),
+            current_session.current_game_session_id(),
             candidate.identity().game_session_id(),
             current_session,
             candidate,
@@ -775,7 +1105,7 @@ fn validate_session_claims(
             && b == account_id
             && *character == commit.character_id()
             && *c == *character
-            && *session == commit.game_session_id()
+            && *session == snapshot.current_game_session_id()
             && *holder == *session
             && *world_id == commit.world_id()
             && *lease_generation == lease.generation() =>
@@ -863,7 +1193,7 @@ fn validate_lifecycle_effects(
             TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
                 account_id,
                 Some(&presence),
-                current_session.commit().game_session_id(),
+                current_session.current_game_session_id(),
                 candidate.identity().game_session_id(),
                 *current_session,
                 candidate,
@@ -2205,5 +2535,341 @@ impl PostGraceClaimTransitionV1 {
             .map_err(|_| AdmissionAuthorityPublicationErrorV1::Stale)?;
         validate_post_grace_claim_pair(&evidence, current.verified().security(), now)?;
         Ok(Self { evidence })
+    }
+}
+
+pub(super) fn validate_complete_reconnect_claims(
+    account: &str,
+    session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    claims: &[AdmissionAuthorityPublicationChangeV1],
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_post_grace_claim_resource_fields(claims)?;
+    if claims.len() != 2 {
+        return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+    }
+    for claim in claims {
+        validate_release_change(claim, now)?;
+    }
+    validate_session_claims(account, session, claims)?;
+    match (&claims[0].state, &claims[1].state) {
+        (
+            AdmissionAuthorityGuardStateV1::Account { security, .. },
+            AdmissionAuthorityGuardStateV1::Character { eligible: true, .. },
+        ) if security.account_id == account
+            && security.allowed
+            && security.minimum_generation > 0 =>
+        {
+            Ok(())
+        }
+        _ => Err(AdmissionAuthorityPublicationErrorV1::Stale),
+    }
+}
+
+/// Additive complete replacement binding; no variant is added to legacy enums.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompleteReconnectClaimEvidenceV1 {
+    pub operation: super::CompleteReconnectOperationV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompleteReconnectClaimResolutionV1 {
+    pub current: super::CompleteReconnectSnapshotV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+pub trait CompleteReconnectClaimSourceV1:
+    super::fnd04_verifier::recovery_source_sealed::Sealed
+{
+    fn prepare_complete_reconnect_claim(
+        &self,
+        operation: &super::CompleteReconnectOperationV1,
+        now: i64,
+    ) -> Result<CompleteReconnectClaimResolutionV1, AdmissionAuthorityPublicationErrorV1>;
+}
+/// Owner-issued exact conditional effects. Public history cannot construct this.
+#[derive(Debug)]
+pub struct CompleteReconnectClaimTransitionV1 {
+    evidence: CompleteReconnectClaimEvidenceV1,
+}
+impl CompleteReconnectClaimTransitionV1 {
+    pub fn prepare(
+        owner: &dyn CompleteReconnectClaimSourceV1,
+        authorization: &super::CompleteReconnectAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        let operation = authorization.operation();
+        operation
+            .validate_historical()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        if operation.mode != super::CompleteReconnectModeV1::EarlyTerminalReplacement
+            || now != operation.prepared_at
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        let resolved = owner.prepare_complete_reconnect_claim(operation, now)?;
+        resolved
+            .current
+            .validate_resources()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        validate_post_grace_claim_resource_fields(&resolved.transition.predecessors)?;
+        validate_post_grace_claim_resource_fields(&resolved.transition.successors)?;
+        if resolved.current != operation.original || resolved.transition.prepared_at != now {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        let evidence = CompleteReconnectClaimEvidenceV1 {
+            operation: operation.clone(),
+            transition: resolved.transition,
+        };
+        evidence.validate_historical(now)?;
+        Ok(Self { evidence })
+    }
+    #[must_use]
+    pub const fn evidence(&self) -> &CompleteReconnectClaimEvidenceV1 {
+        &self.evidence
+    }
+    pub(super) fn validate_current(
+        &self,
+        operation: &super::CompleteReconnectOperationV1,
+        current: &super::CompleteReconnectSnapshotV1,
+        credential: &super::CompleteReconnectCredentialV1,
+        now: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        if operation != &self.evidence.operation {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        self.evidence.validate_historical(now)?;
+        validate_complete_replacement_pair(&self.evidence, credential, now)?;
+        if let Some(anchor) = &current.replacement_anchor {
+            if anchor.receipt != self.evidence.transition {
+                return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+            }
+            validate_complete_replacement_current_claims(anchor, &current.claims, now)
+        } else if current.claims == self.evidence.transition.predecessors {
+            Ok(())
+        } else {
+            Err(AdmissionAuthorityPublicationErrorV1::Stale)
+        }
+    }
+    pub(super) fn resume(
+        evidence: CompleteReconnectClaimEvidenceV1,
+        authorization: &super::CompleteReconnectAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        evidence.validate_historical(now)?;
+        if &evidence.operation != authorization.operation() {
+            return Err(AdmissionAuthorityPublicationErrorV1::Conflict);
+        }
+        Ok(Self { evidence })
+    }
+}
+impl CompleteReconnectClaimEvidenceV1 {
+    pub fn validate_historical(
+        &self,
+        now: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        validate_post_grace_claim_resource_fields(&self.transition.predecessors)?;
+        validate_post_grace_claim_resource_fields(&self.transition.successors)?;
+        self.operation
+            .validate_historical()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        if self.operation.mode != super::CompleteReconnectModeV1::EarlyTerminalReplacement
+            || self.transition.prepared_at != self.operation.prepared_at
+            || now < self.transition.prepared_at
+            || now > self.operation.original.candidate.prepared_deadline()
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        validate_complete_replacement_pair(
+            self,
+            &self.operation.credential,
+            self.transition.prepared_at,
+        )
+    }
+}
+fn validate_complete_replacement_pair(
+    evidence: &CompleteReconnectClaimEvidenceV1,
+    credential: &super::CompleteReconnectCredentialV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    let invalid = AdmissionAuthorityPublicationErrorV1::Invalid;
+    let operation = &evidence.operation;
+    let recovery = &credential
+        .recovery()
+        .ok_or(invalid)?
+        .v2
+        .as_ref()
+        .ok_or(invalid)?
+        .security;
+    validate_release_pair(&evidence.transition, now)?;
+    validate_complete_reconnect_claims(
+        operation.identity.account_id(),
+        operation.original.session,
+        &evidence.transition.predecessors,
+        now,
+    )?;
+    if evidence.transition.predecessors != operation.original.claims {
+        return Err(invalid);
+    }
+    let AdmissionAuthorityGuardStateV1::Account {
+        security: history, ..
+    } = &evidence.transition.predecessors[0].state
+    else {
+        return Err(invalid);
+    };
+    if recovery.provenance.scope != Fnd04EvidenceScope::ExistingActorRecovery
+        || recovery.provenance.purpose != FreshEvidencePurposeV1::PlatformSecurity
+        || recovery.account_id != history.account_id
+        || !recovery.allowed
+        || recovery.minimum_generation < history.minimum_generation
+        || recovery.provenance.source_authority != history.provenance.source_authority
+        || recovery.provenance.source_revision <= history.provenance.source_revision
+        || recovery.provenance.source_observed_at < history.provenance.source_observed_at
+    {
+        return Err(invalid);
+    }
+    match (
+        &evidence.transition.successors[0].state,
+        &evidence.transition.predecessors[1].state,
+        &evidence.transition.successors[1].state,
+    ) {
+        (
+            AdmissionAuthorityGuardStateV1::Account {
+                presence: Some((character, session)),
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                lease_generation: old,
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                holder: Some(holder),
+                lease_generation: new,
+                eligible: true,
+                ..
+            },
+        ) if *character == operation.identity.character_id()
+            && *session == operation.identity.game_session_id()
+            && *holder == *session
+            && old == new
+            && *new
+                == operation
+                    .original
+                    .session
+                    .current_character_lease()
+                    .generation() =>
+        {
+            Ok(())
+        }
+        _ => Err(invalid),
+    }
+}
+
+/// Validates independently loaded current replacement rows against the
+/// immutable transition and actor anchor. The receipt describes what should
+/// have happened; only `current` supplies the rows that presently own the
+/// Account and Character claims.
+pub(super) fn validate_complete_replacement_current_claims(
+    anchor: &super::CompleteReplacementAnchorV1,
+    current: &[AdmissionAuthorityPublicationChangeV1],
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::{Invalid, Stale};
+
+    validate_post_grace_claim_resource_fields(&anchor.receipt.predecessors)?;
+    validate_post_grace_claim_resource_fields(&anchor.receipt.successors)?;
+    validate_post_grace_claim_resource_fields(current)?;
+    validate_release_pair(&anchor.receipt, anchor.prepared_at)?;
+    if anchor.receipt.prepared_at != anchor.prepared_at
+        || current != anchor.receipt.successors
+        || anchor.identity.game_session_id() != anchor.candidate.game_session_id()
+        || anchor.identity.reconnect_attempt_ref() != anchor.candidate.reconnect_attempt_ref()
+        || anchor.identity.character_id() != anchor.lease.character_id()
+        || anchor.identity.runtime_scope() != anchor.runtime_scope
+        || anchor.loss_decided_at > anchor.prepared_at
+        || anchor.prepared_at > now
+        || anchor.prepared_at > anchor.candidate.prepared_deadline()
+        || anchor.loss_decided_at > anchor.original_grace_deadline
+    {
+        return Err(Stale);
+    }
+    match (anchor.state, anchor.transport) {
+        (GameSessionState::Reconnectable, None)
+            if anchor.connection_generation.get().checked_add(1)
+                == Some(anchor.candidate.connection_generation().get()) => {}
+        (GameSessionState::Active, Some(transport))
+            if anchor.connection_generation == anchor.candidate.connection_generation()
+                && transport == anchor.candidate.transport_ref() => {}
+        _ => return Err(Stale),
+    }
+
+    let [predecessor_account, predecessor_character] = anchor.receipt.predecessors.as_slice()
+    else {
+        return Err(Invalid);
+    };
+    let [successor_account, successor_character] = current else {
+        return Err(Invalid);
+    };
+    match (
+        &predecessor_account.key,
+        &predecessor_account.state,
+        &predecessor_character.key,
+        &predecessor_character.state,
+        &successor_account.key,
+        &successor_account.state,
+        &successor_character.key,
+        &successor_character.state,
+    ) {
+        (
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: before_key,
+            },
+            AdmissionAuthorityGuardStateV1::Account {
+                security: before_security,
+                presence: Some((before_character, before_session)),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(before_character_key),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: before_account,
+                world_id: before_world,
+                eligible: true,
+                lease_generation: before_lease,
+                holder: Some(before_holder),
+            },
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: after_key,
+            },
+            AdmissionAuthorityGuardStateV1::Account {
+                security: after_security,
+                presence: Some((after_character, after_session)),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(after_character_key),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: after_account,
+                world_id: after_world,
+                eligible: true,
+                lease_generation: after_lease,
+                holder: Some(after_holder),
+            },
+        ) if before_key == anchor.identity.account_id()
+            && before_account == before_key
+            && before_character == before_character_key
+            && *before_character == anchor.identity.character_id()
+            && *before_world == anchor.identity.world_id()
+            && *before_session == anchor.predecessor_session
+            && *before_holder == anchor.predecessor_session
+            && *before_lease == anchor.lease.generation()
+            && after_key == before_key
+            && after_account == before_account
+            && after_character_key == before_character_key
+            && after_character == before_character
+            && *after_world == *before_world
+            && *after_lease == *before_lease
+            && *after_session == anchor.candidate.game_session_id()
+            && *after_holder == anchor.candidate.game_session_id()
+            && same_security_observation(before_security, after_security) =>
+        {
+            Ok(())
+        }
+        _ => Err(Stale),
     }
 }

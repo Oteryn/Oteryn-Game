@@ -7,6 +7,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 
 const MIN_ENTROPY_BYTES: usize = 32;
+const MAX_ENTROPY_BYTES: usize = 96;
 const MAX_CALLBACK_QUERY_BYTES: usize = 4096;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -38,7 +39,7 @@ impl Display for SecretString {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdentityError {
-    InsufficientEntropy,
+    EntropyLengthOutOfRange,
     InvalidState,
     InvalidCallback,
     StateMismatch,
@@ -50,7 +51,9 @@ pub enum IdentityError {
 impl Display for IdentityError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
-            Self::InsufficientEntropy => "Identity entropy is insufficient",
+            Self::EntropyLengthOutOfRange => {
+                "Identity entropy length is outside the accepted range"
+            }
             Self::InvalidState => "Identity state is invalid",
             Self::InvalidCallback => "Identity callback is invalid",
             Self::StateMismatch => "Identity callback state does not match",
@@ -71,8 +74,8 @@ pub struct PkceMaterial {
 
 impl PkceMaterial {
     pub fn from_entropy(entropy: &[u8]) -> Result<Self, IdentityError> {
-        if entropy.len() < MIN_ENTROPY_BYTES {
-            return Err(IdentityError::InsufficientEntropy);
+        if !(MIN_ENTROPY_BYTES..=MAX_ENTROPY_BYTES).contains(&entropy.len()) {
+            return Err(IdentityError::EntropyLengthOutOfRange);
         }
         let verifier = base64_url_no_pad(entropy);
         let challenge = base64_url_no_pad(&Sha256::digest(verifier.as_bytes()));
@@ -266,6 +269,36 @@ mod tests {
             "SecretString([REDACTED])"
         );
         Ok(())
+    }
+
+    #[test]
+    fn pkce_rejects_entropy_below_minimum() {
+        assert_eq!(
+            PkceMaterial::from_entropy(&[7_u8; 31]),
+            Err(IdentityError::EntropyLengthOutOfRange)
+        );
+    }
+
+    #[test]
+    fn pkce_accepts_minimum_entropy_with_exact_verifier_length() -> Result<(), IdentityError> {
+        let material = PkceMaterial::from_entropy(&[7_u8; 32])?;
+        assert_eq!(material.verifier().expose().len(), 43);
+        Ok(())
+    }
+
+    #[test]
+    fn pkce_accepts_maximum_entropy_with_exact_verifier_length() -> Result<(), IdentityError> {
+        let material = PkceMaterial::from_entropy(&[7_u8; 96])?;
+        assert_eq!(material.verifier().expose().len(), 128);
+        Ok(())
+    }
+
+    #[test]
+    fn pkce_rejects_entropy_above_maximum() {
+        assert_eq!(
+            PkceMaterial::from_entropy(&[7_u8; 97]),
+            Err(IdentityError::EntropyLengthOutOfRange)
+        );
     }
 
     #[test]

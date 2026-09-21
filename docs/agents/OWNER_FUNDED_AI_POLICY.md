@@ -1,72 +1,94 @@
-# Owner-funded AI policy
+# Owner-funded AI permission boundary
 
-This document records repository-owner instructions established on 2026-08-12 and refined on 2026-08-13 and 2026-08-27, implemented by the root `AGENTS.md`.
+Status: active Game-specific permission extension.
 
-## Default
+Game resolves review selection and review economy from the policy pinned by
+`META_AGENT_POLICY_BINDING.json`. This file controls only permission to consume an
+owner's personal, quota-limited or metered AI resources. It is not a review router,
+risk classifier or merge gate.
 
-Owner-funded and owner-metered AI resources remain deny-by-default. Codex, OpenAI API, paid or quota-limited AI review services, and equivalent mechanisms may not consume the owner's personal quota, credits, tokens, subscription limits or metered allowance unless either:
+## Default permission
 
-1. the exact invocation is covered by the protected-main standing authorization in `docs/agents/CODEX_REVIEW_POLICY.json`; or
-2. the owner explicitly authorizes that specific non-covered use.
+Tool availability, credentials, an alias, a task packet or a recommendation to seek
+review does not authorize personal quota or metered spend. An invocation that would
+consume those resources requires current owner/user authorization covering that use.
+Authorization already established for the same operation in the active session remains
+effective; do not ask for it again merely because execution moves between task phases.
 
-Technical availability, an authenticated session, connector, environment variable, API key or earlier one-off permission is not authority outside those two cases.
+## Standing repository review authorization
 
-## Standing authorization: independent Codex review
+For `Oteryn/Oteryn-Game`, the owner grants standing authorization to consume
+owner-funded, personal-quota or metered AI **only** for one external independent
+review of a stable exact-head candidate when the bound META review policy or an
+accepted task contract requires that review for qualification.
 
-Issue #229 records the owner's standing authorization for the bounded review operations encoded in `docs/agents/CODEX_REVIEW_POLICY.json`. The authorization becomes effective only after that contract and the matching root governance are merged to protected `main`.
+This standing authorization is current owner/user authorization for that bounded
+review invocation and survives chat, worker, coordinator and task-phase handoffs.
+Do not ask the owner again for a covered review.
 
-For an invocation that matches the policy exactly:
+Before invoking a covered review:
 
-- `owner_confirmation_per_covered_run` is false;
-- an allocated lane lead may request a fresh independent exact-head Codex review directly through the canonical GitHub pull request when a real supported native Codex review capability is proven available;
-- the preferred native trigger is `@codex review`, optionally followed by bounded risk-specific review guidance;
-- the owner is not the default message relay between the lane lead and the reviewer;
-- the lane lead owns the candidate -> review -> repair -> fresh re-review loop until the applicable review gate passes or a real blocker is reached.
+- bind the repository, PR and exact candidate head;
+- verify deterministic validation required before review is complete when the
+  governing task/policy requires that ordering;
+- read live PR review state and comments and do not issue another trigger when a
+  review for the same exact head is already requested, running or completed;
+- use the lightest reviewer/depth selected by the bound review policy;
+- count one native `@codex review` request or equivalent provider invocation as
+  the single covered invocation for that exact head.
 
-The standing authorization is limited to the operations and risk routing defined by the machine-readable policy. It grants no implementation/fix, tracked-file mutation, commit/push/merge, branch-protection, production/protected-environment, secret, live-data or cross-repository authority to the reviewer.
+A materially risk-bearing head change may qualify for one new review only when
+the bound policy requires re-review. Cosmetic, metadata-only or unchanged-risk
+movement does not authorize another paid review. A failed/ambiguous trigger must
+be reconciled from live provider/PR readback before any retry; never send duplicate
+review requests merely because a response is delayed.
 
-Every non-covered Codex/OpenAI/API invocation remains subject to exact per-invocation owner authorization.
+This standing authorization does **not** cover optional/speculative extra reviews,
+implementation, code generation or repair, tracked-file mutation, commits, push,
+merge/enqueue, production/live-data actions, cross-repository writes, general
+Codex usage, repeated reviewer loops or any other owner-funded AI/API operation.
+Optional review without separate task-specific authorization is skipped rather than
+turned into a new owner prompt.
 
-## Independent review default
+The owner may revoke or narrow this standing authorization at any time by a later
+explicit instruction. A later protected policy may narrow execution further but
+cannot broaden this permission.
 
-A genuinely independent reviewer must not have materially authored or materially modified the candidate it reviews. A Codex task/session that assisted implementation cannot count as the independent reviewer for that candidate; a fresh reviewer task/session is required.
+### Single review-dispatch owner
 
-The implementing/coordinating agent's self-review remains self-review and must never be relabeled as independent.
+Standing funding permission is not permission for every worker to emit a provider
+trigger. A manual `@codex review` or equivalent owner-funded review invocation is a
+GitHub control-plane write and must obey one-writer routing.
 
-Codex is not required merely because any review is needed. Apply `CODEX_REVIEW_POLICY.json` mechanically: its high-risk classes require Codex independent technical review; an unvalidated or conflicting downgrade also fails closed to `CODEX_REQUIRED`. Only a mechanically proven ordinary-docs rule or independently validated authoritative downgrade metadata may select `CODEX_OPTIONAL` / `CODEX_NOT_REQUIRED_BY_THIS_POLICY`. Separate governance/lifecycle audit requirements remain separate.
+- For work governed by an active programme control plane, only the unique active
+  control-plane coordinator may emit the owner-funded review trigger.
+- A worker/reviewer may determine that review is required and return the exact
+  repository/PR/head review packet, but it must not emit the trigger itself.
+- For a standalone task with no programme control plane, only the exact task owner
+  named by the live allocation may trigger review.
+- If trigger ownership is ambiguous, fail closed and reconcile ownership; do not
+  ask the owner for funding permission and do not race another agent.
+- Provider-native automatic review already running for the same exact head counts
+  as the covered invocation and suppresses any manual trigger.
 
-A lane lead may self-tag a candidate only to increase review rigor. It may not make its own candidate optional or not-required. Any downgrade source role and source record must be proven from canonical authority under the machine-readable contract rather than accepted as self-declared text.
+Immediately before the single trigger, the trigger owner must refresh live PR
+comments/reviews/provider status for the exact head. Provider-side de-duplication is
+a safety backstop, not authority to send concurrent duplicate comments.
 
-## GitHub review evidence
+Repository-native or platform-provided review must still be both available and
+authorized on the actual execution surface. Outside the standing authorization above,
+the bound META policy selecting an external review as useful does not create funding,
+repository, candidate, mutation, production, secret or merge authority.
 
-The pull request is the canonical review message bus when native GitHub Codex review capability is available. The request and result must be bound to the exact candidate head and durably visible on GitHub.
+## Execution boundary
 
-A material head change makes a prior qualifying Codex review historical. If the risk matrix still requires Codex, the lane lead freezes the new head and requests a fresh review. Technical findings are repaired by the owning lane lead within its existing allocation, not by the owner or control plane.
+Use the lightest authorized review mechanism selected by the bound policy. A reviewer
+does not receive implementation, tracked-file, commit, push, merge, protection,
+production, live-data, credential or cross-repository authority from this document.
+Required repository checks and genuinely required independent review are never waived
+because an external AI mechanism is unavailable.
 
-Successful Codex evidence can satisfy the independent technical-review gate only when all independence, exact-head, qualification and durable-evidence conditions in `CODEX_REVIEW_POLICY.json` are proven. Success means either an explicit exact-head PASS or the native exact-head no-suggestions signal accepted by that policy, with zero unresolved P0/P1 findings and zero unresolved required review threads. Green CI alone is not independent review.
-
-## Capability and fallback
-
-Authority and capability are separate. A standing authorization does not prove that a particular chat/session or repository has a supported Codex GitHub invocation mechanism.
-
-Before requesting review, the lane lead must verify the actual capability exposed in that execution context. If unavailable, record the precise capability gap and follow the machine-readable fallback rule. Never claim a Codex review ran when it did not. Manual owner prompt relay is not the normal fallback.
-
-If Codex is required by the current risk matrix and no permitted equivalent reviewer satisfies the exact repository gate, fail closed rather than weakening review requirements. If Codex is optional and unavailable, continue through the existing qualified independent-review path.
-
-## Non-review Codex recommendation and handoff
-
-For implementation, debugging, build/repository execution or any other owner-funded AI use not covered by `CODEX_REVIEW_POLICY.json`, the prior deny-by-default rule remains unchanged.
-
-If an agent judges such a non-covered Codex use materially advantageous, it must first inform the owner, identify the exact task/PR/SHA and purpose, explain the expected advantage, provide a bounded prompt/handoff and wait for explicit authorization for that exact use.
-
-Prior permission or the independent-review standing authorization is never standing permission for non-covered work.
-
-## Gate behavior
-
-A mandatory review or validation gate is never waived by quota/capability policy. Use the canonical standing-authorized Codex path when required and available, an explicitly permitted equivalent reviewer when the exact gate allows it, or fail closed with the exact blocker.
-
-The uniquely active Work/Terra control plane mechanically validates risk-routing inputs, rejects any unvalidated low-risk/optional downgrade, and verifies required review presence and exact-head evidence. It does not decide ad hoc whether a technical finding is harmless and cannot waive `CODEX_REQUIRED` classifications.
-
-## Authority
-
-The normative enforcement text is the highest-priority owner-funded AI and autonomous Codex review sections in root `AGENTS.md`, together with protected-main `docs/agents/CODEX_REVIEW_POLICY.json`. A later explicit repository-owner instruction may narrow or supersede this standing authorization.
+If no authorized mechanism can satisfy a material required review, record the exact
+missing capability or permission and continue other safe work. Do not invent a review,
+use the owner as a message relay when an authorized repository-native route exists, or
+treat green CI as independent review.

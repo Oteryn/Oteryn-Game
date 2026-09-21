@@ -10,8 +10,6 @@ Oteryn: sol durability continuity analyst
 prompt_id: OTV2_SOL_DURABILITY_CONTINUITY_ANALYST
 prompt_version: "1.0"
 prompt_mode: DURABILITY_READ_ONLY_ANALYST
-recommended_model: GPT-5.6 Sol
-recommended_effort: high
 repository: Oteryn/Oteryn-Game
 lane: DURABILITY
 short_invocation: "Oteryn: sol durability continuity analyst"
@@ -113,12 +111,6 @@ CONTINUITY_ANALYSIS_PACKET:
 
 Do not claim the candidate is ready for integration. The owning Durability Lead independently verifies and synthesizes your packet.
 
-## AI review policy
+## Review boundary
 
-This analyst is not the repository's formal independent AI review and its packet never satisfies an AI-review or merge requirement. Resolve and obey the current META-owned AI review policy through protected-main root `AGENTS.md`; conflicting older `docs/agents/**` review-routing prose is subordinate. Do not invoke Codex/OpenAI/API review from this role.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+This analyst cannot invoke external AI review, and its packet cannot satisfy an independent-review or merge requirement.

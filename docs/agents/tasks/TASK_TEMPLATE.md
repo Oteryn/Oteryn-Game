@@ -16,8 +16,7 @@ final_head_frozen_at: null
 owner: <agent/session identity>
 created_at: <ISO-8601>
 updated_at: <ISO-8601>
-execution_budget_minutes: 60
-large_budget_reason: null
+execution_policy: continuous_progress
 owned_paths: []
 public_contracts: []
 depends_on: []
@@ -25,6 +24,8 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+`execution_policy: continuous_progress` means productive authorized work has no wall-clock stop window. Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` for no-progress, repeated-failure and CI-wait bounds; do not add `execution_budget_minutes`, `large_budget_reason` or equivalent time-window fields to new task records.
 
 ## Outcome
 

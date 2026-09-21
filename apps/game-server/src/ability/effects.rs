@@ -47,6 +47,13 @@ impl Effect {
         }
     }
 
+    pub(crate) fn validate_magnitude(&self) -> Result<(), AbilityError> {
+        if self.magnitude() <= 0 {
+            return Err(AbilityError::InvalidMagnitude);
+        }
+        Ok(())
+    }
+
     pub(crate) fn canonical_cmp(&self, other: &Self) -> Ordering {
         self.target()
             .cmp(other.target())

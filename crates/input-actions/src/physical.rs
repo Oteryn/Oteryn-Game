@@ -214,6 +214,12 @@ pub enum InputAtom {
 }
 
 impl InputAtom {
+    // Stable USB HID modifier usages emitted by the physical adapter. Modifier
+    // snapshots carry these separately from a chord's non-modifier atoms.
+    pub(crate) const fn is_modifier(self) -> bool {
+        matches!(self, Self::Key(KeyCode(224..=231)))
+    }
+
     /// Return whether this input is a pointer button.
     #[must_use]
     pub const fn is_mouse_button(self) -> bool {

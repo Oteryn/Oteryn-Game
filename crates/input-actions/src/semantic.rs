@@ -151,7 +151,7 @@ impl InputChord {
     ///
     /// # Errors
     ///
-    /// Returns a stable empty, length, duplicate or unreachable-wheel error.
+    /// Returns a stable empty, length, duplicate, modifier-atom or unreachable-wheel error.
     pub fn new(modifiers: Modifiers, mut inputs: Vec<InputAtom>) -> Result<Self, InputError> {
         if inputs.is_empty() {
             return Err(InputError::EmptyChord);
@@ -161,6 +161,9 @@ impl InputChord {
                 max: MAX_CHORD_INPUTS,
                 actual: inputs.len(),
             });
+        }
+        if inputs.iter().any(|input| input.is_modifier()) {
+            return Err(InputError::ModifierChordInput);
         }
         inputs.sort_unstable();
         if inputs.windows(2).any(|window| window[0] == window[1]) {

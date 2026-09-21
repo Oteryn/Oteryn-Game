@@ -1,0 +1,326 @@
+[
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "basic",
+    "sprite_px": 32,
+    "runs": 5,
+    "median_frame_mean_ms": 1.3452,
+    "median_frame_p50_ms": 1.3225,
+    "median_frame_p95_ms": 1.6158,
+    "median_frame_p99_ms": 1.7828,
+    "median_mean_fps": 743.4,
+    "median_prep_mean_ms": 0.0002,
+    "median_prep_p95_ms": 0.0003,
+    "median_startup_ms": 266.0866,
+    "median_peak_working_set_bytes": 278355968.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "basic",
+    "sprite_px": 64,
+    "runs": 5,
+    "median_frame_mean_ms": 1.3998,
+    "median_frame_p50_ms": 1.3745,
+    "median_frame_p95_ms": 1.7001,
+    "median_frame_p99_ms": 1.8727,
+    "median_mean_fps": 714.41,
+    "median_prep_mean_ms": 0.0002,
+    "median_prep_p95_ms": 0.0003,
+    "median_startup_ms": 267.4021,
+    "median_peak_working_set_bytes": 278937600.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "basic",
+    "sprite_px": 128,
+    "runs": 5,
+    "median_frame_mean_ms": 1.3764,
+    "median_frame_p50_ms": 1.3419,
+    "median_frame_p95_ms": 1.7701,
+    "median_frame_p99_ms": 1.9764,
+    "median_mean_fps": 726.56,
+    "median_prep_mean_ms": 0.0003,
+    "median_prep_p95_ms": 0.0003,
+    "median_startup_ms": 278.4591,
+    "median_peak_working_set_bytes": 280920064.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "normal",
+    "sprite_px": 32,
+    "runs": 5,
+    "median_frame_mean_ms": 2.7706,
+    "median_frame_p50_ms": 2.7053,
+    "median_frame_p95_ms": 3.1304,
+    "median_frame_p99_ms": 3.9164,
+    "median_mean_fps": 360.93,
+    "median_prep_mean_ms": 0.0005,
+    "median_prep_p95_ms": 0.0007,
+    "median_startup_ms": 279.6203,
+    "median_peak_working_set_bytes": 309260288.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "normal",
+    "sprite_px": 64,
+    "runs": 5,
+    "median_frame_mean_ms": 2.7817,
+    "median_frame_p50_ms": 2.7377,
+    "median_frame_p95_ms": 3.1816,
+    "median_frame_p99_ms": 3.8911,
+    "median_mean_fps": 359.49,
+    "median_prep_mean_ms": 0.0005,
+    "median_prep_p95_ms": 0.0007,
+    "median_startup_ms": 279.0928,
+    "median_peak_working_set_bytes": 309084160.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "normal",
+    "sprite_px": 128,
+    "runs": 5,
+    "median_frame_mean_ms": 2.7745,
+    "median_frame_p50_ms": 2.7327,
+    "median_frame_p95_ms": 3.1259,
+    "median_frame_p99_ms": 3.4559,
+    "median_mean_fps": 360.43,
+    "median_prep_mean_ms": 0.0005,
+    "median_prep_p95_ms": 0.0007,
+    "median_startup_ms": 278.6396,
+    "median_peak_working_set_bytes": 311603200.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "stress",
+    "sprite_px": 32,
+    "runs": 5,
+    "median_frame_mean_ms": 5.919,
+    "median_frame_p50_ms": 5.8309,
+    "median_frame_p95_ms": 6.5096,
+    "median_frame_p99_ms": 7.7592,
+    "median_mean_fps": 168.95,
+    "median_prep_mean_ms": 0.0011,
+    "median_prep_p95_ms": 0.0016,
+    "median_startup_ms": 286.7503,
+    "median_peak_working_set_bytes": 360779776.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "stress",
+    "sprite_px": 64,
+    "runs": 5,
+    "median_frame_mean_ms": 5.9267,
+    "median_frame_p50_ms": 5.8399,
+    "median_frame_p95_ms": 6.6361,
+    "median_frame_p99_ms": 8.191,
+    "median_mean_fps": 168.73,
+    "median_prep_mean_ms": 0.0011,
+    "median_prep_p95_ms": 0.0018,
+    "median_startup_ms": 287.6262,
+    "median_peak_working_set_bytes": 362422272.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "bevy-0.19.1",
+    "scenario": "stress",
+    "sprite_px": 128,
+    "runs": 5,
+    "median_frame_mean_ms": 5.9092,
+    "median_frame_p50_ms": 5.8258,
+    "median_frame_p95_ms": 6.4984,
+    "median_frame_p99_ms": 7.4842,
+    "median_mean_fps": 169.23,
+    "median_prep_mean_ms": 0.0011,
+    "median_prep_p95_ms": 0.0016,
+    "median_startup_ms": 284.1712,
+    "median_peak_working_set_bytes": 364003328.0,
+    "adapter_evidence": [
+      "physical-adapter-recorded-by-run-wrapper"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "basic",
+    "sprite_px": 32,
+    "runs": 5,
+    "median_frame_mean_ms": 0.2448,
+    "median_frame_p50_ms": 0.2114,
+    "median_frame_p95_ms": 0.4544,
+    "median_frame_p99_ms": 0.5908,
+    "median_mean_fps": 4084.91,
+    "median_prep_mean_ms": 0.0009,
+    "median_prep_p95_ms": 0.0012,
+    "median_startup_ms": 202.0951,
+    "median_peak_working_set_bytes": 174059520.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "basic",
+    "sprite_px": 64,
+    "runs": 5,
+    "median_frame_mean_ms": 0.2745,
+    "median_frame_p50_ms": 0.2529,
+    "median_frame_p95_ms": 0.4928,
+    "median_frame_p99_ms": 0.5864,
+    "median_mean_fps": 3643.53,
+    "median_prep_mean_ms": 0.0008,
+    "median_prep_p95_ms": 0.0009,
+    "median_startup_ms": 203.7905,
+    "median_peak_working_set_bytes": 174243840.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "basic",
+    "sprite_px": 128,
+    "runs": 5,
+    "median_frame_mean_ms": 0.2865,
+    "median_frame_p50_ms": 0.2633,
+    "median_frame_p95_ms": 0.5059,
+    "median_frame_p99_ms": 0.624,
+    "median_mean_fps": 3490.16,
+    "median_prep_mean_ms": 0.0007,
+    "median_prep_p95_ms": 0.001,
+    "median_startup_ms": 211.5537,
+    "median_peak_working_set_bytes": 174559232.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "normal",
+    "sprite_px": 32,
+    "runs": 5,
+    "median_frame_mean_ms": 0.319,
+    "median_frame_p50_ms": 0.2879,
+    "median_frame_p95_ms": 0.5018,
+    "median_frame_p99_ms": 0.6044,
+    "median_mean_fps": 3134.91,
+    "median_prep_mean_ms": 0.0012,
+    "median_prep_p95_ms": 0.0015,
+    "median_startup_ms": 205.0089,
+    "median_peak_working_set_bytes": 174223360.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "normal",
+    "sprite_px": 64,
+    "runs": 5,
+    "median_frame_mean_ms": 0.335,
+    "median_frame_p50_ms": 0.3086,
+    "median_frame_p95_ms": 0.5127,
+    "median_frame_p99_ms": 0.6232,
+    "median_mean_fps": 2985.32,
+    "median_prep_mean_ms": 0.0012,
+    "median_prep_p95_ms": 0.0016,
+    "median_startup_ms": 204.0548,
+    "median_peak_working_set_bytes": 174133248.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "normal",
+    "sprite_px": 128,
+    "runs": 5,
+    "median_frame_mean_ms": 0.4141,
+    "median_frame_p50_ms": 0.3923,
+    "median_frame_p95_ms": 0.5895,
+    "median_frame_p99_ms": 0.6971,
+    "median_mean_fps": 2415.0,
+    "median_prep_mean_ms": 0.0012,
+    "median_prep_p95_ms": 0.0017,
+    "median_startup_ms": 210.5034,
+    "median_peak_working_set_bytes": 174206976.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "stress",
+    "sprite_px": 32,
+    "runs": 5,
+    "median_frame_mean_ms": 0.5084,
+    "median_frame_p50_ms": 0.4855,
+    "median_frame_p95_ms": 0.7075,
+    "median_frame_p99_ms": 0.8266,
+    "median_mean_fps": 1967.02,
+    "median_prep_mean_ms": 0.0023,
+    "median_prep_p95_ms": 0.0036,
+    "median_startup_ms": 208.3742,
+    "median_peak_working_set_bytes": 174776320.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "stress",
+    "sprite_px": 64,
+    "runs": 5,
+    "median_frame_mean_ms": 0.5531,
+    "median_frame_p50_ms": 0.5288,
+    "median_frame_p95_ms": 0.7687,
+    "median_frame_p99_ms": 0.8941,
+    "median_mean_fps": 1807.9,
+    "median_prep_mean_ms": 0.0023,
+    "median_prep_p95_ms": 0.0036,
+    "median_startup_ms": 209.4975,
+    "median_peak_working_set_bytes": 174821376.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  },
+  {
+    "backend": "custom-wgpu-30.0.0",
+    "scenario": "stress",
+    "sprite_px": 128,
+    "runs": 5,
+    "median_frame_mean_ms": 0.7156,
+    "median_frame_p50_ms": 0.6946,
+    "median_frame_p95_ms": 0.9394,
+    "median_frame_p99_ms": 1.0728,
+    "median_mean_fps": 1397.37,
+    "median_prep_mean_ms": 0.0024,
+    "median_prep_p95_ms": 0.0034,
+    "median_startup_ms": 218.3635,
+    "median_peak_working_set_bytes": 174796800.0,
+    "adapter_evidence": [
+      "AMD Radeon RX 9070 XT|Dx12|32.0.31035.1003"
+    ]
+  }
+]

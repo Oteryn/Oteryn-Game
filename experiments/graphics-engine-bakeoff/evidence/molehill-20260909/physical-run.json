@@ -1,0 +1,37 @@
+{
+    "captured_at_utc":  "2026-09-09T10:46:10.9465202Z",
+    "git_head":  "11c568639484d6ecc0284239b6f1dfbb1755f5e8",
+    "cargo_lock_sha256":  "84fc6942d0fa6e10f91835d2ea9c8f912cfb065fbcf93825c4eb359ead44a4c7",
+    "hardware":  {
+                     "hardware_alias":  "Molehill-PC",
+                     "os_caption":  "Microsoft Windows 11 Pro",
+                     "os_version":  "10.0.26200",
+                     "os_build":  "26200",
+                     "cpu":  "AMD Ryzen 7 9800X3D 8-Core Processor           ",
+                     "logical_processors":  16,
+                     "gpu":  [
+                                 {
+                                     "name":  "AMD Radeon(TM) Graphics",
+                                     "driver_version":  "32.0.21045.1000"
+                                 },
+                                 {
+                                     "name":  "AMD Radeon RX 9070 XT",
+                                     "driver_version":  "32.0.31035.1003"
+                                 }
+                             ],
+                     "power_scheme":  "Power Scheme GUID: 723014c7-6bb2-4e63-af20-66a171c9a554  (Ultimate Performance)",
+                     "wgpu_backend":  "dx12",
+                     "wgpu_power_preference":  "high"
+                 },
+    "rust":  "rustc 1.95.0 (59807616e 2026-04-14)",
+    "build_skipped":  true,
+    "wgpu_clean_build_seconds":  null,
+    "bevy_clean_build_seconds":  null,
+    "wgpu_binary_bytes":  5400064,
+    "bevy_binary_bytes":  55859712,
+    "repetitions":  5,
+    "warmup_frames":  180,
+    "sample_frames":  1200,
+    "inter_run_delay_ms":  1000,
+    "max_attempts":  3
+}

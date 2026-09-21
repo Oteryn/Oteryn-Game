@@ -147,6 +147,7 @@ fn apply_fixture_effect(
     fixture_health: &mut BTreeMap<String, i64>,
     effect: &Effect,
 ) -> Result<(), AbilityError> {
+    effect.validate_magnitude()?;
     let target = effect.target().as_str().to_owned();
     let health = fixture_health.entry(target).or_insert(0);
     *health = match effect {
@@ -158,4 +159,42 @@ fn apply_fixture_effect(
             .ok_or(AbilityError::NumericOverflow)?,
     };
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ability::TargetId;
+
+    #[test]
+    fn invalid_effects_fail_before_fixture_mutation() -> Result<(), AbilityError> {
+        let target = TargetId::new("target:fixture")?;
+        for effect in [
+            Effect::Damage {
+                target: target.clone(),
+                magnitude: 0,
+            },
+            Effect::Damage {
+                target: target.clone(),
+                magnitude: -7,
+            },
+            Effect::Heal {
+                target: target.clone(),
+                magnitude: 0,
+            },
+            Effect::Heal {
+                target: target.clone(),
+                magnitude: -7,
+            },
+        ] {
+            let mut fixture_health = BTreeMap::from([(target.as_str().to_owned(), 23)]);
+            assert_eq!(
+                apply_fixture_effect(&mut fixture_health, &effect),
+                Err(AbilityError::InvalidMagnitude)
+            );
+            assert_eq!(fixture_health.get(target.as_str()), Some(&23));
+            assert_eq!(fixture_health.len(), 1);
+        }
+        Ok(())
+    }
 }

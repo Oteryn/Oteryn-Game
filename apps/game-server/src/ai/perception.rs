@@ -43,6 +43,13 @@ impl Perception {
 /// Canonicalize an immutable fixture before any order-sensitive decision evaluation.
 pub fn canonicalize_perception(input: &[Candidate]) -> Result<Perception, AiError> {
     ResourceLimit::PerceptionCandidates.admit(0, input.len())?;
+    if input.iter().enumerate().any(|(index, candidate)| {
+        input[index + 1..]
+            .iter()
+            .any(|other| candidate.id == other.id)
+    }) {
+        return Err(AiError::InvalidInput);
+    }
     let mut candidates = input.to_vec();
     candidates.sort_unstable_by(|left, right| {
         right
@@ -50,11 +57,5 @@ pub fn canonicalize_perception(input: &[Candidate]) -> Result<Perception, AiErro
             .cmp(&left.priority)
             .then_with(|| left.id.cmp(&right.id))
     });
-    if candidates
-        .windows(2)
-        .any(|window| window[0].id == window[1].id)
-    {
-        return Err(AiError::InvalidInput);
-    }
     Ok(Perception { candidates })
 }

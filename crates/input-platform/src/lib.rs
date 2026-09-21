@@ -16,3 +16,6 @@ pub use error::InputPlatformError;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod audit_regressions;

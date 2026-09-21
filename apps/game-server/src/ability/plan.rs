@@ -148,6 +148,9 @@ impl EffectPlan {
         if effects.len() > MAX_EFFECT_PLAN_ENTRIES {
             return Err(AbilityError::TooManyEffectPlanEntries);
         }
+        for effect in &effects {
+            effect.validate_magnitude()?;
+        }
         if calculation_stages.len() > MAX_CALCULATION_STAGES {
             return Err(AbilityError::TooManyCalculationStages);
         }

@@ -40,8 +40,8 @@ Run the named real scenario where applicable. For governance/docs-only tasks use
 
 ## Exact-head gate
 
-Verify required checks on final unchanged SHA. Re-check PR head, required review state, mergeability and ownership immediately before merge. A material repair invalidates prior exact-head review/audit evidence and requires the applicable review/validation again.
+Verify required checks on final unchanged SHA. Re-check PR head, required review state, mergeability and ownership immediately before integration submission. A material repair invalidates prior exact-head review/audit evidence and requires the applicable review/validation again.
 
 ## Lifecycle closeout
 
-After merge record merge commit/resulting state, archive task, release ownership and update programme/Issue. Do not leave duplicate active task records.
+Do not close/archive/release from enqueue or an unverified merge result. Only after successful governed Merge Queue integration and protected-main readback confirm the accepted candidate is integrated may you record the integration commit/resulting state, archive the task, release ownership and update the programme/Issue. Do not leave duplicate active task records.

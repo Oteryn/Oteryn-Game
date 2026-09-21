@@ -37,6 +37,58 @@ fn immediate_damage_plan(occurrence: AbilityOccurrence) -> Result<EffectPlan, Ab
 }
 
 #[test]
+fn plan_rejects_directly_constructed_non_positive_damage_and_heal() -> Result<(), AbilityError> {
+    let target = TargetId::new("target:fixture")?;
+    for (index, effect) in [
+        Effect::Damage {
+            target: target.clone(),
+            magnitude: 0,
+        },
+        Effect::Damage {
+            target: target.clone(),
+            magnitude: -7,
+        },
+        Effect::Heal {
+            target: target.clone(),
+            magnitude: 0,
+        },
+        Effect::Heal {
+            target: target.clone(),
+            magnitude: -7,
+        },
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let occurrence = AbilityOccurrence::new(
+            &format!("ability-occurrence:invalid-magnitude:{index}"),
+            revisions("formula:v1")?,
+        )?;
+        let intent =
+            AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &[target.as_str()])?;
+        let result = if index % 2 == 0 {
+            EffectPlan::new(
+                occurrence,
+                intent,
+                vec![effect],
+                stages(1)?,
+                CommitGroup::atomic("runtime-scope:fixture", "commit-group:invalid")?,
+            )
+        } else {
+            EffectPlan::immediate(
+                occurrence,
+                intent,
+                vec![effect],
+                stages(1)?,
+                CommitGroup::ordered_sequential("runtime-scope:fixture", "commit-group:invalid")?,
+            )
+        };
+        assert_eq!(result, Err(AbilityError::InvalidMagnitude));
+    }
+    Ok(())
+}
+
+#[test]
 fn retry_reuses_the_original_occurrence_revision_without_double_commit() -> Result<(), AbilityError>
 {
     let occurrence = AbilityOccurrence::new("ability-occurrence:1", revisions("formula:v1")?)?;

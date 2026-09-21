@@ -12,6 +12,54 @@ mod authority_recovery;
 mod durability;
 #[path = "support/postgres.rs"]
 mod postgres;
+use sqlx::Connection;
+
+static PROCESS_ROOT_LEDGER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+async fn seed_shared_root_replacement_predecessor(
+    url: &str,
+    seed: authority_matrix::Seed,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut connection = <sqlx::PgConnection as sqlx::Connection>::connect(url).await?;
+    sqlx::query(
+        "INSERT INTO game_durability_reconnect_sessions (\
+            game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+            runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+            control_loss_epoch, original_grace_deadline, predecessor_generation, \
+            character_lease_generation, scope_ownership_generation, current_generation, session_state\
+         ) VALUES (\
+            encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
+            encode($4, 'hex')::uuid, 1, encode($4, 'hex')::uuid, \
+            encode($5, 'hex')::uuid, NULL, 3, $6, 7, 9, 9, 7, 1\
+         )",
+    )
+    .bind(authority_matrix::uuid(10).as_slice())
+    .bind(authority_matrix::ACCOUNT)
+    .bind(authority_matrix::uuid(seed.character).as_slice())
+    .bind(authority_matrix::uuid(12).as_slice())
+    .bind(authority_matrix::uuid(13).as_slice())
+    .bind(seed.now + 120)
+    .execute(&mut connection)
+    .await?;
+    sqlx::query(
+        "INSERT INTO game_durability_control_loss_continuity (\
+            character_id, control_loss_epoch, account_id, world_id, context_game_session_id, \
+            original_grace_deadline, protection_entitlement_state, protection_rearm_state\
+         ) VALUES (\
+            encode($1, 'hex')::uuid, 3, $2::text::uuid, encode($3, 'hex')::uuid, \
+            encode($4, 'hex')::uuid, $5, 1, 1\
+         )",
+    )
+    .bind(authority_matrix::uuid(seed.character).as_slice())
+    .bind(authority_matrix::ACCOUNT)
+    .bind(authority_matrix::uuid(12).as_slice())
+    .bind(authority_matrix::uuid(10).as_slice())
+    .bind(seed.now + 120)
+    .execute(&mut connection)
+    .await?;
+    connection.close().await?;
+    Ok(())
+}
 
 #[test]
 fn owning_loss_codec_retains_distinct_protection_and_source_generations()
@@ -1425,7 +1473,7 @@ fn fresh_admission_forward_schema_supports_truthful_atomic_session()
 }
 
 #[test]
-fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
+fn shared_root_positive_v1_v2_authority_matrix_is_configured_postgres_proof()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
         return Ok(());
@@ -1449,7 +1497,11 @@ fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
                 };
                 let record = prepared_record(seed)?;
                 let source = LiveSource::read(seed);
-                let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                let journal = AdmissionReconnectJournal::from_root(root.clone());
                 let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
                 let prepared = journal.prepare(&request).await?;
                 assert_eq!(prepared, ReconnectPrepareDispositionV1::Prepared);
@@ -1461,17 +1513,215 @@ fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
                     journal.commit(&commit).await?,
                     ReconnectCommitDispositionV1::Committed
                 );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
                 drop(journal);
-                let reloaded = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let reloaded = AdmissionReconnectJournal::from_root(root.clone());
                 let v1 = reloaded.reconcile(&request).await?;
-                let typed = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
+                let typed = durability::AdmissionReconnectJournalV2::from_root(root.clone());
                 let (_, request_v2) =
                     oteryn_game_server::foundation::ReconnectDurabilityFlowV2::begin(
                         record.clone(),
                         None,
                     );
                 let v2 = typed.reconcile(&request_v2).await?;
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
                 authority_matrix::run_loaded_matrix(seed, &record, &source, v1, v2)?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn shared_root_caller_cancellation_preserves_detached_journal_custody()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use authority_matrix::{Seed, prepared_record};
+
+            let database =
+                postgres::IsolatedPostgres::create("shared_root_cancelled_caller").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let seed = Seed {
+                    now: unix_now().map_err(foundation_error)?,
+                    ..Seed::fixed()
+                };
+                let record = prepared_record(seed)?;
+                let (_flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                let journal = AdmissionReconnectJournal::from_root(root.clone());
+
+                let mut blocker = <sqlx::PgConnection as sqlx::Connection>::connect(&url).await?;
+                sqlx::query("BEGIN").execute(&mut blocker).await?;
+                sqlx::query(
+                    "LOCK TABLE game_durability_reconnect_attempts IN ACCESS EXCLUSIVE MODE",
+                )
+                .execute(&mut blocker)
+                .await?;
+
+                let caller_journal = journal.clone();
+                let caller_request = request.clone();
+                let caller =
+                    tokio::spawn(async move { caller_journal.prepare(&caller_request).await });
+
+                tokio::time::timeout(Duration::from_secs(1), async {
+                    while root.is_ready() {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await
+                .map_err(|_| std::io::Error::other("root holder was not checked out"))?;
+                assert!(!root.has_ready_demand());
+
+                caller.abort();
+                let cancelled = match caller.await {
+                    Ok(_) => {
+                        return Err(
+                            std::io::Error::other("caller task unexpectedly completed").into()
+                        );
+                    }
+                    Err(cancelled) => cancelled,
+                };
+                assert!(cancelled.is_cancelled());
+                assert!(
+                    !root.is_ready(),
+                    "caller cancellation released the root holder before detached work finished"
+                );
+                assert!(!root.has_ready_demand());
+
+                sqlx::query("ROLLBACK").execute(&mut blocker).await?;
+                blocker.close().await?;
+
+                tokio::time::timeout(Duration::from_secs(1), async {
+                    while !root.is_ready() {
+                        tokio::task::yield_now().await;
+                    }
+                })
+                .await
+                .map_err(|_| {
+                    std::io::Error::other("detached journal task did not return holder")
+                })?;
+                assert!(!root.has_ready_demand());
+
+                assert_eq!(
+                    journal.prepare(&request).await?,
+                    ReconnectPrepareDispositionV1::ExistingPrepared
+                );
+                assert_eq!(
+                    journal.reconcile(&request).await?,
+                    ReconnectDurableReconciliationSnapshotV1::prepared(record)
+                );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn shared_root_positive_v2_terminal_replacement_is_configured_postgres_proof()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use authority_matrix::{LiveSource, Seed, checked, prepared_record, v2_budget};
+
+            let database = postgres::IsolatedPostgres::create("shared_root_v2_replacement").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let seed = Seed {
+                    now: unix_now().map_err(foundation_error)?,
+                    ..Seed::fixed()
+                };
+                seed_shared_root_replacement_predecessor(&url, seed).await?;
+                let record = prepared_record(seed)?;
+                let source = LiveSource::read(seed);
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+
+                let legacy = AdmissionReconnectJournal::from_root(root.clone());
+                let typed = durability::AdmissionReconnectJournalV2::from_root(root.clone());
+                let (mut flow, request) =
+                    oteryn_game_server::foundation::ReconnectDurabilityFlowV2::begin(
+                        record.clone(),
+                        Some(source.authorize_replacement(&record)?),
+                    );
+                let disposition = typed.prepare(&request).await?;
+                assert_eq!(
+                    disposition,
+                    oteryn_game_server::foundation::ReconnectPrepareDispositionV2::Prepared
+                );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+
+                let mut budget = v2_budget(seed)?;
+                checked(flow.accept_prepare_completion(
+                    oteryn_game_server::foundation::ReconnectPrepareCompletionV2::for_request(
+                        &request,
+                        disposition,
+                    ),
+                    &mut budget,
+                ))?;
+                let commit = checked(flow.authorize_commit(source.bind(&record)?, seed.now + 2))?;
+                assert_eq!(
+                    legacy.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                assert_eq!(
+                    checked(flow.accept_commit_completion(
+                        ReconnectCommitCompletionV1::for_request(
+                            &commit,
+                            ReconnectCommitDispositionV1::Committed,
+                        ),
+                    ))?,
+                    ReconnectCommitActionV1::ReconcileSameAttempt
+                );
+
+                let snapshot = typed.reconcile(&request).await?;
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+                assert!(matches!(
+                    checked(flow.accept_reconciliation(
+                        snapshot,
+                        source.bind(&record)?,
+                        &mut budget,
+                    ))?,
+                    oteryn_game_server::foundation::ReconnectProjectionDecisionV2::InstallController { .. }
+                ));
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;
@@ -1499,6 +1749,394 @@ use postgres::current_authority_from_record;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+const WP3_HOSTILE_PG_CHILD: &str = "OTERYN_WP3_HOSTILE_PG_CHILD";
+
+#[test]
+fn wp3_deterministic_pg_options_ignore_ambient_sources() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::var_os(WP3_HOSTILE_PG_CHILD).is_some() {
+        use sqlx::ConnectOptions;
+        use sqlx::postgres::{PgConnectOptions, PgSslMode};
+
+        let options = PgConnectOptions::from_str_without_environment(
+            "postgresql://explicit@db.example/oteryn?hostaddr=127.0.0.1&sslmode=verify-full",
+        )?;
+        assert_eq!(options.get_host(), "db.example");
+        assert_eq!(options.get_host_addr(), Some("127.0.0.1"));
+        assert_eq!(options.get_port(), 5432);
+        assert_eq!(options.get_username(), "explicit");
+        assert_eq!(options.get_database(), Some("oteryn"));
+        assert!(matches!(options.get_ssl_mode(), PgSslMode::VerifyFull));
+        assert_eq!(options.to_url_lossy().password(), None);
+        return Ok(());
+    }
+
+    let pgpass =
+        std::env::temp_dir().join(format!("oteryn-wp3-hostile-pgpass-{}", std::process::id()));
+    std::fs::write(&pgpass, "db.example:5432:oteryn:ambient:ambient-secret\n")?;
+    let output = Command::new(std::env::current_exe()?)
+        .arg("--exact")
+        .arg("wp3_deterministic_pg_options_ignore_ambient_sources")
+        .arg("--nocapture")
+        .env(WP3_HOSTILE_PG_CHILD, "1")
+        .env("PGHOST", "hostile.example")
+        .env("PGHOSTADDR", "203.0.113.99")
+        .env("PGPORT", "6543")
+        .env("PGUSER", "ambient")
+        .env("PGPASSWORD", "ambient-secret")
+        .env("PGDATABASE", "ambient_db")
+        .env("PGSSLMODE", "disable")
+        .env("PGPASSFILE", &pgpass)
+        .output()?;
+    let _ = std::fs::remove_file(pgpass);
+    if !output.status.success() {
+        return Err(format!(
+            "hostile PG child failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    Ok(())
+}
+
+#[test]
+fn wp3_process_root_is_singleton_ready_only_and_detached_task_safe()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DB_PASS_DEADLINE, DurabilityError, DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+    use std::sync::mpsc;
+
+    fn production_config() -> Result<DurabilityRootConfig, DurabilityError> {
+        DurabilityRootConfig::new(
+            IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+            5432,
+            "db.example",
+            "oteryn",
+            "explicit",
+            "test-secret",
+            b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+        )
+    }
+
+    let _process_root_guard = match PROCESS_ROOT_LEDGER_TEST_LOCK.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+
+    let config = production_config()?;
+    assert!(matches!(
+        production_config(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    let root = DurabilityRoot::new(config)?;
+
+    assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+    assert!(!root.is_ready());
+    assert!(root.has_ready_demand());
+    assert!(matches!(
+        root.try_acquire_ready(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+
+    let (started_tx, started_rx) = mpsc::channel();
+    let detached_root = root.clone();
+    let task = root.spawn_task(async move {
+        assert!(
+            started_tx.send(()).is_ok(),
+            "singleton test receiver must remain alive"
+        );
+        tokio::time::sleep(Duration::from_millis(25)).await;
+        drop(detached_root);
+        7u8
+    });
+    started_rx.recv_timeout(Duration::from_secs(2))?;
+    drop(root);
+
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    assert_eq!(runtime.block_on(task)?, 7);
+    assert!(matches!(
+        production_config(),
+        Err(DurabilityError::RootUnavailable)
+    ));
+    Ok(())
+}
+
+#[test]
+fn wp3_root_journal_ready_miss_is_fail_closed_without_connect()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+
+    let root = DurabilityRoot::new(DurabilityRootConfig::new_with_isolated_test_ledger(
+        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+        5432,
+        "db.example",
+        "oteryn",
+        "explicit",
+        "test-secret",
+        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+    )?)?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let result = runtime.block_on(async {
+        let journal = AdmissionReconnectJournal::from_root(root.clone());
+        let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+            record(201, 1, 0xa1, unix_now().map_err(foundation_error)?)
+                .map_err(foundation_error)?,
+        );
+
+        assert!(matches!(
+            journal.prepare(&request).await,
+            Err(DurabilityError::RootUnavailable)
+        ));
+        assert!(!root.is_ready());
+        assert!(root.has_ready_demand());
+        Ok::<(), Box<dyn std::error::Error>>(())
+    });
+    drop(runtime);
+    drop(root);
+    result
+}
+
+#[test]
+fn wp3_process_scoped_root_keeps_final_runtime_owner_outside_async_tasks()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{DurabilityRoot, DurabilityRootConfig};
+    use std::net::{IpAddr, Ipv4Addr};
+
+    let root = DurabilityRoot::new(DurabilityRootConfig::new_with_isolated_test_ledger(
+        IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+        5432,
+        "db.example",
+        "oteryn",
+        "explicit",
+        "test-secret",
+        b"-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n",
+    )?)?;
+    let async_owner = root.clone();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+
+    runtime.block_on(async move {
+        tokio::task::yield_now().await;
+        drop(async_owner);
+    });
+
+    drop(runtime);
+    drop(root);
+    Ok(())
+}
+
+#[test]
+fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use durability::{DB_PASS_DEADLINE, DurabilityRoot};
+
+            let database = postgres::IsolatedPostgres::create("wp3_shared_root_deadline").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let root = DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+                assert!(root.is_ready());
+                assert!(!root.has_ready_demand());
+
+                let issued = root.try_issue_semantic_pass()?;
+                let result = issued
+                    .run(|_holder, _deadline| {
+                        Box::pin(async move {
+                            tokio::time::sleep(DB_PASS_DEADLINE + Duration::from_millis(50)).await;
+                            Ok(())
+                        })
+                    })
+                    .await;
+
+                assert!(matches!(
+                    result,
+                    Err(DurabilityError::RootPassDeadlineExceeded)
+                ));
+                assert!(!root.is_ready());
+                assert!(root.has_ready_demand());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use durability::{DurabilityError, DurabilityRoot};
+
+            let database = postgres::IsolatedPostgres::create("wp3_commit_outcome_unknown").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let root = DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+
+                let ambiguous: Result<(), DurabilityError> = root
+                    .try_issue_semantic_pass()?
+                    .run(|holder, _deadline| {
+                        Box::pin(async move {
+                            sqlx::query(
+                                "SELECT set_config('oteryn.wp3_holder_marker', 'ambiguous', false)",
+                            )
+                            .execute(&mut **holder)
+                            .await?;
+                            Err(DurabilityError::CommitOutcomeUnknown)
+                        })
+                    })
+                    .await;
+
+                assert!(matches!(
+                    ambiguous,
+                    Err(DurabilityError::CommitOutcomeUnknown)
+                ));
+                assert!(!root.is_ready(), "ambiguous holder must not return to idle");
+                assert!(root.has_ready_demand());
+                assert!(root.maintain_ready_once().await?);
+
+                let marker: Option<String> = root
+                    .try_issue_semantic_pass()?
+                    .run(|holder, _deadline| {
+                        Box::pin(async move {
+                            sqlx::query_scalar(
+                                "SELECT current_setting('oteryn.wp3_holder_marker', true)",
+                            )
+                            .fetch_one(&mut **holder)
+                            .await
+                            .map_err(DurabilityError::from)
+                        })
+                    })
+                    .await?;
+
+                assert_eq!(marker, None, "recovery must use a successor holder");
+                assert!(
+                    root.is_ready(),
+                    "successful pass must still return holder to idle"
+                );
+                assert!(!root.has_ready_demand());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn wp3_root_readiness_requires_compatible_schema() -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use durability::DurabilityRoot;
+
+            let database = postgres::IsolatedPostgres::create("wp3_root_schema_gate").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let root = DurabilityRoot::connect_test_runtime(&url)?;
+
+                assert!(matches!(
+                    root.maintain_ready_once().await,
+                    Err(DurabilityError::SchemaIncompatible(
+                        SchemaCompatibility::MissingMigrationLedger
+                    ))
+                ));
+                assert!(!root.is_ready());
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn wp3_return_finality_deadline_hard_retires_exact_holder() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            use sqlx::pool::PoolConnectionReturnDisposition;
+            use sqlx::postgres::PgPoolOptions;
+            use std::time::Instant;
+
+            let database = postgres::IsolatedPostgres::create("wp3_return_finality_deadline").await?;
+            let result = async {
+                let url = database.database_url()?;
+                let pool = PgPoolOptions::new()
+                    .max_connections(1)
+                    .min_connections(0)
+                    .after_release(|_connection, _metadata| {
+                        Box::pin(async {
+                            std::future::pending::<()>().await;
+                            Ok(true)
+                        })
+                    })
+                    .connect(&url)
+                    .await?;
+
+                let mut holder = pool.acquire().await?;
+                let deadline = Instant::now() + Duration::from_millis(100);
+                let disposition = holder.return_to_pool_observed_until(deadline).await;
+
+                assert_eq!(
+                    disposition,
+                    PoolConnectionReturnDisposition::RetiredClosed,
+                    "deadline expiry must retire the exact holder before reporting terminal finality"
+                );
+                assert_eq!(pool.num_idle(), 0);
+                assert_eq!(pool.size(), 0, "retired generation must release pool capacity");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+
+            database.cleanup().await?;
+            result
+        })
+}
 
 type CrossEpochSessionRow = (
     i64,

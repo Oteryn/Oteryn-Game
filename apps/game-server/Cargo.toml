@@ -22,5 +22,10 @@ serde_json.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
 
+[target.'cfg(target_os = "linux")'.dependencies]
+cap-fs-ext.workspace = true
+cap-std.workspace = true
+rustix.workspace = true
+
 [lints]
 workspace = true

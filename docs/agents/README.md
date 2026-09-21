@@ -1,8 +1,10 @@
 # Oteryn Game agent governance
 
-This directory is the durable operating system for autonomous and multi-agent work in `Oteryn/Oteryn-Game`. The preserved `blakinio/Oteryn-v2` repository is legacy/migration provenance and is read-only by default.
+This directory contains routed procedures and retained coordination evidence for `Oteryn/Oteryn-Game`. The preserved `blakinio/Oteryn-v2` repository is legacy/migration provenance and is read-only by default.
 
-## Required core
+## Procedure catalog
+
+This list is an index, not a mandatory reading bundle. Start with root and nearest instructions, then load only entries whose operation or domain applies.
 
 - `AGENTS.md` — rules for this directory and task records.
 - `REPOSITORY_MAP.md` — current/planned repository layout and source-of-truth boundaries.
@@ -25,8 +27,12 @@ This directory is the durable operating system for autonomous and multi-agent wo
 
 - `prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — autonomous coordinator prompt for continuing the staged global architecture decision programme from the canonical foundation checkpoint and global decision register.
 - `prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` — independent read-only programme and architecture audit prompt for exact-SHA, phase-aware review of Game direction, active workstreams, evidence, legacy contamination and the next evidence-producing milestone; short invocation: `Oteryn: audyt`.
+- `prompts/OTV2_WP3_WRITER.md` — single mutating WP3 SQLx-driver-accounting writer; short invocation: `Oteryn: wp3 writer`.
+- `prompts/OTV2_WP3_TLS_AUDITOR.md` — strict read-only TLS allocation/custody auditor for the exact live WP3 candidate; short invocation: `Oteryn: wp3 tls audit`.
+- `prompts/OTV2_WP3_QUALIFICATION_AUDITOR.md` — strict read-only WP3 qualification/integration-prerequisite auditor; short invocation: `Oteryn: wp3 qualification audit`.
+- `programs/OTERYN_WP3_MULTIAGENT_LAUNCH_RUNBOOK_20260910.md` — one-writer + two-read-only launch order, packet relay and recommended model/effort guidance for the current WP3 lineage.
 
-Reusable prompts are execution contracts, not project state. Agents must still read trusted-base governance, live task checkpoints, current ADRs/contracts and live PR/CI state before acting.
+Reusable prompts are task deltas, not project state. Apply current authority, task checkpoints, ADRs/contracts and live PR/CI state when they are material to the requested operation.
 
 ## Task lifecycle
 

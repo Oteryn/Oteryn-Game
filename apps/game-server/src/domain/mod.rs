@@ -1,5 +1,7 @@
 //! Protocol- and persistence-neutral Character and Item semantic core.
 
+pub mod progression;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};

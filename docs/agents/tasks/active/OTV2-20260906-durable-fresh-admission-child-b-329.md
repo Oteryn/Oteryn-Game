@@ -1,6 +1,52 @@
-# OTV2-20260906-durable-fresh-admission-child-b-329
+﻿# OTV2-20260906-durable-fresh-admission-child-b-329
 
 Work admitted this allocation after protected PR #333 integration and readback at `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd` (tree `d7f5a1a07d2a27b81de75ad8c3264848981d4279`); issue #329 admission comment `5557972460` precedes worker mutation.
+## Current prospective351 hosted-test lease ΓÇö Work162
+
+Work162 [comment5560691505](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5560691505) authorizes this five-document allocation package on `coord/sqlx-351-test-lease`, based on protected main `b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a`. The new test-target lease is **NOT_ACTIVE** until independent qualification, protected integration/readback and an explicit Work grant. Existing351 implementation admission continues; this is not a new worker admission or budget reset.
+
+Current custody overrides older prospective/NOT_ADMITTED prose below. B329 retains immutable admission `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`, branch `agent/durable-fresh-admission-child-b-329`/PR335, window6/completed5/rotation1 under [329 comment5560373810](https://github.com/Oteryn/Oteryn-Game/issues/329#issuecomment-5560373810). Native `6a2cccb5f448fc9f3b8ca07e1e4a66dc7aadec29` is the actual restart qualification checkpoint recorded in [329 comment5560643661](https://github.com/Oteryn/Oteryn-Game/issues/329#issuecomment-5560643661), not full B acceptance. Newer canonical B head `834db1d7118d751e31287715d3eaac7780a0c7b9`, tree `b11f20a35e4c205c7e3320469616ccd4aaa96bc5`, is the independently reviewed sealed-completion checkpoint in [329 comment5560718303](https://github.com/Oteryn/Oteryn-Game/issues/329#issuecomment-5560718303); its hosted CI is pending, not covered by the earlier366/0 result. At this checkpoint B reports50 productive minutes used in window6, approximately10 remaining, with waiting paused; this amendment adds no minutes. Driver351 retains immutable admission `53c6bdf06a2282d893035a995c46052c88f935b4`, branch `agent/sqlx-driver-budget-351`/draft PR356 and window2 under [351 comment5560554622](https://github.com/Oteryn/Oteryn-Game/issues/351#issuecomment-5560554622), following native `1363c9b5b238f4922615eda9b502866c305e83bf`. Window1 remains55m14s productive/4m46s unused, completed1/repair1/rotation0. These immutable checkpoints do not replace later canonical branch heads or cumulative findings. Preserve all branch/task history and subsequent windows/repairs through normal merge-up; old zero counters below are historical allocation evidence.
+
+### Exact prospective transfer
+
+After the activation gate, temporarily remove `apps/game-server/tests/durability_postgres.rs` from B329's active write scope and lease it exclusively to the sole351 writer **only** to add this module inclusion:
+
+```rust
+#[path = "../../../vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs"]
+mod oteryn_resource_budget;
+```
+
+The included `vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs` stays within351's existing vendor subtree. No other change to the shared target is authorized: preserve every existing B test, import, fixture, gate and assertion; no reformatting or test suppression. No workflow, Cargo feature/dependency, production B, Foundation or source scope is added. Driver retains its separately protected two-crate Cargo lease and exclusions.
+
+B keeps every other owned path and its canonical branch/worktree. Work verifies exact overlap before granting the lease and before integration. While active, B must not write the shared target or integrate overlapping target changes;351 may not use the lease for any additional edits. Work serializes ordinary merge-up and reviews the resulting exact delta, retaining prior B material. Return the target to B only after protected351 delivery/integration/readback and Work's explicit release/readmission for this file; no concurrent writer or automatic lease inheritance. Earlier14-path B lists remain historical during the active transfer.
+
+The existing canonical PostgreSQL17.6 target must actually execute the included tests on the pinned root dependency graph. Vendor-only test results and successful compilation do not establish hosted SQL execution. Keep all existing workflows and tests intact. If the service is plaintext, it supplies no TLS-positive evidence:351 must separately qualify actual TLS without security/feature downgrade or treating skipped/unconfigured tests as success. This amendment alone proves no TLS/driver/B acceptance and does not release Server Seam247.
+
+### B effective owned paths during the activated lease
+
+Only after activation, B retains these13 paths from its canonical14-path scope; the shared target is excluded until Work returns it:
+
+- `apps/game-server/src/bin/oteryn-game-migrate.rs`
+- `apps/game-server/src/durability/fresh_admission.rs`
+- `apps/game-server/src/durability/admission_authority_guards.rs`
+- `apps/game-server/src/durability/admission_journal.rs`
+- `apps/game-server/src/durability/db.rs`
+- `apps/game-server/src/durability/mod.rs`
+- `apps/game-server/src/durability/schema.rs`
+- `apps/game-server/migrations/0002_fresh_admission_authority.sql`
+- `apps/game-server/tests/support/postgres.rs`
+- `apps/game-server/tests/support/authority_matrix.rs`
+- `apps/game-server/tests/support/authority_recovery.rs`
+- `docs/agents/tasks/active/OTV2-20260906-durable-fresh-admission-child-b-329.md`
+- `docs/superpowers/plans/2026-09-06-durable-fresh-admission-child-b.md`
+
+### B329 task-record handoff
+
+This is a coordinated ownership correction under Work162 comment5560691505. This task's earlier metadata and all historical evidence remain intact. It grants no reset/replacement of the existing admitted worker. Before activation, existing runtime custody remains unchanged; after activation, the exact shared-target exception above supersedes earlier conflicting path lists only. Preserve the worker branch's newer task evidence when normally merging this coordinator amendment.
+
+Next action: Work qualifies/protects the amendment and verifies exact branch overlap before granting the target lease.
+
+This exact prospective allocation activates only after protected integration and Work readback. The actual allocation merge becomes immutable worker admission/base before first mutation.
 
 ```yaml
 task_id: OTV2-20260906-durable-fresh-admission-child-b-329
@@ -111,7 +157,7 @@ No Foundation, Cargo/lockfile, workflow/protection, 0001 edits, production DB/so
 
 ## Implementation / findings
 
-### Window 3 — migration composition and atomic rollback qualification
+### Window 3 ΓÇö migration composition and atomic rollback qualification
 
 Independent checkpoint review identified P2: panic-based checks inside the rollback test could skip its outer isolated-database cleanup. Accepted and repaired: SQLSTATE, absent reconciliation, unchanged guards and exact row-count mismatches now return diagnostic errors; every failure reaches `database.cleanup().await` before propagation. No assertion condition is weakened. This increments the persistent repair counter to2; prior hosted evidence and the original fixed priority finding remain retained.
 
@@ -121,7 +167,7 @@ Protected allocation344 merge `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2`, Merge 
 
 New configured PostgreSQL case `fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation` uses six fresh isolated databases and an administrator-owned test trigger interrupting receipt, session, Account guard, Character guard, guard history or transport reservation respectively. Each starts from valid independently published guards, requires the specific injected SQL error, then checks authoritative absence, unchanged guard payloads, zero receipt/session/reservation and exactly four prior history rows. Cleanup removes each isolated database; no production fault path is introduced. The existing publication case additionally verifies full-u64 source/runtime generations through actual NUMERIC/mirror/restart reads. Hosted execution is mandatory and pending; these tests do not claim full race/lifecycle qualification.
 
-### Window 3 — initial fresh transaction and original-operation recovery
+### Window 3 ΓÇö initial fresh transaction and original-operation recovery
 
 Protected hosted evidence on priority repair `df0472e88ce4809d124011f0bae24e6007946257`: canonical34031174082/Linux101480959285, actual PostgreSQL17.6 at11:50:59Z,302 passed/0 failed; all four priority regressions are GREEN. The original P2 is fixed. Guard storage checkpoint `c426625d8408e4b576091304e9359f588222233f` / tree `fae938e91091aa7ed583339c059c47c831a10531` passed independent intermediate review P0/P1/P2=0 and actual PostgreSQL17.6 canonical34031690145/Linux101482307338: new guard test GREEN12:01:43Z, full303 passed/0 failed12:01:52Z. Earlier unconfigured workspace cases are excluded from that evidence.
 
@@ -131,7 +177,7 @@ Reconciliation distinctly reports absent, conflicting operation or original rece
 
 Focused test `fresh_commit_persists_complete_operation_and_reconciles_original_decision` first gave missing-API compiler RED (`b329-fresh-api-red.log`), not SQL RED. It now covers one independently missing signing-trust guard, no receipt on rejection, complete positive operation, exact retry, new adapter reconciliation, original L, initial generation1/absent continuity, exact paired persisted successors, changed-operation conflict and one receipt/session/reservation. Hosted execution remains pending. Strict all-target Clippy and library291/291 passed locally; unconfigured SQL is excluded. Full atomic rollback/race/time/lifecycle/storage matrix, shared bounded executor and all-copy resources, complete key/row closure and final independent qualification remain open. Per-caller storage construction is intermediate and must not survive as independent production capacity.
 
-### Window 3 — initial typed publication storage
+### Window 3 ΓÇö initial typed publication storage
 
 Native priority repair `df0472e88ce4809d124011f0bae24e6007946257` / tree `b6720ec247e5ecf10e8a3092dafc06cee6e2f28d` was normally fast-forwarded clean and custody returned in the same window. The next focused test first produced compiler RED for absent `AdmissionGuardStore` / disposition API (`b329-guard-api-red.log`); this is compiler evidence, not PostgreSQL RED.
 
@@ -141,7 +187,7 @@ Configured PostgreSQL case `guard_publication_is_atomic_replayable_and_retains_d
 
 Per-record budgets remain explicit caller allocations, not production defaults. SQL guards payload and mirror byte lengths before transfer within the same protected snapshot. Complete all-copy/end-to-end resource accounting, executor slots, pending recovery, full physical lock closure and the remaining fresh/lifecycle adapter are still outstanding and required. No completion seal, migration binary, Foundation, registry or other unallocated path is changed. Local strict all-target Clippy passed and library tests passed291/291 (unconfigured SQL returns remain excluded from DB evidence); formatting and governance remain required before handoff.
 
-### Window 3 — retained replay and continuity priority repair
+### Window 3 ΓÇö retained replay and continuity priority repair
 
 Work continuation comment `5558970279` grants successor writer `b_resume_audit` the same canonical branch/PR and thirteen paths, from `2026-09-06T11:43:00Z` to `12:43:00Z`. The recreated worktree is clean at native `35d7c8445dda1b1aef3899dbe2a119c8cd781b2f`; unpublished previous-worker work is unavailable and receives no completion credit. Immutable admission is retained; completed windows2, worker rotations1 and prior repair/retry evidence persist.
 
@@ -156,7 +202,7 @@ Window 1 started at `2026-09-06T08:17:20Z` on the verified clean canonical branc
 
 The plan's milestones preserve full acceptance and are not separate task/PR allocations. At each authorized 60-minute window boundary, checkpoint exact durable head, changed paths, evidence, unresolved findings and one next action. Work controls continuation/custody rotation. A frozen failing candidate remains frozen/failing until dispositioned; rotation does not reset failure, repair or CI counters. No metadata/no-op commits for counter resets.
 
-### Checkpoint 2 — forward schema implementation; SQL GREEN pending
+### Checkpoint 2 ΓÇö forward schema implementation; SQL GREEN pending
 
 - Canonical first checkpoint: PR #335 head `a251d94b4a23b7ae0b889a0a6dfbb93dfb1574f3`, tree `d3855e4e18bd308952eb7058ef3810dc69a72432`; normal fast-forward preserved one branch/history.
 - Actual configured PostgreSQL17.6 RED: gate `34021756196`, Linux job `101455557352`, `2026-09-06T08:28:13Z`; target reported 295 passed / 1 failed. Sole failure `fresh_admission_forward_schema_supports_truthful_atomic_session`: `fresh atomic admission requires its immutable receipt table`. Compiler and lint succeeded. This is schema prerequisite RED, not full atomic adapter proof.
@@ -165,7 +211,7 @@ The plan's milestones preserve full acceptance and are not separate task/PR allo
 - Work explicitly dispositioned existing isolated-admin reservation corruption fixtures: disable only the named immutability trigger and inject corruption inside one transaction, then re-enable before commit; error/drop rolls back both changes. Existing reload assertions remain. A separate restricted test runtime role is granted normal DML only and must fail both reservation deletion (23514) and trigger disable (42501). Its role/grants are themselves transactionally rolled back. No production bypass is added.
 - Shared pre-L inventory: V1 prepare session/attempt/actor continuity/transport/pending FK; V1 commit unique nonce and session/attempt/protection state; mutating reconciliation protection activation; V2 broad predecessor attempts and candidate replacement/session/continuity/reservation/pending FK. New receipt/guard/history/account uniqueness must join one protocol. Common locks and lossless codecs are not implemented yet.
 
-### Checkpoint 3 — lossless codec mechanics and next relation-wait RED
+### Checkpoint 3 ΓÇö lossless codec mechanics and next relation-wait RED
 
 - Canonical schema checkpoint `d371e0a61e8a39c8c3f6875bf2343da60984ae2b`, tree `ec7cdf1d05b39e9b8933458b2ac23140820135c1`, was normally fast-forwarded and independently reviewed P0/P1/P2=0 for that intermediate scope.
 - Hosted gate `34022664262`, Linux job `101458035139`: configured PostgreSQL17.6 schema case GREEN at `08:48:03Z`, including restricted runtime DELETE rejection23514 and trigger-disable rejection42501. Full target FAILED: 289 passed / 8 failed. These failures remain open: old transport/nonce/collision fixtures used multiple nonterminal characters under one AccountId and now encounter the correctly enforced account exclusion before the intended invariant. V1's suppressed insert then missing session reports InvalidStoredState. Preserve account exclusion; independently isolate fixture accounts and normalize real occupancy to existing RejectedStaleAuthority under common serialization. Work controls the prospective two-path fixture amendment; no extra fixture paths are admitted yet.
@@ -175,7 +221,7 @@ The plan's milestones preserve full acceptance and are not separate task/PR allo
 - Measured fixtures only: complete operation3934 encoded bytes /2931 binary bytes; account478, character278, runtime385, signing-trust280 encoded guard bytes. These are not maxima/capacity proof. Encode retains bounded binary + base64 + JSON, historical validation clones guard evidence only after bounded encoding; decode borrows envelope and retains binary + typed string copies, without canonical re-encode copies.
 - New actual hosted RED prepared: `commit_nonce_relation_wait_cannot_outlive_authorization_deadline`. It holds the nonce relation in SHARE mode, observes the blocked request through pg_locks, lets trusted PostgreSQL time cross the accepted deadline, then requires stale rejection with no consumption. Existing code samples time before this later relation acquisition. This new RED is pending; common strongest-needed relation locks and sorted domain/key/row footprint closure are not implemented yet. No new hosted run or result is claimed here.
 
-### Window 1 material handoff — relation wait repair and owned fixture family
+### Window 1 material handoff ΓÇö relation wait repair and owned fixture family
 
 - Canonical codec checkpoint `d8fb43e727a4052464bbd40d66c6d8df53fd8889`, tree `3b2e57876565264e513c4bfe09c504a25e04a16e`; independent intermediate codec/test review P0/P1/P2=0. Same branch and normal fast-forward; immutable admission remains `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`.
 - Actual relation-wait RED: PostgreSQL17.6 run `34023568404`, Linux `101460507857`, `2026-09-06T09:08:33Z`; `commit_nonce_relation_wait_cannot_outlive_authorization_deadline` observed `Committed` instead of `RejectedStaleAuthority` after its pg_locks barrier and trusted database deadline crossing. Full target 291 passed / 9 failed (eight known fixture cases plus this RED). No unchanged run was requested.
@@ -251,9 +297,9 @@ blocker: null
 next_action: Next allocated writer repairs WIP strict Clippy layout and adds actual registered-runtime qualification before continuing full shared executor; Work preserves this stopped-user checkpoint.
 ```
 
-## Window 4 — first fresh control loss
+## Window 4 ΓÇö first fresh control loss
 
-Work comment5559297399 grants12:46–13:46Z on the same branch and fourteen allocated paths; completed windows3, rotations1, repair cycles2 remain cumulative. Native8a807a4d7d47c2ed0c758d8a30e2df5617189841 was normally fast-forwarded clean. Fresh checkpoint4139f552 passed actual PostgreSQL17.6 canonical34033443274/Linux101487176414,304 passed/0 failed. Rollback checkpoint8a807 passed actual PostgreSQL17.6 canonical34033942736/Linux101488525245,305 passed/0 failed12:47:50Z, including six effect rollback boundaries and full-u64 publication mirrors. Unconfigured local test bodies are excluded.
+Work comment5559297399 grants12:46ΓÇô13:46Z on the same branch and fourteen allocated paths; completed windows3, rotations1, repair cycles2 remain cumulative. Native8a807a4d7d47c2ed0c758d8a30e2df5617189841 was normally fast-forwarded clean. Fresh checkpoint4139f552 passed actual PostgreSQL17.6 canonical34033443274/Linux101487176414,304 passed/0 failed. Rollback checkpoint8a807 passed actual PostgreSQL17.6 canonical34033942736/Linux101488525245,305 passed/0 failed12:47:50Z, including six effect rollback boundaries and full-u64 publication mirrors. Unconfigured local test bodies are excluded.
 
 Independent review found two P1 defects in unpublished tree77bcf86d878d9c8938521a815a3733055b1d1dea: public raw-record PREPARE requests cannot authorize unexpected loss of a healthy controller; and expired initial preparation could persist stale attempts while continuity remained NULL, poisoning a later epoch. Publication was held. Repair cycle3 removes the unsafe optional-context APIs entirely and returns RejectedStaleAuthority for initial NULL continuity before any retained attempt/children. Existing established-epoch behavior is unchanged. No unsafe checkpoint was committed.
 
@@ -263,9 +309,9 @@ Exact dependency: admission.rs mark_unexpected_control_loss checks local current
 
 Strict all-target Clippy passed4.75s including the final no-child SQL assertion (b329-first-loss-repair-clippy.log); formatting, whitespace and governance26 documents/9 lanes passed. Full sealed lifecycle, shared bounded executor/custody, adaptive locking and qualification remain required. Resource registry345 is accepted at protectedc9890968ce4c71165bdd9cd1d6938f9af75eaa00; all23 DFR dimensions were read at that immutable blob.
 
-Independent repair review P2: the fixture adds115 seconds to its seed time, so offset−60 did not expire the first request. Repair cycle4 changes it to−180 and explicitly checks first deadline < actual database clock and second deadline >= actual database clock before submission. Both full no-effects assertions remain. Same window4/admission and cumulative counters; actual SQL remains pending.
+Independent repair review P2: the fixture adds115 seconds to its seed time, so offsetΓêÆ60 did not expire the first request. Repair cycle4 changes it toΓêÆ180 and explicitly checks first deadline < actual database clock and second deadline >= actual database clock before submission. Both full no-effects assertions remain. Same window4/admission and cumulative counters; actual SQL remains pending.
 
-## Window 4 — accepted resource preflight checkpoint
+## Window 4 ΓÇö accepted resource preflight checkpoint
 
 Safe first-loss rejection was published asfd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a / tree283836a52caa59512f6c994d12f48b3abe0761c0 and normally fast-forwarded clean. Actual PostgreSQL17.6 canonical34035642462/Linux101493135940 passed the new no-effects test13:21:27Z and full306/306 tests13:21:41Z; all applicable CI SUCCESS, PR335comment5559500731. Same window4/completed3/rotation1/repair4.
 
@@ -277,15 +323,15 @@ Resource review P2 repaired in cycle5: a generic oversized mirror rejection coul
 
 Actual resource checkpoint86c5935d97ab87dccfc29b6344cb3ddb1607b182 / treef55b1a3fff0b218de52362e2b85b3dcc07087a19 was published and normally fast-forwarded clean. Actual PostgreSQL canonical34036298616/Linux101494928507 failed307 passed/1 failed13:35:06Z: the new boundary fixture decoded SQL octet_length INT4 as Rusti64. Repair cycle6 explicitly casts both boundary length expressions tobigint, preserving exact131072/131073 assertions. No unchanged rerun or gate reset.
 
-## Window 4 — durable custody storage checkpoint
+## Window 4 ΓÇö durable custody storage checkpoint
 
 Work329comment5559558326 authorizes the DB-fenced stable logical executor mechanism under accepted341. Unreleased owned0002 adds one relation (15 total): row0generation and exactly two initialized pending slots1/2; no source truth or controller authority. Exclusive transaction advisory custody waits for predecessor shared fences, reads both existing bounded slots, then advances generation. A shared custody token validates current generation and remains tied to the returned transaction through COMMIT. Checkpoint writes cannot overwrite a different original operation, cannot address a third slot, and cannot clear an occupied slot. Takeover retains exact originals; missing slots and generation overflow fail closed. Canonical effects are not granted by an opaque checkpoint.
 
 Configured SQL test covers both fixed slots, exact checkpoint retry, changed-operation/third-slot rejection, successor lock waiting observed through pg_locks before releasing the predecessor transaction, generation takeover retaining both originals, stale-token rejection, and missing-slot corruption. Joined futures are retained until settlement; no detached task or sleep-only assertion. Actual execution remains pending. This is low-level custody storage, not the completed process singleton/shared queue: every existing production backend still needs integration with shared custody and retained end-to-end slots, complete2s pass/acquisition accounting, owner acknowledgement/definitive clear, sized owned request clones and all protocol tests. No completion or timeout/fencing proof beyond this explicit scope is claimed.
 
-## User-stop handoff — window 5 WIP
+## User-stop handoff ΓÇö window 5 WIP
 
-Work329comment5559643400 admitted window5 13:47–14:47Z on native68609f8ae93e9fb74bff817eaa30e48045eb1b95 / treeb7f239f9278f97db11e5843210f11a62c706415b; normal FF clean verified. Completed windows4, rotations1, repair cycles6 remain cumulative. At13:50Z the user requested all work saved for the next agent; implementation stopped immediately. No authored local commit/push.
+Work329comment5559643400 admitted window5 13:47ΓÇô14:47Z on native68609f8ae93e9fb74bff817eaa30e48045eb1b95 / treeb7f239f9278f97db11e5843210f11a62c706415b; normal FF clean verified. Completed windows4, rotations1, repair cycles6 remain cumulative. At13:50Z the user requested all work saved for the next agent; implementation stopped immediately. No authored local commit/push.
 
 UNQUALIFIED WIP in five owned Rust files: shared RuntimeBackend and process registration state in db.rs; unchanged public constructors route through registered backend in production, historical cfg(test) constructors remain isolated fixture-only; explicit AdmissionRuntime::connect always exercises production registration. Registered backend owns one pool, custody generation and restored original pending slots. Cancellation/failed initialization leaves registration Starting and cannot silently create another backend. URL mismatch rejects. V1/V2/fresh/guard handles share the same backend; all nine semantic transaction starts plus V2 terminal-state lookup and test projection now call backend.begin, obtaining shared custody before relation/domain locks. V2's former duplicate legacy pool is removed. This is not yet queue/active budget enforcement.
 
@@ -293,7 +339,7 @@ Verification at stop: formatting and git diff --check pass. Strict all-target Cl
 
 Full open acceptance remains: process queue8/active2 retained across timeout/cancel/uncertain checkpoint/COMMIT, checked complete owned-request clone charging (three binding copies plus two effect copies), pending reconciliation/definitive outcome+owner acknowledgement before clear, complete2s pass including acquisition, complete row/result/physical-child resource enforcement, adaptive logical lock expansion/order, sealed loss/release/replacement and current adoption, whole matrix/independent review/CI/MQ. No driver bound is claimed: pinned SQLx0.9 PgStream recv accepts peer-u32 frame length before ReadBuffer reserve, and ParameterStatus map is unbounded; SELECT byte checks and timeout cannot prove4MiB driver memory. Dependency changes remain unallocated pending Work's exact driver resolution.
 
-## Work rebind — registered runtime qualification checkpoint
+## Work rebind ΓÇö registered runtime qualification checkpoint
 
 Work162 comment5559848749 resumes the sole writer on saved native97eb86f01d22b9d8bc42282a341799369412bba1, same fourteen paths, immutable admission and paused window5. Four completed windows, one historical rotation and six repair cycles remain; this fixes the already-recorded saved Clippy gate without resetting its history. Local canonical branch/origin/HEAD and clean tree were freshly verified before mutation. No publication or integration authority moved from Work.
 
@@ -301,7 +347,7 @@ Reproduced strict all-target Clippy RED: registered AdmissionRuntime was unused 
 
 Moved the unchanged production registration block before db.rs tests. Strict Rust1.94 all-target Clippy PASS10.56s. The new configured SQL case remains pending hosted PostgreSQL17.6; local unconfigured test bodies receive no SQL credit. This is saved-WIP qualification preparation, not full executor completion. All earlier open acceptance remains, including queue8/active2, full copy and driver accounting, all-row/result bounds, deadline/cancellation/ack custody, adaptive locks, sealed lifecycle, exact-head independent review and protected gates. SQLx0.9 finite-driver proof and Foundation owning-loss consumption remain outside this checkpoint's authority.
 
-## Window5 continuation — bounded checkpoint queue kernel
+## Window5 continuation ΓÇö bounded checkpoint queue kernel
 
 Root verified native0b47fff257902bdcc71c4ee68a6123fd1d9585c1 with actual PostgreSQL17.6 canonical34039435247/Linux101503439694: registered-runtime case PASS14:36:26Z, full310/0fail14:36:28Z. Sole writable cache moved to `/workspace/scratch/c123eb18789e/b329-continuation`, freshly verified clean canonical branch/origin/exact head. Prior local equivalent174b962 is preserved inactive; no local commit/push is authorized here. Same paused window5, completed4/rotation1/repair6 and original admission persist.
 
@@ -311,7 +357,7 @@ This is explicitly a partial bookkeeping kernel: existing semantic fresh/publica
 
 Tests: API-missing compiler RED preceded implementation; three executable component cases pass for8/9queue,2/3active, recovered-original retention, queued cancellation versus active retention,1,000/1,001ms expiry,65,536/65,537bytes and ticket overflow. Configured SQL test runs separate actual child processes for timeout and cancellation to preserve the real singleton rather than resetting it or using fixture constructors. It exercises shared queue saturation, successful first checkpoint, second checkpoint blocked on a pg_locks-observed relation, cancellation/requested timeout and retained two-slot exhaustion, original durable identity and zero admission effects. Actual new SQL remains pending; the unconfigured local case is compile evidence only. Strict all-target Clippy PASS8.25s after repairing conditional-build matching/test lint and using standard future polling because existing Tokio macro features are not enabled; no dependency change or lint allowance. Full canonical gates and independent material review remain pending.
 
-## Window5 — protected Foundation loss consumption, bounded truth checkpoint
+## Window5 ΓÇö protected Foundation loss consumption, bounded truth checkpoint
 
 Work329comment5560220922 authorizes sole writer on canonical8f73d12c105e230817524fa91287d82586a65b8a with25productive minutes remaining, completed4/rotation1/repair6 preserved. Fresh root instructions and comment read; normal fetch/merge --no-commit --no-ff of protected53c6bdf06a2282d893035a995c46052c88f935b4 succeeded without conflict/reset. Initial merged baseline tree99e2d492ce7a172638fcd83694232598948c26b3 passed source-identical `--test durability_postgres --no-run`21.02s before authored edits. Foundation owning-loss API is actual protected code, not a shadow shim; inherited protected changes are separate from B authorship.
 
@@ -325,15 +371,15 @@ Root requested broadening truth-only persistence after removing all legacy proje
 
 Freeze verification: final strict Rust1.94 all-target Clippy PASS9.24s; executable generation-separation codec case PASS; configured SQL case compiles but local body explicitly NOT_APPLICABLE because no admin URL. Target contains365 tests after protected Foundation merge and two B additions. Formatting, whitespace and governance26/9 pass. Five authored paths only (fresh_admission/admission_journal/mod/PGtarget/own task), no unresolved merge conflicts, no local commit/push. Work controls exact-tree independent review/publication and actual hosted qualification. This remains a bounded incomplete loss-truth checkpoint, not B completion.
 
-## Window6 — independent review repairs before publication
+## Window6 ΓÇö independent review repairs before publication
 
-Work329comment5560373810 closes window5 with three unused minutes honestly unused, advances completed windows4→5 and grants window6 sixty productive minutes. Rotation1 and historical repair6 remain unchanged. The separate unpublished protection-mapping repair remains recorded. Independent review now adds two distinct defects: P1 missing independently current runtime ownership/readiness validation, and P2 exact retry accepting a stored decision L earlier than authorization. Neither is deferred to bridge353 or claimed safe in the prior frozen candidate.
+Work329comment5560373810 closes window5 with three unused minutes honestly unused, advances completed windows4ΓåÆ5 and grants window6 sixty productive minutes. Rotation1 and historical repair6 remain unchanged. The separate unpublished protection-mapping repair remains recorded. Independent review now adds two distinct defects: P1 missing independently current runtime ownership/readiness validation, and P2 exact retry accepting a stored decision L earlier than authorization. Neither is deferred to bridge353 or claimed safe in the prior frozen candidate.
 
 P1 repair loads the exact current-session Runtime key through the existing complete guard decoder/mirror/history-highwater validation under the common transaction relation fence, before final L sampling. Missing guard, different ownership generation or readiness false rejects before effects. The configured test independently publishes a valid runtime-only CAS revision2 for ownership advance and readiness withdrawal in separate fresh databases, leaves the sealed loss source/session/claims unchanged, checks exact published row, and requires loss rejection with unchanged canonical session and no loss receipt. Existing positive and atomic rollback cases remain.
 
 P2 repair rejects an otherwise byte-identical lifecycle receipt whose stored L is earlier than operation.authorized_at. The configured corruption negative changes only L to zero with fixture-only immutable-trigger suspension, restores triggers before calling the production method, and requires InvalidStoredState with unchanged canonical session. Ordinary exact original-L retry remains the positive control. Test additions preceded repair; no configured SQL RED or PASS is claimed locally because PostgreSQL admin URL is absent. Initial test compilation caught test import/disposition naming errors, repaired without weakening assertions. Source-included test compilation passed11.15s and strict all-target Clippy passed8.82s before the final additional exact published-row assertion; final verification follows in Work's checkpoint evidence. These are repairs of the restricted truth checkpoint, not complete loss recovery, driver, queue, acknowledgement, or B acceptance.
 
-## Window6 continuation — historical loss decoding and original reconciliation
+## Window6 continuation ΓÇö historical loss decoding and original reconciliation
 
 Work published the independently repaired checkpoint as native40a8f3e3441d08dd53456543c2200d1ef5b8f219, exact treea5a85b07083dc50a9107556a4a48bb7b9f2e56d2. Explicit authorized GitHub fetch succeeded; sole writable cache is `/workspace/scratch/c123eb18789e/b329-reconcile-continuation`, created as a shared local clone and verified clean at that canonical head/tree before edits. Prior cache remains frozen. Same original admission, window6, five completed windows, rotation1 and historical repair6 plus separately recorded mapping/P1/P2 repairs persist; no history reset or local publication.
 
@@ -345,7 +391,7 @@ Executable codec tests round-trip distinct source/entitlement/rearm generations 
 
 Independent review of unpublished tree2ccad38 identified an additional distinct predecessor-mirror defect: fresh snapshot decoding only required positive predecessor_generation, discarded that mirror, and original loss reconciliation could therefore accept predecessor2 with current/original generation1. This repair is recorded separately from historical repair6 and mapping/runtime/L repairs. A configured single-mirror corruption regression was added and source-included compiled8.54s before implementation; no unavailable local SQL RED is claimed. General fresh reconciliation now requires positive predecessor<=current generation. Original loss reconciliation reads the exact numeric predecessor under its existing common transaction fence and additionally requires equality to the immutable original loss generation when the current epoch is that loss epoch. It does not force an old epoch's predecessor onto a later accepted epoch. Both original-loss and general fresh reads must reject the isolated predecessor2/current1 corruption; legitimate first-loss and reopened-original positives remain. Native40a8 actual PostgreSQL17.6 full365/0 and canonical34044419244 success are recorded by Work comments5560490491/5560502156; the new decoder/reconciliation and mirror regression still need their own hosted run.
 
-## Window6 continuation — actual process restart qualification candidate
+## Window6 continuation ΓÇö actual process restart qualification candidate
 
 Work published repaired loss decoding/reconciliation as native6036bee65dd798609dcfa63d7189d2ea12abfee3, exact treea1ef8fc35668d556743df03039aa18da389a66d2. An explicit GitHub fetch, shared checked-out clone and ordinary fast-forward from40a8 established sole writable cache `/workspace/scratch/c123eb18789e/b329-restart-continuation`, freshly clean at the canonical branch/head/tree/origin. Previous caches remain frozen; no reset, local commit, push or admission change. Same window6/counter history remains.
 
@@ -355,7 +401,7 @@ Two successive independent recovery processes reload both durable originals, dec
 
 The configured test compiles (16.80s final target build) but its local body is explicitly NOT_APPLICABLE without PostgreSQL admin URL; no restart SQL PASS is claimed before hosted execution. An initial missing test enum import was repaired without production changes or weakened assertions. Only the existing PostgreSQL target and this task record are authored in this slice. Work retains independent exact-tree review and hosted qualification/publication authority.
 
-## Window6 continuation — actual sealed durable completion delivery
+## Window6 continuation ΓÇö actual sealed durable completion delivery
 
 Work records native6a2cccb5f448fc9f3b8ca07e1e4a66dc7aadec29 actual PostgreSQL17.6 restart qualification366/0 at16:38:49 (Linux101520720389/full34045862137, comment5560643661). Explicit fetch/shared clone/ordinary fast-forward establishes sole writable cache `/workspace/scratch/c123eb18789e/b329-completion-continuation`, verified clean native6a2cccb/treef55f5bf45f325a5499b74fdfb5c7d876a96b34c4 with canonical branch/origin. Earlier caches remain frozen and all window/counter history is retained.
 

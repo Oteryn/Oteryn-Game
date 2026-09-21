@@ -1,0 +1,90 @@
+{
+  "admission_main_sha": "f04b75bfe53d3ebcda7d287df98345d1c37c2b8d",
+  "allocation_comment_id": 5734402048,
+  "architect_comment_id": 5734335743,
+  "behavior": {
+    "changed_intent_or_binding": "CONFLICT",
+    "evicted_reservable_again": false,
+    "evicted_terminal": "EXPIRED",
+    "pending_overtake": false,
+    "recovery": "RECONSTRUCT_OR_NON_RESUMABLE",
+    "same_intent_binding": "REPLAY"
+  },
+  "boundary": {
+    "exact_max_bytes": 3116,
+    "exact_max_sha256": "91bed9f74e044a483a469c6fc78f2f98019cbeebec106b639731b98e50d9008f",
+    "generation_513": "REJECTED",
+    "key_513": "REJECTED",
+    "overflow": "REJECTED",
+    "pre_mutation_over_envelope": "REJECTED",
+    "repeat_equal": true,
+    "roundtrip_equal": true
+  },
+  "branch": "agent/fnd02-retained-semantic-record-byte-bound-evidence-663",
+  "charge": {
+    "allocator_rss_rust_abi_wire_persistence_claim": false,
+    "checked_total": 3116,
+    "equation": "4*8 + 6*2 + 6*512",
+    "fixed_u64_bytes": 32,
+    "length_prefix_bytes": 12,
+    "max_variable_bytes": 3072,
+    "owned_retained_copy_count": 1,
+    "shared_reference_double_charge": false
+  },
+  "classification": "NON_PRODUCTION_BOUND_EVIDENCE",
+  "established_discriminator": {
+    "candidate_aggregate_bytes_per_gamesession": 3116,
+    "name": "FIRST_PLAYABLE_RETAINED_SEMANTIC_RECORD_CHARGED_BYTE_BOUND",
+    "production_value_selected_here": false,
+    "retained_records_per_gamesession": 1,
+    "unit": "charged_bytes_per_retained_semantic_record",
+    "value": 3116
+  },
+  "evidence_result": "BOUND_ESTABLISHED_FOR_ARCHITECT_CONSIDERATION",
+  "handoff": {
+    "cw4_resume_authority": false,
+    "production_authority": false,
+    "value_ready_for_architect_consideration": 3116
+  },
+  "protected_inputs": {
+    "production_atom_max_bytes": 512,
+    "production_key_max_bytes": 512,
+    "transition_key_wraps_production_key": true
+  },
+  "record_candidate": {
+    "normalized_intent": [
+      "placement",
+      "incarnation",
+      "family",
+      "expected_revision"
+    ],
+    "original_binding": [
+      "exact_generation_identity",
+      "transition_key"
+    ],
+    "owned_representation": "one immutable canonical byte buffer",
+    "policy_guard_refs_retained": false,
+    "re_resolve_binding_on_replay": false,
+    "retention_metadata": [
+      "command_id"
+    ],
+    "terminal_result": [
+      "outcome",
+      "state",
+      "revision"
+    ],
+    "transition_binding_copy": false
+  },
+  "schema_version": 1,
+  "scope": {
+    "cargo_workspace": false,
+    "cw3_cw4": false,
+    "foundation_runtime": false,
+    "production": false,
+    "protocol": false,
+    "resource_registry": false
+  },
+  "validation": {
+    "focused_tests": 19
+  }
+}
