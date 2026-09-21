@@ -1,18 +1,20 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #721 exact candidate `72f035d4dd7d22058cfbb0b6f593d6514ecb73f6` passed real Merge Queue run `35615585400` with aggregate `game-gate` job `106388137988` SUCCESS and integrated as `29c21553f919bd143e6b60264a7381b66bab2fa9`. Protected `main@5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555` contains the accepted cleanup chain. Any nonterminal/checkpoint wording below is historical provenance only.
+
 # OTV2-20260921-agent-prompt-cleanup-715
 
 ```yaml
 task_id: OTV2-20260921-agent-prompt-cleanup-715
 title: Retire Terra and slim remaining broad-startup prompts
 mode: GOVERNANCE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/agent-prompt-cleanup-715
 issue: 715
-pr: null
+pr: 721
 base_sha: 256aa3b152c944cb8451906effe1f0090c5b798d
-head_sha: null
-final_head_sha: null
+head_sha: 72f035d4dd7d22058cfbb0b6f593d6514ecb73f6
+final_head_sha: 72f035d4dd7d22058cfbb0b6f593d6514ecb73f6
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-21T12:24:24Z
@@ -87,3 +89,15 @@ head_sha: null
 pr: null
 next_action: run final exact-head CI and one final independent re-review; mark Ready only if both are clean
 ```
+
+
+## Terminal closeout
+
+- issue: #715
+- delivery PR: #721
+- frozen exact head: `72f035d4dd7d22058cfbb0b6f593d6514ecb73f6`
+- real Merge Queue run: `35615585400`
+- merge-group aggregate `game-gate`: job `106388137988` — SUCCESS
+- integrated commit: `29c21553f919bd143e6b60264a7381b66bab2fa9`
+- final protected-main readback for this cleanup chain: `5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555`
+- ownership: released

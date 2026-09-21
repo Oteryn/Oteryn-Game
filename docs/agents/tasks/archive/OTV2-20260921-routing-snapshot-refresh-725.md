@@ -1,18 +1,20 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #726 exact candidate `cce8697106e218ad7da4d5fdd18c26842f4cef3d` passed real Merge Queue run `35629569584` with aggregate `game-gate` job `106435015597` SUCCESS and integrated as `5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555`. Protected `main@5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555` contains the accepted cleanup chain. Any nonterminal/checkpoint wording below is historical provenance only.
+
 # OTV2-20260921-routing-snapshot-refresh-725
 
 ```yaml
 task_id: OTV2-20260921-routing-snapshot-refresh-725
 title: Refresh reviewed routing snapshot after protected WP3 integration
 mode: REPAIR
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/routing-snapshot-refresh-725
 issue: 725
-pr: null
+pr: 726
 base_sha: 04f46b16e3b33c2ebab39edcf7e693a0a72c6301
-head_sha: null
-final_head_sha: null
+head_sha: cce8697106e218ad7da4d5fdd18c26842f4cef3d
+final_head_sha: cce8697106e218ad7da4d5fdd18c26842f4cef3d
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-21T15:18:17Z
@@ -78,3 +80,15 @@ head_sha: null
 pr: null
 next_action: freeze this final repaired head and require fresh routing-health, full CI, and independent re-review
 ```
+
+
+## Terminal closeout
+
+- issue: #725
+- delivery PR: #726
+- frozen exact head: `cce8697106e218ad7da4d5fdd18c26842f4cef3d`
+- real Merge Queue run: `35629569584`
+- merge-group aggregate `game-gate`: job `106435015597` — SUCCESS
+- integrated commit: `5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555`
+- final protected-main readback for this cleanup chain: `5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555`
+- ownership: released

@@ -1,18 +1,20 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #720 exact candidate `86b03128cb1f662ebdea202b12525db04832e7bb` passed real Merge Queue run `35615586460` with aggregate `game-gate` job `106388104993` SUCCESS and integrated as `39fde6956c582e0757740de87f845bfb08005f50`. Protected `main@5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555` contains the accepted cleanup chain. Any nonterminal/checkpoint wording below is historical provenance only.
+
 # OTV2-20260921-agent-lifecycle-cleanup-714
 
 ```yaml
 task_id: OTV2-20260921-agent-lifecycle-cleanup-714
 title: Reconcile stale active tasks and live allocation state
 mode: GOVERNANCE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/agent-lifecycle-cleanup-714
 issue: 714
-pr: null
+pr: 720
 base_sha: 256aa3b152c944cb8451906effe1f0090c5b798d
-head_sha: null
-final_head_sha: null
+head_sha: 86b03128cb1f662ebdea202b12525db04832e7bb
+final_head_sha: 86b03128cb1f662ebdea202b12525db04832e7bb
 final_head_frozen_at: null
 owner: ChatGPT
 created_at: 2026-09-21T12:23:17Z
@@ -102,3 +104,15 @@ head_sha: null
 pr: null
 next_action: freeze exact remote head, open PR #714 delivery candidate, and require exact-head governance/semantic/merge-gate validation
 ```
+
+
+## Terminal closeout
+
+- issue: #714
+- delivery PR: #720
+- frozen exact head: `86b03128cb1f662ebdea202b12525db04832e7bb`
+- real Merge Queue run: `35615586460`
+- merge-group aggregate `game-gate`: job `106388104993` — SUCCESS
+- integrated commit: `39fde6956c582e0757740de87f845bfb08005f50`
+- final protected-main readback for this cleanup chain: `5a28b53108b5a9e6c570e6dd3dbb2e9bad0a9555`
+- ownership: released
