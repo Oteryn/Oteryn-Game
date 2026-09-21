@@ -123,6 +123,31 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         )
         self.assertEqual(entry["version"], "1.9")
 
+        durability = (ROOT / "docs/agents/prompts/OTV2_IMPL_DURABILITY.md").read_text(encoding="utf-8")
+        for value in (
+            "atomic expected-head API **new-candidate** publication",
+            "one server-side mutation fences the exact expected task-branch predecessor",
+            "fresh candidate-specific validation/review evidence",
+            "ancestry-only `force=false` ref movement",
+            "sequential per-file API commits",
+        ):
+            self.assertIn(value, durability)
+
+        closure = (ROOT / "docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md").read_text(encoding="utf-8")
+        for value in (
+            "atomic expected-head API **new-candidate** publication",
+            "candidate-specific validation/review evidence from any superseded head is not reusable",
+            "precondition mismatch must create no commit and move no branch",
+            "ancestry-only `force=false` ref movement",
+            "sequential per-file API commits",
+        ):
+            self.assertIn(value, closure)
+
+        durability_entry = next(
+            prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_IMPL_DURABILITY"
+        )
+        self.assertEqual(durability_entry["version"], "1.3")
+
     def test_owner_funded_review_standing_authorization_is_bounded_and_deduplicated(self):
         policy = (ROOT / "docs/agents/OWNER_FUNDED_AI_POLICY.md").read_text(encoding="utf-8")
         for value in (

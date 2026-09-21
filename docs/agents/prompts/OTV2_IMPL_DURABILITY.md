@@ -57,11 +57,16 @@ A diagnostic-only allocation remains diagnostic-only. If the allocation authoriz
 
 ## Publication safety
 
-Publish canonical material work only through the normal authorized high-level Git publication path for the current worker/session.
+Publish canonical material work only through the route explicitly allocated by the active control plane and permitted by current root/META policy:
 
-If normal publication is unavailable or rejected, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
+- guarded local-Git exact-candidate publication; or
+- atomic expected-head API **new-candidate** publication, where one server-side mutation fences the exact expected task-branch predecessor and creates the complete bounded delta as one successor commit.
 
-Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs as a fallback for an unavailable normal publication path. Do not force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
+The API route must not reconstruct a selected local Git candidate. It creates a new exact candidate and therefore requires fresh candidate-specific validation/review evidence. A precondition mismatch must create no commit and move no branch.
+
+If neither governed route is available, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
+
+Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, emit sequential per-file API commits, force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
 
 ## Acceptance / validation
 
