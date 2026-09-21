@@ -853,3 +853,88 @@ fn four_operations_use_the_accepted_platform_endpoint() {
         assert_eq!(operation.path(), "/internal/v1/game-auth/native-evidence");
     }
 }
+
+#[test]
+fn eof_body_and_identity_encoding_follow_bounded_profile() -> Result<(), Box<dyn std::error::Error>>
+{
+    runtime()?.block_on(async {
+        async fn parse(wire: Vec<u8>) -> Result<Vec<u8>, native_admission_source::SourceError> {
+            let (mut writer, mut reader) = tokio::io::duplex(wire.len() + 1);
+            writer.write_all(&wire).await?;
+            drop(writer);
+            native_admission_source::http1_mtls::read_response(&mut reader).await
+        }
+        let body = br#"{"version":1,"operation":"ReadFreshSigningTrustV1","result":"unavailable"}"#;
+        for encoding in [
+            "",
+            "Content-Encoding: identity\r\n",
+            "content-encoding: IdEnTiTy\r\n",
+        ] {
+            for framing in [
+                "".to_string(),
+                format!("Content-Length: {}\r\n", body.len()),
+            ] {
+                let mut wire = format!("HTTP/1.1 200 OK\r\n{encoding}{framing}\r\n").into_bytes();
+                wire.extend_from_slice(body);
+                let raw = parse(wire).await?;
+                let request = Request::Trust {
+                    recovery: false,
+                    key_id: "key-1",
+                    key_purpose: "fresh_admission",
+                };
+                assert_eq!(
+                    admission_evidence::decode_response(&request, "platform-test", &raw)
+                        .map_err(|_| io::Error::other("decode"))?,
+                    Response::Failure(Failure::Unavailable)
+                );
+            }
+        }
+        for size in [8192, 8193] {
+            let mut wire = b"HTTP/1.1 200 OK\r\n\r\n".to_vec();
+            wire.extend(std::iter::repeat_n(b'x', size));
+            assert_eq!(parse(wire).await.is_ok(), size == 8192);
+        }
+        for encoding in [
+            "Content-Encoding: gzip\r\n",
+            "Content-Encoding: identity\r\nContent-Encoding: identity\r\n",
+            "Content-Encoding: identity, gzip\r\n",
+        ] {
+            let wire = format!("HTTP/1.1 200 OK\r\n{encoding}\r\n{{}}").into_bytes();
+            assert!(parse(wire).await.is_err());
+        }
+        let raw = parse(b"HTTP/1.1 200 OK\r\n\r\n{\"version\":1".to_vec()).await?;
+        let request = Request::Trust {
+            recovery: false,
+            key_id: "key-1",
+            key_purpose: "fresh_admission",
+        };
+        assert!(admission_evidence::decode_response(&request, "platform-test", &raw).is_err());
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+}
+#[test]
+fn stalled_eof_body_preserves_exchange_deadline() -> Result<(), Box<dyn std::error::Error>> {
+    runtime()?.block_on(async {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
+        let port = listener.local_addr()?.port();
+        let acceptor = tokio_rustls::TlsAcceptor::from(server_config(1)?);
+        let server = tokio::spawn(async move {
+            let (tcp, _) = listener.accept().await?;
+            let mut tls = acceptor.accept(tcp).await?;
+            let mut buf = [0u8; 2048];
+            tls.read(&mut buf).await?;
+            tls.write_all(b"HTTP/1.1 200 OK\r\nContent-Encoding: identity\r\n\r\n{}")
+                .await?;
+            let _ = tls.read(&mut buf).await;
+            Ok::<(), io::Error>(())
+        });
+        let started = std::time::Instant::now();
+        assert!(matches!(
+            exchange(&descriptor(port)?, Operation::ReadFreshSigningTrustV1, "{}").await,
+            Err(native_admission_source::SourceError::Unavailable)
+        ));
+        assert!(started.elapsed() >= std::time::Duration::from_millis(3000));
+        tokio::time::timeout(std::time::Duration::from_secs(2), server).await???;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+}

@@ -159,6 +159,7 @@ pub(crate) async fn read_response<S: AsyncRead + Unpin>(
     let mut fields = 0_usize;
     let mut length = None;
     let mut chunked = false;
+    let mut identity_encoding = false;
     for line in lines.filter(|line| !line.is_empty()) {
         fields = fields.checked_add(1).ok_or(SourceError::CapacityExceeded)?;
         if fields > 32 || line.len() + 2 > 2048 {
@@ -192,16 +193,34 @@ pub(crate) async fn read_response<S: AsyncRead + Unpin>(
                 return Err(SourceError::InvalidInput);
             }
             chunked = true;
-        } else if name.eq_ignore_ascii_case("content-encoding")
-            || name.eq_ignore_ascii_case("location")
-        {
+        } else if name.eq_ignore_ascii_case("content-encoding") {
+            if identity_encoding || !value.eq_ignore_ascii_case("identity") {
+                return Err(SourceError::InvalidInput);
+            }
+            identity_encoding = true;
+        } else if name.eq_ignore_ascii_case("location") {
             return Err(SourceError::InvalidInput);
         }
     }
     if chunked {
         return read_chunked(stream).await;
     }
-    let length = length.ok_or(SourceError::InvalidInput)?;
+    let Some(length) = length else {
+        let mut body = Vec::with_capacity(8192);
+        let mut scratch = [0u8; 1024];
+        loop {
+            // At the cap, probe one byte without retaining any excess body.
+            let available = (8192 - body.len()).clamp(1, scratch.len());
+            let n = stream.read(&mut scratch[..available]).await?;
+            if n == 0 {
+                return Ok(body);
+            }
+            if n > 8192 - body.len() {
+                return Err(SourceError::CapacityExceeded);
+            }
+            body.extend_from_slice(&scratch[..n]);
+        }
+    };
     if length > 8192 {
         return Err(SourceError::CapacityExceeded);
     }
