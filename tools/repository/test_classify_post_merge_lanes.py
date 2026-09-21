@@ -93,7 +93,7 @@ def main():
                     assert classify({"after": large_head, "commits": []})["windows"] is False
                 git("checkout", "-q", after)
                 # Independent Git history, not event commit arrays, determines every path.
-                for path in ("apps/client/src/lib.rs", "crates/simulation-determinism/src/lib.rs", "crates/foundation/src/lib.rs", "Cargo.lock", "apps/game-server/Cargo.toml", ".github/workflows/other.yml", "unknown.bin", "tools/repository/other.py"):
+                for path in ("apps/client/src/lib.rs", "crates/simulation-determinism/src/lib.rs", "crates/foundation/src/lib.rs", "Cargo.lock", "apps/game-server/Cargo.toml", ".github/workflows/other.yml", "unknown.bin", "tools/repository/other.py", "docs/agents/evidence/runtime-input.json"):
                     git("checkout", "-q", after)
                     target = root / path
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -109,6 +109,21 @@ def main():
                 head = git("rev-parse", "HEAD")
                 with patch.dict(os.environ, GITHUB_SHA=head):
                     assert classify({"after": head})["windows"] is True
+                # Agent governance changes are validated by governance/policy gates and
+                # must not allocate product runtime builds on protected main.
+                for path in ("AGENTS.md", "tools/agents/probe.py", "docs/agents/PROJECT_LANES.json"):
+                    git("checkout", "-q", after)
+                    target = root / path
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text("governance-only change\n")
+                    git("add", ".")
+                    git("commit", "-qm", "agent governance")
+                    governance_head = git("rev-parse", "HEAD")
+                    with patch.dict(os.environ, GITHUB_SHA=governance_head):
+                        result = classify({"after": governance_head, "commits": []})
+                        assert result["rust"] is False and result["windows"] is False, (path, result)
+                        assert result["surface"] == "agent-governance", (path, result)
+
                 git("checkout", "-q", after)
                 doc = root / "README.md"
                 doc.write_text("original documentation\n")
