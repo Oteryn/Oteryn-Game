@@ -303,6 +303,7 @@ pub struct FreshAdmissionStore {
     maximum_operation_bytes: usize,
 }
 impl FreshAdmissionStore {
+    #[cfg(test)]
     pub async fn connect_runtime(
         url: &str,
         maximum_operation_bytes: usize,
@@ -313,8 +314,11 @@ impl FreshAdmissionStore {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let _ = url;
-        Err(DurabilityError::Unavailable)
+        let root = super::DurabilityRoot::connect_test_runtime(url)?;
+        if !root.maintain_ready_once().await? {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        Ok(Self::from_root(root))
     }
 
     #[must_use]
@@ -460,7 +464,7 @@ impl FreshAdmissionStore {
         ))?;
         // An acknowledgement error is uncertain; caller reconciles this original
         // operation rather than assuming rollback or manufacturing another key.
-        if tx.commit().await.is_err() {
+        if super::admission_journal::commit_pass_transaction(tx, deadline).await.is_err() {
             return Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable);
         }
         Ok(FreshAdmissionDurableOutcomeV1::Committed(receipt))
@@ -473,11 +477,121 @@ impl FreshAdmissionStore {
     /// unavailable; this API never derives loss authority from reconnect PREPARE.
     pub async fn commit_fresh_loss(
         &self,
-        request: &ControlLossRequestV1,
-        source: &dyn ControlLossSourceV1,
+        request: std::sync::Arc<ControlLossRequestV1>,
+        source: std::sync::Arc<dyn ControlLossSourceV1 + Send + Sync>,
     ) -> Result<ControlLossOutcomeV1> {
-        let _ = (request, source);
-        Err(DurabilityError::Unavailable)
+        let store = (*self).clone();
+
+        let issued = store.guards.backend.try_issue_root()?;
+        let backend = store.guards.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| Box::pin(async move {
+        use sqlx::Row;
+        let operation = request.operation();
+        let encoded = encode_fresh_loss(operation)?;
+        let observation = &operation.observation;
+        let session_id = observation.session.commit().game_session_id();
+        let mut key = b"owning-loss-v1".to_vec();
+        key.extend_from_slice(session_id.as_bytes());
+        key.extend_from_slice(&observation.loss_epoch.get().to_be_bytes());
+        let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+        super::db::lock_admission_relations(&mut tx).await?;
+        if let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+            .bind(&key).fetch_optional(&mut *tx).await? {
+            let stored: Option<String> = row.try_get("operation_json")?;
+            if stored.as_deref() != Some(encoded.as_str()) { return Err(DurabilityError::InvalidStoredState); }
+            let decided_at: i64 = row.try_get("decided_at")?;
+            if decided_at < operation.authorized_at { return Err(DurabilityError::InvalidStoredState); }
+            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+            return Ok(ControlLossOutcomeV1::Committed { decided_at });
+        }
+        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
+            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+        let Some(row) = row else {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        };
+        let original_json: Option<String> = row.try_get("operation_json")?;
+        let original = decode_operation(
+            &original_json.ok_or(DurabilityError::InvalidStoredState)?,
+            store.maximum_operation_bytes,
+        )?;
+        let FreshReconciliation::Committed(current) =
+            store.reconcile_locked(&mut tx, &original).await?
+        else {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        };
+        let expected_claims = &original.transition.successors;
+        let mut claims = Vec::with_capacity(2);
+        for expected in expected_claims {
+            claims.push(store.guards.load_locked(&mut tx, &expected.key).await?);
+        }
+        if original.authorization.account_id != observation.account_presence.account_id()
+            || validate_claim_preserving_session_v1(
+                &original.authorization.account_id,
+                observation.session,
+                current.current_session,
+                expected_claims,
+                &claims,
+            )
+            .is_err()
+        {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        }
+        // The sealed observation does not supersede the independently published
+        // current runtime owner. Load its complete guard under the same relation
+        // fence before taking L, so concurrent ownership/readiness publication
+        // cannot authorize loss against a superseded session observation.
+        let runtime = store
+            .guards
+            .load_locked(
+                &mut tx,
+                &AdmissionAuthorityGuardKeyV1::Runtime(observation.session.current_runtime_scope()),
+            )
+            .await?;
+        if !matches!(runtime.as_ref().map(|row| &row.state),
+            Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
+            if *ownership_generation == observation.session.current_scope_generation().get())
+        {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        }
+        let reservation: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 AND game_session_id = encode($2,'hex')::uuid AND reservation_owner = 2 AND fresh_replay_key = $3 AND reconnect_attempt_ref IS NULL)")
+            .bind(observation.session.commit().initial_transport().to_bytes().as_slice()).bind(session_id.as_bytes().as_slice()).bind(original.authorization.facts.replay_key().to_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        let epoch_exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_control_loss_continuity WHERE character_id = encode($1,'hex')::uuid AND control_loss_epoch = $2::text::numeric(20,0))")
+            .bind(observation.session.commit().character_id().as_bytes().as_slice()).bind(observation.loss_epoch.get().to_string()).fetch_one(&mut *tx).await?;
+        if !reservation || epoch_exists {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        }
+        // Strong common relation fencing excludes every sibling semantic writer
+        // before this single final decision-time sample.
+        let decided_at: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&mut *tx)
+                .await?;
+        let Ok(effect) = request.validate_final(source.as_ref(), decided_at) else {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        };
+        if effect.predecessor() != current.current_session {
+            return Ok(ControlLossOutcomeV1::Rejected);
+        }
+        let successor = effect.successor();
+        let changed = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 1, current_transport_ref = NULL, control_loss_epoch = $2::text::numeric(20,0), original_grace_deadline = $3, predecessor_generation = current_generation WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 2 AND control_loss_epoch IS NULL AND prepared_attempt_ref IS NULL AND attempt_count = 0")
+            .bind(session_id.as_bytes().as_slice()).bind(successor.current_control_loss_epoch().ok_or(DurabilityError::InvalidStoredState)?.get().to_string()).bind(successor.current_original_grace_deadline().ok_or(DurabilityError::InvalidStoredState)?).execute(&mut *tx).await?;
+        if changed.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        // The complete canonical loss/protection operation is retained below.
+        // Do not manufacture a legacy protection row: its connection-generation
+        // namespace is not this operation's entitlement/rearm namespace. Legacy
+        // prepare/replacement fail closed on this receipt until a typed bridge.
+        sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts(operation_key,operation_json,decided_at) VALUES ($1,$2,$3)")
+            .bind(&key).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
+        if super::admission_journal::commit_pass_transaction(tx, deadline).await.is_err() {
+            return Ok(ControlLossOutcomeV1::Ambiguous);
+        }
+        Ok(ControlLossOutcomeV1::Committed { decided_at })
+
+            }))
+            .await
     }
 
     /// Bind sealed delivery to an actual validated durable original. Absence or

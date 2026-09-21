@@ -250,7 +250,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
     };
     use foundation::admission_authority_publication::*;
     use foundation::*;
-    struct LossSource(std::cell::RefCell<ControlLossObservationV1>);
+    struct LossSource(std::sync::Mutex<ControlLossObservationV1>);
     impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
     impl ControlLossSourceV1 for LossSource {
         fn resolve_loss(
@@ -258,7 +258,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             _: GameSessionId,
             _: i64,
         ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
-            Ok(self.0.borrow().clone())
+            Ok(self.0.lock().expect("loss source lock").clone())
         }
     }
     if !postgres_e2e_is_configured()? {
@@ -281,7 +281,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             store.commit(&request).await?;
             let FreshReconciliation::Committed(initial) = store.reconcile(request.operation()).await? else { return Err("missing fresh session".into()); };
             let session = initial.current_session;
-            let source = LossSource(std::cell::RefCell::new(ControlLossObservationV1 {
+            let source = std::sync::Arc::new(LossSource(std::sync::Mutex::new(ControlLossObservationV1 {
                 source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
                 decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
                 accepted_decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
@@ -295,7 +295,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                     usage: if not_entitled { RecoveryProtectionUseV1::NotEntitled } else { RecoveryProtectionUseV1::Unused { entitlement_generation: 1 } },
                     rearm: if not_entitled { RecoveryProtectionRearmV1::NotRearmed { generation: 7, stable_control_started_at: Some(now - 10), accepted_deadline: Some(now + 10) } } else { RecoveryProtectionRearmV1::Satisfied { generation: 1, established_at: now } },
                 },
-            }));
+            })));
             let template = authority_matrix::prepared_record(authority_matrix::Seed { now, generation: 1, epoch: 1, transport: 44, ..authority_matrix::Seed::fixed() })?;
             let raw = authority_matrix::checked(ReconnectDurabilityRecordV1::new(
                 authority_matrix::checked(ReconnectIdentityV1::new(session.commit().game_session_id(), template.identity().reconnect_attempt_ref(), "00000000-0000-4000-8000-000000000001", session.commit().character_id(), session.commit().world_id(), session.current_runtime_scope()))?,
@@ -307,15 +307,15 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             // is 2 while owning entitlement/rearm generations are 1. They are
             // separate namespaces, never a lawful protection-fence conversion.
             assert_eq!(raw.connection().candidate().get(), 2);
-            assert!(not_entitled || matches!(source.0.borrow().protection.usage, RecoveryProtectionUseV1::Unused { entitlement_generation: 1 }));
+            assert!(not_entitled || matches!(source.0.lock().expect("loss source lock").protection.usage, RecoveryProtectionUseV1::Unused { entitlement_generation: 1 }));
             let raw_v1 = ReconnectDurabilityFlowV1::begin(raw.clone()).1;
             let raw_v2 = ReconnectDurabilityFlowV2::begin(raw, None).1;
             let reconnect = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
             assert_eq!(reconnect.legacy().prepare(&raw_v1).await?, ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             assert_eq!(reconnect.prepare(&raw_v2).await?, ReconnectPrepareDispositionV2::RejectedStaleAuthority);
-            let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(&source, session.commit().game_session_id(), now))?;
+            let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(source.as_ref(), session.commit().game_session_id(), now))?;
             let mut flow = ControlLossFlowV1::begin(authorization);
-            let loss = authority_matrix::checked(flow.take_request())?;
+            let loss = std::sync::Arc::new(authority_matrix::checked(flow.take_request())?);
             assert_eq!(store.reconcile_fresh_loss(loss.operation()).await?, FreshLossReconciliation::Absent);
             if scenario >= 2 {
                 // Publish one independently valid current runtime change while
@@ -332,32 +332,32 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 let publication = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?;
                 assert_eq!(guards.publish(&publication).await?, durability::admission_authority_guards::GuardPublicationDisposition::Applied);
                 assert_eq!(guards.load(&[owner.rows[0].key.clone()]).await?, vec![Some(owner.rows[0].clone())]);
-                assert_eq!(store.commit_fresh_loss(&loss, &source).await?, ControlLossOutcomeV1::Rejected);
+                assert_eq!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Rejected);
                 assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(initial.clone()));
-                assert_eq!(source.0.borrow().session, session);
+                assert_eq!(source.0.lock().expect("loss source lock").session, session);
                 let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool).await?;
                 assert_eq!(receipts, 0);
                 pool.close().await;
                 return Ok(());
             }
-            source.0.borrow_mut().cause = ControlLossCauseV1::HealthyController;
-            assert_eq!(store.commit_fresh_loss(&loss, &source).await?, ControlLossOutcomeV1::Rejected);
+            source.0.lock().expect("loss source lock").cause = ControlLossCauseV1::HealthyController;
+            assert_eq!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Rejected);
             assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(initial.clone()));
-            source.0.borrow_mut().cause = ControlLossCauseV1::AuthoritativeUnexpectedLoss;
+            source.0.lock().expect("loss source lock").cause = ControlLossCauseV1::AuthoritativeUnexpectedLoss;
             // Force the final receipt effect to fail after tentative session write; complete loss truth must roll back together.
             sqlx::query("CREATE FUNCTION reject_test_loss_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'loss receipt test rollback' USING ERRCODE = '23514'; END; $$")
                 .execute(&pool).await?;
             sqlx::query("CREATE TRIGGER reject_test_loss_receipt BEFORE INSERT ON game_durability_admission_lifecycle_receipts FOR EACH ROW EXECUTE FUNCTION reject_test_loss_receipt()")
                 .execute(&pool).await?;
-            let rollback = store.commit_fresh_loss(&loss, &source).await;
+            let rollback = store.commit_fresh_loss(loss.clone(), source.clone()).await;
             assert!(matches!(rollback, Err(DurabilityError::Database(_))));
             assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(initial.clone()));
             let continuity: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_control_loss_continuity").fetch_one(&pool).await?;
             assert_eq!(continuity, 0);
             sqlx::query("DROP TRIGGER reject_test_loss_receipt ON game_durability_admission_lifecycle_receipts").execute(&pool).await?;
-            let outcome = store.commit_fresh_loss(&loss, &source).await?;
+            let outcome = store.commit_fresh_loss(loss.clone(), source.clone()).await?;
             assert!(matches!(outcome, ControlLossOutcomeV1::Committed { .. }));
-            assert_eq!(store.commit_fresh_loss(&loss, &source).await?, outcome);
+            assert_eq!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, outcome);
             let FreshReconciliation::Committed(current) = store.reconcile(request.operation()).await? else { return Err("missing loss session".into()); };
             assert_eq!(current.current_session.session_state(), GameSessionState::Reconnectable);
             assert_eq!(current.current_session.current_transport(), None);
@@ -369,6 +369,10 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             assert_eq!(completion.operation, *loss.operation());
             assert_eq!(completion.outcome, outcome);
             assert_eq!(recovered_current, current);
+            let mut durable_source = reopened.loss_completion_source(loss.operation()).await?.ok_or("missing durable completion source")?;
+            assert_eq!(durable_source.current_snapshot(), current.as_ref());
+            assert_eq!(durable_source.take_loss_completion(loss.operation()).expect("durable completion"), Some(*completion.clone()));
+            assert_eq!(durable_source.take_loss_completion(loss.operation()).expect("durable completion"), None);
             let mut historical = authority_matrix::checked(ControlLossFlowV1::restore(completion.operation.clone()))?;
             assert!(historical.take_request().is_err());
             let mut conflicting = loss.operation().clone();
@@ -406,7 +410,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts DISABLE TRIGGER USER").execute(&pool).await?;
             sqlx::query("UPDATE game_durability_admission_lifecycle_receipts SET decided_at = 0").execute(&pool).await?;
             sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts ENABLE TRIGGER USER").execute(&pool).await?;
-            assert!(matches!(store.commit_fresh_loss(&loss, &source).await, Err(DurabilityError::InvalidStoredState)));
+            assert!(matches!(store.commit_fresh_loss(loss.clone(), source.clone()).await, Err(DurabilityError::InvalidStoredState)));
             assert!(matches!(reopened.reconcile_fresh_loss(loss.operation()).await, Err(DurabilityError::InvalidStoredState)));
             assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(current));
             pool.close().await;

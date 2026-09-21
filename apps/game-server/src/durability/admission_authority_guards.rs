@@ -663,14 +663,19 @@ fn key_predicate(query: &mut sqlx::QueryBuilder<sqlx::Postgres>, fields: Mirror)
 }
 
 impl AdmissionGuardStore {
-    pub async fn connect_runtime(_database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
+    #[cfg(test)]
+    pub async fn connect_runtime(database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
         if maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES {
             return invalid();
         }
-        Err(DurabilityError::Unavailable)
+        let root = super::DurabilityRoot::connect_test_runtime(database_url)?;
+        if !root.maintain_ready_once().await? {
+            return Err(DurabilityError::RootUnavailable);
+        }
+        Ok(Self::from_root(root))
     }
 
-    pub(super) fn from_root(root: super::DurabilityRoot) -> Self {
+    pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
             backend: super::admission_journal::JournalBackend::Root(root),
             maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
@@ -681,6 +686,9 @@ impl AdmissionGuardStore {
         &self,
         keys: &[AdmissionAuthorityGuardKeyV1],
     ) -> Result<Vec<Option<AdmissionAuthorityPublicationChangeV1>>> {
+        if keys.len() > 4 {
+            return invalid();
+        }
         let store = (*self).clone();
         let keys = keys.to_vec();
         let issued = store.backend.try_issue_root()?;
@@ -688,9 +696,6 @@ impl AdmissionGuardStore {
         backend
             .run_pass(issued, |holder, deadline| {
                 Box::pin(async move {
-                    if keys.len() > 4 {
-                        return invalid();
-                    }
                     let mut transaction =
                         super::admission_journal::begin_pass_transaction(holder, deadline).await?;
                     super::db::lock_admission_relations(&mut transaction).await?;
@@ -804,6 +809,9 @@ impl AdmissionGuardStore {
         &self,
         request: &AdmissionAuthorityPublicationV1,
     ) -> Result<GuardPublicationDisposition> {
+        if request.changes().len() > 4 {
+            return invalid();
+        }
         let store = (*self).clone();
         let request = (*request).clone();
         let issued = store.backend.try_issue_root()?;
@@ -811,9 +819,6 @@ impl AdmissionGuardStore {
         backend
             .run_pass(issued, |holder, deadline| {
                 Box::pin(async move {
-                    if request.changes().len() > 4 {
-                        return invalid();
-                    }
                     // Encode/validate explicit per-record allocation before transaction work.
                     let encoded: Vec<_> = request
                         .changes()
