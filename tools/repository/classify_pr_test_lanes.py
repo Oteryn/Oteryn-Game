@@ -457,21 +457,37 @@ def git_diff_records(before: str, after: str) -> list[dict]:
     if any(re.fullmatch(r"[0-9a-f]{40}", sha or "") is None for sha in (before, after)) or before == after:
         raise ValueError("invalid-or-empty-git-range")
     raw = subprocess.check_output(
-        ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
+        ["git", "diff", "--no-ext-diff", "--no-textconv", "--find-renames",
          "--name-status", "-z", before, after, "--"]
     )
     if not raw or not raw.endswith(b"\0"):
         raise ValueError("empty-or-incomplete-git-diff")
     fields = raw[:-1].split(b"\0")
-    if len(fields) % 2:
-        raise ValueError("malformed-git-diff")
-    statuses = {b"A": "added", b"M": "modified", b"D": "removed"}
     files = []
-    for index in range(0, len(fields), 2):
-        status = statuses.get(fields[index])
-        if status is None:
-            raise ValueError("unsupported-git-diff-status")
-        files.append({"filename": fields[index + 1].decode("utf-8"), "status": status})
+    index = 0
+    while index < len(fields):
+        code = fields[index]
+        index += 1
+        if code in {b"A", b"M", b"D"}:
+            if index >= len(fields):
+                raise ValueError("malformed-git-diff")
+            status = {b"A": "added", b"M": "modified", b"D": "removed"}[code]
+            files.append({"filename": fields[index].decode("utf-8"), "status": status})
+            index += 1
+            continue
+        if code[:1] in {b"R", b"C"} and code[1:].isdigit():
+            if index + 1 >= len(fields):
+                raise ValueError("malformed-git-diff")
+            previous = fields[index].decode("utf-8")
+            current = fields[index + 1].decode("utf-8")
+            files.append({
+                "filename": current,
+                "status": "renamed" if code.startswith(b"R") else "copied",
+                "previous_filename": previous,
+            })
+            index += 2
+            continue
+        raise ValueError("unsupported-git-diff-status")
     return files
 
 
@@ -500,6 +516,7 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
         if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
             return full("incomplete-enumeration")
         paths, filenames = [], set()
+        added_surfaces, removed_surfaces = set(), set()
         for item in files:
             path = item["filename"]
             status = item.get("status")
@@ -508,6 +525,10 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
                 return full("invalid-file-record")
             filenames.add(path)
             paths.append(path)
+            if status == "added":
+                added_surfaces.add(non_runtime(path))
+            elif status == "removed":
+                removed_surfaces.add(non_runtime(path))
             if status == "renamed" and not previous:
                 return full("missing-rename-source")
             if previous is not None:
@@ -516,15 +537,21 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
                 if non_runtime(path) != non_runtime(previous):
                     return full("cross-surface-rename")
                 paths.append(previous)
+        if added_surfaces and removed_surfaces and any(
+            added != removed for added in added_surfaces for removed in removed_surfaces
+        ):
+            return full("possible-cross-surface-rename")
+        non_runtime_present = any(non_runtime(path) for path in paths)
+        governance_present = any(agent_governance(path) for path in paths)
+        if non_runtime_present:
+            graph(metadata)
+            proof_surface = "agent-governance" if governance_present else "docs"
+            if docs_consumers_verified is False:
+                return full("unreviewed-document-consumer-inputs", proof_surface)
+            if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
+                return full("unreviewed-document-consumer-inputs", proof_surface)
         if all(non_runtime(path) for path in paths):
             docs_present = any(neutral(path) and not agent_governance(path) for path in paths)
-            governance_present = any(agent_governance(path) for path in paths)
-            if docs_present:
-                graph(metadata)
-                if docs_consumers_verified is False:
-                    return full("unreviewed-document-consumer-inputs", "docs")
-                if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
-                    return full("unreviewed-document-consumer-inputs", "docs")
             if governance_present:
                 reason = "agent-governance-plus-neutral-documentation" if docs_present else "agent-governance-only"
                 return dict(rust=False, windows=False, surface="agent-governance", reason=reason)
@@ -595,15 +622,7 @@ def classify_post_merge(event, metadata) -> dict:
         if actual != after or subprocess.check_output(["git", "rev-parse", "--is-shallow-repository"]).strip() != b"false":
             return full("unverified-or-incomplete-protected-checkout")
         subprocess.check_output(["git", "merge-base", "--is-ancestor", before, after], stderr=subprocess.PIPE)
-        raw = subprocess.check_output(["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--name-status", "-z", before, after, "--"])
-        if not raw or not raw.endswith(b"\0"):
-            return full("empty-or-incomplete-git-diff")
-        fields = raw[:-1].split(b"\0")
-        if len(fields) % 2:
-            return full("malformed-git-diff")
-        statuses = {b"A": "added", b"M": "modified", b"D": "removed"}
-        files = [{"filename": fields[index + 1].decode("utf-8"), "status": statuses[fields[index]]}
-                 for index in range(0, len(fields), 2)]
+        files = git_diff_records(before, after)
         result = classify(files, len(files), metadata, input_digest(metadata),
                           docs_digest=input_digest(metadata, include_server=True),
                           candidate_modes_verified=candidate_modes_safe(after),
@@ -629,23 +648,14 @@ def main() -> int:
             files, changed_count, complete = pr_file_records()
             atlas_fullworld = atlas_fullworld_required(files, changed_count, complete)
             digest = input_digest(metadata)
-            docs_candidate = (
+            non_runtime_candidate = (
                 isinstance(files, list) and bool(files)
-                and all(isinstance(item, dict) and isinstance(item.get("filename"), str)
-                        and non_runtime(item["filename"])
-                        and (item.get("previous_filename") is None or
-                             (isinstance(item.get("previous_filename"), str) and non_runtime(item["previous_filename"])))
-                        for item in files)
                 and any(
                     isinstance(item, dict)
                     and (
-                        (isinstance(item.get("filename"), str)
-                         and neutral(item["filename"])
-                         and not agent_governance(item["filename"]))
+                        (isinstance(item.get("filename"), str) and non_runtime(item["filename"]))
                         or
-                        (isinstance(item.get("previous_filename"), str)
-                         and neutral(item["previous_filename"])
-                         and not agent_governance(item["previous_filename"]))
+                        (isinstance(item.get("previous_filename"), str) and non_runtime(item["previous_filename"]))
                     )
                     for item in files
                 )
@@ -654,7 +664,7 @@ def main() -> int:
                               complete=complete,
                               docs_digest=input_digest(metadata, include_server=True),
                               candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]),
-                              docs_consumers_verified=document_consumers_safe(metadata) if docs_candidate else None)
+                              docs_consumers_verified=document_consumers_safe(metadata) if non_runtime_candidate else None)
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
         result = full("classifier-or-metadata-failure")
     health = routing_health(result)
