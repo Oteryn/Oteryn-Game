@@ -146,7 +146,7 @@ def test_reviewed_document_consumers(module):
         "dc9381615fb7b1f7b06533ac6f6ffebb6d274b8d799894fe54882bf69f638472",
     )
     reviewed_docs = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
-    for path in ("README.md", "docs/agents/tasks/archive/finished.md"):
+    for path in ("README.md", "docs/reference/finished.md"):
         result = module.classify([dict(filename=path, status="modified")], 1,
                                  fixture(), reviewed_nonserver, docs_digest=reviewed_docs,
                                  candidate_modes_verified=True)
