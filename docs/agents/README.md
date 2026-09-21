@@ -17,7 +17,7 @@ Shared execution, authority/trust, recovery, checkpoint/handoff and communicatio
 - `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md` — completion and merge gate.
 - `GITHUB_ONLY_EXECUTION.md` — GitHub/Actions fallback execution.
 - `PROMPTING_STANDARD.md`, `PROMPTING_HANDOVER.md`, `PROMPT_EVAL_STANDARD.md` — prompt quality and handover.
-- `END_TO_END_FEATURE_COMPLETENESS.md`, `TASK_CLOSEOUT_AUDIT_E2E.md` — feature acceptance and closeout audit.
+- `END_TO_END_FEATURE_COMPLETENESS.md` — end-to-end feature acceptance.
 - `CROSS_REPO_CONTRACTS.md` — Oteryn Platform/Otheryn/otclient migration boundaries.
 - `GOVERNANCE_CONTRACT.json`, `PROJECT_LANES.json` — machine-readable policy.
 
