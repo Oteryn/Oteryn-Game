@@ -19,8 +19,11 @@ oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 serde.workspace = true
 serde_json.workspace = true
+rustls.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
+
+tokio-rustls.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 cap-fs-ext.workspace = true
