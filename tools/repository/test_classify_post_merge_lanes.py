@@ -120,7 +120,7 @@ def main():
                     git("commit", "-qm", "agent governance")
                     governance_head = git("rev-parse", "HEAD")
                     with patch.dict(os.environ, GITHUB_SHA=governance_head):
-                        result = classify({"after": governance_head, "commits": []})
+                        result = classify({"before": after, "after": governance_head, "commits": []})
                         assert result["rust"] is False and result["windows"] is False, (path, result)
                         assert result["surface"] == "agent-governance", (path, result)
 
