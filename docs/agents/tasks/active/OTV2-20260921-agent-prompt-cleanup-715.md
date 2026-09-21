@@ -79,11 +79,11 @@ No runtime/gameplay/protocol/persistence/production/external-repository mutation
 ```yaml
 last_progress: >-
   retired Terra dispatchability, simplified the Work + Sol scheduler/runbook, bounded remaining
-  broad-startup prompts, reconciled all current runbook references to Terra, repaired the final
-  Work Auditor selector residue found by independent review, and added Work-only regression coverage
+  broad-startup prompts, reconciled all current runbook references to Terra, repaired the Work Auditor selector residue and
+  prompt-version drift found by independent review, and added Work-only/version-sync regression coverage
 status: validating
 branch: docs/agent-prompt-cleanup-715
 head_sha: null
 pr: null
-next_action: requalify this repaired exact head and obtain one fresh independent review before Ready
+next_action: run final exact-head CI and one final independent re-review; mark Ready only if both are clean
 ```
