@@ -530,6 +530,10 @@ fn wp3_shared_root_deadline_retires_and_rearms_on_configured_postgres()
             let database = postgres::IsolatedPostgres::create("wp3_shared_root_deadline").await?;
             let result = async {
                 let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
                 let root = DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
                 assert!(root.is_ready());
@@ -575,6 +579,10 @@ fn wp3_commit_outcome_unknown_retires_holder_and_preserves_success_path()
             let database = postgres::IsolatedPostgres::create("wp3_commit_outcome_unknown").await?;
             let result = async {
                 let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
                 let root = DurabilityRoot::connect_test_runtime(&url)?;
                 assert!(root.maintain_ready_once().await?);
 
