@@ -143,7 +143,7 @@ async fn test_context(args: &TestArgs) -> Result<TestContext<Postgres>, Error> {
             created_at timestamptz not null default now()
         );
 
-        create index if not exists databases_created_at 
+        create index if not exists databases_created_at
             on _sqlx_test.databases(created_at);
 
         create sequence if not exists _sqlx_test.database_ids;

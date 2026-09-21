@@ -239,19 +239,19 @@ fn explain_parsing() {
 
     // https://github.com/launchbadge/sqlx/issues/2622
     let extra_field = r#"[
-   {                                        
-     "Plan": {                              
-       "Node Type": "Result",               
-       "Parallel Aware": false,             
-       "Async Capable": false,              
-       "Startup Cost": 0.00,                
-       "Total Cost": 0.01,                  
-       "Plan Rows": 1,                      
-       "Plan Width": 4,                     
-       "Output": ["1"]                      
-     },                                     
+   {
+     "Plan": {
+       "Node Type": "Result",
+       "Parallel Aware": false,
+       "Async Capable": false,
+       "Startup Cost": 0.00,
+       "Total Cost": 0.01,
+       "Plan Rows": 1,
+       "Plan Width": 4,
+       "Output": ["1"]
+     },
      "Query Identifier": 1147616880456321454
-   }                                        
+   }
 ]"#;
 
     // https://github.com/launchbadge/sqlx/issues/1449

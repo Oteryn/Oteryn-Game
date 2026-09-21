@@ -417,7 +417,7 @@ impl PgConnectOptions {
     /// -----BEGIN CERTIFICATE-----
     /// <Certificate data here.>
     /// -----END CERTIFICATE-----";
-    ///    
+    ///
     /// let options = PgConnectOptions::new()
     ///     // Providing a CA certificate with less than VerifyCa is pointless
     ///     .ssl_mode(PgSslMode::VerifyCa)
