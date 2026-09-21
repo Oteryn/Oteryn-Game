@@ -1884,15 +1884,19 @@ mod native_item_batch_tests {
 
     #[test]
     fn successor_profiles_preserve_v2_bound_and_select_v3_for_the_full_family() {
-        assert!(!ReferenceArtifactProfile::NativeItemBatchV2
-            .accepts_item_count(BATCH_MAX_INDEX_ENTRIES + 1));
+        assert!(
+            !ReferenceArtifactProfile::NativeItemBatchV2
+                .accepts_item_count(BATCH_MAX_INDEX_ENTRIES + 1)
+        );
         assert_eq!(
             ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1)
                 .expect("65 Items select family-scale profile"),
             ReferenceArtifactProfile::NativeItemFamilyV3
         );
-        assert!(ReferenceArtifactProfile::NativeItemFamilyV3
-            .accepts_item_count(FAMILY_MAX_INDEX_ENTRIES));
+        assert!(
+            ReferenceArtifactProfile::NativeItemFamilyV3
+                .accepts_item_count(FAMILY_MAX_INDEX_ENTRIES)
+        );
         assert!(matches!(
             ReferenceArtifactProfile::for_definition_count(FAMILY_MAX_INDEX_ENTRIES + 1),
             Err(ContentError::LimitExceeded {
