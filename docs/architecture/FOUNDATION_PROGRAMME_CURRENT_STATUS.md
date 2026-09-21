@@ -192,7 +192,7 @@ Historical disconnect checkpoint documents remain provenance and must not overri
 
 ```text
 EXECUTOR_PROGRAMME: RELEASED_AND_ACTIVE
-DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
+HISTORICAL_DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
 BOOTSTRAP: COMPLETED
 SIM: COMPLETED
