@@ -6,6 +6,10 @@
 - Prior dispositions: #319 comments `5764377706` and `5764391057`
 - Scope: first-playable native-source TLS resource enforcement only
 
+## Precedence
+
+This amendment supersedes only the earlier requirement in `OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md` and its active registry wording that the 65,536-byte cumulative handshake cap or peer-chain caps be enforced by stock rustls before lower-layer allocation or verification. All other requirements of that decision remain binding. The caller-owned cumulative ingress boundary and the configured verifier boundary specified here govern where these retained numeric caps are enforced.
+
 ## Decision
 
 Retain `NSRC-TLS-HANDSHAKE-INBOUND-BYTES` at the inclusive hard maximum 65,536 bytes across all inbound handshake reads. A thin caller-owned bounded ingress adapter uses checked cumulative accounting and rejects an increment that would overflow or raise the total above 65,536 before supplying any bytes from that increment to stock rustls. Rejection is `UNAVAILABLE`. Native rustls per-message and backing limits separately protect library-owned memory; proof of a native aggregate 65,536-byte bound is not required.
