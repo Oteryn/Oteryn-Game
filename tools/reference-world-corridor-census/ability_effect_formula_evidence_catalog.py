@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Build the deterministic CW2-B4 Ability -> Effect -> Formula evidence catalogue.
+"""CW2 deterministic whole-family Ability source catalogue.
 
-This is an offline, candidate-only evidence mapper.  It consumes only protected
-Game repository objects.  It never mints native ContentKeys, promotes Reference
-parity, or supplies an executable quantitative formula.
+This extends the existing B4 evidence catalogue into a finite 825-record source
+catalogue. Pinned legacy source bytes remain migration evidence only. The two
+historical B4 records are joined as immutable evidence overlays; this module
+never mints native Ability identities, promotes Reference parity, or supplies
+an executable formula.
 """
 from __future__ import annotations
 
@@ -13,93 +15,81 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Sequence
 
-SCHEMA = "OTERYN_CW2_ABILITY_EFFECT_FORMULA_EVIDENCE_BATCH/v1"
-MAPPER_PROFILE = "OTERYN_CW2_ABILITY_EFFECT_FORMULA_EVIDENCE_MAPPER/v1"
-TASK = "CW2-B4 ABILITY_EFFECT_FORMULA_EVIDENCE_504"
-ADMISSION_MAIN = "03a821edd828e24ccff6e2cb7fc819a776cbd238"
-CLOSURE = "CANDIDATE_ONLY"
+SCHEMA = "OTERYN_CW2_ABILITY_SOURCE_CATALOGUE/v1"
+MAPPER_PROFILE = "OTERYN_CW2_ABILITY_SOURCE_CATALOGUE_MAPPER/v1"
+TASK = "OTV2-20260921-content-world-cw2-ability-family-source-catalogue-708"
+ADMISSION_MAIN = "fd9dcb55a0ea55d2d20488f80abccf8f6c8ec875"
+CLOSURE = "SOURCE_CATALOGUE_COMPLETE_NATIVE_UNRESOLVED"
 
-MANIFEST_PATH = "docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json"
-REFERENCE_SURFACE_PATH = "apps/game-server/src/content/reference_playable.rs"
+SOURCE_REPOSITORY = "blakinio/Otheryn"
+SOURCE_REVISION = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
+SOURCE_CLASSIFICATION = "OTERYN_LEGACY / MIGRATION_EVIDENCE"
+SOURCE_EVIDENCE_STATUS = "OTS_HYPOTHESIS_ONLY"
+
 MAPPER_PATH = (
     "tools/reference-world-corridor-census/"
     "ability_effect_formula_evidence_catalog.py"
 )
-
-PROTECTED_INPUTS: dict[str, tuple[str, str]] = {
-    MANIFEST_PATH: (
-        "f5828732038ac2fd3ae03f3d1793505d48a61122",
-        "REFERENCE_CASE_AUTHORITY",
-    ),
-    "docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md": (
-        "5c9961a99616839a40b3ca933ac4371f93ffca48",
-        "PENDING_FIXTURE_BOUNDARY",
-    ),
-    "docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md": (
-        "6ada6c52a20beae37abfecb1e2792a36f5dba8ca",
-        "INDEXED_OFFICIAL_DISCOVERY_EVIDENCE",
-    ),
-    "docs/agents/evidence/OTV2-20260815-ability-combat-reference-continuity.md": (
-        "704e57840d0d3a1c84284e650c7c023d171d97dc",
-        "TARGET_CONTINUITY_DISPOSITION",
-    ),
-    "docs/agents/evidence/OTV2-20260912-reference-combat-light-healing.md": (
-        "4a96e9859f6c425d3c03be09bc7712fc4cb6cf83",
-        "LIGHT_HEALING_FORMULA_DISPOSITION",
-    ),
-    REFERENCE_SURFACE_PATH: (
-        "ec5fa303fa8a09f055c8043a560f9a6120dee6cb",
-        "PROTECTED_TYPED_FAMILY_SURFACE",
-    ),
-}
-
-CASE_IDS = (
-    "ability_combat.light_healing.cast_metadata.v1",
-    "ability_combat.light_healing.self_heal_semantics.v1",
-    "ability_combat.ice_strike.cast_metadata.v1",
-    "ability_combat.ice_strike.targeted_ice_damage_semantics.v1",
+EVIDENCE_PATH = (
+    "docs/agents/evidence/"
+    "OTV2-20260921-content-world-cw2-ability-family-source-catalogue.json"
+)
+HISTORICAL_B4_EVIDENCE_PATH = (
+    "docs/agents/evidence/"
+    "OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence.json"
+)
+HISTORICAL_B4_EVIDENCE_BLOB = "56b8e4b1d143cc9a68aa691aa30a292d4befe2c3"
+HISTORICAL_B4_PRODUCT_DIGEST = (
+    "56cef2d78442a37c00daa4cb737007e8a069e10ae3d4a298c0d38c38976f8289"
+)
+HISTORICAL_B4_ADMISSION_MAIN = "03a821edd828e24ccff6e2cb7fc819a776cbd238"
+HISTORICAL_B4_MAPPER_BLOB = "e6d98aadd352ad36b466970e1f7182e1bf93643b"
+HISTORICAL_B4_MAPPER_CANONICAL_SIZE = 16013
+HISTORICAL_B4_MAPPER_CANONICAL_SHA256 = (
+    "bc68f0f63a5dd6ea5ee7a3c20b708d6ea78c6033a2f5dddb518c49d6f45f8666"
 )
 
-ABILITY_SPECS: dict[str, dict[str, Any]] = {
-    "light_healing": {
-        "display_name": "Light Healing",
-        "incantation_candidate": "exura",
-        "case_ids": CASE_IDS[:2],
-        "effect": {
-            "candidate_family": "HEAL",
-            "candidate_shape": "SELF_HEAL",
-            "protected_family_symbol": "ReferenceEffectFamily::Heal",
-        },
-        "formula_unknowns": (
-            "minimum_heal_function",
-            "maximum_heal_function",
-            "rng_distribution",
-            "intermediate_rounding",
-            "final_rounding",
-            "scaling_coefficients",
-        ),
-    },
-    "ice_strike": {
-        "display_name": "Ice Strike",
-        "incantation_candidate": "exori frigo",
-        "case_ids": CASE_IDS[2:],
-        "effect": {
-            "candidate_family": "DAMAGE",
-            "candidate_shape": "TARGETED_ICE_DAMAGE",
-            "protected_family_symbol": "ReferenceEffectFamily::Damage",
-        },
-        "formula_unknowns": (
-            "minimum_damage_function",
-            "maximum_damage_function",
-            "rng_distribution",
-            "rounding",
-            "scaling_coefficients",
-            "mitigation_and_resistance_ordering",
-            "critical_block_dodge_ordering",
-        ),
-    },
+PLAYER_ROOTS: tuple[tuple[str, int], ...] = (
+    ("data/scripts/spells/attack", 69),
+    ("data/scripts/spells/healing", 28),
+    ("data/scripts/spells/support", 39),
+    ("data/scripts/spells/conjuring", 49),
+    ("data/scripts/spells/party", 5),
+    ("data/scripts/spells/familiar", 5),
+    ("data/scripts/spells/house", 4),
+)
+RUNE_ROOT = "data/scripts/runes"
+MONSTER_ROOT = "data-otservbr-global/scripts/spells/monster"
+EXAMPLE_PATH = "data/scripts/spells/#example.lua"
+MONSTER_HELPER_PATH = f"{MONSTER_ROOT}/gaz_functions.lua"
+
+EXPECTED_COUNTS = {
+    "player_spells": 199,
+    "runes": 36,
+    "monster_spells": 590,
+    "abilities_total": 825,
+}
+EXPECTED_EXCLUSIONS: Mapping[str, tuple[str, str]] = {
+    EXAMPLE_PATH: (
+        "46b410ff05e896d63f48813f392a6c2abaef652a",
+        "EXAMPLE_TEST_CONTENT_EXCLUSION",
+    ),
+    MONSTER_HELPER_PATH: (
+        "ae135c9159c67859701e25da33caf3280945d591",
+        "HELPER_ONLY_MONSTER_SPELL_EXCLUSION",
+    ),
+}
+OVERLAY_SOURCES: Mapping[str, tuple[str, str]] = {
+    "reference-source:ability:ice_strike": (
+        "data/scripts/spells/attack/ice_strike.lua",
+        "8c95d439118f6d87e8b4db6c6792c15fb2adb391",
+    ),
+    "reference-source:ability:light_healing": (
+        "data/scripts/spells/healing/light_healing.lua",
+        "8699980575c3786edf96de701f8a5f2c9b1d20d3",
+    ),
 }
 
 
@@ -119,7 +109,6 @@ def sha256_bytes(value: bytes) -> str:
 
 
 def canonical_repository_text_bytes(value: bytes) -> bytes:
-    """Canonicalize checkout text bytes to repository LF form."""
     without_crlf = value.replace(b"\r\n", b"")
     if b"\r" in without_crlf:
         raise CatalogError("UNSUPPORTED_MAPPER_LINE_ENDING")
@@ -145,53 +134,169 @@ def _git(repo: Path, *args: str, binary: bool = False) -> str | bytes:
     return result.stdout.decode("utf-8").strip()
 
 
-def verify_protected_inputs(
-    game_root: Path,
-    expected_inputs: Mapping[str, tuple[str, str]] = PROTECTED_INPUTS,
-    expected_sha256: Mapping[str, str] | None = None,
-) -> tuple[list[dict[str, Any]], dict[str, bytes]]:
-    game_root = game_root.resolve()
-    top = Path(str(_git(game_root, "rev-parse", "--show-toplevel"))).resolve()
-    if top != game_root:
-        raise CatalogError("GAME_REPOSITORY_ROOT_MISMATCH")
-    if _git(game_root, "rev-parse", f"{ADMISSION_MAIN}^{{commit}}") != ADMISSION_MAIN:
-        raise CatalogError("ADMISSION_MAIN_UNAVAILABLE")
+def _normalize_remote(url: str) -> str:
+    value = url.strip().lower().replace("\\", "/")
+    if value.endswith(".git"):
+        value = value[:-4]
+    if value.startswith("git@github.com:"):
+        value = "https://github.com/" + value.split(":", 1)[1]
+    return value.rstrip("/")
 
-    records: list[dict[str, Any]] = []
-    payloads: dict[str, bytes] = {}
-    for path, (expected_blob, role) in sorted(expected_inputs.items()):
-        status = str(_git(game_root, "status", "--porcelain=v1", "--", path))
-        if status:
-            raise CatalogError(f"PROTECTED_INPUT_DIRTY: {path}")
-        blob = str(_git(game_root, "rev-parse", f"{ADMISSION_MAIN}:{path}"))
-        if blob != expected_blob:
+
+def _tree_paths(repo: Path, root: str) -> list[str]:
+    raw = _git(
+        repo,
+        "ls-tree",
+        "-r",
+        "-z",
+        "--name-only",
+        SOURCE_REVISION,
+        "--",
+        root,
+        binary=True,
+    )
+    assert isinstance(raw, bytes)
+    return sorted(value.decode("utf-8") for value in raw.split(b"\0") if value)
+
+
+def _direct_lua_paths(repo: Path, root: str) -> list[str]:
+    return [
+        path
+        for path in _tree_paths(repo, root)
+        if path.endswith(".lua") and Path(path).parent.as_posix() == root
+    ]
+
+
+def _source_object(
+    source_repo: Path,
+    path: str,
+    *,
+    expected_blob: str | None = None,
+) -> tuple[str, bytes]:
+    try:
+        blob = str(_git(source_repo, "rev-parse", f"{SOURCE_REVISION}:{path}"))
+        payload = _git(source_repo, "cat-file", "blob", blob, binary=True)
+    except CatalogError as exc:
+        raise CatalogError(f"SOURCE_OBJECT_UNAVAILABLE: {path}") from exc
+    assert isinstance(payload, bytes)
+    if expected_blob is not None and blob != expected_blob:
+        raise CatalogError(
+            f"SOURCE_BLOB_MISMATCH: {path}: expected {expected_blob}, got {blob}"
+        )
+    return blob, payload
+
+
+def verify_source_repository(source_repo: Path) -> None:
+    source_repo = source_repo.resolve()
+    top = Path(str(_git(source_repo, "rev-parse", "--show-toplevel"))).resolve()
+    if top != source_repo:
+        raise CatalogError("SOURCE_REPOSITORY_ROOT_MISMATCH")
+    remote = _normalize_remote(str(_git(source_repo, "remote", "get-url", "origin")))
+    if remote != f"https://github.com/{SOURCE_REPOSITORY}".lower():
+        raise CatalogError(f"SOURCE_REPOSITORY_REMOTE_MISMATCH: {remote}")
+    revision = str(_git(source_repo, "rev-parse", f"{SOURCE_REVISION}^{{commit}}"))
+    if revision != SOURCE_REVISION:
+        raise CatalogError("SOURCE_REVISION_MISMATCH")
+
+
+def enumerate_source_paths(source_repo: Path) -> dict[str, Any]:
+    verify_source_repository(source_repo)
+    player: dict[str, list[str]] = {}
+    player_total = 0
+    for root, expected in PLAYER_ROOTS:
+        paths = _direct_lua_paths(source_repo, root)
+        if len(paths) != expected:
             raise CatalogError(
-                f"GIT_BLOB_MISMATCH: {path}: expected {expected_blob}, got {blob}"
+                f"PLAYER_SUBFAMILY_COUNT_MISMATCH: {root}: expected {expected}, got {len(paths)}"
             )
-        payload = _git(game_root, "cat-file", "blob", blob, binary=True)
-        assert isinstance(payload, bytes)
-        digest = sha256_bytes(payload)
-        if expected_sha256 is not None:
-            expected_digest = expected_sha256.get(path)
-            if expected_digest is not None and digest != expected_digest:
-                raise CatalogError(
-                    f"SHA256_MISMATCH: {path}: expected {expected_digest}, got {digest}"
-                )
-        payloads[path] = payload
-        records.append(
+        subfamily = root.rsplit("/", 1)[-1]
+        player[subfamily] = paths
+        player_total += len(paths)
+    if player_total != EXPECTED_COUNTS["player_spells"]:
+        raise CatalogError("PLAYER_SPELL_COUNT_MISMATCH")
+
+    runes = _direct_lua_paths(source_repo, RUNE_ROOT)
+    if len(runes) != EXPECTED_COUNTS["runes"]:
+        raise CatalogError("RUNE_COUNT_MISMATCH")
+
+    monster_raw = _direct_lua_paths(source_repo, MONSTER_ROOT)
+    if len(monster_raw) != EXPECTED_COUNTS["monster_spells"] + 1:
+        raise CatalogError("MONSTER_RAW_COUNT_MISMATCH")
+    if MONSTER_HELPER_PATH not in monster_raw:
+        raise CatalogError("MONSTER_HELPER_EXCLUSION_MISSING")
+    monsters = [path for path in monster_raw if path != MONSTER_HELPER_PATH]
+    if len(monsters) != EXPECTED_COUNTS["monster_spells"]:
+        raise CatalogError("MONSTER_SPELL_COUNT_MISMATCH")
+
+    selected: list[str] = []
+    for subfamily, paths in player.items():
+        if not subfamily:
+            raise CatalogError("PLAYER_SUBFAMILY_EMPTY")
+        selected.extend(paths)
+    selected.extend(runes)
+    selected.extend(monsters)
+    if len(selected) != EXPECTED_COUNTS["abilities_total"]:
+        raise CatalogError("ABILITY_TOTAL_MISMATCH")
+    if len(set(selected)) != len(selected):
+        raise CatalogError("DUPLICATE_SELECTED_SOURCE_PATH")
+    if EXAMPLE_PATH in selected or MONSTER_HELPER_PATH in selected:
+        raise CatalogError("EXCLUDED_PATH_SELECTED")
+
+    exclusions = []
+    for path, (expected_blob, reason) in sorted(EXPECTED_EXCLUSIONS.items()):
+        blob, payload = _source_object(source_repo, path, expected_blob=expected_blob)
+        exclusions.append(
             {
+                "repository": SOURCE_REPOSITORY,
+                "revision": SOURCE_REVISION,
                 "path": path,
                 "blob": blob,
-                "sha256": digest,
-                "size": len(payload),
-                "role": role,
+                "byte_size": len(payload),
+                "reason": reason,
             }
         )
-    return records, payloads
+
+    return {
+        "player": player,
+        "runes": runes,
+        "monsters": monsters,
+        "selected": selected,
+        "exclusions": exclusions,
+    }
+
+
+def _classify_path(path: str) -> tuple[str, str]:
+    for root, _ in PLAYER_ROOTS:
+        if path.startswith(root + "/") and Path(path).parent.as_posix() == root:
+            return "PLAYER_SPELL", root.rsplit("/", 1)[-1]
+    if path.startswith(RUNE_ROOT + "/") and Path(path).parent.as_posix() == RUNE_ROOT:
+        return "RUNE", "rune"
+    if path.startswith(MONSTER_ROOT + "/") and Path(path).parent.as_posix() == MONSTER_ROOT:
+        return "MONSTER_SPELL", "monster"
+    raise CatalogError(f"UNCLASSIFIED_SOURCE_PATH: {path}")
+
+
+def validate_selected_source_paths(
+    expected_paths: Sequence[str],
+    selected_paths: Iterable[str],
+) -> list[str]:
+    values = list(selected_paths)
+    if len(values) != len(set(values)):
+        raise CatalogError("DUPLICATE_SELECTED_SOURCE_PATH")
+    if set(values) != set(expected_paths):
+        missing = sorted(set(expected_paths) - set(values))
+        extra = sorted(set(values) - set(expected_paths))
+        raise CatalogError(
+            f"SOURCE_SELECTION_SET_MISMATCH: missing={missing[:3]} extra={extra[:3]}"
+        )
+    return values
 
 
 def verify_mapper_revision(game_root: Path) -> dict[str, Any]:
     game_root = game_root.resolve()
+    top = Path(str(_git(game_root, "rev-parse", "--show-toplevel"))).resolve()
+    if top != game_root:
+        raise CatalogError("GAME_REPOSITORY_ROOT_MISMATCH")
     status = str(_git(game_root, "status", "--porcelain=v1", "--", MAPPER_PATH))
     if status:
         raise CatalogError(f"MAPPER_DIRTY: {MAPPER_PATH}")
@@ -209,159 +314,187 @@ def verify_mapper_revision(game_root: Path) -> dict[str, Any]:
     }
 
 
-def _load_manifest(payload: bytes) -> dict[str, Any]:
+def _load_json(payload: bytes, label: str) -> dict[str, Any]:
     try:
-        manifest = json.loads(payload.decode("utf-8"))
+        value = json.loads(payload.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise CatalogError("REFERENCE_MANIFEST_INVALID_JSON") from exc
-    if not isinstance(manifest, dict):
-        raise CatalogError("REFERENCE_MANIFEST_ROOT_INVALID")
-    return manifest
+        raise CatalogError(f"{label}_INVALID_JSON") from exc
+    if not isinstance(value, dict):
+        raise CatalogError(f"{label}_ROOT_INVALID")
+    return value
 
 
-def validate_manifest_cases(
-    manifest: dict[str, Any], case_ids: Iterable[str] = CASE_IDS
-) -> list[dict[str, Any]]:
-    by_id = {case.get("case_id"): case for case in manifest.get("cases", [])}
-    selected: list[dict[str, Any]] = []
-    for case_id in case_ids:
-        case = by_id.get(case_id)
-        if case is None:
-            raise CatalogError(f"REFERENCE_CASE_MISSING: {case_id}")
-        target = case.get("target", {})
-        provenance = case.get("provenance", {})
-        parity = case.get("parity", {})
-        oteryn = case.get("oteryn", {})
-        required = {
-            "domain": case.get("domain"),
-            "target_evidence": target.get("evidence_class"),
-            "provenance": provenance.get("state"),
-            "legal_review": provenance.get("legal_review_state"),
-            "parity": parity.get("status"),
-            "implementation": oteryn.get("implementation_state"),
-            "exact_revision": oteryn.get("exact_revision"),
-        }
-        expected = {
-            "domain": "ABILITY_COMBAT",
-            "target_evidence": "UNKNOWN",
-            "provenance": "PENDING",
-            "legal_review": "PENDING",
-            "parity": "PARITY_PENDING_EVIDENCE",
-            "implementation": "NOT_STARTED",
-            "exact_revision": None,
-        }
-        if required != expected:
-            raise CatalogError(
-                f"REFERENCE_CASE_FAIL_CLOSED_STATE_MISMATCH: {case_id}: {required}"
-            )
-        selected.append(
+def _verify_product_digest(value: dict[str, Any], expected: str, label: str) -> None:
+    digest_scope = copy.deepcopy(value)
+    recorded = digest_scope.pop("product_digest_sha256", None)
+    digest_scope.pop("product_digest_scope", None)
+    recomputed = sha256_bytes(canonical_bytes(digest_scope))
+    if recorded != expected or recomputed != expected:
+        raise CatalogError(
+            f"{label}_PRODUCT_DIGEST_MISMATCH: expected {expected}, recorded {recorded}, recomputed {recomputed}"
+        )
+
+
+def verify_historical_b4_overlay(game_root: Path) -> dict[str, Any]:
+    game_root = game_root.resolve()
+    top = Path(str(_git(game_root, "rev-parse", "--show-toplevel"))).resolve()
+    if top != game_root:
+        raise CatalogError("GAME_REPOSITORY_ROOT_MISMATCH")
+    if str(_git(game_root, "rev-parse", f"{ADMISSION_MAIN}^{{commit}}")) != ADMISSION_MAIN:
+        raise CatalogError("ADMISSION_MAIN_UNAVAILABLE")
+    if str(_git(game_root, "rev-parse", f"{HISTORICAL_B4_ADMISSION_MAIN}^{{commit}}")) != HISTORICAL_B4_ADMISSION_MAIN:
+        raise CatalogError("HISTORICAL_B4_ADMISSION_MAIN_UNAVAILABLE")
+
+    evidence_blob = str(
+        _git(game_root, "rev-parse", f"{ADMISSION_MAIN}:{HISTORICAL_B4_EVIDENCE_PATH}")
+    )
+    if evidence_blob != HISTORICAL_B4_EVIDENCE_BLOB:
+        raise CatalogError(f"HISTORICAL_B4_EVIDENCE_BLOB_MISMATCH: {evidence_blob}")
+    evidence_payload = _git(game_root, "cat-file", "blob", evidence_blob, binary=True)
+    assert isinstance(evidence_payload, bytes)
+    evidence = _load_json(evidence_payload, "HISTORICAL_B4_EVIDENCE")
+    _verify_product_digest(evidence, HISTORICAL_B4_PRODUCT_DIGEST, "HISTORICAL_B4")
+
+    mapper_blob = str(
+        _git(game_root, "rev-parse", f"{HISTORICAL_B4_ADMISSION_MAIN}:{MAPPER_PATH}")
+    )
+    if mapper_blob != HISTORICAL_B4_MAPPER_BLOB:
+        raise CatalogError(f"HISTORICAL_B4_MAPPER_BLOB_MISMATCH: {mapper_blob}")
+    mapper_payload = _git(game_root, "cat-file", "blob", mapper_blob, binary=True)
+    assert isinstance(mapper_payload, bytes)
+    canonical = canonical_repository_text_bytes(mapper_payload)
+    if len(canonical) != HISTORICAL_B4_MAPPER_CANONICAL_SIZE:
+        raise CatalogError("HISTORICAL_B4_MAPPER_SIZE_MISMATCH")
+    if sha256_bytes(canonical) != HISTORICAL_B4_MAPPER_CANONICAL_SHA256:
+        raise CatalogError("HISTORICAL_B4_MAPPER_SHA256_MISMATCH")
+    recorded_mapper = evidence.get("mapper_revision", {})
+    if (
+        recorded_mapper.get("git_blob") != HISTORICAL_B4_MAPPER_BLOB
+        or recorded_mapper.get("canonical_size") != HISTORICAL_B4_MAPPER_CANONICAL_SIZE
+        or recorded_mapper.get("canonical_sha256") != HISTORICAL_B4_MAPPER_CANONICAL_SHA256
+    ):
+        raise CatalogError("HISTORICAL_B4_RECORDED_MAPPER_MISMATCH")
+
+    candidates = evidence.get("ability_effect_formula_candidates", [])
+    if not isinstance(candidates, list) or len(candidates) != 2:
+        raise CatalogError("HISTORICAL_B4_OVERLAY_COUNT_MISMATCH")
+    by_id = {candidate.get("source_candidate_id"): candidate for candidate in candidates}
+    if set(by_id) != set(OVERLAY_SOURCES):
+        raise CatalogError("HISTORICAL_B4_OVERLAY_ID_SET_MISMATCH")
+    for candidate_id, candidate in by_id.items():
+        if candidate.get("target_evidence") != "UNKNOWN":
+            raise CatalogError(f"HISTORICAL_B4_TARGET_PROMOTED: {candidate_id}")
+        if candidate.get("source_provenance") != "PENDING":
+            raise CatalogError(f"HISTORICAL_B4_PROVENANCE_PROMOTED: {candidate_id}")
+        if candidate.get("legal_review") != "PENDING":
+            raise CatalogError(f"HISTORICAL_B4_LEGAL_PROMOTED: {candidate_id}")
+        if candidate.get("parity") != "PARITY_PENDING_EVIDENCE":
+            raise CatalogError(f"HISTORICAL_B4_PARITY_PROMOTED: {candidate_id}")
+        if candidate.get("native_ability_identity", {}).get("content_key") is not None:
+            raise CatalogError(f"HISTORICAL_B4_NATIVE_IDENTITY_PRESENT: {candidate_id}")
+        if candidate.get("effect_to_formula", {}).get("quantitative_formula") is not None:
+            raise CatalogError(f"HISTORICAL_B4_FORMULA_PROMOTED: {candidate_id}")
+        if candidate.get("executable_promotion", {}).get("disposition") != "BLOCKED":
+            raise CatalogError(f"HISTORICAL_B4_EXECUTABLE_PROMOTED: {candidate_id}")
+
+    return {
+        "path": HISTORICAL_B4_EVIDENCE_PATH,
+        "blob": evidence_blob,
+        "byte_size": len(evidence_payload),
+        "product_digest_sha256": HISTORICAL_B4_PRODUCT_DIGEST,
+        "historical_mapper": {
+            "admission_main": HISTORICAL_B4_ADMISSION_MAIN,
+            "path": MAPPER_PATH,
+            "blob": mapper_blob,
+            "canonical_size": len(canonical),
+            "canonical_sha256": sha256_bytes(canonical),
+        },
+        "candidates_by_id": by_id,
+    }
+
+
+def build_source_records(
+    source_repo: Path,
+    *,
+    source_paths: Iterable[str] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    enumeration = enumerate_source_paths(source_repo)
+    expected_paths = list(enumeration["selected"])
+    selected_paths = validate_selected_source_paths(
+        expected_paths,
+        expected_paths if source_paths is None else source_paths,
+    )
+
+    records: list[dict[str, Any]] = []
+    for path in selected_paths:
+        family, subfamily = _classify_path(path)
+        blob, payload = _source_object(source_repo, path)
+        records.append(
             {
-                "case_id": case_id,
-                "title": case.get("title"),
-                "target_evidence": "UNKNOWN",
-                "source_provenance": "PENDING",
-                "legal_review": "PENDING",
-                "parity": "PARITY_PENDING_EVIDENCE",
-                "oteryn_implementation": "NOT_STARTED",
+                "repository": SOURCE_REPOSITORY,
+                "revision": SOURCE_REVISION,
+                "path": path,
+                "blob": blob,
+                "byte_size": len(payload),
+                "source_family": family,
+                "source_subfamily": subfamily,
+                "source_classification": SOURCE_CLASSIFICATION,
+                "evidence_status": SOURCE_EVIDENCE_STATUS,
+                "native_ability_identity": {
+                    "disposition": "UNRESOLVED",
+                    "content_key": None,
+                    "reason": "NO_ACCEPTED_NATIVE_ABILITY_BINDING",
+                },
             }
         )
-    return canonical_records(selected)
-
-
-def _verify_semantic_markers(payloads: Mapping[str, bytes]) -> None:
-    required: dict[str, tuple[bytes, ...]] = {
-        REFERENCE_SURFACE_PATH: (
-            b"Ability,",
-            b"Effect,",
-            b"Formula,",
-            b"pub enum ReferenceEffectFamily",
-            b"Damage,",
-            b"Heal,",
-        ),
-        "docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md": (
-            b"PENDING_TARGET_CONTINUITY_PROVENANCE_LEGAL_IMPLEMENTATION",
-            b"No target behavior is promoted above `UNKNOWN`",
-        ),
-        "docs/agents/evidence/OTV2-20260815-ability-combat-reference-continuity.md": (
-            b"0 of 4 cases promoted",
-            b"UNKNOWN / PENDING",
-        ),
-        "docs/agents/evidence/OTV2-20260912-reference-combat-light-healing.md": (
-            b"exact_min_formula:",
-            b"exact_max_formula:",
-            b"admissible_as_exact_reference_formula: false",
-        ),
-    }
-    for path, needles in required.items():
-        payload = payloads[path]
-        for needle in needles:
-            if needle not in payload:
-                raise CatalogError(
-                    f"PROTECTED_SEMANTIC_MARKER_MISSING: {path}: "
-                    f"{needle.decode('utf-8', 'replace')}"
-                )
-
-
-def _ability_record(slug: str, spec: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "source_candidate_id": f"reference-source:ability:{slug}",
-        "display_name": spec["display_name"],
-        "incantation_candidate": spec["incantation_candidate"],
-        "reference_case_ids": sorted(spec["case_ids"]),
-        "target_evidence": "UNKNOWN",
-        "source_provenance": "PENDING",
-        "legal_review": "PENDING",
-        "parity": "PARITY_PENDING_EVIDENCE",
-        "native_ability_identity": {
-            "disposition": "UNRESOLVED",
-            "content_key": None,
-            "reason": "NO_ACCEPTED_NATIVE_ABILITY_BINDING",
-        },
-        "ability_to_effect": {
-            "disposition": "CANDIDATE_ONLY",
-            **spec["effect"],
-            "reason": "INDEXED_QUALITATIVE_SHAPE_LACKS_TARGET_CONTINUITY_AND_CLEARANCE",
-        },
-        "effect_to_formula": {
-            "disposition": "UNRESOLVED",
-            "quantitative_formula": None,
-            "formula_state": "UNKNOWN",
-            "unknown_fields": sorted(spec["formula_unknowns"]),
-            "reason": "EXACT_TARGET_FORMULA_NOT_EVIDENCED",
-        },
-        "executable_promotion": {
-            "disposition": "BLOCKED",
-            "reason_codes": [
-                "TARGET_EVIDENCE_UNKNOWN",
-                "SOURCE_PROVENANCE_PENDING",
-                "LEGAL_REVIEW_PENDING",
-                "NATIVE_IDENTITY_UNRESOLVED",
-                "EXACT_FORMULA_UNKNOWN",
-            ],
-        },
-    }
+    return canonical_records(records), enumeration
 
 
 def build_catalog(
+    source_repo: Path,
     game_root: Path,
     *,
-    case_ids: Iterable[str] = CASE_IDS,
-    expected_inputs: Mapping[str, tuple[str, str]] = PROTECTED_INPUTS,
-    expected_sha256: Mapping[str, str] | None = None,
+    source_paths: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    protected, payloads = verify_protected_inputs(
-        game_root, expected_inputs, expected_sha256
-    )
+    records, enumeration = build_source_records(source_repo, source_paths=source_paths)
+    historical = verify_historical_b4_overlay(game_root)
     mapper_revision = verify_mapper_revision(game_root)
-    _verify_semantic_markers(payloads)
-    manifest = _load_manifest(payloads[MANIFEST_PATH])
-    cases = validate_manifest_cases(manifest, case_ids)
-    selected = {record["case_id"] for record in cases}
-    if selected != set(CASE_IDS):
-        raise CatalogError("REFERENCE_CASE_SET_MISMATCH")
-    abilities = canonical_records(
-        _ability_record(slug, spec) for slug, spec in ABILITY_SPECS.items()
-    )
+
+    by_path = {record["path"]: record for record in records}
+    if len(by_path) != EXPECTED_COUNTS["abilities_total"]:
+        raise CatalogError("SOURCE_RECORD_PATH_UNIQUENESS_MISMATCH")
+
+    overlay_joined = 0
+    for candidate_id, (path, expected_blob) in sorted(OVERLAY_SOURCES.items()):
+        record = by_path.get(path)
+        if record is None:
+            raise CatalogError(f"B4_OVERLAY_SOURCE_MISSING: {path}")
+        if record["blob"] != expected_blob:
+            raise CatalogError(
+                f"B4_OVERLAY_SOURCE_BLOB_MISMATCH: {path}: expected {expected_blob}, got {record['blob']}"
+            )
+        candidate = historical["candidates_by_id"][candidate_id]
+        record["historical_b4_overlay"] = copy.deepcopy(candidate)
+        overlay_joined += 1
+    if overlay_joined != 2:
+        raise CatalogError("B4_OVERLAY_JOIN_COUNT_MISMATCH")
+
+    records = canonical_records(records)
+    player_count = sum(record["source_family"] == "PLAYER_SPELL" for record in records)
+    rune_count = sum(record["source_family"] == "RUNE" for record in records)
+    monster_count = sum(record["source_family"] == "MONSTER_SPELL" for record in records)
+    total = len(records)
+    if (
+        player_count != EXPECTED_COUNTS["player_spells"]
+        or rune_count != EXPECTED_COUNTS["runes"]
+        or monster_count != EXPECTED_COUNTS["monster_spells"]
+        or total != EXPECTED_COUNTS["abilities_total"]
+    ):
+        raise CatalogError("FINAL_PARTITION_COUNT_MISMATCH")
+
+    player_subfamilies = {
+        subfamily: len(paths) for subfamily, paths in sorted(enumeration["player"].items())
+    }
     value: dict[str, Any] = {
         "schema": SCHEMA,
         "mapper_profile": MAPPER_PROFILE,
@@ -371,62 +504,83 @@ def build_catalog(
         "closure": CLOSURE,
         "production_authority": "NONE",
         "source_snapshot": {
-            "repository": "Oteryn/Oteryn-Game",
-            "revision": ADMISSION_MAIN,
-            "protected_inputs": protected,
+            "repository": SOURCE_REPOSITORY,
+            "revision": SOURCE_REVISION,
+            "classification": SOURCE_CLASSIFICATION,
+            "evidence_status": SOURCE_EVIDENCE_STATUS,
+            "selected_roots": [root for root, _ in PLAYER_ROOTS] + [RUNE_ROOT, MONSTER_ROOT],
+            "selection": {
+                "player_spells": "direct *.lua under the seven admitted spell subroots",
+                "runes": f"direct *.lua under {RUNE_ROOT}",
+                "monster_spells": f"direct *.lua under {MONSTER_ROOT} excluding gaz_functions.lua",
+            },
+            "exclusions": enumeration["exclusions"],
         },
-        "reference_boundary": {
-            "target": manifest.get("reference_target"),
-            "manifest_revision": manifest.get("manifest_revision"),
-            "cases": cases,
+        "historical_b4_overlay": {
+            "evidence_path": historical["path"],
+            "evidence_blob": historical["blob"],
+            "evidence_byte_size": historical["byte_size"],
+            "product_digest_sha256": historical["product_digest_sha256"],
+            "historical_mapper": historical["historical_mapper"],
+            "join_count": overlay_joined,
+            "join_paths": sorted(path for path, _ in OVERLAY_SOURCES.values()),
+            "disposition": "EVIDENCE_OVERLAY_ONLY_NO_REFERENCE_PROMOTION",
         },
-        "typed_surface": {
-            "protected_definition_families": ["Ability", "Effect", "Formula"],
-            "protected_effect_families": ["Damage", "Heal"],
-            "scope": "CLASSIFICATION_ONLY_NO_SHARED_MODEL_WRITE",
-        },
-        "ability_effect_formula_candidates": abilities,
+        "source_records": records,
         "counts": {
-            "abilities": len(abilities),
-            "reference_cases": len(cases),
-            "candidate_effect_bindings": len(abilities),
-            "resolved_native_ability_identities": 0,
-            "resolved_exact_quantitative_formulas": 0,
-            "executable_promotions": 0,
+            "player_spells": player_count,
+            "player_spell_subfamilies": player_subfamilies,
+            "runes": rune_count,
+            "monster_spells": monster_count,
+            "abilities_total": total,
+            "source_catalogued": total,
+            "source_remaining": EXPECTED_COUNTS["abilities_total"] - total,
+            "historical_b4_overlay_joined": overlay_joined,
         },
         "loss_report": {
             "silently_dropped_records": 0,
-            "unknown_target_cases": len(cases),
-            "pending_provenance_cases": len(cases),
-            "pending_legal_review_cases": len(cases),
-            "unresolved_native_ability_identities": len(abilities),
-            "unresolved_exact_quantitative_formulas": len(abilities),
+            "duplicate_selected_source_paths": 0,
+            "excluded_nonproduction_modules": len(enumeration["exclusions"]),
+            "native_ability_identities_resolved": 0,
+            "reference_truth_promotions": 0,
+            "executable_promotions": 0,
         },
         "non_claims": [
             "NO_REFERENCE_PARITY_PROMOTION",
+            "NO_LEGACY_FORMULA_AS_REFERENCE_TRUTH",
             "NO_NATIVE_CONTENT_KEY_MINTING",
-            "NO_EXECUTABLE_FORMULA",
+            "NO_EXECUTABLE_ABILITY_CLOSURE",
             "NO_RUNTIME_OR_SHARED_MODEL_CHANGE",
             "NO_PRODUCTION_AUTHORITY",
         ],
     }
-    digest_scope = copy.deepcopy(value)
-    value["product_digest_scope"] = "canonical JSON excluding digest fields"
-    value["product_digest_sha256"] = sha256_bytes(canonical_bytes(digest_scope))
     return value
+
+
+def write_evidence(path: Path, evidence: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(canonical_bytes(evidence))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--source-repo", type=Path, required=True)
     parser.add_argument("--game-root", type=Path, required=True)
-    parser.add_argument("--output", type=Path)
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    value = build_catalog(args.game_root)
-    payload = canonical_bytes(value)
-    if args.output:
-        args.output.write_bytes(payload)
-    else:
-        print(payload.decode("utf-8"), end="")
+
+    evidence = build_catalog(args.source_repo, args.game_root)
+    write_evidence(args.output, evidence)
+    counts = evidence["counts"]
+    print(
+        "ability-source-catalogue: PASS "
+        f"total={counts['abilities_total']} "
+        f"player={counts['player_spells']} "
+        f"runes={counts['runes']} "
+        f"monster={counts['monster_spells']} "
+        f"catalogued={counts['source_catalogued']} "
+        f"remaining={counts['source_remaining']}"
+    )
     return 0
 
 
