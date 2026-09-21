@@ -74,6 +74,7 @@ jobs:
               (33220, 31659, 13): "destination_slot_3",
               (33219, 31659, 13): "destination_slot_4",
               (33226, 31671, 13): "lever",
+              (33213, 31671, 13): "source_exit_destination",
           }
           room_positions = {
               (x, y, 13)
@@ -114,6 +115,8 @@ jobs:
                   target_records[key] = {"role": targets[key], **value}
               if key in room_positions:
                   room_records[key] = value
+              if len(target_records) == len(targets) and len(room_records) == len(room_positions):
+                  break
 
           problems = []
           for key, role in targets.items():
