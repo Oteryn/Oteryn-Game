@@ -138,6 +138,23 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
     ):
         raise ValueError(f"build-input fail-closed contract changed: {result}")
 
+    result = classify(["AGENTS.md"])
+    if result != {
+        "rust": False,
+        "windows": False,
+        "surface": "agent-governance",
+        "reason": "agent-governance-only",
+    }:
+        raise ValueError(f"agent-governance routing contract changed: {result}")
+
+    result = classify(["docs/agents/evidence/runtime-input.json"])
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "unmodelled-input"
+    ):
+        raise ValueError(f"runtime-consumed agent-evidence fail-closed contract changed: {result}")
+
 
 def write_summary(health: str, declared: str, actual: str, changed: list[str]) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
