@@ -199,7 +199,7 @@ def main():
                         mixed = git("rev-parse", "HEAD")
                         with patch.dict(os.environ, GITHUB_SHA=mixed):
                             result = classify({"before": doc_before, "after": mixed})
-                            if path.startswith("apps/game-server/"):
+                            if path == "apps/game-server/src/main.rs":
                                 assert result["rust"] is True and result["windows"] is False, result
                             else:
                                 assert result["rust"] is True and result["windows"] is True, result
