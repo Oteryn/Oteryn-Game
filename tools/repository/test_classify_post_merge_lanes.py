@@ -109,6 +109,16 @@ def main():
                 head = git("rev-parse", "HEAD")
                 with patch.dict(os.environ, GITHUB_SHA=head):
                     assert classify({"after": head})["windows"] is True
+
+                git("checkout", "-q", after)
+                git("mv", "apps/game-server/src/main.rs", "AGENTS.md")
+                git("commit", "-qm", "rename runtime input to governance")
+                governance_rename_head = git("rev-parse", "HEAD")
+                with patch.dict(os.environ, GITHUB_SHA=governance_rename_head):
+                    result = classify({"before": after, "after": governance_rename_head})
+                    assert result["rust"] is True and result["windows"] is True, result
+                    assert result["reason"] == "cross-surface-rename", result
+
                 # Agent governance changes are validated by governance/policy gates and
                 # must not allocate product runtime builds on protected main.
                 for path in ("AGENTS.md", "tools/agents/probe.py", "docs/agents/PROJECT_LANES.json"):
@@ -123,6 +133,25 @@ def main():
                         result = classify({"before": after, "after": governance_head, "commits": []})
                         assert result["rust"] is False and result["windows"] is False, (path, result)
                         assert result["surface"] == "agent-governance", (path, result)
+
+                # Once runtime source drift can introduce a new filesystem/document
+                # consumer, governance omission must fail closed until re-audited.
+                git("checkout", "-q", after)
+                consumer = root / "apps/client/src/governance_consumer.rs"
+                consumer.parent.mkdir(parents=True, exist_ok=True)
+                consumer.write_text('pub fn read() { let _ = std::fs::read_to_string("AGENTS.md"); }\n')
+                git("add", ".")
+                git("commit", "-qm", "introduce governance consumer")
+                consumer_head = git("rev-parse", "HEAD")
+                governance = root / "AGENTS.md"
+                governance.write_text("governance after consumer drift\n")
+                git("add", ".")
+                git("commit", "-qm", "governance after consumer drift")
+                governance_after_consumer = git("rev-parse", "HEAD")
+                with patch.dict(os.environ, GITHUB_SHA=governance_after_consumer):
+                    result = classify({"before": consumer_head, "after": governance_after_consumer})
+                    assert result["rust"] is True and result["windows"] is True, result
+                    assert result["reason"] == "unreviewed-document-consumer-inputs", result
 
                 git("checkout", "-q", after)
                 doc = root / "README.md"
