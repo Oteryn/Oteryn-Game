@@ -167,6 +167,64 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         )
         self.assertEqual(durability_entry["version"], "1.4")
 
+    def test_work_is_single_control_plane_and_startups_are_targeted(self):
+        lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
+        entries = {entry["prompt_id"]: entry for entry in lifecycle["prompts"]}
+
+        terra = entries["OTV2_TERRA_GAME_CONTROL_PLANE"]
+        self.assertEqual(terra["version"], "1.2")
+        self.assertEqual(terra["status"], "retired")
+        self.assertIs(terra["reusable"], False)
+        self.assertEqual(
+            terra["superseded_by"],
+            "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        )
+
+        for prompt_id, version in {
+            "OTV2_REFERENCE_INVESTIGATOR": "1.1",
+            "OTV2_OWNER_EXECUTION_STATUS_ADVISOR": "1.1",
+            "OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT": "1.1",
+            "OTV2_DEFECT_DISCOVERY_SUPERVISOR": "1.1",
+            "OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR": "1.2",
+            "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR": "1.4",
+            "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT": "1.3",
+        }.items():
+            self.assertEqual(entries[prompt_id]["version"], version)
+
+        readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
+        self.assertIn("former `Oteryn: terra game coordinator` profile is retired", readme)
+        self.assertNotIn(
+            "`OTV2_TERRA_GAME_CONTROL_PLANE.md` — deterministic Game control plane",
+            readme,
+        )
+
+        runbook = (ROOT / "docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md").read_text(encoding="utf-8")
+        self.assertNotIn("| `Oteryn: terra game coordinator` |", runbook)
+        self.assertIn("single active mutating control plane in ChatGPT Work: `Oteryn: work coordinator`", runbook)
+
+        scheduler = (ROOT / "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md").read_text(encoding="utf-8")
+        self.assertIn("# Oteryn v2 Work + Sol Execution Scheduler", scheduler)
+        self.assertNotIn("`Oteryn: terra game coordinator`", scheduler)
+        self.assertNotIn("Work/Terra", scheduler)
+
+        reference = (ROOT / "docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md").read_text(encoding="utf-8")
+        self.assertIn("Resolve the requested `<lane>` exactly first", reference)
+        self.assertIn("full `PROMPT_LIFECYCLE.json`", reference)
+        self.assertIn("not ordinary invocation prerequisites", reference)
+
+        owner = (ROOT / "docs/agents/prompts/OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md").read_text(encoding="utf-8")
+        self.assertIn("matching lifecycle entry", owner)
+        self.assertIn("Terra is retired", owner)
+
+        content_audit = (ROOT / "docs/agents/prompts/OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md").read_text(encoding="utf-8")
+        self.assertIn("matching `OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT` lifecycle entry", content_audit)
+
+        work_audit = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md").read_text(encoding="utf-8")
+        self.assertIn("`PROMPT_EVAL_STANDARD.md` is needed only when prompt/harness behavior is an audit target", work_audit)
+
+        programme_audit = (ROOT / "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md").read_text(encoding="utf-8")
+        self.assertIn("intentionally a **whole-programme audit**", programme_audit)
+
     def test_api_native_authoring_never_escalates_missing_git_to_remote_desktop(self):
         root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         coordinator = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
