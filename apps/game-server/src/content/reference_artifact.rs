@@ -1888,11 +1888,10 @@ mod native_item_batch_tests {
             !ReferenceArtifactProfile::NativeItemBatchV2
                 .accepts_item_count(BATCH_MAX_INDEX_ENTRIES + 1)
         );
-        assert_eq!(
-            ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1)
-                .expect("65 Items select family-scale profile"),
-            ReferenceArtifactProfile::NativeItemFamilyV3
-        );
+        assert!(matches!(
+            ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1),
+            Ok(ReferenceArtifactProfile::NativeItemFamilyV3)
+        ));
         assert!(
             ReferenceArtifactProfile::NativeItemFamilyV3
                 .accepts_item_count(FAMILY_MAX_INDEX_ENTRIES)
