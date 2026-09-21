@@ -23,7 +23,7 @@ A current-state read may expand only when the smaller slice leaves a material au
 
 For an ungoverned, low-risk and reversible implementation detail, state a bounded assumption and continue. Do not infer permission, ownership, production access, destructive intent or a durable product decision from missing context.
 
-For Oteryn-v2 foundation or architecture continuation, also read `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` before interpreting progress, blockers or next-action text in long-lived backlog/register/baseline documents.
+For Oteryn-v2 foundation or architecture continuation, resolve current progress, blockers and next action from live Issue/PR/check state and the active task checkpoint. Treat dated programme-status and coordination-register documents as historical snapshots unless a protected change explicitly refreshes and re-establishes them as current.
 
 ## Architecture or domain ownership
 
