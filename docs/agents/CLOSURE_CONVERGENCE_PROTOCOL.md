@@ -394,11 +394,16 @@ After clean final review and exact-head qualification, return to the normal repo
 
 ## Publication safety
 
-Canonical material work must use the worker's normal authorized high-level Git publication path.
+Canonical material work must use exactly one publication route already allocated by the active control plane and permitted by current root/META policy:
 
-If that publication path is unavailable or rejected, return `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and hand custody back to the control plane.
+- guarded local-Git exact-candidate publication; or
+- atomic expected-head API **new-candidate** publication, where one server-side mutation fences the exact expected task-branch predecessor and creates the complete bounded delta as one successor commit.
 
-Do **not** use direct Git object construction as an emergency publication fallback for a canonical material branch. In particular, do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs to bypass an unavailable normal push/publication path. Do not force, reset, rebase or manufacture replacement history as recovery.
+The API route does not reconstruct a selected local Git candidate. It creates a new candidate, so candidate-specific validation/review evidence from any superseded head is not reusable. A precondition mismatch must create no commit and move no branch.
+
+If neither governed route is proven, return `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and hand custody back to the control plane.
+
+Do **not** use direct Git object construction, ancestry-only `force=false` ref movement, sequential per-file API commits, reset, rebase, force or manufactured replacement history as emergency publication fallback.
 
 A separately authorized coordinator recovery operation may reconcile a damaged branch under current governance; an implementation worker must not improvise that authority.
 
