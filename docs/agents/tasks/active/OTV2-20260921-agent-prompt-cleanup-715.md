@@ -32,6 +32,9 @@ owned_paths:
   - docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md
   - docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md
   - docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md
+  - docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_OPERATOR_RUNBOOK_20260910.md
+  - docs/agents/programs/OTERYN_GLOBAL_REFERENCE_FIRST_AGENT_LAUNCH_LINES_20260909.md
+  - docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_PREPRODUCTION_ALLOCATION_20260911.md
   - tools/agents/tests/test_meta_agent_policy_adoption.py
   - docs/agents/tasks/active/OTV2-20260921-agent-prompt-cleanup-715.md
 public_contracts:
@@ -76,7 +79,8 @@ No runtime/gameplay/protocol/persistence/production/external-repository mutation
 ```yaml
 last_progress: >-
   retired Terra dispatchability, simplified the Work + Sol scheduler/runbook, bounded remaining
-  broad-startup prompts, and added regression coverage for Work-only control-plane routing
+  broad-startup prompts, reconciled all current runbook references to Terra, and added regression
+  coverage for Work-only control-plane routing
 status: validating
 branch: docs/agent-prompt-cleanup-715
 head_sha: null
