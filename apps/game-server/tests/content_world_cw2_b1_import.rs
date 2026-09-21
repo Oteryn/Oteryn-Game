@@ -619,7 +619,7 @@ fn native_item_batch_reimport_and_canonical_round_trip_are_deterministic() {
     );
     assert!(linked.definitions.iter().all(|definition| {
         matches!(
-            definition.kind,
+            &definition.kind,
             ReferenceDefinitionKind::Item(ReferenceItemDefinition {
                 physical_class: ReferenceItemPhysicalClass::Physical,
                 materializable: true,
@@ -645,7 +645,8 @@ fn native_item_batch_conflicts_missing_targets_and_duplicates_fail_closed() {
     let mut missing = batch_import();
     let first = &mut missing.batch.candidates[0];
     candidate_binding_mut_at(first).identity.revision = "definition-r2".to_owned();
-    first.candidate_target = format!("{}@definition-r2", candidate_binding(first).identity.key);
+    let missing_key = candidate_binding(first).identity.key.clone();
+    first.candidate_target = format!("{missing_key}@definition-r2");
     assert!(matches!(
         CanonicalProjectDocuments::from_draft(batch_draft(missing), batch_limits()),
         Err(ProjectError::InvalidProject(
