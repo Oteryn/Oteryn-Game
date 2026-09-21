@@ -69,7 +69,7 @@ The atomic API route must not reconstruct a selected local Git candidate. It cre
 
 If none of the governed routes is available, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
 
-Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, reconstruct a selected local candidate through sequential API writes, mutate a frozen candidate with sequential file commits, force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
+Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, reconstruct a selected local Git candidate through sequential API writes, mutate a frozen candidate with sequential file commits, force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
 
 ## Acceptance / validation
 
