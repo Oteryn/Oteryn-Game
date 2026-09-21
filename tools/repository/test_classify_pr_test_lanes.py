@@ -99,6 +99,26 @@ def test_snapshot_and_fallbacks(module):
             pass
         else:
             raise AssertionError("symlink input accepted")
+
+    external = set(module.external_local_dependency_roots())
+    expected_external = {
+        "vendor/sqlx-core-0.9.0",
+        "vendor/sqlx-postgres-0.9.0",
+        "vendor/tokio-1.53.1",
+    }
+    assert expected_external <= external, external
+    for root in expected_external:
+        assert module.audited_input_path(fixture(), f"{root}/src/lib.rs")
+
+    vendor_rows = rows + [
+        b"100644 blob " + b"d" * 40 + b"\tvendor/tokio-1.53.1/src/lib.rs"
+    ]
+    with patch.object(module.subprocess, "check_output", return_value=b"\0".join(vendor_rows) + b"\0"):
+        vendor_digest = module.input_digest(fixture())
+    changed_vendor_rows = vendor_rows.copy()
+    changed_vendor_rows[-1] = changed_vendor_rows[-1].replace(b"d" * 40, b"e" * 40)
+    with patch.object(module.subprocess, "check_output", return_value=b"\0".join(changed_vendor_rows) + b"\0"):
+        assert module.input_digest(fixture()) != vendor_digest
     gate = (ROOT / ".github/workflows/merge-gate.yml").read_text()
     assert "  lanes:\n" in gate, "trusted-base lane job is absent"
     block = gate.split("  lanes:\n", 1)[1].split("  governance:\n", 1)[0]
