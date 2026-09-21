@@ -149,7 +149,12 @@ def _git_blob_sha1_file(path: Path) -> str:
 
 
 def _reject_game_input_bytecode(path: Path, relative_path: str) -> None:
-    for candidate in (path.with_suffix(".pyc"), path.with_suffix(".pyo")):
+    active_cache = Path(importlib.util.cache_from_source(str(path)))
+    for candidate in (
+        active_cache,
+        path.with_suffix(".pyc"),
+        path.with_suffix(".pyo"),
+    ):
         try:
             candidate.lstat()
         except FileNotFoundError:

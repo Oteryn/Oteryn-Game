@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import py_compile
 import subprocess
 import sys
 import tempfile
@@ -194,6 +195,42 @@ def exercise_game_input_provenance() -> None:
                 lambda: catalog.verify_game_inputs(root),
             )
             export_cache.unlink()
+
+            active_prefix = root / "hostile-pycache-prefix"
+            previous_prefix = sys.pycache_prefix
+            sys.pycache_prefix = str(active_prefix)
+            try:
+                for relative_path in (producer_rel, census_rel, export_rel):
+                    protected_path = root / relative_path
+                    active_cache = Path(
+                        importlib.util.cache_from_source(str(protected_path))
+                    )
+                    active_cache.parent.mkdir(parents=True, exist_ok=True)
+                    marker = root / f"{protected_path.stem}-hostile-executed"
+                    hostile_source = root / f"{protected_path.stem}-hostile.py"
+                    hostile_source.write_text(
+                        "from pathlib import Path\n"
+                        f"Path({str(marker)!r}).write_text('executed', encoding='utf-8')\n"
+                        "VALUE = 'hostile bytecode'\n",
+                        encoding="utf-8",
+                    )
+                    py_compile.compile(
+                        str(hostile_source),
+                        cfile=str(active_cache),
+                        doraise=True,
+                        invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
+                    )
+                    expect_error(
+                        "PROTECTED_GAME_INPUT_BYTECODE_CACHE",
+                        lambda: catalog._load_game_module(
+                            root, relative_path, f"{module_name}_{protected_path.stem}"
+                        ),
+                    )
+                    assert not marker.exists()
+                    active_cache.unlink()
+                    hostile_source.unlink()
+            finally:
+                sys.pycache_prefix = previous_prefix
 
             previous_dont_write = sys.dont_write_bytecode
             sys.dont_write_bytecode = False
