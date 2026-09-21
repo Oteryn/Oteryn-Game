@@ -1346,6 +1346,7 @@ mod wp3_root_contract_tests {
             let options = pool.connect_options();
 
             assert_eq!(DB_PASS_DEADLINE, Duration::from_secs(2));
+            assert_eq!(ROOT_RECOVERY_WINDOW, Duration::from_secs(5));
             assert_eq!(pool.options().get_max_connections(), 1);
             assert_eq!(pool.options().get_min_connections(), 0);
             assert_eq!(pool.options().get_acquire_timeout(), ROOT_RECOVERY_WINDOW);
