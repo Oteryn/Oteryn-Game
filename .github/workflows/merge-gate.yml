@@ -396,7 +396,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "99a898fd511f4b20024739f005f7b065f22c8d1d"
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "e3090f2b4b7556b9940df16d3de41801e6e20061"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
