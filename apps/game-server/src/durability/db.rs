@@ -1193,8 +1193,9 @@ mod wp3_root_contract_tests {
             Ok(RETAINED_CONFIG_MAX_BYTES)
         ));
 
-        let config =
-            DurabilityRootConfig::new(ip, 5432, &tls, &database, &username, &password, &root_ca);
+        let config = DurabilityRootConfig::new_with_isolated_test_ledger(
+            ip, 5432, &tls, &database, &username, &password, &root_ca,
+        );
         assert!(config.is_ok());
         let Ok(config) = config else {
             return;
@@ -1288,7 +1289,18 @@ mod wp3_root_contract_tests {
         let ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7));
         for newline in ["\n", "\r\n"] {
             let ca = pem_bundle(ROOT_CA_MAX_CERTIFICATES, ROOT_CA_MAX_DER_BYTES, newline);
-            assert!(DurabilityRootConfig::new(ip, 5432, "db.example", "d", "u", "p", &ca).is_ok());
+            assert!(
+                DurabilityRootConfig::new_with_isolated_test_ledger(
+                    ip,
+                    5432,
+                    "db.example",
+                    "d",
+                    "u",
+                    "p",
+                    &ca
+                )
+                .is_ok()
+            );
         }
     }
 

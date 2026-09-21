@@ -1941,7 +1941,7 @@ mod terminal_replacement_foundation_red_tests {
         let request = ReconnectDurabilityFlowV2::begin(candidate, Some(authorization)).1;
 
         let root = super::DurabilityRoot::new(
-            super::DurabilityRootConfig::new(
+            super::DurabilityRootConfig::new_with_isolated_test_ledger(
                 IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
                 5432,
                 "db.example",
