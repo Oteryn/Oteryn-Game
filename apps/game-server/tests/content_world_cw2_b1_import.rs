@@ -740,6 +740,11 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
     assert_eq!(imported.allocation_digest_sha256.len(), 64);
     assert_eq!(
         imported.allocation_digest_sha256,
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "CONTROLLED_RED_CAPTURE_FULL_FAMILY_ALLOCATION_DIGEST"
+    );
+    assert_eq!(
+        imported.allocation_digest_sha256,
         full_family_import().allocation_digest_sha256
     );
 
