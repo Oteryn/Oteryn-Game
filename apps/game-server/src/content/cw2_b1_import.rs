@@ -47,8 +47,7 @@ pub const CW2_B1_OPAQUE_ITEM_COUNT: usize =
     CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT;
 pub const CW2_B1_FULL_ITEM_REVISION: &str = "definition-r1";
 pub const CW2_B1_OPAQUE_ITEM_NAMESPACE: &str = "oteryn:item.registry";
-pub const CW2_B1_FULL_ITEM_REGISTRY_PROFILE: &str =
-    "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1";
+pub const CW2_B1_FULL_ITEM_REGISTRY_PROFILE: &str = "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1";
 pub const CW2_B1_VASE_B3_ROW: &str = "definition:monster:0108:loot:0006";
 pub const CW2_B1_VASE_B3_ROW_SHA256: &str =
     "f5d87a09806776c70a799abb5b9eb657ed66b93346d943053ba3fad6500b2712";
@@ -940,7 +939,6 @@ pub fn protected_cw2_b1_native_item_batch_import(
     })
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtectedCw2B1FullItemFamilyImport {
     pub records: Vec<ProjectReferenceRecord>,
@@ -976,9 +974,8 @@ pub fn protected_cw2_b1_full_item_family_import(
 ) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
     validate_protected_evidence(evidence_bytes)?;
 
-    let evidence: serde_json::Value = serde_json::from_slice(evidence_bytes).map_err(|_| {
-        ProtectedCw2B1ImportError::EvidenceMismatch("evidence JSON decoding")
-    })?;
+    let evidence: serde_json::Value = serde_json::from_slice(evidence_bytes)
+        .map_err(|_| ProtectedCw2B1ImportError::EvidenceMismatch("evidence JSON decoding"))?;
     let rows = evidence
         .pointer("/semantic_catalog/identity_records")
         .and_then(serde_json::Value::as_array)
@@ -1041,40 +1038,37 @@ pub fn protected_cw2_b1_full_item_family_import(
             ))?
             .to_owned();
 
-        let (
-            native_key,
-            source_label,
-            materializable,
-            stack_class,
-            authorship,
-        ) = if let Some(spec) = semantic_specs.get(&source_item_id) {
-            if source_node_digest != spec.node_sha256 || field_profile_id != spec.field_profile_sha256 {
-                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "protected semantic binding provenance",
-                ));
-            }
-            preserved_semantic_bindings += 1;
-            (
-                spec.native_key.to_owned(),
-                spec.source_label.to_owned(),
-                true,
-                if spec.stack_capable {
-                    ItemStackDocument::StackCapable
-                } else {
-                    ItemStackDocument::NonStackable
-                },
-                "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED",
-            )
-        } else {
-            opaque_sequence += 1;
-            (
-                opaque_item_key(opaque_sequence),
-                format!("crystal:item:{source_item_id}"),
-                false,
-                ItemStackDocument::Unknown,
-                "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1",
-            )
-        };
+        let (native_key, source_label, materializable, stack_class, authorship) =
+            if let Some(spec) = semantic_specs.get(&source_item_id) {
+                if source_node_digest != spec.node_sha256
+                    || field_profile_id != spec.field_profile_sha256
+                {
+                    return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "protected semantic binding provenance",
+                    ));
+                }
+                preserved_semantic_bindings += 1;
+                (
+                    spec.native_key.to_owned(),
+                    spec.source_label.to_owned(),
+                    true,
+                    if spec.stack_capable {
+                        ItemStackDocument::StackCapable
+                    } else {
+                        ItemStackDocument::NonStackable
+                    },
+                    "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED",
+                )
+            } else {
+                opaque_sequence += 1;
+                (
+                    opaque_item_key(opaque_sequence),
+                    format!("crystal:item:{source_item_id}"),
+                    false,
+                    ItemStackDocument::Unknown,
+                    "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1",
+                )
+            };
 
         if !native_keys.insert(native_key.clone()) {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
@@ -1152,7 +1146,10 @@ pub fn protected_cw2_b1_full_item_family_import(
                         disposition: NativeItemBindingDisposition::LocalNonProduction,
                     }),
                 ),
-                text_field("evidence.field-profile-sha256", &allocation.field_profile_id),
+                text_field(
+                    "evidence.field-profile-sha256",
+                    &allocation.field_profile_id,
+                ),
                 text_field("evidence.node-sha256", &allocation.source_node_digest),
                 text_field("source.native-key-authorship", allocation.authorship),
                 text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
