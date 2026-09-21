@@ -1,7 +1,21 @@
 use crate::durability::{DurabilityError, db};
-use sqlx::{PgPool, Row};
+use sqlx::postgres::PgConnection;
+use sqlx::{Executor, PgPool, Postgres, Row};
 
 pub(crate) static GAME_MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+
+const MIGRATION_LEDGER_INSPECTION_SQL: &str = "WITH expected(version, checksum_len) AS (\
+     SELECT * FROM unnest($1::BIGINT[], $2::BIGINT[])\
+ ) \
+ SELECT m.version, octet_length(m.checksum)::BIGINT AS checksum_len, \
+        CASE WHEN e.checksum_len IS NOT NULL \
+                   AND octet_length(m.checksum)::BIGINT = e.checksum_len \
+             THEN m.checksum ELSE NULL END AS bounded_checksum, \
+        m.success \
+ FROM _sqlx_migrations AS m \
+ LEFT JOIN expected AS e ON e.version = m.version \
+ ORDER BY m.version ASC \
+ LIMIT $3";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SchemaCompatibility {
@@ -21,8 +35,8 @@ impl MigrationExecutor {
         })
     }
 
-    /// This is the only runtime path in this module allowed to execute DDL.
-    /// Normal game-server startup must use `inspect` through `connect_runtime`.
+    /// This is the only migration path in this module allowed to execute DDL.
+    /// Runtime compatibility inspection remains read-only; the URL connector below is test-only.
     pub async fn apply_embedded_ledger(&self) -> Result<(), DurabilityError> {
         GAME_MIGRATOR
             .run(&self.pool)
@@ -35,6 +49,7 @@ impl MigrationExecutor {
     }
 }
 
+#[cfg(test)]
 pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, DurabilityError> {
     let pool = db::connect(database_url, 4).await?;
     let compatibility = inspect(&pool).await?;
@@ -45,11 +60,40 @@ pub(crate) async fn connect_runtime(database_url: &str) -> Result<PgPool, Durabi
 }
 
 async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> {
-    let rows = match sqlx::query(
-        "SELECT version, checksum, success FROM _sqlx_migrations ORDER BY version ASC",
-    )
-    .fetch_all(pool)
-    .await
+    inspect_executor(pool).await
+}
+
+pub(crate) async fn inspect_connection(
+    connection: &mut PgConnection,
+) -> Result<SchemaCompatibility, DurabilityError> {
+    inspect_executor(connection).await
+}
+
+async fn inspect_executor<'e, E>(executor: E) -> Result<SchemaCompatibility, DurabilityError>
+where
+    E: Executor<'e, Database = Postgres>,
+{
+    let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
+    let expected_versions: Vec<i64> = expected.iter().map(|migration| migration.version).collect();
+    let expected_checksum_lengths: Vec<i64> = expected
+        .iter()
+        .map(|migration| i64::try_from(migration.checksum.len()))
+        .collect::<Result<_, _>>()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let row_limit = i64::try_from(expected.len())
+        .ok()
+        .and_then(|count| count.checked_add(1))
+        .ok_or(DurabilityError::InvalidStoredState)?;
+
+    // The row transfer is bounded by embedded migration count N + one overflow
+    // sentinel. A checksum is transferred only when its server-side byte length
+    // exactly matches the embedded checksum for the same version.
+    let rows = match sqlx::query(MIGRATION_LEDGER_INSPECTION_SQL)
+        .bind(&expected_versions)
+        .bind(&expected_checksum_lengths)
+        .bind(row_limit)
+        .fetch_all(executor)
+        .await
     {
         Ok(rows) => rows,
         Err(error) if is_missing_table(&error) => {
@@ -58,18 +102,22 @@ async fn inspect(pool: &PgPool) -> Result<SchemaCompatibility, DurabilityError> 
         Err(error) => return Err(DurabilityError::from(error)),
     };
 
-    let expected: Vec<_> = GAME_MIGRATOR.iter().collect();
     if rows.len() != expected.len() {
         return Ok(SchemaCompatibility::Incompatible);
     }
 
-    for (row, migration) in rows.iter().zip(expected) {
+    for (row, (migration, expected_checksum_len)) in rows
+        .iter()
+        .zip(expected.iter().zip(expected_checksum_lengths.iter()))
+    {
         let version: i64 = row.try_get("version")?;
-        let checksum: Vec<u8> = row.try_get("checksum")?;
+        let checksum_len: i64 = row.try_get("checksum_len")?;
+        let checksum: Option<Vec<u8>> = row.try_get("bounded_checksum")?;
         let success: bool = row.try_get("success")?;
         if !success
             || version != migration.version
-            || checksum.as_slice() != migration.checksum.as_ref()
+            || checksum_len != *expected_checksum_len
+            || checksum.as_deref() != Some(migration.checksum.as_ref())
         {
             return Ok(SchemaCompatibility::Incompatible);
         }
@@ -94,6 +142,15 @@ mod contract_tests {
         MIGRATION
             .split_once("CREATE TABLE game_durability_transport_ref_reservations")
             .map(|(session, _rest)| session)
+    }
+
+    #[test]
+    fn migration_ledger_inspection_is_bounded_before_checksum_materialization() {
+        let sql = super::MIGRATION_LEDGER_INSPECTION_SQL;
+        assert!(sql.contains("unnest($1::BIGINT[], $2::BIGINT[])"));
+        assert!(sql.contains("octet_length(m.checksum)::BIGINT = e.checksum_len"));
+        assert!(sql.contains("THEN m.checksum ELSE NULL END AS bounded_checksum"));
+        assert!(sql.contains("LIMIT $3"));
     }
 
     #[test]
