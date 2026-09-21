@@ -1,4 +1,4 @@
-//! Bounded successor artifact for the protected one-Item Reference corpus.
+//! Bounded successor artifacts for the protected one-Item and native Item batch Reference corpora.
 //!
 //! The carrier follows the existing production Content envelope lineage: a fixed header,
 //! critical section table, per-section SHA-256 and a whole-artifact trailer. Its separate magic
@@ -45,6 +45,138 @@ const MAX_INDEX_ENTRIES: usize = 1;
 const MAX_BODY_RECORD_BYTES: usize = 64;
 const BODY_RECORD_VERSION: u8 = 1;
 const FAMILY_ITEM: u8 = 5;
+
+const BATCH_ARTIFACT_PROFILE_ID: &str = "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v2";
+const BATCH_COMPILER_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_COMPILER/v2";
+const BATCH_CANONICALIZATION_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v2";
+const BATCH_MAGIC: [u8; 8] = *b"OTRPA02\0";
+const BATCH_PROFILE_VERSION: u16 = 2;
+const BATCH_MAX_INDEX_ENTRIES: usize = 64;
+const BATCH_MAX_INDEX_BYTES: usize =
+    4 + BATCH_MAX_INDEX_ENTRIES * (1 + 2 + MAX_KEY_BYTES + 2 + MAX_ATOM_BYTES + 4 + 4 + 32);
+const BATCH_MAX_BODY_BYTES: usize = BATCH_MAX_INDEX_ENTRIES * MAX_BODY_RECORD_BYTES;
+const BATCH_MAX_ARTIFACT_BYTES: usize = HEADER_LEN
+    + SECTION_ENTRY_LEN * SECTION_COUNT
+    + MAX_MANIFEST_BYTES
+    + BATCH_MAX_INDEX_BYTES
+    + BATCH_MAX_BODY_BYTES
+    + TRAILER_LEN;
+const BATCH_MAX_GENERATION_PAIR_BYTES: usize = BATCH_MAX_ARTIFACT_BYTES * 2;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReferenceArtifactProfile {
+    OneItemV1,
+    NativeItemBatchV2,
+}
+
+impl ReferenceArtifactProfile {
+    fn for_definition_count(count: usize) -> Result<Self, ContentError> {
+        match count {
+            0 => Err(ContentError::InvalidArtifact(
+                "Reference artifact requires at least one typed Item",
+            )),
+            1 => Ok(Self::OneItemV1),
+            2..=BATCH_MAX_INDEX_ENTRIES => Ok(Self::NativeItemBatchV2),
+            _ => Err(ContentError::LimitExceeded {
+                resource: "Reference playable definitions",
+                actual: count,
+                limit: BATCH_MAX_INDEX_ENTRIES,
+            }),
+        }
+    }
+
+    fn detect(bytes: &[u8], projection: ReferenceArtifactProjection) -> Result<Self, ContentError> {
+        if bytes.get(..BATCH_MAGIC.len()) == Some(BATCH_MAGIC.as_slice()) {
+            let profile = Self::NativeItemBatchV2;
+            check_artifact_length(profile, bytes.len(), projection)?;
+            return Ok(profile);
+        }
+
+        let profile = Self::OneItemV1;
+        check_artifact_length(profile, bytes.len(), projection)?;
+        if bytes.get(..MAGIC.len()) != Some(MAGIC.as_slice()) {
+            return Err(ContentError::InvalidMagic);
+        }
+        Ok(profile)
+    }
+
+    const fn magic(self) -> [u8; 8] {
+        match self {
+            Self::OneItemV1 => MAGIC,
+            Self::NativeItemBatchV2 => BATCH_MAGIC,
+        }
+    }
+
+    const fn profile_version(self) -> u16 {
+        match self {
+            Self::OneItemV1 => PROFILE_VERSION,
+            Self::NativeItemBatchV2 => BATCH_PROFILE_VERSION,
+        }
+    }
+
+    const fn artifact_profile_id(self) -> &'static str {
+        match self {
+            Self::OneItemV1 => OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID,
+            Self::NativeItemBatchV2 => BATCH_ARTIFACT_PROFILE_ID,
+        }
+    }
+
+    const fn compiler_profile(self) -> &'static str {
+        match self {
+            Self::OneItemV1 => COMPILER_PROFILE,
+            Self::NativeItemBatchV2 => BATCH_COMPILER_PROFILE,
+        }
+    }
+
+    const fn canonicalization_profile(self) -> &'static str {
+        match self {
+            Self::OneItemV1 => CANONICALIZATION_PROFILE,
+            Self::NativeItemBatchV2 => BATCH_CANONICALIZATION_PROFILE,
+        }
+    }
+
+    const fn max_index_entries(self) -> usize {
+        match self {
+            Self::OneItemV1 => MAX_INDEX_ENTRIES,
+            Self::NativeItemBatchV2 => BATCH_MAX_INDEX_ENTRIES,
+        }
+    }
+
+    const fn max_index_bytes(self) -> usize {
+        match self {
+            Self::OneItemV1 => MAX_INDEX_BYTES,
+            Self::NativeItemBatchV2 => BATCH_MAX_INDEX_BYTES,
+        }
+    }
+
+    const fn max_body_bytes(self) -> usize {
+        match self {
+            Self::OneItemV1 => MAX_BODY_BYTES,
+            Self::NativeItemBatchV2 => BATCH_MAX_BODY_BYTES,
+        }
+    }
+
+    const fn artifact_limit(self, projection: ReferenceArtifactProjection) -> usize {
+        match self {
+            Self::OneItemV1 => projection.artifact_limit(),
+            Self::NativeItemBatchV2 => BATCH_MAX_ARTIFACT_BYTES,
+        }
+    }
+
+    const fn generation_pair_limit(self) -> usize {
+        match self {
+            Self::OneItemV1 => REFERENCE_PLAYABLE_MAX_GENERATION_PAIR_BYTES,
+            Self::NativeItemBatchV2 => BATCH_MAX_GENERATION_PAIR_BYTES,
+        }
+    }
+
+    const fn accepts_item_count(self, count: usize) -> bool {
+        match self {
+            Self::OneItemV1 => count == 1,
+            Self::NativeItemBatchV2 => count >= 2 && count <= BATCH_MAX_INDEX_ENTRIES,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReferenceArtifactProjection {
@@ -107,6 +239,7 @@ impl ReferenceArtifactMetadata {
     fn from_source(
         source: &CanonicalReferencePlayableContent,
         projection: ReferenceArtifactProjection,
+        profile: ReferenceArtifactProfile,
     ) -> Result<Self, ContentError> {
         Ok(Self {
             package_key: source.package_manifest.package_key.clone(),
@@ -123,10 +256,13 @@ impl ReferenceArtifactMetadata {
             package_provenance_digest: source.package_manifest.package_provenance_digest()?,
             source_profile: source.profile_revision.clone(),
             capability_profile: source.capability_profile.clone(),
-            compiler_profile: ProductionAtom::new("Reference compiler profile", COMPILER_PROFILE)?,
+            compiler_profile: ProductionAtom::new(
+                "Reference compiler profile",
+                profile.compiler_profile(),
+            )?,
             canonicalization_profile: ProductionAtom::new(
                 "Reference canonicalization profile",
-                CANONICALIZATION_PROFILE,
+                profile.canonicalization_profile(),
             )?,
             projection,
         })
@@ -220,6 +356,7 @@ struct SectionEntry {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReferencePlayableArtifactView<'a> {
     bytes: &'a [u8],
+    profile: ReferenceArtifactProfile,
     projection: ReferenceArtifactProjection,
     metadata: ReferenceArtifactMetadata,
     artifact_digest: [u8; 32],
@@ -233,11 +370,8 @@ impl<'a> ReferencePlayableArtifactView<'a> {
         bytes: &'a [u8],
         expected_projection: ReferenceArtifactProjection,
     ) -> Result<Self, ContentError> {
-        check_artifact_length(bytes.len(), expected_projection)?;
-        if bytes.get(..MAGIC.len()) != Some(MAGIC.as_slice()) {
-            return Err(ContentError::InvalidMagic);
-        }
-        if read_u16_at(bytes, 8)? != PROFILE_VERSION {
+        let profile = ReferenceArtifactProfile::detect(bytes, expected_projection)?;
+        if read_u16_at(bytes, 8)? != profile.profile_version() {
             return Err(ContentError::UnsupportedProfile(read_u16_at(bytes, 8)?));
         }
         let flags = read_u16_at(bytes, 10)?;
@@ -289,16 +423,16 @@ impl<'a> ReferencePlayableArtifactView<'a> {
         let index_entry = unique_section(&entries, SECTION_INDEX)?;
         let body_entry = unique_section(&entries, SECTION_BODY)?;
         if manifest_entry.item_count != MANIFEST_FIELD_COUNT
-            || index_entry.item_count != MAX_INDEX_ENTRIES
-            || body_entry.item_count != MAX_INDEX_ENTRIES
+            || index_entry.item_count != body_entry.item_count
+            || !profile.accepts_item_count(index_entry.item_count)
         {
             return Err(ContentError::InvalidArtifact(
                 "Reference artifact section cardinality mismatch",
             ));
         }
-        check_section_length(manifest_entry.kind, manifest_entry.length)?;
-        check_section_length(index_entry.kind, index_entry.length)?;
-        check_section_length(body_entry.kind, body_entry.length)?;
+        check_section_length(profile, manifest_entry.kind, manifest_entry.length)?;
+        check_section_length(profile, index_entry.kind, index_entry.length)?;
+        check_section_length(profile, body_entry.kind, body_entry.length)?;
 
         let expected_digest = array32(
             bytes
@@ -318,12 +452,17 @@ impl<'a> ReferencePlayableArtifactView<'a> {
             }
         }
 
-        let metadata = parse_manifest(section_bytes(bytes, manifest_entry)?, projection)?;
-        let index = parse_index(section_bytes(bytes, index_entry)?, index_entry.item_count)?;
+        let metadata = parse_manifest(profile, section_bytes(bytes, manifest_entry)?, projection)?;
+        let index = parse_index(
+            profile,
+            section_bytes(bytes, index_entry)?,
+            index_entry.item_count,
+        )?;
         validate_body_ranges(&index, body_entry.length)?;
 
         Ok(Self {
             bytes,
+            profile,
             projection,
             metadata,
             artifact_digest: actual_digest,
@@ -341,6 +480,22 @@ impl<'a> ReferencePlayableArtifactView<'a> {
         self.artifact_digest
     }
 
+    pub fn artifact_profile_id(&self) -> &'static str {
+        self.profile.artifact_profile_id()
+    }
+
+    pub fn indexed_identity_count(&self) -> usize {
+        self.index.len()
+    }
+
+    pub fn indexed_identities(&self) -> impl ExactSizeIterator<Item = &TypedDefinitionRef> + '_ {
+        self.index.iter().map(|entry| &entry.identity)
+    }
+
+    /// Compatibility accessor for the first canonical Item identity.
+    ///
+    /// One-Item v1 callers retain their original behavior. Batch-aware consumers should iterate
+    /// Self::indexed_identities instead of treating this value as the complete generation.
     pub fn indexed_identity(&self) -> &TypedDefinitionRef {
         &self.index[0].identity
     }
@@ -431,7 +586,7 @@ pub struct ReferencePlayableGenerationIdentity {
     package_revision: ProductionAtom,
     package_provenance_digest: Sha256HexDigest,
     world_id: WorldId,
-    item_identity: TypedDefinitionRef,
+    item_identities: Vec<TypedDefinitionRef>,
     server_artifact_digest: [u8; 32],
     client_artifact_digest: [u8; 32],
 }
@@ -453,8 +608,15 @@ impl ReferencePlayableGenerationIdentity {
         self.world_id
     }
 
+    /// Compatibility accessor for the first canonical Item identity.
+    ///
+    /// Batch-aware consumers must use Self::item_identities to observe the complete set.
     pub fn item_identity(&self) -> &TypedDefinitionRef {
-        &self.item_identity
+        &self.item_identities[0]
+    }
+
+    pub fn item_identities(&self) -> &[TypedDefinitionRef] {
+        &self.item_identities
     }
 
     pub fn server_artifact_digest(&self) -> [u8; 32] {
@@ -496,7 +658,6 @@ impl<'a> NonAuthoritativeReferenceStage<'a> {
         client_bytes: &'a [u8],
         expected: &ReferencePlayableExpectation,
     ) -> Result<Self, ContentError> {
-        check_pair_lengths(server_bytes.len(), client_bytes.len())?;
         let server = ReferencePlayableArtifactView::load(
             server_bytes,
             ReferenceArtifactProjection::ServerAuthoritative,
@@ -505,6 +666,12 @@ impl<'a> NonAuthoritativeReferenceStage<'a> {
             client_bytes,
             ReferenceArtifactProjection::ClientSafe,
         )?;
+        if server.profile != client.profile {
+            return Err(ContentError::PairMismatch(
+                "Reference server/client artifact profile differs",
+            ));
+        }
+        check_pair_lengths(server.profile, server_bytes.len(), client_bytes.len())?;
         if !server.metadata.same_generation_identity(&client.metadata) {
             return Err(ContentError::PairMismatch(
                 "Reference server/client generation identity differs",
@@ -519,30 +686,38 @@ impl<'a> NonAuthoritativeReferenceStage<'a> {
                 "Reference expected artifact digest pair",
             ));
         }
-        let server_identity = server.indexed_identity();
-        if server_identity != client.indexed_identity() {
-            return Err(ContentError::PairMismatch(
-                "Reference server/client typed identity differs",
-            ));
-        }
-        let server_item =
-            server
-                .lookup_server_item(server_identity)?
-                .ok_or(ContentError::InvalidArtifact(
-                    "Reference server item missing after indexed load",
-                ))?;
-        let client_item =
-            client
-                .lookup_client_item(server_identity)?
-                .ok_or(ContentError::InvalidArtifact(
-                    "Reference client item missing after indexed load",
-                ))?;
-        if server_item.physical_class != client_item.physical_class
-            || server_item.stack_class != client_item.stack_class
+        if server.index.len() != client.index.len()
+            || server
+                .index
+                .iter()
+                .zip(&client.index)
+                .any(|(left, right)| left.identity != right.identity)
         {
             return Err(ContentError::PairMismatch(
-                "Reference client-safe item differs from authoritative item",
+                "Reference server/client typed identity set differs",
             ));
+        }
+        for entry in &server.index {
+            let identity = &entry.identity;
+            let server_item =
+                server
+                    .lookup_server_item(identity)?
+                    .ok_or(ContentError::InvalidArtifact(
+                        "Reference server item missing after indexed load",
+                    ))?;
+            let client_item =
+                client
+                    .lookup_client_item(identity)?
+                    .ok_or(ContentError::InvalidArtifact(
+                        "Reference client item missing after indexed load",
+                    ))?;
+            if server_item.physical_class != client_item.physical_class
+                || server_item.stack_class != client_item.stack_class
+            {
+                return Err(ContentError::PairMismatch(
+                    "Reference client-safe item differs from authoritative item",
+                ));
+            }
         }
 
         let identity = ReferencePlayableGenerationIdentity {
@@ -550,7 +725,11 @@ impl<'a> NonAuthoritativeReferenceStage<'a> {
             package_revision: server.metadata.package_revision.clone(),
             package_provenance_digest: server.metadata.package_provenance_digest.clone(),
             world_id: server.metadata.world_id,
-            item_identity: server_identity.clone(),
+            item_identities: server
+                .index
+                .iter()
+                .map(|entry| entry.identity.clone())
+                .collect(),
             server_artifact_digest: server.artifact_digest,
             client_artifact_digest: client.artifact_digest,
         };
@@ -577,24 +756,40 @@ impl<'a> NonAuthoritativeReferenceStage<'a> {
 pub(crate) fn compile(
     source: &CanonicalReferencePlayableContent,
 ) -> Result<CompiledReferencePlayableContent, ContentError> {
-    validate_compile_source(source)?;
-    let definition = &source.definitions[0];
-    let ReferenceDefinitionKind::Item(item) = &definition.kind else {
-        return Err(ContentError::InvalidArtifact(
-            "Reference artifact v1 requires one typed Item",
-        ));
-    };
-    let server_body = encode_server_item(item)?;
-    let client_body = encode_client_item(item)?;
+    let profile = ReferenceArtifactProfile::for_definition_count(source.definitions.len())?;
+    validate_compile_source(source, profile)?;
+
+    let mut server_records = Vec::with_capacity(source.definitions.len());
+    let mut client_records = Vec::with_capacity(source.definitions.len());
+    for definition in &source.definitions {
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            return Err(ContentError::InvalidArtifact(
+                "Reference artifact requires typed Item definitions",
+            ));
+        };
+        server_records.push(EncodedRecord {
+            identity: &definition.definition,
+            body: encode_server_item(item)?,
+        });
+        client_records.push(EncodedRecord {
+            identity: &definition.definition,
+            body: encode_client_item(item)?,
+        });
+    }
+
     let server_metadata = ReferenceArtifactMetadata::from_source(
         source,
         ReferenceArtifactProjection::ServerAuthoritative,
+        profile,
     )?;
-    let client_metadata =
-        ReferenceArtifactMetadata::from_source(source, ReferenceArtifactProjection::ClientSafe)?;
-    let server = encode_artifact(&server_metadata, &definition.definition, &server_body)?;
-    let client = encode_artifact(&client_metadata, &definition.definition, &client_body)?;
-    check_pair_lengths(server.bytes.len(), client.bytes.len())?;
+    let client_metadata = ReferenceArtifactMetadata::from_source(
+        source,
+        ReferenceArtifactProjection::ClientSafe,
+        profile,
+    )?;
+    let server = encode_artifact(&server_metadata, profile, &server_records)?;
+    let client = encode_artifact(&client_metadata, profile, &client_records)?;
+    check_pair_lengths(profile, server.bytes.len(), client.bytes.len())?;
     Ok(CompiledReferencePlayableContent {
         server_artifact: server.bytes,
         client_artifact: client.bytes,
@@ -606,7 +801,10 @@ pub(crate) fn compile(
     })
 }
 
-fn validate_compile_source(source: &CanonicalReferencePlayableContent) -> Result<(), ContentError> {
+fn validate_compile_source(
+    source: &CanonicalReferencePlayableContent,
+    profile: ReferenceArtifactProfile,
+) -> Result<(), ContentError> {
     if source.profile_revision.as_str() != REFERENCE_PLAYABLE_CONTENT_PROFILE_ID {
         return Err(ContentError::RevisionMismatch(
             "Reference playable source profile",
@@ -636,11 +834,11 @@ fn validate_compile_source(source: &CanonicalReferencePlayableContent) -> Result
             "Reference playable Content Lock does not bind the exact root package",
         ));
     }
-    if source.definitions.len() != 1 {
+    if !profile.accepts_item_count(source.definitions.len()) {
         return Err(ContentError::LimitExceeded {
             resource: "Reference playable definitions",
             actual: source.definitions.len(),
-            limit: 1,
+            limit: profile.max_index_entries(),
         });
     }
     if !source.placements.is_empty()
@@ -648,17 +846,36 @@ fn validate_compile_source(source: &CanonicalReferencePlayableContent) -> Result
         || !source.transitions.is_empty()
     {
         return Err(ContentError::InvalidArtifact(
-            "Reference artifact v1 does not admit spatial or transition records",
+            "Reference artifact does not admit spatial or transition records",
         ));
     }
-    let definition = &source.definitions[0];
-    if definition.definition.family() != DefinitionFamily::Item
-        || definition.client_projection != ClientProjectionClass::ClientSafe
-        || !matches!(definition.kind, ReferenceDefinitionKind::Item(_))
+    if source
+        .definitions
+        .windows(2)
+        .any(|pair| pair[0].definition >= pair[1].definition)
     {
         return Err(ContentError::InvalidArtifact(
-            "Reference artifact v1 requires one client-safe typed Item",
+            "Reference artifact definitions are not strictly identity sorted",
         ));
+    }
+    for pair in source.definitions.windows(2) {
+        if pair[0].definition.family() == pair[1].definition.family()
+            && pair[0].definition.key() == pair[1].definition.key()
+        {
+            return Err(ContentError::DuplicateKey(
+                pair[1].definition.key().as_str().to_owned(),
+            ));
+        }
+    }
+    for definition in &source.definitions {
+        if definition.definition.family() != DefinitionFamily::Item
+            || definition.client_projection != ClientProjectionClass::ClientSafe
+            || !matches!(definition.kind, ReferenceDefinitionKind::Item(_))
+        {
+            return Err(ContentError::InvalidArtifact(
+                "Reference artifact requires client-safe typed Items",
+            ));
+        }
     }
     Ok(())
 }
@@ -807,6 +1024,12 @@ fn parse_client_item(bytes: &[u8]) -> Result<ReferenceClientItem, ContentError> 
 }
 
 #[derive(Debug)]
+struct EncodedRecord<'a> {
+    identity: &'a TypedDefinitionRef,
+    body: Vec<u8>,
+}
+
+#[derive(Debug)]
 struct EncodedArtifact {
     bytes: Vec<u8>,
     digest: [u8; 32],
@@ -814,15 +1037,25 @@ struct EncodedArtifact {
 
 fn encode_artifact(
     metadata: &ReferenceArtifactMetadata,
-    identity: &TypedDefinitionRef,
-    body: &[u8],
+    profile: ReferenceArtifactProfile,
+    records: &[EncodedRecord<'_>],
 ) -> Result<EncodedArtifact, ContentError> {
-    check_body_record_length(body.len())?;
-    let manifest = encode_manifest(metadata)?;
-    let index = encode_index(identity, body)?;
-    check_section_length(SECTION_MANIFEST, manifest.len())?;
-    check_section_length(SECTION_INDEX, index.len())?;
-    check_section_length(SECTION_BODY, body.len())?;
+    if !profile.accepts_item_count(records.len()) {
+        return Err(ContentError::InvalidArtifact(
+            "Reference artifact record count does not match profile",
+        ));
+    }
+
+    let mut body = Vec::new();
+    for record in records {
+        check_body_record_length(record.body.len())?;
+        body.extend_from_slice(&record.body);
+    }
+    let manifest = encode_manifest(metadata, profile)?;
+    let index = encode_index(profile, records)?;
+    check_section_length(profile, SECTION_MANIFEST, manifest.len())?;
+    check_section_length(profile, SECTION_INDEX, index.len())?;
+    check_section_length(profile, SECTION_BODY, body.len())?;
 
     let table_end = HEADER_LEN
         .checked_add(
@@ -844,11 +1077,11 @@ fn encode_artifact(
     let total_len = payload_end
         .checked_add(TRAILER_LEN)
         .ok_or(ContentError::InvalidSectionBounds)?;
-    check_artifact_length(total_len, metadata.projection)?;
+    check_artifact_length(profile, total_len, metadata.projection)?;
 
     let mut bytes = Vec::with_capacity(total_len);
-    bytes.extend_from_slice(&MAGIC);
-    put_u16(&mut bytes, PROFILE_VERSION);
+    bytes.extend_from_slice(&profile.magic());
+    put_u16(&mut bytes, profile.profile_version());
     put_u16(&mut bytes, 0);
     bytes.push(metadata.projection.as_byte());
     bytes.push(0);
@@ -868,7 +1101,7 @@ fn encode_artifact(
         SECTION_INDEX,
         index_offset,
         index.len(),
-        1,
+        records.len(),
         sha256(&index),
     )?;
     encode_section_entry(
@@ -876,21 +1109,24 @@ fn encode_artifact(
         SECTION_BODY,
         body_offset,
         body.len(),
-        1,
-        sha256(body),
+        records.len(),
+        sha256(&body),
     )?;
     bytes.extend_from_slice(&manifest);
     bytes.extend_from_slice(&index);
-    bytes.extend_from_slice(body);
+    bytes.extend_from_slice(&body);
     let digest = sha256(&bytes);
     bytes.extend_from_slice(&digest);
     Ok(EncodedArtifact { bytes, digest })
 }
 
-fn encode_manifest(metadata: &ReferenceArtifactMetadata) -> Result<Vec<u8>, ContentError> {
+fn encode_manifest(
+    metadata: &ReferenceArtifactMetadata,
+    profile: ReferenceArtifactProfile,
+) -> Result<Vec<u8>, ContentError> {
     let world_id = encode_world_id(metadata.world_id);
     let fields = [
-        OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID,
+        profile.artifact_profile_id(),
         metadata.source_profile.as_str(),
         metadata.capability_profile.as_str(),
         metadata.package_key.as_str(),
@@ -910,17 +1146,18 @@ fn encode_manifest(metadata: &ReferenceArtifactMetadata) -> Result<Vec<u8>, Cont
     for field in fields {
         put_string(&mut bytes, field, MAX_ATOM_BYTES)?;
     }
-    check_section_length(SECTION_MANIFEST, bytes.len())?;
+    check_section_length(profile, SECTION_MANIFEST, bytes.len())?;
     Ok(bytes)
 }
 
 fn parse_manifest(
+    profile: ReferenceArtifactProfile,
     bytes: &[u8],
     projection: ReferenceArtifactProjection,
 ) -> Result<ReferenceArtifactMetadata, ContentError> {
-    check_section_length(SECTION_MANIFEST, bytes.len())?;
+    check_section_length(profile, SECTION_MANIFEST, bytes.len())?;
     let mut reader = SliceReader::new(bytes);
-    if reader.read_string(MAX_ATOM_BYTES)? != OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID {
+    if reader.read_string(MAX_ATOM_BYTES)? != profile.artifact_profile_id() {
         return Err(ContentError::InvalidArtifact(
             "unexpected Reference artifact profile id",
         ));
@@ -971,14 +1208,14 @@ fn parse_manifest(
         "Reference compiler profile",
         reader.read_string(MAX_ATOM_BYTES)?,
     )?;
-    if compiler_profile.as_str() != COMPILER_PROFILE {
+    if compiler_profile.as_str() != profile.compiler_profile() {
         return Err(ContentError::RevisionMismatch("Reference compiler profile"));
     }
     let canonicalization_profile = ProductionAtom::from_artifact(
         "Reference canonicalization profile",
         reader.read_string(MAX_ATOM_BYTES)?,
     )?;
-    if canonicalization_profile.as_str() != CANONICALIZATION_PROFILE {
+    if canonicalization_profile.as_str() != profile.canonicalization_profile() {
         return Err(ContentError::RevisionMismatch(
             "Reference canonicalization profile",
         ));
@@ -1020,30 +1257,60 @@ fn parse_manifest(
     })
 }
 
-fn encode_index(identity: &TypedDefinitionRef, body: &[u8]) -> Result<Vec<u8>, ContentError> {
-    if identity.family() != DefinitionFamily::Item {
+fn encode_index(
+    profile: ReferenceArtifactProfile,
+    records: &[EncodedRecord<'_>],
+) -> Result<Vec<u8>, ContentError> {
+    if !profile.accepts_item_count(records.len()) {
         return Err(ContentError::InvalidArtifact(
-            "Reference artifact index requires Item identity",
+            "Reference artifact index count does not match profile",
         ));
     }
     let mut bytes = Vec::new();
-    put_u32(&mut bytes, 1);
-    bytes.push(FAMILY_ITEM);
-    put_string(&mut bytes, identity.key().as_str(), MAX_KEY_BYTES)?;
-    put_string(&mut bytes, identity.revision().as_str(), MAX_ATOM_BYTES)?;
-    put_u32(&mut bytes, 0);
-    put_u32(&mut bytes, to_u32(body.len())?);
-    bytes.extend_from_slice(&sha256(body));
-    check_section_length(SECTION_INDEX, bytes.len())?;
+    put_u32(&mut bytes, to_u32(records.len())?);
+    let mut body_offset = 0_usize;
+    let mut previous_identity: Option<&TypedDefinitionRef> = None;
+    for record in records {
+        if record.identity.family() != DefinitionFamily::Item {
+            return Err(ContentError::InvalidArtifact(
+                "Reference artifact index requires Item identity",
+            ));
+        }
+        if previous_identity.is_some_and(|previous| previous >= record.identity) {
+            return Err(ContentError::InvalidArtifact(
+                "Reference artifact index is not strictly identity sorted",
+            ));
+        }
+        check_body_record_length(record.body.len())?;
+        bytes.push(FAMILY_ITEM);
+        put_string(&mut bytes, record.identity.key().as_str(), MAX_KEY_BYTES)?;
+        put_string(
+            &mut bytes,
+            record.identity.revision().as_str(),
+            MAX_ATOM_BYTES,
+        )?;
+        put_u32(&mut bytes, to_u32(body_offset)?);
+        put_u32(&mut bytes, to_u32(record.body.len())?);
+        bytes.extend_from_slice(&sha256(&record.body));
+        body_offset = body_offset
+            .checked_add(record.body.len())
+            .ok_or(ContentError::InvalidSectionBounds)?;
+        previous_identity = Some(record.identity);
+    }
+    check_section_length(profile, SECTION_INDEX, bytes.len())?;
     Ok(bytes)
 }
 
-fn parse_index(bytes: &[u8], expected_count: usize) -> Result<Vec<IndexEntry>, ContentError> {
-    check_section_length(SECTION_INDEX, bytes.len())?;
+fn parse_index(
+    profile: ReferenceArtifactProfile,
+    bytes: &[u8],
+    expected_count: usize,
+) -> Result<Vec<IndexEntry>, ContentError> {
+    check_section_length(profile, SECTION_INDEX, bytes.len())?;
     let mut reader = SliceReader::new(bytes);
     let count =
         usize::try_from(reader.read_u32()?).map_err(|_| ContentError::InvalidSectionBounds)?;
-    if count != expected_count || count != MAX_INDEX_ENTRIES {
+    if count != expected_count || !profile.accepts_item_count(count) {
         return Err(ContentError::InvalidArtifact(
             "Reference artifact index count mismatch",
         ));
@@ -1209,10 +1476,11 @@ fn verify_expected(
 }
 
 fn check_artifact_length(
+    profile: ReferenceArtifactProfile,
     actual: usize,
     projection: ReferenceArtifactProjection,
 ) -> Result<(), ContentError> {
-    let limit = projection.artifact_limit();
+    let limit = profile.artifact_limit(projection);
     if actual > limit {
         return Err(ContentError::LimitExceeded {
             resource: "Reference artifact bytes",
@@ -1223,27 +1491,40 @@ fn check_artifact_length(
     Ok(())
 }
 
-fn check_pair_lengths(server: usize, client: usize) -> Result<(), ContentError> {
-    check_artifact_length(server, ReferenceArtifactProjection::ServerAuthoritative)?;
-    check_artifact_length(client, ReferenceArtifactProjection::ClientSafe)?;
+fn check_pair_lengths(
+    profile: ReferenceArtifactProfile,
+    server: usize,
+    client: usize,
+) -> Result<(), ContentError> {
+    check_artifact_length(
+        profile,
+        server,
+        ReferenceArtifactProjection::ServerAuthoritative,
+    )?;
+    check_artifact_length(profile, client, ReferenceArtifactProjection::ClientSafe)?;
     let actual = server
         .checked_add(client)
         .ok_or(ContentError::InvalidSectionBounds)?;
-    if actual > REFERENCE_PLAYABLE_MAX_GENERATION_PAIR_BYTES {
+    let limit = profile.generation_pair_limit();
+    if actual > limit {
         return Err(ContentError::LimitExceeded {
             resource: "Reference generation pair bytes",
             actual,
-            limit: REFERENCE_PLAYABLE_MAX_GENERATION_PAIR_BYTES,
+            limit,
         });
     }
     Ok(())
 }
 
-fn check_section_length(kind: u16, actual: usize) -> Result<(), ContentError> {
+fn check_section_length(
+    profile: ReferenceArtifactProfile,
+    kind: u16,
+    actual: usize,
+) -> Result<(), ContentError> {
     let limit = match kind {
         SECTION_MANIFEST => MAX_MANIFEST_BYTES,
-        SECTION_INDEX => MAX_INDEX_BYTES,
-        SECTION_BODY => MAX_BODY_BYTES,
+        SECTION_INDEX => profile.max_index_bytes(),
+        SECTION_BODY => profile.max_body_bytes(),
         _ => return Err(ContentError::UnknownCriticalSection(kind)),
     };
     if actual > limit {
@@ -1430,6 +1711,152 @@ impl<'a> SliceReader<'a> {
                 "Reference artifact section has trailing bytes",
             ));
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod native_item_batch_tests {
+    use super::*;
+    use crate::content::{
+        CW2_B1_NATIVE_ITEM_BATCH_COUNT, CanonicalProjectDocuments, ProjectDraft,
+        ProjectEvidenceLimits, protected_cw2_b1_native_item_batch_import,
+    };
+
+    const B1_EVIDENCE: &[u8] = include_bytes!(
+        "../../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
+    );
+
+    fn batch_limits() -> ProjectEvidenceLimits {
+        ProjectEvidenceLimits {
+            max_documents: 8,
+            max_document_bytes: 2_097_152,
+            max_total_bytes: 4_194_304,
+            max_json_depth: 24,
+            max_decoded_fields: 32_768,
+            max_string_bytes: 2_097_152,
+            max_locator_bytes: 160,
+            max_locator_segments: 8,
+            max_reference_records: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
+            max_import_records: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
+            max_reimport_states: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
+        }
+    }
+
+    fn linked_batch() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>> {
+        let imported = protected_cw2_b1_native_item_batch_import(B1_EVIDENCE)?;
+        let canonical = CanonicalProjectDocuments::from_draft(
+            ProjectDraft {
+                project_revision: "project-r1".to_owned(),
+                package_key: "oteryn:content.world-project".to_owned(),
+                semantic_schema_version: "reference-schema-v1".to_owned(),
+                licensing_metadata: "PENDING".to_owned(),
+                world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+                coordinate_frame: "global-target-2026-07-28".to_owned(),
+                records: imported.records,
+                imports: vec![imported.batch],
+                metadata: Vec::new(),
+            },
+            batch_limits(),
+        )?;
+        Ok(canonical
+            .into_snapshot(batch_limits())?
+            .parse(batch_limits())?
+            .link()?)
+    }
+
+    #[test]
+    fn frozen_native_item_batch_compiles_loads_and_stages_as_v2()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let linked = linked_batch()?;
+        assert_eq!(linked.definitions.len(), BATCH_MAX_INDEX_ENTRIES);
+
+        let first = compile(&linked)?;
+        let repeated = compile(&linked)?;
+        assert_eq!(first.server_artifact, repeated.server_artifact);
+        assert_eq!(first.client_artifact, repeated.client_artifact);
+
+        let server = ReferencePlayableArtifactView::load(
+            &first.server_artifact,
+            ReferenceArtifactProjection::ServerAuthoritative,
+        )?;
+        let client = ReferencePlayableArtifactView::load(
+            &first.client_artifact,
+            ReferenceArtifactProjection::ClientSafe,
+        )?;
+        assert_eq!(server.artifact_profile_id(), BATCH_ARTIFACT_PROFILE_ID);
+        assert_eq!(client.artifact_profile_id(), BATCH_ARTIFACT_PROFILE_ID);
+        assert_eq!(
+            server.indexed_identity_count(),
+            CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        );
+        assert_eq!(
+            client.indexed_identity_count(),
+            CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        );
+        assert_eq!(
+            server.indexed_identities().cloned().collect::<Vec<_>>(),
+            linked
+                .definitions
+                .iter()
+                .map(|definition| definition.definition.clone())
+                .collect::<Vec<_>>()
+        );
+
+        for definition in &linked.definitions {
+            let authoritative = server
+                .lookup_server_item(&definition.definition)?
+                .ok_or(ContentError::InvalidArtifact("authoritative batch Item"))?;
+            let projected = client
+                .lookup_client_item(&definition.definition)?
+                .ok_or(ContentError::InvalidArtifact("client batch Item"))?;
+            assert_eq!(authoritative.physical_class, projected.physical_class);
+            assert_eq!(authoritative.stack_class, projected.stack_class);
+        }
+
+        let staged = NonAuthoritativeReferenceStage::stage(
+            &first.server_artifact,
+            &first.client_artifact,
+            first.expectation(),
+        )?;
+        assert_eq!(
+            staged.identity().item_identities().len(),
+            CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        );
+        assert_eq!(
+            staged.identity().item_identity(),
+            &linked.definitions[0].definition
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn successor_profile_is_bounded_to_the_frozen_batch_cardinality() {
+        assert!(matches!(
+            ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1),
+            Err(ContentError::LimitExceeded {
+                resource: "Reference playable definitions",
+                actual,
+                limit: BATCH_MAX_INDEX_ENTRIES,
+            }) if actual == BATCH_MAX_INDEX_ENTRIES + 1
+        ));
+    }
+
+    #[test]
+    fn compiler_rejects_duplicate_item_key_across_revisions()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut linked = linked_batch()?;
+        let duplicate_key = linked.definitions[0].definition.key().clone();
+        linked.definitions[1].definition = TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            duplicate_key.clone(),
+            DefinitionRevisionRef::new("definition-r2")?,
+        );
+
+        assert!(matches!(
+            compile(&linked),
+            Err(ContentError::DuplicateKey(key)) if key == duplicate_key.as_str()
+        ));
         Ok(())
     }
 }
