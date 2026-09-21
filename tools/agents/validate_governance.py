@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 import json
 import re
 import sys
@@ -196,6 +198,66 @@ def validate_active_task_packets(errors: list[str]) -> None:
                 f"task packet exists in both active and archive: {duplicate}"
             )
 
+
+def validate_active_task_live_state(request: Callable[[str], object]) -> list[str]:
+    """Reject active packets whose canonical GitHub authority is terminal.
+
+    The caller owns authentication and transport. Keeping network access out of
+    the local validator preserves its deterministic offline contract; the
+    hosted inherited-policy validator supplies the authenticated requester.
+    """
+    active_dir = ROOT / "docs/agents/tasks/active"
+    if not active_dir.is_dir():
+        return []
+
+    packets: list[tuple[str, int | None, int | None]] = []
+    references: set[tuple[str, int]] = set()
+    for path in sorted(active_dir.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        text = path.read_text(encoding="utf-8")
+        issue_match = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
+        pr_match = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
+        issue = int(issue_match.group(1)) if issue_match is not None else None
+        pr = int(pr_match.group(1)) if pr_match is not None else None
+        packets.append((relative, issue, pr))
+        if issue is not None:
+            references.add(("issues", issue))
+        if pr is not None:
+            references.add(("pulls", pr))
+
+    def fetch(reference: tuple[str, int]) -> tuple[tuple[str, int], object]:
+        kind, number = reference
+        return reference, request(
+            f"https://api.github.com/repos/{EXPECTED_REPOSITORY}/{kind}/{number}"
+        )
+
+    with ThreadPoolExecutor(max_workers=min(8, max(1, len(references)))) as executor:
+        payloads = dict(executor.map(fetch, sorted(references)))
+
+    errors: list[str] = []
+    for relative, issue, pr in packets:
+        pr_open = False
+        if pr is not None:
+            payload = payloads[("pulls", pr)]
+            if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
+                raise ValueError(f"invalid GitHub pull response for #{pr}")
+            pr_open = payload["state"] == "open"
+            if not pr_open:
+                disposition = "merged" if payload.get("merged_at") is not None else "closed"
+                errors.append(
+                    f"active task packet {relative} names terminal canonical PR #{pr} ({disposition})"
+                )
+        if issue is not None:
+            payload = payloads[("issues", issue)]
+            if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
+                raise ValueError(f"invalid GitHub issue response for #{issue}")
+            if payload["state"] == "closed" and not pr_open:
+                errors.append(
+                    f"active task packet {relative} names closed Issue #{issue} without an open canonical PR"
+                )
+    return errors
 
 def _markdown_section(text: str, heading: str) -> str:
     marker = f"## {heading}\n"

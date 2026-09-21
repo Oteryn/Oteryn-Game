@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical Issue #351 is closed `completed`; its WP3 implementation lineage culminated in protected PR #673, merged as `3a384864d84560eb6ce76136afeb038576dc2976`. The continuing parent programme remains #162, but this historical #351 task packet is terminal. Any active/checkpoint wording below is preserved provenance only.
+
 # OTV2-20260906-sqlx-driver-budget-351
 
 ## Prospective exact error-custody amendment — 2026-09-13
