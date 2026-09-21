@@ -1832,4 +1832,22 @@ mod native_item_batch_tests {
             }) if actual == BATCH_MAX_INDEX_ENTRIES + 1
         ));
     }
+
+    #[test]
+    fn compiler_rejects_duplicate_item_key_across_revisions()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut linked = linked_batch()?;
+        let duplicate_key = linked.definitions[0].definition.key().clone();
+        linked.definitions[1].definition = TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            duplicate_key.clone(),
+            DefinitionRevisionRef::new("definition-r2")?,
+        );
+
+        assert!(matches!(
+            compile(&linked),
+            Err(ContentError::DuplicateKey(key)) if key == duplicate_key.as_str()
+        ));
+        Ok(())
+    }
 }
