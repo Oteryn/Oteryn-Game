@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from contextlib import contextmanager
 import hashlib
 import importlib.util
 import json
@@ -147,6 +148,44 @@ def _git_blob_sha1_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _reject_game_input_bytecode(path: Path, relative_path: str) -> None:
+    for candidate in (path.with_suffix(".pyc"), path.with_suffix(".pyo")):
+        try:
+            candidate.lstat()
+        except FileNotFoundError:
+            continue
+        raise CatalogError(
+            f"PROTECTED_GAME_INPUT_BYTECODE_CACHE: {relative_path}: {candidate}"
+        )
+
+    cache_root = path.parent / "__pycache__"
+    try:
+        cache_metadata = cache_root.lstat()
+    except FileNotFoundError:
+        return
+    if stat.S_ISLNK(cache_metadata.st_mode) or not stat.S_ISDIR(cache_metadata.st_mode):
+        raise CatalogError(
+            f"PROTECTED_GAME_INPUT_BYTECODE_CACHE_NAMESPACE: {relative_path}"
+        )
+
+    prefix = f"{path.stem}."
+    for candidate in cache_root.iterdir():
+        if candidate.name.startswith(prefix) and candidate.suffix in {".pyc", ".pyo"}:
+            raise CatalogError(
+                f"PROTECTED_GAME_INPUT_BYTECODE_CACHE: {relative_path}: {candidate}"
+            )
+
+
+@contextmanager
+def _without_bytecode_writes():
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        yield
+    finally:
+        sys.dont_write_bytecode = previous
+
+
 def _regular_game_input_path(game_root: Path, relative_path: str) -> Path:
     current = game_root
     parts = Path(relative_path).parts
@@ -171,6 +210,7 @@ def _regular_game_input_path(game_root: Path, relative_path: str) -> Path:
 
 def _verify_game_input_file(game_root: Path, relative_path: str, expected_blob: str) -> Path:
     path = _regular_game_input_path(game_root, relative_path)
+    _reject_game_input_bytecode(path, relative_path)
 
     committed_blob = _git(game_root, "rev-parse", f"HEAD:{relative_path}")
     if committed_blob != expected_blob:
@@ -251,7 +291,8 @@ def _load_game_module(game_root: Path, relative_path: str, name: str) -> Any:
         raise CatalogError(f"MODULE_LOAD_FAILED: {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
-    spec.loader.exec_module(module)
+    with _without_bytecode_writes():
+        spec.loader.exec_module(module)
     _verify_loaded_game_module(game_root, relative_path, expected_blob, module)
     return module
 
@@ -599,13 +640,19 @@ def collect_real_observations(
     if Path(getattr(producer, "BOUNDED_EXPORT_REL", "")) != Path(bounded_export_rel):
         raise CatalogError("PROTECTED_GAME_INPUT_TRANSITIVE_PATH_MISMATCH")
 
-    runtime = producer.load_runtime(
-        legacy_root=legacy_root,
-        map_path=map_path,
-        asset_zip=asset_zip,
-        assets_dir=assets_dir,
-        source_generation_profile_id=SOURCE_PROFILE,
+    _verify_game_input_file(
+        game_root,
+        bounded_export_rel,
+        GAME_INPUT_BLOBS[bounded_export_rel],
     )
+    with _without_bytecode_writes():
+        runtime = producer.load_runtime(
+            legacy_root=legacy_root,
+            map_path=map_path,
+            asset_zip=asset_zip,
+            assets_dir=assets_dir,
+            source_generation_profile_id=SOURCE_PROFILE,
+        )
     _verify_loaded_game_module(
         game_root,
         bounded_export_rel,
