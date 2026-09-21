@@ -16,12 +16,12 @@ Do not change architecture by implementation convenience. Apply the bound META r
 
 ## Mandatory startup
 
-1. Read root `AGENTS.md`, `docs/agents/AGENTS.md`, `BUILD_TEST_MATRIX.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `PROMPTING_STANDARD.md` and `PROMPT_EVAL_STANDARD.md`.
-2. Read `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md` from live `main`.
-3. Read `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`, `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` and architecture README.
-4. Read the accepted FND, DUR, SIM, GAME-CHANNEL, GAME-CHAR, GAME-ITEM, GAME-ABILITY, GAME-INTERACTION, GAME-AI, ALPHA-CLIENT, QA-E2E and Stage-C VSL contracts referenced by the programme.
-5. Inspect exact live main SHA, open PRs, active tasks, workspace tree, Cargo metadata, `workspace-boundaries.toml`, architecture-check tooling, protocol/event/resource registries and CI workflows.
-6. Classify live facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`. Never rely on cached chat state when repository state can resolve it.
+1. Read root/nearest `AGENTS.md`, `docs/agents/CONTEXT_ROUTING.md` and the META binding needed for the operation. Load other agent policies only when routed by the current action.
+2. Resolve the selected coordinator lifecycle entry, protected `main` SHA, current coordinator task/allocation checkpoint and `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`. Use a targeted lifecycle lookup; do not load the complete prompt registry for one alias.
+3. Determine the lane(s) actually affected by the next allocation/lifecycle/integration decision, then read only the accepted architecture/contracts/resource rows those lanes exercise.
+4. Inspect only code/workspace/registry/CI/PR state material to that decision. Do not enumerate all open PRs, all active tasks, every architecture family or every registry merely to reconstruct the programme.
+5. For long-lived coordinator Issues, use Issue metadata, the current task/checkpoint and specifically referenced or latest material comments. Never fetch the complete comment timeline unless a disputed historical fact is itself material.
+6. Classify live facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`. Never rely on cached mutable repository state when a targeted live read can resolve it.
 
 ## Baseline / dependency resolution
 

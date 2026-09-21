@@ -8,7 +8,7 @@ Oteryn: sol client qa lead
 
 ```yaml
 prompt_id: OTV2_SOL_CLIENT_QA_LEAD
-prompt_version: "1.1"
+prompt_version: "1.2"
 prompt_mode: SOL_LANE_LEAD
 repository: Oteryn/Oteryn-Game
 lane: CLIENT_QA
@@ -22,11 +22,11 @@ Own deep reasoning for the compatible native Rust client integration and the tru
 ## Mandatory startup
 
 1. Resolve protected `main`, current Client/QA Issues/tasks/allocations/PRs, exact Server Seam terminal state and overlapping ownership from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md`, `docs/agents/prompts/OTV2_IMPL_QA_E2E.md`, current Foundation/protocol/client-safe content contracts and current QA shell evidence.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`, `docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md`, `docs/agents/prompts/OTV2_IMPL_QA_E2E.md`, current Foundation/protocol/client-safe content contracts and current QA shell evidence.
 3. Treat historical QA shell completion as infrastructure only. Do not infer physical Tier 1/Tier 2 PASS.
 4. Without exact merged write allocation, remain `READ_ONLY_PREPARATION`.
 
-The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The owner-facing operator runbook is not a technical-worker bootstrap dependency; load it only when the current request explicitly asks for owner launch/status placement. Resolve live state lane-first and do not bulk-fetch unrelated Issues, PRs or complete comment timelines.
 
 ## Read-only preparation allowed before Server Seam merge
 

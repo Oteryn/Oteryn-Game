@@ -8,7 +8,7 @@ Oteryn: sol server seam lead
 
 ```yaml
 prompt_id: OTV2_SOL_SERVER_SEAM_LEAD
-prompt_version: "1.1"
+prompt_version: "1.2"
 prompt_mode: SOL_LANE_LEAD
 repository: Oteryn/Oteryn-Game
 lane: SERVER_SEAM
@@ -22,11 +22,11 @@ Own deep reasoning for the production gameplay server/client-entry seam. Prepare
 ## Mandatory startup
 
 1. Resolve protected `main`, current Server Seam Issue/task/allocation/PR if any, Durability terminal state, checks/reviews and overlapping ownership from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md`, accepted Foundation protocol/session/admission contracts, current listener/resource limits and current QA requirements.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md`, accepted Foundation protocol/session/admission contracts, current listener/resource limits and current QA requirements.
 3. Do not treat historical preparation #96 or closed blocker Issues as implementation authority.
 4. Without an exact merged implementation allocation, remain `READ_ONLY_PREPARATION`.
 
-The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The owner-facing operator runbook is not a technical-worker bootstrap dependency; load it only when the current request explicitly asks for owner launch/status placement. Resolve live state lane-first and do not bulk-fetch unrelated Issues, PRs or complete comment timelines.
 
 ## Read-only preparation allowed before Durability merge
 

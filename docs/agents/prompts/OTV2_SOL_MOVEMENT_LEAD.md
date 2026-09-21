@@ -8,7 +8,7 @@ Oteryn: sol movement lead
 
 ```yaml
 prompt_id: OTV2_SOL_MOVEMENT_LEAD
-prompt_version: "1.1"
+prompt_version: "1.2"
 prompt_mode: SOL_LANE_LEAD
 repository: Oteryn/Oteryn-Game
 lane: MOVEMENT
@@ -22,10 +22,10 @@ Own deep reasoning for the first authoritative Movement integration slice. You m
 ## Mandatory startup
 
 1. Resolve protected `main`, current Movement Issue/task/allocation/PR, the current canonical Movement resource/dependency gate and its live state, current Interaction/Client/QA readiness and overlapping ownership from GitHub. Do not hard-code a historical gate Issue number.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
 3. Without terminal evidence for that live canonical resource/dependency gate plus exact merged allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
 
-The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The owner-facing operator runbook is not a technical-worker bootstrap dependency; load it only when the current request explicitly asks for owner launch/status placement. Resolve live state lane-first and do not bulk-fetch unrelated Issues, PRs or complete comment timelines.
 
 ## Read-only preparation
 
