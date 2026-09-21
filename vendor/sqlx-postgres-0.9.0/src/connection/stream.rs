@@ -372,11 +372,16 @@ fn parse_server_version(s: &str) -> Option<u32> {
     }
 
     match parts_len {
-        3 => (100 * parts[0] + parts[1])
+        3 => parts[0]
+            .checked_mul(100)?
+            .checked_add(parts[1])?
             .checked_mul(100)?
             .checked_add(parts[2]),
         2 if parts[0] >= 10 => parts[0].checked_mul(10_000)?.checked_add(parts[1]),
-        2 => (100 * parts[0] + parts[1]).checked_mul(100),
+        2 => parts[0]
+            .checked_mul(100)?
+            .checked_add(parts[1])?
+            .checked_mul(100),
         1 => parts[0].checked_mul(10_000),
         _ => None,
     }
@@ -407,6 +412,7 @@ mod tests {
         assert_eq!(parse_server_version("9.6.1"), Some(90601));
         // new style
         assert_eq!(parse_server_version("10.1"), Some(100001));
+        assert_eq!(parse_server_version("17.6"), Some(170006));
         // old style without minor version
         assert_eq!(parse_server_version("9.6devel"), Some(90600));
         // new style without minor version, e.g.  */
@@ -414,5 +420,12 @@ mod tests {
         assert_eq!(parse_server_version("13devel87"), Some(130000));
         // unknown
         assert_eq!(parse_server_version("unknown"), None);
+    }
+
+    #[test]
+    fn parse_server_version_rejects_composition_overflow() {
+        assert_eq!(parse_server_version("42949673.0.0"), None);
+        assert_eq!(parse_server_version("42949672.96.0"), None);
+        assert_eq!(parse_server_version("9.42949672"), None);
     }
 }
