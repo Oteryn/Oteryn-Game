@@ -146,7 +146,7 @@ def test_reviewed_document_consumers(module):
         "dc9381615fb7b1f7b06533ac6f6ffebb6d274b8d799894fe54882bf69f638472",
     )
     reviewed_docs = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
-    for path in ("README.md", "docs/agents/tasks/archive/finished.md"):
+    for path in ("README.md", "docs/reference/finished.md"):
         result = module.classify([dict(filename=path, status="modified")], 1,
                                  fixture(), reviewed_nonserver, docs_digest=reviewed_docs,
                                  candidate_modes_verified=True)
@@ -642,6 +642,37 @@ def test_large_pr_git_fallback(module):
                 candidate_modes_verified=True,
             )
             assert result["rust"] is True and result["windows"] is True, result
+
+            # Complete immutable Git fallback must retain cross-surface rename
+            # provenance instead of flattening it into a server-only removal.
+            git("checkout", "-q", baseline)
+            renamed_source = root / "apps/game-server/src/rename_probe.rs"
+            renamed_source.parent.mkdir(parents=True, exist_ok=True)
+            renamed_source.write_text("governance rename probe\n")
+            git("add", ".")
+            git("commit", "-qm", "rename baseline")
+            rename_base = git("rev-parse", "HEAD")
+            git("mv", "apps/game-server/src/rename_probe.rs", "AGENTS.md")
+            git("commit", "-qm", "rename server input to governance")
+            rename_head = git("rev-parse", "HEAD")
+            git("checkout", "-q", rename_base)
+            rename_env = env | {"EXPECTED_HEAD": rename_head, "CHANGED_FILE_COUNT": "1"}
+            with patch.dict(os.environ, rename_env, clear=False):
+                rename_files, rename_count, rename_complete = module.pr_file_records()
+            assert rename_complete is True and rename_count == 1, rename_files
+            assert rename_files == [{
+                "filename": "AGENTS.md",
+                "status": "renamed",
+                "previous_filename": "apps/game-server/src/rename_probe.rs",
+            }], rename_files
+            result = module.classify(
+                rename_files, rename_count, fixture(), module.AUDITED_INPUT_SHA256,
+                docs_digest=module.AUDITED_DOC_INPUT_SHA256,
+                candidate_modes_verified=True,
+                docs_consumers_verified=True,
+            )
+            assert result["rust"] is True and result["windows"] is True, result
+            assert result["reason"] == "cross-surface-rename", result
         finally:
             os.chdir(old_cwd)
 
@@ -715,28 +746,73 @@ def main() -> int:
         "crates/simulation-determinism/src/lib.rs", "crates/simulation-determinism/fixtures/golden.json",
         "Cargo.lock", "Cargo.toml", "rust-toolchain.toml", "apps/game-server/build.rs",
         "apps/game-server/Cargo.toml", ".github/workflows/rust.yml", ".github/actions/custom/action.yml",
-        "tools/repository/classify_pr_test_lanes.py", "AGENTS.md", "docs/agents/AGENTS.md",
+        "tools/repository/classify_pr_test_lanes.py",
         "tools/game-atlas-fullworld-source/animated.py", "tools/game-atlas-fullworld-source/README.md",
-        "docs/agents/PROJECT_LANES.json", "docs/migration/input.json", "unknown/input.dat", "apps/game-server/unknown.md",
+        "docs/agents/evidence/runtime-input.json", "docs/migration/input.json",
+        "unknown/input.dat", "apps/game-server/unknown.md",
     )
     for path in full_paths:
         result = classify([path])
         assert result["rust"] is True and result["windows"] is True, (path, result)
+
+    governance_paths = (
+        "AGENTS.md",
+        "docs/agents/AGENTS.md",
+        "docs/agents/PROJECT_LANES.json",
+        "docs/agents/PROMPT_LIFECYCLE.json",
+        "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        "docs/agents/tasks/active/task.md",
+        "tools/agents/tests/test_meta_agent_policy_adoption.py",
+    )
+    for path in governance_paths:
+        result = classify([path], docs_consumers_verified=True)
+        assert result == {
+            "rust": False,
+            "windows": False,
+            "surface": "agent-governance",
+            "reason": "agent-governance-only",
+        }, (path, result)
+        result = classify([path], docs_consumers_verified=False)
+        assert result["rust"] is True and result["windows"] is True, (path, result)
+        assert result["reason"] == "unreviewed-document-consumer-inputs", (path, result)
+        result = classify([path], digest="stale-runtime-snapshot", docs_digest="stale-doc-snapshot")
+        assert result["rust"] is True and result["windows"] is True, (path, result)
+        result = classify(
+            [path], digest="stale-runtime-snapshot", docs_digest="stale-doc-snapshot",
+            docs_consumers_verified=True,
+        )
+        assert result["rust"] is False and result["windows"] is False, (path, result)
     for paths in ([server, "apps/client/src/lib.rs"], [server, "unknown/input.dat"],
                   [{"filename": server, "status": "renamed", "previous_filename": "apps/client/src/old.rs"}],
-                  [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}]):
-        result = classify(paths)
+                  [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}],
+                  [{"filename": "AGENTS.md", "status": "renamed", "previous_filename": server}],
+                  [{"filename": server, "status": "renamed", "previous_filename": "AGENTS.md"}],
+                  [{"filename": server, "status": "removed"}, {"filename": "AGENTS.md", "status": "added"}],
+                  [{"filename": "AGENTS.md", "status": "removed"}, {"filename": server, "status": "added"}]):
+        result = classify(paths, docs_consumers_verified=True)
         assert result["rust"] and result["windows"], result
-    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"],
-                  ["docs/agents/PROMPT_LIFECYCLE.json"]):
+    for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/reference/example.md"],
+                  ["docs/agents/evidence/history.md"]):
         result = classify(paths)
         assert result["rust"] is False and result["windows"] is False, result
         result = classify(paths, digest="unreviewed-document-consumer")
         assert result["rust"] and result["windows"], "docs skip ignored changed input assumptions"
         result = classify(paths, docs_digest="server-started-reading-docs")
         assert result["rust"] and result["windows"], "docs skip ignored changed server input assumptions"
-    result = classify([server, "docs/agents/tasks/active/task.md"])
+
+    result = classify([server, "docs/agents/tasks/active/task.md"], docs_consumers_verified=True)
     assert result["rust"] and not result["windows"], result
+    result = classify([server, "docs/agents/tasks/active/task.md"], docs_consumers_verified=False)
+    assert result["rust"] and result["windows"], result
+    assert result["reason"] == "unreviewed-document-consumer-inputs", result
+    result = classify(["apps/client/src/lib.rs", "docs/agents/tasks/active/task.md"], docs_consumers_verified=True)
+    assert result["rust"] and result["windows"], result
+    result = classify(["AGENTS.md", "docs/architecture/example.md"])
+    assert result["rust"] is False and result["windows"] is False, result
+    assert result["surface"] == "agent-governance", result
+    assert result["reason"] == "agent-governance-plus-neutral-documentation", result
+    result = classify([{"filename": "docs/agents/AGENTS.md", "status": "renamed", "previous_filename": "AGENTS.md"}])
+    assert result["rust"] is False and result["windows"] is False, result
 
     invalid = (
         ([], {}), ([server], {"count": 2}), ([server], {"complete": False}),
