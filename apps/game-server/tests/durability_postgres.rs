@@ -424,9 +424,10 @@ fn wp3_process_root_is_singleton_ready_only_and_detached_task_safe()
     let (started_tx, started_rx) = mpsc::channel();
     let detached_root = root.clone();
     let task = root.spawn_task(async move {
-        started_tx
-            .send(())
-            .expect("singleton test receiver must remain alive");
+        assert!(
+            started_tx.send(()).is_ok(),
+            "singleton test receiver must remain alive"
+        );
         tokio::time::sleep(Duration::from_millis(25)).await;
         drop(detached_root);
         7u8
