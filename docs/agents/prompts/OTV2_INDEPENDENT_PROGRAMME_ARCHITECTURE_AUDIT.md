@@ -360,7 +360,6 @@ Do not expand the audit simply because unrelated open Issues exist.
 
 At minimum inspect applicable current versions of:
 
-- `docs/agents/TASK_CLOSEOUT_AUDIT_E2E.md`;
 - `docs/agents/PROMPT_EVAL_STANDARD.md`;
 - `docs/agents/BUILD_TEST_MATRIX.md`;
 - `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`;
