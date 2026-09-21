@@ -84,7 +84,20 @@ def valid_path(value) -> bool:
 def neutral(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} or path.startswith("docs/migration/"):
         return False
-    return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md", "docs/agents/PROMPT_LIFECYCLE.json"} or (path.startswith("docs/") and path.endswith(".md"))
+    return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md"} or (path.startswith("docs/") and path.endswith(".md"))
+
+
+def agent_governance(path: str) -> bool:
+    """Return paths whose semantics are validated by governance/policy gates, not product builds."""
+    if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"}:
+        return True
+    if path.startswith("tools/agents/"):
+        return True
+    return path.startswith("docs/agents/") and not path.startswith("docs/agents/evidence/")
+
+
+def non_runtime(path: str) -> bool:
+    return neutral(path) or agent_governance(path)
 
 
 def atlas_fullworld_path(path: str) -> bool:
@@ -500,24 +513,31 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
             if previous is not None:
                 if not valid_path(previous):
                     return full("invalid-rename-source")
-                if neutral(path) != neutral(previous):
+                if non_runtime(path) != non_runtime(previous):
                     return full("cross-surface-rename")
                 paths.append(previous)
-        if all(neutral(path) for path in paths):
-            graph(metadata)
-            if docs_consumers_verified is False:
-                return full("unreviewed-document-consumer-inputs", "docs")
-            if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
-                return full("unreviewed-document-consumer-inputs", "docs")
+        if all(non_runtime(path) for path in paths):
+            docs_present = any(neutral(path) and not agent_governance(path) for path in paths)
+            governance_present = any(agent_governance(path) for path in paths)
+            if docs_present:
+                graph(metadata)
+                if docs_consumers_verified is False:
+                    return full("unreviewed-document-consumer-inputs", "docs")
+                if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
+                    return full("unreviewed-document-consumer-inputs", "docs")
+            if governance_present:
+                reason = "agent-governance-plus-neutral-documentation" if docs_present else "agent-governance-only"
+                return dict(rust=False, windows=False, surface="agent-governance", reason=reason)
             return dict(rust=False, windows=False, surface="docs", reason="neutral-documentation")
-        if any(path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"} for path in paths):
+        material_paths = [path for path in paths if not agent_governance(path)]
+        if any(path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"} for path in material_paths):
             return full("explicit-build-or-dependency-input", "dependencies-build")
-        if any(path.startswith((".github/", "tools/repository/", "tools/agents/", "docs/migration/")) or PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} for path in paths):
+        if any(path.startswith((".github/", "tools/repository/", "docs/migration/")) for path in material_paths):
             return full("explicit-build-or-control-input", "control-plane")
         roots, reverse = graph(metadata)
         affected = set()
         atlas_fullworld = False
-        for path in paths:
+        for path in material_paths:
             if neutral(path):
                 continue
             disposition = atlas_path_disposition(path)
@@ -546,7 +566,7 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
             return full("mixed-or-unowned-surface")
         if digest != AUDITED_INPUT_SHA256:
             return full("unreviewed-consumer-input-snapshot")
-        surface = "durability" if any(any(token in path for token in ("/durability/", "/migrations/", "postgres", "reconnect")) for path in paths) else "server"
+        surface = "durability" if any(any(token in path for token in ("/durability/", "/migrations/", "postgres", "reconnect")) for path in material_paths) else "server"
         reason = "server-only-reverse-closure-and-audited-inputs"
         if atlas_fullworld:
             reason += "-plus-atlas-fullworld"
@@ -588,7 +608,7 @@ def classify_post_merge(event, metadata) -> dict:
                           docs_digest=input_digest(metadata, include_server=True),
                           candidate_modes_verified=candidate_modes_safe(after),
                           docs_consumers_verified=document_consumers_safe(metadata))
-        if result["rust"] is False and result["windows"] is False and result["surface"] == "docs":
+        if result["rust"] is False and result["windows"] is False and result["surface"] in {"docs", "agent-governance"}:
             return result
         if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability"}:
             return result
@@ -612,10 +632,23 @@ def main() -> int:
             docs_candidate = (
                 isinstance(files, list) and bool(files)
                 and all(isinstance(item, dict) and isinstance(item.get("filename"), str)
-                        and neutral(item["filename"])
+                        and non_runtime(item["filename"])
                         and (item.get("previous_filename") is None or
-                             (isinstance(item.get("previous_filename"), str) and neutral(item["previous_filename"])))
+                             (isinstance(item.get("previous_filename"), str) and non_runtime(item["previous_filename"])))
                         for item in files)
+                and any(
+                    isinstance(item, dict)
+                    and (
+                        (isinstance(item.get("filename"), str)
+                         and neutral(item["filename"])
+                         and not agent_governance(item["filename"]))
+                        or
+                        (isinstance(item.get("previous_filename"), str)
+                         and neutral(item["previous_filename"])
+                         and not agent_governance(item["previous_filename"]))
+                    )
+                    for item in files
+                )
             )
             result = classify(files, changed_count, metadata, digest,
                               complete=complete,
