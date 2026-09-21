@@ -20,7 +20,7 @@
     },
     {
       "prompt_id": "OTV2_CLOSE_NEXT_WAVE_BLOCKERS",
-      "path": "docs/agents/prompts/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md",
+      "path": "docs/agents/prompts/retired/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-implementation-programme",
@@ -31,7 +31,7 @@
     },
     {
       "prompt_id": "OTV2_CONTENT_FORMAT_SPIKE",
-      "path": "docs/agents/prompts/OTV2_CONTENT_FORMAT_SPIKE.md",
+      "path": "docs/agents/prompts/retired/OTV2_CONTENT_FORMAT_SPIKE.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-implementation-coordinator",
@@ -108,7 +108,7 @@
     },
     {
       "prompt_id": "OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION",
-      "path": "docs/agents/prompts/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md",
+      "path": "docs/agents/prompts/retired/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-architecture-programme",
@@ -306,7 +306,7 @@
     },
     {
       "prompt_id": "OTV2_NEXT_WAVE_PARALLEL_PREPARATION",
-      "path": "docs/agents/prompts/OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md",
+      "path": "docs/agents/prompts/retired/OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-implementation-programme",
@@ -317,7 +317,7 @@
     },
     {
       "prompt_id": "OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH",
-      "path": "docs/agents/prompts/OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH.md",
+      "path": "docs/agents/prompts/retired/OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH.md",
       "version": "1.0",
       "status": "retired",
       "owner": "historical-implementation-programme",
@@ -328,7 +328,7 @@
     },
     {
       "prompt_id": "OTV2_PREP_DURABILITY_TOPOLOGY",
-      "path": "docs/agents/prompts/OTV2_PREP_DURABILITY_TOPOLOGY.md",
+      "path": "docs/agents/prompts/retired/OTV2_PREP_DURABILITY_TOPOLOGY.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-live-implementation-coordinator-allocation",
@@ -339,7 +339,7 @@
     },
     {
       "prompt_id": "OTV2_PREP_PROGRAMME_STATUS",
-      "path": "docs/agents/prompts/OTV2_PREP_PROGRAMME_STATUS.md",
+      "path": "docs/agents/prompts/retired/OTV2_PREP_PROGRAMME_STATUS.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-live-implementation-coordinator-allocation",
@@ -350,7 +350,7 @@
     },
     {
       "prompt_id": "OTV2_PREP_SERVER_SEAM",
-      "path": "docs/agents/prompts/OTV2_PREP_SERVER_SEAM.md",
+      "path": "docs/agents/prompts/retired/OTV2_PREP_SERVER_SEAM.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-live-implementation-coordinator-allocation",
@@ -361,7 +361,7 @@
     },
     {
       "prompt_id": "OTV2_PREP_WAVE2_RESOURCE_LIMITS",
-      "path": "docs/agents/prompts/OTV2_PREP_WAVE2_RESOURCE_LIMITS.md",
+      "path": "docs/agents/prompts/retired/OTV2_PREP_WAVE2_RESOURCE_LIMITS.md",
       "version": "1.1",
       "status": "retired",
       "owner": "historical-live-implementation-coordinator-allocation",
@@ -438,36 +438,36 @@
     },
     {
       "prompt_id": "OTV2_WP3_WRITER",
-      "path": "docs/agents/prompts/OTV2_WP3_WRITER.md",
-      "version": "1.0",
-      "status": "reusable",
+      "path": "docs/agents/prompts/retired/OTV2_WP3_WRITER.md",
+      "version": "1.1",
+      "status": "retired",
       "owner": "wp3-live-canonical-lineage",
-      "scope": "Single mutating writer profile for the current canonical WP3 SQLx driver accounting lineage; mutation remains limited to exact live protected WP3 allocations and owned paths.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Additive WP3 execution profile; it never creates a replacement lineage or supersedes the implementation coordinator, active control plane or broader Durability prompts."
+      "scope": "Historical single-writer profile for the superseded broad #356 SQLx-driver-accounting lineage; retained as provenance only.",
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md",
+      "supersession_rule": "Retired after the protected upstream-first WP3-A transition. Do not dispatch against #356; current mutation uses the WP3-v2 implementation lead only under live #162/#364 allocation."
     },
     {
       "prompt_id": "OTV2_WP3_TLS_AUDITOR",
-      "path": "docs/agents/prompts/OTV2_WP3_TLS_AUDITOR.md",
-      "version": "1.0",
-      "status": "reusable",
+      "path": "docs/agents/prompts/retired/OTV2_WP3_TLS_AUDITOR.md",
+      "version": "1.1",
+      "status": "retired",
       "owner": "wp3-read-only-analysis",
-      "scope": "Strict read-only TLS allocation/custody analysis of the exact live WP3 candidate; returns an exact-head advisory packet and grants no repository/GitHub mutation or formal-review authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Read-only acceleration profile; it never becomes a WP3 writer, formal independent reviewer, control plane or architecture authority."
+      "scope": "Historical read-only TLS audit profile bound to the superseded broad #356 candidate; retained as provenance only.",
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md",
+      "supersession_rule": "Retired after the protected upstream-first WP3-A transition. Current TLS/source evidence work uses the WP3-v2 evidence auditor against the live upstream-first lineage."
     },
     {
       "prompt_id": "OTV2_WP3_QUALIFICATION_AUDITOR",
-      "path": "docs/agents/prompts/OTV2_WP3_QUALIFICATION_AUDITOR.md",
-      "version": "1.0",
-      "status": "reusable",
+      "path": "docs/agents/prompts/retired/OTV2_WP3_QUALIFICATION_AUDITOR.md",
+      "version": "1.1",
+      "status": "retired",
       "owner": "wp3-read-only-analysis",
-      "scope": "Strict read-only qualification and integration-prerequisite tracking for the exact live WP3 candidate; returns an exact-head advisory checklist and grants no repository/GitHub mutation or formal-review authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Read-only acceleration profile; it never becomes a WP3 writer, formal independent reviewer, control plane or merge authority."
+      "scope": "Historical read-only qualification profile bound to the superseded broad #356 candidate; retained as provenance only.",
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md",
+      "supersession_rule": "Retired after the protected upstream-first WP3-A transition. Current evidence and qualification support uses the WP3-v2 evidence auditor against the live upstream-first lineage."
     },
     {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
@@ -714,13 +714,13 @@
     {
       "prompt_id": "OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD",
       "path": "docs/agents/prompts/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "wp3-v2-live-implementation-allocation",
       "scope": "WP3-v2 implementation lead activated only after architecture acceptance and fresh exact #162/#364 allocation/path custody; read-only otherwise.",
       "reusable": true,
       "superseded_by": null,
-      "supersession_rule": "Additive successor-implementation profile; it does not create a replacement lineage or supersede existing WP3 writer/control-plane authority without live allocation."
+      "supersession_rule": "Current upstream-first WP3-v2 implementation profile. It supersedes the retired #356 writer only when live #162/#364 allocation grants exact lineage/path custody; it creates no authority by itself."
     },
     {
       "prompt_id": "OTV2_ASTRA_CHILD_B_DURABILITY_LEAD",
