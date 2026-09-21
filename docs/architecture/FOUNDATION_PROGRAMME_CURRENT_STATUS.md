@@ -1,15 +1,15 @@
-# Oteryn v2 Foundation Programme — Current Status
+# Oteryn v2 Foundation Programme — Historical 2026-08-24 Snapshot
 
-- Status: **Canonical current execution-status overlay**
+- Status: **Historical execution-status snapshot; not current lifecycle authority**
 - Date: 2026-08-24
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Reconciliation issue: `#97`
 - Reconciliation snapshot: `main@e1a942675f98b4a42ce9d021773702e727c23574`
-- Applies to: current DecisionStatus / DeliveryStatus / ImplementationStatus and the next safe execution gate
+- Applies to: the recorded 2026-08-24 reconciliation generation only
 
 ## 1. Reading rule
 
-This document is the maintained current-status overlay. Accepted ADRs/contracts/owner baselines remain semantic authority for their owned scope. GitHub Issue/PR/CI state and `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` outrank stale prose when the repository has advanced.
+This file preserves the 2026-08-24 reconciliation and is not maintained as current execution state. Accepted ADRs/contracts/owner baselines remain semantic authority for their owned scope. Resolve current delivery, blockers and next actions from live GitHub Issue/PR/check state plus the active task checkpoint; do not dispatch or block work from the status tables below.
 
 `ARCHITECTURE_STATUS_MODEL.md` remains normative:
 
@@ -188,7 +188,7 @@ Historical disconnect checkpoint documents remain provenance and must not overri
 - high-risk protocol/session/admission/persistence/item/loot/value/multichannel/fencing changes require genuinely independent exact-head review under root `AGENTS.md`;
 - entitlement runtime/product activation remains unallocated and production-disabled even though its paper consumer contract is accepted.
 
-## 11. Executor state
+## 11. Historical executor-state snapshot
 
 ```text
 EXECUTOR_PROGRAMME: RELEASED_AND_ACTIVE
