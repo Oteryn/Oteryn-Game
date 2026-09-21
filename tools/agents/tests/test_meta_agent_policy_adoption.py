@@ -200,7 +200,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
 
         runbook = (ROOT / "docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md").read_text(encoding="utf-8")
         self.assertNotIn("| `Oteryn: terra game coordinator` |", runbook)
-        self.assertIn("single active mutating control plane in ChatGPT Work: `Oteryn: work coordinator`", runbook)
+        self.assertIn("exactly one active mutating control plane in ChatGPT Work: `Oteryn: work coordinator`", runbook)
 
         scheduler = (ROOT / "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md").read_text(encoding="utf-8")
         self.assertIn("# Oteryn v2 Work + Sol Execution Scheduler", scheduler)
