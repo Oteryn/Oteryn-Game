@@ -8,13 +8,34 @@ pub mod admission_authority_guards;
 mod admission_journal;
 mod db;
 pub mod fresh_admission;
-#[allow(dead_code)]
 pub mod native_admission_source;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod native_admission_source_linkage {
+    use super::DurabilityRoot;
+    use super::native_admission_source::{
+        DescriptorRegistration, FreshStoreProvenance, PendingPublication, SourceObservation,
+    };
+
+    #[test]
+    fn native_admission_source_api_is_linked() {
+        let _ = std::mem::size_of::<FreshStoreProvenance>();
+        let _ = std::mem::size_of::<DescriptorRegistration>();
+        let _ = std::mem::size_of::<SourceObservation>();
+        let _ = std::mem::size_of::<PendingPublication>();
+        let _ = DurabilityRoot::initialize_native_admission_source;
+        let _ = DurabilityRoot::register_native_admission_descriptor;
+        let _ = DurabilityRoot::accept_native_source_observation;
+        let _ = DurabilityRoot::checkpoint_native_source_publication;
+        let _ = DurabilityRoot::clear_native_source_publication;
+        let _ = DurabilityRoot::pending_native_source_publications;
+    }
+}
 
 use oteryn_game_server::foundation::{
     PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectDurabilityFlowV1,

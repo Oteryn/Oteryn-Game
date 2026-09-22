@@ -1,12 +1,11 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-
 // Include the production durability implementation in this dedicated PostgreSQL
 // target. Ordinary workspace runs may skip when the routed PostgreSQL service is
 // absent; only configured PostgreSQL 17.6 runs count as qualification evidence.
 extern crate self as oteryn_game_server;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 
@@ -140,7 +139,34 @@ fn migration_declares_nonrollback_registration_floors_and_two_slots() {
 }
 
 #[test]
-fn postgres_api_fails_closed_and_restores_shared_floor_after_restart()
+fn missing_registration_pending_read_fails_closed() -> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, database_name, database_url) =
+                create_database("native_source_missing_registration").await?;
+            let result = async {
+                migrate_postgres_17_6(&database_url).await?;
+                let root = ready_root(&database_url).await?;
+                assert!(matches!(
+                    root.pending_native_source_publications().await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &database_name).await?;
+            result
+        })
+}
+
+#[test]
+fn fresh_and_recovery_account_security_share_one_floor_across_restart()
 -> Result<(), Box<dyn std::error::Error>> {
     if !configured() {
         skipped();
@@ -155,11 +181,6 @@ fn postgres_api_fails_closed_and_restores_shared_floor_after_restart()
             let result = async {
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
-
-                assert!(matches!(
-                    root.pending_native_source_publications().await,
-                    Err(DurabilityError::Unavailable)
-                ));
 
                 root.initialize_native_admission_source(provenance(), descriptor(1, 1, 10))
                     .await?;
@@ -205,6 +226,203 @@ fn postgres_api_fails_closed_and_restores_shared_floor_after_restart()
                     .await?;
                 assert!(matches!(
                     restarted.accept_native_source_observation(fresh).await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &database_name).await?;
+            result
+        })
+}
+
+#[test]
+fn arbitrary_alternate_namespace_cannot_create_another_floor()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, database_name, database_url) =
+                create_database("native_source_namespace").await?;
+            let result = async {
+                migrate_postgres_17_6(&database_url).await?;
+                let root = ready_root(&database_url).await?;
+                root.initialize_native_admission_source(provenance(), descriptor(1, 1, 10))
+                    .await?;
+                root.accept_native_source_observation(observation(
+                    "ReadAccountSecurityV1",
+                    50,
+                    "decision:50",
+                    500,
+                    1,
+                ))
+                .await?;
+
+                let mut alternate =
+                    observation("ReadAccountSecurityV1", 1, "decision:alternate", 501, 1);
+                alternate.semantic_namespace =
+                    "account:00000000-0000-7000-8000-000000000002".into();
+                assert!(matches!(
+                    root.accept_native_source_observation(alternate).await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &database_name).await?;
+            result
+        })
+}
+
+#[test]
+fn unknown_operation_rejects_before_retention() -> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, database_name, database_url) =
+                create_database("native_source_unknown_operation").await?;
+            let result = async {
+                migrate_postgres_17_6(&database_url).await?;
+                let root = ready_root(&database_url).await?;
+                root.initialize_native_admission_source(provenance(), descriptor(1, 1, 10))
+                    .await?;
+                assert!(matches!(
+                    root.accept_native_source_observation(observation(
+                        "UnknownOperation",
+                        1,
+                        "decision:unknown",
+                        100,
+                        1,
+                    ))
+                    .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &database_name).await?;
+            result
+        })
+}
+
+#[test]
+fn source_authority_max_plus_one_rejects_before_retention() -> Result<(), Box<dyn std::error::Error>>
+{
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, database_name, database_url) =
+                create_database("native_source_authority_bound").await?;
+            let result = async {
+                migrate_postgres_17_6(&database_url).await?;
+                let root = ready_root(&database_url).await?;
+                root.initialize_native_admission_source(provenance(), descriptor(1, 1, 10))
+                    .await?;
+
+                let mut at_max =
+                    observation("ReadAccountSecurityV1", 1, "decision:authority:max", 100, 1);
+                at_max.source_authority = "a".repeat(128);
+                root.accept_native_source_observation(at_max).await?;
+
+                let mut above_max = observation(
+                    "ReadAccountSecurityV1",
+                    1,
+                    "decision:authority:max-plus-one",
+                    101,
+                    1,
+                );
+                above_max.source_authority = "b".repeat(129);
+                assert!(matches!(
+                    root.accept_native_source_observation(above_max).await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &database_name).await?;
+            result
+        })
+}
+
+#[test]
+fn descriptor_max_plus_one_rejects_before_retention() -> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, database_name, database_url) =
+                create_database("native_source_descriptor_bound").await?;
+            let result = async {
+                migrate_postgres_17_6(&database_url).await?;
+                let root = ready_root(&database_url).await?;
+                root.initialize_native_admission_source(
+                    provenance(),
+                    DescriptorRegistration {
+                        revision: 1,
+                        facts: vec![1; 4096],
+                        installed_at: 10,
+                    },
+                )
+                .await?;
+                assert!(matches!(
+                    root.register_native_admission_descriptor(DescriptorRegistration {
+                        revision: 2,
+                        facts: vec![2; 4097],
+                        installed_at: 20,
+                    })
+                    .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &database_name).await?;
+            result
+        })
+}
+
+#[test]
+fn pending_checkpoint_max_plus_one_rejects_before_retention()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, database_name, database_url) =
+                create_database("native_source_pending_bound").await?;
+            let result = async {
+                migrate_postgres_17_6(&database_url).await?;
+                let root = ready_root(&database_url).await?;
+                root.initialize_native_admission_source(provenance(), descriptor(1, 1, 10))
+                    .await?;
+                root.checkpoint_native_source_publication(vec![1; 16384], 100)
+                    .await?;
+                assert!(matches!(
+                    root.checkpoint_native_source_publication(vec![2; 16385], 101)
+                        .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 Ok::<(), Box<dyn std::error::Error>>(())
