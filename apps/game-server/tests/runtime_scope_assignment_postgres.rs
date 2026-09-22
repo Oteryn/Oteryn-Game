@@ -1778,6 +1778,13 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
                 "42501",
             )
             .await?;
+            expect_sql_state(
+                sqlx::query("SELECT game_runtime_scope_assignment_history_valid()")
+                    .execute(&mut *connection)
+                    .await,
+                "42501",
+            )
+            .await?;
             sqlx::query("RESET ROLE").execute(&mut *connection).await?;
             drop(connection);
             pool.close().await;
@@ -1787,6 +1794,136 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
         database.cleanup(&[runtime_role.as_str()]).await?;
         result
     })
+}
+
+#[test]
+fn restricted_assignment_writer_can_mutate_and_read_authoritative_state() -> TestResult {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = Database::create("assignment_writer_privileges").await?;
+            let suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+            let writer_role = format!("rsa_assignment_writer_{suffix}");
+            let writer_password = format!("assignment-writer-{suffix}");
+            let result = async {
+            let pool = database.pool().await?;
+            let owner_root = ready_root(&database.url).await?;
+            let target = register(&owner_root, 1, None).await?;
+            let channel = scope(1)?;
+            let now = db_now(&pool).await?;
+            let guards = AdmissionGuardStore::from_root(owner_root.clone());
+            publish_runtime(&guards, runtime_change(channel, None, 1, true, now), now).await?;
+
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE ROLE {writer_role} LOGIN PASSWORD '{writer_password}'"
+            )))
+            .execute(&pool)
+            .await?;
+
+            // This is the minimum deployment grant contract for the existing
+            // assignment writer: schema/ledger inspection, relation locks,
+            // assignment state mutation, the Runtime readiness fence, and the
+            // two deliberately non-PUBLIC internal function boundaries. The
+            // migration creates no production role or credential.
+            for statement in [
+                format!("GRANT USAGE ON SCHEMA public TO {writer_role}"),
+                format!("GRANT SELECT ON _sqlx_migrations TO {writer_role}"),
+                format!(
+                    "GRANT MAINTAIN ON TABLE \
+                     game_durability_admission_account_guards, \
+                     game_durability_admission_character_guards, \
+                     game_durability_admission_lifecycle_receipts, \
+                     game_durability_admission_signing_trust_guards, \
+                     game_durability_control_loss_continuity, \
+                     game_durability_executor_custody, \
+                     game_durability_fresh_admission_receipts, \
+                     game_durability_reconnect_attempts, \
+                     game_durability_reconnect_pending_commands, \
+                     game_durability_reconnect_sessions, \
+                     game_durability_recovery_grant_consumptions, \
+                     game_durability_session_replacements, \
+                     game_durability_session_use_ledgers, \
+                     game_durability_session_use_memberships, \
+                     game_durability_transport_ref_reservations TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, INSERT, UPDATE ON \
+                     game_runtime_scope_assignment_slots, \
+                     game_runtime_scope_assignments TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, UPDATE ON game_runtime_scope_assignment_writer TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, INSERT ON \
+                     game_runtime_scope_assignment_receipts, \
+                     game_durability_admission_guard_history TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, INSERT, UPDATE ON \
+                     game_durability_admission_runtime_guards TO {writer_role}"
+                ),
+                format!(
+                    "GRANT EXECUTE ON FUNCTION \
+                     game_node_lock_current_registration(UUID, NUMERIC), \
+                     game_runtime_scope_assignment_history_valid() TO {writer_role}"
+                ),
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(statement))
+                    .execute(&pool)
+                    .await?;
+            }
+
+            let (_, address) = database
+                .url
+                .split_once('@')
+                .ok_or("database URL has no authority separator")?;
+            let writer_url = format!(
+                "postgresql://{writer_role}:{writer_password}@{address}"
+            );
+            let writer_root = ready_root(&writer_url).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(writer_root.clone(), "writer-a")
+                .await
+                .map_err(|error| format!("restricted writer open: {error:?}"))?;
+            let receipt = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: channel,
+                            target,
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(receipt.assignment.source_revision, 1);
+
+            let current = writer_root
+                .read_runtime_scope_assignment(channel)
+                .await
+                .map_err(|error| format!("restricted authoritative read: {error:?}"))?
+                .ok_or("restricted authoritative read returned no assignment")?;
+            assert_eq!(current, receipt.assignment);
+            let ready: bool = sqlx::query_scalar(
+                "SELECT ready FROM game_durability_admission_runtime_guards",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert!(!ready, "restricted writer did not apply the readiness fence");
+            drop(writer);
+            drop(writer_root);
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }
+        .await;
+            database.cleanup(&[writer_role.as_str()]).await?;
+            result
+        })
 }
 
 #[test]
