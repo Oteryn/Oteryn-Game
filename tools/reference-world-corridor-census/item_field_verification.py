@@ -24,6 +24,14 @@ RULE_PROFILE = "OTERYN_ITEM_FIELD_RULE_ENGINE/v1"
 CROSSWALK_SCHEMA = "OTERYN_ITEM_CLASSIFICATION_CROSSWALK/v1"
 CURRENT_SOURCE_SCHEMA = "OTERYN_ITEM_CURRENT_SOURCE_TIBIAWIKI/v1"
 CURRENT_SOURCE_MANIFEST_SCHEMA = "OTERYN_ITEM_CURRENT_SOURCE_TIBIAWIKI_MANIFEST/v1"
+CURRENT_SOURCE_PROFILE = "OTERYN_ITEM_CURRENT_SOURCE_TIBIAWIKI_COLLECTOR/v1"
+CURRENT_SOURCE_ID = "TIBIAWIKI_STRUCTURED"
+
+# Immutable protected lineage inputs for this bounded generation.
+CROSSWALK_FULL_SHA256 = "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+SCHEMA_READINESS_SHA256 = "c69b7626ca052b5494d14c034848088175f79a662aa7d9e41876d3452917eb78"
+PROTECTED_CURRENT_SOURCE_MANIFEST_SHA256 = "06e40dd1472cd3650e641e9e8b33af8e930d3c4345967aec917a08baf73022ed"
+PROTECTED_CURRENT_SOURCE_SHA256 = "005761fa0c464da0f64cedcb7efcfc7afb5f0dc19eded97ed935013d72d095d0"
 
 FIELD_STATES = (
     "CONFIRMED_CURRENT",
@@ -196,8 +204,14 @@ def validate_inputs(
         raise VerificationError("CURRENT_SOURCE_SCHEMA_MISMATCH")
     if current.get("target_cut") != TARGET_CUT:
         raise VerificationError("CURRENT_SOURCE_TARGET_CUT_MISMATCH")
+    if current.get("collector_profile") != CURRENT_SOURCE_PROFILE:
+        raise VerificationError("CURRENT_SOURCE_PROFILE_MISMATCH")
     source = current.get("source")
-    if not isinstance(source, dict) or source.get("role") != "STRUCTURED_REFERENCE_DATA":
+    if (
+        not isinstance(source, dict)
+        or source.get("id") != CURRENT_SOURCE_ID
+        or source.get("role") != "STRUCTURED_REFERENCE_DATA"
+    ):
         raise VerificationError("CURRENT_SOURCE_ROLE_MISMATCH")
     authority = current.get("authority")
     if not isinstance(authority, dict) or authority.get("semantic_promotion") != "FORBIDDEN":
@@ -820,6 +834,15 @@ def compile_files(args: argparse.Namespace) -> None:
         args.protected_current_source_manifest
     )
     schema, schema_bytes = load_json(args.schema_readiness)
+    if sha256_bytes(cross_bytes) != CROSSWALK_FULL_SHA256:
+        raise VerificationError("PROTECTED_CROSSWALK_DIGEST_MISMATCH")
+    if sha256_bytes(schema_bytes) != SCHEMA_READINESS_SHA256:
+        raise VerificationError("PROTECTED_SCHEMA_READINESS_DIGEST_MISMATCH")
+    if (
+        sha256_bytes(protected_current_manifest_bytes)
+        != PROTECTED_CURRENT_SOURCE_MANIFEST_SHA256
+    ):
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_MANIFEST_DIGEST_MISMATCH")
     if protected_current_manifest.get("schema") != CURRENT_SOURCE_MANIFEST_SCHEMA:
         raise VerificationError("PROTECTED_CURRENT_SOURCE_MANIFEST_SCHEMA_MISMATCH")
     if protected_current_manifest.get("target_cut") != TARGET_CUT:
@@ -830,6 +853,14 @@ def compile_files(args: argparse.Namespace) -> None:
     protected_current_sha = protected_current_output.get("sha256")
     if not isinstance(protected_current_sha, str) or len(protected_current_sha) != 64:
         raise VerificationError("PROTECTED_CURRENT_SOURCE_SHA_INVALID")
+    if protected_current_sha != PROTECTED_CURRENT_SOURCE_SHA256:
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_SHA_MISMATCH")
+    protected_collector = protected_current_manifest.get("collector")
+    if (
+        not isinstance(protected_collector, dict)
+        or protected_collector.get("profile") != CURRENT_SOURCE_PROFILE
+    ):
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_PROFILE_MISMATCH")
     observed_current_sha = sha256_bytes(current_bytes)
     observation_status = (
         "EXACT_PROTECTED_REPRODUCTION"
