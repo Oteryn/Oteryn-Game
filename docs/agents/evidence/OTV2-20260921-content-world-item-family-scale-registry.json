@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY_EPOCH/v1",
-  "status": "WIP_PRE_FREEZE",
+  "status": "CANDIDATE_QUALIFICATION",
   "decision_ref": "Oteryn/Oteryn-Game#504:5767823480",
   "allocation_ref": "Oteryn/Oteryn-Game#162:5767897229",
   "admission_main": "0bbaa898e5d5a33f844786054e8c7e82148b6180",
@@ -46,10 +46,27 @@
     "duplicate_source_rejected": true,
     "duplicate_native_key_rejected": true,
     "existing_64_provenance_revalidated": true,
-    "allocation_digest_sha256": null,
-    "allocation_digest_state": "PENDING_HOSTED_WIP_QUALIFICATION",
+    "allocation_digest_sha256": "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966",
+    "allocation_digest_state": "REPRODUCED_HOSTED_WIP",
     "full_round_trip_required": true,
-    "deterministic_artifact_required": true
+    "deterministic_artifact_required": true,
+    "allocation_digest_measurement_head": "f82455005204bb943854e7d9d1e2564dccd47942",
+    "resource_budget": {
+      "measurement_head": "f82455005204bb943854e7d9d1e2564dccd47942",
+      "limiting_document": "imports/candidates.json",
+      "measured_max_decoded_fields": 2098651,
+      "measured_max_string_bytes": 42332603,
+      "selected_max_decoded_fields": 2098651,
+      "selected_max_string_bytes": 42332603,
+      "arbitrary_headroom": 0,
+      "qualification_required": [
+        "exact full-family generation passes",
+        "selected decoded-field maximum passes",
+        "selected decoded-field maximum minus one fails closed",
+        "selected decoded-string-byte maximum passes",
+        "selected decoded-string-byte maximum minus one fails closed"
+      ]
+    }
   },
   "non_claims": [
     "NO_OTS_GAMEPLAY_TRUTH_PROMOTION",
