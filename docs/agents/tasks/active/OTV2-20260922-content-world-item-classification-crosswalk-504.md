@@ -4,7 +4,7 @@
 task_id: OTV2-20260922-content-world-item-classification-crosswalk-504
 title: D6-M1 Item Classification Crosswalk
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-classification-crosswalk-504
@@ -37,6 +37,23 @@ Source-policy direction is inherited from Oteryn/Oteryn-Game#504 comments `57715
 - Committed evidence is a compact manifest of canonical full-record output digests and counts; it does not hand-author or duplicate the 38,157-row corpus.
 - Repository CI is required before qualification. No exact-head review, freeze, paid review or Merge Queue action is part of this implementation handoff.
 
+### Completed locally
+
+- Canonical Rust exporter: PASS twice, byte-identical 5,789,755-byte maps, SHA-256 `83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a`.
+- Python self-test: PASS, including all four crosswalk states plus missing, duplicate, native-key collision, remap and schema-coverage rejection.
+- Full census: PASS twice, 38,157 records, 64 preserved semantic bindings, 38,093 opaque identities, 17,665 source profiles and allocation digest `ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966`.
+- Full output: byte-identical 136,223,781-byte canonical JSON, SHA-256 `004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d`; bulk output remains scratch-only.
+- Compact evidence manifest: 6,349 bytes, SHA-256 `46e925de6e624e6e8c4027b797b7240d1389c0784da387ab74e7a011599ea5f8`.
+- Rust formatting: PASS on the published exporter generation.
+
+### Limitations
+
+- No current-source catalogue was supplied or searched. Current-source state is `NOT_EVALUATED/UNKNOWN`, never a no-match claim.
+- Pinned OTS field presence is hypothesis evidence only. Absence is not false or zero, and accepted typed Reference capability state remains `UNKNOWN`.
+- Existing retained core semantics and all 38,157 native identities are consumed unchanged. The Python compiler performs no identity allocation.
+- The source-signal census covers all 24 orthogonal classification capabilities. Eleven have no direct pinned OTS signal; all 24 remain accepted Reference `UNKNOWN`, so Item classification completion remains a later evidence-backed task.
+- Repository CI remains required; this handoff is not an exact-head qualification or release decision.
+
 ## Status
 
-Implementation and local validation pending. Draft PR #763 was opened before candidate validation.
+Implementation and local validation are complete. Draft PR #763 was opened before validation; coordinator qualification, repository CI and any later review/freeze remain pending.
