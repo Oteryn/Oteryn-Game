@@ -987,6 +987,11 @@ impl DurabilityRoot {
         self.ready_demand.load(Ordering::Acquire)
     }
 
+    /// Stable identity of this root shared by all of its clones.
+    pub(crate) fn root_identity(&self) -> usize {
+        Arc::as_ptr(&self.maintenance) as usize
+    }
+
     pub(crate) fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let holder = self.try_acquire_ready()?;
         Ok(IssuedSemanticPass {

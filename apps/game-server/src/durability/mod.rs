@@ -54,6 +54,10 @@ mod runtime_scope_assignment_linkage {
         let _ = DurabilityRoot::require_current_node_registration;
         let _ = DurabilityRoot::revoke_node_registration;
         let _ = DurabilityRoot::read_runtime_scope_assignment;
+        let _ = DurabilityRoot::publish_runtime_readiness;
+        let _ = super::runtime_scope_assignment::NodeIncarnationProof::new;
+        let _ = super::runtime_scope_assignment::NodeIncarnationProof::fact;
+        let _ = AssignmentError::NotCurrentHolder;
         let _ = RuntimeScopeAssignmentWriter::open;
         let _ = RuntimeScopeAssignmentWriter::unreconciled;
         let _ = RuntimeScopeAssignmentWriter::submit;

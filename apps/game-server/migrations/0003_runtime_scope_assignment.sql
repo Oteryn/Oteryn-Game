@@ -144,9 +144,12 @@ BEGIN
     IF NOT FOUND OR v_revision >= 18446744073709551615 THEN
         RAISE EXCEPTION 'GameNode registration revision unavailable' USING ERRCODE = 'OTN01';
     END IF;
-    PERFORM 1 FROM game_node_registrations WHERE registration_revision > v_revision;
-    IF FOUND THEN
-        RAISE EXCEPTION 'GameNode registration high-water regressed' USING ERRCODE = 'XX000';
+    -- Retained history must match the high-water exactly: neither ahead of
+    -- it (regressed high-water) nor behind it (rolled-back history).
+    IF EXISTS (SELECT 1 FROM game_node_registrations WHERE registration_revision > v_revision)
+       OR (v_revision > 0 AND NOT EXISTS (
+           SELECT 1 FROM game_node_registrations WHERE registration_revision = v_revision)) THEN
+        RAISE EXCEPTION 'GameNode registration history contradicts its high-water' USING ERRCODE = 'XX000';
     END IF;
     v_revision := v_revision + 1;
     UPDATE game_node_registration_writer SET registration_revision_high_water = v_revision WHERE writer_id = 1;
@@ -169,9 +172,9 @@ BEGIN
     RETURN v_revision;
 END; $$;
 
--- Current-incarnation primitive. Returns true only for the exact current
--- incarnation and holds a share lock until the caller's transaction ends, so a
--- concurrent revoke/supersede serializes with the caller's fenced mutation.
+-- Control-plane currentness check of a target incarnation (no possession
+-- proof). Holds a share lock until the caller's transaction ends, so a
+-- concurrent revoke/supersede serializes with the caller's decision.
 CREATE FUNCTION game_node_lock_current_registration(p_node_id UUID, p_registration_revision NUMERIC)
 RETURNS BOOLEAN
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
@@ -182,11 +185,31 @@ BEGIN
     RETURN FOUND;
 END; $$;
 
-CREATE FUNCTION game_node_require_current(p_node_id UUID, p_registration_revision NUMERIC)
+-- Current-incarnation primitive for fenced writers (S2 custody, readiness).
+-- NodeId and revision are public; the caller must also prove possession of
+-- the incarnation's own launch secret, checked against the retained digest.
+-- Holds a share lock until the caller's transaction ends.
+CREATE FUNCTION game_node_prove_current_incarnation(
+    p_node_id UUID, p_registration_revision NUMERIC, p_secret BYTEA)
+RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    IF p_secret IS NULL OR octet_length(p_secret) <> 32 THEN
+        RETURN FALSE;
+    END IF;
+    PERFORM 1 FROM game_node_registrations
+        WHERE node_id = p_node_id AND registration_revision = p_registration_revision AND state = 1
+          AND authorization_digest = sha256(p_secret)
+        FOR SHARE;
+    RETURN FOUND;
+END; $$;
+
+CREATE FUNCTION game_node_require_current(
+    p_node_id UUID, p_registration_revision NUMERIC, p_secret BYTEA)
 RETURNS VOID
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
-    IF NOT game_node_lock_current_registration(p_node_id, p_registration_revision) THEN
+    IF NOT game_node_prove_current_incarnation(p_node_id, p_registration_revision, p_secret) THEN
         RAISE EXCEPTION 'GameNode process incarnation is not current' USING ERRCODE = 'OTN02';
     END IF;
 END; $$;
@@ -295,10 +318,53 @@ END; $$;
 CREATE TRIGGER game_runtime_scope_assignment_slot_guard BEFORE UPDATE OR DELETE
     ON game_runtime_scope_assignment_slots FOR EACH ROW EXECUTE FUNCTION game_runtime_scope_assignment_slot_guard();
 
+-- Transaction-bound readiness attestations: written only by the definer
+-- function below after the exact current holder proved possession of its
+-- incarnation secret, checked by the readiness trigger in the same
+-- transaction and removed by the attesting publisher before commit. A
+-- transaction id is never reused, so a retained row can never authorize
+-- another transaction.
+CREATE TABLE game_runtime_readiness_attestations (
+    attested_xact XID8 NOT NULL,
+    scope_key BYTEA NOT NULL REFERENCES game_runtime_scope_assignments (scope_key),
+    holder_node_id UUID NOT NULL,
+    holder_registration_revision NUMERIC(20, 0) NOT NULL,
+    ownership_generation NUMERIC(20, 0) NOT NULL,
+    PRIMARY KEY (attested_xact, scope_key)
+);
+
+CREATE FUNCTION game_runtime_attest_readiness(
+    p_scope_key BYTEA, p_node_id UUID, p_registration_revision NUMERIC, p_secret BYTEA)
+RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    v_assignment game_runtime_scope_assignments%ROWTYPE;
+BEGIN
+    SELECT * INTO v_assignment FROM game_runtime_scope_assignments
+        WHERE scope_key = p_scope_key FOR SHARE;
+    IF NOT FOUND OR v_assignment.state <> 1
+       OR v_assignment.holder_node_id <> p_node_id
+       OR v_assignment.holder_registration_revision <> p_registration_revision
+       OR NOT game_node_prove_current_incarnation(p_node_id, p_registration_revision, p_secret) THEN
+        RETURN FALSE;
+    END IF;
+    INSERT INTO game_runtime_readiness_attestations
+        (attested_xact, scope_key, holder_node_id, holder_registration_revision, ownership_generation)
+        VALUES (pg_current_xact_id(), p_scope_key, p_node_id, p_registration_revision,
+                v_assignment.ownership_generation)
+        ON CONFLICT (attested_xact, scope_key) DO UPDATE
+            SET holder_node_id = EXCLUDED.holder_node_id,
+                holder_registration_revision = EXCLUDED.holder_registration_revision,
+                ownership_generation = EXCLUDED.ownership_generation;
+    RETURN TRUE;
+END; $$;
+
 -- Readiness fence: once a Channel scope has an assignment record, a Runtime
--- guard may be ready only for the exact current ASSIGNED generation whose holder
--- is the current registered process incarnation. Replaced/revoked holders and
--- older generations cannot publish or restore readiness.
+-- guard may become ready only for the exact current ASSIGNED generation, only
+-- while its holder is the current registered incarnation, and only in a
+-- transaction where that holder attested possession of its incarnation
+-- secret. Replaced/revoked holders, public NodeId claims and older
+-- generations cannot publish or restore readiness.
 CREATE FUNCTION game_runtime_guard_requires_current_assignment() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 DECLARE
@@ -307,13 +373,26 @@ BEGIN
     IF NEW.ready THEN
         SELECT * INTO v_assignment FROM game_runtime_scope_assignments
             WHERE scope_key = NEW.scope_key FOR SHARE;
-        IF FOUND AND NOT (
-            v_assignment.state = 1
-            AND v_assignment.ownership_generation = NEW.ownership_generation
-            AND game_node_lock_current_registration(
-                v_assignment.holder_node_id, v_assignment.holder_registration_revision)
-        ) THEN
-            RAISE EXCEPTION 'runtime readiness requires the current scope assignment' USING ERRCODE = '23514';
+        IF FOUND THEN
+            IF NOT (
+                v_assignment.state = 1
+                AND v_assignment.ownership_generation = NEW.ownership_generation
+                AND game_node_lock_current_registration(
+                    v_assignment.holder_node_id, v_assignment.holder_registration_revision)
+            ) THEN
+                RAISE EXCEPTION 'runtime readiness requires the current scope assignment' USING ERRCODE = '23514';
+            END IF;
+            -- Checked, not consumed: INSERT .. ON CONFLICT DO UPDATE fires both
+            -- the insert and update row triggers. The attesting publisher
+            -- removes its own attestation before commit.
+            PERFORM 1 FROM game_runtime_readiness_attestations
+                WHERE attested_xact = pg_current_xact_id() AND scope_key = NEW.scope_key
+                  AND holder_node_id = v_assignment.holder_node_id
+                  AND holder_registration_revision = v_assignment.holder_registration_revision
+                  AND ownership_generation = v_assignment.ownership_generation;
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'runtime readiness requires an attested current holder' USING ERRCODE = '23514';
+            END IF;
         END IF;
     END IF;
     RETURN NEW;
@@ -329,11 +408,14 @@ REVOKE ALL ON TABLE
     game_runtime_scope_assignment_writer,
     game_runtime_scope_assignments,
     game_runtime_scope_assignment_receipts,
-    game_runtime_scope_assignment_slots
+    game_runtime_scope_assignment_slots,
+    game_runtime_readiness_attestations
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_node_register(BYTEA, TEXT, UUID),
     game_node_lock_current_registration(UUID, NUMERIC),
-    game_node_require_current(UUID, NUMERIC),
+    game_node_prove_current_incarnation(UUID, NUMERIC, BYTEA),
+    game_node_require_current(UUID, NUMERIC, BYTEA),
+    game_runtime_attest_readiness(BYTEA, UUID, NUMERIC, BYTEA),
     game_runtime_guard_requires_current_assignment()
 FROM PUBLIC;

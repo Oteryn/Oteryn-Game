@@ -12,7 +12,9 @@
 //! the admission relations first and then checks the assignment under the same
 //! serialization, so no stale readiness can be restored.
 
-use super::admission_authority_guards::{AdmissionGuardStore, encode_guard};
+use super::admission_authority_guards::{
+    AdmissionGuardStore, GuardPublicationDisposition, encode_guard,
+};
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
@@ -20,14 +22,16 @@ use super::{DurabilityError, DurabilityRoot, MAX_ADMISSION_GUARD_BYTES};
 use base64::Engine;
 use oteryn_game_server::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+    AdmissionAuthorityPublicationErrorV1, AdmissionAuthorityPublicationV1,
     AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
     AdmissionPublicationSourceV1,
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
 use sqlx::postgres::PgRow;
 use sqlx::{Postgres, Row, Transaction};
+use std::collections::HashMap;
 use std::fmt;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock, Weak};
 use std::time::Duration;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
@@ -146,6 +150,38 @@ impl NodeRegistrationFact {
     }
 }
 
+/// Process-held proof of one current incarnation: its sealed registration fact
+/// plus the launch secret it registered with. Only this process holds the
+/// secret; the database retains only its digest. A public NodeId/revision
+/// alone never proves currentness to a fenced writer.
+#[derive(Clone, PartialEq, Eq)]
+pub struct NodeIncarnationProof {
+    fact: NodeRegistrationFact,
+    secret: BootstrapSecret,
+}
+
+impl NodeIncarnationProof {
+    #[must_use]
+    pub const fn new(fact: NodeRegistrationFact, secret: BootstrapSecret) -> Self {
+        Self { fact, secret }
+    }
+
+    #[must_use]
+    pub const fn fact(&self) -> NodeRegistrationFact {
+        self.fact
+    }
+}
+
+impl fmt::Debug for NodeIncarnationProof {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("NodeIncarnationProof")
+            .field("fact", &self.fact)
+            .field("secret", &"<redacted>")
+            .finish()
+    }
+}
+
 impl DurabilityRoot {
     /// Control-plane: durably record one launch-scoped bootstrap authorization.
     pub async fn issue_node_bootstrap_authorization(
@@ -198,13 +234,14 @@ impl DurabilityRoot {
 
     /// GameNode: consume the launch authorization and bind this exact incarnation.
     /// Replaying the identical request after a lost response returns the
-    /// original fact without consuming another authorization.
+    /// original result without consuming another authorization.
     pub async fn register_node_incarnation(
         &self,
         secret: &BootstrapSecret,
         launch: &LaunchBinding,
         node_id: NodeId,
-    ) -> Result<NodeRegistrationFact, RegistrationError> {
+    ) -> Result<NodeIncarnationProof, RegistrationError> {
+        let proof_secret = secret.clone();
         let secret = secret.0;
         let launch = launch.0.clone();
         self.try_issue_semantic_pass()?
@@ -227,22 +264,26 @@ impl DurabilityRoot {
                         Err(error) => return Err(error.into()),
                     };
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(NodeRegistrationFact::new(node_id, revision)))
+                    Ok(Ok(NodeIncarnationProof::new(
+                        NodeRegistrationFact::new(node_id, revision),
+                        proof_secret,
+                    )))
                 })
             })
             .await?
     }
 
-    /// Serialized current-registration read for the exact incarnation.
+    /// Serialized proof that the caller is the exact current incarnation.
     pub async fn require_current_node_registration(
         &self,
-        fact: NodeRegistrationFact,
+        proof: &NodeIncarnationProof,
     ) -> Result<(), RegistrationError> {
+        let proof = proof.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    let current = lock_current_registration(&mut tx, fact).await?;
+                    let current = prove_current_incarnation(&mut tx, &proof).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(if current {
                         Ok(())
@@ -298,9 +339,25 @@ impl DurabilityRoot {
 }
 
 /// DB-visible current-incarnation primitive for fenced writers (for example S2).
-/// Holds a share lock on the exact current registration until `transaction`
+/// Proves possession of the incarnation secret against the retained digest and
+/// holds a share lock on the exact current registration until `transaction`
 /// ends, so a concurrent revoke/supersede serializes with the caller's mutation.
-pub(crate) async fn lock_current_registration(
+pub(crate) async fn prove_current_incarnation(
+    transaction: &mut Transaction<'_, Postgres>,
+    proof: &NodeIncarnationProof,
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar(
+        "SELECT game_node_prove_current_incarnation(encode($1, 'hex')::uuid, $2::text::numeric(20,0), $3)",
+    )
+    .bind(proof.fact.node_id.as_bytes().as_slice())
+    .bind(proof.fact.registration_revision.to_string())
+    .bind(proof.secret.0.as_slice())
+    .fetch_one(&mut **transaction)
+    .await?)
+}
+
+/// Control-plane currentness check of an assignment target (no possession).
+async fn lock_current_registration(
     transaction: &mut Transaction<'_, Postgres>,
     fact: NodeRegistrationFact,
 ) -> Result<bool, DurabilityError> {
@@ -331,6 +388,8 @@ pub enum AssignmentError {
     ReconcileRequired,
     /// The dispatched operation's outcome is unknown; its slot is retained.
     Ambiguous,
+    /// The caller is not the attested current holder of the assigned scope.
+    NotCurrentHolder,
     /// Authority state is unavailable; nothing was submitted.
     Unavailable(DurabilityError),
 }
@@ -562,6 +621,7 @@ impl DurabilityRoot {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let high_water = writer_high_water(&mut tx, false).await?;
+                    require_history_matches_high_water(&mut tx, high_water).await?;
                     let current = load_assignment(&mut tx, &key, false).await?;
                     if current
                         .as_ref()
@@ -577,10 +637,107 @@ impl DurabilityRoot {
     }
 }
 
+impl DurabilityRoot {
+    /// Runtime readiness publication for an assigned Channel scope. The caller
+    /// proves it is the exact current holder incarnation; the proof, the guard
+    /// CAS and the readiness trigger's fence commit in one transaction. A
+    /// replaced process holding only public NodeId/generation facts is refused.
+    pub async fn publish_runtime_readiness(
+        &self,
+        proof: &NodeIncarnationProof,
+        publication: &AdmissionAuthorityPublicationV1,
+    ) -> Result<GuardPublicationDisposition, AssignmentError> {
+        let [change] = publication.changes() else {
+            return Err(AssignmentError::InvalidInput);
+        };
+        let AdmissionAuthorityGuardKeyV1::Runtime(scope) = change.key else {
+            return Err(AssignmentError::InvalidInput);
+        };
+        let (world_id, channel_id) = channel_scope(scope)?;
+        let key = scope_key(world_id, channel_id);
+        let encoded = encode_guard(change, MAX_ADMISSION_GUARD_BYTES)?;
+        let proof = proof.clone();
+        let publication = publication.clone();
+        let store = AdmissionGuardStore::from_root(self.clone());
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let attested: bool = sqlx::query_scalar(
+                        "SELECT game_runtime_attest_readiness($1, encode($2, 'hex')::uuid, \
+                                $3::text::numeric(20,0), $4)",
+                    )
+                    .bind(key.as_slice())
+                    .bind(proof.fact.node_id.as_bytes().as_slice())
+                    .bind(proof.fact.registration_revision.to_string())
+                    .bind(proof.secret.0.as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if !attested {
+                        return Ok(Err(AssignmentError::NotCurrentHolder));
+                    }
+                    let changes = publication.changes();
+                    let current = [store.load_locked(&mut tx, &changes[0].key).await?];
+                    let disposition = match publication.validate_locked(&current) {
+                        Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
+                            GuardPublicationDisposition::Stale
+                        }
+                        Err(_) => GuardPublicationDisposition::Conflict,
+                        Ok(()) if current[0].as_ref() == Some(&changes[0]) => {
+                            GuardPublicationDisposition::Existing
+                        }
+                        Ok(())
+                            if !store
+                                .successor_history_available(&mut tx, changes, &current)
+                                .await? =>
+                        {
+                            GuardPublicationDisposition::Conflict
+                        }
+                        Ok(()) => {
+                            store
+                                .persist_locked(
+                                    &mut tx,
+                                    changes,
+                                    &current,
+                                    std::slice::from_ref(&encoded),
+                                )
+                                .await?;
+                            GuardPublicationDisposition::Applied
+                        }
+                    };
+                    sqlx::query(
+                        "DELETE FROM game_runtime_readiness_attestations \
+                         WHERE attested_xact = pg_current_xact_id()",
+                    )
+                    .execute(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(disposition))
+                })
+            })
+            .await?
+    }
+}
+
 struct QueueState {
     pending_commands: usize,
     pending_bytes: usize,
     unreconciled: Option<OperationKey>,
+}
+
+/// NASG accounting shared by every handle of one logical writer registration
+/// on one process root, so duplicate opens cannot multiply the bounds.
+struct WriterShared {
+    queue: Arc<Mutex<QueueState>>,
+    inflight: Arc<Semaphore>,
+}
+
+type WriterRegistry = Mutex<HashMap<(usize, Arc<str>), Weak<WriterShared>>>;
+
+fn writer_registry() -> &'static WriterRegistry {
+    static REGISTRY: OnceLock<WriterRegistry> = OnceLock::new();
+    REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 /// Single logical assignment-writer registration with the NASG queue and one
@@ -589,6 +746,7 @@ struct QueueState {
 pub struct RuntimeScopeAssignmentWriter {
     root: DurabilityRoot,
     registration: Arc<str>,
+    _shared: Arc<WriterShared>,
     queue: Arc<Mutex<QueueState>>,
     inflight: Arc<Semaphore>,
 }
@@ -650,15 +808,41 @@ impl RuntimeScopeAssignmentWriter {
                 })
             })
             .await?;
+        let shared = {
+            let mut registry = writer_registry()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            registry.retain(|_, shared| shared.strong_count() > 0);
+            let key = (root.root_identity(), registration.clone());
+            match registry.get(&key).and_then(Weak::upgrade) {
+                Some(shared) => {
+                    let mut queue = lock_queue(&shared.queue);
+                    if queue.unreconciled.is_none() {
+                        queue.unreconciled = occupied;
+                    }
+                    drop(queue);
+                    shared
+                }
+                None => {
+                    let shared = Arc::new(WriterShared {
+                        queue: Arc::new(Mutex::new(QueueState {
+                            pending_commands: 0,
+                            pending_bytes: 0,
+                            unreconciled: occupied,
+                        })),
+                        inflight: Arc::new(Semaphore::new(1)),
+                    });
+                    registry.insert(key, Arc::downgrade(&shared));
+                    shared
+                }
+            }
+        };
         Ok(Self {
             root,
             registration,
-            queue: Arc::new(Mutex::new(QueueState {
-                pending_commands: 0,
-                pending_bytes: 0,
-                unreconciled: occupied,
-            })),
-            inflight: Arc::new(Semaphore::new(1)),
+            queue: shared.queue.clone(),
+            inflight: shared.inflight.clone(),
+            _shared: shared,
         })
     }
 
@@ -878,16 +1062,7 @@ async fn authoritative_transition(
         });
     }
     let high_water = writer_high_water(tx, true).await?;
-    let restored_max: String = sqlx::query_scalar(
-        "SELECT greatest(\
-             (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignments), \
-             (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignment_receipts))::text",
-    )
-    .fetch_one(&mut **tx)
-    .await?;
-    if parse_u64_text(&restored_max)? > high_water {
-        return Err(DurabilityError::InvalidStoredState);
-    }
+    require_history_matches_high_water(tx, high_water).await?;
     let current = load_assignment(tx, &scope_key, true).await?;
     let rejection = match (typed, &current) {
         (AssignmentCommand::Assign { .. }, None) => None,
@@ -1085,6 +1260,25 @@ async fn fence_runtime_guard(
         .persist_locked(tx, &changes, &predecessors, &[encoded])
         .await?;
     Ok(Some(changes[0].publication_revision))
+}
+
+/// Every allocated writer revision leaves an immutable receipt. Retained history
+/// must match the high-water exactly: history ahead of it (regressed high-water)
+/// or behind it (rolled-back decisions) fails closed pending recovery.
+async fn require_history_matches_high_water(
+    tx: &mut Transaction<'_, Postgres>,
+    high_water: u64,
+) -> Result<(), DurabilityError> {
+    let (receipts, assignments): (String, String) = sqlx::query_as(
+        "SELECT (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignment_receipts)::text, \
+                (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignments)::text",
+    )
+    .fetch_one(&mut **tx)
+    .await?;
+    if parse_u64_text(&receipts)? != high_water || parse_u64_text(&assignments)? > high_water {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
 }
 
 async fn writer_high_water(

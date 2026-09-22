@@ -14,8 +14,9 @@ use durability::admission_authority_guards::{AdmissionGuardStore, GuardPublicati
 use durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentError, AssignmentOutcome, AssignmentPredecessor,
     AssignmentReceipt, AssignmentRejection, AssignmentRequest, AssignmentState, BootstrapSecret,
-    ControlActor, LaunchBinding, MAX_IDENTITY_BYTES, MAX_PENDING_COMMANDS, NodeRegistrationFact,
-    OperationKey, ReconcileOutcome, RegistrationError, RuntimeScopeAssignmentWriter,
+    ControlActor, LaunchBinding, MAX_IDENTITY_BYTES, MAX_PENDING_COMMANDS, NodeIncarnationProof,
+    NodeRegistrationFact, OperationKey, ReconcileOutcome, RegistrationError,
+    RuntimeScopeAssignmentWriter,
 };
 use durability::{DurabilityError, DurabilityRoot};
 use foundation::admission_authority_publication::{
@@ -181,6 +182,14 @@ async fn register(
     tag: u8,
     supersedes: Option<NodeId>,
 ) -> TestResult<NodeRegistrationFact> {
+    Ok(register_proof(root, tag, supersedes).await?.fact())
+}
+
+async fn register_proof(
+    root: &DurabilityRoot,
+    tag: u8,
+    supersedes: Option<NodeId>,
+) -> TestResult<NodeIncarnationProof> {
     root.issue_node_bootstrap_authorization(&secret(tag), &launch(tag)?, supersedes)
         .await
         .map_err(|error| format!("issue {tag}: {error:?}"))?;
@@ -353,10 +362,10 @@ fn registration_consumes_one_launch_authorization_and_tracks_current_incarnation
             let pool = database.pool().await?;
 
             // Fresh authorization + fresh UUIDv7 NodeId registration succeeds.
-            let first = register(&root, 1, None).await?;
-            assert_eq!(first.node_id(), node(1)?);
-            assert_eq!(first.registration_revision(), 1);
-            root.require_current_node_registration(first)
+            let first = register_proof(&root, 1, None).await?;
+            assert_eq!(first.fact().node_id(), node(1)?);
+            assert_eq!(first.fact().registration_revision(), 1);
+            root.require_current_node_registration(&first)
                 .await
                 .map_err(|e| format!("{e:?}"))?;
 
@@ -418,38 +427,54 @@ fn registration_consumes_one_launch_authorization_and_tracks_current_incarnation
             }
 
             // Wrong-incarnation fact is not current.
-            let wrong =
-                NodeRegistrationFact::new(first.node_id(), first.registration_revision() + 1);
+            let wrong = NodeRegistrationFact::new(
+                first.fact().node_id(),
+                first.fact().registration_revision() + 1,
+            );
             assert!(matches!(
-                root.require_current_node_registration(wrong).await,
+                root.require_current_node_registration(&NodeIncarnationProof::new(
+                    wrong,
+                    secret(1)
+                ))
+                .await,
+                Err(RegistrationError::NotCurrent)
+            ));
+
+            // Public NodeId/revision without the incarnation's own secret proves nothing.
+            assert!(matches!(
+                root.require_current_node_registration(&NodeIncarnationProof::new(
+                    first.fact(),
+                    secret(2)
+                ))
+                .await,
                 Err(RegistrationError::NotCurrent)
             ));
 
             // Restart: a new process gets a new NodeId under an explicit relaunch
             // authorization that supersedes the prior incarnation atomically.
-            let second = register(&root, 2, Some(first.node_id())).await?;
-            assert_eq!(second.registration_revision(), 2);
+            let second = register_proof(&root, 2, Some(first.fact().node_id())).await?;
+            assert_eq!(second.fact().registration_revision(), 2);
             assert!(matches!(
-                root.require_current_node_registration(first).await,
+                root.require_current_node_registration(&first).await,
                 Err(RegistrationError::NotCurrent)
             ));
-            root.require_current_node_registration(second)
+            root.require_current_node_registration(&second)
                 .await
                 .map_err(|e| format!("{e:?}"))?;
 
             // Explicit revoke; idempotent; superseded cannot be revoked back.
-            root.revoke_node_registration(second)
+            root.revoke_node_registration(second.fact())
                 .await
                 .map_err(|e| format!("{e:?}"))?;
-            root.revoke_node_registration(second)
+            root.revoke_node_registration(second.fact())
                 .await
                 .map_err(|e| format!("{e:?}"))?;
             assert!(matches!(
-                root.require_current_node_registration(second).await,
+                root.require_current_node_registration(&second).await,
                 Err(RegistrationError::NotCurrent)
             ));
             assert!(matches!(
-                root.revoke_node_registration(first).await,
+                root.revoke_node_registration(first.fact()).await,
                 Err(RegistrationError::Rejected)
             ));
 
@@ -824,6 +849,17 @@ fn initial_and_replacement_targets_must_be_current_registered_incarnations() -> 
     })
 }
 
+async fn publish_ready(
+    root: &DurabilityRoot,
+    proof: &NodeIncarnationProof,
+    change: AdmissionAuthorityPublicationChangeV1,
+    now: i64,
+) -> Result<GuardPublicationDisposition, AssignmentError> {
+    let publication = AdmissionAuthorityPublicationV1::prepare(&RuntimePublisher(change), now)
+        .map_err(|_| AssignmentError::InvalidInput)?;
+    root.publish_runtime_readiness(proof, &publication).await
+}
+
 #[test]
 fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication() -> TestResult {
     run("readiness_fence", |database| {
@@ -832,8 +868,8 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             let pool = database.pool().await?;
             let guards = AdmissionGuardStore::from_root(root.clone());
             let channel = scope(1)?;
-            let node1 = register(&root, 1, None).await?;
-            let node2 = register(&root, 2, None).await?;
+            let node1 = register_proof(&root, 1, None).await?;
+            let node2 = register_proof(&root, 2, None).await?;
             let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
                 .await
                 .map_err(|e| format!("{e:?}"))?;
@@ -852,7 +888,7 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                         1,
                         AssignmentCommand::Assign {
                             scope: channel,
-                            target: node1,
+                            target: node1.fact(),
                         },
                     )?)
                     .await,
@@ -867,25 +903,54 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                 "runtime-scope-assignment:1"
             );
 
-            // The registered Runtime publisher may publish readiness only for the
-            // exact current generation of a current holder.
+            // Once assigned, readiness needs the attested current holder: an
+            // unattested publication, a current non-holder and a caller that knows
+            // only the holder's public NodeId/revision are all refused.
             let now = db_now(&pool).await?;
             assert!(matches!(
-                publish_runtime(
-                    &guards,
-                    runtime_change(channel, Some(&fenced), 2, true, now),
-                    now
-                )
-                .await,
-                Err(DurabilityError::Database(_))
-            ));
-            assert_eq!(
                 publish_runtime(
                     &guards,
                     runtime_change(channel, Some(&fenced), 1, true, now),
                     now
                 )
-                .await?,
+                .await,
+                Err(DurabilityError::Database(_))
+            ));
+            for impostor in [
+                node2.clone(),
+                NodeIncarnationProof::new(node1.fact(), secret(2)),
+            ] {
+                assert!(matches!(
+                    publish_ready(
+                        &root,
+                        &impostor,
+                        runtime_change(channel, Some(&fenced), 1, true, now),
+                        now
+                    )
+                    .await,
+                    Err(AssignmentError::NotCurrentHolder)
+                ));
+            }
+            // The holder cannot publish a generation other than the current one.
+            assert!(matches!(
+                publish_ready(
+                    &root,
+                    &node1,
+                    runtime_change(channel, Some(&fenced), 2, true, now),
+                    now
+                )
+                .await,
+                Err(AssignmentError::Unavailable(_))
+            ));
+            assert_eq!(
+                publish_ready(
+                    &root,
+                    &node1,
+                    runtime_change(channel, Some(&fenced), 1, true, now),
+                    now
+                )
+                .await
+                .map_err(|e| format!("{e:?}"))?,
                 GuardPublicationDisposition::Applied
             );
             let ready = current_runtime(&guards, channel).await?;
@@ -899,7 +964,7 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                         AssignmentCommand::Replace {
                             scope: channel,
                             predecessor: first.assignment.predecessor(),
-                            target: node2,
+                            target: node2.fact(),
                         },
                     )?)
                     .await,
@@ -910,17 +975,26 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             );
             let fenced = current_runtime(&guards, channel).await?;
             assert_eq!(runtime_ready(&fenced), Some((1, false)));
-            // Stale generation cannot restore readiness after replacement.
+            // The replaced process keeps running with its genuine proof and learns
+            // the new generation and holder's public identity: it still cannot
+            // restore readiness for either generation.
             let now = db_now(&pool).await?;
-            assert!(matches!(
-                publish_runtime(
-                    &guards,
-                    runtime_change(channel, Some(&fenced), 1, true, now),
-                    now
-                )
-                .await,
-                Err(DurabilityError::Database(_))
-            ));
+            for (proof, generation) in [
+                (node1.clone(), 1),
+                (node1.clone(), 2),
+                (NodeIncarnationProof::new(node2.fact(), secret(1)), 2),
+            ] {
+                assert!(matches!(
+                    publish_ready(
+                        &root,
+                        &proof,
+                        runtime_change(channel, Some(&fenced), generation, true, now),
+                        now
+                    )
+                    .await,
+                    Err(AssignmentError::NotCurrentHolder)
+                ));
+            }
             assert_eq!(
                 runtime_ready(&current_runtime(&guards, channel).await?),
                 Some((1, false))
@@ -937,20 +1011,21 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             );
             let closed = current_runtime(&guards, channel).await?;
             // A revoked holder registration cannot publish readiness either.
-            root.revoke_node_registration(node2)
+            root.revoke_node_registration(node2.fact())
                 .await
                 .map_err(|e| format!("{e:?}"))?;
             assert!(matches!(
-                publish_runtime(
-                    &guards,
+                publish_ready(
+                    &root,
+                    &node2,
                     runtime_change(channel, Some(&closed), 2, true, now),
                     now
                 )
                 .await,
-                Err(DurabilityError::Database(_))
+                Err(AssignmentError::NotCurrentHolder)
             ));
             // Revoke also advances generation; no readiness survives it.
-            let node3 = register(&root, 3, None).await?;
+            let node3 = register_proof(&root, 3, None).await?;
             let third = committed(
                 writer
                     .submit(&request(
@@ -958,7 +1033,7 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                         AssignmentCommand::Replace {
                             scope: channel,
                             predecessor: second.assignment.predecessor(),
-                            target: node3,
+                            target: node3.fact(),
                         },
                     )?)
                     .await,
@@ -966,12 +1041,14 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             assert_eq!(third.fenced_publication_revision, None);
             let now = db_now(&pool).await?;
             assert_eq!(
-                publish_runtime(
-                    &guards,
+                publish_ready(
+                    &root,
+                    &node3,
                     runtime_change(channel, Some(&closed), 3, true, now),
                     now
                 )
-                .await?,
+                .await
+                .map_err(|e| format!("{e:?}"))?,
                 GuardPublicationDisposition::Applied
             );
             let ready = current_runtime(&guards, channel).await?;
@@ -995,16 +1072,17 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             let now = db_now(&pool).await?;
             for generation in [3, 4] {
                 assert!(matches!(
-                    publish_runtime(
-                        &guards,
+                    publish_ready(
+                        &root,
+                        &node3,
                         runtime_change(channel, Some(&revoked), generation, true, now),
                         now
                     )
                     .await,
-                    Err(DurabilityError::Database(_))
+                    Err(AssignmentError::NotCurrentHolder)
                 ));
             }
-            // Direct SQL cannot bypass the fence either.
+            // Direct SQL cannot bypass the fence, and no attestation outlives its transaction.
             expect_sql_state(
                 sqlx::query("UPDATE game_durability_admission_runtime_guards SET ready = TRUE")
                     .execute(&pool)
@@ -1012,6 +1090,11 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                 "23514",
             )
             .await?;
+            let attestations: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_runtime_readiness_attestations")
+                    .fetch_one(&pool)
+                    .await?;
+            assert_eq!(attestations, 0);
             pool.close().await;
             Ok(())
         })
@@ -1524,6 +1607,19 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
             .await?;
 
             // Checked successor overflow rejects permanently without mutation.
+            // Consistent retained history at the maximum revision (a synthetic
+            // receipt for another decision), so only checked overflow can reject.
+            sqlx::query(
+                "INSERT INTO game_runtime_scope_assignment_receipts \
+                 (operation_key, command, scope_key, ownership_generation, state, holder_node_id, \
+                  holder_registration_revision, source_revision, decision_identity, decided_at) \
+                 SELECT '\\x99'::bytea || substring(operation_key FROM 2), command, scope_key, ownership_generation, \
+                        state, holder_node_id, holder_registration_revision, 18446744073709551615, \
+                        'runtime-scope-assignment:max', decided_at \
+                 FROM game_runtime_scope_assignment_receipts WHERE source_revision = 1",
+            )
+            .execute(&pool)
+            .await?;
             sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 18446744073709551615")
                 .execute(&pool)
                 .await?;
@@ -1550,6 +1646,17 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                 sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation = 18446744073709551615, source_revision = 2")
                     .execute(&pool2)
                     .await?;
+                sqlx::query(
+                    "INSERT INTO game_runtime_scope_assignment_receipts \
+                     (operation_key, command, scope_key, ownership_generation, state, holder_node_id, \
+                      holder_registration_revision, source_revision, decision_identity, decided_at) \
+                     SELECT '\\x98'::bytea || substring(operation_key FROM 2), command, scope_key, 18446744073709551615, \
+                            state, holder_node_id, holder_registration_revision, 2, \
+                            'runtime-scope-assignment:2', decided_at \
+                     FROM game_runtime_scope_assignment_receipts WHERE source_revision = 1",
+                )
+                .execute(&pool2)
+                .await?;
                 sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 2")
                     .execute(&pool2)
                     .await?;
@@ -1594,7 +1701,8 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
             for statement in [
                 format!("GRANT SELECT ON game_runtime_scope_assignments TO {runtime_role}"),
                 format!("GRANT EXECUTE ON FUNCTION game_node_register(BYTEA, TEXT, UUID) TO {runtime_role}"),
-                format!("GRANT EXECUTE ON FUNCTION game_node_require_current(UUID, NUMERIC) TO {runtime_role}"),
+                format!("GRANT EXECUTE ON FUNCTION game_node_require_current(UUID, NUMERIC, BYTEA) TO {runtime_role}"),
+                format!("GRANT EXECUTE ON FUNCTION game_runtime_attest_readiness(BYTEA, UUID, NUMERIC, BYTEA) TO {runtime_role}"),
             ] {
                 sqlx::query(sqlx::AssertSqlSafe(statement)).execute(&pool).await?;
             }
@@ -1607,7 +1715,10 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
                 .fetch_one(&mut *connection)
                 .await?;
             assert_eq!(revision, "1");
-            sqlx::query("SELECT game_node_require_current('01890f4c-3b2a-7c01-8d11-9a321b7c0001'::uuid, 1)")
+            sqlx::query(
+                "SELECT game_node_require_current('01890f4c-3b2a-7c01-8d11-9a321b7c0001'::uuid, 1, $1)",
+            )
+            .bind([1_u8; 32].as_slice())
                 .execute(&mut *connection)
                 .await?;
             // But it cannot write, allocate or self-grant authority.
@@ -1648,7 +1759,7 @@ fn database_outage_cannot_make_cached_state_sufficient() -> TestResult {
     run("assignment_outage", |database| {
         Box::pin(async move {
             let root = ready_root(&database.url).await?;
-            let node1 = register(&root, 1, None).await?;
+            let node1 = register_proof(&root, 1, None).await?;
             let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
                 .await
                 .map_err(|e| format!("{e:?}"))?;
@@ -1658,7 +1769,7 @@ fn database_outage_cannot_make_cached_state_sufficient() -> TestResult {
                         1,
                         AssignmentCommand::Assign {
                             scope: scope(1)?,
-                            target: node1,
+                            target: node1.fact(),
                         },
                     )?)
                     .await,
@@ -1695,9 +1806,197 @@ fn database_outage_cannot_make_cached_state_sufficient() -> TestResult {
             );
             assert!(root.read_runtime_scope_assignment(scope(1)?).await.is_err());
             assert!(matches!(
-                root.require_current_node_registration(node1).await,
+                root.require_current_node_registration(&node1).await,
                 Err(RegistrationError::Unavailable(_))
             ));
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn history_trailing_the_high_water_fails_closed() -> TestResult {
+    run("history_trailing", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let node1 = register(&root, 1, None).await?;
+            let node2 = register(&root, 2, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target: node1,
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        2,
+                        AssignmentCommand::Assign {
+                            scope: scope(2)?,
+                            target: node2,
+                        },
+                    )?)
+                    .await,
+            )?;
+            // A partial restore rolls back the newest decision's evidence while the
+            // writer high-water survives: authority must not resume across it.
+            let mut restore = pool.begin().await?;
+            for sql in [
+                "ALTER TABLE game_runtime_scope_assignment_receipts DISABLE TRIGGER game_runtime_scope_assignment_receipt_immutable",
+                "ALTER TABLE game_runtime_scope_assignments DISABLE TRIGGER game_runtime_scope_assignment_guard",
+                "DELETE FROM game_runtime_scope_assignment_receipts WHERE source_revision = 2",
+                "DELETE FROM game_runtime_scope_assignments WHERE source_revision = 2",
+                "ALTER TABLE game_runtime_scope_assignment_receipts ENABLE TRIGGER game_runtime_scope_assignment_receipt_immutable",
+                "ALTER TABLE game_runtime_scope_assignments ENABLE TRIGGER game_runtime_scope_assignment_guard",
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(sql))
+                    .execute(&mut *restore)
+                    .await?;
+            }
+            restore.commit().await?;
+            assert_eq!(high_water(&pool).await?.0, "2");
+            assert!(matches!(
+                root.read_runtime_scope_assignment(scope(1)?).await,
+                Err(AssignmentError::Unavailable(
+                    DurabilityError::InvalidStoredState
+                ))
+            ));
+            let replace = request(
+                3,
+                AssignmentCommand::Replace {
+                    scope: scope(1)?,
+                    predecessor: first.assignment.predecessor(),
+                    target: node2,
+                },
+            )?;
+            assert!(matches!(
+                writer.submit(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            ensure_ready(&root).await?;
+            assert_eq!(
+                writer
+                    .reconcile(key(3))
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Absent
+            );
+            assert_eq!(high_water(&pool).await?.0, "2");
+
+            // The same exact-equality rule protects the registration namespace.
+            let mut restore = pool.begin().await?;
+            for sql in [
+                "ALTER TABLE game_node_registrations DISABLE TRIGGER game_node_registration_guard",
+                "ALTER TABLE game_node_bootstrap_authorizations DISABLE TRIGGER game_node_bootstrap_authorization_guard",
+                "UPDATE game_node_bootstrap_authorizations SET consumed_node_id = NULL, consumed_at = NULL WHERE launch_binding = 'launch-2'",
+                "DELETE FROM game_node_registrations WHERE registration_revision = 2",
+                "ALTER TABLE game_node_registrations ENABLE TRIGGER game_node_registration_guard",
+                "ALTER TABLE game_node_bootstrap_authorizations ENABLE TRIGGER game_node_bootstrap_authorization_guard",
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(sql))
+                    .execute(&mut *restore)
+                    .await?;
+            }
+            restore.commit().await?;
+            root.issue_node_bootstrap_authorization(&secret(5), &launch(5)?, None)
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            assert!(matches!(
+                root.register_node_incarnation(&secret(5), &launch(5)?, node(5)?)
+                    .await,
+                Err(RegistrationError::Unavailable(_))
+            ));
+            assert_eq!(high_water(&pool).await?.1, "2");
+            pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn duplicate_writer_handles_share_one_nasg_queue() -> TestResult {
+    run("shared_queue", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let target = register(&root, 1, None).await?;
+            let first_handle = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let second_handle = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let mut blocker = pool.begin().await?;
+            sqlx::query("LOCK TABLE game_runtime_scope_assignment_writer IN EXCLUSIVE MODE")
+                .execute(&mut *blocker)
+                .await?;
+            let inflight_handle = first_handle.clone();
+            let inflight_request = request(
+                1,
+                AssignmentCommand::Assign {
+                    scope: scope(1)?,
+                    target,
+                },
+            )?;
+            let inflight =
+                tokio::spawn(async move { inflight_handle.submit(&inflight_request).await });
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            // Eight pending commands split across both handles fill the one queue.
+            let mut pending = Vec::new();
+            for index in 0..MAX_PENDING_COMMANDS {
+                let handle = if index % 2 == 0 {
+                    first_handle.clone()
+                } else {
+                    second_handle.clone()
+                };
+                let tag = u8::try_from(10 + index)?;
+                let command = request(
+                    tag,
+                    AssignmentCommand::Assign {
+                        scope: scope(tag)?,
+                        target,
+                    },
+                )?;
+                pending.push(tokio::spawn(async move { handle.submit(&command).await }));
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            let ninth = request(
+                30,
+                AssignmentCommand::Assign {
+                    scope: scope(30)?,
+                    target,
+                },
+            )?;
+            assert!(matches!(
+                second_handle.submit(&ninth).await,
+                Err(AssignmentError::QueueFull)
+            ));
+            for waiting in pending {
+                assert!(matches!(waiting.await?, Err(AssignmentError::QueueTimeout)));
+            }
+            assert!(matches!(inflight.await?, Err(AssignmentError::Ambiguous)));
+            blocker.rollback().await?;
+            // The ambiguity is visible through every handle of the registration.
+            assert_eq!(second_handle.unreconciled(), Some(key(1)));
+            ensure_ready(&root).await?;
+            assert_eq!(
+                second_handle
+                    .reconcile(key(1))
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Absent
+            );
+            assert_eq!(first_handle.unreconciled(), None);
+            pool.close().await;
             Ok(())
         })
     })
