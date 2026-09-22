@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical delivery PR #737 merged through protected main on 2026-09-22 as `9daf3522efbf799c5d9ffe9817215895d4fa8af0`. Any validating/current checkpoint prose below is retained historical provenance only; live GitHub and protected current state supersede it.
+
 # OTV2-20260921 — Content World full-family Item identity/resource successor
 
 ```yaml
