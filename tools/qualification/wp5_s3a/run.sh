@@ -134,9 +134,9 @@ expect_status() {
   [[ "$status" == "$expected" ]] || { echo "unexpected_http_status=$status expected=$expected" >&2; return 1; }
 }
 expect_unavailable() {
-  local payload=$1 output=$2
+  local payload=$1 output=$2 operation=$3 version=$4
   expect_status 200 "$payload" "$output"
-  grep -Eq '^\{"version":[12],"operation":"[A-Za-z0-9]+","result":"unavailable"\}$' "$output"
+  grep -Fxq "{\"version\":$version,\"operation\":\"$operation\",\"result\":\"unavailable\"}" "$output"
   [[ "$(wc -c < "$output")" -le 8192 ]]
 }
 expect_observed_account() {
@@ -223,12 +223,13 @@ wrong_status="$(curl "${curl_base[@]}" --cert "$WP5_PKI/wrong-identity.crt" --ke
 [[ "$wrong_status" == 401 ]]
 evidence 'mtls=tls1.3_required no_cert=rejected wrong_root=rejected lower_tls=rejected wrong_identity=rejected public_header_substitution=erased'
 
-# Closed parser and HTTP bounds.
-for bad in \
-  '{' \
-  '{"version":1,"operation":"ReadAccountSecurityV1","operation":"ReadAccountSecurityV1"}' \
-  '{"version":1,"operation":"ReadAccountSecurityV1","unknown":"x"}' \
-  '{"version":1,"operation":{"nested":true}}'; do
+# Closed parser and HTTP bounds. Each structural probe starts from the valid
+# account request and mutates only the condition under test.
+duplicate_payload="${account_payload%\}},\"purpose\":\"platform_security\"}"
+unknown_payload="${account_payload%\}},\"unknown\":\"x\"}"
+nested_payload="${account_payload/'"operation":"ReadAccountSecurityV1"'/'"operation":{"nested":true}'}"
+[[ "$duplicate_payload" != "$account_payload" && "$unknown_payload" != "$account_payload" && "$nested_payload" != "$account_payload" ]]
+for bad in '{' "$duplicate_payload" "$unknown_payload" "$nested_payload"; do
   expect_status 400 "$bad" "$WP5_SCRATCH/bad-response"
 done
 oversize="$(printf '%*s' 1025 '' | tr ' ' x)"
@@ -307,7 +308,7 @@ evidence "producer_capacity=two_inflight third=immediate_unavailable application
 
 # Relational outage is bounded and does not escape the closed failure shape.
 compose stop db >/dev/null
-expect_unavailable "$account_payload" "$WP5_SCRATCH/db-down-response"
+expect_unavailable "$account_payload" "$WP5_SCRATCH/db-down-response" ReadAccountSecurityV1 1
 compose start db >/dev/null
 until compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-admin ping -h 127.0.0.1 -uroot --silent >/dev/null 2>&1; do sleep 1; done
 evidence 'relational_failure=bounded_unavailable'
@@ -345,7 +346,7 @@ evidence 'database_restore=retained_witness_rebound'
 
 # Empty replacement witness is rejected while relational history remains; restore retained files afterward.
 compose exec --no-TTY platform sh -c 'tar -C /var/lib/oteryn-witness -cf /run/wp5/witness.tar . && find /var/lib/oteryn-witness -mindepth 1 -maxdepth 1 -delete'
-expect_unavailable "$account_payload" "$WP5_SCRATCH/replacement-response"
+expect_unavailable "$account_payload" "$WP5_SCRATCH/replacement-response" ReadAccountSecurityV1 1
 compose exec --no-TTY platform sh -c 'tar -C /var/lib/oteryn-witness -xf /run/wp5/witness.tar'
 expect_observed_account "$account_payload" "$WP5_SCRATCH/replacement-restored-response" \
   ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
@@ -353,7 +354,7 @@ evidence 'replacement_witness=rejected retained_witness=restored'
 
 # Account witness-ahead rollback and explicit forward-only reconciliation.
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=App\Identity\Models\Identity::query()->where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); Illuminate\Support\Facades\DB::beginTransaction(); try { app(App\Identity\Actions\RevokeIdentityGameAuthorizations::class)->execute($id); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
-expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-response"
+expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-response" ReadAccountSecurityV1 1
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --account-id="$ACCOUNT_ID" --no-interaction >/dev/null
 expect_observed_account "$account_payload" "$WP5_SCRATCH/account-reconciled-response" \
   ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
@@ -361,7 +362,7 @@ evidence 'account_rollback=unavailable account_reconcile=forward_only'
 
 # Signing witness-ahead rollback, conservative revocation, then a fresh successor key/profile.
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); Illuminate\Support\Facades\DB::beginTransaction(); try { $r->revokeProfile(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission"); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
-expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-response"
+expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-response" ReadFreshSigningTrustV1 1
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --trust=fresh --no-interaction >/dev/null
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr(3),32));'
 WP5_S3A_FRESH_KEY_ID=fresh-key-2 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
@@ -371,7 +372,7 @@ evidence 'trust_rollback=unavailable trust_reconcile=revoked successor_profile=f
 for mode in file directory; do
   WP5_FSYNC_FAULT="$mode"; export WP5_FSYNC_FAULT
   compose up --detach --wait --force-recreate --no-deps platform >/dev/null
-  expect_unavailable "$account_payload" "$WP5_SCRATCH/fsync-$mode-response"
+  expect_unavailable "$account_payload" "$WP5_SCRATCH/fsync-$mode-response" ReadAccountSecurityV1 1
   WP5_FSYNC_FAULT=none; export WP5_FSYNC_FAULT
   compose up --detach --wait --force-recreate --no-deps platform >/dev/null
   expect_observed_account "$account_payload" "$WP5_SCRATCH/fsync-$mode-recovered-response" \
