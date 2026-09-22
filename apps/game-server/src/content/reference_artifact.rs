@@ -3102,8 +3102,15 @@ mod typed_item_codec_tests {
             hex_bytes("0f9f25815a61fa292d6a74f89974f8b4bbefcca3d70a19ee023d730e88261e21")
         );
         assert_eq!(encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?, server);
-        let identity = identity()?;
-        let index = [IndexEntry { identity, body_offset: 0, body_length: server.len(), body_digest: sha256(&server) }];
+        let index = definitions
+            .iter()
+            .map(|definition| IndexEntry {
+                identity: definition.definition.clone(),
+                body_offset: 0,
+                body_length: server.len(),
+                body_digest: sha256(&server),
+            })
+            .collect::<Vec<_>>();
         assert_eq!(parse_typed_server_item(&server, &index)?.semantics, item.semantics);
         assert_eq!(parse_typed_client_item(&client, &index)?.semantics, item.semantics.client_projection());
         let mut over = server;
