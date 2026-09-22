@@ -136,11 +136,16 @@ expect_status() {
   status="$(curl "${curl_base[@]}" "${auth[@]}" -H 'Content-Type: application/json' -o "$output" -w '%{http_code}' --data-binary "$payload" "$base_url")"
   [[ "$status" == "$expected" ]] || { echo "unexpected_http_status=$status expected=$expected" >&2; return 1; }
 }
+# The complete response body must equal the exact closed unavailable object for
+# the originating request; no extra line, byte or whitespace is accepted.
+expect_exact_unavailable_body() {
+  local output=$1 operation=$2 version=$3
+  printf '{"version":%s,"operation":"%s","result":"unavailable"}' "$version" "$operation" | cmp -s - "$output"
+}
 expect_unavailable() {
   local payload=$1 output=$2 operation=$3 version=$4
   expect_status 200 "$payload" "$output"
-  grep -Fxq "{\"version\":$version,\"operation\":\"$operation\",\"result\":\"unavailable\"}" "$output"
-  [[ "$(wc -c < "$output")" -le 8192 ]]
+  expect_exact_unavailable_body "$output" "$operation" "$version"
 }
 expect_observed_account() {
   local payload=$1 output=$2 operation=$3 version=$4 account_id=$5 purpose=$6 scope=$7
@@ -299,9 +304,7 @@ third_status="$(curl "${curl_base[@]}" "${auth[@]}" -H 'Content-Type: applicatio
   --data-binary "$account_payload" "$base_url")"
 read -r third_http third_seconds <<< "$third_status"
 [[ "$third_http" == 200 ]]
-grep -Fxq '{"version":1,"operation":"ReadAccountSecurityV1","result":"unavailable"}' \
-  "$WP5_SCRATCH/producer-third-response"
-[[ "$(wc -c < "$WP5_SCRATCH/producer-third-response")" -le 8192 ]]
+expect_exact_unavailable_body "$WP5_SCRATCH/producer-third-response" ReadAccountSecurityV1 1
 python3 - "$third_seconds" <<'PY'
 import sys
 if float(sys.argv[1]) >= 2.0:
@@ -375,6 +378,9 @@ evidence 'account_rollback=unavailable account_reconcile=forward_only'
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); Illuminate\Support\Facades\DB::beginTransaction(); try { $r->revokeProfile(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission"); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-response" ReadFreshSigningTrustV1 1
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --trust=fresh --no-interaction >/dev/null
+# Before any successor exists, the reconciled old key must be observed as
+# untrusted with its exact seeded key material through the real Game decoder.
+cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_reports_revoked_fresh_key -- --ignored --exact --nocapture
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr('"$SUCCESSOR_FRESH_KEY_BYTE"'),32));'
 WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 evidence 'trust_rollback=unavailable trust_reconcile=revoked successor_profile=fresh_key'

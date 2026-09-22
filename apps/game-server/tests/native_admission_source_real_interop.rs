@@ -174,6 +174,35 @@ fn real_platform_producer_decodes_all_four_operations() -> Result<(), Box<dyn st
 
 #[test]
 #[ignore = "requires the disposable S3-A TLS/FastCGI/MariaDB topology"]
+fn real_platform_producer_reports_revoked_fresh_key() -> Result<(), Box<dyn std::error::Error>> {
+    let descriptor = descriptor()?;
+    let fresh_key = required("WP5_S3A_FRESH_KEY_ID")?;
+    let fresh_public_key = seeded_key("WP5_S3A_FRESH_KEY_BYTE")?;
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    runtime.block_on(async {
+        let revoked = query_one(
+            &descriptor,
+            "ReadFreshSigningTrustV1/revoked",
+            Request::Trust {
+                recovery: false,
+                key_id: &fresh_key,
+                key_purpose: "fresh_admission",
+            },
+        )
+        .await?;
+        if !matches!(revoked.facts, Facts::Trust { trusted: false, public_key } if public_key == fresh_public_key)
+        {
+            return Err("reconciled fresh signing key is not observed as untrusted".into());
+        }
+        println!("S3_EVIDENCE revoked_fresh_key=untrusted exact_key_material=true");
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+}
+
+#[test]
+#[ignore = "requires the disposable S3-A TLS/FastCGI/MariaDB topology"]
 fn real_capacity_two_inflight_rejects_third() -> Result<(), Box<dyn std::error::Error>> {
     static CAPACITY: TransientCapacity = TransientCapacity::new();
     let account_id = required("WP5_S3A_ACCOUNT_ID")?;
