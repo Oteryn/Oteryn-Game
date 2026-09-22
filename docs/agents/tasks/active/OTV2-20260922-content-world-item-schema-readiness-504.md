@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: item schema lead
 created_at: 2026-09-22T10:44:00+02:00
-updated_at: 2026-09-22T12:20:00+00:00
+updated_at: 2026-09-22T10:11:07.953Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
