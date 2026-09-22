@@ -56,6 +56,101 @@ const CATALOG_SCHEMA: &str = "OTERYN_CW2_ITEM_IDENTITY_CATALOG_SOURCE_BATCH/v1";
 const MAPPER_PROFILE: &str = "OTERYN_CW2_ITEM_IDENTITY_CATALOG_MAPPER/v1";
 const SOURCE_CANDIDATE_ID: &str = "crystal:item:2876";
 
+/// Complete B1 candidate-field routing for schema readiness. These rows describe a typed
+/// destination or an explicit v1 loss; they never promote donor values to Reference truth.
+pub const CW2_B1_ITEM_FIELD_DISPOSITIONS: [(&str, &str); 90] = [
+    ("allow_distance_read", "readable_writeable.distance_read"),
+    ("ammo_type", "weapon.ammunition"),
+    ("armor", "protection.armor"),
+    ("attack", "weapon.attack"),
+    ("augment_binding", "EXPLICIT_UNSUPPORTED_AUGMENT_V1"),
+    ("capacity", "container.capacity"),
+    ("charge_count", "charges.count"),
+    ("decay_target_source_id", "temporal.decay_target_ordinal"),
+    ("deequip_target_source_id", "use_transform.deequip"),
+    ("defense", "weapon.defense"),
+    ("destroy_target_source_id", "use_transform.destroy"),
+    ("duration", "temporal.duration_ms+consumption_mode"),
+    ("elemental_bond", "skill_modifiers.modifiers"),
+    ("equip_target_source_id", "use_transform.equip"),
+    ("extra_defense", "weapon.extra_defense"),
+    ("female_transform_target_source_id", "use_transform.female"),
+    ("fluid_source", "fluid.fluid_type"),
+    ("hit_chance", "weapon.hit_chance"),
+    ("invisibility", "skill_modifiers.modifiers"),
+    ("item_type", "classification.item_class"),
+    ("male_transform_target_source_id", "use_transform.male"),
+    ("mana_shield", "skill_modifiers.modifiers"),
+    ("mantra", "skill_modifiers.modifiers"),
+    ("max_hit_chance", "weapon.max_hit_chance"),
+    ("max_text_length", "readable_writeable.max_text_length"),
+    ("melee_attack_effect", "EXPLICIT_UNSUPPORTED_PRESENTATION_BINDING_V1"),
+    ("modifier.absorbpercentdeath", "protection.resistances"),
+    ("modifier.absorbpercentdrown", "protection.resistances"),
+    ("modifier.absorbpercentearth", "protection.resistances"),
+    ("modifier.absorbpercentenergy", "protection.resistances"),
+    ("modifier.absorbpercentfire", "protection.resistances"),
+    ("modifier.absorbpercentholy", "protection.resistances"),
+    ("modifier.absorbpercentice", "protection.resistances"),
+    ("modifier.absorbpercentlifedrain", "protection.resistances"),
+    ("modifier.absorbpercentmanadrain", "protection.resistances"),
+    ("modifier.absorbpercentphysical", "protection.resistances"),
+    ("modifier.absorbpercentpoison", "protection.resistances"),
+    ("modifier.cleavepercent", "skill_modifiers.modifiers"),
+    ("modifier.criticalhitchance", "skill_modifiers.modifiers"),
+    ("modifier.criticalhitdamage", "skill_modifiers.modifiers"),
+    ("modifier.deathmagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.earthmagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.elementdeath", "weapon.elemental"),
+    ("modifier.elementearth", "weapon.elemental"),
+    ("modifier.elementenergy", "weapon.elemental"),
+    ("modifier.elementfire", "weapon.elemental"),
+    ("modifier.elementice", "weapon.elemental"),
+    ("modifier.energymagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.fieldabsorbpercentfire", "protection.resistances"),
+    ("modifier.firemagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.healingmagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.healthgain", "skill_modifiers.modifiers"),
+    ("modifier.healthticks", "skill_modifiers.modifiers"),
+    ("modifier.holymagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.icemagiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.lifeleechamount", "skill_modifiers.modifiers"),
+    ("modifier.lifeleechchance", "skill_modifiers.modifiers"),
+    ("modifier.magiclevelpoints", "skill_modifiers.modifiers"),
+    ("modifier.magicshieldcapacityflat", "skill_modifiers.modifiers"),
+    ("modifier.magicshieldcapacitypercent", "skill_modifiers.modifiers"),
+    ("modifier.managain", "skill_modifiers.modifiers"),
+    ("modifier.manaleechamount", "skill_modifiers.modifiers"),
+    ("modifier.manaleechchance", "skill_modifiers.modifiers"),
+    ("modifier.manaticks", "skill_modifiers.modifiers"),
+    ("modifier.perfectshotdamage", "skill_modifiers.modifiers"),
+    ("modifier.perfectshotrange", "skill_modifiers.modifiers"),
+    ("modifier.reflectdamage", "skill_modifiers.modifiers"),
+    ("modifier.skillaxe", "skill_modifiers.modifiers"),
+    ("modifier.skillclub", "skill_modifiers.modifiers"),
+    ("modifier.skilldist", "skill_modifiers.modifiers"),
+    ("modifier.skillfist", "skill_modifiers.modifiers"),
+    ("modifier.skillshield", "skill_modifiers.modifiers"),
+    ("modifier.skillsword", "skill_modifiers.modifiers"),
+    ("modifier.speed", "skill_modifiers.modifiers"),
+    ("movable", "physical.movable"),
+    ("pickup_eligibility", "physical.pickupable"),
+    ("range", "weapon.range_cells"),
+    ("readable", "readable_writeable.readable"),
+    ("rotate_target_source_id", "use_transform.rotate"),
+    ("slot_and_allowed_family_tier", "imbuement.allowed_family_tiers"),
+    ("slot_claim", "equipment.patterns"),
+    ("stop_duration", "temporal.stop_duration"),
+    ("suppress_drown", "skill_modifiers.modifiers"),
+    ("suppress_drunk", "skill_modifiers.modifiers"),
+    ("use_target_source_id", "use_transform.use"),
+    ("weapon_type", "weapon.weapon_type"),
+    ("weight", "physical.weight"),
+    ("wrap_target_source_id", "use_transform.wrap"),
+    ("write_once_target_source_id", "readable_writeable.write_once_target_ordinal"),
+    ("writeable", "readable_writeable.writeable"),
+];
+
 #[derive(Debug, Clone, Copy)]
 struct NativeItemSpec {
     source_item_id: u64,
@@ -696,6 +791,7 @@ pub fn protected_cw2_b1_vase_import(
         client_projection: ProjectionDocument::ClientSafe,
         materializable: true,
         stack_class: ItemStackDocument::NonStackable,
+        semantics: Default::default(),
     };
 
     let normalized_fields = vec![
@@ -834,6 +930,7 @@ pub fn protected_cw2_b1_native_item_batch_import(
             } else {
                 ItemStackDocument::NonStackable
             },
+            semantics: Default::default(),
         });
 
         let source_candidate_id = format!("crystal:item:{}", spec.source_item_id);
@@ -1119,6 +1216,7 @@ pub fn protected_cw2_b1_full_item_family_import(
             client_projection: ProjectionDocument::ClientSafe,
             materializable: allocation.materializable,
             stack_class: allocation.stack_class,
+            semantics: Default::default(),
         });
 
         let source_candidate_id = format!("crystal:item:{}", allocation.source_item_id);
