@@ -232,7 +232,11 @@ def test_trusted_job_mutations():
                  block.replace("rust=true", "rust=false"),
                  block.replace("windows=true", "windows=false"),
                  block.replace("atlas_fullworld=true", "atlas_fullworld=false"),
-                 block.replace("          python -I", "          exit 0\n          python -I")]
+                 block.replace("          python -I", "          exit 0\n          python -I"),
+                 block.replace(
+                     '        run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"\n',
+                     "        run: python -c 'pass'\n",
+                 )]
     for changed in mutations:
         assert changed != block
         mutated = original.replace(block, changed, 1)
@@ -250,6 +254,10 @@ def test_trusted_job_mutations():
         routing.replace(
             '        run: python -I tools/repository/validate_pr_routing_contract.py "$RUNNER_TEMP/routing-contract-metadata.json"\n',
             "        run: python -c 'pass'\n",
+        ),
+        routing.replace(
+            '          git diff --check "$EXPECTED_BASE" "$EXPECTED_HEAD"\n',
+            "          true\n",
         ),
     ]
     for changed in routing_mutations:
