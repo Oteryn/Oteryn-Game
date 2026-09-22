@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
-status: COORDINATING
+status: implementing
 programme_state: ACTIVE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 repository: Oteryn/Oteryn-Game
@@ -105,7 +105,7 @@ Do not declare downstream release from PR-head CI alone. Required terminal evide
 last_progress: >-
   Context/lifecycle cleanup #714 reduced this active coordinator packet to current state only;
   historical checkpoint prose moved to evidence without changing programme authority.
-status: COORDINATING
+status: implementing
 programme_state: ACTIVE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 protected_main_sha: 256aa3b152c944cb8451906effe1f0090c5b798d
