@@ -4,7 +4,7 @@
 task_id: OTV2-20260921-content-world-item-family-scale-504
 title: Full-family Item identity registry and artifact v3
 mode: MIGRATE
-status: qualification
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-family-scale-504
