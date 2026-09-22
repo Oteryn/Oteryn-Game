@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
-          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "8fbed90c35f7f1958a1f2fa770ee37c25efc84eda66591ae9ef795655217ee1c"
+          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "b6532886dc224d18024ded38260049ed8dae9bc7429e1a2e387a51d7ae391a86"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
@@ -119,8 +119,8 @@ jobs:
           assert observed['schema'] == protected['schema']
           for key in ('records','source_profiles','field_vocabulary','expanded_field_slots','field_states','continuity','promotion'):
               assert observed['counts'][key] == protected['counts'][key], f'#770 aggregate drift: {key}'
-          assert observed['counts']['field_states']['CORROBORATED_CURRENT'] == 67
-          assert observed['counts']['promotion'] == {'BLOCKED': 2022321}
+          assert observed['counts']['field_states']['CORROBORATED_CURRENT'] == protected['counts']['field_states']['CORROBORATED_CURRENT'] == 69
+          assert observed['counts']['promotion'] == protected['counts']['promotion'] == {'BLOCKED': 4082799}
           print('#770 aggregate field partition: PASS')
           PY
 
@@ -155,7 +155,7 @@ jobs:
           import sys
           manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
           counts = manifest['counts']
-          assert counts['candidate_fields'] == 67
+          assert counts['candidate_fields'] == 69
           assert sum(counts['continuity'].values()) == 67
           assert set(counts['continuity']) == {'DERIVED','UNKNOWN','CONFLICT'}
           assert manifest['continuity_policy']['max_classification'] == 'DERIVED'
