@@ -45,12 +45,12 @@ This generation does not promote Item semantics. It only upgrades continuity fro
 ## Architecture and source of truth
 
 - PROVEN: protected main is dd32da467c8d1e172c7ddedc91feb6c04a8893b3; #770 and lifecycle #771 are protected.
-- PROVEN: the #770 compact manifest closes 2,022,321 field slots and records 67 CORROBORATED_CURRENT slots, all still promotion-blocked because target continuity is unresolved.
+- PROVEN: corrected exact-head #770 evidence from run 35773500272/job 106900759673 closes 4,082,799 atomic field slots and records 69 CORROBORATED_CURRENT slots, all still promotion-blocked because target continuity is unresolved.
 - PROVEN: the protected source registry allows a consistent static field to become an explicitly reasoned DERIVED candidate when target continuity is supported and no stronger conflict exists; wiki-only never becomes automatic PROVEN.
 - PROVEN: September 2026 current values are not automatically the 2026-07-28 target values.
 - PROVEN: the protected #767 TibiaWiki parser/normalizer is the canonical structured Item parser for this lineage and must be reused.
 - DERIVED: because the accepted target boundary has date-only precision, a conservative bridge can span the entire 2026-07-28 calendar day: compare the last normalized wiki revision before the day, every bounded revision during the day, and the current already-corroborated value. Equality supports DERIVED; disagreement is CONFLICT; incomplete history stays UNKNOWN.
-- UNKNOWN: #770 intentionally retained only compact manifest + full-output digest, not the full 38,157 scratch bytes. This successor therefore regenerates a fresh current-source/field-verification scratch under the protected algorithms and must fail closed if its aggregate #770 state partition drifts from the protected compact manifest.
+- PROVEN: the original committed #770 compact manifest was stale because it preceded final atomic-field/protected-lineage repairs. #162 correction allocation 5783885613 authorizes an evidence-only repair from immutable exact-head CI; the corrected manifest records compiler SHA b6532886dc224d18024ded38260049ed8dae9bc7429e1a2e387a51d7ae391a86 and full-output SHA ad3d3b16801979bd67fbf5e14f1d36f6e321f3526d133b17efa9e49a80d224f2. The full 38,157 scratch bytes remain uncommitted, so this successor regenerates fresh scratch under the protected algorithms and fails closed on aggregate partition drift.
 
 ## High-risk authority/recovery qualification
 
@@ -165,7 +165,7 @@ Target-day coverage uses the whole UTC calendar day rather than inventing an exa
 ## Context checkpoint
 
 ~~~yaml
-last_progress: continuity compiler and synthetic self-test authored on allocated branch
+last_progress: corrected stale #770 compact evidence from immutable exact-head CI; continuity compiler/self-test/workflow authored
 status: implementing
 branch: agent/content-world-item-target-continuity-504
 head_sha: pending
