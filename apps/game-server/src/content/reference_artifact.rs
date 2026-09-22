@@ -2860,6 +2860,33 @@ mod typed_item_codec_tests {
         })
     }
 
+    fn worst_definitions(item: ReferenceItemDefinition) -> Result<Vec<ReferenceDefinition>, ContentError> {
+        let identity_only = ReferenceItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Unknown,
+            materializable: false,
+            stack_class: ReferenceItemStackClass::Unknown,
+            legal_destinations: Vec::new(),
+            semantics: Default::default(),
+        };
+        let mut definitions = (0..REFERENCE_ITEM_REGISTRY_SIZE - 1)
+            .map(|ordinal| {
+                Ok(ReferenceDefinition {
+                    definition: TypedDefinitionRef::new(
+                        DefinitionFamily::Item,
+                        ProductionKey::new(&format!(
+                            "oteryn:item.schema.boundary-{ordinal:05}"
+                        ))?,
+                        DefinitionRevisionRef::new("definition-r1")?,
+                    ),
+                    kind: ReferenceDefinitionKind::Item(identity_only.clone()),
+                    client_projection: ClientProjectionClass::ClientSafe,
+                })
+            })
+            .collect::<Result<Vec<_>, ContentError>>()?;
+        definitions.push(source_definition(item)?);
+        Ok(definitions)
+    }
+
     fn target() -> Result<ReferenceItemTarget, ContentError> {
         ReferenceItemTarget::new("oteryn:item.schema.boundary-witness", "definition-r1")
     }
@@ -3061,8 +3088,7 @@ mod typed_item_codec_tests {
     #[test]
     fn typed_body_matches_accepted_exact_record_maxima_and_round_trips() -> Result<(), ContentError> {
         let item = worst_item()?;
-        let definition = source_definition(item.clone())?;
-        let definitions = [definition];
+        let definitions = worst_definitions(item.clone())?;
         let server = encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?;
         let client = encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
         assert_eq!(server.len(), TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES);
