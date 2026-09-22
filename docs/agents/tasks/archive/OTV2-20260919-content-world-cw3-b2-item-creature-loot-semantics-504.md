@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #680 is merged on protected main as `03a821edd828e24ccff6e2cb7fc819a776cbd238`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260919-content-world-cw3-b2-item-creature-loot-semantics-504
 
 ```yaml

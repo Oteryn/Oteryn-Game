@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #698 is merged on protected main as `a0f05f19d0caf6e44d704f59d383218b5663af73`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260920-content-world-cw2-b6-interaction-bindings-504
 
 ```yaml

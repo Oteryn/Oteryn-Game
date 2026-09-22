@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #695 is merged on protected main as `b6c06126e97c64ec938ed679d634ab64b54a9a73`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260920-content-world-cw2-b5-npc-service-bindings-504
 
 ```yaml
