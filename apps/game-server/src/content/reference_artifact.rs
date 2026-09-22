@@ -124,7 +124,7 @@ impl ReferenceArtifactProfile {
         if source.definitions.iter().any(|definition| {
             matches!(&definition.kind, ReferenceDefinitionKind::Item(item) if !item.semantics.is_all_unknown())
         }) {
-            if source.definitions.is_empty() || source.definitions.len() > FAMILY_MAX_INDEX_ENTRIES {
+            if source.definitions.len() != FAMILY_MAX_INDEX_ENTRIES {
                 return Err(ContentError::LimitExceeded {
                     resource: "Reference playable definitions",
                     actual: source.definitions.len(),
@@ -265,7 +265,7 @@ impl ReferenceArtifactProfile {
             Self::NativeItemFamilyV3 => {
                 count > BATCH_MAX_INDEX_ENTRIES && count <= FAMILY_MAX_INDEX_ENTRIES
             }
-            Self::TypedItemV4 => count >= 1 && count <= FAMILY_MAX_INDEX_ENTRIES,
+            Self::TypedItemV4 => count == FAMILY_MAX_INDEX_ENTRIES,
         }
     }
 

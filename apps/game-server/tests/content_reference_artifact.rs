@@ -67,19 +67,47 @@ fn compiled() -> CompiledReferencePlayableContent {
     compile_reference_playable(&linked).expect("compiled Reference artifact pair")
 }
 
-fn typed_linked(
-    semantics: ReferenceItemSemantics,
-) -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>> {
-    let imported = protected_cw2_b1_vase_import(B1_EVIDENCE)?;
-    let mut record = imported.record;
-    let ProjectReferenceRecord::Item {
-        semantics: item_semantics,
-        ..
-    } = &mut record
-    else {
-        panic!("protected vase is an Item");
-    };
-    *item_semantics = semantics;
+fn full_family_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_documents: 8,
+        max_document_bytes: 96_000_000,
+        max_total_bytes: 160_000_000,
+        max_json_depth: 24,
+        max_decoded_fields: 2_110_000,
+        max_string_bytes: 96_000_000,
+        max_locator_bytes: 160,
+        max_locator_segments: 8,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_import_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_reimport_states: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+    }
+}
+
+type NamedItemSemantics = (&'static str, ReferenceItemSemantics, String);
+
+fn typed_family_linked(
+    cases: Vec<(&'static str, ReferenceItemSemantics)>,
+) -> Result<(CanonicalReferencePlayableContent, Vec<NamedItemSemantics>), Box<dyn std::error::Error>>
+{
+    let mut imported = protected_cw2_b1_full_item_family_import(B1_EVIDENCE)?;
+    let mut selected = Vec::with_capacity(cases.len());
+    let mut cases = cases.into_iter();
+    for record in &mut imported.records {
+        let ProjectReferenceRecord::Item {
+            identity,
+            semantics,
+            ..
+        } = record
+        else {
+            continue;
+        };
+        let Some((name, value)) = cases.next() else {
+            break;
+        };
+        *semantics = value.clone();
+        selected.push((name, value, identity.key.clone()));
+    }
+    assert!(cases.next().is_none(), "full family carries all Item cases");
     let canonical = CanonicalProjectDocuments::from_draft(
         ProjectDraft {
             project_revision: "project-r1".to_owned(),
@@ -88,13 +116,17 @@ fn typed_linked(
             licensing_metadata: "PENDING".to_owned(),
             world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
             coordinate_frame: "global-target-2026-07-28".to_owned(),
-            records: vec![record],
+            records: imported.records,
             imports: vec![imported.batch],
             metadata: Vec::new(),
         },
-        limits(),
+        full_family_limits(),
     )?;
-    Ok(canonical.into_snapshot(limits())?.parse(limits())?.link()?)
+    let linked = canonical
+        .into_snapshot(full_family_limits())?
+        .parse(full_family_limits())?
+        .link()?;
+    Ok((linked, selected))
 }
 
 fn item_target() -> ReferenceItemTarget {
@@ -302,21 +334,27 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
     ));
 
     assert_eq!(cases.len(), 11);
-    for (name, semantics) in cases {
-        let linked = typed_linked(semantics.clone())?;
-        let compiled = compile_reference_playable(&linked)?;
-        let repeated = compile_reference_playable(&linked)?;
-        assert_eq!(compiled.server_artifact, repeated.server_artifact, "{name}");
-        assert_eq!(compiled.client_artifact, repeated.client_artifact, "{name}");
-        let identity = &linked.definitions[0].definition;
-        let server = load_reference_playable_artifact(
-            &compiled.server_artifact,
-            ReferenceArtifactProjection::ServerAuthoritative,
-        )?;
-        let client = load_reference_playable_artifact(
-            &compiled.client_artifact,
-            ReferenceArtifactProjection::ClientSafe,
-        )?;
+    let (linked, cases) = typed_family_linked(cases)?;
+    assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let compiled = compile_reference_playable(&linked)?;
+    let repeated = compile_reference_playable(&linked)?;
+    assert_eq!(compiled.server_artifact, repeated.server_artifact);
+    assert_eq!(compiled.client_artifact, repeated.client_artifact);
+    let server = load_reference_playable_artifact(
+        &compiled.server_artifact,
+        ReferenceArtifactProjection::ServerAuthoritative,
+    )?;
+    let client = load_reference_playable_artifact(
+        &compiled.client_artifact,
+        ReferenceArtifactProjection::ClientSafe,
+    )?;
+    for (name, semantics, key) in cases {
+        let identity = linked
+            .definitions
+            .iter()
+            .find(|definition| definition.definition.key().as_str() == key)
+            .map(|definition| &definition.definition)
+            .expect(name);
         assert_eq!(
             server.artifact_profile_id(),
             "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4",
@@ -332,6 +370,50 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
             semantics.client_projection(),
             "{name}",
         );
+    }
+
+    let mut below = linked.clone();
+    below.definitions.pop();
+    assert!(matches!(
+        compile_reference_playable(&below),
+        Err(ContentError::LimitExceeded {
+            resource: "Reference playable definitions",
+            actual: 38_156,
+            limit: 38_157,
+        })
+    ));
+    let mut above = linked.clone();
+    above
+        .definitions
+        .push(above.definitions.last().expect("last definition").clone());
+    assert!(matches!(
+        compile_reference_playable(&above),
+        Err(ContentError::LimitExceeded {
+            resource: "Reference playable definitions",
+            actual: 38_158,
+            limit: 38_157,
+        })
+    ));
+
+    for projection in [
+        ReferenceArtifactProjection::ServerAuthoritative,
+        ReferenceArtifactProjection::ClientSafe,
+    ] {
+        let source = match projection {
+            ReferenceArtifactProjection::ServerAuthoritative => &compiled.server_artifact,
+            ReferenceArtifactProjection::ClientSafe => &compiled.client_artifact,
+        };
+        for invalid_count in [38_156, 38_158] {
+            let mut malformed = source.clone();
+            write_u32(&mut malformed, INDEX_ENTRY + 12, invalid_count);
+            write_u32(&mut malformed, BODY_ENTRY + 12, invalid_count);
+            assert!(matches!(
+                load_reference_playable_artifact(&malformed, projection),
+                Err(ContentError::InvalidArtifact(
+                    "Reference artifact section cardinality mismatch"
+                ))
+            ));
+        }
     }
     Ok(())
 }

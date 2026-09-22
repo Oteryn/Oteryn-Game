@@ -589,6 +589,232 @@ fn replace_lock_and_rebind_root(documents: &mut BTreeMap<String, Vec<u8>>, lock:
     documents.insert("project.json".to_owned(), canonical_value(&root));
 }
 
+fn replace_document_and_rebind(
+    documents: &mut BTreeMap<String, Vec<u8>>,
+    locator: &str,
+    bytes: Vec<u8>,
+) {
+    documents.insert(locator.to_owned(), bytes.clone());
+    let mut manifest: Value =
+        serde_json::from_slice(&documents["manifest.json"]).expect("manifest");
+    let entry = manifest["documents"]
+        .as_array_mut()
+        .expect("manifest inventory")
+        .iter_mut()
+        .find(|entry| entry["locator"] == locator)
+        .expect("document inventory entry");
+    entry["byte_length"] = Value::from(bytes.len());
+    entry["sha256"] = Value::String(world_project_sha256(&bytes));
+    let manifest_bytes = canonical_value(&manifest);
+    documents.insert("manifest.json".to_owned(), manifest_bytes.clone());
+
+    let package = PackageManifestBinding::new(
+        ProductionKey::new(manifest["package_key"].as_str().expect("package key")).expect("key"),
+        ProductionAtom::new(
+            "package revision",
+            manifest["package_revision"].as_str().expect("revision"),
+        )
+        .expect("revision"),
+        ProductionAtom::new(
+            "schema",
+            manifest["semantic_schema_version"]
+                .as_str()
+                .expect("schema"),
+        )
+        .expect("schema"),
+        ProductionAtom::new(
+            "license",
+            manifest["licensing_metadata"].as_str().expect("license"),
+        )
+        .expect("license"),
+        Sha256HexDigest::new(&world_project_sha256(&manifest_bytes)).expect("manifest digest"),
+    );
+    let mut lock: Value = serde_json::from_slice(&documents["content.lock.json"]).expect("lock");
+    lock["entries"][0]["package_provenance_digest"] = Value::String(
+        package
+            .package_provenance_digest()
+            .expect("provenance")
+            .as_str()
+            .to_owned(),
+    );
+    let lock_bytes = canonical_value(&lock);
+    documents.insert("content.lock.json".to_owned(), lock_bytes.clone());
+    let mut root: Value = serde_json::from_slice(&documents["project.json"]).expect("project root");
+    root["manifest_sha256"] = Value::String(world_project_sha256(&manifest_bytes));
+    root["content_lock_sha256"] = Value::String(world_project_sha256(&lock_bytes));
+    documents.insert("project.json".to_owned(), canonical_value(&root));
+}
+
+#[test]
+fn project_parser_rejects_unknown_members_in_nested_item_payloads() {
+    let cases = [
+        (
+            "field state envelope",
+            json!({
+                "presentation": {
+                    "state": "UNKNOWN",
+                    "legacy_state": "UNKNOWN"
+                }
+            }),
+        ),
+        (
+            "presentation aliases",
+            json!({
+                "presentation": {
+                    "state": "KNOWN",
+                    "value": {
+                        "name": {"state": "UNKNOWN"},
+                        "description": {"state": "UNKNOWN"},
+                        "aliases": ["legacy alias"]
+                    }
+                }
+            }),
+        ),
+        (
+            "presentation tags",
+            json!({
+                "presentation": {
+                    "state": "KNOWN",
+                    "value": {
+                        "name": {"state": "UNKNOWN"},
+                        "description": {"state": "UNKNOWN"},
+                        "tags": ["legacy-tag"]
+                    }
+                }
+            }),
+        ),
+        (
+            "presentation binding",
+            json!({
+                "presentation": {
+                    "state": "KNOWN",
+                    "value": {
+                        "name": {"state": "UNKNOWN"},
+                        "description": {"state": "UNKNOWN"},
+                        "appearance_binding": "legacy-sprite"
+                    }
+                }
+            }),
+        ),
+        (
+            "nested equipment vector",
+            json!({
+                "equipment": {
+                    "state": "KNOWN",
+                    "value": {
+                        "patterns": {
+                            "state": "KNOWN",
+                            "value": [{
+                                "pattern_id": 1,
+                                "primary_slot": {"state": "UNKNOWN"},
+                                "additional_reserved_slots": {"state": "UNKNOWN"},
+                                "mutually_exclusive_groups": {"state": "UNKNOWN"},
+                                "vocations": {"state": "UNKNOWN"},
+                                "level": {"state": "UNKNOWN"},
+                                "compatibility_rule": {"state": "UNKNOWN"},
+                                "legacy_pattern": true
+                            }]
+                        }
+                    }
+                }
+            }),
+        ),
+        (
+            "nested target reference",
+            json!({
+                "temporal": {
+                    "state": "KNOWN",
+                    "value": {
+                        "consumption_mode": {"state": "UNKNOWN"},
+                        "duration": {"state": "UNKNOWN"},
+                        "stop_duration": {"state": "UNKNOWN"},
+                        "decay_target": {
+                            "state": "KNOWN",
+                            "value": {
+                                "key": "oteryn:reference.item.project-owned-token",
+                                "revision": "definition-r1",
+                                "source_numeric_id": 100
+                            }
+                        }
+                    }
+                }
+            }),
+        ),
+        (
+            "nested rational payload",
+            json!({
+                "weapon": {
+                    "state": "KNOWN",
+                    "value": {
+                        "weapon_type": {"state": "UNKNOWN"},
+                        "attack": {"state": "UNKNOWN"},
+                        "defense": {"state": "UNKNOWN"},
+                        "extra_defense": {"state": "UNKNOWN"},
+                        "range": {"state": "UNKNOWN"},
+                        "hit_chance": {
+                            "state": "KNOWN",
+                            "value": {"numerator": 1, "denominator": 1, "scale": 100}
+                        },
+                        "max_hit_chance": {"state": "UNKNOWN"},
+                        "ammunition": {"state": "UNKNOWN"},
+                        "elemental": {"state": "UNKNOWN"}
+                    }
+                }
+            }),
+        ),
+        (
+            "nested structured enum payload",
+            json!({
+                "skill_modifiers": {
+                    "state": "KNOWN",
+                    "value": {
+                        "modifiers": {
+                            "state": "KNOWN",
+                            "value": [{
+                                "kind": "CRITICAL_HIT_CHANCE",
+                                "target_domain": {"state": "UNKNOWN"},
+                                "evaluation_phase": {"state": "UNKNOWN"},
+                                "priority": {"state": "UNKNOWN"},
+                                "parameter": {
+                                    "state": "KNOWN",
+                                    "value": {
+                                        "kind": "BOOLEAN",
+                                        "value": true,
+                                        "legacy_parameter": true
+                                    }
+                                }
+                            }]
+                        }
+                    }
+                }
+            }),
+        ),
+    ];
+
+    for (case, semantics) in cases {
+        let mut emitted = documents(draft());
+        let mut records: Value =
+            serde_json::from_slice(&emitted["records/reference.json"]).expect("reference records");
+        let item = records["records"]
+            .as_array_mut()
+            .expect("records")
+            .iter_mut()
+            .find(|record| record["kind"] == "Item")
+            .expect("Item record");
+        item["semantics"] = semantics;
+        replace_document_and_rebind(
+            &mut emitted,
+            "records/reference.json",
+            canonical_value(&records),
+        );
+        let result = parse(emitted);
+        assert!(
+            matches!(&result, Err(ProjectError::InvalidJson(_))),
+            "{case} must fail closed at the Project parser boundary: {result:?}"
+        );
+    }
+}
+
 #[test]
 fn content_lock_requires_exactly_one_immutable_root_entry() {
     for mutation in 0..4 {

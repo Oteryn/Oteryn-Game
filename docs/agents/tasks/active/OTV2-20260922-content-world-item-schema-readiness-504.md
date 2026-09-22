@@ -4,18 +4,18 @@
 task_id: OTV2-20260922-content-world-item-schema-readiness-504
 title: D6-M1 Item Schema Readiness
 mode: IMPLEMENT
-status: implementing
+status: repairing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-schema-readiness-504
 pr: 749
-base_sha: cf5c5f35476559450b6bbaf87dce519f7eead9d0
-head_sha: 3d69fa467fc41d6ef7b85fa4c1cdca509a060a4b
+base_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
+head_sha: 3f6ee6970d1b250b8f6d76585dad5c5279d57099
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: item schema lead
 created_at: 2026-09-22T10:44:00+02:00
-updated_at: 2026-09-22T11:52:07Z
+updated_at: 2026-09-22T12:25:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -93,6 +93,9 @@ No second Crystal/B1 source import. No full-family semantic value promotion. No 
 - IMPLEMENTED — client-safe data is a positive allowlist projection of the same semantic graph. Temporal, transform, trade, fluid and read/write authority groups are rejected in client records.
 - IMPLEMENTED — all 90 B1 candidate fields have exactly one typed destination or explicit unsupported/loss disposition. The mapper leaves new real-corpus semantics UNKNOWN; no Crystal/B1 value promotion or identity regeneration occurs in this generation.
 - PROVEN — independent Python-oracle bytes and SHA-256 values match Rust for identity-only, retained materializable core, melee, distance and exact maximum server/client records. The maximum fixture resolves target ordinal 38,156 through a full 38,157-entry synthetic index.
+- ACCEPTED FINDING R1 — exact-head self-review and independent review of frozen `3f6ee6970d1b250b8f6d76585dad5c5279d57099` found two P1 defects: nested typed Item JSON carriers admitted unknown members, and the production v4 profile admitted partial `1..=38,157` record families despite the accepted exact-38,157 registry contract.
+- REPAIRING R1 — every new nested typed Item object/structured-enum carrier rejects unknown members at the real Project parser boundary. Production v4 compile and decode require exactly 38,157 records; compact record-codec goldens remain unit-scoped, while the 11 representative semantic fixtures share one complete protected-family artifact.
+- ACCEPTED P2 DISPOSITION — account and character binding policies remain explicit unsupported entries alongside presentation binding/aliases/tags, equipment compatibility and modifier augment binding. The immutable pre-implementation measurement packet remains unchanged; live acceptance and release checkpoints govern its lifecycle status.
 
 Start from the already-retained B1 source-field -> typed capability matrix in #504 comment `5773340420`. Prefer bounded typed structures over arbitrary maps. Resolve cross-Item references through the protected #737 native map.
 
@@ -130,18 +133,18 @@ Start from the already-retained B1 source-field -> typed capability matrix in #5
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: `3f6ee6970d1b250b8f6d76585dad5c5279d57099`
+- method/reviewer: implementing agent, mandatory full-diff adversarial review
+- material findings: P0=0, P1=2, P2=1; both P1 findings accepted for R1 repair, P2 accepted as live-checkpoint-governed historical packet wording
+- verdict: FIX; successor R1 review pending
 
 ## Independent review
 
-- required: pending
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: completed for failed generation; successor R1 review remains required
+- exact head: `3f6ee6970d1b250b8f6d76585dad5c5279d57099`
+- method/auditor: independent non-authoring Sol High full-diff review
+- material findings: P0=0, P1=2, P2=1; both P1 findings independently reproduced and accepted
+- verdict: FIX; successor R1 review pending
 
 ## PR and closeout
 
@@ -155,10 +158,10 @@ Start from the already-retained B1 source-field -> typed capability matrix in #5
 ## Context checkpoint
 
 ```yaml
-last_progress: Accepted resource profile is implemented in the canonical typed Item model and v4 codec; focused Rust, byte-oracle, bounds and Windows integration checks pass
-status: implementing
+last_progress: R1 repair has RED evidence for both accepted P1 findings and a bounded GREEN implementation; final merged-head validation and successor review remain pending
+status: repairing
 branch: agent/content-world-item-schema-readiness-504
-head_sha: 3d69fa467fc41d6ef7b85fa4c1cdca509a060a4b
+head_sha: 3f6ee6970d1b250b8f6d76585dad5c5279d57099
 pr: 749
 final_head_sha: null
 final_head_frozen_at: null
@@ -176,6 +179,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: EXACT_HEAD_LINUX_WORKSPACE_AND_GOVERNED_QUALIFICATION_PENDING
-next_action: complete workspace validation, independent exact-head review and repository-selected qualification before freeze
+blocker: R1_FINAL_HEAD_VALIDATION_REVIEW_AND_GOVERNED_QUALIFICATION_PENDING
+next_action: publish the guarded normal-Git R1 successor, then complete exact-head validation, independent review and repository-selected qualification before freeze
 ```

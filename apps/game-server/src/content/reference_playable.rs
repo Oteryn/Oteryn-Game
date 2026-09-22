@@ -2,7 +2,7 @@ use super::{
     ContentError, ContentLockBinding, PackageManifestBinding, ProductionAtom, ProductionKey,
 };
 use crate::foundation::WorldId;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use std::collections::BTreeSet;
 
 pub const REFERENCE_PLAYABLE_CONTENT_PROFILE_ID: &str = "REFERENCE_PLAYABLE_CONTENT_PROFILE/v1";
@@ -136,7 +136,7 @@ pub const REFERENCE_ITEM_EXPLICIT_UNSUPPORTED_V1: [&str; 7] = [
 
 /// Truth-bearing immutable Item field. `Known(false)` and `Known(0)` are deliberately
 /// different from `Unknown`, `NotApplicable` and `Conflict`.
-#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(tag = "state", content = "value", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReferenceItemField<T> {
     #[default]
@@ -144,6 +144,76 @@ pub enum ReferenceItemField<T> {
     NotApplicable,
     Conflict,
     Known(T),
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum ReferenceItemFieldState {
+    Unknown,
+    NotApplicable,
+    Conflict,
+    Known,
+}
+
+enum ReferenceItemFieldValue<T> {
+    Missing,
+    Present(T),
+}
+
+impl<T> Default for ReferenceItemFieldValue<T> {
+    fn default() -> Self {
+        Self::Missing
+    }
+}
+
+fn deserialize_reference_item_field_value<'de, D, T>(
+    deserializer: D,
+) -> Result<ReferenceItemFieldValue<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(ReferenceItemFieldValue::Present)
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, bound(deserialize = "T: Deserialize<'de>"))]
+struct ReferenceItemFieldEnvelope<T> {
+    state: ReferenceItemFieldState,
+    #[serde(default, deserialize_with = "deserialize_reference_item_field_value")]
+    value: ReferenceItemFieldValue<T>,
+}
+
+impl<'de, T> Deserialize<'de> for ReferenceItemField<T>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let envelope = ReferenceItemFieldEnvelope::<T>::deserialize(deserializer)?;
+        match (envelope.state, envelope.value) {
+            (ReferenceItemFieldState::Unknown, ReferenceItemFieldValue::Missing) => {
+                Ok(Self::Unknown)
+            }
+            (ReferenceItemFieldState::NotApplicable, ReferenceItemFieldValue::Missing) => {
+                Ok(Self::NotApplicable)
+            }
+            (ReferenceItemFieldState::Conflict, ReferenceItemFieldValue::Missing) => {
+                Ok(Self::Conflict)
+            }
+            (ReferenceItemFieldState::Known, ReferenceItemFieldValue::Present(value)) => {
+                Ok(Self::Known(value))
+            }
+            (ReferenceItemFieldState::Known, ReferenceItemFieldValue::Missing) => {
+                Err(de::Error::missing_field("value"))
+            }
+            (_, ReferenceItemFieldValue::Present(_)) => Err(de::Error::custom(
+                "Reference Item non-KNOWN field state cannot carry a value",
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -270,6 +340,7 @@ pub struct ReferenceCells(pub u16);
 pub struct ReferenceMilliseconds(pub u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceRationalPercent {
     pub numerator: i64,
     pub denominator: u64,
@@ -305,6 +376,7 @@ fn gcd_u64(mut left: u64, mut right: u64) -> u64 {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemTarget {
     pub key: String,
     pub revision: String,
@@ -330,18 +402,21 @@ impl ReferenceItemTarget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemPresentation {
     pub name: ReferenceItemField<String>,
     pub description: ReferenceItemField<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemClassification {
     pub item_type: ReferenceItemField<ReferenceItemType>,
     pub capabilities: ReferenceItemField<[ReferenceItemField<bool>; 24]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemPhysical {
     pub weight: ReferenceItemField<u32>,
     pub movable: ReferenceItemField<bool>,
@@ -349,12 +424,14 @@ pub struct ReferenceItemPhysical {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemStack {
     pub stackable: ReferenceItemField<bool>,
     pub stack_max: ReferenceItemField<u16>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceEquipmentPattern {
     pub pattern_id: u8,
     pub primary_slot: ReferenceItemField<ReferenceEquipmentSlot>,
@@ -367,17 +444,20 @@ pub struct ReferenceEquipmentPattern {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemEquipment {
     pub patterns: ReferenceItemField<Vec<ReferenceEquipmentPattern>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceElementalAttack {
     pub element: ReferenceWeaponElement,
     pub points: ReferenceItemField<ReferenceSignedPoints>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemWeapon {
     pub weapon_type: ReferenceItemField<ReferenceWeaponType>,
     pub attack: ReferenceItemField<ReferenceSignedPoints>,
@@ -391,18 +471,20 @@ pub struct ReferenceItemWeapon {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceResistance {
     pub kind: ReferenceResistanceKind,
     pub percent: ReferenceItemField<ReferenceRationalPercent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemProtection {
     pub armor: ReferenceItemField<ReferenceSignedPoints>,
     pub resistances: ReferenceItemField<Vec<ReferenceResistance>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReferenceModifierParameter {
     Boolean(bool),
@@ -413,7 +495,92 @@ pub enum ReferenceModifierParameter {
     Element(ReferenceModifierElement),
 }
 
+macro_rules! strict_modifier_parameter_kind {
+    ($name:ident, $variant:ident, $wire:literal) => {
+        #[derive(Deserialize)]
+        enum $name {
+            #[serde(rename = $wire)]
+            $variant,
+        }
+    };
+}
+
+strict_modifier_parameter_kind!(ReferenceModifierBooleanKind, Boolean, "BOOLEAN");
+strict_modifier_parameter_kind!(
+    ReferenceModifierSignedPointsKind,
+    SignedPoints,
+    "SIGNED_POINTS"
+);
+strict_modifier_parameter_kind!(ReferenceModifierCellsKind, Cells, "CELLS");
+strict_modifier_parameter_kind!(
+    ReferenceModifierMillisecondsKind,
+    Milliseconds,
+    "MILLISECONDS"
+);
+strict_modifier_parameter_kind!(
+    ReferenceModifierRationalPercentKind,
+    RationalPercent,
+    "RATIONAL_PERCENT"
+);
+strict_modifier_parameter_kind!(ReferenceModifierElementKind, Element, "ELEMENT");
+
+#[derive(Deserialize)]
+#[serde(
+    deny_unknown_fields,
+    bound(deserialize = "K: Deserialize<'de>, V: Deserialize<'de>")
+)]
+struct ReferenceModifierParameterCase<K, V> {
+    #[serde(rename = "kind")]
+    _kind: K,
+    value: V,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ReferenceModifierParameterEnvelope {
+    Boolean(ReferenceModifierParameterCase<ReferenceModifierBooleanKind, bool>),
+    SignedPoints(
+        ReferenceModifierParameterCase<ReferenceModifierSignedPointsKind, ReferenceSignedPoints>,
+    ),
+    Cells(ReferenceModifierParameterCase<ReferenceModifierCellsKind, ReferenceCells>),
+    Milliseconds(
+        ReferenceModifierParameterCase<ReferenceModifierMillisecondsKind, ReferenceMilliseconds>,
+    ),
+    RationalPercent(
+        ReferenceModifierParameterCase<
+            ReferenceModifierRationalPercentKind,
+            ReferenceRationalPercent,
+        >,
+    ),
+    Element(ReferenceModifierParameterCase<ReferenceModifierElementKind, ReferenceModifierElement>),
+}
+
+impl<'de> Deserialize<'de> for ReferenceModifierParameter {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(
+            match ReferenceModifierParameterEnvelope::deserialize(deserializer)? {
+                ReferenceModifierParameterEnvelope::Boolean(case) => Self::Boolean(case.value),
+                ReferenceModifierParameterEnvelope::SignedPoints(case) => {
+                    Self::SignedPoints(case.value)
+                }
+                ReferenceModifierParameterEnvelope::Cells(case) => Self::Cells(case.value),
+                ReferenceModifierParameterEnvelope::Milliseconds(case) => {
+                    Self::Milliseconds(case.value)
+                }
+                ReferenceModifierParameterEnvelope::RationalPercent(case) => {
+                    Self::RationalPercent(case.value)
+                }
+                ReferenceModifierParameterEnvelope::Element(case) => Self::Element(case.value),
+            },
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceModifierBinding {
     pub kind: ReferenceSkillModifierKind,
     /// Profile-local closed capacity ID; an accepted ruleset binding remains independently gated.
@@ -425,16 +592,19 @@ pub struct ReferenceModifierBinding {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemSkillModifiers {
     pub modifiers: ReferenceItemField<Vec<ReferenceModifierBinding>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemCharges {
     pub count: ReferenceItemField<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemTemporal {
     pub consumption_mode: ReferenceItemField<ReferenceTemporalMode>,
     pub duration: ReferenceItemField<ReferenceMilliseconds>,
@@ -443,6 +613,7 @@ pub struct ReferenceItemTemporal {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemContainer {
     pub capacity: ReferenceItemField<u16>,
 }
@@ -455,12 +626,14 @@ pub enum ReferenceImbuementTier {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceImbuementAllowance {
     pub family: ReferenceImbuementFamily,
     pub tier: ReferenceImbuementTier,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemImbuement {
     pub slot_count: ReferenceItemField<u8>,
     pub allowed_family_tiers: ReferenceItemField<Vec<ReferenceImbuementAllowance>>,
@@ -468,18 +641,21 @@ pub struct ReferenceItemImbuement {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceTransformTarget {
     pub kind: ReferenceTransformKind,
     pub target: ReferenceItemField<ReferenceItemTarget>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemUseTransform {
     /// Exactly ten ordered entries when the outer group is known.
     pub targets: Vec<ReferenceTransformTarget>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemTradeRestrictions {
     pub tradeable: ReferenceItemField<bool>,
     pub marketable: ReferenceItemField<bool>,
@@ -491,11 +667,13 @@ pub struct ReferenceItemTradeRestrictions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemFluid {
     pub fluid_type: ReferenceItemField<ReferenceFluidType>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReferenceItemReadableWriteable {
     pub readable: ReferenceItemField<bool>,
     pub writeable: ReferenceItemField<bool>,
