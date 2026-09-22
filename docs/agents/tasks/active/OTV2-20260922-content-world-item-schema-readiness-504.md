@@ -20,12 +20,14 @@ execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
   - apps/game-server/src/content/project.rs
+  - apps/game-server/src/content/project_fs.rs
   - apps/game-server/src/content/reference_artifact.rs
   - apps/game-server/src/content/cw2_b1_import.rs
   - apps/game-server/tests/content_reference_playable.rs
   - apps/game-server/tests/content_reference_artifact.rs
   - apps/game-server/tests/content_world_project.rs
   - apps/game-server/tests/content_world_project_fs.rs
+  - apps/game-server/tests/content_world_project_publication.rs
   - apps/game-server/tests/content_world_cw2_b1_import.rs
   - docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json
   - docs/agents/tasks/active/OTV2-20260922-content-world-item-schema-readiness-504.md
