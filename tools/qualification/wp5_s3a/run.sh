@@ -138,6 +138,66 @@ expect_unavailable() {
   grep -Eq '^\{"version":[12],"operation":"[A-Za-z0-9]+","result":"unavailable"\}$' "$output"
   [[ "$(wc -c < "$output")" -le 8192 ]]
 }
+expect_observed_account() {
+  local payload=$1 output=$2 operation=$3 version=$4 account_id=$5 purpose=$6 scope=$7
+  expect_status 200 "$payload" "$output"
+  validate_observed_account "$output" "$operation" "$version" "$account_id" "$purpose" "$scope"
+}
+validate_observed_account() {
+  local output=$1 operation=$2 version=$3 account_id=$4 purpose=$5 scope=$6
+  python3 - "$output" "$operation" "$version" "$account_id" "$purpose" "$scope" <<'PY'
+import json
+import pathlib
+import sys
+
+path, operation, version, account_id, purpose, scope = sys.argv[1:]
+body = pathlib.Path(path).read_bytes()
+if not body or len(body) > 8192:
+    raise SystemExit("observed response body is empty or oversized")
+
+def closed_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate response member: {key}")
+        result[key] = value
+    return result
+
+try:
+    response = json.loads(body.decode("utf-8"), object_pairs_hook=closed_object)
+except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+    raise SystemExit(f"malformed observed response: {error}") from error
+
+expected_keys = {
+    "version", "operation", "result", "source_authority", "source_revision",
+    "decision_identity", "source_observed_at", "clock_uncertainty_seconds",
+    "account_id", "purpose", "scope", "allowed", "minimum_valid_generation",
+}
+if not isinstance(response, dict) or set(response) != expected_keys:
+    raise SystemExit("observed response has an unknown or missing member")
+expected = {
+    "version": int(version), "operation": operation, "result": "observed",
+    "source_authority": "platform", "account_id": account_id,
+    "purpose": purpose, "scope": scope, "allowed": True,
+}
+if any(response.get(key) != value for key, value in expected.items()):
+    raise SystemExit("observed response has wrong operation, binding, authority, or result")
+for key, allow_zero in (
+    ("source_revision", False), ("source_observed_at", False),
+    ("clock_uncertainty_seconds", True), ("minimum_valid_generation", False),
+):
+    value = response.get(key)
+    if not isinstance(value, str) or not value.isascii() or not value.isdigit():
+        raise SystemExit(f"observed response has malformed {key}")
+    parsed = int(value)
+    if str(parsed) != value or (parsed == 0 and not allow_zero):
+        raise SystemExit(f"observed response has non-canonical {key}")
+if response["decision_identity"] != response["source_revision"]:
+    raise SystemExit("observed response has invalid decision provenance")
+if int(response["clock_uncertainty_seconds"]) > 5:
+    raise SystemExit("observed response exceeds clock uncertainty bound")
+PY
+}
 expect_transport_rejected() {
   local label=$1
   shift
@@ -172,8 +232,8 @@ for bad in \
 done
 oversize="$(printf '%*s' 1025 '' | tr ' ' x)"
 expect_status 413 "$oversize" "$WP5_SCRATCH/oversize-response"
-expect_status 200 "$account_payload" "$WP5_SCRATCH/account-response"
-[[ "$(wc -c < "$WP5_SCRATCH/account-response")" -le 8192 ]]
+expect_observed_account "$account_payload" "$WP5_SCRATCH/account-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
 evidence 'request_bound=1024 response_bound=8192 malformed=closed duplicate=closed nested=closed unknown=closed'
 
 export WP5_S3A_PORT="$WP5_PORT"
@@ -186,14 +246,63 @@ export WP5_S3A_FRESH_KEY_ID="$FRESH_KEY_ID"
 export WP5_S3A_RECOVERY_KEY_ID="$RECOVERY_KEY_ID"
 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 
-# Hold the relational read briefly while two genuine S1 requests occupy both Game slots.
+# Keep the Game-side two-active proof separate from the producer-side boundary.
 compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db \
   mariadb -uroot oteryn_s3a -e 'LOCK TABLES identities WRITE; DO SLEEP(2); UNLOCK TABLES' >/dev/null &
 locker=$!
 sleep 0.2
 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_capacity_two_inflight_rejects_third -- --ignored --exact --nocapture
 wait "$locker"
-evidence 'capacity=two_inflight third=immediate_reject application_queue=none client_profile=two_active_eight_queued'
+evidence 'game_capacity=two_active third=immediate_reject client_profile=two_active_eight_queued'
+
+# Hold two authenticated requests after they acquire the producer's two atomic
+# capacity locks. A third authenticated request must traverse nginx/FastCGI and
+# return unavailable before the held database reads can complete.
+compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db \
+  mariadb -uroot oteryn_s3a -e 'LOCK TABLES identities WRITE; DO SLEEP(8); UNLOCK TABLES' >/dev/null &
+producer_locker=$!
+sleep 0.2
+producer_request() {
+  local output=$1 status_output=$2
+  curl "${curl_base[@]}" "${auth[@]}" -H 'Content-Type: application/json' \
+    -o "$output" -w '%{http_code}' --data-binary "$account_payload" "$base_url" > "$status_output"
+}
+producer_request "$WP5_SCRATCH/producer-first-response" "$WP5_SCRATCH/producer-first-status" &
+producer_first=$!
+producer_request "$WP5_SCRATCH/producer-second-response" "$WP5_SCRATCH/producer-second-status" &
+producer_second=$!
+producer_slots_locked=false
+for _ in {1..50}; do
+  if compose exec --no-TTY --user www-data platform php -r \
+    '$d="/var/lib/oteryn-witness"; foreach ([0,1] as $s) { $h=fopen("$d/pipeline-$s.lock","c+b"); if ($h===false || flock($h,LOCK_EX|LOCK_NB)) { if (is_resource($h)) { flock($h,LOCK_UN); fclose($h); } exit(1); } fclose($h); }' >/dev/null; then
+    producer_slots_locked=true
+    break
+  fi
+  sleep 0.1
+done
+[[ "$producer_slots_locked" == true ]]
+third_status="$(curl "${curl_base[@]}" "${auth[@]}" -H 'Content-Type: application/json' \
+  -o "$WP5_SCRATCH/producer-third-response" -w '%{http_code} %{time_total}' \
+  --data-binary "$account_payload" "$base_url")"
+read -r third_http third_seconds <<< "$third_status"
+[[ "$third_http" == 200 ]]
+grep -Fxq '{"version":1,"operation":"ReadAccountSecurityV1","result":"unavailable"}' \
+  "$WP5_SCRATCH/producer-third-response"
+[[ "$(wc -c < "$WP5_SCRATCH/producer-third-response")" -le 8192 ]]
+python3 - "$third_seconds" <<'PY'
+import sys
+if float(sys.argv[1]) >= 2.0:
+    raise SystemExit("producer capacity rejection was not immediate and bounded")
+PY
+wait "$producer_locker"
+wait "$producer_first" "$producer_second"
+[[ "$(cat "$WP5_SCRATCH/producer-first-status")" == 200 ]]
+[[ "$(cat "$WP5_SCRATCH/producer-second-status")" == 200 ]]
+validate_observed_account "$WP5_SCRATCH/producer-first-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
+validate_observed_account "$WP5_SCRATCH/producer-second-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
+evidence "producer_capacity=two_inflight third=immediate_unavailable application_queue=none rejection_seconds=$third_seconds"
 
 # Relational outage is bounded and does not escape the closed failure shape.
 compose stop db >/dev/null
@@ -205,7 +314,8 @@ evidence 'relational_failure=bounded_unavailable'
 store_digest_before="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
 compose restart platform nginx >/dev/null
 compose up --detach --wait platform nginx >/dev/null
-expect_status 200 "$account_payload" "$WP5_SCRATCH/restart-response"
+expect_observed_account "$account_payload" "$WP5_SCRATCH/restart-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
 store_digest_after="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
 [[ "$store_digest_before" == "$store_digest_after" ]]
 evidence "process_restart=retained witness_store_digest=$store_digest_after"
@@ -226,7 +336,8 @@ compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot \
 compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot oteryn_s3a < "$WP5_SCRATCH/database-no-binding.sql"
 compose start platform >/dev/null
 compose up --detach --wait platform nginx >/dev/null
-expect_status 200 "$account_payload" "$WP5_SCRATCH/restore-response"
+expect_observed_account "$account_payload" "$WP5_SCRATCH/restore-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
 rebound="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_witness_stores WHERE id=1')"
 [[ "$rebound" == 1 ]]
 evidence 'database_restore=retained_witness_rebound'
@@ -235,14 +346,16 @@ evidence 'database_restore=retained_witness_rebound'
 compose exec --no-TTY platform sh -c 'tar -C /var/lib/oteryn-witness -cf /run/wp5/witness.tar . && find /var/lib/oteryn-witness -mindepth 1 -maxdepth 1 -delete'
 expect_unavailable "$account_payload" "$WP5_SCRATCH/replacement-response"
 compose exec --no-TTY platform sh -c 'tar -C /var/lib/oteryn-witness -xf /run/wp5/witness.tar'
-expect_status 200 "$account_payload" "$WP5_SCRATCH/replacement-restored-response"
+expect_observed_account "$account_payload" "$WP5_SCRATCH/replacement-restored-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
 evidence 'replacement_witness=rejected retained_witness=restored'
 
 # Account witness-ahead rollback and explicit forward-only reconciliation.
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=App\Identity\Models\Identity::query()->where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); Illuminate\Support\Facades\DB::beginTransaction(); try { app(App\Identity\Actions\RevokeIdentityGameAuthorizations::class)->execute($id); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-response"
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --account-id="$ACCOUNT_ID" --no-interaction >/dev/null
-expect_status 200 "$account_payload" "$WP5_SCRATCH/account-reconciled-response"
+expect_observed_account "$account_payload" "$WP5_SCRATCH/account-reconciled-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
 evidence 'account_rollback=unavailable account_reconcile=forward_only'
 
 # Signing witness-ahead rollback, conservative revocation, then a fresh successor key/profile.
@@ -260,7 +373,8 @@ for mode in file directory; do
   expect_unavailable "$account_payload" "$WP5_SCRATCH/fsync-$mode-response"
   WP5_FSYNC_FAULT=none; export WP5_FSYNC_FAULT
   compose up --detach --wait --force-recreate --no-deps platform >/dev/null
-  expect_status 200 "$account_payload" "$WP5_SCRATCH/fsync-$mode-recovered-response"
+  expect_observed_account "$account_payload" "$WP5_SCRATCH/fsync-$mode-recovered-response" \
+    ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
   evidence "fsync_fault=$mode result=unavailable recovery=observed"
 done
 
