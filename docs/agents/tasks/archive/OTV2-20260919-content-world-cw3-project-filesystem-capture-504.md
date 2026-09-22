@@ -1,4 +1,6 @@
-> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical delivery PR #687 is protected-merged as `037bf7818122ad7d2bb10ad47f89fdd90d2a35dc`. Any nonterminal status, custody, review, CI or next-action wording below is retained as historical provenance only and grants no current authority.\n\n# OTV2-20260919-content-world-cw3-project-filesystem-capture-504
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical delivery PR #687 is protected-merged as `037bf7818122ad7d2bb10ad47f89fdd90d2a35dc`. Any nonterminal status, custody, review, CI or next-action wording below is retained as historical provenance only and grants no current authority.
+
+# OTV2-20260919-content-world-cw3-project-filesystem-capture-504
 
 ```yaml
 task_id: OTV2-20260919-content-world-cw3-project-filesystem-capture-504
