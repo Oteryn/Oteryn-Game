@@ -1,4 +1,6 @@
-> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical delivery PR #684 is protected-merged as `c9778672da3c8060ec0f9a5821391aa30b4a6267`. Any nonterminal status, custody, review, CI or next-action wording below is retained as historical provenance only and grants no current authority.\n\n# OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence-504
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical delivery PR #684 is protected-merged as `c9778672da3c8060ec0f9a5821391aa30b4a6267`. Any nonterminal status, custody, review, CI or next-action wording below is retained as historical provenance only and grants no current authority.
+
+# OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence-504
 
 ```yaml
 task_id: OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence-504
