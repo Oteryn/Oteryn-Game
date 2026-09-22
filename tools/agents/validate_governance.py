@@ -340,6 +340,11 @@ def validate_active_task_packets(
                 errors.append(f"active task packet {relative} has unsupported status {status}")
             if status in terminal_statuses:
                 errors.append(f"active task packet {relative} has terminal status {status}")
+            if status in {"validating", "ready"} and pr is None:
+                errors.append(
+                    f"active task packet {relative} with status {status} "
+                    "must bind a positive canonical pr"
+                )
 
     archive_dir = ROOT / "docs/agents/tasks/archive"
     if archive_dir.is_dir():
@@ -355,16 +360,32 @@ def validate_active_task_packets(
             )
 
 
-def validate_active_task_live_state(request: Callable[[str], object]) -> list[str]:
-    """Reject active packets whose canonical GitHub authority is terminal.
+def validate_active_task_live_state(
+    request: Callable[[str], object],
+    packet_paths: set[str] | None = None,
+) -> list[str]:
+    """Reject selected active packets whose canonical GitHub authority is terminal.
 
-    The caller owns authentication and transport. Keeping network access out of
-    the local validator preserves its deterministic offline contract; the
-    hosted inherited-policy validator supplies the authenticated requester.
+    packet_paths=None validates the complete active set for protected-main
+    health. A concrete set validates only candidate-touched packets, so an
+    unrelated lifecycle transition cannot retroactively invalidate an immutable
+    PR head. The caller owns authentication and transport.
     """
     active_dir = ROOT / "docs/agents/tasks/active"
     if not active_dir.is_dir():
         return []
+
+    if packet_paths is not None:
+        invalid = sorted(
+            relative for relative in packet_paths
+            if not (
+                relative.startswith("docs/agents/tasks/active/")
+                and relative.endswith(".md")
+                and relative != "docs/agents/tasks/active/README.md"
+            )
+        )
+        if invalid:
+            raise ValueError(f"invalid active-task scope: {', '.join(invalid)}")
 
     packets: list[tuple[str, int | None, int | None]] = []
     references: set[tuple[str, int]] = set()
@@ -372,6 +393,8 @@ def validate_active_task_live_state(request: Callable[[str], object]) -> list[st
         if path.name == "README.md":
             continue
         relative = path.relative_to(ROOT).as_posix()
+        if packet_paths is not None and relative not in packet_paths:
+            continue
         text = path.read_text(encoding="utf-8")
         issue_match = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
         pr_match = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
@@ -451,21 +474,6 @@ def validate_context_economy(errors: list[str]) -> None:
         startup = _markdown_section(path.read_text(encoding="utf-8"), "Mandatory startup")
         if "OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md" in startup:
             errors.append(f"{relative} must not load owner operator runbook in technical startup")
-
-    implementation_path = ROOT / "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md"
-    if implementation_path.is_file():
-        startup = _markdown_section(
-            implementation_path.read_text(encoding="utf-8"), "Mandatory startup"
-        )
-        for legacy in (
-            "Read the accepted FND, DUR, SIM",
-            "Inspect exact live main SHA, open PRs, active tasks",
-        ):
-            if legacy in startup:
-                errors.append(
-                    "implementation coordinator reintroduced broad mandatory startup: "
-                    f"{legacy}"
-                )
 
     work_path = ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md"
     if work_path.is_file():

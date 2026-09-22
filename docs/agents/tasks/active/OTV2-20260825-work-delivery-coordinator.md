@@ -12,7 +12,7 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: 40e9d723392b8fc1be652bdbb4b6d31b6729867b
+protected_main_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
 updated_at: 2026-09-22
@@ -30,26 +30,19 @@ external_repositories: []
 
 ## Current authority
 
-Issue #162 remains the unique programme allocation/control-plane lifecycle. The active mutating
-profile is `OTV2_WORK_DELIVERY_COORDINATOR`. Live GitHub state outranks this packet.
+Issue #162 remains the unique programme allocation/control-plane lifecycle. The active mutating profile is `OTV2_WORK_DELIVERY_COORDINATOR`. Live GitHub state outranks this packet.
 
-This file is a **single current checkpoint**. Historical coordinator checkpoints remain at
-`docs/agents/evidence/OTV2-20260921-work-delivery-coordinator-history.md`.
+This file is a **single current checkpoint**. Historical coordinator checkpoints remain at `docs/agents/evidence/OTV2-20260921-work-delivery-coordinator-history.md`.
 
 ## Current checkpoint
 
-- Protected Game main: `40e9d723392b8fc1be652bdbb4b6d31b6729867b`.
-- WP3 successor PR #673 is protected-complete as `3a384864d84560eb6ce76136afeb038576dc2976`.
-- WP4 Child B PR #335 is protected-complete as `f02beb42523af6db1bb0c71d2840961e3fa5fcd0`; its stale active task packet is being archived by #740.
-- WP5 Issue #319 is the current material critical path. S1 PR #735 is protected at
-  `c59d8b25f9e3017d013d578a5a4bc9d93fa49e1d`; S2 and material #416 routing are active on their existing canonical branches.
-- WP5 G0/source-composition readiness is **not yet proven**. Do not resume Server Seam early.
-- Server Seam Issue #247 remains preserved at
-  `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`.
-- Content Item identity PR #737 remains open/draft at frozen head
-  `0e643dbb5981599702b3407256e8ed03f1cad943`. Its scope is identity/resource closure only.
-  D6-M1 Item schema-readiness starts only after #737 protects and fresh custody is computed.
-- Governance cleanup #740 is path-disjoint from product/runtime lanes and must not broaden into them.
+- Admission protected Game main for this checkpoint: `86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1`.
+- WP5 Issue #319 is the material Server-Seam critical path. Material #416 routing PR #739 is protected as `cf5c5f35476559450b6bbaf87dce519f7eead9d0`.
+- S2 qualification/repair continues on canonical PR #757; S3-A real-interoperability remains a separately gated successor. WP5 G0/source-composition readiness is **not yet proven**.
+- Server Seam Issue #247 remains preserved at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e` and must not resume before fresh `WP5_G0_READINESS_PROVEN`.
+- Content D6-M1 Item Schema Readiness continues on canonical PR #749. The measured artifact resource profile is accepted; production schema/codec qualification is the active successor, not a new source import.
+- Governance Issue #745 Phase 1 is protected. Phase 2 is waiting for a fresh bounded allocation; no Phase-2 branch/PR is implied by this checkpoint.
+- Agent hygiene Issue #740 is in final closeout only; completed lifecycle records are no longer live writer custody.
 
 ## Ownership discipline
 
@@ -65,15 +58,10 @@ Before every new allocation or resumed writer:
 ## Current dependency shape
 
 ```text
-PROTECTED_COMPLETE:
-  WP3 #673
-  WP4 #335
-  WP5 S1 #735
-
 ACTIVE / QUALIFY:
-  WP5 #319 S2 + material #416 routing
-  Content Item #737
-  Governance hygiene #740 (path-disjoint)
+  WP5 #319 -> S2 #757 + S3/source-composition successors
+  Content D6-M1 #749
+  Governance #745 Phase 2 -> fresh allocation required
 
 HELD:
   Server Seam #247 -> WP5_G0_READINESS_PROVEN
@@ -84,36 +72,24 @@ HELD:
 
 ## Validation / closeout rule
 
-A downstream release or terminal closeout requires its actual accepted gate, not stale prose:
-exact-head qualification/review where applicable, governed Merge Queue, real `merge_group`
-aggregate `game-gate`, protected-main readback and lifecycle/ownership release.
+A downstream release or terminal closeout requires its actual accepted gate, not stale prose: exact-head qualification/review where applicable, governed Merge Queue, real `merge_group` aggregate `game-gate`, protected-main readback and lifecycle/ownership release.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: >-
-  WP3 #673 and WP4 #335 are protected-complete; WP5 #319 has active S2 plus material
-  #416 routing, while Server Seam remains frozen pending actual WP5 G0 readiness.
+last_progress: lifecycle hygiene removed terminal task packets; #739 and #748 are protected while active work is WP5, D6-M1 and future #745 Phase 2
 status: implementing
 programme_state: ACTIVE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: 40e9d723392b8fc1be652bdbb4b6d31b6729867b
-wp3_issue: 351
-wp3_pr: 673
-wp3_state: PROTECTED_COMPLETE
-wp4_issue: 329
-wp4_pr: 335
-wp4_state: PROTECTED_COMPLETE
+protected_main_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
 wp5_issue: 319
-wp5_state: ACTIVE_S2_AND_ROUTING
+wp5_state: ACTIVE_S2_S3_COMPOSITION
 server_seam_issue: 247
 server_seam_state: WAITING_WP5_G0
-content_item_pr: 737
-content_item_state: QUALIFYING_DRAFT
-governance_cleanup_issue: 740
-governance_cleanup_state: IMPLEMENTING_PATH_DISJOINT
+content_item_pr: 749
+content_item_state: ACTIVE_SCHEMA_READINESS
+governance_simplification_issue: 745
+governance_simplification_state: WAITING_PHASE2_ALLOCATION
 owner_action_required: null
-next_action: >-
-  continue the existing WP5 S2/routing/composition sequence; prove WP5 G0 before resuming the
-  preserved Server Seam, while qualifying #737 and #740 independently inside their exact scopes
+next_action: continue canonical WP5 and D6-M1 lineages; keep Server Seam held until G0; allocate #745 Phase 2 only after fresh overlap/custody readback
 ```

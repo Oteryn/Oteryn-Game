@@ -61,7 +61,7 @@ class GovernanceLifecycleDiscoveryTests(unittest.TestCase):
             )
 
     def assert_cases_executed(self, output: str) -> None:
-        self.assertIn("Ran 7 tests", output)
+        self.assertIn("Ran 8 tests", output)
         for name in EXPECTED_CASES:
             self.assertRegex(output, rf"(?m)^{name} \([^\n]+\) \.\.\. (ok|FAIL)$")
 

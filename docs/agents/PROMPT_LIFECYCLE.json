@@ -26,8 +26,8 @@
       "owner": "historical-implementation-programme",
       "scope": "Owner-authorized coordinator for #93/#115/#116/#123 blocker closure, evidence-backed first-slice numeric acceptance, serialized registry canonicalization and bounded #115 verifier/consumer closure.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "supersession_rule": "Terminal blocker-closure delivery is complete through #131/#152; use the canonical implementation coordinator and live allocations for future work."
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Terminal blocker-closure delivery is complete through #131/#152; use the canonical Work coordinator and live allocations for future work."
     },
     {
       "prompt_id": "OTV2_CONTENT_FORMAT_SPIKE",
@@ -37,7 +37,7 @@
       "owner": "historical-implementation-coordinator",
       "scope": "Evidence-only content-format spike; no permanent production-format selection authority.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
       "supersession_rule": "Issue #95 is completed; any future content-format work requires a fresh live allocation rather than redispatching the terminal spike."
     },
     {
@@ -65,13 +65,13 @@
     {
       "prompt_id": "OTV2_IMPLEMENTATION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "version": "1.1",
-      "status": "reusable",
-      "owner": "implementation-programme",
-      "scope": "Implementation-wave coordination and allocation inside Oteryn/Oteryn-Game only.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "version": "1.2",
+      "status": "retired",
+      "owner": "historical-implementation-programme",
+      "scope": "Historical implementation-wave coordinator retained for provenance; current mutation and integration coordination is owned only by OTV2_WORK_DELIVERY_COORDINATOR.",
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "OTV2_WORK_DELIVERY_COORDINATOR is the sole reusable mutating Game control plane; historical implementation-coordinator references are provenance only."
     },
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
@@ -312,8 +312,8 @@
       "owner": "historical-implementation-programme",
       "scope": "Orchestration-only launcher for bounded preparation lanes #93-#97; live task/allocation state is mandatory before any write.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "supersession_rule": "Preparation Issues #93-#97 are terminal; future work is allocated from the canonical coordinator and current DAG."
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Preparation Issues #93-#97 are terminal; future work is allocated from the canonical Work coordinator and current DAG."
     },
     {
       "prompt_id": "OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH",
@@ -323,8 +323,8 @@
       "owner": "historical-implementation-programme",
       "scope": "Historical one-shot post-SIM Wave-1 launch guidance retained for provenance only.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "supersession_rule": "The canonical implementation coordinator and live allocation state supersede this one-shot launch guidance; it must not be dispatched."
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "The canonical Work coordinator and live allocation state supersede this one-shot launch guidance; it must not be dispatched."
     },
     {
       "prompt_id": "OTV2_PREP_DURABILITY_TOPOLOGY",
@@ -334,7 +334,7 @@
       "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #94 durability topology preparation executor; no runtime/DDL implementation authority.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
       "supersession_rule": "Issue #94 is completed; future durability work resolves current allocations and contracts."
     },
     {
@@ -345,8 +345,8 @@
       "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #97 programme-status reconciliation executor; docs/audit only under a current allocation.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "supersession_rule": "Issue #97 is completed; future status reconciliation resolves live GitHub through the current coordinator."
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "Issue #97 is completed; future status reconciliation resolves live GitHub through the current Work coordinator."
     },
     {
       "prompt_id": "OTV2_PREP_SERVER_SEAM",
@@ -356,7 +356,7 @@
       "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #96 production gameplay server-seam preparation executor; no listener/runtime implementation authority.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
       "supersession_rule": "Issue #96 preparation is completed; current Server Seam delivery is governed by its live allocation and implementation prompt."
     },
     {
@@ -367,7 +367,7 @@
       "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #93 Wave-2 resource-limit decision preparation; missing numeric values must not be invented.",
       "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
       "supersession_rule": "Issue #93 is completed; future resource-limit work requires a fresh current allocation."
     },
     {
