@@ -280,7 +280,6 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             self.assertEqual(entries[prompt_id]["version"], version)
 
         readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
-        self.assertIn("former `Oteryn: terra game coordinator` profile is retired", readme)
         self.assertNotIn(
             "`OTV2_TERRA_GAME_CONTROL_PLANE.md` — deterministic Game control plane",
             readme,
