@@ -50,8 +50,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a19161638
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "18db247edcc40f43900fc99140d911fe3a113c56e0f9584fc8a415d2877fcc50"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "8f95b9f8b67255aa9f26619fe394af9679af100a"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ad439cf3b04aaea084521f7be37761d3b1458cc5"
-EXPECTED_POST_MERGE_RUST_SHA256 = "9f894c3a23e780162a3db0878007118b0cba0cedc5aa64958457322ae8bb0314"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ebb2a8a4ec9bcd42ee750c00bb6c9eeff12105df"
+EXPECTED_POST_MERGE_RUST_SHA256 = "e117fbddf02d1f34cd15445e79b0aa1b35463ae9e1730adbb9aca1c984fabab8"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -488,9 +488,16 @@ def main() -> int:
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
                 "image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
-                "test -f apps/game-server/tests/durability_postgres.rs",
-                "cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+                "BASE_SHA: ${{ github.event.merge_group.base_sha }}",
+                "HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+                'git cat-file -e "$BASE_SHA:$path"',
+                'git cat-file -e "$HEAD_SHA:$path"',
+                'if [[ "$base_present" == true && "$head_present" == false ]]; then',
+                'cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+                "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
+                "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
+                "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
+                "run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs",
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
