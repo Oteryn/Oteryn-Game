@@ -1591,12 +1591,12 @@ fn encode_typed_item(
     group!(
         ITEM_GROUP_PROTECTION,
         &semantics.protection,
-        |out, value| encode_protection(out, value)
+        encode_protection
     );
     group!(
         ITEM_GROUP_SKILL_MODIFIERS,
         &semantics.skill_modifiers,
-        |out, value| encode_skill_modifiers(out, value)
+        encode_skill_modifiers
     );
     group!(ITEM_GROUP_CHARGES, &semantics.charges, |out, value| {
         put_field(out, &value.count, |out, value| {
@@ -1653,7 +1653,7 @@ fn encode_typed_item(
         group!(
             ITEM_GROUP_TRADE_RESTRICTIONS,
             &semantics.trade_restrictions,
-            |out, value| encode_trade(out, value)
+            encode_trade
         );
         group!(ITEM_GROUP_FLUID, &semantics.fluid, |out, value| {
             put_field(out, &value.fluid_type, |out, value| {
@@ -3421,20 +3421,21 @@ mod typed_item_codec_tests {
         ReferenceItemTarget::new("oteryn:item.schema.boundary-witness", "definition-r1")
     }
 
-    fn hex_bytes(value: &str) -> Vec<u8> {
-        value
-            .as_bytes()
-            .chunks_exact(2)
-            .map(|pair| {
-                fn nibble(value: u8) -> u8 {
-                    match value {
-                        b'0'..=b'9' => value - b'0',
-                        b'a'..=b'f' => value - b'a' + 10,
-                        _ => panic!("invalid fixture hex"),
-                    }
-                }
-                (nibble(pair[0]) << 4) | nibble(pair[1])
-            })
+    fn hex_bytes(value: &str) -> Result<Vec<u8>, ContentError> {
+        fn nibble(value: u8) -> Result<u8, ContentError> {
+            match value {
+                b'0'..=b'9' => Ok(value - b'0'),
+                b'a'..=b'f' => Ok(value - b'a' + 10),
+                _ => Err(ContentError::InvalidArtifact("invalid fixture hex")),
+            }
+        }
+
+        let chunks = value.as_bytes().chunks_exact(2);
+        if !chunks.remainder().is_empty() {
+            return Err(ContentError::InvalidArtifact("odd fixture hex length"));
+        }
+        chunks
+            .map(|pair| Ok((nibble(pair[0])? << 4) | nibble(pair[1])?))
             .collect()
     }
 
@@ -3687,11 +3688,11 @@ mod typed_item_codec_tests {
         assert_eq!(client.len(), TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES);
         assert_eq!(
             sha256(&server).as_slice(),
-            hex_bytes("19c38b3cd18c7e2765aefb9ec2c7b0da9a31be66eaa30b84c63a7cf9ee132fc5")
+            hex_bytes("19c38b3cd18c7e2765aefb9ec2c7b0da9a31be66eaa30b84c63a7cf9ee132fc5")?
         );
         assert_eq!(
             sha256(&client).as_slice(),
-            hex_bytes("0f9f25815a61fa292d6a74f89974f8b4bbefcca3d70a19ee023d730e88261e21")
+            hex_bytes("0f9f25815a61fa292d6a74f89974f8b4bbefcca3d70a19ee023d730e88261e21")?
         );
         assert_eq!(
             encode_typed_item(
@@ -3821,7 +3822,7 @@ mod typed_item_codec_tests {
                 ReferenceArtifactProjection::ServerAuthoritative,
                 &identity_definitions
             )?,
-            hex_bytes("02020003000000"),
+            hex_bytes("02020003000000")?,
         );
         assert_eq!(
             encode_typed_item(
@@ -3829,7 +3830,7 @@ mod typed_item_codec_tests {
                 ReferenceArtifactProjection::ClientSafe,
                 &identity_definitions
             )?,
-            hex_bytes("0202030000"),
+            hex_bytes("0202030000")?,
         );
         let partial = ReferenceItemDefinition {
             physical_class: ReferenceItemPhysicalClass::Unknown,
@@ -3892,10 +3893,10 @@ mod typed_item_codec_tests {
             )?;
             let client =
                 encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
-            assert_eq!(server, hex_bytes(server_hex));
-            assert_eq!(client, hex_bytes(client_hex));
-            assert_eq!(sha256(&server).as_slice(), hex_bytes(server_sha));
-            assert_eq!(sha256(&client).as_slice(), hex_bytes(client_sha));
+            assert_eq!(server, hex_bytes(server_hex)?);
+            assert_eq!(client, hex_bytes(client_hex)?);
+            assert_eq!(sha256(&server).as_slice(), hex_bytes(server_sha)?);
+            assert_eq!(sha256(&client).as_slice(), hex_bytes(client_sha)?);
         }
         Ok(())
     }
