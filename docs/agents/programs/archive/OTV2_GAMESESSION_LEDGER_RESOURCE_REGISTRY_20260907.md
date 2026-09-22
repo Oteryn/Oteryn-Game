@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #384 is closed and implementation PR #386 merged on 2026-09-07 as `7d59a1169b5c99d4994a904aa566d843cf833a34`. The registered resource result is protected; this execution record is terminal provenance only.
+
 # OTV2 GameSession Ledger Resource Registry Plan — 2026-09-07
 
 Issue: #384

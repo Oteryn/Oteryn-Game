@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. This 2026-08-16 successor delegation is referenced only by archived task provenance on current main; its C/D successor tasks are terminal. Current architecture authority comes from accepted architecture/contracts and live GitHub state. Do not dispatch or allocate from this record.
+
 # Oteryn-v2 Architecture Successor Delegation — 2026-08-16
 
 - Status: coordinator-owned exact successor delegation

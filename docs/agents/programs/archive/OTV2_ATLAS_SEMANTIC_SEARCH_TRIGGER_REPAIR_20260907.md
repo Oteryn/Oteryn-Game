@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #418 is closed and the material semantic-search closure PR #426 merged on 2026-09-09 as `d66bdd63ee157fcea4e417f45e2a7601054a6f65`. This prospective trigger-repair allocation is terminal provenance only.
+
 # Atlas producer trigger-completeness repair allocation
 
 Coordinator: #162. Safety issue: #418. Remediation programme: #364.

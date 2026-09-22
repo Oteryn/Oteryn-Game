@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #384 is closed and implementation PR #386 merged on 2026-09-07 as `7d59a1169b5c99d4994a904aa566d843cf833a34`. This prospective registry allocation is terminal provenance only.
+
 # OTV2 GameSession Ledger Registry Allocation — 2026-09-07
 
 Status: **PROSPECTIVE_ALLOCATION**
@@ -21,7 +23,7 @@ status: NOT_ADMITTED
 admission_main_sha: null
 worker_branch: agent/gamesession-ledger-resource-registry-384
 task_packet: docs/agents/tasks/active/OTV2-20260907-gamesession-ledger-resource-registry-384.md
-implementation_plan: docs/agents/programs/OTV2_GAMESESSION_LEDGER_RESOURCE_REGISTRY_20260907.md
+implementation_plan: docs/agents/programs/archive/OTV2_GAMESESSION_LEDGER_RESOURCE_REGISTRY_20260907.md
 owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/agents/tasks/active/OTV2-20260907-gamesession-ledger-resource-registry-384.md

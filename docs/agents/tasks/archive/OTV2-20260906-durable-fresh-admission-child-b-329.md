@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #335 merged on 2026-09-21T22:00:40Z as `f02beb42523af6db1bb0c71d2840961e3fa5fcd0`. The active packet became terminal at that point. Any nonterminal/status/checkpoint language below is preserved historical provenance only; live GitHub and protected current state supersede it.
+
 ﻿# OTV2-20260906-durable-fresh-admission-child-b-329
 
 ## 2026-09-21 owner-authorized completion checkpoint

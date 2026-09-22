@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Prototype PR #568 merged on 2026-09-11 as `90a3f92434e32354ff1aaeac96d038bbc49eba9c`; current Issue #530 continues through later preproduction/resource-evidence work and does not consume this allocation file. This prototype allocation is terminal provenance only.
+
 # Runtime actor carrier prototype allocation
 
 - Coordinator: #162

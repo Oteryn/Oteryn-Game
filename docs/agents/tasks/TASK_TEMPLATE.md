@@ -3,7 +3,7 @@
 ```yaml
 task_id: OTV2-YYYYMMDD-short-slug
 title: <short title>
-mode: IMPLEMENT | AUDIT | CONTRACT | REPAIR | COORDINATE | MIGRATE | GOVERNANCE
+mode: IMPLEMENT | AUDIT | CONTRACT | REPAIR | COORDINATE | MIGRATE | GOVERNANCE | BUILD
 status: investigating | implementing | validating | ready | waiting | blocked | completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -25,7 +25,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-`execution_policy: continuous_progress` means productive authorized work has no wall-clock stop window. Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` for no-progress, repeated-failure and CI-wait bounds; do not add `execution_budget_minutes`, `large_budget_reason` or equivalent time-window fields to new task records.
+`execution_policy: continuous_progress` means productive authorized work has no wall-clock stop window. Active task packets are current-state routing records: keep them within the machine-readable `active_task_limits` in `docs/agents/GOVERNANCE_CONTRACT.json` and move superseded checkpoint/history prose to `docs/agents/evidence/` or `tasks/archive/`. Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` for no-progress, repeated-failure and CI-wait bounds; do not add `execution_budget_minutes`, `large_budget_reason` or equivalent time-window fields to new task records.
 
 ## Outcome
 
