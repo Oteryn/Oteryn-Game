@@ -202,7 +202,7 @@ def validate() -> list[str]:
                 "          ref: ${{ needs.scope.outputs.target_sha }}\n",
                 "          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}\n",
                 "if ((git rev-parse HEAD).Trim() -ne \"$env:EXPECTED_SHA\")",
-                '$client = ".\\\\target\\\\x86_64-pc-windows-msvc\\\\release\\\\oteryn-client.exe"',
+                '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
                 "Test-Path -LiteralPath $client -PathType Leaf",
                 "& $client --smoke",
                 "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
