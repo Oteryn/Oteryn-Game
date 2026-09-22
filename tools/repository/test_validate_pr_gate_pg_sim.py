@@ -118,7 +118,7 @@ def test_registered_postgres_targets_are_materially_routed() -> None:
 
 def test_postgres_evidence_step_cannot_be_skipped() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    mutated = inject_step_condition(baseline, "Run Durability PostgreSQL E2E when allocated")
+    mutated = inject_step_condition(baseline, "Run registered PostgreSQL E2E targets when allocated")
     errors = validate_mutated_gate(mutated)
     assert errors, "validator accepted a skipped PostgreSQL evidence step"
     assert any("rust_linux" in error and "if" in error for error in errors), errors
@@ -157,18 +157,25 @@ def run_classifier(
     immutable_files=None,
     tree_payloads=None,
     checkout_present=True,
+    checkout_files=None,
     checkout_blob=BLOB_SHA,
     commit_payloads=None,
     workflow_text=None,
 ):
     """Execute the real workflow script with only GitHub HTTP responses replaced."""
     validator = load_validator()
+    source_text = workflow_text or MERGE_GATE.read_text(encoding="utf-8")
+    classifier_step = (
+        "Classify registered PostgreSQL targets"
+        if "Classify registered PostgreSQL targets" in source_text
+        else "Classify Durability PostgreSQL target"
+    )
     step = validator.step_block(
         validator.job_block(
-            workflow_text or MERGE_GATE.read_text(encoding="utf-8"),
+            source_text,
             "scope" if scope else "rust_linux",
         ),
-        "Resolve and validate exact pull request head" if scope else "Classify Durability PostgreSQL target",
+        "Resolve and validate exact pull request head" if scope else classifier_step,
     )
     assert step is not None
     script = textwrap.dedent(step.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
@@ -231,8 +238,13 @@ def run_classifier(
         }
         failure = None
         completed = subprocess.CompletedProcess([], 0, stdout=f"{checkout_blob}\n")
+        def isfile(path):
+            if checkout_files is not None:
+                return path in checkout_files
+            return path == TARGET and checkout_present
+
         with patch.dict(os.environ, env), patch("urllib.request.urlopen", urlopen), patch(
-            "os.path.isfile", return_value=checkout_present
+            "os.path.isfile", side_effect=isfile
         ), patch(
             "subprocess.run", return_value=completed
         ), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
@@ -371,6 +383,21 @@ def test_classifier_exact_target_state_matrix() -> None:
         assert output == expected_output, (name, output)
 
 
+def test_classifier_fails_closed_for_each_protected_registered_target_removal() -> None:
+    elsewhere = {"path": "docs/readme.md", "mode": "100644", "type": "blob", "sha": "4" * 40}
+    for name, target in REGISTERED_POSTGRES_TARGETS.items():
+        present = {"path": target, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+        failure, output = run_classifier(
+            [],
+            tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": [present]},
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": [elsewhere]},
+            },
+            checkout_files=set(),
+        )
+        assert f"{name} PostgreSQL target was removed or renamed" in failure and not output, (name, failure, output)
+
+
 def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
     present = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
     bad = (
@@ -408,9 +435,9 @@ def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
             },
             checkout_present=checkout_present,
         )
-        assert "checkout and API target state disagree" in failure and not output
+        assert "target state disagree" in failure and not output
     failure, output = run_classifier([], checkout_blob="2" * 40)
-    assert "checkout and API target blob disagree" in failure and not output
+    assert "target blob disagree" in failure and not output
 
 
 def test_classifier_rejects_unavailable_exact_commits() -> None:
@@ -486,7 +513,7 @@ def test_classifier_validates_every_tree_entry_before_proving_absence() -> None:
         trees = copy.deepcopy(valid_trees)
         trees["3" * 40]["tree"] = [target_entry]
         failure, output = run_classifier([], tree_payloads=trees)
-        assert "unexpected target object" in failure and not output, target_entry
+        assert "unexpected" in failure and not output, target_entry
 
 
 def test_classifier_rejects_invalid_changed_file_counts() -> None:
@@ -504,7 +531,7 @@ def test_evidence_step_condition_family() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     assert not validate_mutated_gate(baseline), "unmodified gate must pass before mutation checks"
     for job, name in (
-        ("rust_linux", "Run Durability PostgreSQL E2E when allocated"),
+        ("rust_linux", "Run registered PostgreSQL E2E targets when allocated"),
         ("rust_windows", "Verify deterministic simulation golden fixtures"),
         ("rust_windows", "Test Windows input platform"),
     ):
@@ -538,14 +565,24 @@ def test_postgres_early_exit_cannot_preserve_contract_strings() -> None:
     assert errors, "validator accepted early exit before PG evidence with contract strings intact"
 
 
+def test_fixed_postgres_target_mapping_cannot_be_suppressed() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    assert not validate_mutated_gate(baseline), "stable gate must pass before fixed-target mutation checks"
+    for name, target in REGISTERED_POSTGRES_TARGETS.items():
+        marker = f"          run_registered_target {name} {target}\n"
+        assert baseline.count(marker) == 1, (name, target)
+        errors = validate_mutated_gate(baseline.replace(marker, "", 1))
+        assert any("rust_linux" in error for error in errors), (name, errors)
+
+
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
     assert any("rust_linux" in error and "exactly match" in error for error in validate_mutated_gate(stale))
-    invocation = "            cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres\n"
+    invocation = '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n'
     assert baseline.count(invocation) == 1
     errors = validate_mutated_gate(baseline.replace(invocation, "", 1))
-    assert any("rust_linux" in error and "durability_postgres" in error for error in errors), errors
+    assert any("rust_linux" in error for error in errors), errors
 
 
 def main() -> int:
@@ -557,6 +594,7 @@ def main() -> int:
         test_classifier_rejects_identity_races,
         test_classifier_rejects_unbound_base,
         test_classifier_exact_target_state_matrix,
+        test_classifier_fails_closed_for_each_protected_registered_target_removal,
         test_classifier_rejects_bad_target_evidence_and_checkout_mismatch,
         test_classifier_rejects_unavailable_exact_commits,
         test_classifier_requires_successful_tree_evidence_for_absence,
@@ -571,6 +609,7 @@ def main() -> int:
         test_protected_classifier_red_for_valid_803_file_target,
         test_evidence_job_failure_cannot_be_tolerated,
         test_postgres_early_exit_cannot_preserve_contract_strings,
+        test_fixed_postgres_target_mapping_cannot_be_suppressed,
         test_postgres_digest_and_invocation_are_mandatory,
     )
     for test in tests:
