@@ -136,19 +136,14 @@ pub const REFERENCE_ITEM_EXPLICIT_UNSUPPORTED_V1: [&str; 7] = [
 
 /// Truth-bearing immutable Item field. `Known(false)` and `Known(0)` are deliberately
 /// different from `Unknown`, `NotApplicable` and `Conflict`.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "state", content = "value", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReferenceItemField<T> {
+    #[default]
     Unknown,
     NotApplicable,
     Conflict,
     Known(T),
-}
-
-impl<T> Default for ReferenceItemField<T> {
-    fn default() -> Self {
-        Self::Unknown
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -625,6 +620,10 @@ pub struct ReferenceLootDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "preserve the established ReferenceDefinitionKind API while the bounded typed Item payload grows"
+)]
 pub enum ReferenceDefinitionKind {
     Generic,
     Ability(ReferenceAbilityDefinition),
@@ -1300,12 +1299,12 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         }
     }
     if let Known(value) = &semantics.stack {
-        if let Known(true) = value.stackable {
-            if !matches!(value.stack_max, Known(maximum) if maximum >= 1) {
-                return Err(ContentError::InvalidArtifact(
-                    "Reference Item stackable=true requires known nonzero stack maximum",
-                ));
-            }
+        if let Known(true) = value.stackable
+            && !matches!(value.stack_max, Known(maximum) if maximum >= 1)
+        {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item stackable=true requires known nonzero stack maximum",
+            ));
         }
         if let Known(stackable) = value.stackable {
             match (item.stack_class, stackable) {
@@ -1319,8 +1318,9 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
             }
         }
     }
-    if let Known(value) = &semantics.equipment {
-        if let Known(patterns) = &value.patterns {
+    if let Known(value) = &semantics.equipment
+        && let Known(patterns) = &value.patterns
+    {
             if patterns.is_empty() {
                 return Err(ContentError::InvalidArtifact(
                     "Reference Item known Equipment patterns cannot be empty",
@@ -1388,7 +1388,6 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
                     ));
                 }
             }
-        }
     }
     if let Known(value) = &semantics.weapon {
         validate_rational_field(&value.hit_chance)?;
@@ -1408,8 +1407,9 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
             )?;
         }
     }
-    if let Known(value) = &semantics.protection {
-        if let Known(entries) = &value.resistances {
+    if let Known(value) = &semantics.protection
+        && let Known(entries) = &value.resistances
+    {
             require_limit(
                 "Reference Item resistances",
                 entries.len(),
@@ -1422,10 +1422,10 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
             for entry in entries {
                 validate_rational_field(&entry.percent)?;
             }
-        }
     }
-    if let Known(value) = &semantics.skill_modifiers {
-        if let Known(entries) = &value.modifiers {
+    if let Known(value) = &semantics.skill_modifiers
+        && let Known(entries) = &value.modifiers
+    {
             require_limit(
                 "Reference Item SkillModifiers",
                 entries.len(),
@@ -1447,12 +1447,11 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
                     validate_modifier_parameter(entry.kind, parameter)?;
                 }
             }
-        }
     }
-    if let Known(value) = &semantics.temporal {
-        if let Known(target) = &value.decay_target {
-            validate_item_target(target)?;
-        }
+    if let Known(value) = &semantics.temporal
+        && let Known(target) = &value.decay_target
+    {
+        validate_item_target(target)?;
     }
     if let Known(value) = &semantics.imbuement {
         if matches!(value.slot_count, Known(slots) if slots > REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS) {
@@ -1518,10 +1517,10 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
             "Reference Item immutable character binding is unsupported in v1",
         )?;
     }
-    if let Known(value) = &semantics.readable_writeable {
-        if let Known(target) = &value.write_once_target {
-            validate_item_target(target)?;
-        }
+    if let Known(value) = &semantics.readable_writeable
+        && let Known(target) = &value.write_once_target
+    {
+        validate_item_target(target)?;
     }
     Ok(())
 }
