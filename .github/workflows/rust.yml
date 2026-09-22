@@ -204,6 +204,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
+            cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
+          elif [[ -e apps/game-server/tests/durability_postgres.rs ]]; then
+            echo "Registered PostgreSQL target is not a regular file: durability_postgres -> apps/game-server/tests/durability_postgres.rs" >&2
+            exit 1
+          else
+            echo "NOT_APPLICABLE: registered PostgreSQL target absent on protected main: durability_postgres -> apps/game-server/tests/durability_postgres.rs"
+          fi
           run_registered_target() {
             local name="$1"
             local path="$2"
@@ -216,7 +224,6 @@ jobs:
               echo "NOT_APPLICABLE: registered PostgreSQL target absent on protected main: $name -> $path"
             fi
           }
-          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs
           run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
           run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
           run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
