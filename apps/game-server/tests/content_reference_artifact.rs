@@ -172,93 +172,134 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
         ..Default::default()
     };
     cases.push(("distance_weapon", distance));
-    cases.push(("armor_equipment", ReferenceItemSemantics {
-        presentation: Known(presentation()),
-        equipment: Known(equipment.clone()),
-        protection: Known(ReferenceItemProtection {
-            armor: Known(ReferenceSignedPoints(12)),
-            resistances: Unknown,
-        }),
-        ..Default::default()
-    }));
-    cases.push(("container", ReferenceItemSemantics {
-        presentation: Known(presentation()),
-        container: Known(ReferenceItemContainer { capacity: Known(20) }),
-        ..Default::default()
-    }));
-    cases.push(("charges_consumable", ReferenceItemSemantics {
-        charges: Known(ReferenceItemCharges { count: Known(5) }),
-        temporal: Known(ReferenceItemTemporal {
-            consumption_mode: Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget),
-            duration: Known(ReferenceMilliseconds(60_000)),
-            stop_duration: Known(false),
-            decay_target: Unknown,
-        }),
-        ..Default::default()
-    }));
-    cases.push(("rune_use_item", ReferenceItemSemantics {
-        classification: Known(classification.clone()),
-        use_transform: Known(ReferenceItemUseTransform {
-            targets: (1..=10).map(|kind| Ok(ReferenceTransformTarget {
-                kind: ReferenceTransformKind::from_wire(kind)?,
-                target: if kind == ReferenceTransformKind::Use.wire() { Known(target.clone()) } else { Unknown },
-            })).collect::<Result<Vec<_>, ContentError>>()?,
-        }),
-        ..Default::default()
-    }));
-    cases.push(("material_loot", ReferenceItemSemantics {
-        presentation: Known(presentation()),
-        classification: Conflict,
-        physical: Known(ReferenceItemPhysical { weight: Known(0), movable: Known(false), pickupable: Known(true) }),
-        ..Default::default()
-    }));
-    cases.push(("presentation_only", ReferenceItemSemantics {
-        presentation: Known(presentation()),
-        classification: Known(classification),
-        ..Default::default()
-    }));
-    cases.push(("resistance_modifiers", ReferenceItemSemantics {
-        protection: Known(ReferenceItemProtection {
-            armor: Known(ReferenceSignedPoints(0)),
-            resistances: Known(vec![ReferenceResistance {
-                kind: ReferenceResistanceKind::Fire,
-                percent: Known(ReferenceRationalPercent::new(1, 10)?),
-            }]),
-        }),
-        skill_modifiers: Known(ReferenceItemSkillModifiers {
-            modifiers: Known(vec![ReferenceModifierBinding {
-                kind: ReferenceSkillModifierKind::CriticalHitChance,
-                target_domain: Unknown,
-                evaluation_phase: Unknown,
-                priority: Known(0),
-                parameter: Known(ReferenceModifierParameter::RationalPercent(
-                    ReferenceRationalPercent::new(1, 100)?,
-                )),
-            }]),
-        }),
-        ..Default::default()
-    }));
-    cases.push(("imbuement_slots", ReferenceItemSemantics {
-        equipment: Known(equipment),
-        imbuement: Known(ReferenceItemImbuement {
-            slot_count: Known(3),
-            allowed_family_tiers: Known(vec![ReferenceImbuementAllowance {
-                family: ReferenceImbuementFamily::CriticalHit,
-                tier: ReferenceImbuementTier::Three,
-            }]),
-            excluded_families: Known(Vec::new()),
-        }),
-        ..Default::default()
-    }));
-    cases.push(("transform_decay_target", ReferenceItemSemantics {
-        temporal: Known(ReferenceItemTemporal {
-            consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
-            duration: Known(ReferenceMilliseconds(0)),
-            stop_duration: Known(false),
-            decay_target: Known(target),
-        }),
-        ..Default::default()
-    }));
+    cases.push((
+        "armor_equipment",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            equipment: Known(equipment.clone()),
+            protection: Known(ReferenceItemProtection {
+                armor: Known(ReferenceSignedPoints(12)),
+                resistances: Unknown,
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "container",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            container: Known(ReferenceItemContainer {
+                capacity: Known(20),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "charges_consumable",
+        ReferenceItemSemantics {
+            charges: Known(ReferenceItemCharges { count: Known(5) }),
+            temporal: Known(ReferenceItemTemporal {
+                consumption_mode: Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget),
+                duration: Known(ReferenceMilliseconds(60_000)),
+                stop_duration: Known(false),
+                decay_target: Unknown,
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "rune_use_item",
+        ReferenceItemSemantics {
+            classification: Known(classification.clone()),
+            use_transform: Known(ReferenceItemUseTransform {
+                targets: (1..=10)
+                    .map(|kind| {
+                        Ok(ReferenceTransformTarget {
+                            kind: ReferenceTransformKind::from_wire(kind)?,
+                            target: if kind == ReferenceTransformKind::Use.wire() {
+                                Known(target.clone())
+                            } else {
+                                Unknown
+                            },
+                        })
+                    })
+                    .collect::<Result<Vec<_>, ContentError>>()?,
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "material_loot",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            classification: Conflict,
+            physical: Known(ReferenceItemPhysical {
+                weight: Known(0),
+                movable: Known(false),
+                pickupable: Known(true),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "presentation_only",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            classification: Known(classification),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "resistance_modifiers",
+        ReferenceItemSemantics {
+            protection: Known(ReferenceItemProtection {
+                armor: Known(ReferenceSignedPoints(0)),
+                resistances: Known(vec![ReferenceResistance {
+                    kind: ReferenceResistanceKind::Fire,
+                    percent: Known(ReferenceRationalPercent::new(1, 10)?),
+                }]),
+            }),
+            skill_modifiers: Known(ReferenceItemSkillModifiers {
+                modifiers: Known(vec![ReferenceModifierBinding {
+                    kind: ReferenceSkillModifierKind::CriticalHitChance,
+                    target_domain: Unknown,
+                    evaluation_phase: Unknown,
+                    priority: Known(0),
+                    parameter: Known(ReferenceModifierParameter::RationalPercent(
+                        ReferenceRationalPercent::new(1, 100)?,
+                    )),
+                }]),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "imbuement_slots",
+        ReferenceItemSemantics {
+            equipment: Known(equipment),
+            imbuement: Known(ReferenceItemImbuement {
+                slot_count: Known(3),
+                allowed_family_tiers: Known(vec![ReferenceImbuementAllowance {
+                    family: ReferenceImbuementFamily::CriticalHit,
+                    tier: ReferenceImbuementTier::Three,
+                }]),
+                excluded_families: Known(Vec::new()),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "transform_decay_target",
+        ReferenceItemSemantics {
+            temporal: Known(ReferenceItemTemporal {
+                consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
+                duration: Known(ReferenceMilliseconds(0)),
+                stop_duration: Known(false),
+                decay_target: Known(target),
+            }),
+            ..Default::default()
+        },
+    ));
 
     assert_eq!(cases.len(), 11);
     for (name, semantics) in cases {
@@ -276,8 +317,16 @@ fn typed_item_v4_representative_families_round_trip_through_project_and_both_pro
             &compiled.client_artifact,
             ReferenceArtifactProjection::ClientSafe,
         )?;
-        assert_eq!(server.artifact_profile_id(), "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4", "{name}");
-        assert_eq!(server.lookup_server_item(identity)?.expect(name).semantics, semantics, "{name}");
+        assert_eq!(
+            server.artifact_profile_id(),
+            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4",
+            "{name}"
+        );
+        assert_eq!(
+            server.lookup_server_item(identity)?.expect(name).semantics,
+            semantics,
+            "{name}"
+        );
         assert_eq!(
             client.lookup_client_item(identity)?.expect(name).semantics,
             semantics.client_projection(),
