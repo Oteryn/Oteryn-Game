@@ -698,7 +698,7 @@ fn full_family_limits() -> ProjectEvidenceLimits {
         max_total_bytes: 160_000_000,
         max_json_depth: 24,
         max_decoded_fields: 2_000_000,
-        max_string_bytes: 2_097_152,
+        max_string_bytes: 96_000_000,
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
