@@ -9,6 +9,9 @@ readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
 readonly CAPACITY_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly FRESH_KEY_ID=fresh-key-1
 readonly RECOVERY_KEY_ID=recovery-key-1
+readonly FRESH_KEY_BYTE=1
+readonly RECOVERY_KEY_BYTE=2
+readonly SUCCESSOR_FRESH_KEY_BYTE=3
 readonly ROUTE=/internal/v1/game-auth/native-evidence
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 
@@ -125,7 +128,7 @@ fresh_trust_payload='{"version":1,"operation":"ReadFreshSigningTrustV1","issuer"
 php_exec() {
   compose exec --no-TTY --user www-data platform php -r "$1" >/dev/null
 }
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","s3a-synthetic@example.invalid"],["'"$CAPACITY_ACCOUNT_ID"'","s3a-capacity@example.invalid"]] as [$accountId,$email]) { if (!Illuminate\Support\Facades\DB::table("identities")->where("account_id",$accountId)->exists()) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } } $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",str_repeat(chr(1),32)); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_PROFILE,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_KEY_PURPOSE,"'"$RECOVERY_KEY_ID"'",str_repeat(chr(2),32));'
+php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","s3a-synthetic@example.invalid"],["'"$CAPACITY_ACCOUNT_ID"'","s3a-capacity@example.invalid"]] as [$accountId,$email]) { if (!Illuminate\Support\Facades\DB::table("identities")->where("account_id",$accountId)->exists()) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } } $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",str_repeat(chr('"$FRESH_KEY_BYTE"'),32)); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_PROFILE,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_KEY_PURPOSE,"'"$RECOVERY_KEY_ID"'",str_repeat(chr('"$RECOVERY_KEY_BYTE"'),32));'
 
 expect_status() {
   local expected=$1 payload=$2 output=$3
@@ -199,24 +202,30 @@ if int(response["clock_uncertainty_seconds"]) > 5:
     raise SystemExit("observed response exceeds clock uncertainty bound")
 PY
 }
+# A transport negative must fail at the TLS boundary itself: either the
+# handshake fails, or nginx's client-certificate verification returns its own
+# 400 page before any FastCGI/producer processing. Producer 4xx never counts.
 expect_transport_rejected() {
-  local label=$1
-  shift
-  local status rc
+  local label=$1 expected=$2
+  shift 2
+  local status rc output="$WP5_SCRATCH/transport-$label"
   set +e
-  status="$(curl "${curl_base[@]}" "$@" -H 'Content-Type: application/json' -o "$WP5_SCRATCH/transport-$label" -w '%{http_code}' --data-binary "$account_payload" "$base_url" 2>/dev/null)"
+  status="$(curl "${curl_base[@]}" "$@" -H 'Content-Type: application/json' -o "$output" -w '%{http_code}' --data-binary "$account_payload" "$base_url" 2>/dev/null)"
   rc=$?
   set -e
-  if [[ "$rc" -eq 0 && "$status" =~ ^2 ]]; then
-    return 1
+  if [[ "$expected" == handshake ]]; then
+    [[ "$rc" -ne 0 && "$status" == 000 ]] || { echo "transport_negative=$label rc=$rc status=$status" >&2; return 1; }
+  else
+    [[ "$rc" -eq 0 && "$status" == 400 ]] && grep -Fq "$expected" "$output" \
+      || { echo "transport_negative=$label rc=$rc status=$status" >&2; return 1; }
   fi
-  evidence "transport_negative=$label rejected=true"
+  evidence "transport_negative=$label rejected=true boundary=$([[ "$expected" == handshake ]] && echo tls_handshake || echo nginx_client_verify)"
 }
 
 # Real transport provenance negatives.
-expect_transport_rejected no_client_cert
-expect_transport_rejected wrong_root --cert "$WP5_PKI/wrong-client.crt" --key "$WP5_PKI/wrong-client.key"
-expect_transport_rejected lower_tls "${auth[@]}" --tlsv1.2 --tls-max 1.2
+expect_transport_rejected no_client_cert 'No required SSL certificate was sent'
+expect_transport_rejected wrong_root 'The SSL certificate error' --cert "$WP5_PKI/wrong-client.crt" --key "$WP5_PKI/wrong-client.key"
+expect_transport_rejected lower_tls handshake "${auth[@]}" --tlsv1.2 --tls-max 1.2
 wrong_status="$(curl "${curl_base[@]}" --cert "$WP5_PKI/wrong-identity.crt" --key "$WP5_PKI/wrong-identity.key" \
   -H 'SSL_CLIENT_VERIFY: SUCCESS' -H 'SSL_PROTOCOL: TLSv1.3' -H 'SSL_CLIENT_S_DN: CN=oteryn-game-native-evidence' \
   -o "$WP5_SCRATCH/wrong-identity" -w '%{http_code}' --data-binary "$account_payload" "$base_url")"
@@ -246,6 +255,8 @@ export WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID"
 export WP5_S3A_CAPACITY_ACCOUNT_ID="$CAPACITY_ACCOUNT_ID"
 export WP5_S3A_FRESH_KEY_ID="$FRESH_KEY_ID"
 export WP5_S3A_RECOVERY_KEY_ID="$RECOVERY_KEY_ID"
+export WP5_S3A_FRESH_KEY_BYTE="$FRESH_KEY_BYTE"
+export WP5_S3A_RECOVERY_KEY_BYTE="$RECOVERY_KEY_BYTE"
 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 
 # Keep the Game-side two-active proof separate from the producer-side boundary.
@@ -364,8 +375,8 @@ evidence 'account_rollback=unavailable account_reconcile=forward_only'
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); Illuminate\Support\Facades\DB::beginTransaction(); try { $r->revokeProfile(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission"); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-response" ReadFreshSigningTrustV1 1
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --trust=fresh --no-interaction >/dev/null
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr(3),32));'
-WP5_S3A_FRESH_KEY_ID=fresh-key-2 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
+php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr('"$SUCCESSOR_FRESH_KEY_BYTE"'),32));'
+WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 evidence 'trust_rollback=unavailable trust_reconcile=revoked successor_profile=fresh_key'
 
 # The path-scoped interposer runs in the exact PHP ABI and distinguishes file and directory fsync.

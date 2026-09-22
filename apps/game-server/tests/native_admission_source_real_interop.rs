@@ -22,6 +22,10 @@ fn required(name: &str) -> Result<String, io::Error> {
     env::var(name).map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, name))
 }
 
+fn seeded_key(name: &str) -> Result<[u8; 32], Box<dyn std::error::Error>> {
+    Ok([required(name)?.parse::<u8>()?; 32])
+}
+
 fn pem_der(path: &str, label: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let text = fs::read_to_string(path)?;
     let begin = format!("-----BEGIN {label}-----");
@@ -100,6 +104,8 @@ fn real_platform_producer_decodes_all_four_operations() -> Result<(), Box<dyn st
     let account_id = required("WP5_S3A_ACCOUNT_ID")?;
     let fresh_key = required("WP5_S3A_FRESH_KEY_ID")?;
     let recovery_key = required("WP5_S3A_RECOVERY_KEY_ID")?;
+    let fresh_public_key = seeded_key("WP5_S3A_FRESH_KEY_BYTE")?;
+    let recovery_public_key = seeded_key("WP5_S3A_RECOVERY_KEY_BYTE")?;
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
@@ -129,7 +135,7 @@ fn real_platform_producer_decodes_all_four_operations() -> Result<(), Box<dyn st
             },
         )
         .await?;
-        if !matches!(fresh_trust.facts, Facts::Trust { trusted: true, .. }) {
+        if !matches!(fresh_trust.facts, Facts::Trust { trusted: true, public_key } if public_key == fresh_public_key) {
             return Err("fresh trust facts are not authoritative".into());
         }
 
@@ -158,7 +164,7 @@ fn real_platform_producer_decodes_all_four_operations() -> Result<(), Box<dyn st
             },
         )
         .await?;
-        if !matches!(recovery_trust.facts, Facts::Trust { trusted: true, .. }) {
+        if !matches!(recovery_trust.facts, Facts::Trust { trusted: true, public_key } if public_key == recovery_public_key) {
             return Err("recovery trust facts are not authoritative".into());
         }
         Ok::<(), Box<dyn std::error::Error>>(())
