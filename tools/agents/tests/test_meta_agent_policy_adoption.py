@@ -88,11 +88,42 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
 
         with mock.patch.object(adoption, "_request", side_effect=request):
             self.assertEqual(
-                adoption._pull_request_active_task_paths(77, head, base),
+                adoption._pull_request_active_task_paths(77, head),
                 {"docs/agents/tasks/active/OTV2-selected.md"},
             )
 
-    def test_active_task_live_scope_uses_exact_event_generation(self):
+    def test_pull_request_live_task_scope_rejects_mid_read_base_drift(self):
+        first_base = "1" * 40
+        second_base = "2" * 40
+        head = "3" * 40
+        pulls = [
+            {
+                "state": "open",
+                "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+                "base": {"sha": first_base, "ref": "main"},
+                "changed_files": 1,
+            },
+            {
+                "state": "open",
+                "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+                "base": {"sha": second_base, "ref": "main"},
+                "changed_files": 1,
+            },
+        ]
+        files = [{"filename": "docs/agents/tasks/active/OTV2-selected.md", "status": "modified"}]
+
+        def request(url: str):
+            if "/files?" in url:
+                return files
+            if url.endswith("/pulls/78"):
+                return pulls.pop(0)
+            raise AssertionError(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=request):
+            with self.assertRaisesRegex(ValueError, "moved during live-state candidate validation"):
+                adoption._pull_request_active_task_paths(78, head)
+
+    def test_active_task_live_scope_uses_exact_event_head_not_historical_base(self):
         base = "e" * 40
         head = "f" * 40
         event = {
@@ -122,7 +153,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
                     adoption._active_task_live_scope(),
                     {"docs/agents/tasks/active/OTV2-selected.md"},
                 )
-                scoped.assert_called_once_with(88, head, base)
+                scoped.assert_called_once_with(88, head)
 
     def test_non_pr_live_task_scope_keeps_full_health_scan(self):
         with mock.patch.dict(os.environ, {"GITHUB_EVENT_NAME": "push"}, clear=False):
