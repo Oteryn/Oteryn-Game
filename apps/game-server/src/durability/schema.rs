@@ -549,6 +549,20 @@ mod terminal_replacement_postgres_red_tests {
         ChannelId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
     }
 
+    // This module is also compiled in the migrate binary's separate test crate.
+    fn fixture_account_for_character(character: u64) -> String {
+        if character == 11 {
+            ACCOUNT.into()
+        } else {
+            format!(
+                "{:08x}-{:04x}-4000-8000-{:012x}",
+                character >> 32,
+                (character >> 16) & 0xffff,
+                character & 0xffff
+            )
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn record(
         game_session_raw: u64,
@@ -565,7 +579,7 @@ mod terminal_replacement_postgres_red_tests {
             game_session(game_session_raw)?,
             ReconnectAttemptRef::new(attempt_raw)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-            ACCOUNT,
+            &fixture_account_for_character(character_raw),
             character(character_raw)?,
             world_id,
             RuntimeScopeRefV1::channel(world_id, channel(13)?),
@@ -766,6 +780,11 @@ mod terminal_replacement_postgres_red_tests {
         .bind(now + 120)
         .execute(&mut connection)
         .await?;
+        // Independent complete history for this positive owning fixture.
+        sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES (encode($1,'hex')::uuid,1,TRUE,1,1)")
+            .bind(uuid_v7(11).as_slice()).execute(&mut connection).await?;
+        sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+            .bind(uuid_v7(session_raw).as_slice()).bind(uuid_v7(11).as_slice()).bind([1_u8;16].as_slice()).execute(&mut connection).await?;
         connection.close().await?;
         Ok(())
     }
@@ -1028,6 +1047,55 @@ mod terminal_replacement_postgres_red_tests {
             );
 
             drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn replaced_collision_replay_retains_terminal_and_idempotency_priority() -> TestResult {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("replaced_collision_history").await?;
+            let now = unix_now().map_err(|_| "clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+            let reserved = record(50, 51, 1, 0xa2, 3, 7, 10, now).map_err(|_| "reservation")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(reserved).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let original = record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "original")?;
+            let original_request = ReconnectDurabilityFlowV1::begin(original.clone()).1;
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::RejectedTransportRefCollision
+            );
+            let successor = record(30, 11, 2, 0xa3, 3, 7, 10, now).map_err(|_| "successor")?;
+            let successor_request =
+                v2_request(successor, 20, 10).map_err(|_| "replacement authority")?;
+            assert_eq!(
+                journal.prepare_v2(&successor_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::ExistingTerminal
+            );
+            let typed_original = ReconnectDurabilityFlowV2::begin(original, None).1;
+            assert_eq!(
+                journal.prepare_v2(&typed_original).await?,
+                ReconnectPrepareDispositionV2::ExistingTerminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+                }
+            );
+            let changed = record(20, 11, 1, 0xa4, 3, 7, 10, now).map_err(|_| "changed replay")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(changed).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::IdempotencyConflict
+            );
             database.cleanup().await?;
             Ok(())
         })

@@ -70,14 +70,14 @@ pub(super) async fn replacement_receipt_matches_record(
 }
 
 #[derive(Clone)]
-enum JournalBackend {
+pub(super) enum JournalBackend {
     #[cfg(test)]
     Legacy(PgPool),
     Root(DurabilityRoot),
 }
 
 impl JournalBackend {
-    fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
+    pub(super) fn try_issue_root(&self) -> Result<Option<db::IssuedSemanticPass>, DurabilityError> {
         match self {
             #[cfg(test)]
             Self::Legacy(_) => Ok(None),
@@ -100,7 +100,7 @@ impl JournalBackend {
         }
     }
 
-    async fn run_pass<T, F>(
+    pub(super) async fn run_pass<T, F>(
         &self,
         issued: Option<db::IssuedSemanticPass>,
         operation: F,
@@ -155,7 +155,7 @@ pub(super) async fn commit_pass_transaction(
 
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
-    backend: JournalBackend,
+    pub(super) backend: JournalBackend,
 }
 
 impl AdmissionReconnectJournal {
@@ -268,6 +268,33 @@ impl AdmissionReconnectJournal {
                         scope_storage(record);
 
                     let mut transaction = begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, record).await?;
+                    if super::fresh_admission::has_owning_loss_receipt(
+                        &mut transaction,
+                        &session_id,
+                        record.continuity().control_loss_epoch().get(),
+                    )
+                    .await?
+                    {
+                        return Ok(ReconnectPrepareDispositionV1::Unavailable);
+                    }
+                    let existing_session: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid)")
+                        .bind(session_id.as_slice()).fetch_one(&mut *transaction).await?;
+                    if !existing_session {
+                        let account_incumbent: bool = sqlx::query_scalar(
+                            "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions WHERE account_id = $1::text::uuid AND session_state IN (1, 2) AND game_session_id <> encode($2, 'hex')::uuid AND character_id <> encode($3, 'hex')::uuid)",
+                        )
+                        .bind(identity.account_id())
+                        .bind(session_id.as_slice())
+                        .bind(identity.character_id().as_bytes().as_slice())
+                        .fetch_one(&mut *transaction)
+                        .await?;
+                        if account_incumbent {
+                            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+                        }
+                        let revision = super::fresh_admission::unused_session_revision(&mut transaction, identity.character_id(), identity.game_session_id()).await?;
+                        super::fresh_admission::commit_session_use(&mut transaction, identity.character_id(), identity.game_session_id(), record.connection().transport_ref().to_bytes(), revision).await?;
+                    }
                     let inserted_session = sqlx::query(
                         "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -307,6 +334,11 @@ impl AdmissionReconnectJournal {
                     else {
                         return Err(DurabilityError::InvalidStoredState);
                     };
+                    // Fresh ACTIVE sessions have no accepted loss epoch. A legacy
+                    // PREPARE must not invent one from its proposed record.
+                    if session.try_get::<Option<String>, _>("control_loss_epoch")?.is_none() {
+                        return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+                    }
                     if !session_binding_is_valid(&session, record)? {
                         return Err(DurabilityError::InvalidStoredState);
                     }
@@ -660,6 +692,7 @@ impl AdmissionReconnectJournal {
                         .to_string();
 
                     let mut transaction = begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, record).await?;
                     let Some(session) =
                         load_session_for_update(&mut transaction, session_id.as_slice()).await?
                     else {
@@ -870,6 +903,7 @@ impl AdmissionReconnectJournal {
             .run_pass(issued, |holder, deadline| {
                 Box::pin(async move {
                     let mut transaction = begin_pass_transaction(holder, deadline).await?;
+                    db::lock_admission_domain(&mut transaction, request.record()).await?;
                     let (snapshot, _state) =
                         Self::reconcile_record_in_transaction(&mut transaction, request.record())
                             .await?;

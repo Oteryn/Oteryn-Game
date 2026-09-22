@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #511 closed on 2026-09-17 and material PR #525 merged on 2026-09-10 as `bb4c0fce8fa12a38dd1675860de0620ce50ac0a6`. Current exact filename search found no live consumer. This allocation is terminal provenance only.
+
 # OTV2 Reference World Corridor Census #511 — allocation
 
 Refs #162 #486 #511 #504 #483 #64 #502.

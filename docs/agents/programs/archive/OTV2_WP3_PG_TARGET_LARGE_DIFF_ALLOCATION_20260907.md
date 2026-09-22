@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #420 is closed and material PR #422 merged on 2026-09-08 as `e3d8a46871a98a309c73b3febaa41a7e6d2ec408`. Its task packet is already archived. This allocation is terminal provenance only.
+
 # WP3 large-diff PostgreSQL target qualification repair allocation
 
 Coordinator: #162. Programme: #364. Bounded blocker: #420. Consumer: #351 / #356.

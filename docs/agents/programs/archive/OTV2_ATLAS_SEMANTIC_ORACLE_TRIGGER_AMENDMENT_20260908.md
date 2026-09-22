@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #418 is closed and material PR #426 merged on 2026-09-09 as `d66bdd63ee157fcea4e417f45e2a7601054a6f65`. This prospective amendment is terminal provenance only; current protected workflow/oracle state is authoritative.
+
 # Atlas semantic-search oracle and producer-trigger amendment
 
 Coordinator: #162. Programme: #364. Safety issue: #418. Existing material PR: #426.

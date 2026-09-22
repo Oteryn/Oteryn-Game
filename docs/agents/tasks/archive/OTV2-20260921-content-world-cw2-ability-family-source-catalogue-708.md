@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #736 exact candidate `bea9b1f130b4ab0cbf8e3a6d3d3b4401669881a2` passed real Merge Queue run `35656145580` with terminal `game-gate` SUCCESS and integrated as protected main `0bbaa898e5d5a33f844786054e8c7e82148b6180`. Source closure is `825/825`; native/executable Ability closure remains separate. Any nonterminal/checkpoint wording below is historical provenance only.
+
 # OTV2-20260921-content-world-cw2-ability-family-source-catalogue-708
 
 ```yaml

@@ -4,7 +4,7 @@
 task_id: OTV2-20260918-fnd02-retained-command-outcome-663
 title: Implement Foundation-owned retained command outcome lifecycle
 mode: IMPLEMENT
-status: review
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/fnd02-retained-command-outcome-663
@@ -157,7 +157,7 @@ Remaining material findings after repair: NONE after final custody-only diff/rea
 
 ```yaml
 last_progress: implementation locally committed as f83c2eb95bb4cb960486486c93467ce583e15378 and all local qualification reverified
-status: review
+status: validating
 branch: agent/fnd02-retained-command-outcome-663
 head_sha: null
 pr: null

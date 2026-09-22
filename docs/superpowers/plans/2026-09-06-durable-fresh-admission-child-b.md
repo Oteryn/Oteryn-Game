@@ -1,5 +1,20 @@
 # Durable Fresh Admission Child B Implementation Plan
 
+## 2026-09-21 owner-authorized completion checkpoint
+
+Status: **in progress; candidate qualification, independent review and protected integration pending**. Work162 [comment5766813795](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5766813795) activates the existing fourteen-path WP4 allocation, including the returned PostgreSQL target and unreleased `0002`; older prospective lease and local-database availability statements below are historical. Continue the same PR335 and canonical branch, preserving immutable admission and cumulative history. The owner authorized ordinary non-force Git on the owner PC; no replacement branch, Foundation/Cargo changes or protection bypass are included.
+
+The post-WP3 packet retains owning-loss receipt rejection in all three legacy V2 paths. Completion persists globally unique, immutable GameSession membership and per-character revision/floor/completeness, with the accepted 65536 ceiling and no eviction. Fresh and supported replacement effects share one transaction with membership; pre-contract known history migrates as incomplete. The existing sealed Foundation observation API reads independent SQL state and rechecks it at mutation. Additive claim replacement/release consume existing sealed owner transitions, reload actual persisted session/guard state, retain complete bounded historical evidence and original decision L, and preserve the initial fresh binding across successive replacements. Historical evidence is not a live capability.
+
+Configured local PostgreSQL 17.6 uses the canonical pinned image, the existing isolated harness and process-only synthetic credentials. The complete Rust 1.94.0 `--locked` PostgreSQL target passed 448/448 (0 failed or ignored, 19.46 seconds) after the final borrowed-field lifecycle-codec preflight tightening; workspace formatting and diff whitespace checks also pass. Required additional assertions passed for last-effect replacement rollback and stale release after replacement. Cases cover the 65535-to-65536 boundary, exact replay at capacity, all three Foundation nonreuse error families after reload, incomplete/corrupt/global membership rejection, migration incompleteness, concurrent exact fresh replay, immutable membership/revision protection, lifecycle replay/original L, two replacements retaining the initial binding, release, and rollback at fresh effects including ledger membership. These are actual configured SQL executions, not skipped local tests. Evidence is retained on the owner PC under `C:\Oteryn\evidence\wp4-*.log`.
+
+Canonical workspace Clippy on Windows currently reports two unrelated content dead-code errors (`ProjectCapturePlan::documents` and `ProjectFilesystemLimits::validate`); these paths are outside this allocation and are unchanged. Hosted canonical checks and exact-head review remain required.
+
+**Composition boundary retained:** owning fresh control-loss receipts are not a qualified bridge into legacy V2 replacement. Their rejection remains fail-closed under packet5764575587. Positive claim-replacement storage tests use an independently established canonical legacy-loss predecessor and do not prove a fresh-owning-loss bridge or release Server Seam247. Root must track that separate composition prerequisite; this checkpoint makes no Server Seam readiness or protected integration claim.
+
+Next action: finish the cohesive candidate checks, publish through ordinary non-force Git on the existing branch, then root performs exact-head independent review, CI qualification and normal Merge Queue/protected readback.
+
+
 This exact prospective allocation activates only after protected integration and Work readback. The actual allocation merge becomes immutable worker admission/base before first mutation.
 
 **Goal:** Deliver #329's complete asynchronous PostgreSQL fresh admission, typed publication, exact-operation recovery and affected session lifecycle adapter, preserving one canonical GameSession owner and the accepted final decision L.
@@ -27,6 +42,14 @@ This exact prospective allocation activates only after protected integration and
 | `docs/superpowers/plans/2026-09-06-durable-fresh-admission-child-b.md` | This technical plan, only if explicitly included in Work's allocation |
 
 No Foundation, Cargo, lockfile, workflow, released 0001, listener, production provider/registration, deployment or external repository writes. Concrete missing surfaces require Work amendment before mutation. Steps are serialized because schema, shared lock order and canonical lifecycle mutations are coupled; independent read-only analysis and exact-head review can run alongside the sole writer.
+
+## Protected fixture amendment (window 2)
+
+PR340 protected merge `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee` / MQ34023932923 and Work comment5558302168 add exactly `apps/game-server/tests/support/authority_matrix.rs` and `apps/game-server/tests/support/authority_recovery.rs` to the eleven paths above. These paths isolate transport/nonce fixture accounts and preserve independent source mutation evidence; they do not expand runtime policy or permit assertion weakening. Immutable B admission, same branch/PR and cumulative counters are retained. The semantic Foundation338 allocation remains separate and disjoint.
+
+## Protected migration-binary composition amendment (window 3)
+
+Allocation344 merge `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2` / Merge Queue34032269848 adds exactly `apps/game-server/src/bin/oteryn-game-migrate.rs`, fourteen total paths. The permitted change only imports the canonical-library `MigrationExecutor` in place of duplicate source inclusion; migration-only environment/connection/embedded ledger behavior and private seals are unchanged. No additional Foundation/Cargo/lib/registry scope follows.
 
 ## Execution windows and custody
 
@@ -121,3 +144,21 @@ No absent local PostgreSQL run qualifies these cases. The actual hosted head/run
 - [ ] Work verifies remote exact head/tree mapping, scope, review findings and checks, integrates normally, reads protected main and archives/releases custody. Upstream movement is reconciled without resets/force pushes; affected validation reruns only for concrete invalidation.
 
 **Single current next action:** Work qualifies this exact allocation, then binds its actual protected merge and dispatches the sole worker.
+
+### Window 4 first-loss safety repair and exact dependency
+
+Published fresh/rollback SQL checkpoints have actual PostgreSQL17.6 evidence304/305 passed respectively (canonical34033443274 and34033942736). Independent review rejected unpublished first-loss tree77bc: raw PREPARE is not owning unexpected-loss authority, and initial stale attempt persistence can poison an unopened epoch. Repair cycle3 removes those optional-context APIs and rejects initial NULL continuity before retained effects. Configured V1/V2 expired-then-distinct-current negative checks unchanged session/receipt/claims and zero attempt/child/continuity rows; actual SQL is pending.
+
+No existing exported sealed real-loss capability was found: the owning facade currently calls synchronous unsealed mark_control_loss. A separately allocated additive Foundation owning-loss source/request must bind the exact current transport/generation/actor/runtime fence and real epoch/grace/protection continuity, with pure locked-current revalidation. PREPARE then consumes established continuity. A public raw record or immutable expected snapshot cannot substitute for that prerequisite. This is a concrete minimal Foundation dependency, not permission to edit outside B's lease. Continue other admitted lifecycle/resource/locking work while Work handles it. All full-plan acceptance above remains mandatory.
+
+### Window 4 accepted resource preflight progress
+
+After protected345 registry readback, runtime operation/guard configuration is fixed to65536/8192 bytes and selected complete-row SQL transfer is bounded at131072 bytes. Complete codec length counting precedes allocation; encoded size is not a substitute for charging all private request copies and retained capacities. Four executable component boundary/codec tests pass; configured oversized-mirror rejection/restoration awaits actual PostgreSQL. This is partial enforcement only: one shared executor, all retained copies,32-variable-column/result aggregates, two durable pending slots with predecessor custody, every V1/V2/lifecycle sibling and adaptive lock qualification remain open.
+
+### Window 4 durable custody storage
+
+Work329comment5559558326 allows a DB generation fence with shared backend transactions and exclusive takeover, stable logical identity and the same two pending slots. Added low-level custody/checkpoint storage in unreleased0002 (15 relations total); no clearing API, new empty-capacity fallback or owning authority. Configured exact retry/takeover/stale/missing-slot tests await actual SQL. Every backend and the shared executor still require end-to-end integration, process-singleton admission, retained deadlines/uncertainty and complete resident accounting. Actual prior resource SQL307/1 exposed an INT4/i64 test decode mismatch; repair6 casts both boundary length expressions tobigint without changing assertions.
+
+### User-stop handoff at window 5
+
+Window5 starts13:47Z under Work5559643400, completed4/rotation1/repair6, base native68609f8. User requested save/next-agent handoff at13:50Z. Unqualified shared backend wiring is preserved: nine semantic transaction starts and V2 terminal lookup now acquire registered shared custody; one backend/pool is reused by handles, historical test constructors remain explicitly separate. Strict Clippy currently fails item placement after db.rs test module and unused unexercised production registration in integration-test compilation. Add actual registered-runtime test and repair layout before claiming any checkpoint qualification. Full queue/active/copy/deadline/ack/driver/locking/lifecycle acceptance remains unchanged; no further implementation after the stop request.

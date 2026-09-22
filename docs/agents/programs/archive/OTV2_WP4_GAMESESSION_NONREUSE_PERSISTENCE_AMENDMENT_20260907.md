@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Its predecessor WP2 #353/#361 is terminal, and the consuming WP4 Child B PR #335 merged on 2026-09-21 as `f02beb42523af6db1bb0c71d2840961e3fa5fcd0`. This persistence amendment is terminal provenance only.
+
 # WP4 GameSession nonreuse persistence/reload allocation amendment
 
 Coordinator: #162. Existing worker: #329 / PR #335. Programme: #364.
@@ -63,7 +65,7 @@ Implement only the already accepted contracts:
   `docs/architecture/reviews/OTERYN_GAME_SESSION_NONREUSE_AUTHORITY_DECISION_2026-09-07.md`;
 - its FND-04C permanent lifetime-capacity error amendment;
 - registry resource `FND04-GAMESESSION-USED-IDS-PER-CHARACTER = 65536`;
-- protected WP2 allocation `OTV2_WP2_GAMESESSION_NONREUSE_AMENDMENT_20260907.md`.
+- protected WP2 allocation `archive/OTV2_WP2_GAMESESSION_NONREUSE_AMENDMENT_20260907.md`.
 
 No copied retired-ID history is introduced into Foundation. Durability remains
 the single Game owner of the exact permanent membership authority; Foundation

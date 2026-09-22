@@ -23,6 +23,8 @@ EXPECTED_CASES = (
     "test_active_task_packets_require_github_authority_and_nonterminal_status",
     "test_active_task_live_state_rejects_terminal_canonical_authority",
     "test_active_task_live_state_accepts_open_pr_for_closed_issue",
+    "test_active_task_packets_reject_unknown_lifecycle_and_oversize_context",
+    "test_program_registry_covers_archived_programmes_with_terminal_evidence",
 )
 CANARY = "F02_DISCOVERY_NEGATIVE_CANARY"
 
@@ -59,7 +61,7 @@ class GovernanceLifecycleDiscoveryTests(unittest.TestCase):
             )
 
     def assert_cases_executed(self, output: str) -> None:
-        self.assertIn("Ran 5 tests", output)
+        self.assertIn("Ran 7 tests", output)
         for name in EXPECTED_CASES:
             self.assertRegex(output, rf"(?m)^{name} \([^\n]+\) \.\.\. (ok|FAIL)$")
 
