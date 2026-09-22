@@ -45,4 +45,4 @@ High-risk protocol/session/admission/persistence/item/loot/value/multichannel/fe
 
 ## Retired provenance
 
-Retired prompt bodies live under `retired/`; retired programme runbooks live under `../programs/archive/`. Their lifecycle entries preserve the explicit successor. Historical coordinates and examples never regain dispatch authority merely because the files remain readable.
+Retired prompt bodies normally live under `retired/`; a short compatibility stub may remain at its historical path when moving it would break retained links. Lifecycle status controls dispatchability. Retired programme runbooks live under `../programs/archive/`. Historical coordinates and examples never regain dispatch authority merely because the files remain readable.
