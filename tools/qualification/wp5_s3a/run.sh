@@ -119,6 +119,7 @@ curl_base=(--silent --show-error --http1.1 --connect-timeout 2 --max-time 10 \
 auth=(--cert "$WP5_PKI/client.crt" --key "$WP5_PKI/client.key")
 account_payload='{"version":1,"operation":"ReadAccountSecurityV1","account_id":"01934f10-7c00-7000-8000-000000000001","purpose":"platform_security","scope":"fresh_admission"}'
 recovery_account_payload='{"version":2,"operation":"ReadRecoveryAccountSecurityV2","account_id":"01934f10-7c00-7000-8000-000000000001","purpose":"platform_security","scope":"existing_actor_recovery"}'
+capacity_account_payload='{"version":2,"operation":"ReadRecoveryAccountSecurityV2","account_id":"01934f10-7c00-7000-8000-000000000002","purpose":"platform_security","scope":"existing_actor_recovery"}'
 fresh_trust_payload='{"version":1,"operation":"ReadFreshSigningTrustV1","issuer":"urn:oteryn:platform:game-admission","profile":"oteryn-pre-admission-v1","key_purpose":"fresh_admission","key_id":"fresh-key-1"}'
 
 php_exec() {
@@ -263,13 +264,13 @@ compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db \
 producer_locker=$!
 sleep 0.2
 producer_request() {
-  local output=$1 status_output=$2
+  local payload=$1 output=$2 status_output=$3
   curl "${curl_base[@]}" "${auth[@]}" -H 'Content-Type: application/json' \
-    -o "$output" -w '%{http_code}' --data-binary "$account_payload" "$base_url" > "$status_output"
+    -o "$output" -w '%{http_code}' --data-binary "$payload" "$base_url" > "$status_output"
 }
-producer_request "$WP5_SCRATCH/producer-first-response" "$WP5_SCRATCH/producer-first-status" &
+producer_request "$account_payload" "$WP5_SCRATCH/producer-first-response" "$WP5_SCRATCH/producer-first-status" &
 producer_first=$!
-producer_request "$WP5_SCRATCH/producer-second-response" "$WP5_SCRATCH/producer-second-status" &
+producer_request "$capacity_account_payload" "$WP5_SCRATCH/producer-second-response" "$WP5_SCRATCH/producer-second-status" &
 producer_second=$!
 producer_slots_locked=false
 for _ in {1..50}; do
@@ -301,7 +302,7 @@ wait "$producer_first" "$producer_second"
 validate_observed_account "$WP5_SCRATCH/producer-first-response" \
   ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
 validate_observed_account "$WP5_SCRATCH/producer-second-response" \
-  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
+  ReadRecoveryAccountSecurityV2 2 "$CAPACITY_ACCOUNT_ID" platform_security existing_actor_recovery
 evidence "producer_capacity=two_inflight third=immediate_unavailable application_queue=none rejection_seconds=$third_seconds"
 
 # Relational outage is bounded and does not escape the closed failure shape.
