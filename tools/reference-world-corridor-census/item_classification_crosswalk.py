@@ -86,10 +86,10 @@ def read_pinned(root: Path, name: str) -> dict[str, Any]:
 
 
 def read_native_map(path: Path) -> tuple[dict[str, Any], bytes]:
-    size = path.stat().st_size
-    if size > NATIVE_MAP_MAX_BYTES:
-        raise CrosswalkError(f"CANONICAL_NATIVE_MAP_MAX_PLUS_ONE:{size}")
-    payload = path.read_bytes()
+    with path.open("rb") as source:
+        payload = source.read(NATIVE_MAP_MAX_BYTES + 1)
+    if len(payload) > NATIVE_MAP_MAX_BYTES:
+        raise CrosswalkError(f"CANONICAL_NATIVE_MAP_MAX_PLUS_ONE:{len(payload)}")
     try:
         value = json.loads(payload)
     except json.JSONDecodeError as exc:

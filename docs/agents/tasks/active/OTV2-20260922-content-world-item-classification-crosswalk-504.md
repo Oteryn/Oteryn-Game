@@ -32,7 +32,7 @@ Source-policy direction is inherited from Oteryn/Oteryn-Game#504 comments `57715
 
 ## Validation
 
-- Python self-test covers deterministic output, duplicate/missing/remap rejection, crosswalk partition states, orthogonal capability states and absent current-source handling.
+- Python self-test covers deterministic output, bounded canonical-map reads independent of file metadata, duplicate/missing/remap rejection, crosswalk partition states, orthogonal capability states and absent current-source handling.
 - Full protected 38,157-record compile reproduces the family allocation digest, emits every native identity exactly once, preserves all 64 semantic bindings and produces byte-identical repeated output.
 - Committed evidence is a compact manifest of canonical full-record output digests and counts; it does not hand-author or duplicate the 38,157-row corpus.
 - Repository CI is required before qualification. No exact-head review, freeze, paid review or Merge Queue action is part of this implementation handoff.
@@ -43,7 +43,7 @@ Source-policy direction is inherited from Oteryn/Oteryn-Game#504 comments `57715
 - Python self-test: PASS, including all four crosswalk states plus missing, duplicate, native-key collision, remap and schema-coverage rejection.
 - Full census: PASS twice, 38,157 records, 64 preserved semantic bindings, 38,093 opaque identities, 17,665 source profiles and allocation digest `ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966`.
 - Full output: byte-identical 136,223,781-byte canonical JSON, SHA-256 `004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d`; bulk output remains scratch-only.
-- Compact evidence manifest: 6,349 bytes, SHA-256 `46e925de6e624e6e8c4027b797b7240d1389c0784da387ab74e7a011599ea5f8`.
+- Compact evidence manifest: 6,349 bytes, SHA-256 `26798c1f80d5260b3b2711b4c90c0443d48ba8fb055efda3c485dc88893446c3`.
 - Rust formatting: PASS on the published exporter generation.
 
 ### Limitations

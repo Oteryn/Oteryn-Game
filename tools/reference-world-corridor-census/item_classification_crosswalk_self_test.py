@@ -4,9 +4,11 @@ from __future__ import annotations
 import copy
 import argparse
 import importlib.util
+import io
 from pathlib import Path
 import sys
 import tempfile
+from unittest.mock import patch
 
 
 HERE = Path(__file__).resolve().parent
@@ -97,6 +99,14 @@ def test_full_census_is_closed_deterministic_and_non_promoting(native_map_path: 
 def test_native_map_bound(native_map_path: Path) -> None:
     payload = native_map_path.read_bytes()
     assert len(payload) == crosswalk.NATIVE_MAP_MAX_BYTES
+    controlled_oversized = payload + (b" " * 16)
+    with patch.object(Path, "stat", side_effect=AssertionError("stat must not be consulted")), patch.object(
+        Path, "open", return_value=io.BytesIO(controlled_oversized)
+    ):
+        reject(
+            lambda: crosswalk.read_native_map(Path("controlled-native-map.json")),
+            "CANONICAL_NATIVE_MAP_MAX_PLUS_ONE",
+        )
     with tempfile.TemporaryDirectory() as directory:
         oversized = Path(directory) / "native-map-max-plus-one.json"
         oversized.write_bytes(payload + b" ")
