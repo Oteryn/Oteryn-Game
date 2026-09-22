@@ -50,6 +50,14 @@ COMPARABLE_CURRENT_TO_B1 = {
 }
 B1_TO_CURRENT = {native: current for current, native in COMPARABLE_CURRENT_TO_B1.items()}
 
+# These typed destinations are vector/container carriers. Distinct B1 atoms that share the
+# carrier are not competing values and must remain independently verifiable.
+AGGREGATE_TYPED_DESTINATIONS = {
+    "skill_modifiers.modifiers",
+    "protection.resistances",
+    "weapon.elemental",
+}
+
 # Current-source fields can be retained for verification even when no promotion mapping has
 # been accepted. Those remain UNKNOWN unless a stronger rule below explicitly qualifies them.
 CURRENT_LOGICAL_PATH = {
@@ -169,6 +177,11 @@ def field_paths_for_destination(native_field: str, destination: str) -> list[str
         # The duration source value can verify the duration atom only. Mode is an independent
         # semantic atom and remains UNKNOWN absent its own evidence.
         return ["temporal.duration_ms"]
+    if destination in AGGREGATE_TYPED_DESTINATIONS:
+        # Preserve source-atom identity inside aggregate typed carriers. Different resistance,
+        # elemental and skill-modifier atoms coexist; they are not a conflict merely because
+        # the canonical schema stores them in one vector.
+        return [f"{destination}[{native_field}]"]
     return [destination]
 
 
@@ -436,7 +449,11 @@ def current_overlay(
 
     out: dict[str, dict[str, Any]] = {}
     if disposition == "WIKI_CONFLICT":
-        for wiki_key in current_source.get("contradicted_non_name_signals", []):
+        contradicted = current_source.get("contradicted_non_name_signals", [])
+        matched = current_source.get("matched_non_name_signals", [])
+        if not isinstance(contradicted, list) or not isinstance(matched, list):
+            raise VerificationError("CURRENT_SOURCE_SIGNAL_LIST_INVALID")
+        for wiki_key in contradicted:
             native_field = COMPARABLE_CURRENT_TO_B1.get(wiki_key)
             if native_field is None or native_field not in coverage:
                 continue
@@ -454,6 +471,57 @@ def current_overlay(
                     "promotion": "BLOCKED",
                     "reason": (
                         "CURRENT_STRUCTURED_REFERENCE_CONTRADICTS_PINNED_SIGNAL"
+                    ),
+                    "observations": [
+                        {
+                            "source": "TIBIAWIKI_STRUCTURED",
+                            "authority": "STRUCTURED_REFERENCE_DATA",
+                            "page_id": page["page_id"],
+                            "revision_id": page.get("revision_id"),
+                            "revision_timestamp": page.get("revision_timestamp"),
+                            "source_field": wiki_key,
+                            "value": value,
+                        }
+                    ],
+                }
+
+        # One contradicted field must not erase an independently corroborated field. Keep this
+        # narrow: only an exact one-page candidate and only non-name signals that independently
+        # equal the pinned observation may survive the Item-level conflict.
+        if len(selected_pages) == 1:
+            page = selected_pages[0]
+            for wiki_key in matched:
+                native_field = COMPARABLE_CURRENT_TO_B1.get(wiki_key)
+                if native_field is None or native_field not in coverage:
+                    continue
+                value = current_value(page, wiki_key)
+                parsed_current = simple_int(value)
+                if parsed_current is None:
+                    continue
+                if ots_simple_values(profile, native_field) != {parsed_current}:
+                    continue
+                path = field_paths_for_destination(
+                    native_field, coverage[native_field]
+                )[0]
+                if path in out:
+                    continue
+                continuity = page.get("target_continuity")
+                if continuity not in CONTINUITY_STATES:
+                    continuity = "UNKNOWN"
+                promotion = (
+                    "ELIGIBLE"
+                    if continuity in {"PROVEN", "DERIVED"}
+                    else "BLOCKED"
+                )
+                out[path] = {
+                    "field_path": path,
+                    "field_state": "CORROBORATED_CURRENT",
+                    "continuity_to_target": continuity,
+                    "promotion": promotion,
+                    "reason": (
+                        "CURRENT_SIGNAL_CORROBORATED_DESPITE_SIBLING_FIELD_CONFLICT"
+                        if promotion == "BLOCKED"
+                        else "CURRENT_SIGNAL_CORROBORATED_DESPITE_SIBLING_FIELD_CONFLICT_WITH_TARGET_CONTINUITY"
                     ),
                     "observations": [
                         {
