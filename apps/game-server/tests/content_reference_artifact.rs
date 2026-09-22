@@ -67,6 +67,357 @@ fn compiled() -> CompiledReferencePlayableContent {
     compile_reference_playable(&linked).expect("compiled Reference artifact pair")
 }
 
+fn full_family_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_documents: 8,
+        max_document_bytes: 96_000_000,
+        max_total_bytes: 160_000_000,
+        max_json_depth: 24,
+        max_decoded_fields: 2_110_000,
+        max_string_bytes: 96_000_000,
+        max_locator_bytes: 160,
+        max_locator_segments: 8,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_import_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_reimport_states: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+    }
+}
+
+type NamedItemSemantics = (&'static str, ReferenceItemSemantics, String);
+
+fn typed_family_linked(
+    cases: Vec<(&'static str, ReferenceItemSemantics)>,
+) -> Result<(CanonicalReferencePlayableContent, Vec<NamedItemSemantics>), Box<dyn std::error::Error>>
+{
+    let mut imported = protected_cw2_b1_full_item_family_import(B1_EVIDENCE)?;
+    let mut selected = Vec::with_capacity(cases.len());
+    let mut cases = cases.into_iter();
+    for record in &mut imported.records {
+        let ProjectReferenceRecord::Item {
+            identity,
+            semantics,
+            ..
+        } = record
+        else {
+            continue;
+        };
+        let Some((name, value)) = cases.next() else {
+            break;
+        };
+        *semantics = value.clone();
+        selected.push((name, value, identity.key.clone()));
+    }
+    assert!(cases.next().is_none(), "full family carries all Item cases");
+    let canonical = CanonicalProjectDocuments::from_draft(
+        ProjectDraft {
+            project_revision: "project-r1".to_owned(),
+            package_key: "oteryn:content.world-project".to_owned(),
+            semantic_schema_version: "reference-schema-v1".to_owned(),
+            licensing_metadata: "PENDING".to_owned(),
+            world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+            coordinate_frame: "global-target-2026-07-28".to_owned(),
+            records: imported.records,
+            imports: vec![imported.batch],
+            metadata: Vec::new(),
+        },
+        full_family_limits(),
+    )?;
+    let linked = canonical
+        .into_snapshot(full_family_limits())?
+        .parse(full_family_limits())?
+        .link()?;
+    Ok((linked, selected))
+}
+
+fn item_target() -> ReferenceItemTarget {
+    ReferenceItemTarget::new(CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION).expect("typed target")
+}
+
+fn presentation() -> ReferenceItemPresentation {
+    ReferenceItemPresentation {
+        name: ReferenceItemField::Known("typed item".to_owned()),
+        description: ReferenceItemField::Known("synthetic schema witness".to_owned()),
+    }
+}
+
+#[test]
+fn typed_item_v4_representative_families_round_trip_through_project_and_both_projections()
+-> Result<(), Box<dyn std::error::Error>> {
+    use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
+    let capabilities = std::array::from_fn(|index| match index % 4 {
+        0 => Unknown,
+        1 => NotApplicable,
+        2 => Conflict,
+        _ => Known(false),
+    });
+    let classification = ReferenceItemClassification {
+        item_type: Known(ReferenceItemType::Rune),
+        capabilities: Known(capabilities),
+    };
+    let equipment = ReferenceItemEquipment {
+        patterns: Known(vec![ReferenceEquipmentPattern {
+            pattern_id: 1,
+            primary_slot: Known(ReferenceEquipmentSlot::Weapon),
+            additional_reserved_slots: Known(vec![ReferenceEquipmentSlot::Shield]),
+            mutually_exclusive_groups: Known(vec![ReferenceItemGroupKey::new(
+                "oteryn:equipment-group.two-handed",
+            )?]),
+            vocations: Known(vec![ReferenceBaseVocation::Paladin]),
+            level: Known(20),
+            compatibility_rule: Unknown,
+        }]),
+    };
+    let target = item_target();
+    let mut cases = Vec::new();
+
+    let melee = ReferenceItemSemantics {
+        presentation: Known(presentation()),
+        classification: Known(classification.clone()),
+        weapon: Known(ReferenceItemWeapon {
+            weapon_type: Known(ReferenceWeaponType::Sword),
+            attack: Known(ReferenceSignedPoints(42)),
+            defense: Known(ReferenceSignedPoints(20)),
+            extra_defense: Known(ReferenceSignedPoints(0)),
+            range: Known(ReferenceCells(1)),
+            hit_chance: Known(ReferenceRationalPercent::new(1, 1)?),
+            max_hit_chance: Known(ReferenceRationalPercent::new(1, 1)?),
+            ammunition: NotApplicable,
+            elemental: Known(Vec::new()),
+        }),
+        ..Default::default()
+    };
+    cases.push(("melee_weapon", melee));
+
+    let distance = ReferenceItemSemantics {
+        presentation: Known(presentation()),
+        weapon: Known(ReferenceItemWeapon {
+            weapon_type: Known(ReferenceWeaponType::Distance),
+            attack: Known(ReferenceSignedPoints(35)),
+            defense: Unknown,
+            extra_defense: Unknown,
+            range: Known(ReferenceCells(7)),
+            hit_chance: Known(ReferenceRationalPercent::new(9, 10)?),
+            max_hit_chance: Known(ReferenceRationalPercent::new(1, 1)?),
+            ammunition: Known(ReferenceAmmoType::Arrow),
+            elemental: Unknown,
+        }),
+        ..Default::default()
+    };
+    cases.push(("distance_weapon", distance));
+    cases.push((
+        "armor_equipment",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            equipment: Known(equipment.clone()),
+            protection: Known(ReferenceItemProtection {
+                armor: Known(ReferenceSignedPoints(12)),
+                resistances: Unknown,
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "container",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            container: Known(ReferenceItemContainer {
+                capacity: Known(20),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "charges_consumable",
+        ReferenceItemSemantics {
+            charges: Known(ReferenceItemCharges { count: Known(5) }),
+            temporal: Known(ReferenceItemTemporal {
+                consumption_mode: Known(ReferenceTemporalMode::AuthoritativeActiveTimeBudget),
+                duration: Known(ReferenceMilliseconds(60_000)),
+                stop_duration: Known(false),
+                decay_target: Unknown,
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "rune_use_item",
+        ReferenceItemSemantics {
+            classification: Known(classification.clone()),
+            use_transform: Known(ReferenceItemUseTransform {
+                targets: (1..=10)
+                    .map(|kind| {
+                        Ok(ReferenceTransformTarget {
+                            kind: ReferenceTransformKind::from_wire(kind)?,
+                            target: if kind == ReferenceTransformKind::Use.wire() {
+                                Known(target.clone())
+                            } else {
+                                Unknown
+                            },
+                        })
+                    })
+                    .collect::<Result<Vec<_>, ContentError>>()?,
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "material_loot",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            classification: Conflict,
+            physical: Known(ReferenceItemPhysical {
+                weight: Known(0),
+                movable: Known(false),
+                pickupable: Known(true),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "presentation_only",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            classification: Known(classification),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "resistance_modifiers",
+        ReferenceItemSemantics {
+            protection: Known(ReferenceItemProtection {
+                armor: Known(ReferenceSignedPoints(0)),
+                resistances: Known(vec![ReferenceResistance {
+                    kind: ReferenceResistanceKind::Fire,
+                    percent: Known(ReferenceRationalPercent::new(1, 10)?),
+                }]),
+            }),
+            skill_modifiers: Known(ReferenceItemSkillModifiers {
+                modifiers: Known(vec![ReferenceModifierBinding {
+                    kind: ReferenceSkillModifierKind::CriticalHitChance,
+                    target_domain: Unknown,
+                    evaluation_phase: Unknown,
+                    priority: Known(0),
+                    parameter: Known(ReferenceModifierParameter::RationalPercent(
+                        ReferenceRationalPercent::new(1, 100)?,
+                    )),
+                }]),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "imbuement_slots",
+        ReferenceItemSemantics {
+            equipment: Known(equipment),
+            imbuement: Known(ReferenceItemImbuement {
+                slot_count: Known(3),
+                allowed_family_tiers: Known(vec![ReferenceImbuementAllowance {
+                    family: ReferenceImbuementFamily::CriticalHit,
+                    tier: ReferenceImbuementTier::Three,
+                }]),
+                excluded_families: Known(Vec::new()),
+            }),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "transform_decay_target",
+        ReferenceItemSemantics {
+            temporal: Known(ReferenceItemTemporal {
+                consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
+                duration: Known(ReferenceMilliseconds(0)),
+                stop_duration: Known(false),
+                decay_target: Known(target),
+            }),
+            ..Default::default()
+        },
+    ));
+
+    assert_eq!(cases.len(), 11);
+    let (linked, cases) = typed_family_linked(cases)?;
+    assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let compiled = compile_reference_playable(&linked)?;
+    let repeated = compile_reference_playable(&linked)?;
+    assert_eq!(compiled.server_artifact, repeated.server_artifact);
+    assert_eq!(compiled.client_artifact, repeated.client_artifact);
+    let server = load_reference_playable_artifact(
+        &compiled.server_artifact,
+        ReferenceArtifactProjection::ServerAuthoritative,
+    )?;
+    let client = load_reference_playable_artifact(
+        &compiled.client_artifact,
+        ReferenceArtifactProjection::ClientSafe,
+    )?;
+    for (name, semantics, key) in cases {
+        let identity = linked
+            .definitions
+            .iter()
+            .find(|definition| definition.definition.key().as_str() == key)
+            .map(|definition| &definition.definition)
+            .expect(name);
+        assert_eq!(
+            server.artifact_profile_id(),
+            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4",
+            "{name}"
+        );
+        assert_eq!(
+            server.lookup_server_item(identity)?.expect(name).semantics,
+            semantics,
+            "{name}"
+        );
+        assert_eq!(
+            client.lookup_client_item(identity)?.expect(name).semantics,
+            semantics.client_projection(),
+            "{name}",
+        );
+    }
+
+    let mut below = linked.clone();
+    below.definitions.pop();
+    assert!(matches!(
+        compile_reference_playable(&below),
+        Err(ContentError::LimitExceeded {
+            resource: "Reference playable definitions",
+            actual: 38_156,
+            limit: 38_157,
+        })
+    ));
+    let mut above = linked.clone();
+    above
+        .definitions
+        .push(above.definitions.last().expect("last definition").clone());
+    assert!(matches!(
+        compile_reference_playable(&above),
+        Err(ContentError::LimitExceeded {
+            resource: "Reference playable definitions",
+            actual: 38_158,
+            limit: 38_157,
+        })
+    ));
+
+    for projection in [
+        ReferenceArtifactProjection::ServerAuthoritative,
+        ReferenceArtifactProjection::ClientSafe,
+    ] {
+        let source = match projection {
+            ReferenceArtifactProjection::ServerAuthoritative => &compiled.server_artifact,
+            ReferenceArtifactProjection::ClientSafe => &compiled.client_artifact,
+        };
+        for invalid_count in [38_156, 38_158] {
+            let mut malformed = source.clone();
+            write_u32(&mut malformed, INDEX_ENTRY + 12, invalid_count);
+            write_u32(&mut malformed, BODY_ENTRY + 12, invalid_count);
+            assert!(matches!(
+                load_reference_playable_artifact(&malformed, projection),
+                Err(ContentError::InvalidArtifact(
+                    "Reference artifact section cardinality mismatch"
+                ))
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn read_u32(bytes: &[u8], offset: usize) -> usize {
     usize::try_from(u32::from_be_bytes(
         bytes[offset..offset + 4]
