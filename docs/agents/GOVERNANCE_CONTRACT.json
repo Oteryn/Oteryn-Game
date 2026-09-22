@@ -34,6 +34,8 @@
     "docs/agents/CROSS_REPO_CONTRACTS.md",
     "docs/agents/KNOWN_RISKS.md",
     "docs/agents/PROJECT_LANES.json",
+    "docs/agents/PROGRAM_LIFECYCLE.json",
+    "docs/agents/programs/README.md",
     "docs/agents/tasks/TASK_TEMPLATE.md",
     "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md"
   ],
@@ -83,5 +85,19 @@
     "command": "python tools/agents/validate_governance.py",
     "workflow": ".github/workflows/agent-governance.yml",
     "workflow_name": "Agent governance"
+  },
+  "task_modes": [
+    "IMPLEMENT",
+    "AUDIT",
+    "CONTRACT",
+    "REPAIR",
+    "COORDINATE",
+    "MIGRATE",
+    "GOVERNANCE",
+    "BUILD"
+  ],
+  "active_task_limits": {
+    "max_characters": 12000,
+    "max_lines": 240
   }
 }
