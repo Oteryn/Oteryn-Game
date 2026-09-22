@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #749 merged through governed Merge Queue on protected main as `9ddd6e020837bd43ec66ce7d78d2af7742afeb39`; merge-group run `35732438308` and aggregate `game-gate` job `106764000845` completed SUCCESS. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and protected state supersede it.
+
 # OTV2-20260922-content-world-item-schema-readiness-504
 
 ```yaml
