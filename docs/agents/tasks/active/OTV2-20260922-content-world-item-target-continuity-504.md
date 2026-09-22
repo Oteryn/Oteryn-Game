@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-target-continuity-504
-pr: null
+pr: 774
 base_sha: dd32da467c8d1e172c7ddedc91feb6c04a8893b3
 head_sha: pending
 final_head_sha: null
@@ -23,6 +23,8 @@ owned_paths:
   - docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json
   - docs/agents/tasks/active/OTV2-20260922-content-world-item-target-continuity-504.md
   - .github/workflows/item-content-continuity.yml
+  - docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json
+  - docs/agents/tasks/archive/OTV2-20260922-content-world-item-field-verification-504.md
 public_contracts:
   - docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
@@ -108,6 +110,8 @@ No Crystal/B1 reimport, identity regeneration, broad rediscovery, Item schema mu
 
 ## Implementation / findings
 
+P1 provenance repair accepted: the committed #770 compact evidence manifest was stale relative to final protected head `8ac4c20dd6d2790592f7c0a0cd921733c3157207`. Immutable exact-head run `35773500272`, job `106900759673`, provides the corrected final manifest (`compiler=b6532886dc224d18024ded38260049ed8dae9bc7429e1a2e387a51d7ae391a86`, 107 fields, 4,082,799 slots, CORROBORATED_CURRENT=69, CONFLICT=8, OTS_ONLY=30,216, UNKNOWN=4,052,506, full-output `ad3d3b16801979bd67fbf5e14f1d36f6e321f3526d133b17efa9e49a80d224f2`). The correction changes evidence metadata only; product verifier semantics remain the protected #770 exact-head implementation.
+
 The bridge is intentionally restricted to static atomic field continuity. It does not use absence of a wiki edit as PROVEN; historical wiki evidence can produce at most DERIVED.
 
 Target-day coverage uses the whole UTC calendar day rather than inventing an exact server-save minute. If the historical page lacks a pre-target revision, the field remains UNKNOWN.
@@ -169,7 +173,7 @@ last_progress: corrected stale #770 compact evidence from immutable exact-head C
 status: implementing
 branch: agent/content-world-item-target-continuity-504
 head_sha: pending
-pr: null
+pr: 774
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
