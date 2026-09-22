@@ -12,7 +12,8 @@ use super::{
     REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceAbilityDefinition, ReferenceCreatureDefinition,
     ReferenceDefinition, ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
     ReferenceFormulaDefinition, ReferenceItemDefinition, ReferenceItemDestination,
-    ReferenceItemPhysicalClass, ReferenceItemStackClass, ReferencePlayableContentSource,
+    ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStackClass,
+    ReferencePlayableContentSource,
     Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
 };
 use crate::foundation::WorldId;
@@ -548,6 +549,8 @@ pub enum ProjectReferenceRecord {
         client_projection: ProjectionDocument,
         materializable: bool,
         stack_class: ItemStackDocument,
+        #[serde(default, skip_serializing_if = "ReferenceItemSemantics::is_all_unknown")]
+        semantics: ReferenceItemSemantics,
     },
     Generic {
         identity: DefinitionIdentityDocument,
@@ -622,6 +625,7 @@ impl ProjectReferenceRecord {
                 client_projection,
                 materializable,
                 stack_class,
+                semantics,
             } => {
                 require_family(&identity.family, DefinitionFamily::Item)?;
                 let (physical_class, stack_class, legal_destinations) = match stack_class {
@@ -663,6 +667,7 @@ impl ProjectReferenceRecord {
                         materializable: *materializable,
                         stack_class,
                         legal_destinations,
+                        semantics: semantics.clone(),
                     }),
                     client_projection: client_projection.lower(),
                 })
