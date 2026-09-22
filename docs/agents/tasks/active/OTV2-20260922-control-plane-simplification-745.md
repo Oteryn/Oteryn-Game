@@ -4,19 +4,19 @@
 task_id: OTV2-20260922-control-plane-simplification-745
 title: Simplify candidate qualification and coordinator authority
 mode: GOVERNANCE
-status: validating
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: ci/control-plane-simplification-745-v2
+branch: null
 issue: 745
 pr: null
-base_sha: bbda147eedc7b01c39827ab4784b5760032b1237
+base_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: work coordinator
 created_at: 2026-09-22T09:43:00+02:00
-updated_at: 2026-09-22T10:52:00+02:00
+updated_at: 2026-09-22T14:10:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/agents/validate_governance.py
@@ -38,15 +38,15 @@ external_repositories: []
 
 ## Outcome
 
-Keep one authoritative mutating Game coordinator and make PR qualification candidate-scoped: unrelated protected-main lifecycle/routing drift must not invalidate an unchanged exact PR head, while candidate-caused defects, protected-main health, required `game-gate`, Merge Queue and real `merge_group` qualification remain fail-closed.
+Keep one authoritative mutating Game coordinator and simplify candidate qualification without weakening exact-head checks, protected-main health, required `game-gate`, Merge Queue or real `merge_group` qualification.
 
 ## Architecture and source of truth
 
-- PROVEN: META policy 3.1 says ordinary protected-main movement does not invalidate a qualified head by itself and Merge Queue owns composition with current `main`.
-- PROVEN: repository ruleset 20991995 requires `game-gate`, has Merge Queue enabled and does not require strict up-to-date PR branches.
-- PROVEN: PR #737 exposed the inherited-routing false-blocker class and is now protected as `main@9daf3522efbf799c5d9ffe9817215895d4fa8af0`; #745 is therefore systemic cleanup, not a prerequisite for that completed Item integration.
-- PROVEN: PR #739 owns merge-gate/MQ/rust workflow and PG-policy paths; this task is path-disjoint and must not edit them.
-- PROVEN: #740 lifecycle closeout was independently integrated by #743 before this successor branch; this task does not re-own that completed cleanup.
+- PROVEN: Phase 1 PR #748 is protected-integrated as `86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1` after real Merge Queue `game-gate=SUCCESS`.
+- PROVEN: WP5 routing owner PR #739 is protected-integrated as `cf5c5f35476559450b6bbaf87dce519f7eead9d0`; the Phase-2 serialization dependency is closed.
+- PROVEN: Phase 1 makes PR live-task validation candidate-scoped while protected-main/non-PR health still scans the complete active-task set.
+- PROVEN: `OTV2_IMPLEMENTATION_COORDINATOR` is retired; `Oteryn: work coordinator` remains the sole reusable mutating Game control plane.
+- CURRENT: no Phase-2 writer/branch/PR is allocated by this checkpoint. Live GitHub and fresh Work allocation outrank this record.
 
 ## High-risk authority/recovery qualification
 
@@ -54,24 +54,24 @@ NOT_APPLICABLE — repository governance/qualification only; no production, game
 
 ## Acceptance criteria
 
-- [ ] inherited routing snapshot drift simplification is serialized to phase 2 after #739 protected integration because #739 currently owns the required workflow/policy surfaces;
-- [ ] candidate-caused routing drift still selects conservative validation and protected-main routing drift still fails;
-- [x] active-task live-state validation on PRs is restricted to task packets changed by that exact head against one stable live base snapshot; protected-main/full-health validation still scans all active packets;
-- [x] redundant `OTV2_IMPLEMENTATION_COORDINATOR` is retired in favor of the sole reusable `OTV2_WORK_DELIVERY_COORDINATOR`;
-- [x] #740 stale active ownership was independently closed on protected main by #743 before this successor branch;
-- [x] no #739-owned path changes in PR #748;
-- [ ] focused lifecycle/routing/META regressions and exact-head repository CI pass.
+- [x] PR candidate live-task validation is scoped to candidate-touched active packets.
+- [x] protected-main/non-PR health still validates the complete active-task set.
+- [x] duplicate implementation coordinator is retired in favor of Work.
+- [x] Phase 1 passed exact-head CI, governed Merge Queue, real `merge_group` `game-gate` and protected-main readback.
+- [ ] Phase 2 classifies inherited routing drift without weakening candidate-caused/protected-main failures.
+- [ ] Phase 2 adds pre-queue `git diff --check` on the coherent workflow/policy surface.
+- [ ] Phase 2 is freshly allocated after path/ownership reconciliation and protected normally.
 
 ## Excluded scope
 
-No ruleset/protection change, no direct merge/auto-merge substitute, no Merge Queue weakening, no product/runtime code, no PostgreSQL routing changes from #739, no force/rebase/reset, no production or external-repository mutation.
+No ruleset/protection weakening, direct merge/auto-merge substitute, product/runtime code, production mutation, force/reset/rebase, or implicit seizure of #739/#757/#749 paths.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #748 phase-one candidate is path-disjoint from #739, tolerates protected-main advancement without freshness merge-up, and collapses retired coordinator successors directly onto Work; Issue #745 remains the canonical live authority across phase 2
-status: validating
-branch: ci/control-plane-simplification-745-v2
+last_progress: Phase 1 PR #748 protected-integrated through real Merge Queue; Phase 2 dependency #739 is also protected
+status: waiting
+branch: null
 head_sha: null
 pr: null
 final_head_sha: null
@@ -90,6 +90,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: qualify the repaired exact head, complete one independent deep review, then prepare protected integration of phase 1 while phase 2 stays serialized behind #739
+blocker: PHASE2_FRESH_ALLOCATION_NOT_ISSUED
+next_action: Work performs a fresh overlap/custody readback and allocates one bounded Phase-2 writer on a new canonical branch
 ```

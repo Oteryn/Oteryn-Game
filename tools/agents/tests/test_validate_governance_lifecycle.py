@@ -134,6 +134,29 @@ class GovernanceLifecycleTests(unittest.TestCase):
         )
 
 
+    def test_active_task_packets_require_pr_binding_when_validating_or_ready(self) -> None:
+        self.write(
+            "docs/agents/tasks/active/OTV2-validating-without-pr.md",
+            "# task\n```yaml\nmode: IMPLEMENT\nstatus: validating\nissue: 123\npr: null\n```\n",
+        )
+        self.write(
+            "docs/agents/tasks/active/OTV2-waiting-without-pr.md",
+            "# task\n```yaml\nmode: IMPLEMENT\nstatus: waiting\nissue: 124\npr: null\n```\n",
+        )
+        errors: list[str] = []
+        validator.validate_active_task_packets(errors)
+        self.assertIn(
+            "active task packet docs/agents/tasks/active/OTV2-validating-without-pr.md "
+            "with status validating must bind a positive canonical pr",
+            errors,
+        )
+        self.assertFalse(
+            any(
+                "OTV2-waiting-without-pr.md" in error and "must bind a positive canonical pr" in error
+                for error in errors
+            )
+        )
+
     def test_active_task_live_state_rejects_terminal_canonical_authority(self) -> None:
         self.write(
             "docs/agents/tasks/active/OTV2-merged-pr.md",
