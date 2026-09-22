@@ -19,6 +19,7 @@ spec.loader.exec_module(continuity)
 
 class FakeCollector:
     MAX_WIKITEXT_BYTES = 4096
+    CurrentSourceError = RuntimeError
 
     @staticmethod
     def bounded_text(value, *, label, max_bytes):
@@ -321,6 +322,25 @@ def test_full_compile_partition_and_no_promotion():
     assert first["invariants"]["semantic_promotion_performed"] is False
     assert first["invariants"]["proven_continuity_emitted"] is False
 
+
+
+def test_unparseable_history_becomes_unknown_not_batch_failure():
+    candidate = {"current_value": 42, "source_field": "attack"}
+    result = continuity.classify_candidate(
+        candidate,
+        {
+            "pre_target_revision": {
+                "revision_id": 1,
+                "revision_timestamp": "2026-07-27T00:00:00Z",
+                "source_digest": "a" * 64,
+                "parse_state": "UNPARSED",
+                "normalized_fields": {},
+            },
+            "target_day_revisions": [],
+        },
+    )
+    assert result["continuity_to_target"] == "UNKNOWN"
+    assert result["promotion_bridge"] == "BLOCKED"
 
 def main() -> int:
     tests = [
