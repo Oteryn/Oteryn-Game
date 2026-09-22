@@ -54,7 +54,7 @@ services:
       GAME_AUTH_NATIVE_EVIDENCE_REQUESTS_PER_MINUTE: "600"
       LD_PRELOAD: /opt/wp5-libfsync-fault.so
       WP5_FSYNC_FAULT: ${WP5_FSYNC_FAULT:-none}
-    command: ["sh", "-euc", "php artisan migrate --force --no-interaction && exec php-fpm -F"]
+    command: ["sh", "-euc", "chown -R www-data:www-data /var/lib/oteryn-witness && php artisan migrate --force --no-interaction && exec php-fpm -F"]
     healthcheck:
       test: ["CMD", "php", "-r", "$$s=@fsockopen('127.0.0.1',9000); exit(is_resource($$s)?0:1);"]
       interval: 2s

@@ -109,6 +109,9 @@ done
 evidence 'images=immutable linux_amd64=true php=8.5.6 mariadb=11.8.8 nginx=1.29 composer=2.8'
 
 compose up --detach --wait db platform nginx
+witness_owner="$(compose exec --no-TTY platform stat -c '%U:%G' /var/lib/oteryn-witness)"
+[[ "$witness_owner" == www-data:www-data ]]
+evidence "witness_owner=$witness_owner"
 base_url="https://source.test:$WP5_PORT$ROUTE"
 curl_base=(--silent --show-error --http1.1 --connect-timeout 2 --max-time 10 \
   --resolve "source.test:$WP5_PORT:127.0.0.1" --cacert "$WP5_PKI/server-ca.crt")
@@ -118,7 +121,7 @@ recovery_account_payload='{"version":2,"operation":"ReadRecoveryAccountSecurityV
 fresh_trust_payload='{"version":1,"operation":"ReadFreshSigningTrustV1","issuer":"urn:oteryn:platform:game-admission","profile":"oteryn-pre-admission-v1","key_purpose":"fresh_admission","key_id":"fresh-key-1"}'
 
 php_exec() {
-  compose exec --no-TTY platform php -r "$1" >/dev/null
+  compose exec --no-TTY --user www-data platform php -r "$1" >/dev/null
 }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if (!Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$ACCOUNT_ID"'")->exists()) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"s3a-synthetic@example.invalid","password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",str_repeat(chr(1),32)); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_PROFILE,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_KEY_PURPOSE,"'"$RECOVERY_KEY_ID"'",str_repeat(chr(2),32));'
 
@@ -230,14 +233,14 @@ evidence 'replacement_witness=rejected retained_witness=restored'
 # Account witness-ahead rollback and explicit forward-only reconciliation.
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=App\Identity\Models\Identity::query()->where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); Illuminate\Support\Facades\DB::beginTransaction(); try { app(App\Identity\Actions\RevokeIdentityGameAuthorizations::class)->execute($id); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-response"
-compose exec --no-TTY platform php artisan game-auth:native-evidence:reconcile --account-id="$ACCOUNT_ID" --no-interaction >/dev/null
+compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --account-id="$ACCOUNT_ID" --no-interaction >/dev/null
 expect_status 200 "$account_payload" "$WP5_SCRATCH/account-reconciled-response"
 evidence 'account_rollback=unavailable account_reconcile=forward_only'
 
 # Signing witness-ahead rollback, conservative revocation, then a fresh successor key/profile.
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); Illuminate\Support\Facades\DB::beginTransaction(); try { $r->revokeProfile(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission"); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-response"
-compose exec --no-TTY platform php artisan game-auth:native-evidence:reconcile --trust=fresh --no-interaction >/dev/null
+compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --trust=fresh --no-interaction >/dev/null
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr(3),32));'
 WP5_S3A_FRESH_KEY_ID=fresh-key-2 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 evidence 'trust_rollback=unavailable trust_reconcile=revoked successor_profile=fresh_key'
