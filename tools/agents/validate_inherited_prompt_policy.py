@@ -6,7 +6,7 @@ import base64
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import sys
 import types
@@ -114,6 +114,17 @@ def _reusable_prompt_paths(lifecycle: object) -> list[str]:
 
 
 
+def _valid_repository_path(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and not any(char in value for char in "\x00\n\r\\")
+        and not value.startswith("/")
+        and ".." not in value.split("/")
+        and str(PurePosixPath(value)) == value
+    )
+
+
 def _normalize_positive_integer(raw: object, label: str) -> int:
     value = str(raw or "").strip()
     prefix = f"{label}:"
@@ -192,14 +203,26 @@ def _pull_request_active_task_paths(
     prefix = "docs/agents/tasks/active/"
     selected: set[str] = set()
     for item in items:
-        for key in ("filename", "previous_filename"):
-            path = item.get(key)
-            if path is None:
-                continue
-            if not isinstance(path, str):
-                raise ValueError("invalid pull request file path")
-            if path.startswith(prefix) and path.endswith(".md") and path != prefix + "README.md":
-                selected.add(path)
+        filename = item.get("filename")
+        if not _valid_repository_path(filename):
+            raise ValueError("invalid pull request filename")
+        if (
+            filename.startswith(prefix)
+            and filename.endswith(".md")
+            and filename != prefix + "README.md"
+        ):
+            selected.add(filename)
+
+        previous = item.get("previous_filename")
+        if previous is not None:
+            if not _valid_repository_path(previous):
+                raise ValueError("invalid pull request previous_filename")
+            if (
+                previous.startswith(prefix)
+                and previous.endswith(".md")
+                and previous != prefix + "README.md"
+            ):
+                selected.add(previous)
     return selected
 
 
