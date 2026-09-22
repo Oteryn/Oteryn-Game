@@ -26,6 +26,7 @@ OPAQUE_COUNT = 38_093
 REVISION = "definition-r1"
 ALLOCATION_DIGEST = "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966"
 NATIVE_MAP_SCHEMA = "OTERYN_PROTECTED_ITEM_IDENTITY_MAP_EXPORT/v1"
+NATIVE_MAP_MAX_BYTES = 5_789_755
 
 PINNED_INPUTS = {
     "b1_catalog": (
@@ -50,6 +51,12 @@ CAPABILITIES = (
     "presentation", "classification", "physical", "stack", "equipment", "weapon",
     "protection", "skill_modifiers", "charges", "temporal", "container", "imbuement",
     "use_transform", "trade_restrictions", "fluid", "readable_writeable",
+)
+CLASSIFICATION_CAPABILITIES = (
+    "weapon", "armor", "helmet", "legs", "boots", "shield", "ammo", "rune",
+    "container", "consumable", "currency", "material", "loot", "decoration", "key",
+    "book_readable", "fluid", "usable", "transformable", "stackable", "charge_based",
+    "imbueable", "presentation_only", "other",
 )
 OUTCOMES = ("EXACT_ONE", "ZERO_MATCH", "AMBIGUOUS", "CONFLICT")
 
@@ -76,6 +83,20 @@ def read_pinned(root: Path, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise CrosswalkError(f"PINNED_INPUT_ROOT_INVALID:{name}")
     return value
+
+
+def read_native_map(path: Path) -> tuple[dict[str, Any], bytes]:
+    size = path.stat().st_size
+    if size > NATIVE_MAP_MAX_BYTES:
+        raise CrosswalkError(f"CANONICAL_NATIVE_MAP_MAX_PLUS_ONE:{size}")
+    payload = path.read_bytes()
+    try:
+        value = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise CrosswalkError("CANONICAL_NATIVE_MAP_JSON_INVALID") from exc
+    if not isinstance(value, dict):
+        raise CrosswalkError("CANONICAL_NATIVE_MAP_ROOT_INVALID")
+    return value, payload
 
 
 def classify_candidates(candidates: Iterable[dict[str, Any]]) -> dict[str, Any]:
@@ -219,6 +240,45 @@ def destination_capability(destination: str) -> tuple[str | None, str]:
     return capability, "TYPED_DESTINATION_AVAILABLE_NOT_PROMOTED"
 
 
+def classification_signals(observations: list[dict[str, Any]]) -> set[str]:
+    signals: set[str] = set()
+    transform_fields = {
+        "rotate_target_source_id", "wrap_target_source_id", "use_target_source_id",
+        "equip_target_source_id", "deequip_target_source_id", "male_transform_target_source_id",
+        "female_transform_target_source_id", "destroy_target_source_id",
+    }
+    for observation in observations:
+        field = observation.get("native_field")
+        value = observation.get("source_value")
+        if field == "weapon_type":
+            signals.add("weapon")
+            if value == "shield":
+                signals.add("shield")
+            if value == "ammunition":
+                signals.add("ammo")
+        elif field == "ammo_type":
+            signals.add("ammo")
+        elif field == "slot_claim" and value == "head":
+            signals.add("helmet")
+        elif field == "item_type" and value in {"rune", "container", "key"}:
+            signals.add(str(value))
+        elif field == "capacity":
+            signals.add("container")
+        elif field == "readable":
+            signals.add("book_readable")
+        elif field == "fluid_source":
+            signals.add("fluid")
+        elif field == "charge_count":
+            signals.add("charge_based")
+        elif field == "slot_and_allowed_family_tier":
+            signals.add("imbueable")
+        if field in transform_fields:
+            signals.add("transformable")
+        if field == "use_target_source_id":
+            signals.add("usable")
+    return signals
+
+
 def source_profiles(b1: dict[str, Any], schema: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[str, str], dict[str, int]]:
     catalog = b1.get("semantic_catalog", {})
     semantic_records = catalog.get("semantic_candidate_node_records")
@@ -283,6 +343,15 @@ def source_profiles(b1: dict[str, Any], schema: dict[str, Any]) -> tuple[dict[st
             }
             for name in CAPABILITIES
         }
+        category_signals = classification_signals(observations)
+        classification_capability_states = {
+            name: {
+                "source_observation_state": "PRESENT_OTS_ONLY" if name in category_signals else "ABSENT_IN_PINNED_OTS_NODE",
+                "accepted_reference_state": "UNKNOWN",
+                "current_source_state": "NOT_EVALUATED",
+            }
+            for name in CLASSIFICATION_CAPABILITIES
+        }
         profile = {
             "source_node_digest": node,
             "source_classification": SOURCE_CLASSIFICATION,
@@ -290,6 +359,7 @@ def source_profiles(b1: dict[str, Any], schema: dict[str, Any]) -> tuple[dict[st
             "classification_hypotheses": classification_hypotheses,
             "accepted_reference_classification": "UNKNOWN",
             "capability_states": capability_states,
+            "classification_capability_states": classification_capability_states,
         }
         profile_id = digest(canonical_bytes(profile))
         profile["profile_id"] = profile_id
@@ -300,6 +370,8 @@ def source_profiles(b1: dict[str, Any], schema: dict[str, Any]) -> tuple[dict[st
         counts["classification_hypotheses"] += len(classification_hypotheses)
         for name in observed_capabilities:
             counts[f"capability_present:{name}"] += 1
+        for name in category_signals:
+            counts[f"classification_capability_profile_present:{name}"] += 1
     if len(node_to_profile) != len({row["source_node_digest"] for row in identity_rows}):
         raise CrosswalkError("SOURCE_PROFILE_CLOSURE_FAILED")
     return profiles, node_to_profile, dict(sorted(counts.items()))
@@ -319,6 +391,7 @@ def compile_crosswalk(b1: dict[str, Any], batch: dict[str, Any], registry: dict[
         })
     records: list[dict[str, Any]] = []
     outcomes: Counter[str] = Counter()
+    classification_capability_records: Counter[str] = Counter()
     native_keys: set[str] = set()
     for allocation in allocations:
         source_id = allocation["source_item_id"]
@@ -329,6 +402,10 @@ def compile_crosswalk(b1: dict[str, Any], batch: dict[str, Any], registry: dict[
         if allocation["native_key"] in native_keys:
             raise CrosswalkError(f"DUPLICATE_OUTPUT_NATIVE_KEY:{allocation['native_key']}")
         native_keys.add(allocation["native_key"])
+        profile = profiles[node_to_profile[allocation["source_node_digest"]]]
+        for name, state in profile["classification_capability_states"].items():
+            if state["source_observation_state"] == "PRESENT_OTS_ONLY":
+                classification_capability_records[name] += 1
         records.append({
             **allocation,
             "crosswalk_outcome": crosswalk["outcome"],
@@ -366,6 +443,10 @@ def compile_crosswalk(b1: dict[str, Any], batch: dict[str, Any], registry: dict[
             "source_profiles": len(profiles),
             "crosswalk_outcomes": {name: outcomes[name] for name in OUTCOMES},
             **profile_counts,
+            **{
+                f"classification_capability_present:{name}": classification_capability_records[name]
+                for name in CLASSIFICATION_CAPABILITIES
+            },
         },
         "capability_state_contract": {
             "families": list(CAPABILITIES),
@@ -373,6 +454,8 @@ def compile_crosswalk(b1: dict[str, Any], batch: dict[str, Any], registry: dict[
             "absence_is_false_or_zero": False,
             "accepted_reference_default": "UNKNOWN",
             "current_source_default": "NOT_EVALUATED",
+            "classification_capabilities": list(CLASSIFICATION_CAPABILITIES),
+            "classification_source_signal_rule": "exact admitted field/value signals only; no names or absence inference",
         },
         "source_profiles": [profiles[key] for key in sorted(profiles)],
         "records": records,
@@ -400,7 +483,11 @@ def manifest(full: dict[str, Any], full_bytes: bytes, producer_path: Path) -> di
             "records_sha256": digest(records_bytes),
             "source_profiles_sha256": digest(profiles_bytes),
             "committed_bulk_corpus": False,
-            "reproduction": "run compiler against the four pinned repository inputs",
+            "reproduction": [
+                "cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- <native-map.json>",
+                "python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map <native-map.json>",
+                "python tools/reference-world-corridor-census/item_classification_crosswalk.py --game-root . --native-map <native-map.json> --output <full.json> --manifest-output <manifest.json>",
+            ],
         },
         "counts": full["counts"],
         "allocation_digest_sha256": full["allocation_digest_sha256"],
@@ -441,8 +528,7 @@ def main() -> int:
     args = parser.parse_args()
     root = args.game_root.resolve()
     inputs = {name: read_pinned(root, name) for name in PINNED_INPUTS}
-    native_map_bytes = args.native_map.read_bytes()
-    native_map = json.loads(native_map_bytes)
+    native_map, native_map_bytes = read_native_map(args.native_map)
     full = compile_crosswalk(inputs["b1_catalog"], inputs["native_batch"], inputs["family_registry"], inputs["schema_readiness"], native_map, digest(native_map_bytes))
     full_bytes = write(args.output, full)
     if args.manifest_output is not None:
