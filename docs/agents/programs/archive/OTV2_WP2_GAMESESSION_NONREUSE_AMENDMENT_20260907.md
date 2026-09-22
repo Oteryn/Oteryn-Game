@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Issue #353 is closed and canonical implementation PR #361 merged on 2026-09-07 as `3825e9c82ff388923f73548a807718807012f53f`. This WP2 allocation amendment is terminal provenance only.
+
 # WP2 GameSession nonreuse allocation amendment
 
 Coordinator: #162. Existing worker: #353 / PR #361. Programme: #364.

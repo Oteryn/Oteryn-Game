@@ -1,3 +1,5 @@
+> Lifecycle: **HISTORICAL / ARCHIVED**. Material PR #257 merged on 2026-09-08 as `da8284c476ce59cbead61340a6d876ece269e6fe`; overlapping #258 closed without merge after supersession. This allocation is terminal provenance only. Current workflow/policy blobs and live GitHub state are authoritative.
+
 # Coordinated CodeQL 4.37.9 action-pin allocation
 
 Refs #162, #257, #258, #398, #420, #422, #448, #449.

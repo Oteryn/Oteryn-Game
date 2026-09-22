@@ -3,10 +3,11 @@
 ```yaml
 task: CW1_WORLD_PROJECT_SOURCE_PROFILE_DECISION_504
 repository: Oteryn/Oteryn-Game
+mode: CONTRACT
 issue: 162
 branch: agent/content-world-cw1-source-profile-504
 base: 03a821edd828e24ccff6e2cb7fc819a776cbd238
-status: REPAIRED_READY_FOR_INDEPENDENT_REVIEW
+status: validating
 owner_direction: ACCEPTED_JSON_WITH_CONDITIONAL_MEASURED_JSONL
 implementation_authority: NONE
 production_authority: NONE

@@ -73,6 +73,46 @@ class GovernanceLifecycleTests(unittest.TestCase):
         self.assertIn("handover test-handoff must define expiry_rule", errors)
         self.assertIn("handover test-handoff must define superseded_by", errors)
 
+
+    def test_program_registry_covers_archived_programmes_with_terminal_evidence(self) -> None:
+        self.write("docs/agents/programs/archive/HISTORICAL.md")
+        registry = {
+            "programs": [
+                {
+                    "program_id": "historical",
+                    "path": "docs/agents/programs/archive/HISTORICAL.md",
+                    "status": "historical",
+                    "authoritative": False,
+                    "terminal_evidence": [],
+                    "superseded_by": [],
+                }
+            ]
+        }
+        errors: list[str] = []
+        validator.validate_program_lifecycle(registry, errors)
+        self.assertIn("program historical must define terminal_evidence", errors)
+        self.assertIn("program historical must define superseded_by", errors)
+
+    def test_active_task_packets_reject_unknown_lifecycle_and_oversize_context(self) -> None:
+        self.write(
+            "docs/agents/tasks/active/OTV2-bad-status.md",
+            "# task\n```yaml\nmode: IMPLEMENT\nstatus: review\nissue: 123\n```\n" + ("x" * 200),
+        )
+        errors: list[str] = []
+        validator.validate_active_task_packets(
+            errors,
+            task_statuses=["investigating", "implementing", "validating", "ready", "waiting", "blocked", "completed"],
+            task_modes=["IMPLEMENT"],
+            limits={"max_characters": 100, "max_lines": 20},
+        )
+        self.assertIn(
+            "active task packet docs/agents/tasks/active/OTV2-bad-status.md has unsupported status review",
+            errors,
+        )
+        self.assertTrue(
+            any("OTV2-bad-status.md exceeded bounded current-state size" in error for error in errors)
+        )
+
     def test_active_task_packets_require_github_authority_and_nonterminal_status(self) -> None:
         self.write(
             "docs/agents/tasks/active/OTV2-no-authority.md",

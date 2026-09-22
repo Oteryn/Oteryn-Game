@@ -96,11 +96,13 @@ pub struct ReferenceFormulaDefinition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReferenceItemPhysicalClass {
+    Unknown,
     Physical,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReferenceItemStackClass {
+    Unknown,
     NonStackable,
     StackCapable,
 }
@@ -732,6 +734,21 @@ fn validate_item_definition(item: &ReferenceItemDefinition) -> Result<(), Conten
                 "reference-playable item duplicates legal destination capability",
             ));
         }
+    }
+
+    let identity_only = item.physical_class == ReferenceItemPhysicalClass::Unknown
+        || item.stack_class == ReferenceItemStackClass::Unknown;
+    if identity_only {
+        if item.physical_class != ReferenceItemPhysicalClass::Unknown
+            || item.stack_class != ReferenceItemStackClass::Unknown
+            || item.materializable
+            || !destinations.is_empty()
+        {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable identity-only item must keep physical, stack, materialization and destination semantics unresolved",
+            ));
+        }
+        return Ok(());
     }
 
     let inventory_legal = destinations.contains(&ReferenceItemDestination::CharacterInventory);
