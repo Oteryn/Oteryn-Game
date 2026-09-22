@@ -4,9 +4,9 @@ from __future__ import annotations
 import copy
 import argparse
 import importlib.util
-import json
 from pathlib import Path
 import sys
+import tempfile
 
 
 HERE = Path(__file__).resolve().parent
@@ -53,8 +53,8 @@ def test_crosswalk_outcome_partition() -> None:
 
 
 def load_native_map(path: Path):
-    payload = path.read_bytes()
-    return json.loads(payload), crosswalk.digest(payload)
+    value, payload = crosswalk.read_native_map(path)
+    return value, crosswalk.digest(payload)
 
 
 def test_full_census_is_closed_deterministic_and_non_promoting(native_map_path: Path) -> None:
@@ -85,8 +85,22 @@ def test_full_census_is_closed_deterministic_and_non_promoting(native_map_path: 
     for profile in first["source_profiles"]:
         assert profile["accepted_reference_classification"] == "UNKNOWN"
         assert set(profile["capability_states"]) == set(crosswalk.CAPABILITIES)
+        assert set(profile["classification_capability_states"]) == set(crosswalk.CLASSIFICATION_CAPABILITIES)
         assert all(value["accepted_reference_state"] == "UNKNOWN" for value in profile["capability_states"].values())
+        assert all(value["accepted_reference_state"] == "UNKNOWN" for value in profile["classification_capability_states"].values())
         assert all(value["current_source_state"] == "NOT_EVALUATED" for value in profile["capability_states"].values())
+    assert counts["classification_capability_present:weapon"] > 0
+    assert counts["classification_capability_present:rune"] > 0
+    assert counts["classification_capability_present:currency"] == 0
+
+
+def test_native_map_bound(native_map_path: Path) -> None:
+    payload = native_map_path.read_bytes()
+    assert len(payload) == crosswalk.NATIVE_MAP_MAX_BYTES
+    with tempfile.TemporaryDirectory() as directory:
+        oversized = Path(directory) / "native-map-max-plus-one.json"
+        oversized.write_bytes(payload + b" ")
+        reject(lambda: crosswalk.read_native_map(oversized), "CANONICAL_NATIVE_MAP_MAX_PLUS_ONE")
 
 
 def test_duplicate_missing_and_remap_fail_closed(native_map_path: Path) -> None:
@@ -125,6 +139,7 @@ def main() -> int:
     parser.add_argument("--native-map", type=Path, required=True)
     args = parser.parse_args()
     test_crosswalk_outcome_partition()
+    test_native_map_bound(args.native_map)
     test_full_census_is_closed_deterministic_and_non_promoting(args.native_map)
     test_duplicate_missing_and_remap_fail_closed(args.native_map)
     test_schema_coverage_is_exact()
