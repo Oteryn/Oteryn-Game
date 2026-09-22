@@ -678,7 +678,7 @@ pub struct ReferenceServerItem {
     pub semantics: super::ReferenceItemSemantics,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReferenceClientItem {
     pub physical_class: ReferenceItemPhysicalClass,
     pub stack_class: ReferenceItemStackClass,
@@ -1711,7 +1711,7 @@ fn decode_typed_groups(
             })?,
             ITEM_GROUP_PHYSICAL => semantics.physical = read_field(&mut payload, |source| {
                 Ok(super::ReferenceItemPhysical {
-                    weight: read_field(source, SliceReader::read_u32)?,
+                    weight: read_field(source, |source| source.read_u32())?,
                     movable: read_field(source, read_bool)?,
                     pickupable: read_field(source, read_bool)?,
                 })
@@ -1719,7 +1719,7 @@ fn decode_typed_groups(
             ITEM_GROUP_STACK => semantics.stack = read_field(&mut payload, |source| {
                 Ok(super::ReferenceItemStack {
                     stackable: read_field(source, read_bool)?,
-                    stack_max: read_field(source, SliceReader::read_u16)?,
+                    stack_max: read_field(source, |source| source.read_u16())?,
                 })
             })?,
             ITEM_GROUP_EQUIPMENT => semantics.equipment = read_field(&mut payload, decode_equipment)?,
@@ -1727,7 +1727,7 @@ fn decode_typed_groups(
             ITEM_GROUP_PROTECTION => semantics.protection = read_field(&mut payload, decode_protection)?,
             ITEM_GROUP_SKILL_MODIFIERS => semantics.skill_modifiers = read_field(&mut payload, decode_skill_modifiers)?,
             ITEM_GROUP_CHARGES => semantics.charges = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemCharges { count: read_field(source, SliceReader::read_u32)? })
+                Ok(super::ReferenceItemCharges { count: read_field(source, |source| source.read_u32())? })
             })?,
             ITEM_GROUP_TEMPORAL => semantics.temporal = read_field(&mut payload, |source| {
                 Ok(super::ReferenceItemTemporal {
@@ -1738,7 +1738,7 @@ fn decode_typed_groups(
                 })
             })?,
             ITEM_GROUP_CONTAINER => semantics.container = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemContainer { capacity: read_field(source, SliceReader::read_u16)? })
+                Ok(super::ReferenceItemContainer { capacity: read_field(source, |source| source.read_u16())? })
             })?,
             ITEM_GROUP_IMBUEMENT => semantics.imbuement = read_field(&mut payload, decode_imbuement)?,
             ITEM_GROUP_USE_TRANSFORM => semantics.use_transform = read_field(&mut payload, |source| {
@@ -1762,7 +1762,7 @@ fn decode_typed_groups(
                     readable: read_field(source, read_bool)?,
                     writeable: read_field(source, read_bool)?,
                     distance_read: read_field(source, read_bool)?,
-                    max_text_length: read_field(source, SliceReader::read_u32)?,
+                    max_text_length: read_field(source, |source| source.read_u32())?,
                     write_once_target: read_field(source, |source| read_target(source, identities))?,
                 })
             })?,
@@ -1802,7 +1802,7 @@ fn decode_equipment(source: &mut SliceReader<'_>) -> Result<super::ReferenceItem
                     for _ in 0..count { values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?); }
                     Ok(values)
                 })?;
-                let level = read_field(source, SliceReader::read_u16)?;
+                let level = read_field(source, |source| source.read_u16())?;
                 let compatibility_rule = read_field(source, |_source| {
                     Err(ContentError::InvalidArtifact("Reference Item Equipment compatibility grammar is unsupported in v1"))
                 })?;
@@ -1891,8 +1891,8 @@ fn decode_skill_modifiers(source: &mut SliceReader<'_>) -> Result<super::Referen
                 let kind = super::ReferenceSkillModifierKind::from_wire(source.read_u8()?)?;
                 entries.push(super::ReferenceModifierBinding {
                     kind,
-                    target_domain: read_field(source, SliceReader::read_u8)?,
-                    evaluation_phase: read_field(source, SliceReader::read_u8)?,
+                    target_domain: read_field(source, |source| source.read_u8())?,
+                    evaluation_phase: read_field(source, |source| source.read_u8())?,
                     priority: read_field(source, read_i16)?,
                     parameter: read_field(source, |source| decode_modifier_parameter(source, kind))?,
                 });
@@ -1903,7 +1903,7 @@ fn decode_skill_modifiers(source: &mut SliceReader<'_>) -> Result<super::Referen
 }
 
 fn decode_imbuement(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemImbuement, ContentError> {
-    let slot_count = read_field(source, SliceReader::read_u8)?;
+    let slot_count = read_field(source, |source| source.read_u8())?;
     let allowed_family_tiers = read_field(source, |source| {
         let count = read_count(source, super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES, "Reference Item imbuement allowances")?;
         let mut entries = Vec::with_capacity(count);
@@ -3080,7 +3080,7 @@ mod typed_item_codec_tests {
         let mut item = worst_item()?;
         let ReferenceItemField::Known(stack) = &mut item.semantics.stack else { unreachable!() };
         stack.stackable = Known(false);
-        assert!(super::reference_playable::validate_item_definition(&item).is_err());
+        assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
 
         let identity = identity()?;
         let index = [IndexEntry { identity, body_offset: 0, body_length: 0, body_digest: [0; 32] }];
