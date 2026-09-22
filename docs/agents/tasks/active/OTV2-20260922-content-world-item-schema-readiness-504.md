@@ -9,13 +9,13 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-schema-readiness-504
 pr: 749
-base_sha: 9daf3522efbf799c5d9ffe9817215895d4fa8af0
-head_sha: b6cb12fb16c0dd351ed04e11cd7669f582706d22
+base_sha: ba419a3625c848f7b2464db761bb3aa7ae26a145
+head_sha: 046b59646e65953a89c984843daf850cb7ef7142
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: item schema lead
 created_at: 2026-09-22T10:44:00+02:00
-updated_at: 2026-09-22T10:44:00+02:00
+updated_at: 2026-09-22T12:20:00+00:00
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -29,7 +29,12 @@ owned_paths:
   - apps/game-server/tests/content_world_cw2_b1_import.rs
   - docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json
   - docs/agents/tasks/active/OTV2-20260922-content-world-item-schema-readiness-504.md
-public_contracts: []
+  - docs/architecture/OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
+  - tools/reference-item-resource-profile/item_resource_profile.py
+public_contracts:
+  - D6_M1_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE/v1
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
 depends_on:
   - protected PR #737 / full 38,157 Item identity closure
 blocks:
@@ -78,6 +83,11 @@ reason: immutable Content schema/compiler/artifact work only; no production muta
 No second Crystal/B1 source import. No full-family semantic value promotion. No TibiaWiki/current-value promotion. No client UI/tooltip consumer wiring, World Bundle/Foundation/Cargo change, runtime/persistence/protocol/value authority, or Ability/Creature/NPC/Quest/spatial schema widening. `world_runtime.rs` is excluded unless separately reallocated after fresh evidence.
 
 ## Implementation / findings
+
+- PROVEN — live #162 custody amendment `5774684703` adds the exact resource-profile, registry and reproducible measurement-tool paths above; the same canonical #749 lineage and single-writer custody remain binding.
+- PROVEN — ordinary merge-up `046b59646e65953a89c984843daf850cb7ef7142` inherits protected #750 without changing Item product files; governance validation passes on that synchronization head.
+- UNKNOWN — `D6_M1_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE/v1` is not accepted yet. Independent review rejected the reduced prototype because its measurement omitted required typed modifier, equipment and temporal shapes; its 726/611-byte sizes are not accepted production limits.
+- REQUIRED — publish and validate a profile-only intermediate generation, then bind live acceptance to its exact commit and profile/registry/evidence hashes before schema/codec mutation. Existing owner authority covers measured technical limits; no renewed owner approval is required.
 
 Start from the already-retained B1 source-field -> typed capability matrix in #504 comment `5773340420`. Prefer bounded typed structures over arbitrary maps. Resolve cross-Item references through the protected #737 native map.
 
@@ -134,7 +144,7 @@ Start from the already-retained B1 source-field -> typed capability matrix in #5
 ## Context checkpoint
 
 ```yaml
-last_progress: D6-M1 single writer released after protected #737 and zero-overlap census
+last_progress: Canonical merge-up and resource-path custody complete; full typed measurement repair in progress
 status: implementing
 branch: agent/content-world-item-schema-readiness-504
 head_sha: null
@@ -155,6 +165,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: implement the minimal typed schema and representative deterministic round-trip
+blocker: D6_M1_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_NOT_YET_ACCEPTED
+next_action: complete and independently verify full typed measurements before profile-only publication and acceptance
 ```
