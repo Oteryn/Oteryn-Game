@@ -367,12 +367,22 @@ expect_observed_account "$account_payload" "$WP5_SCRATCH/replacement-restored-re
 evidence 'replacement_witness=rejected retained_witness=restored'
 
 # Account witness-ahead rollback and explicit forward-only reconciliation.
+observed_generation() {
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["minimum_valid_generation"])' "$1"
+}
+account_generation_before="$(observed_generation "$WP5_SCRATCH/replacement-restored-response")"
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=App\Identity\Models\Identity::query()->where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); Illuminate\Support\Facades\DB::beginTransaction(); try { app(App\Identity\Actions\RevokeIdentityGameAuthorizations::class)->execute($id); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-response" ReadAccountSecurityV1 1
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --account-id="$ACCOUNT_ID" --no-interaction >/dev/null
 expect_observed_account "$account_payload" "$WP5_SCRATCH/account-reconciled-response" \
   ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
-evidence 'account_rollback=unavailable account_reconcile=forward_only'
+# The rolled-back revocation advanced only the witness; reconciliation must move
+# canonical state forward to it (never roll the witness back to the database).
+account_generation_after="$(observed_generation "$WP5_SCRATCH/account-reconciled-response")"
+account_generation_database="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e "SELECT native_security_generation FROM identities WHERE account_id='$ACCOUNT_ID'")"
+(( account_generation_after == account_generation_before + 1 ))
+[[ "$account_generation_database" == "$account_generation_after" ]]
+evidence "account_rollback=unavailable account_reconcile=forward_only generation=${account_generation_before}->${account_generation_after} database_generation=$account_generation_database"
 
 # Signing witness-ahead rollback, conservative revocation, then a fresh successor key/profile.
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); Illuminate\Support\Facades\DB::beginTransaction(); try { $r->revokeProfile(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission"); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
