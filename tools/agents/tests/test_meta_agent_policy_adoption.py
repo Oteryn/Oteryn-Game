@@ -125,6 +125,28 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "invalid pull request"):
                         adoption._pull_request_active_task_paths(79, head)
 
+    def test_pull_request_live_task_scope_rejects_duplicate_filenames(self):
+        base = "6" * 40
+        head = "7" * 40
+        pull = {
+            "state": "open",
+            "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+            "base": {"sha": base, "ref": "main"},
+            "changed_files": 2,
+        }
+        duplicate = {"filename": "apps/game-server/src/lib.rs", "status": "modified"}
+
+        def request(url: str):
+            if "/files?" in url:
+                return [duplicate, duplicate.copy()]
+            if url.endswith("/pulls/80"):
+                return pull
+            raise AssertionError(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=request):
+            with self.assertRaisesRegex(ValueError, "duplicate pull request filename"):
+                adoption._pull_request_active_task_paths(80, head)
+
     def test_pull_request_live_task_scope_rejects_mid_read_base_drift(self):
         first_base = "1" * 40
         second_base = "2" * 40
