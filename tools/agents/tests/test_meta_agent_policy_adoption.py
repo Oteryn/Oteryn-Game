@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -56,6 +58,161 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         with mock.patch.object(adoption, "_request", side_effect=responses):
             with self.assertRaisesRegex(ValueError, "exact commit"):
                 adoption._authenticate_binding({"authority_repository": "Oteryn/Oteryn", "authority_commit": SHA})
+
+    def test_pull_request_live_task_scope_is_candidate_bound(self):
+        base = "c" * 40
+        head = "d" * 40
+        pull = {
+            "state": "open",
+            "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+            "base": {"sha": base, "ref": "main"},
+            "changed_files": 2,
+        }
+        files = [
+            {
+                "filename": "docs/agents/tasks/active/OTV2-selected.md",
+                "status": "modified",
+            },
+            {
+                "filename": "apps/game-server/src/lib.rs",
+                "status": "modified",
+            },
+        ]
+
+        def request(url: str):
+            if "/files?" in url:
+                return files
+            if url.endswith("/pulls/77"):
+                return pull
+            raise AssertionError(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=request):
+            self.assertEqual(
+                adoption._pull_request_active_task_paths(77, head),
+                {"docs/agents/tasks/active/OTV2-selected.md"},
+            )
+
+    def test_pull_request_live_task_scope_rejects_malformed_file_paths(self):
+        base = "4" * 40
+        head = "5" * 40
+        pull = {
+            "state": "open",
+            "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+            "base": {"sha": base, "ref": "main"},
+            "changed_files": 1,
+        }
+        malformed = (
+            {},
+            {"filename": ""},
+            {"filename": 7},
+            {"filename": "../docs/agents/tasks/active/OTV2-selected.md"},
+            {
+                "filename": "apps/game-server/src/lib.rs",
+                "previous_filename": "../docs/agents/tasks/active/OTV2-selected.md",
+            },
+        )
+
+        for file_record in malformed:
+            with self.subTest(file_record=file_record):
+                def request(url: str):
+                    if "/files?" in url:
+                        return [file_record]
+                    if url.endswith("/pulls/79"):
+                        return pull
+                    raise AssertionError(url)
+
+                with mock.patch.object(adoption, "_request", side_effect=request):
+                    with self.assertRaisesRegex(ValueError, "invalid pull request"):
+                        adoption._pull_request_active_task_paths(79, head)
+
+    def test_pull_request_live_task_scope_rejects_duplicate_filenames(self):
+        base = "6" * 40
+        head = "7" * 40
+        pull = {
+            "state": "open",
+            "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+            "base": {"sha": base, "ref": "main"},
+            "changed_files": 2,
+        }
+        duplicate = {"filename": "apps/game-server/src/lib.rs", "status": "modified"}
+
+        def request(url: str):
+            if "/files?" in url:
+                return [duplicate, duplicate.copy()]
+            if url.endswith("/pulls/80"):
+                return pull
+            raise AssertionError(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=request):
+            with self.assertRaisesRegex(ValueError, "duplicate pull request filename"):
+                adoption._pull_request_active_task_paths(80, head)
+
+    def test_pull_request_live_task_scope_rejects_mid_read_base_drift(self):
+        first_base = "1" * 40
+        second_base = "2" * 40
+        head = "3" * 40
+        pulls = [
+            {
+                "state": "open",
+                "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+                "base": {"sha": first_base, "ref": "main"},
+                "changed_files": 1,
+            },
+            {
+                "state": "open",
+                "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+                "base": {"sha": second_base, "ref": "main"},
+                "changed_files": 1,
+            },
+        ]
+        files = [{"filename": "docs/agents/tasks/active/OTV2-selected.md", "status": "modified"}]
+
+        def request(url: str):
+            if "/files?" in url:
+                return files
+            if url.endswith("/pulls/78"):
+                return pulls.pop(0)
+            raise AssertionError(url)
+
+        with mock.patch.object(adoption, "_request", side_effect=request):
+            with self.assertRaisesRegex(ValueError, "moved during live-state candidate validation"):
+                adoption._pull_request_active_task_paths(78, head)
+
+    def test_active_task_live_scope_uses_exact_event_head_not_historical_base(self):
+        base = "e" * 40
+        head = "f" * 40
+        event = {
+            "number": 88,
+            "pull_request": {
+                "number": 88,
+                "head": {"sha": head},
+                "base": {"sha": base},
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "event.json"
+            path.write_text(json.dumps(event), encoding="utf-8")
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "GITHUB_EVENT_NAME": "pull_request",
+                    "GITHUB_EVENT_PATH": str(path),
+                },
+                clear=False,
+            ), mock.patch.object(
+                adoption,
+                "_pull_request_active_task_paths",
+                return_value={"docs/agents/tasks/active/OTV2-selected.md"},
+            ) as scoped:
+                self.assertEqual(
+                    adoption._active_task_live_scope(),
+                    {"docs/agents/tasks/active/OTV2-selected.md"},
+                )
+                scoped.assert_called_once_with(88, head)
+
+    def test_non_pr_live_task_scope_keeps_full_health_scan(self):
+        with mock.patch.dict(os.environ, {"GITHUB_EVENT_NAME": "push"}, clear=False):
+            self.assertIsNone(adoption._active_task_live_scope())
 
     def test_game_bootstrap_preserves_domain_invariants_and_binding_delivery(self):
         text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
@@ -188,6 +345,22 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
         )
 
+        implementation = entries["OTV2_IMPLEMENTATION_COORDINATOR"]
+        self.assertEqual(implementation["version"], "1.2")
+        self.assertEqual(implementation["status"], "retired")
+        self.assertIs(implementation["reusable"], False)
+        self.assertEqual(
+            implementation["superseded_by"],
+            "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+        )
+
+        retired_to_implementation = [
+            entry["prompt_id"]
+            for entry in lifecycle["prompts"]
+            if entry.get("superseded_by") == "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md"
+        ]
+        self.assertEqual(retired_to_implementation, [])
+
         for prompt_id, version in {
             "OTV2_REFERENCE_INVESTIGATOR": "1.1",
             "OTV2_OWNER_EXECUTION_STATUS_ADVISOR": "1.1",
@@ -200,11 +373,18 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             self.assertEqual(entries[prompt_id]["version"], version)
 
         readme = (ROOT / "docs/agents/prompts/README.md").read_text(encoding="utf-8")
-        self.assertIn("former `Oteryn: terra game coordinator` profile is retired", readme)
         self.assertNotIn(
             "`OTV2_TERRA_GAME_CONTROL_PLANE.md` — deterministic Game control plane",
             readme,
         )
+
+        self.assertIn("former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired", readme)
+
+        implementation_prompt = (ROOT / "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("RETIRED / PROVENANCE ONLY", implementation_prompt)
+        self.assertIn("MUTATION_AUTHORITY: NONE", implementation_prompt)
 
         runbook = (ROOT / "docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md").read_text(encoding="utf-8")
         self.assertNotIn("| `Oteryn: terra game coordinator` |", runbook)
@@ -230,6 +410,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         work_audit = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md").read_text(encoding="utf-8")
         self.assertIn("`PROMPT_EVAL_STANDARD.md` is needed only when prompt/harness behavior is an audit target", work_audit)
         self.assertNotIn("Work/Terra", work_audit)
+        self.assertNotIn("OTV2_IMPLEMENTATION_COORDINATOR.md", work_audit)
         self.assertIn("Work-only Game control plane", work_audit)
 
         programme_audit = (ROOT / "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md").read_text(encoding="utf-8")

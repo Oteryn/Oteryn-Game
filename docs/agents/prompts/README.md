@@ -11,7 +11,7 @@ Prompts are task-specific deltas over root/nearest instructions, bound META and 
 - `OTV2_SOL_SUPERVISING_ARCHITECT.md` — material architecture escalation inside accepted authority. **`Oteryn: sol supervising architect`.**
 - `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` — broad independent programme audit. **`Oteryn: audyt`.**
 
-The former `Oteryn: terra game coordinator` profile is retired and `OTV2_TERRA_GAME_CONTROL_PLANE.md` is provenance only. `OTV2_WORK_DELIVERY_COORDINATOR.md` is the sole reusable mutating Game control-plane profile; live allocation still governs whether it may mutate.
+The former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired provenance. `OTV2_WORK_DELIVERY_COORDINATOR.md` is the sole reusable mutating Game control-plane profile; live allocation still governs whether it may mutate.
 
 ## Current WP3-v2 / upstream-first family
 
@@ -45,4 +45,4 @@ High-risk protocol/session/admission/persistence/item/loot/value/multichannel/fe
 
 ## Retired provenance
 
-Retired prompt bodies live under `retired/`; retired programme runbooks live under `../programs/archive/`. Their lifecycle entries preserve the explicit successor. Historical coordinates and examples never regain dispatch authority merely because the files remain readable.
+Retired prompt bodies normally live under `retired/`; a short compatibility stub may remain at its historical path when moving it would break retained links. Lifecycle status controls dispatchability. Retired programme runbooks live under `../programs/archive/`. Historical coordinates and examples never regain dispatch authority merely because the files remain readable.

@@ -134,6 +134,29 @@ class GovernanceLifecycleTests(unittest.TestCase):
         )
 
 
+    def test_active_task_packets_require_pr_binding_when_validating_or_ready(self) -> None:
+        self.write(
+            "docs/agents/tasks/active/OTV2-validating-without-pr.md",
+            "# task\n```yaml\nmode: IMPLEMENT\nstatus: validating\nissue: 123\npr: null\n```\n",
+        )
+        self.write(
+            "docs/agents/tasks/active/OTV2-waiting-without-pr.md",
+            "# task\n```yaml\nmode: IMPLEMENT\nstatus: waiting\nissue: 124\npr: null\n```\n",
+        )
+        errors: list[str] = []
+        validator.validate_active_task_packets(errors)
+        self.assertIn(
+            "active task packet docs/agents/tasks/active/OTV2-validating-without-pr.md "
+            "with status validating must bind a positive canonical pr",
+            errors,
+        )
+        self.assertFalse(
+            any(
+                "OTV2-waiting-without-pr.md" in error and "must bind a positive canonical pr" in error
+                for error in errors
+            )
+        )
+
     def test_active_task_live_state_rejects_terminal_canonical_authority(self) -> None:
         self.write(
             "docs/agents/tasks/active/OTV2-merged-pr.md",
@@ -174,6 +197,36 @@ class GovernanceLifecycleTests(unittest.TestCase):
             return {"state": "closed"}
 
         self.assertEqual(validator.validate_active_task_live_state(request), [])
+
+        self.write(
+            "docs/agents/tasks/active/OTV2-unrelated-terminal.md",
+            "# task\n```yaml\nstatus: validating\nissue: 31\npr: 41\n```\n",
+        )
+
+        requested: list[str] = []
+
+        def scoped_request(url: str) -> object:
+            requested.append(url)
+            if url.endswith("/pulls/21"):
+                return {"state": "open", "merged_at": None}
+            if url.endswith("/issues/12"):
+                return {"state": "closed"}
+            if url.endswith("/pulls/41"):
+                return {"state": "closed", "merged_at": "2026-09-22T00:00:00Z"}
+            if url.endswith("/issues/31"):
+                return {"state": "open"}
+            raise AssertionError(url)
+
+        self.assertEqual(
+            validator.validate_active_task_live_state(
+                scoped_request,
+                {"docs/agents/tasks/active/OTV2-open-pr.md"},
+            ),
+            [],
+        )
+        self.assertEqual(len(requested), 2)
+        self.assertTrue(all(url.endswith(("/pulls/21", "/issues/12")) for url in requested))
+
 
 if __name__ == "__main__":
     unittest.main()
