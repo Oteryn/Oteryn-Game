@@ -149,17 +149,21 @@ expect_unavailable() {
 }
 expect_observed_account() {
   local payload=$1 output=$2 operation=$3 version=$4 account_id=$5 purpose=$6 scope=$7
+  local revision_floor=${8:-0} revision_relation=${9:-positive}
   expect_status 200 "$payload" "$output"
-  validate_observed_account "$output" "$operation" "$version" "$account_id" "$purpose" "$scope"
+  validate_observed_account "$output" "$operation" "$version" "$account_id" "$purpose" "$scope" \
+    "$revision_floor" "$revision_relation"
 }
 validate_observed_account() {
   local output=$1 operation=$2 version=$3 account_id=$4 purpose=$5 scope=$6
-  python3 - "$output" "$operation" "$version" "$account_id" "$purpose" "$scope" <<'PY'
+  local revision_floor=${7:-0} revision_relation=${8:-positive}
+  python3 - "$output" "$operation" "$version" "$account_id" "$purpose" "$scope" \
+    "$revision_floor" "$revision_relation" <<'PY'
 import json
 import pathlib
 import sys
 
-path, operation, version, account_id, purpose, scope = sys.argv[1:]
+path, operation, version, account_id, purpose, scope, revision_floor, revision_relation = sys.argv[1:]
 body = pathlib.Path(path).read_bytes()
 if not body or len(body) > 8192:
     raise SystemExit("observed response body is empty or oversized")
@@ -203,8 +207,88 @@ for key, allow_zero in (
         raise SystemExit(f"observed response has non-canonical {key}")
 if response["decision_identity"] != response["source_revision"]:
     raise SystemExit("observed response has invalid decision provenance")
+revision = int(response["source_revision"])
+floor = int(revision_floor)
+if revision_relation == "at_least" and revision < floor:
+    raise SystemExit("observed response regressed below the pre-fault source revision")
+if revision_relation == "greater" and revision <= floor:
+    raise SystemExit("observed response did not create the required successor decision")
+if revision_relation not in {"positive", "at_least", "greater"}:
+    raise SystemExit("unknown source revision relation")
 if int(response["clock_uncertainty_seconds"]) > 5:
     raise SystemExit("observed response exceeds clock uncertainty bound")
+PY
+}
+observed_revision() {
+  python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_revision"])' "$1"
+}
+expect_observed_trust() {
+  local payload=$1 output=$2 expected_trusted=$3 expected_key_byte=$4 revision_floor=$5 revision_relation=$6
+  expect_status 200 "$payload" "$output"
+  python3 - "$output" "$expected_trusted" "$expected_key_byte" "$revision_floor" "$revision_relation" <<'PY'
+import base64
+import json
+import pathlib
+import sys
+
+path, expected_trusted, expected_key_byte, revision_floor, revision_relation = sys.argv[1:]
+body = pathlib.Path(path).read_bytes()
+if not body or len(body) > 8192:
+    raise SystemExit("observed trust response body is empty or oversized")
+
+def closed_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate response member: {key}")
+        result[key] = value
+    return result
+
+try:
+    response = json.loads(body.decode("utf-8"), object_pairs_hook=closed_object)
+except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+    raise SystemExit(f"malformed observed trust response: {error}") from error
+expected_keys = {
+    "version", "operation", "result", "source_authority", "source_revision",
+    "decision_identity", "source_observed_at", "clock_uncertainty_seconds",
+    "issuer", "profile", "key_purpose", "key_id", "trusted", "public_key",
+}
+if not isinstance(response, dict) or set(response) != expected_keys:
+    raise SystemExit("observed trust response has an unknown or missing member")
+expected = {
+    "version": 1, "operation": "ReadFreshSigningTrustV1", "result": "observed",
+    "source_authority": "platform", "issuer": "urn:oteryn:platform:game-admission",
+    "profile": "oteryn-pre-admission-v1", "key_purpose": "fresh_admission",
+    "key_id": "fresh-key-1", "trusted": expected_trusted == "true",
+}
+if any(response.get(key) != value for key, value in expected.items()):
+    raise SystemExit("observed trust response has wrong operation, binding, authority, or result")
+for key, allow_zero in (("source_revision", False), ("source_observed_at", False), ("clock_uncertainty_seconds", True)):
+    value = response.get(key)
+    if not isinstance(value, str) or not value.isascii() or not value.isdigit():
+        raise SystemExit(f"observed trust response has malformed {key}")
+    parsed = int(value)
+    if str(parsed) != value or (parsed == 0 and not allow_zero):
+        raise SystemExit(f"observed trust response has non-canonical {key}")
+if response["decision_identity"] != response["source_revision"]:
+    raise SystemExit("observed trust response has invalid decision provenance")
+revision = int(response["source_revision"])
+floor = int(revision_floor)
+if revision_relation == "at_least" and revision < floor:
+    raise SystemExit("observed trust response regressed below the pre-fault source revision")
+if revision_relation == "greater" and revision <= floor:
+    raise SystemExit("observed trust response did not create the required successor decision")
+if revision_relation not in {"positive", "at_least", "greater"}:
+    raise SystemExit("unknown source revision relation")
+if int(response["clock_uncertainty_seconds"]) > 5:
+    raise SystemExit("observed trust response exceeds clock uncertainty bound")
+padding = "=" * (-len(response["public_key"]) % 4)
+try:
+    public_key = base64.urlsafe_b64decode(response["public_key"] + padding)
+except Exception as error:
+    raise SystemExit("observed trust response has malformed key material") from error
+if public_key != bytes([int(expected_key_byte)]) * 32:
+    raise SystemExit("observed trust response has wrong key material")
 PY
 }
 # A transport negative must fail at the TLS boundary itself: either the
@@ -321,20 +405,27 @@ validate_observed_account "$WP5_SCRATCH/producer-second-response" \
 evidence "producer_capacity=two_inflight third=immediate_unavailable application_queue=none rejection_seconds=$third_seconds"
 
 # Relational outage is bounded and does not escape the closed failure shape.
+pre_db_fault_revision="$(observed_revision "$WP5_SCRATCH/producer-first-response")"
 compose stop db >/dev/null
 expect_unavailable "$account_payload" "$WP5_SCRATCH/db-down-response" ReadAccountSecurityV1 1
 compose start db >/dev/null
 until compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-admin ping -h 127.0.0.1 -uroot --silent >/dev/null 2>&1; do sleep 1; done
-evidence 'relational_failure=bounded_unavailable'
+expect_observed_account "$account_payload" "$WP5_SCRATCH/db-recovered-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+  "$pre_db_fault_revision" greater
+db_recovered_revision="$(observed_revision "$WP5_SCRATCH/db-recovered-response")"
+evidence "relational_failure=bounded_unavailable recovery_revision=${pre_db_fault_revision}->${db_recovered_revision}"
 
 store_digest_before="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
 compose restart platform nginx >/dev/null
 compose up --detach --wait platform nginx >/dev/null
 expect_observed_account "$account_payload" "$WP5_SCRATCH/restart-response" \
-  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+  "$db_recovered_revision" greater
+restart_revision="$(observed_revision "$WP5_SCRATCH/restart-response")"
 store_digest_after="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
 [[ "$store_digest_before" == "$store_digest_after" ]]
-evidence "process_restart=retained witness_store_digest=$store_digest_after"
+evidence "process_restart=retained witness_store_digest=$store_digest_after revision=${db_recovered_revision}->${restart_revision}"
 
 # Restore a synthetic database snapshot with only the witness-store binding omitted.
 compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-dump -uroot \
@@ -353,18 +444,42 @@ compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot ote
 compose start platform >/dev/null
 compose up --detach --wait platform nginx >/dev/null
 expect_observed_account "$account_payload" "$WP5_SCRATCH/restore-response" \
-  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+  "$restart_revision" greater
+restore_revision="$(observed_revision "$WP5_SCRATCH/restore-response")"
 rebound="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_witness_stores WHERE id=1')"
 [[ "$rebound" == 1 ]]
-evidence 'database_restore=retained_witness_rebound'
+evidence "database_restore=retained_witness_rebound revision=${restart_revision}->${restore_revision}"
 
 # Empty replacement witness is rejected while relational history remains; restore retained files afterward.
 compose exec --no-TTY platform sh -c 'tar -C /var/lib/oteryn-witness -cf /run/wp5/witness.tar . && find /var/lib/oteryn-witness -mindepth 1 -maxdepth 1 -delete'
 expect_unavailable "$account_payload" "$WP5_SCRATCH/replacement-response" ReadAccountSecurityV1 1
 compose exec --no-TTY platform sh -c 'tar -C /var/lib/oteryn-witness -xf /run/wp5/witness.tar'
 expect_observed_account "$account_payload" "$WP5_SCRATCH/replacement-restored-response" \
-  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
-evidence 'replacement_witness=rejected retained_witness=restored'
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+  "$restore_revision" greater
+replacement_restored_revision="$(observed_revision "$WP5_SCRATCH/replacement-restored-response")"
+evidence "replacement_witness=rejected retained_witness=restored revision=${restore_revision}->${replacement_restored_revision}"
+
+# Deterministically prove that the recovery guard rejects an otherwise-valid
+# response whose revision and decision identity regress below the pre-fault high-water.
+python3 - "$WP5_SCRATCH/replacement-restored-response" "$WP5_SCRATCH/regressed-response" "$replacement_restored_revision" <<'PY'
+import json
+import sys
+source, destination, floor = sys.argv[1:]
+response = json.load(open(source))
+response["source_revision"] = str(int(floor) - 1)
+response["decision_identity"] = response["source_revision"]
+with open(destination, "w") as output:
+    json.dump(response, output, separators=(",", ":"))
+PY
+if validate_observed_account "$WP5_SCRATCH/regressed-response" \
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+  "$replacement_restored_revision" at_least 2>/dev/null; then
+  echo 'regressed recovery revision was accepted' >&2
+  exit 1
+fi
+evidence "revision_regression_self_test=rejected floor=$replacement_restored_revision"
 
 # Account witness-ahead rollback and explicit forward-only reconciliation.
 observed_generation() {
@@ -373,38 +488,59 @@ observed_generation() {
 account_generation_before="$(observed_generation "$WP5_SCRATCH/replacement-restored-response")"
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=App\Identity\Models\Identity::query()->where("account_id","'"$ACCOUNT_ID"'")->firstOrFail(); Illuminate\Support\Facades\DB::beginTransaction(); try { app(App\Identity\Actions\RevokeIdentityGameAuthorizations::class)->execute($id); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-response" ReadAccountSecurityV1 1
+account_ambiguous_store_digest="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
+compose restart platform nginx >/dev/null
+compose up --detach --wait platform nginx >/dev/null
+expect_unavailable "$account_payload" "$WP5_SCRATCH/account-ambiguous-after-restart-response" ReadAccountSecurityV1 1
+[[ "$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')" == "$account_ambiguous_store_digest" ]]
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --account-id="$ACCOUNT_ID" --no-interaction >/dev/null
 expect_observed_account "$account_payload" "$WP5_SCRATCH/account-reconciled-response" \
-  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
+  ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+  "$replacement_restored_revision" greater
 # The rolled-back revocation advanced only the witness; reconciliation must move
 # canonical state forward to it (never roll the witness back to the database).
 account_generation_after="$(observed_generation "$WP5_SCRATCH/account-reconciled-response")"
+account_reconciled_revision="$(observed_revision "$WP5_SCRATCH/account-reconciled-response")"
 account_generation_database="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e "SELECT native_security_generation FROM identities WHERE account_id='$ACCOUNT_ID'")"
 (( account_generation_after == account_generation_before + 1 ))
 [[ "$account_generation_database" == "$account_generation_after" ]]
-evidence "account_rollback=unavailable account_reconcile=forward_only generation=${account_generation_before}->${account_generation_after} database_generation=$account_generation_database"
+evidence "account_rollback=unavailable_after_restart witness_ahead=retained account_reconcile=forward_only generation=${account_generation_before}->${account_generation_after} database_generation=$account_generation_database revision=${replacement_restored_revision}->${account_reconciled_revision}"
 
 # Signing witness-ahead rollback, conservative revocation, then a fresh successor key/profile.
+expect_observed_trust "$fresh_trust_payload" "$WP5_SCRATCH/trust-before-fault-response" \
+  true "$FRESH_KEY_BYTE" 0 positive
+trust_before_fault_revision="$(observed_revision "$WP5_SCRATCH/trust-before-fault-response")"
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); Illuminate\Support\Facades\DB::beginTransaction(); try { $r->revokeProfile(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission"); } finally { Illuminate\Support\Facades\DB::rollBack(); }'
 expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-response" ReadFreshSigningTrustV1 1
+trust_ambiguous_store_digest="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
+compose restart platform nginx >/dev/null
+compose up --detach --wait platform nginx >/dev/null
+expect_unavailable "$fresh_trust_payload" "$WP5_SCRATCH/trust-ambiguous-after-restart-response" ReadFreshSigningTrustV1 1
+[[ "$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')" == "$trust_ambiguous_store_digest" ]]
 compose exec --no-TTY --user www-data platform php artisan game-auth:native-evidence:reconcile --trust=fresh --no-interaction >/dev/null
 # Before any successor exists, the reconciled old key must be observed as
 # untrusted with its exact seeded key material through the real Game decoder.
+expect_observed_trust "$fresh_trust_payload" "$WP5_SCRATCH/trust-reconciled-response" \
+  false "$FRESH_KEY_BYTE" "$trust_before_fault_revision" greater
+trust_reconciled_revision="$(observed_revision "$WP5_SCRATCH/trust-reconciled-response")"
 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_reports_revoked_fresh_key -- --ignored --exact --nocapture
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishNextProfileVersion(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","fresh-key-2",str_repeat(chr('"$SUCCESSOR_FRESH_KEY_BYTE"'),32));'
 WP5_S3A_FRESH_KEY_ID=fresh-key-2 WP5_S3A_FRESH_KEY_BYTE="$SUCCESSOR_FRESH_KEY_BYTE" cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
-evidence 'trust_rollback=unavailable trust_reconcile=revoked successor_profile=fresh_key'
+evidence "trust_rollback=unavailable_after_restart witness_ahead=retained trust_reconcile=revoked revision=${trust_before_fault_revision}->${trust_reconciled_revision} successor_profile=fresh_key"
 
 # The path-scoped interposer runs in the exact PHP ABI and distinguishes file and directory fsync.
 for mode in file directory; do
+  fsync_pre_fault_revision="$account_reconciled_revision"
   WP5_FSYNC_FAULT="$mode"; export WP5_FSYNC_FAULT
   compose up --detach --wait --force-recreate --no-deps platform >/dev/null
   expect_unavailable "$account_payload" "$WP5_SCRATCH/fsync-$mode-response" ReadAccountSecurityV1 1
   WP5_FSYNC_FAULT=none; export WP5_FSYNC_FAULT
   compose up --detach --wait --force-recreate --no-deps platform >/dev/null
   expect_observed_account "$account_payload" "$WP5_SCRATCH/fsync-$mode-recovered-response" \
-    ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission
-  evidence "fsync_fault=$mode result=unavailable recovery=observed"
+    ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+    "$fsync_pre_fault_revision" greater
+  account_reconciled_revision="$(observed_revision "$WP5_SCRATCH/fsync-$mode-recovered-response")"
+  evidence "fsync_fault=$mode result=unavailable recovery=observed revision=${fsync_pre_fault_revision}->${account_reconciled_revision}"
 done
 
 history="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_observations')"
