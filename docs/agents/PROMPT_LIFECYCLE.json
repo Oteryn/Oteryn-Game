@@ -65,13 +65,13 @@
     {
       "prompt_id": "OTV2_IMPLEMENTATION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "version": "1.1",
-      "status": "reusable",
-      "owner": "implementation-programme",
-      "scope": "Implementation-wave coordination and allocation inside Oteryn/Oteryn-Game only.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "version": "1.2",
+      "status": "retired",
+      "owner": "historical-implementation-programme",
+      "scope": "Historical implementation-wave coordinator retained for provenance; current mutation and integration coordination is owned only by OTV2_WORK_DELIVERY_COORDINATOR.",
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "supersession_rule": "OTV2_WORK_DELIVERY_COORDINATOR is the sole reusable mutating Game control plane; historical implementation-coordinator references are provenance only."
     },
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
