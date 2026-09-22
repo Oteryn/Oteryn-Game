@@ -8,9 +8,9 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-schema-readiness-504
-pr: null
+pr: 749
 base_sha: 9daf3522efbf799c5d9ffe9817215895d4fa8af0
-head_sha: null
+head_sha: b6cb12fb16c0dd351ed04e11cd7669f582706d22
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: item schema lead
@@ -138,7 +138,7 @@ last_progress: D6-M1 single writer released after protected #737 and zero-overla
 status: implementing
 branch: agent/content-world-item-schema-readiness-504
 head_sha: null
-pr: null
+pr: 749
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
