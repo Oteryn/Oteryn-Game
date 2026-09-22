@@ -21,8 +21,10 @@ def coverage() -> dict[str, str]:
         "defense": "weapon.defense",
         "weight": "physical.weight",
         "duration": "temporal.duration_ms+consumption_mode",
+        "modifier.criticalhitchance": "skill_modifiers.modifiers",
+        "modifier.lifeleechchance": "skill_modifiers.modifiers",
     }
-    for index in range(86):
+    for index in range(84):
         result[f"synthetic_{index:02d}"] = (
             f"EXPLICIT_UNSUPPORTED_SYNTHETIC_{index:02d}"
         )
@@ -51,8 +53,16 @@ def inputs() -> tuple[dict, dict, dict]:
     crosswalk = {
         "schema": field.CROSSWALK_SCHEMA,
         "source_profiles": [
-            profile("p1", [obs("attack", "42"), obs("weight", "100")]),
-            profile("p2", [obs("attack", "10")]),
+            profile(
+                "p1",
+                [
+                    obs("attack", "42"),
+                    obs("weight", "100"),
+                    obs("modifier.criticalhitchance", "10"),
+                    obs("modifier.lifeleechchance", "20"),
+                ],
+            ),
+            profile("p2", [obs("attack", "10"), obs("defense", "5")]),
             profile("p3", []),
         ],
         "records": [
@@ -104,7 +114,7 @@ def inputs() -> tuple[dict, dict, dict]:
                     "disposition": "WIKI_CONFLICT",
                     "reason": "STABLE_SIGNAL_CONTRADICTION",
                     "candidate_page_ids": [102],
-                    "matched_non_name_signals": [],
+                    "matched_non_name_signals": ["defense"],
                     "contradicted_non_name_signals": ["attack"],
                 },
             },
@@ -142,6 +152,7 @@ def inputs() -> tuple[dict, dict, dict]:
                 "normalized_fields": {
                     "name": {"state": "VALUE", "value": "Conflict Sword"},
                     "attack": {"state": "VALUE", "value": 11},
+                    "defense": {"state": "VALUE", "value": 5},
                 },
             },
             {
@@ -204,12 +215,26 @@ def main() -> int:
         if item["profile_id"] == "p1"
     )
     assert p1["fields"]["physical.weight"]["field_state"] == "OTS_ONLY"
+    critical_path = (
+        "skill_modifiers.modifiers[modifier.criticalhitchance]"
+    )
+    leech_path = "skill_modifiers.modifiers[modifier.lifeleechchance]"
+    assert p1["fields"][critical_path]["field_state"] == "OTS_ONLY"
+    assert p1["fields"][leech_path]["field_state"] == "OTS_ONLY"
+    assert critical_path != leech_path
 
     two = record(first, "oteryn:item.2")
     assert two["field_overrides"]["weapon.attack"]["field_state"] == "CONFLICT"
     assert (
         two["field_overrides"]["weapon.attack"]["continuity_to_target"]
         == "CONFLICT"
+    )
+    assert (
+        two["field_overrides"]["weapon.defense"]["field_state"]
+        == "CORROBORATED_CURRENT"
+    )
+    assert (
+        two["field_overrides"]["weapon.defense"]["promotion"] == "BLOCKED"
     )
 
     three = record(first, "oteryn:item.3")
