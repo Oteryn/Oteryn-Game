@@ -299,6 +299,13 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
         )
 
+        retired_to_implementation = [
+            entry["prompt_id"]
+            for entry in lifecycle["prompts"]
+            if entry.get("superseded_by") == "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md"
+        ]
+        self.assertEqual(retired_to_implementation, [])
+
         for prompt_id, version in {
             "OTV2_REFERENCE_INVESTIGATOR": "1.1",
             "OTV2_OWNER_EXECUTION_STATUS_ADVISOR": "1.1",
