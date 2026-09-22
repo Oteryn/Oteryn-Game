@@ -8,6 +8,7 @@ import io
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import textwrap
 import urllib.error
@@ -123,6 +124,44 @@ def test_registered_postgres_targets_are_materially_routed() -> None:
         for target, target_path in REGISTERED_POSTGRES_TARGETS.items():
             assert target in text, f"{workflow.name} does not route registered target {target}"
             assert target_path in text, f"{workflow.name} does not bind registered path {target_path}"
+
+
+def test_pr_gate_rejects_explicit_cargo_test_path_remap() -> None:
+    workflow = MERGE_GATE.read_text(encoding="utf-8")
+    step = load_validator().step_block(
+        load_validator().job_block(workflow, "rust_linux"),
+        "Run registered PostgreSQL E2E targets when allocated",
+    )
+    assert step is not None
+    marker = '            python - "$metadata" "$name" "$path" <<\'PY\'\n'
+    verifier = textwrap.dedent(step.split(marker, 1)[1].split("          PY\n", 1)[0])
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        expected = root / TARGET
+        expected.parent.mkdir(parents=True)
+        expected.write_text("// registered\n", encoding="utf-8")
+        remapped = root / "apps/game-server/tests/remapped.rs"
+        remapped.write_text("// remapped\n", encoding="utf-8")
+        metadata = root / "metadata.json"
+
+        def verify(src_path: Path) -> subprocess.CompletedProcess[str]:
+            metadata.write_text(json.dumps({
+                "packages": [{
+                    "name": "oteryn-game-server",
+                    "targets": [{"name": "durability_postgres", "kind": ["test"], "src_path": str(src_path)}],
+                }],
+            }), encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, "-c", verifier, str(metadata), "durability_postgres", TARGET],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        assert verify(expected).returncode == 0
+        rejected = verify(remapped)
+        assert rejected.returncode != 0 and "target source is" in rejected.stderr, rejected
 
 
 def test_postgres_evidence_step_cannot_be_skipped() -> None:
@@ -612,6 +651,41 @@ def test_post_classification_target_drift_cannot_preserve_contract_strings() -> 
         assert errors, "validator accepted post-classification target drift with old commands intact"
 
 
+def test_cargo_target_source_remap_cannot_preserve_contract_strings() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    evidence = load_validator().step_block(
+        load_validator().job_block(baseline, "rust_linux"),
+        "Run registered PostgreSQL E2E targets when allocated",
+    )
+    assert evidence is not None
+    mutations = (
+        evidence.replace(
+            "              matches = [target for target in targets if target.get('name') == name]\n",
+            "              matches = [target for target in targets if target.get('src_path')]\n",
+            1,
+        ),
+        evidence.replace(
+            "              if len(matches) != 1 or matches[0].get('kind') != ['test']:\n",
+            "              if not matches:\n",
+            1,
+        ),
+        evidence.replace(
+            "              if observed != expected:\n",
+            "              if not observed:\n",
+            1,
+        ),
+        evidence.replace('                verify_registered_target_binding "$name" "$path"\n', "", 1),
+    )
+    for mutated_evidence in mutations:
+        assert mutated_evidence != evidence
+        mutated = baseline.replace(evidence, mutated_evidence, 1)
+        for name, target in REGISTERED_POSTGRES_TARGETS.items():
+            assert f"run_registered_target {name} {target}" in mutated
+        assert validate_mutated_gate(mutated), (
+            "validator accepted an explicit [[test]] name/path remap bypass while fixed commands remained"
+        )
+
+
 def test_fixed_postgres_target_mapping_cannot_be_suppressed() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     baseline_errors = validate_mutated_gate(baseline)
@@ -640,6 +714,7 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
 def main() -> int:
     tests = (
         test_registered_postgres_targets_are_materially_routed,
+        test_pr_gate_rejects_explicit_cargo_test_path_remap,
         test_postgres_evidence_step_cannot_be_skipped,
         test_simulation_evidence_step_cannot_be_skipped,
         test_input_platform_evidence_contract_is_mandatory,
@@ -662,6 +737,7 @@ def main() -> int:
         test_evidence_job_failure_cannot_be_tolerated,
         test_postgres_early_exit_cannot_preserve_contract_strings,
         test_post_classification_target_drift_cannot_preserve_contract_strings,
+        test_cargo_target_source_remap_cannot_preserve_contract_strings,
         test_fixed_postgres_target_mapping_cannot_be_suppressed,
         test_postgres_digest_and_invocation_are_mandatory,
     )

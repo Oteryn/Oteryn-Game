@@ -320,6 +320,41 @@ jobs:
           HEAD_SHA: ${{ github.event.merge_group.head_sha }}
         run: |
           set -euo pipefail
+          verify_registered_target_binding() {
+            local name="$1"
+            local path="$2"
+            local metadata
+            metadata="$(mktemp)"
+            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"
+            python - "$metadata" "$name" "$path" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          metadata_path, name, registered_path = sys.argv[1:]
+          try:
+              payload = json.loads(pathlib.Path(metadata_path).read_text(encoding='utf-8'))
+              packages = payload['packages']
+              if not isinstance(packages, list):
+                  raise ValueError('packages is not a list')
+              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']
+              if len(owners) != 1:
+                  raise ValueError('expected exactly one oteryn-game-server package')
+              targets = owners[0].get('targets')
+              if not isinstance(targets, list):
+                  raise ValueError('package targets is not a list')
+              matches = [target for target in targets if target.get('name') == name]
+              if len(matches) != 1 or matches[0].get('kind') != ['test']:
+                  raise ValueError('expected exactly one integration-test target')
+              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)
+              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)
+              if observed != expected:
+                  raise ValueError(f'target source is {observed}, expected {expected}')
+          except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+              raise SystemExit(f'Cargo target binding verification failed for {name}: {error}') from error
+          PY
+            rm -f "$metadata"
+          }
           run_registered_target() {
             local name="$1"
             local path="$2"
@@ -349,8 +384,9 @@ jobs:
               exit 1
             fi
             if [[ "$head_present" == true ]]; then
-              test -f "$path"
+              test -f "$path" && test ! -L "$path"
               test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"
+              verify_registered_target_binding "$name" "$path"
               cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
             elif [[ -e "$path" ]]; then
               echo "Absent registered PostgreSQL target has unexpected checkout state: $name -> $path" >&2

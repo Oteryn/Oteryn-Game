@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import shutil
@@ -17,7 +18,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ebb2a8a4ec9bcd42ee750c00bb6c9eeff12105df"
+APPROVED = "26cbc973b024aac574f8486e321e243e83d9f24e"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -117,6 +118,14 @@ def main() -> int:
         '            if git cat-file -e "$BASE_SHA:$path" 2>/dev/null; then',
         '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
         '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
+        "          verify_registered_target_binding() {",
+        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
+        "              matches = [target for target in targets if target.get('name') == name]",
+        "              if len(matches) != 1 or matches[0].get('kind') != ['test']:",
+        "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
+        "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
+        '              verify_registered_target_binding "$name" "$path"',
         '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
     ):
         assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
@@ -125,6 +134,32 @@ def main() -> int:
         assert postgres.count(marker) == 1, marker
     for forbidden in ("glob(", "rglob(", "fnmatch", "TARGETS_JSON", "fromJSON(", "postgres-target-manifest"):
         assert forbidden not in postgres, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
+
+    marker = '            python - "$metadata" "$name" "$path" <<\'PY\'\n'
+    verifier = textwrap.dedent(postgres.split(marker, 1)[1].split("          PY\n", 1)[0])
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        target = REGISTERED_POSTGRES_TARGETS[0]
+        expected = root / target[1]
+        expected.parent.mkdir(parents=True)
+        expected.write_text("// registered\n", encoding="utf-8")
+        remapped = expected.with_name("remapped.rs")
+        remapped.write_text("// remapped\n", encoding="utf-8")
+        metadata = root / "metadata.json"
+        metadata.write_text(json.dumps({
+            "packages": [{
+                "name": "oteryn-game-server",
+                "targets": [{"name": target[0], "kind": ["test"], "src_path": str(remapped)}],
+            }],
+        }), encoding="utf-8")
+        rejected = subprocess.run(
+            [sys.executable, "-c", verifier, str(metadata), target[0], target[1]],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert rejected.returncode != 0 and "target source is" in rejected.stderr, rejected
 
     windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
     assert windows is not None
@@ -192,6 +227,17 @@ def main() -> int:
     )
     assert early_exit != original and validate(early_exit) != 0
     mutations += 1
+
+    binding_fragments = (
+        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        "              if len(matches) != 1 or matches[0].get('kind') != ['test']:",
+        "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
+        '              verify_registered_target_binding "$name" "$path"',
+    )
+    for fragment in binding_fragments:
+        assert original.count(fragment) == 1, fragment
+        assert validate(original.replace(fragment, "", 1)) != 0, fragment
+        mutations += 1
 
     for fragment in (LIFECYCLE_COMMAND, *NATIVE_POLICY):
         assert original.count(fragment) == 1
