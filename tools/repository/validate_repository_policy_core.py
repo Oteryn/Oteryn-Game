@@ -415,7 +415,7 @@ def main() -> int:
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
             "len(files) != changed_files",
-            "previous_filename = item.get('previous_filename')",
+            "{key: item[key] for key in ('filename', 'status', 'previous_filename') if key in item}",
             "Merge gate / trusted-base risk lanes",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
