@@ -4,19 +4,19 @@
 task_id: OTV2-20260922-control-plane-simplification-745
 title: Simplify candidate qualification and coordinator authority
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/control-plane-simplification-745-v2
 issue: 745
-pr: null
+pr: 748
 base_sha: bbda147eedc7b01c39827ab4784b5760032b1237
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: work coordinator
 created_at: 2026-09-22T09:43:00+02:00
-updated_at: 2026-09-22T09:43:00+02:00
+updated_at: 2026-09-22T10:22:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/repository/validate_pr_routing_contract.py
@@ -57,7 +57,7 @@ NOT_APPLICABLE — repository governance/qualification only; no production, game
 
 ## Acceptance criteria
 
-- [ ] inherited routing snapshot drift remains visible but no longer fails an otherwise disjoint exact-head PR;
+- [ ] inherited routing snapshot drift simplification is serialized to phase 2 after #739 protected integration because #739 currently owns the required workflow/policy surfaces;
 - [ ] candidate-caused routing drift still selects conservative validation and protected-main routing drift still fails;
 - [ ] active-task live-state validation on PRs is restricted to task packets changed by that candidate; protected-main/full-health validation may still scan all active packets;
 - [ ] redundant `OTV2_IMPLEMENTATION_COORDINATOR` is retired in favor of the sole reusable `OTV2_WORK_DELIVERY_COORDINATOR`;
@@ -73,10 +73,10 @@ No ruleset/protection change, no direct merge/auto-merge substitute, no Merge Qu
 
 ```yaml
 last_progress: issue #745 and successor WIP branch recreated from current protected main after #743 closeout
-status: implementing
+status: validating
 branch: ci/control-plane-simplification-745-v2
 head_sha: null
-pr: null
+pr: 748
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -94,5 +94,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: implement candidate-scoped routing/live-state regressions and retire duplicate coordinator authority
+next_action: freeze the repaired PR #748 head, require exact-head governance/META/repository gates, then leave routing phase 2 serialized behind #739
 ```
