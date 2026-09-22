@@ -10,6 +10,7 @@ const SOURCE_AUTHORITY_BYTES: usize = 128;
 const DESCRIPTOR_BYTES: usize = 4096;
 const PENDING_CHECKPOINT_BYTES: usize = 16_384;
 const JSON_STRING_BYTES: usize = 256;
+const SIGNING_KEY_ID_BYTES: usize = 64;
 const HTTP_BODY_BYTES: usize = 8192;
 const FRESH_ISSUER: &str = "urn:oteryn:platform:game-admission";
 const FRESH_PROFILE: &str = "oteryn-pre-admission-v1";
@@ -112,9 +113,12 @@ impl NativeSourceSubject {
                 profile,
                 key_purpose,
                 key_id,
-            } => [issuer, profile, key_purpose, key_id]
-                .iter()
-                .all(|value| valid_bounded_text(value, JSON_STRING_BYTES)),
+            } => {
+                [issuer, profile, key_purpose]
+                    .iter()
+                    .all(|value| valid_bounded_text(value, JSON_STRING_BYTES))
+                    && valid_signing_key_id(key_id)
+            }
         }
     }
 
@@ -174,6 +178,13 @@ impl NativeSourceSubject {
             } => length_bound_tuple("trust-observation", &[issuer, profile, key_purpose, key_id]),
         }
     }
+
+    fn signing_key_id(&self) -> Option<&str> {
+        match &self.kind {
+            NativeSourceSubjectKind::AccountSecurity { .. } => None,
+            NativeSourceSubjectKind::SigningTrust { key_id, .. } => Some(key_id),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -218,6 +229,13 @@ fn valid_source_authority(value: &str) -> bool {
         && value.bytes().all(|byte| {
             byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'/' | b'-')
         })
+}
+
+fn valid_signing_key_id(value: &str) -> bool {
+    valid_bounded_text(value, SIGNING_KEY_ID_BYTES)
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
 }
 
 fn canonical_uuid_v7(value: &str) -> bool {
@@ -323,6 +341,7 @@ impl DurabilityRoot {
         let operation = observation.operation.as_str();
         let floor_subject = observation.subject.floor_key();
         let observation_subject = observation.subject.observation_key();
+        let signing_key_id = observation.subject.signing_key_id().map(str::to_owned);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let registered = sqlx::query_scalar::<_, String>("SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE")
@@ -339,11 +358,11 @@ impl DurabilityRoot {
                     && row.try_get::<Vec<u8>,_>(5).ok().as_deref() == Some(observation.semantic_facts.as_slice());
                 if observation.source_revision < revision || (observation.source_revision == revision && !exact) { return Err(DurabilityError::Unavailable); }
                 if observation.source_revision == revision { return commit_semantic_transaction(tx, deadline).await; }
-                sqlx::query("INSERT INTO game_durability_native_source_observation_history (registration_id,source_authority,operation,floor_subject,observation_subject,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5::text::numeric(20,0),$6,$7,$8)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
-                sqlx::query("UPDATE game_durability_native_source_floors SET operation=$3,observation_subject=$4,source_revision=$5::text::numeric(20,0),decision_identity=$6,observed_at=$7,semantic_facts=$8 WHERE registration_id=1 AND source_authority=$1 AND floor_subject=$2").bind(&observation.source_authority).bind(&floor_subject).bind(operation).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_durability_native_source_observation_history (registration_id,source_authority,operation,floor_subject,observation_subject,signing_key_id,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5,$6::text::numeric(20,0),$7,$8,$9)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(signing_key_id.as_deref()).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_durability_native_source_floors SET operation=$3,observation_subject=$4,signing_key_id=$5,source_revision=$6::text::numeric(20,0),decision_identity=$7,observed_at=$8,semantic_facts=$9 WHERE registration_id=1 AND source_authority=$1 AND floor_subject=$2").bind(&observation.source_authority).bind(&floor_subject).bind(operation).bind(&observation_subject).bind(signing_key_id.as_deref()).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
             } else {
-                sqlx::query("INSERT INTO game_durability_native_source_observation_history (registration_id,source_authority,operation,floor_subject,observation_subject,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5::text::numeric(20,0),$6,$7,$8)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_durability_native_source_floors (registration_id,source_authority,operation,floor_subject,observation_subject,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5::text::numeric(20,0),$6,$7,$8)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_durability_native_source_observation_history (registration_id,source_authority,operation,floor_subject,observation_subject,signing_key_id,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5,$6::text::numeric(20,0),$7,$8,$9)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(signing_key_id.as_deref()).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_durability_native_source_floors (registration_id,source_authority,operation,floor_subject,observation_subject,signing_key_id,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5,$6::text::numeric(20,0),$7,$8,$9)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(signing_key_id.as_deref()).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
             }
             commit_semantic_transaction(tx, deadline).await
         })).await

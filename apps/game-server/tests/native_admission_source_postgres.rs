@@ -177,6 +177,8 @@ fn migration_declares_closed_bounded_nonrollback_store() {
         "source_authority !~ '[^A-Za-z0-9._:/-]'",
         "octet_length(descriptor_facts) BETWEEN 1 AND 4096",
         "octet_length(operation_binding) BETWEEN 1 AND 16384",
+        "octet_length(signing_key_id) BETWEEN 1 AND 64",
+        "signing_key_id !~ '[^A-Za-z0-9._-]'",
         "slot_id SMALLINT NOT NULL CHECK (slot_id IN (1, 2))",
         "'ReadAccountSecurityV1'",
         "'ReadFreshSigningTrustV1'",
@@ -208,6 +210,31 @@ fn typed_inputs_reject_unknown_namespace_and_invalid_account_ids() {
     ] {
         assert!(matches!(
             NativeSourceSubject::account_security(invalid),
+            Err(DurabilityError::Unavailable)
+        ));
+    }
+    assert!(
+        NativeSourceSubject::signing_trust(
+            FRESH_ISSUER,
+            FRESH_PROFILE,
+            "fresh_admission",
+            "k".repeat(64),
+        )
+        .is_ok()
+    );
+    for invalid_key_id in [
+        "k".repeat(65),
+        "bad/key".into(),
+        "bad key".into(),
+        "é".into(),
+    ] {
+        assert!(matches!(
+            NativeSourceSubject::signing_trust(
+                FRESH_ISSUER,
+                FRESH_PROFILE,
+                "fresh_admission",
+                invalid_key_id,
+            ),
             Err(DurabilityError::Unavailable)
         ));
     }
@@ -414,6 +441,19 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                 root.accept_native_source_observation(key_two_newer.clone())
                     .await?;
                 root.accept_native_source_observation(key_two_newer).await?;
+
+                let maximum_key_id = "k".repeat(64);
+                let maximum_key = signing_observation(
+                    NativeSourceOperation::ReadFreshSigningTrustV1,
+                    FRESH_ISSUER,
+                    FRESH_PROFILE,
+                    "fresh_admission",
+                    &maximum_key_id,
+                    12,
+                );
+                root.accept_native_source_observation(maximum_key.clone())
+                    .await?;
+                root.accept_native_source_observation(maximum_key).await?;
 
                 let recovery = signing_observation(
                     NativeSourceOperation::ReadRecoverySigningTrustV2,

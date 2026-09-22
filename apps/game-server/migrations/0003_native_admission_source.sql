@@ -34,10 +34,19 @@ CREATE TABLE game_durability_native_source_floors (
     )),
     floor_subject TEXT NOT NULL CHECK (octet_length(floor_subject) BETWEEN 1 AND 1024),
     observation_subject TEXT NOT NULL CHECK (octet_length(observation_subject) BETWEEN 1 AND 1280),
+    signing_key_id TEXT NULL,
     source_revision NUMERIC(20, 0) NOT NULL CHECK (source_revision BETWEEN 1 AND 18446744073709551615),
     decision_identity TEXT NOT NULL CHECK (octet_length(decision_identity) BETWEEN 1 AND 256),
     observed_at BIGINT NOT NULL CHECK (observed_at >= 0),
     semantic_facts BYTEA NOT NULL CHECK (octet_length(semantic_facts) BETWEEN 1 AND 8192),
+    CHECK (
+        (operation IN ('ReadAccountSecurityV1', 'ReadRecoveryAccountSecurityV2')
+            AND signing_key_id IS NULL)
+        OR
+        (operation IN ('ReadFreshSigningTrustV1', 'ReadRecoverySigningTrustV2')
+            AND octet_length(signing_key_id) BETWEEN 1 AND 64
+            AND signing_key_id !~ '[^A-Za-z0-9._-]')
+    ),
     PRIMARY KEY (registration_id, source_authority, floor_subject)
 );
 
@@ -55,10 +64,19 @@ CREATE TABLE game_durability_native_source_observation_history (
     )),
     floor_subject TEXT NOT NULL CHECK (octet_length(floor_subject) BETWEEN 1 AND 1024),
     observation_subject TEXT NOT NULL CHECK (octet_length(observation_subject) BETWEEN 1 AND 1280),
+    signing_key_id TEXT NULL,
     source_revision NUMERIC(20, 0) NOT NULL CHECK (source_revision BETWEEN 1 AND 18446744073709551615),
     decision_identity TEXT NOT NULL CHECK (octet_length(decision_identity) BETWEEN 1 AND 256),
     observed_at BIGINT NOT NULL CHECK (observed_at >= 0),
     semantic_facts BYTEA NOT NULL CHECK (octet_length(semantic_facts) BETWEEN 1 AND 8192),
+    CHECK (
+        (operation IN ('ReadAccountSecurityV1', 'ReadRecoveryAccountSecurityV2')
+            AND signing_key_id IS NULL)
+        OR
+        (operation IN ('ReadFreshSigningTrustV1', 'ReadRecoverySigningTrustV2')
+            AND octet_length(signing_key_id) BETWEEN 1 AND 64
+            AND signing_key_id !~ '[^A-Za-z0-9._-]')
+    ),
     PRIMARY KEY (registration_id, source_authority, floor_subject, source_revision),
     FOREIGN KEY (registration_id) REFERENCES game_durability_native_source_registration(registration_id)
 );
