@@ -96,7 +96,7 @@ class GovernanceLifecycleTests(unittest.TestCase):
     def test_active_task_packets_reject_unknown_lifecycle_and_oversize_context(self) -> None:
         self.write(
             "docs/agents/tasks/active/OTV2-bad-status.md",
-            "# task\n\`\`\`yaml\nmode: IMPLEMENT\nstatus: review\nissue: 123\n\`\`\`\n" + ("x" * 200),
+            "# task\n```yaml\nmode: IMPLEMENT\nstatus: review\nissue: 123\n```\n" + ("x" * 200),
         )
         errors: list[str] = []
         validator.validate_active_task_packets(
