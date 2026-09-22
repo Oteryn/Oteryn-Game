@@ -50,8 +50,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a19161638
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "18db247edcc40f43900fc99140d911fe3a113c56e0f9584fc8a415d2877fcc50"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "8f95b9f8b67255aa9f26619fe394af9679af100a"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "26cbc973b024aac574f8486e321e243e83d9f24e"
-EXPECTED_POST_MERGE_RUST_SHA256 = "6c65299372be251280e95f117be738571d99a38069da45208a45e1c3e4d2e0b2"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+EXPECTED_POST_MERGE_RUST_SHA256 = "6246f732b4b320036f6bb5266547c4108a163b56f447d42189b25f31f4673174"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -496,6 +496,9 @@ def main() -> int:
                 "verify_registered_target_binding() {",
                 'cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
                 "owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
+                "expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+                "observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+                "if observed_manifest != expected_manifest:",
                 "matches = [target for target in targets if target.get('name') == name]",
                 "if len(matches) != 1 or matches[0].get('kind') != ['test']:",
                 "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",

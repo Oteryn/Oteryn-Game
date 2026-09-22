@@ -20,7 +20,7 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "cac3fe17598545ec15b036a670cbfa8a9abc6d633c3ff005aaded942b83be821",
+    "rust_linux": "e283c0f7c86043b501fa9935c53fd91d17109a7bf4903be035c08f5ae3efa9cc",
     "rust_windows": "f28b0844ae3779d164cb85f5d8ef5bb4532b78baa2cd55e20cdff9e67c47f1d4",
 }
 
@@ -174,6 +174,9 @@ def validate() -> list[str]:
         '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"\n',
         '            python - "$metadata" "$name" "$path" <<\'PY\'\n',
         "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']\n",
+        "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)\n",
+        "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)\n",
+        "              if observed_manifest != expected_manifest:\n",
         "              matches = [target for target in targets if target.get('name') == name]\n",
         "              if len(matches) != 1 or matches[0].get('kind') != ['test']:\n",
         "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)\n",

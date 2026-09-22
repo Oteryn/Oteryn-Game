@@ -140,17 +140,26 @@ def test_pr_gate_rejects_explicit_cargo_test_path_remap() -> None:
         expected = root / TARGET
         expected.parent.mkdir(parents=True)
         expected.write_text("// registered\n", encoding="utf-8")
-        remapped = root / "apps/game-server/tests/remapped.rs"
+        remapped = expected.with_name("remapped.rs")
         remapped.write_text("// remapped\n", encoding="utf-8")
+        expected_manifest = root / "apps/game-server/Cargo.toml"
+        expected_manifest.write_text("[package]\nname = \"fixture\"\n", encoding="utf-8")
+        wrong_manifest = root / "other/Cargo.toml"
+        wrong_manifest.parent.mkdir(parents=True)
+        wrong_manifest.write_text("[package]\nname = \"wrong\"\n", encoding="utf-8")
         metadata = root / "metadata.json"
 
-        def verify(src_path: Path) -> subprocess.CompletedProcess[str]:
-            metadata.write_text(json.dumps({
-                "packages": [{
-                    "name": "oteryn-game-server",
-                    "targets": [{"name": "durability_postgres", "kind": ["test"], "src_path": str(src_path)}],
+        def package(manifest_path: object = expected_manifest, src_path: Path = expected):
+            return {
+                "name": "oteryn-game-server",
+                "manifest_path": str(manifest_path) if isinstance(manifest_path, Path) else manifest_path,
+                "targets": [{
+                    "name": "durability_postgres", "kind": ["test"], "src_path": str(src_path)
                 }],
-            }), encoding="utf-8")
+            }
+
+        def verify(packages: list[dict[str, object]]) -> subprocess.CompletedProcess[str]:
+            metadata.write_text(json.dumps({"packages": packages}), encoding="utf-8")
             return subprocess.run(
                 [sys.executable, "-c", verifier, str(metadata), "durability_postgres", TARGET],
                 cwd=root,
@@ -159,8 +168,16 @@ def test_pr_gate_rejects_explicit_cargo_test_path_remap() -> None:
                 check=False,
             )
 
-        assert verify(expected).returncode == 0
-        rejected = verify(remapped)
+        assert verify([package()]).returncode == 0
+        rejected = verify([package(wrong_manifest)])
+        assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
+        for packages in (
+            [{key: value for key, value in package().items() if key != "manifest_path"}],
+            [package(True)],
+            [package(), package()],
+        ):
+            assert verify(packages).returncode != 0, packages
+        rejected = verify([package(src_path=remapped)])
         assert rejected.returncode != 0 and "target source is" in rejected.stderr, rejected
 
 

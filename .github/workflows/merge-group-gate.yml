@@ -340,6 +340,12 @@ jobs:
               owners = [package for package in packages if package.get('name') == 'oteryn-game-server']
               if len(owners) != 1:
                   raise ValueError('expected exactly one oteryn-game-server package')
+              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)
+              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)
+              if observed_manifest != expected_manifest:
+                  raise ValueError(
+                      f'package manifest is {observed_manifest}, expected {expected_manifest}'
+                  )
               targets = owners[0].get('targets')
               if not isinstance(targets, list):
                   raise ValueError('package targets is not a list')

@@ -18,7 +18,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "26cbc973b024aac574f8486e321e243e83d9f24e"
+APPROVED = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -121,6 +121,9 @@ def main() -> int:
         "          verify_registered_target_binding() {",
         '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
         "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
+        "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+        "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+        "              if observed_manifest != expected_manifest:",
         "              matches = [target for target in targets if target.get('name') == name]",
         "              if len(matches) != 1 or matches[0].get('kind') != ['test']:",
         "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
@@ -145,20 +148,40 @@ def main() -> int:
         expected.write_text("// registered\n", encoding="utf-8")
         remapped = expected.with_name("remapped.rs")
         remapped.write_text("// remapped\n", encoding="utf-8")
+        expected_manifest = root / "apps/game-server/Cargo.toml"
+        expected_manifest.write_text("[package]\nname = \"fixture\"\n", encoding="utf-8")
+        wrong_manifest = root / "other/Cargo.toml"
+        wrong_manifest.parent.mkdir(parents=True)
+        wrong_manifest.write_text("[package]\nname = \"wrong\"\n", encoding="utf-8")
         metadata = root / "metadata.json"
-        metadata.write_text(json.dumps({
-            "packages": [{
+
+        def package(manifest_path: object = expected_manifest, src_path: Path = expected):
+            return {
                 "name": "oteryn-game-server",
-                "targets": [{"name": target[0], "kind": ["test"], "src_path": str(remapped)}],
-            }],
-        }), encoding="utf-8")
-        rejected = subprocess.run(
-            [sys.executable, "-c", verifier, str(metadata), target[0], target[1]],
-            cwd=root,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+                "manifest_path": str(manifest_path) if isinstance(manifest_path, Path) else manifest_path,
+                "targets": [{"name": target[0], "kind": ["test"], "src_path": str(src_path)}],
+            }
+
+        def verify(packages: list[dict[str, object]]) -> subprocess.CompletedProcess[str]:
+            metadata.write_text(json.dumps({"packages": packages}), encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, "-c", verifier, str(metadata), target[0], target[1]],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        assert verify([package()]).returncode == 0
+        rejected = verify([package(wrong_manifest)])
+        assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
+        for packages in (
+            [{key: value for key, value in package().items() if key != "manifest_path"}],
+            [package(True)],
+            [package(), package()],
+        ):
+            assert verify(packages).returncode != 0, packages
+        rejected = verify([package(src_path=remapped)])
         assert rejected.returncode != 0 and "target source is" in rejected.stderr, rejected
 
     windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
@@ -230,6 +253,9 @@ def main() -> int:
 
     binding_fragments = (
         '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+        "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+        "              if observed_manifest != expected_manifest:",
         "              if len(matches) != 1 or matches[0].get('kind') != ['test']:",
         "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
         '              verify_registered_target_binding "$name" "$path"',
