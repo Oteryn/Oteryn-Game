@@ -3039,6 +3039,7 @@ mod linux {
                         client_projection: ProjectionDocument::ClientSafe,
                         materializable: true,
                         stack_class: ItemStackDocument::StackCapable,
+                        semantics: Default::default(),
                     }],
                     imports: Vec::new(),
                     metadata: Vec::new(),
