@@ -302,6 +302,7 @@ def _fetch_revision_query(
     rvend: str | None,
     rvdir: str,
     rvlimit: int,
+    allow_continuation_after_first_page: bool = False,
 ) -> list[dict[str, Any]]:
     params = {
         "action": "query",
@@ -320,7 +321,7 @@ def _fetch_revision_query(
     value = client.get_json(params)
     if not isinstance(value, dict):
         raise ContinuityError("HISTORY_API_ROOT_INVALID")
-    if "continue" in value:
+    if "continue" in value and not allow_continuation_after_first_page:
         raise ContinuityError("HISTORY_QUERY_CONTINUATION_EXCEEDS_BOUND")
     query = value.get("query")
     pages = query.get("pages") if isinstance(query, dict) else None
@@ -350,6 +351,7 @@ def fetch_page_history(client, collector, page_id: int) -> dict[str, Any]:
         rvend=None,
         rvdir="older",
         rvlimit=1,
+        allow_continuation_after_first_page=True,
     )
     day = _fetch_revision_query(
         client,
