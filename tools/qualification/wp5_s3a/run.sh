@@ -134,11 +134,24 @@ expect_unavailable() {
   grep -Eq '^\{"version":[12],"operation":"[A-Za-z0-9]+","result":"unavailable"\}$' "$output"
   [[ "$(wc -c < "$output")" -le 8192 ]]
 }
+expect_transport_rejected() {
+  local label=$1
+  shift
+  local status rc
+  set +e
+  status="$(curl "${curl_base[@]}" "$@" -H 'Content-Type: application/json' -o "$WP5_SCRATCH/transport-$label" -w '%{http_code}' --data-binary "$account_payload" "$base_url" 2>/dev/null)"
+  rc=$?
+  set -e
+  if [[ "$rc" -eq 0 && "$status" =~ ^2 ]]; then
+    return 1
+  fi
+  evidence "transport_negative=$label rejected=true"
+}
 
 # Real transport provenance negatives.
-if curl "${curl_base[@]}" -o /dev/null "$base_url" >/dev/null 2>&1; then exit 1; fi
-if curl "${curl_base[@]}" --cert "$WP5_PKI/wrong-client.crt" --key "$WP5_PKI/wrong-client.key" -o /dev/null "$base_url" >/dev/null 2>&1; then exit 1; fi
-if curl "${curl_base[@]}" "${auth[@]}" --tlsv1.2 --tls-max 1.2 -o /dev/null "$base_url" >/dev/null 2>&1; then exit 1; fi
+expect_transport_rejected no_client_cert
+expect_transport_rejected wrong_root --cert "$WP5_PKI/wrong-client.crt" --key "$WP5_PKI/wrong-client.key"
+expect_transport_rejected lower_tls "${auth[@]}" --tlsv1.2 --tls-max 1.2
 wrong_status="$(curl "${curl_base[@]}" --cert "$WP5_PKI/wrong-identity.crt" --key "$WP5_PKI/wrong-identity.key" \
   -H 'SSL_CLIENT_VERIFY: SUCCESS' -H 'SSL_PROTOCOL: TLSv1.3' -H 'SSL_CLIENT_S_DN: CN=oteryn-game-native-evidence' \
   -o "$WP5_SCRATCH/wrong-identity" -w '%{http_code}' --data-binary "$account_payload" "$base_url")"
