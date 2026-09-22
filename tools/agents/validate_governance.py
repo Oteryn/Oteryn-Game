@@ -17,6 +17,7 @@ CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
 LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
 PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
+PROGRAM_LIFECYCLE_PATH = ROOT / "docs/agents/PROGRAM_LIFECYCLE.json"
 EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"
 
 
@@ -165,23 +166,178 @@ def validate_handover_lifecycle(registry: dict, errors: list[str]) -> None:
         errors.append(f"handover lifecycle registry has unknown paths: {', '.join(extra)}")
 
 
-def validate_active_task_packets(errors: list[str]) -> None:
+def validate_program_lifecycle(registry: dict, errors: list[str]) -> None:
+    programs_dir = ROOT / "docs/agents/programs"
+    archive_dir = programs_dir / "archive"
+    actual = {
+        path.relative_to(ROOT).as_posix()
+        for path in archive_dir.rglob("*.md")
+        if path.name != "README.md"
+    } if archive_dir.is_dir() else set()
+
+    entries = registry.get("programs", [])
+    if not isinstance(entries, list):
+        errors.append("program lifecycle registry programs must be a list")
+        return
+
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            errors.append(f"program lifecycle entry {index} must be an object")
+            continue
+        program_id = entry.get("program_id")
+        path = entry.get("path")
+        if not isinstance(program_id, str) or not program_id:
+            errors.append(f"program lifecycle entry {index} has invalid program_id")
+            continue
+        if program_id in seen_ids:
+            errors.append(f"duplicate program lifecycle id: {program_id}")
+        seen_ids.add(program_id)
+        if not isinstance(path, str) or not path:
+            errors.append(f"program {program_id} has invalid path")
+            continue
+        if path in seen_paths:
+            errors.append(f"duplicate program lifecycle path: {path}")
+        seen_paths.add(path)
+        if not path.startswith("docs/agents/programs/archive/"):
+            errors.append(f"historical program {program_id} must live under programs/archive")
+        if entry.get("status") != "historical":
+            errors.append(f"program {program_id} must have historical status")
+        if entry.get("authoritative") is not False:
+            errors.append(f"program {program_id} must be explicitly non-authoritative")
+        terminal_evidence = entry.get("terminal_evidence")
+        if not isinstance(terminal_evidence, list) or not terminal_evidence or not all(
+            isinstance(value, str) and value.strip() for value in terminal_evidence
+        ):
+            errors.append(f"program {program_id} must define terminal_evidence")
+        superseded_by = entry.get("superseded_by")
+        if not isinstance(superseded_by, list) or not superseded_by or not all(
+            isinstance(value, str) and value.strip() for value in superseded_by
+        ):
+            errors.append(f"program {program_id} must define superseded_by")
+
+    missing = sorted(actual - seen_paths)
+    extra = sorted(seen_paths - actual)
+    if missing:
+        errors.append(f"program lifecycle registry missing archived paths: {', '.join(missing)}")
+    if extra:
+        errors.append(f"program lifecycle registry has unknown archived paths: {', '.join(extra)}")
+
+    if programs_dir.is_dir() and archive_dir.is_dir():
+        current_names = {
+            path.name for path in programs_dir.glob("*.md") if path.name != "README.md"
+        }
+        archive_names = {
+            path.name for path in archive_dir.rglob("*.md") if path.name != "README.md"
+        }
+        for duplicate in sorted(current_names & archive_names):
+            errors.append(
+                f"program record exists in both current and archive: {duplicate}"
+            )
+
+
+def validate_active_task_packets(
+    errors: list[str],
+    task_statuses: object | None = None,
+    task_modes: object | None = None,
+    limits: object | None = None,
+) -> None:
     active_dir = ROOT / "docs/agents/tasks/active"
     if not active_dir.is_dir():
         return
+
+    default_statuses = {
+        "investigating",
+        "implementing",
+        "validating",
+        "ready",
+        "waiting",
+        "blocked",
+        "completed",
+    }
+    default_modes = {
+        "IMPLEMENT",
+        "AUDIT",
+        "CONTRACT",
+        "REPAIR",
+        "COORDINATE",
+        "MIGRATE",
+        "GOVERNANCE",
+        "BUILD",
+    }
+
+    if task_statuses is None:
+        allowed_statuses = default_statuses
+    elif isinstance(task_statuses, list) and task_statuses and all(
+        isinstance(value, str) and value for value in task_statuses
+    ):
+        allowed_statuses = set(task_statuses)
+    else:
+        errors.append("governance task_statuses must be a non-empty string list")
+        allowed_statuses = set()
+
+    if task_modes is None:
+        allowed_modes = default_modes
+    elif isinstance(task_modes, list) and task_modes and all(
+        isinstance(value, str) and value for value in task_modes
+    ):
+        allowed_modes = set(task_modes)
+    else:
+        errors.append("governance task_modes must be a non-empty string list")
+        allowed_modes = set()
+
+    max_characters = 12000
+    max_lines = 300
+    if limits is not None:
+        if not isinstance(limits, dict):
+            errors.append("active_task_limits must be an object")
+        else:
+            chars = limits.get("max_characters")
+            lines = limits.get("max_lines")
+            if not isinstance(chars, int) or chars <= 0:
+                errors.append("active_task_limits.max_characters must be a positive integer")
+            else:
+                max_characters = chars
+            if not isinstance(lines, int) or lines <= 0:
+                errors.append("active_task_limits.max_lines must be a positive integer")
+            else:
+                max_lines = lines
+
     terminal_statuses = {"completed", "closed", "merged", "terminal", "archived", "done"}
     for path in sorted(active_dir.glob("*.md")):
         if path.name == "README.md":
             continue
         relative = path.relative_to(ROOT).as_posix()
         text = path.read_text(encoding="utf-8")
+
+        if len(text) > max_characters or len(text.splitlines()) > max_lines:
+            errors.append(
+                f"active task packet {relative} exceeded bounded current-state size "
+                f"({len(text)} chars/{len(text.splitlines())} lines; "
+                f"max {max_characters}/{max_lines})"
+            )
+
         issue = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
         pr = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
         if issue is None and pr is None:
             errors.append(f"active task packet {relative} must name a positive issue or pr")
+
+        mode_match = re.search(r"(?m)^mode:\s*([^\n#]+?)\s*$", text)
+        if mode_match is None:
+            errors.append(f"active task packet {relative} must define mode")
+        else:
+            mode = mode_match.group(1).strip().strip('"\'')
+            if mode not in allowed_modes:
+                errors.append(f"active task packet {relative} has unsupported mode {mode}")
+
         status_match = re.search(r"(?m)^status:\s*([^\n#]+?)\s*$", text)
-        if status_match is not None:
+        if status_match is None:
+            errors.append(f"active task packet {relative} must define status")
+        else:
             status = status_match.group(1).strip().strip('"\'').lower()
+            if status not in allowed_statuses:
+                errors.append(f"active task packet {relative} has unsupported status {status}")
             if status in terminal_statuses:
                 errors.append(f"active task packet {relative} has terminal status {status}")
 
@@ -377,10 +533,17 @@ def main() -> int:
     limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
     prompt_lifecycle = load_json(PROMPT_LIFECYCLE_PATH, errors)
     handover_lifecycle = load_json(HANDOVER_LIFECYCLE_PATH, errors)
+    program_lifecycle = load_json(PROGRAM_LIFECYCLE_PATH, errors)
 
     validate_prompt_lifecycle(prompt_lifecycle, errors)
     validate_handover_lifecycle(handover_lifecycle, errors)
-    validate_active_task_packets(errors)
+    validate_program_lifecycle(program_lifecycle, errors)
+    validate_active_task_packets(
+        errors,
+        task_statuses=contract.get("task_statuses"),
+        task_modes=contract.get("task_modes"),
+        limits=contract.get("active_task_limits"),
+    )
     validate_context_economy(errors)
     validate_current_state_hygiene(errors)
 

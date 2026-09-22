@@ -1,29 +1,27 @@
 # Oteryn v2 Implementation Live Allocations
 
-> **CURRENT-STATE ROUTING ONLY.** The former cumulative ledger is preserved at
+> **CURRENT-STATE ROUTING ONLY.** Historical allocation ledgers are preserved in
 > `docs/agents/evidence/OTV2-20260921-implementation-live-allocations-history.md`.
-> Do not append completed/historical checkpoint prose here. Live GitHub Issue/PR/CI state
-> and exact active task packets outrank this snapshot whenever they advance.
+> Live GitHub Issue/PR/CI state and exact active task packets outrank this snapshot whenever they advance.
 
 ## Authority and reading rule
 
 - Programme control plane: Issue #162.
 - Active mutating profile: `OTV2_WORK_DELIVERY_COORDINATOR`.
+- Protected Game main at this checkpoint: `40e9d723392b8fc1be652bdbb4b6d31b6729867b`.
 - This file records only current cross-lane routing, active/held writers, shared serialization and next gates.
-- A task/PR/branch is not active merely because it appears here; fresh live readback is required before mutation.
-- Completed allocations, old heads, superseded leases, repair counters and historical owner decisions belong in task/archive/evidence or immutable GitHub records, not this file.
+- Completed allocations, old heads and superseded leases belong in task/archive/evidence, not here.
 
 ## Current programme lanes
 
 | Lane | Live locator | Current state | Current rule |
 | --- | --- | --- | --- |
-| WP3-A / SQLx resource closure | Issue #351, PR #673, branch `agent/wp3-a-upstream-first-351`, head `cacb03c3863d92c62ff5c12e58b0739e17f4fe70` | `QUALIFICATION_REVIEW_PENDING` | Owner-scoped first-slice repair is limited to `CommitOutcomeUnknown`; use upstream SQLx `close_on_drop()` / `close()` semantics and do not reopen deferred maintenance/panic hardening absent new first-slice evidence. Final exact-head review request: PR #673 comment `5761200059`. |
-| Child B / WP4 durability | Issue #329, PR #335, head `834db1d7118d751e31287715d3eaac7780a0c7b9` | `HELD_UNTIL_WP3_PROTECTED` | Preserve canonical branch/history. No material release before protected WP3 terminal readback and fresh custody reconciliation. |
-| WP5 source composition | Issue #319 | `HELD_UNTIL_WP3_PROTECTED` | Evidence/read-only work may continue; material source/bootstrap/composition mutation requires fresh post-WP3 allocation. |
-| Server Seam | Issue #247, branch `agent/otv2-gameplay-server-seam-01` | `WAITING_DEPENDENCY` | No Server Seam material release before the accepted WP3 -> WP4/WP5 dependency gate closes. |
-| Content/World native item batch | Issue #504 / programme #162, PR #719, head `1d2185dcb00abbbe73e0eb577266510533e79b3a` | `ACTIVE_DRAFT_PATH_DISJOINT` | First bounded 64-item native binding batch. No spatial, shared CW3 model, runtime, protocol, persistence, WP3, root Cargo or client scope. |
-| Physical Content spatial slice | Reference evidence programme #483 / Content #504 | `BLOCKED_EXTERNAL_EVIDENCE` | First blocker remains accepted immutable-target spatial evidence for a selected real placement; do not invent/backdate target truth. |
-| CONTENT-QUEST-01 evidence package | PR #709, head `6074b06786c1b7c8d57712b649ee62b5d7577a7e` | `QUALIFIED_STABLE_CANDIDATE` | Keep stable; integration follows the repository-governed Merge Queue route only. |
+| WP3-A / SQLx resource closure | Issue #351; successor PR #673 | `PROTECTED_COMPLETE` | PR #673 merged as `3a384864d84560eb6ce76136afeb038576dc2976`. The old broad PR #356 is closed/unmerged evidence only; do not reactivate it as the production candidate. |
+| WP4 / fresh-admission durability | Issue #329; PR #335 | `PROTECTED_COMPLETE` | PR #335 merged as `f02beb42523af6db1bb0c71d2840961e3fa5fcd0`. The terminal task is archived; no WP4 lease survives by history alone. |
+| WP5 source composition | Issue #319; branches `agent/wp5-s2-native-admission-source-319`, `agent/wp5-postgres-ci-routing-416-material` | `ACTIVE_S2_AND_ROUTING` | S1 PR #735 is protected at `c59d8b25f9e3017d013d578a5a4bc9d93fa49e1d`. S2 remote head was reported at `27a2db74d40ae2577e8938a67bb7031dbedd8e23`; material #416 routing is active from protected main. G0 is not yet proven. |
+| Server Seam | Issue #247; `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e` | `WAITING_WP5_G0` | Preserve the same branch/head. Do not resume until fresh WP5 G0/source-composition readiness is proven and Work rechecks overlap/custody. |
+| Content Item family-scale identity | Issue #504; PR #737; branch `agent/content-world-item-family-scale-504` | `QUALIFYING_DRAFT` | PR #737 remains open/draft at frozen head `0e643dbb5981599702b3407256e8ed03f1cad943`. Finish this canonical lineage; D6-M1 Item schema-readiness starts only after protected #737 readback. |
+| Agent lifecycle hygiene | Issue #740; branch `docs/agent-hygiene-cleanup-740` | `IMPLEMENTING_PATH_DISJOINT` | Documentation/governance-only cleanup. No runtime/product authority. |
 
 ## Shared serialization
 
@@ -40,24 +38,27 @@ A historical lease never survives terminal merge/closeout by itself. An open Iss
 ## Current dependency shape
 
 ```text
-WP3-A #673
-  -> protected terminal readback
-  -> fresh WP4/WP5 custody reconciliation
-  -> Server Seam #247
+WP3 #673 PROTECTED_COMPLETE
+  -> WP4 #335 PROTECTED_COMPLETE
+  -> WP5 #319 S2 + #416 routing + later accepted composition gates
+  -> WP5_G0_READINESS_PROVEN
+  -> resume SAME Server Seam #247
+  -> downstream Client/QA -> Movement -> Combat
 
-Path-disjoint Content #719 may qualify independently.
-Physical spatial Content remains blocked on Reference evidence, not on #719.
+Content Item #737 qualifies independently.
+After #737 protects: release D6-M1 Item schema-readiness under fresh custody.
 ```
 
 ## Next control-plane reactions
 
-1. Consume the terminal exact-head review for PR #673; if current-gate clean, proceed through governed integration without reopening deferred hardening.
-2. After protected WP3 readback, refresh #329/#335, #319 and #247 ownership before releasing any material downstream writer.
-3. Allow PR #719 to qualify independently while its paths remain disjoint.
-4. Do not allocate a physical spatial writer until the Reference spatial evidence gate is accepted.
+1. Continue the existing WP5 #319 S2/routing/composition lineages; do not create replacement workers.
+2. Keep Server Seam frozen until `WP5_G0_READINESS_PROVEN`.
+3. Finish #737 only within its identity/resource scope; release Item schema-readiness only after protected readback.
+4. Reconcile Issue #740 governance cleanup independently because its paths are documentation/governance-only.
+5. Refresh live state before every mutation/integration decision; this snapshot is not merge authority.
 
 ## Historical provenance
 
-The complete former 1,120-line allocation ledger is preserved verbatim at
+The former cumulative allocation ledger remains at
 `docs/agents/evidence/OTV2-20260921-implementation-live-allocations-history.md`.
 Use it only when a specific historical claim is material.

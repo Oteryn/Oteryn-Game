@@ -1,0 +1,78 @@
+{
+  "schema": "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY_EPOCH/v1",
+  "status": "CANDIDATE_QUALIFICATION",
+  "decision_ref": "Oteryn/Oteryn-Game#504:5767823480",
+  "allocation_ref": "Oteryn/Oteryn-Game#162:5767897229",
+  "admission_main": "0bbaa898e5d5a33f844786054e8c7e82148b6180",
+  "source_catalogue": {
+    "path": "docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json",
+    "sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7",
+    "byte_length": 16877870,
+    "source_item_identities": 38157,
+    "source_repository": "zimbadev/crystalserver",
+    "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+  },
+  "identity_admission": {
+    "target_family": "Item",
+    "target_count": 38157,
+    "preserved_semantic_bindings": 64,
+    "opaque_identity_only_bindings": 38093,
+    "revision": "definition-r1",
+    "opaque_namespace": "oteryn:item.registry",
+    "opaque_key_format": "oteryn:item.registry.i%08d",
+    "allocator_epoch": "family-scale-r1",
+    "allocation_traversal": "strict ascending source_item_id in the exact protected B1 catalogue; traversal determines one-time allocator order only",
+    "authority_rule": "persisted protected source generation + allocator epoch + preserved 64 binding table; moving source values never remap an admitted key",
+    "source_values_mint_key": false,
+    "legacy_numeric_id_is_canonical": false
+  },
+  "semantic_boundary": {
+    "identity_only_physical_class": "Unknown",
+    "identity_only_stack_class": "Unknown",
+    "identity_only_materializable": false,
+    "source_gameplay_values_promoted": false,
+    "preserved_existing_64_semantics": true
+  },
+  "artifact_profile": {
+    "previous_v1_v2_unchanged": true,
+    "new_profile": "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v3",
+    "admitted_item_count_min": 65,
+    "admitted_item_count_max": 38157,
+    "max_plus_one_rejected": 38158,
+    "one_closed_family_generation": true
+  },
+  "validation": {
+    "exact_closure_required": true,
+    "duplicate_source_rejected": true,
+    "duplicate_native_key_rejected": true,
+    "existing_64_provenance_revalidated": true,
+    "allocation_digest_sha256": "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966",
+    "allocation_digest_state": "REPRODUCED_HOSTED_WIP",
+    "full_round_trip_required": true,
+    "deterministic_artifact_required": true,
+    "allocation_digest_measurement_head": "f82455005204bb943854e7d9d1e2564dccd47942",
+    "resource_budget": {
+      "measurement_head": "f82455005204bb943854e7d9d1e2564dccd47942",
+      "limiting_document": "imports/candidates.json",
+      "measured_max_decoded_fields": 2098651,
+      "measured_max_string_bytes": 42332603,
+      "selected_max_decoded_fields": 2098651,
+      "selected_max_string_bytes": 42332603,
+      "arbitrary_headroom": 0,
+      "qualification_required": [
+        "exact full-family generation passes",
+        "selected decoded-field maximum passes",
+        "selected decoded-field maximum minus one fails closed",
+        "selected decoded-string-byte maximum passes",
+        "selected decoded-string-byte maximum minus one fails closed"
+      ]
+    }
+  },
+  "non_claims": [
+    "NO_OTS_GAMEPLAY_TRUTH_PROMOTION",
+    "NO_ITEM_CAPABILITY_COMPLETION",
+    "NO_RUNTIME_OR_VALUE_AUTHORITY",
+    "NO_PROTOCOL_OR_PERSISTENCE_CHANGE",
+    "NO_PRODUCTION_DEPLOYMENT"
+  ]
+}

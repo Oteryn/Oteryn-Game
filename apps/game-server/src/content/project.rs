@@ -624,24 +624,45 @@ impl ProjectReferenceRecord {
                 stack_class,
             } => {
                 require_family(&identity.family, DefinitionFamily::Item)?;
-                Ok(ReferenceDefinition {
-                    definition: identity.lower()?,
-                    kind: ReferenceDefinitionKind::Item(ReferenceItemDefinition {
-                        physical_class: ReferenceItemPhysicalClass::Physical,
-                        materializable: *materializable,
-                        stack_class: match stack_class {
-                            ItemStackDocument::NonStackable => {
-                                ReferenceItemStackClass::NonStackable
-                            }
-                            ItemStackDocument::StackCapable => {
-                                ReferenceItemStackClass::StackCapable
-                            }
-                        },
-                        legal_destinations: if *materializable {
+                let (physical_class, stack_class, legal_destinations) = match stack_class {
+                    ItemStackDocument::Unknown => {
+                        if *materializable {
+                            return Err(ProjectError::InvalidProject(
+                                "identity-only Item cannot be materializable",
+                            ));
+                        }
+                        (
+                            ReferenceItemPhysicalClass::Unknown,
+                            ReferenceItemStackClass::Unknown,
+                            Vec::new(),
+                        )
+                    }
+                    ItemStackDocument::NonStackable => (
+                        ReferenceItemPhysicalClass::Physical,
+                        ReferenceItemStackClass::NonStackable,
+                        if *materializable {
                             vec![ReferenceItemDestination::CharacterInventory]
                         } else {
                             Vec::new()
                         },
+                    ),
+                    ItemStackDocument::StackCapable => (
+                        ReferenceItemPhysicalClass::Physical,
+                        ReferenceItemStackClass::StackCapable,
+                        if *materializable {
+                            vec![ReferenceItemDestination::CharacterInventory]
+                        } else {
+                            Vec::new()
+                        },
+                    ),
+                };
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Item(ReferenceItemDefinition {
+                        physical_class,
+                        materializable: *materializable,
+                        stack_class,
+                        legal_destinations,
                     }),
                     client_projection: client_projection.lower(),
                 })
@@ -749,6 +770,7 @@ impl ProjectionDocument {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ItemStackDocument {
+    Unknown,
     NonStackable,
     StackCapable,
 }
@@ -1466,6 +1488,17 @@ fn validate_imports(
     imports: &[ImportBatch],
     records: &[ProjectReferenceRecord],
 ) -> Result<(), ProjectError> {
+    let item_record_identities = records
+        .iter()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item { identity, .. } => Some((
+                identity.family.as_str(),
+                identity.key.as_str(),
+                identity.revision.as_str(),
+            )),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
     let mut previous_batch: Option<&str> = None;
     let mut native_item_bindings = BTreeSet::new();
     for batch in imports {
@@ -1542,13 +1575,11 @@ fn validate_imports(
                             "native item import shape is inconsistent",
                         ));
                     }
-                    let record = records.iter().find(|record| {
-                        let identity = record.identity();
-                        identity.family == binding.identity.family
-                            && identity.key == binding.identity.key
-                            && identity.revision == binding.identity.revision
-                    });
-                    if !matches!(record, Some(ProjectReferenceRecord::Item { .. })) {
+                    if !item_record_identities.contains(&(
+                        binding.identity.family.as_str(),
+                        binding.identity.key.as_str(),
+                        binding.identity.revision.as_str(),
+                    )) {
                         return Err(ProjectError::InvalidProject(
                             "native item binding target is missing",
                         ));

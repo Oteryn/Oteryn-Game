@@ -11,7 +11,7 @@ use super::{
     ProjectionDocument, ReimportDecision, ReimportFieldState, world_project_sha256,
 };
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fmt::{self, Display, Formatter},
 };
 
@@ -42,6 +42,12 @@ pub const CW2_B1_VASE_KEY: &str = "oteryn:item.decor.vase";
 pub const CW2_B1_VASE_REVISION: &str = "definition-r1";
 pub const CW2_B1_NATIVE_ITEM_BATCH_REVISION: &str = "definition-r1";
 pub const CW2_B1_NATIVE_ITEM_BATCH_COUNT: usize = 64;
+pub const CW2_B1_FULL_ITEM_FAMILY_COUNT: usize = 38_157;
+pub const CW2_B1_OPAQUE_ITEM_COUNT: usize =
+    CW2_B1_FULL_ITEM_FAMILY_COUNT - CW2_B1_NATIVE_ITEM_BATCH_COUNT;
+pub const CW2_B1_FULL_ITEM_REVISION: &str = "definition-r1";
+pub const CW2_B1_OPAQUE_ITEM_NAMESPACE: &str = "oteryn:item.registry";
+pub const CW2_B1_FULL_ITEM_REGISTRY_PROFILE: &str = "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1";
 pub const CW2_B1_VASE_B3_ROW: &str = "definition:monster:0108:loot:0006";
 pub const CW2_B1_VASE_B3_ROW_SHA256: &str =
     "f5d87a09806776c70a799abb5b9eb657ed66b93346d943053ba3fad6500b2712";
@@ -924,6 +930,264 @@ pub fn protected_cw2_b1_native_item_batch_import(
             access_disposition: "PENDING".to_owned(),
             source_generation_profile: CATALOG_SCHEMA.to_owned(),
             importer: "repository-protected-cw2-b1-evidence".to_owned(),
+            mapper: MAPPER_PROFILE.to_owned(),
+            mapper_revision: PROTECTED_CW2_B1_MAPPER_BLOB.to_owned(),
+            mapper_sha256: PROTECTED_CW2_B1_MAPPER_SHA256.to_owned(),
+            candidates,
+            reimport_states,
+        },
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1FullItemFamilyImport {
+    pub records: Vec<ProjectReferenceRecord>,
+    pub batch: ImportBatch,
+    pub allocation_digest_sha256: String,
+}
+
+#[derive(Debug, Clone)]
+struct FullItemAllocation {
+    source_item_id: u64,
+    source_node_digest: String,
+    field_profile_id: String,
+    native_key: String,
+    source_label: String,
+    materializable: bool,
+    stack_class: ItemStackDocument,
+    authorship: &'static str,
+}
+
+fn opaque_item_key(sequence: usize) -> String {
+    format!("{CW2_B1_OPAQUE_ITEM_NAMESPACE}.i{sequence:08}")
+}
+
+/// Admit the complete protected B1 Item identity family into one Oteryn-owned registry epoch.
+///
+/// The exact protected B1 catalogue remains the immutable source denominator. Existing protected
+/// semantic keys from the 64-item predecessor are preserved byte-for-byte. Every other source
+/// identity receives an opaque Oteryn registry key whose allocation is frozen by this exact source
+/// generation. OTS fields remain provenance only; identity-only records carry no materialization,
+/// physical or stack semantics.
+pub fn protected_cw2_b1_full_item_family_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1FullItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_protected_evidence(evidence_bytes)?;
+
+    let evidence: serde_json::Value = serde_json::from_slice(evidence_bytes)
+        .map_err(|_| ProtectedCw2B1ImportError::EvidenceMismatch("evidence JSON decoding"))?;
+    let rows = evidence
+        .pointer("/semantic_catalog/identity_records")
+        .and_then(serde_json::Value::as_array)
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "identity record array",
+        ))?;
+    if rows.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "full item family count",
+        ));
+    }
+
+    let semantic_specs = NATIVE_ITEM_BATCH
+        .iter()
+        .copied()
+        .map(|spec| (spec.source_item_id, spec))
+        .collect::<BTreeMap<_, _>>();
+    if semantic_specs.len() != CW2_B1_NATIVE_ITEM_BATCH_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "protected semantic binding count",
+        ));
+    }
+
+    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut source_ids = BTreeSet::new();
+    let mut native_keys = BTreeSet::new();
+    let mut previous_source_id = None;
+    let mut opaque_sequence = 0_usize;
+    let mut preserved_semantic_bindings = 0_usize;
+    let mut allocation_digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+
+    for row in rows {
+        let source_item_id = row
+            .get("source_item_id")
+            .and_then(serde_json::Value::as_u64)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "source item identity",
+            ))?;
+        if previous_source_id.is_some_and(|previous| previous >= source_item_id)
+            || !source_ids.insert(source_item_id)
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "source item identity ordering",
+            ));
+        }
+        previous_source_id = Some(source_item_id);
+
+        let source_node_digest = row
+            .get("source_node_digest")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "source node digest",
+            ))?
+            .to_owned();
+        let field_profile_id = row
+            .get("field_profile_id")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "field profile id",
+            ))?
+            .to_owned();
+
+        let (native_key, source_label, materializable, stack_class, authorship) =
+            if let Some(spec) = semantic_specs.get(&source_item_id) {
+                if source_node_digest != spec.node_sha256
+                    || field_profile_id != spec.field_profile_sha256
+                {
+                    return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "protected semantic binding provenance",
+                    ));
+                }
+                preserved_semantic_bindings += 1;
+                (
+                    spec.native_key.to_owned(),
+                    spec.source_label.to_owned(),
+                    true,
+                    if spec.stack_capable {
+                        ItemStackDocument::StackCapable
+                    } else {
+                        ItemStackDocument::NonStackable
+                    },
+                    "OTERYN_EDITORIAL_SELECTION_NOT_SOURCE_DERIVED",
+                )
+            } else {
+                opaque_sequence += 1;
+                (
+                    opaque_item_key(opaque_sequence),
+                    format!("crystal:item:{source_item_id}"),
+                    false,
+                    ItemStackDocument::Unknown,
+                    "OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1",
+                )
+            };
+
+        if !native_keys.insert(native_key.clone()) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "full item native key uniqueness",
+            ));
+        }
+        allocation_digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        allocation_digest_input.push(0);
+        allocation_digest_input.extend_from_slice(native_key.as_bytes());
+        allocation_digest_input.push(b'\n');
+
+        allocations.push(FullItemAllocation {
+            source_item_id,
+            source_node_digest,
+            field_profile_id,
+            native_key,
+            source_label,
+            materializable,
+            stack_class,
+            authorship,
+        });
+    }
+
+    if opaque_sequence != CW2_B1_OPAQUE_ITEM_COUNT
+        || preserved_semantic_bindings != CW2_B1_NATIVE_ITEM_BATCH_COUNT
+        || source_ids.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || native_keys.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "full item registry closure",
+        ));
+    }
+
+    let allocation_digest_sha256 = world_project_sha256(&allocation_digest_input);
+    allocations.sort_by(|left, right| left.native_key.cmp(&right.native_key));
+
+    let mut records = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut candidates = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    let mut reimport_states = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    for allocation in allocations {
+        let identity = DefinitionIdentityDocument {
+            family: "Item".to_owned(),
+            key: allocation.native_key.clone(),
+            revision: CW2_B1_FULL_ITEM_REVISION.to_owned(),
+        };
+        records.push(ProjectReferenceRecord::Item {
+            identity: identity.clone(),
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: allocation.materializable,
+            stack_class: allocation.stack_class,
+        });
+
+        let source_candidate_id = format!("crystal:item:{}", allocation.source_item_id);
+        let source_id_value = CandidateValue::SourceId(allocation.source_item_id);
+        candidates.push(ImportCandidate {
+            source_candidate_id,
+            source_label: allocation.source_label,
+            source_numeric_id: Some(allocation.source_item_id),
+            candidate_family: ImportCandidateFamily::Item,
+            candidate_operation: ImportCandidateOperation::BindNativeItem,
+            candidate_target: format!("{}@{}", identity.key, identity.revision),
+            candidate_formula: "NOT_APPLICABLE".to_owned(),
+            evidence_class: "OTS_HYPOTHESIS_ONLY".to_owned(),
+            closure_disposition: CandidateDisposition::LocalNonProduction,
+            disposition_reason: if allocation.materializable {
+                "PROTECTED_EXISTING_SEMANTIC_BINDING".to_owned()
+            } else {
+                "FAMILY_SCALE_IDENTITY_ONLY_GAMEPLAY_SEMANTICS_UNRESOLVED".to_owned()
+            },
+            normalized_fields: vec![
+                field(
+                    "binding.native-item",
+                    CandidateValue::NativeItemBinding(NativeItemBindingDocument {
+                        identity: identity.clone(),
+                        disposition: NativeItemBindingDisposition::LocalNonProduction,
+                    }),
+                ),
+                text_field(
+                    "evidence.field-profile-sha256",
+                    &allocation.field_profile_id,
+                ),
+                text_field("evidence.node-sha256", &allocation.source_node_digest),
+                text_field("source.native-key-authorship", allocation.authorship),
+                text_field("loss.source-values-as-gameplay-truth", "REJECTED"),
+            ],
+        });
+        reimport_states.push(ReimportFieldState {
+            stable_identity: identity.key.clone(),
+            field_path: "source.item-id".to_owned(),
+            baseline: Some(source_id_value.clone()),
+            upstream: Some(source_id_value.clone()),
+            local: Some(source_id_value),
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+
+    candidates.sort_by(|left, right| left.source_candidate_id.cmp(&right.source_candidate_id));
+    for candidate in &mut candidates {
+        candidate
+            .normalized_fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+    }
+    reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+
+    Ok(ProtectedCw2B1FullItemFamilyImport {
+        records,
+        allocation_digest_sha256,
+        batch: ImportBatch {
+            batch_id: "cw2-b1-full-item-family-registry-r1".to_owned(),
+            source_repository: CW2_B1_SOURCE_REPOSITORY.to_owned(),
+            source_revision: CW2_B1_SOURCE_REVISION.to_owned(),
+            source_artifact_sha256: PROTECTED_CW2_B1_EVIDENCE_SHA256.to_owned(),
+            access_disposition: "PENDING".to_owned(),
+            source_generation_profile: CATALOG_SCHEMA.to_owned(),
+            importer: CW2_B1_FULL_ITEM_REGISTRY_PROFILE.to_owned(),
             mapper: MAPPER_PROFILE.to_owned(),
             mapper_revision: PROTECTED_CW2_B1_MAPPER_BLOB.to_owned(),
             mapper_sha256: PROTECTED_CW2_B1_MAPPER_SHA256.to_owned(),

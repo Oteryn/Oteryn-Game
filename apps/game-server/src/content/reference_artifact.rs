@@ -63,10 +63,28 @@ const BATCH_MAX_ARTIFACT_BYTES: usize = HEADER_LEN
     + TRAILER_LEN;
 const BATCH_MAX_GENERATION_PAIR_BYTES: usize = BATCH_MAX_ARTIFACT_BYTES * 2;
 
+const FAMILY_ARTIFACT_PROFILE_ID: &str = "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v3";
+const FAMILY_COMPILER_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_COMPILER/v3";
+const FAMILY_CANONICALIZATION_PROFILE: &str = "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v3";
+const FAMILY_MAGIC: [u8; 8] = *b"OTRPA03\0";
+const FAMILY_PROFILE_VERSION: u16 = 3;
+pub const FAMILY_MAX_INDEX_ENTRIES: usize = 38_157;
+const FAMILY_MAX_INDEX_BYTES: usize =
+    4 + FAMILY_MAX_INDEX_ENTRIES * (1 + 2 + MAX_KEY_BYTES + 2 + MAX_ATOM_BYTES + 4 + 4 + 32);
+const FAMILY_MAX_BODY_BYTES: usize = FAMILY_MAX_INDEX_ENTRIES * MAX_BODY_RECORD_BYTES;
+const FAMILY_MAX_ARTIFACT_BYTES: usize = HEADER_LEN
+    + SECTION_ENTRY_LEN * SECTION_COUNT
+    + MAX_MANIFEST_BYTES
+    + FAMILY_MAX_INDEX_BYTES
+    + FAMILY_MAX_BODY_BYTES
+    + TRAILER_LEN;
+const FAMILY_MAX_GENERATION_PAIR_BYTES: usize = FAMILY_MAX_ARTIFACT_BYTES * 2;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReferenceArtifactProfile {
     OneItemV1,
     NativeItemBatchV2,
+    NativeItemFamilyV3,
 }
 
 impl ReferenceArtifactProfile {
@@ -77,15 +95,21 @@ impl ReferenceArtifactProfile {
             )),
             1 => Ok(Self::OneItemV1),
             2..=BATCH_MAX_INDEX_ENTRIES => Ok(Self::NativeItemBatchV2),
+            65..=FAMILY_MAX_INDEX_ENTRIES => Ok(Self::NativeItemFamilyV3),
             _ => Err(ContentError::LimitExceeded {
                 resource: "Reference playable definitions",
                 actual: count,
-                limit: BATCH_MAX_INDEX_ENTRIES,
+                limit: FAMILY_MAX_INDEX_ENTRIES,
             }),
         }
     }
 
     fn detect(bytes: &[u8], projection: ReferenceArtifactProjection) -> Result<Self, ContentError> {
+        if bytes.get(..FAMILY_MAGIC.len()) == Some(FAMILY_MAGIC.as_slice()) {
+            let profile = Self::NativeItemFamilyV3;
+            check_artifact_length(profile, bytes.len(), projection)?;
+            return Ok(profile);
+        }
         if bytes.get(..BATCH_MAGIC.len()) == Some(BATCH_MAGIC.as_slice()) {
             let profile = Self::NativeItemBatchV2;
             check_artifact_length(profile, bytes.len(), projection)?;
@@ -104,6 +128,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => MAGIC,
             Self::NativeItemBatchV2 => BATCH_MAGIC,
+            Self::NativeItemFamilyV3 => FAMILY_MAGIC,
         }
     }
 
@@ -111,6 +136,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => PROFILE_VERSION,
             Self::NativeItemBatchV2 => BATCH_PROFILE_VERSION,
+            Self::NativeItemFamilyV3 => FAMILY_PROFILE_VERSION,
         }
     }
 
@@ -118,6 +144,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID,
             Self::NativeItemBatchV2 => BATCH_ARTIFACT_PROFILE_ID,
+            Self::NativeItemFamilyV3 => FAMILY_ARTIFACT_PROFILE_ID,
         }
     }
 
@@ -125,6 +152,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => COMPILER_PROFILE,
             Self::NativeItemBatchV2 => BATCH_COMPILER_PROFILE,
+            Self::NativeItemFamilyV3 => FAMILY_COMPILER_PROFILE,
         }
     }
 
@@ -132,6 +160,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => CANONICALIZATION_PROFILE,
             Self::NativeItemBatchV2 => BATCH_CANONICALIZATION_PROFILE,
+            Self::NativeItemFamilyV3 => FAMILY_CANONICALIZATION_PROFILE,
         }
     }
 
@@ -139,6 +168,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => MAX_INDEX_ENTRIES,
             Self::NativeItemBatchV2 => BATCH_MAX_INDEX_ENTRIES,
+            Self::NativeItemFamilyV3 => FAMILY_MAX_INDEX_ENTRIES,
         }
     }
 
@@ -146,6 +176,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => MAX_INDEX_BYTES,
             Self::NativeItemBatchV2 => BATCH_MAX_INDEX_BYTES,
+            Self::NativeItemFamilyV3 => FAMILY_MAX_INDEX_BYTES,
         }
     }
 
@@ -153,6 +184,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => MAX_BODY_BYTES,
             Self::NativeItemBatchV2 => BATCH_MAX_BODY_BYTES,
+            Self::NativeItemFamilyV3 => FAMILY_MAX_BODY_BYTES,
         }
     }
 
@@ -160,6 +192,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => projection.artifact_limit(),
             Self::NativeItemBatchV2 => BATCH_MAX_ARTIFACT_BYTES,
+            Self::NativeItemFamilyV3 => FAMILY_MAX_ARTIFACT_BYTES,
         }
     }
 
@@ -167,6 +200,7 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => REFERENCE_PLAYABLE_MAX_GENERATION_PAIR_BYTES,
             Self::NativeItemBatchV2 => BATCH_MAX_GENERATION_PAIR_BYTES,
+            Self::NativeItemFamilyV3 => FAMILY_MAX_GENERATION_PAIR_BYTES,
         }
     }
 
@@ -174,6 +208,9 @@ impl ReferenceArtifactProfile {
         match self {
             Self::OneItemV1 => count == 1,
             Self::NativeItemBatchV2 => count >= 2 && count <= BATCH_MAX_INDEX_ENTRIES,
+            Self::NativeItemFamilyV3 => {
+                count > BATCH_MAX_INDEX_ENTRIES && count <= FAMILY_MAX_INDEX_ENTRIES
+            }
         }
     }
 }
@@ -868,12 +905,23 @@ fn validate_compile_source(
         }
     }
     for definition in &source.definitions {
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            return Err(ContentError::InvalidArtifact(
+                "Reference artifact requires client-safe typed Items",
+            ));
+        };
         if definition.definition.family() != DefinitionFamily::Item
             || definition.client_projection != ClientProjectionClass::ClientSafe
-            || !matches!(definition.kind, ReferenceDefinitionKind::Item(_))
         {
             return Err(ContentError::InvalidArtifact(
                 "Reference artifact requires client-safe typed Items",
+            ));
+        }
+        let identity_only = item.physical_class == ReferenceItemPhysicalClass::Unknown
+            || item.stack_class == ReferenceItemStackClass::Unknown;
+        if identity_only && profile != ReferenceArtifactProfile::NativeItemFamilyV3 {
+            return Err(ContentError::InvalidArtifact(
+                "identity-only Items require the family-scale v3 artifact profile",
             ));
         }
     }
@@ -917,12 +965,14 @@ fn encode_client_item(item: &super::ReferenceItemDefinition) -> Result<Vec<u8>, 
 fn physical_class_byte(value: ReferenceItemPhysicalClass) -> u8 {
     match value {
         ReferenceItemPhysicalClass::Physical => 1,
+        ReferenceItemPhysicalClass::Unknown => 2,
     }
 }
 
 fn parse_physical_class(value: u8) -> Result<ReferenceItemPhysicalClass, ContentError> {
     match value {
         1 => Ok(ReferenceItemPhysicalClass::Physical),
+        2 => Ok(ReferenceItemPhysicalClass::Unknown),
         _ => Err(ContentError::InvalidArtifact(
             "unknown Reference Item physical class",
         )),
@@ -933,6 +983,7 @@ fn stack_class_byte(value: ReferenceItemStackClass) -> u8 {
     match value {
         ReferenceItemStackClass::NonStackable => 1,
         ReferenceItemStackClass::StackCapable => 2,
+        ReferenceItemStackClass::Unknown => 3,
     }
 }
 
@@ -940,6 +991,7 @@ fn parse_stack_class(value: u8) -> Result<ReferenceItemStackClass, ContentError>
     match value {
         1 => Ok(ReferenceItemStackClass::NonStackable),
         2 => Ok(ReferenceItemStackClass::StackCapable),
+        3 => Ok(ReferenceItemStackClass::Unknown),
         _ => Err(ContentError::InvalidArtifact(
             "unknown Reference Item stack class",
         )),
@@ -1831,14 +1883,26 @@ mod native_item_batch_tests {
     }
 
     #[test]
-    fn successor_profile_is_bounded_to_the_frozen_batch_cardinality() {
+    fn successor_profiles_preserve_v2_bound_and_select_v3_for_the_full_family() {
+        assert!(
+            !ReferenceArtifactProfile::NativeItemBatchV2
+                .accepts_item_count(BATCH_MAX_INDEX_ENTRIES + 1)
+        );
         assert!(matches!(
             ReferenceArtifactProfile::for_definition_count(BATCH_MAX_INDEX_ENTRIES + 1),
+            Ok(ReferenceArtifactProfile::NativeItemFamilyV3)
+        ));
+        assert!(
+            ReferenceArtifactProfile::NativeItemFamilyV3
+                .accepts_item_count(FAMILY_MAX_INDEX_ENTRIES)
+        );
+        assert!(matches!(
+            ReferenceArtifactProfile::for_definition_count(FAMILY_MAX_INDEX_ENTRIES + 1),
             Err(ContentError::LimitExceeded {
                 resource: "Reference playable definitions",
                 actual,
-                limit: BATCH_MAX_INDEX_ENTRIES,
-            }) if actual == BATCH_MAX_INDEX_ENTRIES + 1
+                limit: FAMILY_MAX_INDEX_ENTRIES,
+            }) if actual == FAMILY_MAX_INDEX_ENTRIES + 1
         ));
     }
 
