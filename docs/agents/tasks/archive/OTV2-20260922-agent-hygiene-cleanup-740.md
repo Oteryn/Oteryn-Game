@@ -1,10 +1,12 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #741 merged on 2026-09-22 as protected `8ad99922d7140016df2de38bc3b6ae3a8d4edc1e`. Real Merge Queue gate run `35696735029` succeeded. Post-merge Agent Governance run `35697371175` failed only because this terminal task packet still remained in `tasks/active`; this archive move is the bounded corrective closeout. Any prior nonterminal checkpoint wording below is historical provenance only.
+
 # OTV2-20260922-agent-hygiene-cleanup-740
 
 ```yaml
 task_id: OTV2-20260922-agent-hygiene-cleanup-740
 title: Finish lifecycle and context hygiene cleanup
 mode: GOVERNANCE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/agent-hygiene-cleanup-740
@@ -58,7 +60,7 @@ NOT_APPLICABLE — documentation/governance lifecycle cleanup only; no runtime, 
 - [x] governance validator enforces active status/mode and bounded active-task size;
 - [x] Server Seam active packet is current-state-only and full prior body is retained under evidence;
 - [x] programme cleanup archives only directly proven terminal/superseded records and registers them in `PROGRAM_LIFECYCLE.json`;
-- [ ] focused governance tests and exact-head hosted checks pass.
+- [x] exact-head PR #741 qualification and real Merge Queue gate passed before protected integration; post-merge push failure was lifecycle-only because this terminal packet still remained under `tasks/active`.
 
 ## Excluded scope
 
@@ -68,9 +70,8 @@ No runtime/gameplay/protocol/persistence behavior, architecture decision, contra
 
 ```yaml
 last_progress: >-
-  PR #741 opened after terminal-task/programme cleanup, live-routing refresh and lifecycle-validator hardening;
-  final authoring write binds this task to the PR before exact-head qualification
-status: validating
+  PR #741 integrated as protected `8ad99922d7140016df2de38bc3b6ae3a8d4edc1e`; this closeout archives the terminal task packet that caused post-merge Agent Governance run 35697371175 to fail
+status: completed
 branch: docs/agent-hygiene-cleanup-740
 head_sha: null
 pr: 741
