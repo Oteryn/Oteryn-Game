@@ -13,8 +13,7 @@ use super::{
     ReferenceDefinition, ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
     ReferenceFormulaDefinition, ReferenceItemDefinition, ReferenceItemDestination,
     ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStackClass,
-    ReferencePlayableContentSource,
-    Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
+    ReferencePlayableContentSource, Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
 };
 use crate::foundation::WorldId;
 use serde::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
@@ -549,7 +548,10 @@ pub enum ProjectReferenceRecord {
         client_projection: ProjectionDocument,
         materializable: bool,
         stack_class: ItemStackDocument,
-        #[serde(default, skip_serializing_if = "ReferenceItemSemantics::is_all_unknown")]
+        #[serde(
+            default,
+            skip_serializing_if = "ReferenceItemSemantics::is_all_unknown"
+        )]
         semantics: ReferenceItemSemantics,
     },
     Generic {
