@@ -138,6 +138,7 @@ fn source_with_typed_item(
             materializable: true,
             stack_class: ReferenceItemStackClass::StackCapable,
             legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+            semantics: Default::default(),
         }),
         client_projection,
     });
@@ -234,6 +235,7 @@ fn source_with_creature_loot() -> Result<ReferencePlayableContentSource, Content
             materializable: true,
             stack_class: ReferenceItemStackClass::NonStackable,
             legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+            semantics: Default::default(),
         }),
         client_projection: ClientProjectionClass::ServerOnly,
     });
