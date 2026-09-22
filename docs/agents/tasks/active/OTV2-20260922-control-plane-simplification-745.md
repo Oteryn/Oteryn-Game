@@ -16,11 +16,9 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: work coordinator
 created_at: 2026-09-22T09:43:00+02:00
-updated_at: 2026-09-22T10:22:00+02:00
+updated_at: 2026-09-22T10:47:00+02:00
 execution_policy: continuous_progress
 owned_paths:
-  - tools/repository/validate_pr_routing_contract.py
-  - tools/repository/test_classify_pr_test_lanes.py
   - tools/agents/validate_governance.py
   - tools/agents/validate_inherited_prompt_policy.py
   - tools/agents/tests/test_validate_governance_lifecycle.py
@@ -47,9 +45,9 @@ Keep one authoritative mutating Game coordinator and make PR qualification candi
 
 - PROVEN: META policy 3.1 says ordinary protected-main movement does not invalidate a qualified head by itself and Merge Queue owns composition with current `main`.
 - PROVEN: repository ruleset 20991995 requires `game-gate`, has Merge Queue enabled and does not require strict up-to-date PR branches.
-- PROVEN: PR #737 currently fails from inherited routing/task lifecycle state already repaired on protected `main`.
+- PROVEN: PR #737 exposed the inherited-routing false-blocker class; its original inherited lifecycle blocker is already repaired on protected `main`.
 - PROVEN: PR #739 owns merge-gate/MQ/rust workflow and PG-policy paths; this task is path-disjoint and must not edit them.
-- PROVEN: #740 remains an active ownership packet after its canonical PR #741 merged; this task explicitly supersedes that stale ownership record.
+- PROVEN: #740 lifecycle closeout was independently integrated by #743 before this successor branch; this task does not re-own that completed cleanup.
 
 ## High-risk authority/recovery qualification
 
@@ -59,10 +57,10 @@ NOT_APPLICABLE — repository governance/qualification only; no production, game
 
 - [ ] inherited routing snapshot drift simplification is serialized to phase 2 after #739 protected integration because #739 currently owns the required workflow/policy surfaces;
 - [ ] candidate-caused routing drift still selects conservative validation and protected-main routing drift still fails;
-- [ ] active-task live-state validation on PRs is restricted to task packets changed by that candidate; protected-main/full-health validation may still scan all active packets;
-- [ ] redundant `OTV2_IMPLEMENTATION_COORDINATOR` is retired in favor of the sole reusable `OTV2_WORK_DELIVERY_COORDINATOR`;
+- [x] active-task live-state validation on PRs is restricted to task packets changed by that exact head against one stable live base snapshot; protected-main/full-health validation still scans all active packets;
+- [x] redundant `OTV2_IMPLEMENTATION_COORDINATOR` is retired in favor of the sole reusable `OTV2_WORK_DELIVERY_COORDINATOR`;
 - [x] #740 stale active ownership was independently closed on protected main by #743 before this successor branch;
-- [ ] no #739-owned path changes;
+- [x] no #739-owned path changes in PR #748;
 - [ ] focused lifecycle/routing/META regressions and exact-head repository CI pass.
 
 ## Excluded scope
@@ -94,5 +92,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze the repaired PR #748 head, require exact-head governance/META/repository gates, then leave routing phase 2 serialized behind #739
+next_action: qualify the repaired exact head, complete one independent deep review, then prepare protected integration of phase 1 while phase 2 stays serialized behind #739
 ```
