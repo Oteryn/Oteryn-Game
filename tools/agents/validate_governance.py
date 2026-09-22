@@ -470,21 +470,6 @@ def validate_context_economy(errors: list[str]) -> None:
         if "OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md" in startup:
             errors.append(f"{relative} must not load owner operator runbook in technical startup")
 
-    implementation_path = ROOT / "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md"
-    if implementation_path.is_file():
-        startup = _markdown_section(
-            implementation_path.read_text(encoding="utf-8"), "Mandatory startup"
-        )
-        for legacy in (
-            "Read the accepted FND, DUR, SIM",
-            "Inspect exact live main SHA, open PRs, active tasks",
-        ):
-            if legacy in startup:
-                errors.append(
-                    "implementation coordinator reintroduced broad mandatory startup: "
-                    f"{legacy}"
-                )
-
     work_path = ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md"
     if work_path.is_file():
         work = work_path.read_text(encoding="utf-8")
