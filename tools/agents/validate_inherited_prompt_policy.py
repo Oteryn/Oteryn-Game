@@ -202,10 +202,14 @@ def _pull_request_active_task_paths(
 
     prefix = "docs/agents/tasks/active/"
     selected: set[str] = set()
+    seen_filenames: set[str] = set()
     for item in items:
         filename = item.get("filename")
         if not _valid_repository_path(filename):
             raise ValueError("invalid pull request filename")
+        if filename in seen_filenames:
+            raise ValueError("duplicate pull request filename")
+        seen_filenames.add(filename)
         if (
             filename.startswith(prefix)
             and filename.endswith(".md")
