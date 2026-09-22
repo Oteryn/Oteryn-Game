@@ -4,13 +4,13 @@
 task_id: OTV2-20260922-content-world-item-field-verification-504
 title: Item field verification and continuity rule engine
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-field-verification-504
-pr: null
+pr: 770
 base_sha: b55f9ade00a47fb0ee2d781fb24ed46e09a34e85
-head_sha: 8ea07a9f5edfcd5095fc14520bdd522a9b2f3c85
+head_sha: pending
 final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item content implementation agent"
@@ -112,17 +112,19 @@ Initial implementation adds a pure evidence/rule compiler plus synthetic self-te
 
 WIKI_AMBIGUOUS and WIKI_NOT_FOUND bind no page fields. WIKI_CONFLICT can mark only explicitly contradicted non-name comparable signals as field conflicts. A matched current value can be CORROBORATED_CURRENT, but remains promotion=BLOCKED while #767 target continuity is UNKNOWN.
 
+Hosted full-corpus qualification on pre-final authoring head `2618818df5fdfe7351c5ba4e0478fbd9200a1d38` passed in run `35771517554`, job `106894516735`. It reproduced the protected 38,157 identity map and #763 crosswalk exactly, then collected a fresh current-source observation under the protected #767 collector. The fresh observation preserved the same identity/disposition counts while its mutable web snapshot digest differed from protected #767; both digests are retained separately. Full field verification closed 2,022,321 slots (38,157 x 53): CORROBORATED_CURRENT=67, OTS_ONLY=29,307, CONFLICT=322, UNKNOWN=1,992,625, with all 2,022,321 promotion states BLOCKED. Compact manifest is retained under `docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json`.
+
 ## Validation
 
 ### Focused
 
 - command/run: python tools/reference-world-corridor-census/item_field_verification_self_test.py
-- result: pending hosted exact-head reproduction
+- result: PASS on pre-final authoring head `2618818df5fdfe7351c5ba4e0478fbd9200a1d38`; exact-final rerun required after evidence/task metadata commit
 
 ### Component/integration
 
 - command/run: regenerate protected identity map + #763 crosswalk + #767 current-source scratch, then compile full Item field verification
-- result: pending
+- result: PASS on run `35771517554` / job `106894516735`; exact-final rerun required after evidence/task metadata commit
 
 ### E2E
 
@@ -165,19 +167,21 @@ WIKI_AMBIGUOUS and WIKI_NOT_FOUND bind no page fields. WIKI_CONFLICT can mark on
 ## Context checkpoint
 
 ~~~yaml
-last_progress: deterministic verifier and synthetic rule-engine self-test authored on the allocated branch
-status: implementing
+last_progress: full 38157 field verifier PASS on pre-final authoring head; compact evidence committed, exact-final rerun pending
+status: validating
 branch: agent/content-world-item-field-verification-504
-head_sha: 8ea07a9f5edfcd5095fc14520bdd522a9b2f3c85
-pr: null
+head_sha: pending
+pr: 770
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_run_ids:
+  - 35771517554
+ci_job_ids:
+  - 106894516735
+runner_assignment_state: repository-selected
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -187,5 +191,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: NONE
 blocker: null
-next_action: add hosted reproducible qualification and execute the full 38157 compiler on regenerated scratch inputs
+next_action: fresh-read final authoring head, rerun required exact-head CI/review, then freeze only if all gates pass
 ~~~
