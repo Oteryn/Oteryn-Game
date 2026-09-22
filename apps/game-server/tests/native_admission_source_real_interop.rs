@@ -171,10 +171,10 @@ fn real_platform_producer_decodes_all_four_operations() -> Result<(), Box<dyn st
 fn real_capacity_two_inflight_rejects_third() -> Result<(), Box<dyn std::error::Error>> {
     static CAPACITY: TransientCapacity = TransientCapacity::new();
     let account_id = required("WP5_S3A_ACCOUNT_ID")?;
+    let capacity_account_id = required("WP5_S3A_CAPACITY_ACCOUNT_ID")?;
     let barrier = Arc::new(Barrier::new(3));
-    let spawn_query = |recovery: bool, operation: &'static str| {
+    let spawn_query = |account_id: String, recovery: bool, operation: &'static str| {
         let barrier = Arc::clone(&barrier);
-        let account_id = account_id.clone();
         thread::spawn(move || -> Result<(), String> {
             let descriptor = descriptor().map_err(|error| error.to_string())?;
             let request = Request::Account {
@@ -205,8 +205,12 @@ fn real_capacity_two_inflight_rejects_third() -> Result<(), Box<dyn std::error::
             Ok(())
         })
     };
-    let first = spawn_query(false, "ReadAccountSecurityV1/concurrent");
-    let second = spawn_query(true, "ReadRecoveryAccountSecurityV2/concurrent");
+    let first = spawn_query(account_id, false, "ReadAccountSecurityV1/concurrent");
+    let second = spawn_query(
+        capacity_account_id,
+        true,
+        "ReadRecoveryAccountSecurityV2/concurrent",
+    );
     barrier.wait();
     let mut third_permit = CAPACITY.try_queue()?;
     assert!(matches!(

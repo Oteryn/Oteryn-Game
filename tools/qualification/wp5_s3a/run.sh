@@ -6,6 +6,7 @@ readonly GAME_ADMISSION_SHA=cf5c5f35476559450b6bbaf87dce519f7eead9d0
 readonly PLATFORM_SHA=623435ec1b907d6d9770b767806c90300252a71c
 readonly TOPOLOGY_REVISION=wp5-s3a-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-000000000001
+readonly CAPACITY_ACCOUNT_ID=01934f10-7c00-7000-8000-000000000002
 readonly FRESH_KEY_ID=fresh-key-1
 readonly RECOVERY_KEY_ID=recovery-key-1
 readonly ROUTE=/internal/v1/game-auth/native-evidence
@@ -123,7 +124,7 @@ fresh_trust_payload='{"version":1,"operation":"ReadFreshSigningTrustV1","issuer"
 php_exec() {
   compose exec --no-TTY --user www-data platform php -r "$1" >/dev/null
 }
-php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); if (!Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$ACCOUNT_ID"'")->exists()) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"s3a-synthetic@example.invalid","password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",str_repeat(chr(1),32)); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_PROFILE,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_KEY_PURPOSE,"'"$RECOVERY_KEY_ID"'",str_repeat(chr(2),32));'
+php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","s3a-synthetic@example.invalid"],["'"$CAPACITY_ACCOUNT_ID"'","s3a-capacity@example.invalid"]] as [$accountId,$email]) { if (!Illuminate\Support\Facades\DB::table("identities")->where("account_id",$accountId)->exists()) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } } $r=app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",str_repeat(chr(1),32)); $r->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_PROFILE,App\GameAuth\NativeEvidence\NativeEvidenceContract::RECOVERY_KEY_PURPOSE,"'"$RECOVERY_KEY_ID"'",str_repeat(chr(2),32));'
 
 expect_status() {
   local expected=$1 payload=$2 output=$3
@@ -180,6 +181,7 @@ export WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt"
 export WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt"
 export WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key"
 export WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID"
+export WP5_S3A_CAPACITY_ACCOUNT_ID="$CAPACITY_ACCOUNT_ID"
 export WP5_S3A_FRESH_KEY_ID="$FRESH_KEY_ID"
 export WP5_S3A_RECOVERY_KEY_ID="$RECOVERY_KEY_ID"
 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
