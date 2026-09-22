@@ -20,6 +20,12 @@ VALIDATOR_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_GATE = ROOT / ".github/workflows/merge-gate.yml"
 TARGET = "apps/game-server/tests/durability_postgres.rs"
 BLOB_SHA = "1" * 40
+REGISTERED_POSTGRES_TARGETS = {
+    "durability_postgres": "apps/game-server/tests/durability_postgres.rs",
+    "character_authority_postgres": "apps/game-server/tests/character_authority_postgres.rs",
+    "runtime_scope_assignment_postgres": "apps/game-server/tests/runtime_scope_assignment_postgres.rs",
+    "native_admission_source_postgres": "apps/game-server/tests/native_admission_source_postgres.rs",
+}
 
 # Self-contained snapshot of the protected classifier's >300-file rejection path.
 PROTECTED_PG_CLASSIFIER_FIXTURE = """\
@@ -95,6 +101,19 @@ def missing_target(message="Not Found", code=404):
         {},
         io.BytesIO(json.dumps({"message": message}).encode("utf-8")),
     )
+
+
+def test_registered_postgres_targets_are_materially_routed() -> None:
+    workflows = (
+        MERGE_GATE,
+        ROOT / ".github/workflows/merge-group-gate.yml",
+        ROOT / ".github/workflows/rust.yml",
+    )
+    for workflow in workflows:
+        text = workflow.read_text(encoding="utf-8")
+        for target, target_path in REGISTERED_POSTGRES_TARGETS.items():
+            assert target in text, f"{workflow.name} does not route registered target {target}"
+            assert target_path in text, f"{workflow.name} does not bind registered path {target_path}"
 
 
 def test_postgres_evidence_step_cannot_be_skipped() -> None:
@@ -531,6 +550,7 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
 
 def main() -> int:
     tests = (
+        test_registered_postgres_targets_are_materially_routed,
         test_postgres_evidence_step_cannot_be_skipped,
         test_simulation_evidence_step_cannot_be_skipped,
         test_input_platform_evidence_contract_is_mandatory,
