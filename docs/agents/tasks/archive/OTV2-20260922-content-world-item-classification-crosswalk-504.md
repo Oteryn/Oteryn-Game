@@ -63,7 +63,7 @@ Implementation and local validation are complete. Draft PR #763 was opened befor
 
 ## Owner PAUSED checkpoint — 2026-09-22
 
-- The bounded #763 classification/crosswalk evidence task is complete and protected. Merge Queue request authority is #504 comment `5778484718`, receipt UUID `fa15216a-4d08-4cd1-8364-d6058714ceeb`.
+- The bounded #763 classification/crosswalk evidence task is complete and protected. Merge Queue request authority is Oteryn/Oteryn#196 comment `5778484718`, receipt UUID `fa15216a-4d08-4cd1-8364-d6058714ceeb`.
 - Prerequisite schema PR #749 is protected from exact candidate `5198eebcbc27ec0816fa57e46b16666941a403a2`; its integration main was `9ddd6e020837bd43ec66ce7d78d2af7742afeb39`.
 - Native census is `38,157/38,157`: 64 preserved semantic bindings plus 38,093 opaque identities.
 - All 24 source classification capability names were evaluated across 17,665 pinned source profiles. This statement does not claim compiler ordinal mapping.
