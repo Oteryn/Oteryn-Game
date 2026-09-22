@@ -185,7 +185,7 @@ export WP5_S3A_RECOVERY_KEY_ID="$RECOVERY_KEY_ID"
 cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop real_platform_producer_decodes_all_four_operations -- --ignored --exact --nocapture
 
 # Hold the relational read briefly while two genuine S1 requests occupy both Game slots.
-compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db \
+compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db \
   mariadb -uroot oteryn_s3a -e 'LOCK TABLES identities WRITE; DO SLEEP(2); UNLOCK TABLES' >/dev/null &
 locker=$!
 sleep 0.2
@@ -197,7 +197,7 @@ evidence 'capacity=two_inflight third=immediate_reject application_queue=none cl
 compose stop db >/dev/null
 expect_unavailable "$account_payload" "$WP5_SCRATCH/db-down-response"
 compose start db >/dev/null
-until compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-admin ping -h 127.0.0.1 -uroot --silent >/dev/null 2>&1; do sleep 1; done
+until compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-admin ping -h 127.0.0.1 -uroot --silent >/dev/null 2>&1; do sleep 1; done
 evidence 'relational_failure=bounded_unavailable'
 
 store_digest_before="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/oteryn-witness/witness-store.id' | awk '{print $1}')"
@@ -209,17 +209,17 @@ store_digest_after="$(compose exec --no-TTY platform sh -c 'sha256sum /var/lib/o
 evidence "process_restart=retained witness_store_digest=$store_digest_after"
 
 # Restore a synthetic database snapshot with only the witness-store binding omitted.
-compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-dump -uroot \
+compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-dump -uroot \
   --single-transaction --skip-comments --skip-dump-date oteryn_s3a > "$WP5_SCRATCH/database.sql"
 sed '/^INSERT INTO `native_game_evidence_witness_stores`/d' "$WP5_SCRATCH/database.sql" > "$WP5_SCRATCH/database-no-binding.sql"
 compose stop nginx platform >/dev/null
-compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot \
+compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot \
   -e 'DROP DATABASE oteryn_s3a; CREATE DATABASE oteryn_s3a CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON oteryn_s3a.* TO "oteryn_s3a"@"%"' >/dev/null
-compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot oteryn_s3a < "$WP5_SCRATCH/database-no-binding.sql"
+compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot oteryn_s3a < "$WP5_SCRATCH/database-no-binding.sql"
 compose start platform >/dev/null
 compose up --detach --wait platform nginx >/dev/null
 expect_status 200 "$account_payload" "$WP5_SCRATCH/restore-response"
-rebound="$(compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_witness_stores WHERE id=1')"
+rebound="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_witness_stores WHERE id=1')"
 [[ "$rebound" == 1 ]]
 evidence 'database_restore=retained_witness_rebound'
 
@@ -256,7 +256,7 @@ for mode in file directory; do
   evidence "fsync_fault=$mode result=unavailable recovery=observed"
 done
 
-history="$(compose exec --no-TTY -e MARIADB_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_observations')"
+history="$(compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -N -uroot oteryn_s3a -e 'SELECT COUNT(*) FROM native_game_evidence_observations')"
 floors="$(compose exec --no-TTY platform sh -c 'find /var/lib/oteryn-witness -maxdepth 1 -type f -name "*.floor" | wc -l')"
 (( history > 0 && floors > 0 ))
 compose down --volumes --remove-orphans --timeout 15 >/dev/null
