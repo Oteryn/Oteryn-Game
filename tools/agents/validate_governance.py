@@ -288,7 +288,7 @@ def validate_active_task_packets(
         allowed_modes = set()
 
     max_characters = 12000
-    max_lines = 240
+    max_lines = 300
     if limits is not None:
         if not isinstance(limits, dict):
             errors.append("active_task_limits must be an object")
