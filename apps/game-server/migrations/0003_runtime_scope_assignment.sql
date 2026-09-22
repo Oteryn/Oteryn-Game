@@ -459,10 +459,18 @@ REVOKE ALL ON TABLE
     game_runtime_readiness_attestations
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
+    game_node_is_uuid_v7(UUID),
+    game_node_registration_writer_guard(),
+    game_node_bootstrap_authorization_guard(),
+    game_node_registration_guard(),
     game_node_register(BYTEA, TEXT, UUID),
     game_node_lock_current_registration(UUID, NUMERIC),
     game_node_prove_current_incarnation(UUID, NUMERIC, BYTEA),
     game_node_require_current(UUID, NUMERIC, BYTEA),
+    game_runtime_scope_assignment_writer_guard(),
+    game_runtime_scope_assignment_guard(),
+    game_runtime_scope_assignment_history_valid(),
+    game_runtime_scope_assignment_slot_guard(),
     game_runtime_attest_readiness(BYTEA, UUID, NUMERIC, BYTEA),
     game_runtime_guard_requires_current_assignment()
 FROM PUBLIC;

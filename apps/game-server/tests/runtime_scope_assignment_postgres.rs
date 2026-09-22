@@ -1695,6 +1695,41 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
             root.issue_node_bootstrap_authorization(&secret(1), &launch(1)?, None)
                 .await
                 .map_err(|e| format!("{e:?}"))?;
+            let function_privileges: Vec<(String, bool, bool)> = sqlx::query_as(
+                "WITH expected(signature) AS (VALUES \
+                    ('game_node_is_uuid_v7(uuid)'), \
+                    ('game_node_registration_writer_guard()'), \
+                    ('game_node_bootstrap_authorization_guard()'), \
+                    ('game_node_registration_guard()'), \
+                    ('game_node_register(bytea,text,uuid)'), \
+                    ('game_node_lock_current_registration(uuid,numeric)'), \
+                    ('game_node_prove_current_incarnation(uuid,numeric,bytea)'), \
+                    ('game_node_require_current(uuid,numeric,bytea)'), \
+                    ('game_runtime_scope_assignment_writer_guard()'), \
+                    ('game_runtime_scope_assignment_guard()'), \
+                    ('game_runtime_scope_assignment_history_valid()'), \
+                    ('game_runtime_scope_assignment_slot_guard()'), \
+                    ('game_runtime_attest_readiness(bytea,uuid,numeric,bytea)'), \
+                    ('game_runtime_guard_requires_current_assignment()')) \
+                 SELECT signature, p.oid IS NOT NULL AS function_exists, EXISTS ( \
+                     SELECT 1 \
+                     FROM aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl \
+                     WHERE acl.grantee = 0 AND acl.privilege_type = 'EXECUTE' \
+                 ) AS public_can_execute \
+                 FROM expected \
+                 LEFT JOIN pg_proc p ON p.oid = to_regprocedure(signature) \
+                 ORDER BY signature",
+            )
+            .fetch_all(&pool)
+            .await?;
+            assert_eq!(function_privileges.len(), 14);
+            for (signature, function_exists, public_can_execute) in function_privileges {
+                assert!(function_exists, "migration function is missing: {signature}");
+                assert!(
+                    !public_can_execute,
+                    "PUBLIC retains EXECUTE on migration function: {signature}"
+                );
+            }
             sqlx::query(sqlx::AssertSqlSafe(format!("CREATE ROLE {runtime_role} NOLOGIN"))).execute(&pool).await?;
             // Least-privilege GameNode consumer: read current assignment, register
             // itself and check currentness through definer functions only.
