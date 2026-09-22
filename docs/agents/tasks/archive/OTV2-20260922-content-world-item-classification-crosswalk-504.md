@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #763 exact candidate `94fc64f46eda3d2794d266215d4d50f4dc8d264b` passed real Merge Queue run `35741827881` with aggregate `game-gate` job `106796575362` SUCCESS and integrated as `46b62f34f63b281ff0b95d7514b4f03bfa2a7b3d`. Protected `main` at #763 integration was `46b62f34f63b281ff0b95d7514b4f03bfa2a7b3d`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260922-content-world-item-classification-crosswalk-504
 
 ```yaml
@@ -57,3 +59,23 @@ Source-policy direction is inherited from Oteryn/Oteryn-Game#504 comments `57715
 ## Status
 
 Implementation and local validation are complete. Draft PR #763 was opened before validation; coordinator qualification, repository CI and any later review/freeze remain pending.
+
+
+## Owner PAUSED checkpoint — 2026-09-22
+
+- The bounded #763 classification/crosswalk evidence task is complete and protected. Merge Queue request authority is Oteryn/Oteryn#196 comment `5778484718`, receipt UUID `fa15216a-4d08-4cd1-8364-d6058714ceeb`.
+- Prerequisite schema PR #749 is protected from exact candidate `5198eebcbc27ec0816fa57e46b16666941a403a2`; its integration main was `9ddd6e020837bd43ec66ce7d78d2af7742afeb39`.
+- Native census is `38,157/38,157`: 64 preserved semantic bindings plus 38,093 opaque identities.
+- All 24 source classification capability names were evaluated across 17,665 pinned source profiles. This statement does not claim compiler ordinal mapping.
+- Accepted Reference capability values remain `UNKNOWN`; #763 promoted no source gameplay values.
+- The accepted capability registry already contains entries `1..24`. Named accessors, exact weight scale and vector-completeness checks remain technical closure work; no default is accepted here.
+- Current-source capture was stopped by owner direction and remains partial: 6,023 active IDs, 177 cached, 167 `OK`, 10 normalization `UNKNOWN`, 5,846 pending.
+- The ten normalization-unknown records were HTTP 200 valid JSON payloads with `additionalAttributes: null`; the local normalizer rejected that shape. They are not invalid upstream JSON.
+- No end manifest, final normalized corpus or terminal drift comparison exists.
+- At stop time the scratch checkpoint SHA-256 was `60f4040eb7a5e7875ec14a50ec017660815cb4ee1d48fad827166b4df12e2994`.
+- The authoritative capture start-manifest SHA-256 was `7e8b3b1daf73938ed7c4410967ded8d73b34ebdf4aa6976acdb3526efac55a19`; its active-ID digest was `bf92a0cbaf9364a331d13774d50b2ad06c2cc0948e2fe4db679cfc6e453a6dc0`. Any earlier reported start digest is retired.
+- Capture files are scratch-only, unprotected and nondurable. If unavailable on resume, recollect from a fresh pinned start state rather than claiming continuity.
+- Final server artifact, client-safe artifact, runtime consumption, native-client consumption and Item E2E remain unproven.
+- `SECOND_CRYSTAL_IMPORT = NOT_PERFORMED`; `SECOND_B1_IMPORT = NOT_PERFORMED`; `SECOND_IDENTITY_GENERATION = NOT_PERFORMED`; `PARALLEL_ITEM_SYSTEM = NOT_CREATED`.
+- Programme state is `PAUSED`. Resume only on a new owner request, beginning with fresh protected-main and custody readback.
+- On resume: correct the null normalizer; complete current-source capture and terminal drift evidence; then continue crosswalk and accepted field-rule work. Reuse protected identity/schema lineages and do not reimport Crystal/B1.
