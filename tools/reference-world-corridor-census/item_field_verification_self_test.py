@@ -88,8 +88,12 @@ def inputs() -> tuple[dict, dict, dict]:
     }
     current = {
         "schema": field.CURRENT_SOURCE_SCHEMA,
+        "collector_profile": field.CURRENT_SOURCE_PROFILE,
         "target_cut": field.TARGET_CUT,
-        "source": {"role": "STRUCTURED_REFERENCE_DATA"},
+        "source": {
+            "id": field.CURRENT_SOURCE_ID,
+            "role": "STRUCTURED_REFERENCE_DATA",
+        },
         "authority": {"semantic_promotion": "FORBIDDEN"},
         "records": [
             {
