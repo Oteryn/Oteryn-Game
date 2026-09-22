@@ -4,7 +4,7 @@
 task_id: OTV2-20260922-control-plane-simplification-745
 title: Simplify candidate qualification and coordinator authority
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/control-plane-simplification-745-phase2
@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: work coordinator
 created_at: 2026-09-22T09:43:00+02:00
-updated_at: 2026-09-22T14:12:00+02:00
+updated_at: 2026-09-22T14:21:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/merge-gate.yml
@@ -66,8 +66,8 @@ No ruleset/protection change, no direct merge/auto-merge substitute, no Merge Qu
 ## Context checkpoint
 
 ```yaml
-last_progress: phase 1 protected as main@86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1 with merge_group game-gate SUCCESS; #739 is also protected, so phase 2 owns the released minimal PR routing surfaces
-status: implementing
+last_progress: phase 2 authored on the released minimal routing surfaces: stale-inherited candidate drift is advisory, trusted protected-base snapshot health is fatal, and PR routing now runs git diff --check before Merge Queue
+status: validating
 branch: ci/control-plane-simplification-745-phase2
 head_sha: null
 pr: null
@@ -88,5 +88,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: make stale-inherited PR routing advisory only, fail closed on unhealthy trusted base, and add pre-queue diff-check regression
+next_action: freeze exact branch head, read back bounded diff/ownership, open one phase-2 PR, and require focused regressions plus exact-head game-gate
 ```
