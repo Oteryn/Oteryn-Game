@@ -92,6 +92,39 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
                 {"docs/agents/tasks/active/OTV2-selected.md"},
             )
 
+    def test_pull_request_live_task_scope_rejects_malformed_file_paths(self):
+        base = "4" * 40
+        head = "5" * 40
+        pull = {
+            "state": "open",
+            "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+            "base": {"sha": base, "ref": "main"},
+            "changed_files": 1,
+        }
+        malformed = (
+            {},
+            {"filename": ""},
+            {"filename": 7},
+            {"filename": "../docs/agents/tasks/active/OTV2-selected.md"},
+            {
+                "filename": "apps/game-server/src/lib.rs",
+                "previous_filename": "../docs/agents/tasks/active/OTV2-selected.md",
+            },
+        )
+
+        for file_record in malformed:
+            with self.subTest(file_record=file_record):
+                def request(url: str):
+                    if "/files?" in url:
+                        return [file_record]
+                    if url.endswith("/pulls/79"):
+                        return pull
+                    raise AssertionError(url)
+
+                with mock.patch.object(adoption, "_request", side_effect=request):
+                    with self.assertRaisesRegex(ValueError, "invalid pull request"):
+                        adoption._pull_request_active_task_paths(79, head)
+
     def test_pull_request_live_task_scope_rejects_mid_read_base_drift(self):
         first_base = "1" * 40
         second_base = "2" * 40
