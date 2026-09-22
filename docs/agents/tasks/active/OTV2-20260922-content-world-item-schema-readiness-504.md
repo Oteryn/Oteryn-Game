@@ -4,13 +4,13 @@
 task_id: OTV2-20260922-content-world-item-schema-readiness-504
 title: D6-M1 Item Schema Readiness
 mode: IMPLEMENT
-status: repairing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-schema-readiness-504
 pr: 749
-base_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
-head_sha: 3f6ee6970d1b250b8f6d76585dad5c5279d57099
+base_sha: 186e96ccd3de5464aac59b1f17e40fc055451fab
+head_sha: 6f551ee70316795767de3514cb7ccf2740c06dd7
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: item schema lead
@@ -88,7 +88,7 @@ No second Crystal/B1 source import. No full-family semantic value promotion. No 
 
 - PROVEN — live #162 custody amendment `5774684703` adds the exact resource-profile, registry and reproducible measurement-tool paths above; the same canonical #749 lineage and single-writer custody remain binding.
 - PROVEN — resource profile acceptance is bound by #504 comment `5775184966` and #749 release comment `5775187195`; the accepted full typed record maxima are 3,555 server bytes and 3,433 client bytes.
-- PROVEN — ordinary merge-up `c972f145dad43eb3ebc98e8108a84bebac6605c6` inherits protected main `cf5c5f35476559450b6bbaf87dce519f7eead9d0` without changing the accepted profile inputs.
+- PROVEN — R1 merge-up `91c1eb3e3b07860d334cae2c6bb5a926aa8fb123` inherits protected main `186e96ccd3de5464aac59b1f17e40fc055451fab`; accepted profile inputs remain unchanged.
 - IMPLEMENTED — one canonical typed immutable Item model carries six-state field truth, bounded closed vectors and canonical cross-Item references through Project -> Reference -> artifact v4 body v2. Existing v1/v2/v3 codecs remain readable and all-UNKNOWN protected-family records retain their legacy encoding.
 - IMPLEMENTED — client-safe data is a positive allowlist projection of the same semantic graph. Temporal, transform, trade, fluid and read/write authority groups are rejected in client records.
 - IMPLEMENTED — all 90 B1 candidate fields have exactly one typed destination or explicit unsupported/loss disposition. The mapper leaves new real-corpus semantics UNKNOWN; no Crystal/B1 value promotion or identity regeneration occurs in this generation.
@@ -96,8 +96,6 @@ No second Crystal/B1 source import. No full-family semantic value promotion. No 
 - ACCEPTED FINDING R1 — exact-head self-review and independent review of frozen `3f6ee6970d1b250b8f6d76585dad5c5279d57099` found two P1 defects: nested typed Item JSON carriers admitted unknown members, and the production v4 profile admitted partial `1..=38,157` record families despite the accepted exact-38,157 registry contract.
 - REPAIRING R1 — every new nested typed Item object/structured-enum carrier rejects unknown members at the real Project parser boundary. Production v4 compile and decode require exactly 38,157 records; compact record-codec goldens remain unit-scoped, while the 11 representative semantic fixtures share one complete protected-family artifact.
 - ACCEPTED P2 DISPOSITION — account and character binding policies remain explicit unsupported entries alongside presentation binding/aliases/tags, equipment compatibility and modifier augment binding. The immutable pre-implementation measurement packet remains unchanged; live acceptance and release checkpoints govern its lifecycle status.
-
-Start from the already-retained B1 source-field -> typed capability matrix in #504 comment `5773340420`. Prefer bounded typed structures over arbitrary maps. Resolve cross-Item references through the protected #737 native map.
 
 ## Validation
 
@@ -159,9 +157,9 @@ Start from the already-retained B1 source-field -> typed capability matrix in #5
 
 ```yaml
 last_progress: R1 repair has RED evidence for both accepted P1 findings and a bounded GREEN implementation; final merged-head validation and successor review remain pending
-status: repairing
+status: validating
 branch: agent/content-world-item-schema-readiness-504
-head_sha: 3f6ee6970d1b250b8f6d76585dad5c5279d57099
+head_sha: 6f551ee70316795767de3514cb7ccf2740c06dd7
 pr: 749
 final_head_sha: null
 final_head_frozen_at: null
@@ -180,5 +178,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: R1_FINAL_HEAD_VALIDATION_REVIEW_AND_GOVERNED_QUALIFICATION_PENDING
-next_action: publish the guarded normal-Git R1 successor, then complete exact-head validation, independent review and repository-selected qualification before freeze
+next_action: complete exact-head CI and independent review; freeze only if both pass
 ```
