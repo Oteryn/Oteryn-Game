@@ -1321,73 +1321,73 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
     if let Known(value) = &semantics.equipment
         && let Known(patterns) = &value.patterns
     {
-            if patterns.is_empty() {
+        if patterns.is_empty() {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item known Equipment patterns cannot be empty",
+            ));
+        }
+        require_limit(
+            "Reference Item Equipment patterns",
+            patterns.len(),
+            REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS,
+        )?;
+        let mut previous_id = 0;
+        for (index, pattern) in patterns.iter().enumerate() {
+            if pattern.pattern_id == 0
+                || usize::from(pattern.pattern_id) > REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS
+                || pattern.pattern_id <= previous_id
+            {
                 return Err(ContentError::InvalidArtifact(
-                    "Reference Item known Equipment patterns cannot be empty",
+                    "Reference Item Equipment pattern ids are not canonical",
                 ));
             }
-            require_limit(
-                "Reference Item Equipment patterns",
-                patterns.len(),
-                REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS,
-            )?;
-            let mut previous_id = 0;
-            for (index, pattern) in patterns.iter().enumerate() {
-                if pattern.pattern_id == 0
-                    || usize::from(pattern.pattern_id) > REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS
-                    || pattern.pattern_id <= previous_id
-                {
-                    return Err(ContentError::InvalidArtifact(
-                        "Reference Item Equipment pattern ids are not canonical",
-                    ));
-                }
-                previous_id = pattern.pattern_id;
-                if let Known(slots) = &pattern.additional_reserved_slots {
-                    require_limit(
-                        "Reference Item Equipment additional slots",
-                        slots.len(),
-                        REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS,
-                    )?;
-                    require_sorted_unique("Reference Item Equipment slot order", slots)?;
-                    if matches!(pattern.primary_slot, Known(primary) if slots.contains(&primary)) {
-                        return Err(ContentError::InvalidArtifact(
-                            "Reference Item Equipment primary slot repeats as reservation",
-                        ));
-                    }
-                }
-                if let Known(groups) = &pattern.mutually_exclusive_groups {
-                    require_limit(
-                        "Reference Item Equipment mutually exclusive groups",
-                        groups.len(),
-                        REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS,
-                    )?;
-                    require_sorted_unique("Reference Item Equipment group order", groups)?;
-                }
-                if let Known(vocations) = &pattern.vocations {
-                    require_limit(
-                        "Reference Item Equipment base vocations",
-                        vocations.len(),
-                        REFERENCE_ITEM_MAX_BASE_VOCATIONS,
-                    )?;
-                    require_sorted_unique("Reference Item Equipment vocation order", vocations)?;
-                }
-                reject_known_unsupported(
-                    &pattern.compatibility_rule,
-                    "Reference Item Equipment compatibility grammar is unsupported in v1",
+            previous_id = pattern.pattern_id;
+            if let Known(slots) = &pattern.additional_reserved_slots {
+                require_limit(
+                    "Reference Item Equipment additional slots",
+                    slots.len(),
+                    REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS,
                 )?;
-                if patterns[..index].iter().any(|other| {
-                    other.primary_slot == pattern.primary_slot
-                        && other.additional_reserved_slots == pattern.additional_reserved_slots
-                        && other.mutually_exclusive_groups == pattern.mutually_exclusive_groups
-                        && other.vocations == pattern.vocations
-                        && other.level == pattern.level
-                        && other.compatibility_rule == pattern.compatibility_rule
-                }) {
+                require_sorted_unique("Reference Item Equipment slot order", slots)?;
+                if matches!(pattern.primary_slot, Known(primary) if slots.contains(&primary)) {
                     return Err(ContentError::InvalidArtifact(
-                        "Reference Item duplicates an Equipment semantic pattern",
+                        "Reference Item Equipment primary slot repeats as reservation",
                     ));
                 }
             }
+            if let Known(groups) = &pattern.mutually_exclusive_groups {
+                require_limit(
+                    "Reference Item Equipment mutually exclusive groups",
+                    groups.len(),
+                    REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS,
+                )?;
+                require_sorted_unique("Reference Item Equipment group order", groups)?;
+            }
+            if let Known(vocations) = &pattern.vocations {
+                require_limit(
+                    "Reference Item Equipment base vocations",
+                    vocations.len(),
+                    REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+                )?;
+                require_sorted_unique("Reference Item Equipment vocation order", vocations)?;
+            }
+            reject_known_unsupported(
+                &pattern.compatibility_rule,
+                "Reference Item Equipment compatibility grammar is unsupported in v1",
+            )?;
+            if patterns[..index].iter().any(|other| {
+                other.primary_slot == pattern.primary_slot
+                    && other.additional_reserved_slots == pattern.additional_reserved_slots
+                    && other.mutually_exclusive_groups == pattern.mutually_exclusive_groups
+                    && other.vocations == pattern.vocations
+                    && other.level == pattern.level
+                    && other.compatibility_rule == pattern.compatibility_rule
+            }) {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item duplicates an Equipment semantic pattern",
+                ));
+            }
+        }
     }
     if let Known(value) = &semantics.weapon {
         validate_rational_field(&value.hit_chance)?;
@@ -1410,43 +1410,43 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
     if let Known(value) = &semantics.protection
         && let Known(entries) = &value.resistances
     {
-            require_limit(
-                "Reference Item resistances",
-                entries.len(),
-                REFERENCE_ITEM_MAX_RESISTANCES,
-            )?;
-            require_sorted_unique(
-                "Reference Item resistance order",
-                &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
-            )?;
-            for entry in entries {
-                validate_rational_field(&entry.percent)?;
-            }
+        require_limit(
+            "Reference Item resistances",
+            entries.len(),
+            REFERENCE_ITEM_MAX_RESISTANCES,
+        )?;
+        require_sorted_unique(
+            "Reference Item resistance order",
+            &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
+        )?;
+        for entry in entries {
+            validate_rational_field(&entry.percent)?;
+        }
     }
     if let Known(value) = &semantics.skill_modifiers
         && let Known(entries) = &value.modifiers
     {
-            require_limit(
-                "Reference Item SkillModifiers",
-                entries.len(),
-                REFERENCE_ITEM_MAX_MODIFIERS,
-            )?;
-            require_sorted_unique(
-                "Reference Item SkillModifier order",
-                &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
-            )?;
-            for entry in entries {
-                for capacity in [&entry.target_domain, &entry.evaluation_phase] {
-                    if matches!(capacity, Known(value) if !(1..=37).contains(value)) {
-                        return Err(ContentError::InvalidArtifact(
-                            "Reference Item SkillModifier capacity id is outside the closed domain",
-                        ));
-                    }
-                }
-                if let Known(parameter) = &entry.parameter {
-                    validate_modifier_parameter(entry.kind, parameter)?;
+        require_limit(
+            "Reference Item SkillModifiers",
+            entries.len(),
+            REFERENCE_ITEM_MAX_MODIFIERS,
+        )?;
+        require_sorted_unique(
+            "Reference Item SkillModifier order",
+            &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
+        )?;
+        for entry in entries {
+            for capacity in [&entry.target_domain, &entry.evaluation_phase] {
+                if matches!(capacity, Known(value) if !(1..=37).contains(value)) {
+                    return Err(ContentError::InvalidArtifact(
+                        "Reference Item SkillModifier capacity id is outside the closed domain",
+                    ));
                 }
             }
+            if let Known(parameter) = &entry.parameter {
+                validate_modifier_parameter(entry.kind, parameter)?;
+            }
+        }
     }
     if let Known(value) = &semantics.temporal
         && let Known(target) = &value.decay_target
