@@ -155,15 +155,11 @@ enum ReferenceItemFieldState {
     Known,
 }
 
+#[derive(Default)]
 enum ReferenceItemFieldValue<T> {
+    #[default]
     Missing,
     Present(T),
-}
-
-impl<T> Default for ReferenceItemFieldValue<T> {
-    fn default() -> Self {
-        Self::Missing
-    }
 }
 
 fn deserialize_reference_item_field_value<'de, D, T>(
