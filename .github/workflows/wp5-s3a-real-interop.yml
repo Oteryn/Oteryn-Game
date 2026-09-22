@@ -38,6 +38,8 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.sha }}
           ADMITTED_MAIN: cf5c5f35476559450b6bbaf87dce519f7eead9d0
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
@@ -54,8 +56,14 @@ jobs:
               "tools/qualification/wp5_s3a/platform-fpm.Dockerfile",
               "tools/qualification/wp5_s3a/run.sh",
           }
+          if os.environ["EVENT_NAME"] == "pull_request":
+              diff_base = os.environ["PR_BASE_SHA"]
+          else:
+              diff_base = subprocess.check_output(
+                  ["git", "merge-base", "origin/main", "HEAD"], text=True
+              ).strip()
           changed = set(subprocess.check_output(
-              ["git", "diff", "--name-only", os.environ["ADMITTED_MAIN"], "HEAD"],
+              ["git", "diff", "--name-only", diff_base, "HEAD"],
               text=True,
           ).splitlines())
           if changed != allowed:
