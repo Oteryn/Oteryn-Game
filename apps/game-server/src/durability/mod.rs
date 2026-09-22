@@ -45,6 +45,7 @@ mod native_admission_source_linkage {
             "key",
         );
         let _ = DurabilityRoot::initialize_native_admission_source;
+        let _ = DurabilityRoot::claim_native_admission_source_custody;
         let _ = DurabilityRoot::register_native_admission_descriptor;
         let _ = DurabilityRoot::accept_native_source_observation;
         let _ = DurabilityRoot::checkpoint_native_source_publication;

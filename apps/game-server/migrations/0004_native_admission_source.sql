@@ -9,7 +9,13 @@ CREATE TABLE game_durability_native_source_registration (
     ),
     descriptor_revision NUMERIC(20, 0) NOT NULL CHECK (descriptor_revision BETWEEN 1 AND 18446744073709551615),
     descriptor_facts BYTEA NOT NULL CHECK (octet_length(descriptor_facts) BETWEEN 1 AND 4096),
-    initialized_at BIGINT NOT NULL CHECK (initialized_at >= 0)
+    initialized_at BIGINT NOT NULL CHECK (initialized_at >= 0),
+    -- Exclusive custody holder: one #415 GameNode process incarnation. Every
+    -- mutation additionally proves this incarnation is current in the same
+    -- transaction; a stored holder alone never establishes custody.
+    custody_node_id UUID NOT NULL REFERENCES game_node_registrations (node_id),
+    custody_registration_revision NUMERIC(20, 0) NOT NULL
+        CHECK (custody_registration_revision BETWEEN 1 AND 18446744073709551615)
 );
 
 CREATE TABLE game_durability_native_source_descriptor_history (
@@ -106,7 +112,14 @@ LANGUAGE plpgsql AS $$ BEGIN
        OR NEW.bootstrap_provenance <> OLD.bootstrap_provenance
        OR NEW.source_authority <> OLD.source_authority
        OR NEW.initialized_at <> OLD.initialized_at
-       OR NEW.descriptor_revision <= OLD.descriptor_revision THEN
+       OR NEW.descriptor_revision < OLD.descriptor_revision
+       OR (NEW.descriptor_revision = OLD.descriptor_revision
+           AND (NEW.descriptor_facts <> OLD.descriptor_facts
+                OR (NEW.custody_node_id = OLD.custody_node_id
+                    AND NEW.custody_registration_revision = OLD.custody_registration_revision)))
+       OR (NEW.descriptor_revision > OLD.descriptor_revision
+           AND (NEW.custody_node_id <> OLD.custody_node_id
+                OR NEW.custody_registration_revision <> OLD.custody_registration_revision)) THEN
         RAISE EXCEPTION 'native source registration cannot roll back or be recreated' USING ERRCODE = '23514';
     END IF;
     RETURN NEW;
