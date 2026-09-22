@@ -6,7 +6,7 @@ import base64
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import sys
 import types
@@ -113,6 +113,152 @@ def _reusable_prompt_paths(lifecycle: object) -> list[str]:
     return paths
 
 
+
+def _valid_repository_path(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and not any(char in value for char in "\x00\n\r\\")
+        and not value.startswith("/")
+        and ".." not in value.split("/")
+        and str(PurePosixPath(value)) == value
+    )
+
+
+def _normalize_positive_integer(raw: object, label: str) -> int:
+    value = str(raw or "").strip()
+    prefix = f"{label}:"
+    if value.lower().startswith(prefix.lower()):
+        value = value[len(prefix):].strip()
+    if re.fullmatch(r"[1-9][0-9]*", value) is None:
+        raise ValueError(f"{label} must be a positive integer")
+    return int(value)
+
+
+def _pull_request_active_task_paths(
+    number: int,
+    expected_head: str,
+) -> set[str]:
+    """Return active task packets changed by one exact-head live PR snapshot.
+
+    Protected main may advance independently of an immutable PR head. Bind the
+    candidate to the exact head and a stable live base snapshot observed during
+    this read instead of requiring the triggering event's historical base SHA.
+    """
+    if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
+        raise ValueError("expected pull request head SHA is invalid")
+
+    pr_url = f"https://api.github.com/repos/{PROVIDER}/pulls/{number}"
+    pull = _request(pr_url)
+    if not isinstance(pull, dict):
+        raise ValueError("invalid GitHub pull response")
+
+    head = pull.get("head", {}).get("sha", "")
+    base = pull.get("base", {}).get("sha", "")
+    changed_files = pull.get("changed_files")
+    if pull.get("state") != "open":
+        raise ValueError("live-state candidate validation requires an open pull request")
+    if pull.get("head", {}).get("repo", {}).get("full_name") != PROVIDER:
+        raise ValueError("live-state candidate validation requires a same-repository head")
+    if pull.get("base", {}).get("ref") != "main":
+        raise ValueError("live-state candidate validation requires base=main")
+    if head != expected_head:
+        raise ValueError("pull request head moved during live-state candidate validation")
+    if re.fullmatch(r"[0-9a-f]{40}", base or "") is None:
+        raise ValueError("live pull request base SHA is invalid")
+    if type(changed_files) is not int or changed_files < 0 or changed_files > 3000:
+        raise ValueError("invalid pull request changed-files count")
+
+    items: list[dict] = []
+    page = 1
+    while len(items) < changed_files:
+        batch = _request(
+            f"https://api.github.com/repos/{PROVIDER}/pulls/{number}/files"
+            f"?per_page=100&page={page}"
+        )
+        if not isinstance(batch, list) or not all(isinstance(item, dict) for item in batch):
+            raise ValueError("invalid GitHub pull-files response")
+        items.extend(batch)
+        if len(batch) < 100:
+            break
+        page += 1
+        if page > 30:
+            raise ValueError("pull request file enumeration exceeded bounded pagination")
+
+    if len(items) != changed_files:
+        raise ValueError("pull request file enumeration is incomplete")
+
+    pull_after = _request(pr_url)
+    if not isinstance(pull_after, dict):
+        raise ValueError("invalid GitHub pull readback")
+    if (
+        pull_after.get("state") != "open"
+        or pull_after.get("head", {}).get("sha") != head
+        or pull_after.get("base", {}).get("sha") != base
+        or pull_after.get("base", {}).get("ref") != "main"
+        or pull_after.get("changed_files") != changed_files
+    ):
+        raise ValueError("pull request moved during live-state candidate validation")
+
+    prefix = "docs/agents/tasks/active/"
+    selected: set[str] = set()
+    seen_filenames: set[str] = set()
+    for item in items:
+        filename = item.get("filename")
+        if not _valid_repository_path(filename):
+            raise ValueError("invalid pull request filename")
+        if filename in seen_filenames:
+            raise ValueError("duplicate pull request filename")
+        seen_filenames.add(filename)
+        if (
+            filename.startswith(prefix)
+            and filename.endswith(".md")
+            and filename != prefix + "README.md"
+        ):
+            selected.add(filename)
+
+        previous = item.get("previous_filename")
+        if previous is not None:
+            if not _valid_repository_path(previous):
+                raise ValueError("invalid pull request previous_filename")
+            if (
+                previous.startswith(prefix)
+                and previous.endswith(".md")
+                and previous != prefix + "README.md"
+            ):
+                selected.add(previous)
+    return selected
+
+
+def _active_task_live_scope() -> set[str] | None:
+    """Use candidate-scoped live checks on PRs and full checks for main health."""
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "").strip()
+    if event_name not in {"pull_request", "workflow_dispatch"}:
+        return None
+
+    event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
+    if not event_path:
+        raise ValueError("GITHUB_EVENT_PATH is required for candidate live-state validation")
+    event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    if not isinstance(event, dict):
+        raise ValueError("GitHub event payload must be an object")
+
+    if event_name == "pull_request":
+        pull = event.get("pull_request")
+        if not isinstance(pull, dict):
+            raise ValueError("pull_request event is missing pull_request payload")
+        number = _normalize_positive_integer(event.get("number") or pull.get("number"), "pull_request_number")
+        head = pull.get("head", {}).get("sha", "")
+        return _pull_request_active_task_paths(number, head)
+
+    inputs = event.get("inputs")
+    if not isinstance(inputs, dict):
+        raise ValueError("workflow_dispatch event is missing inputs")
+    number = _normalize_positive_integer(inputs.get("pull_request_number"), "pull_request_number")
+    head = (os.environ.get("TARGET_SHA") or os.environ.get("GITHUB_SHA") or "").strip().lower()
+    return _pull_request_active_task_paths(number, head)
+
+
 def _legacy_review_controller_errors(text: str, central: types.ModuleType) -> list[str]:
     """Reject operative use of Game's retired review controller.
 
@@ -198,7 +344,12 @@ def validate() -> list[str]:
         ):
             if expected not in (ROOT / relative).read_text(encoding="utf-8"):
                 errors.append(f"{relative}: missing bound META source path {expected}")
-        errors.extend(game_governance.validate_active_task_live_state(_request))
+        errors.extend(
+            game_governance.validate_active_task_live_state(
+                _request,
+                _active_task_live_scope(),
+            )
+        )
         if not errors:
             print(
                 f"Validated META policy {binding['policy_version']} at {commit}: "

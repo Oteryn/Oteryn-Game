@@ -175,5 +175,35 @@ class GovernanceLifecycleTests(unittest.TestCase):
 
         self.assertEqual(validator.validate_active_task_live_state(request), [])
 
+        self.write(
+            "docs/agents/tasks/active/OTV2-unrelated-terminal.md",
+            "# task\n```yaml\nstatus: validating\nissue: 31\npr: 41\n```\n",
+        )
+
+        requested: list[str] = []
+
+        def scoped_request(url: str) -> object:
+            requested.append(url)
+            if url.endswith("/pulls/21"):
+                return {"state": "open", "merged_at": None}
+            if url.endswith("/issues/12"):
+                return {"state": "closed"}
+            if url.endswith("/pulls/41"):
+                return {"state": "closed", "merged_at": "2026-09-22T00:00:00Z"}
+            if url.endswith("/issues/31"):
+                return {"state": "open"}
+            raise AssertionError(url)
+
+        self.assertEqual(
+            validator.validate_active_task_live_state(
+                scoped_request,
+                {"docs/agents/tasks/active/OTV2-open-pr.md"},
+            ),
+            [],
+        )
+        self.assertEqual(len(requested), 2)
+        self.assertTrue(all(url.endswith(("/pulls/21", "/issues/12")) for url in requested))
+
+
 if __name__ == "__main__":
     unittest.main()

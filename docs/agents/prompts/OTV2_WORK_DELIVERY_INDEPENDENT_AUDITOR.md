@@ -162,7 +162,6 @@ Before judging Work or a requested target:
 2. Read root `AGENTS.md` and every nearer instruction file governing inspected paths.
 3. For a full Work lifecycle audit, read:
    - `docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md`;
-   - `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
    - `docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md` or its explicit canonical successor;
