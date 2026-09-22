@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: work coordinator
 created_at: 2026-09-22T09:43:00+02:00
-updated_at: 2026-09-22T10:47:00+02:00
+updated_at: 2026-09-22T10:52:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/agents/validate_governance.py
@@ -31,8 +31,7 @@ owned_paths:
 public_contracts:
   - Game candidate qualification and coordinator lifecycle
 depends_on: []
-blocks:
-  - 737
+blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -45,7 +44,7 @@ Keep one authoritative mutating Game coordinator and make PR qualification candi
 
 - PROVEN: META policy 3.1 says ordinary protected-main movement does not invalidate a qualified head by itself and Merge Queue owns composition with current `main`.
 - PROVEN: repository ruleset 20991995 requires `game-gate`, has Merge Queue enabled and does not require strict up-to-date PR branches.
-- PROVEN: PR #737 exposed the inherited-routing false-blocker class; its original inherited lifecycle blocker is already repaired on protected `main`.
+- PROVEN: PR #737 exposed the inherited-routing false-blocker class and is now protected as `main@9daf3522efbf799c5d9ffe9817215895d4fa8af0`; #745 is therefore systemic cleanup, not a prerequisite for that completed Item integration.
 - PROVEN: PR #739 owns merge-gate/MQ/rust workflow and PG-policy paths; this task is path-disjoint and must not edit them.
 - PROVEN: #740 lifecycle closeout was independently integrated by #743 before this successor branch; this task does not re-own that completed cleanup.
 
@@ -70,7 +69,7 @@ No ruleset/protection change, no direct merge/auto-merge substitute, no Merge Qu
 ## Context checkpoint
 
 ```yaml
-last_progress: issue #745 and successor WIP branch recreated from current protected main after #743 closeout
+last_progress: PR #748 phase-one candidate is path-disjoint from #739, tolerates protected-main advancement without freshness merge-up, and collapses retired coordinator successors directly onto Work
 status: validating
 branch: ci/control-plane-simplification-745-v2
 head_sha: null
