@@ -23,6 +23,7 @@ MANIFEST_SCHEMA = "OTERYN_ITEM_FIELD_VERIFICATION_MANIFEST/v1"
 RULE_PROFILE = "OTERYN_ITEM_FIELD_RULE_ENGINE/v1"
 CROSSWALK_SCHEMA = "OTERYN_ITEM_CLASSIFICATION_CROSSWALK/v1"
 CURRENT_SOURCE_SCHEMA = "OTERYN_ITEM_CURRENT_SOURCE_TIBIAWIKI/v1"
+CURRENT_SOURCE_MANIFEST_SCHEMA = "OTERYN_ITEM_CURRENT_SOURCE_TIBIAWIKI_MANIFEST/v1"
 
 FIELD_STATES = (
     "CONFIRMED_CURRENT",
@@ -180,6 +181,14 @@ def validate_inputs(
         raise VerificationError("CROSSWALK_SCHEMA_MISMATCH")
     if current.get("schema") != CURRENT_SOURCE_SCHEMA:
         raise VerificationError("CURRENT_SOURCE_SCHEMA_MISMATCH")
+    if current.get("target_cut") != TARGET_CUT:
+        raise VerificationError("CURRENT_SOURCE_TARGET_CUT_MISMATCH")
+    source = current.get("source")
+    if not isinstance(source, dict) or source.get("role") != "STRUCTURED_REFERENCE_DATA":
+        raise VerificationError("CURRENT_SOURCE_ROLE_MISMATCH")
+    authority = current.get("authority")
+    if not isinstance(authority, dict) or authority.get("semantic_promotion") != "FORBIDDEN":
+        raise VerificationError("CURRENT_SOURCE_AUTHORITY_MISMATCH")
     cross_records = crosswalk.get("records")
     current_records = current.get("records")
     profiles = crosswalk.get("source_profiles")
@@ -713,9 +722,10 @@ def build_manifest(
         },
         "limitations": [
             (
-                "The protected #767 current-source corpus records "
-                "target_continuity=UNKNOWN unless separately proven; current "
-                "September values are never auto-promoted to the July 28 target."
+                "The protected #767 current-source snapshot and later fresh "
+                "observations retain target_continuity=UNKNOWN unless separately "
+                "proven; current September values are never auto-promoted to the "
+                "July 28 target."
             ),
             (
                 "TibiaWiki structured data remains Reference evidence, not "
@@ -738,10 +748,34 @@ def build_manifest(
 def compile_files(args: argparse.Namespace) -> None:
     crosswalk, cross_bytes = load_json(args.classification_crosswalk)
     current, current_bytes = load_json(args.current_source)
+    protected_current_manifest, protected_current_manifest_bytes = load_json(
+        args.protected_current_source_manifest
+    )
     schema, schema_bytes = load_json(args.schema_readiness)
+    if protected_current_manifest.get("schema") != CURRENT_SOURCE_MANIFEST_SCHEMA:
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_MANIFEST_SCHEMA_MISMATCH")
+    if protected_current_manifest.get("target_cut") != TARGET_CUT:
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_TARGET_CUT_MISMATCH")
+    protected_current_output = protected_current_manifest.get("full_output")
+    if not isinstance(protected_current_output, dict):
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_OUTPUT_MISSING")
+    protected_current_sha = protected_current_output.get("sha256")
+    if not isinstance(protected_current_sha, str) or len(protected_current_sha) != 64:
+        raise VerificationError("PROTECTED_CURRENT_SOURCE_SHA_INVALID")
+    observed_current_sha = sha256_bytes(current_bytes)
+    observation_status = (
+        "EXACT_PROTECTED_REPRODUCTION"
+        if observed_current_sha == protected_current_sha
+        else "FRESH_OBSERVATION_DIVERGED_FROM_PROTECTED_SNAPSHOT"
+    )
     source_digests = {
         "classification_crosswalk_sha256": sha256_bytes(cross_bytes),
-        "current_source_sha256": sha256_bytes(current_bytes),
+        "protected_current_source_manifest_sha256": sha256_bytes(
+            protected_current_manifest_bytes
+        ),
+        "protected_current_source_sha256": protected_current_sha,
+        "observed_current_source_sha256": observed_current_sha,
+        "current_source_observation_status": observation_status,
         "schema_readiness_sha256": sha256_bytes(schema_bytes),
     }
     full = compile_verification(
@@ -769,6 +803,9 @@ def main() -> int:
         "--classification-crosswalk", type=Path, required=True
     )
     parser.add_argument("--current-source", type=Path, required=True)
+    parser.add_argument(
+        "--protected-current-source-manifest", type=Path, required=True
+    )
     parser.add_argument("--schema-readiness", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest-output", type=Path, required=True)
