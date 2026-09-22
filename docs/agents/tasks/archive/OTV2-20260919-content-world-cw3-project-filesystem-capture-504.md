@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #687 is merged on protected main as `037bf7818122ad7d2bb10ad47f89fdd90d2a35dc`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260919-content-world-cw3-project-filesystem-capture-504
 
 ```yaml
