@@ -78,6 +78,9 @@ def inputs() -> tuple[dict, dict, dict]:
     }
     current = {
         "schema": field.CURRENT_SOURCE_SCHEMA,
+        "target_cut": field.TARGET_CUT,
+        "source": {"role": "STRUCTURED_REFERENCE_DATA"},
+        "authority": {"semantic_promotion": "FORBIDDEN"},
         "records": [
             {
                 "source_item_id": 1,
