@@ -30,22 +30,20 @@ jobs:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Verify exact candidate and closed path ownership
         env:
-          EXPECTED_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           ADMITTED_MAIN: cf5c5f35476559450b6bbaf87dce519f7eead9d0
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git merge-base --is-ancestor "$ADMITTED_MAIN" HEAD
+          git fetch --no-tags origin main:refs/remotes/origin/main
           python - <<'PY'
-          import os
           import subprocess
 
           allowed = {
@@ -56,12 +54,9 @@ jobs:
               "tools/qualification/wp5_s3a/platform-fpm.Dockerfile",
               "tools/qualification/wp5_s3a/run.sh",
           }
-          if os.environ["EVENT_NAME"] == "pull_request":
-              diff_base = os.environ["PR_BASE_SHA"]
-          else:
-              diff_base = subprocess.check_output(
-                  ["git", "merge-base", "origin/main", "HEAD"], text=True
-              ).strip()
+          diff_base = subprocess.check_output(
+              ["git", "merge-base", "origin/main", "HEAD"], text=True
+          ).strip()
           changed = set(subprocess.check_output(
               ["git", "diff", "--name-only", diff_base, "HEAD"],
               text=True,
