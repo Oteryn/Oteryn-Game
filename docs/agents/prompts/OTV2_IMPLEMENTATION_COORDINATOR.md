@@ -11,6 +11,6 @@ This file remains at its historical path so old task, plan and evidence links st
 
 For current work, resolve the matching `OTV2_WORK_DELIVERY_COORDINATOR` lifecycle entry, live allocation/custody and protected GitHub state. Root/nearest `AGENTS.md`, bound META policy, repository gates, required `game-gate` and Merge Queue remain authoritative.
 
-`MUTATION_AUTHORITY: NONE`  
-`MERGE_AUTHORITY: NONE`  
+`MUTATION_AUTHORITY: NONE`
+`MERGE_AUTHORITY: NONE`
 `PRODUCTION_AUTHORITY: NONE`
