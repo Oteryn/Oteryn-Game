@@ -166,7 +166,11 @@ def main() -> int:
         "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
-        for replacement in (command.replace("cargo", "echo cargo", 1), command.replace("--test", "--no-run --test", 1)):
+        for replacement in (
+            command.replace("cargo", "echo cargo", 1),
+            command.replace("oteryn-", "mutated-", 1),
+        ):
+            assert replacement != command
             assert validate(original.replace(command, replacement, 1)) != 0
             mutations += 1
 
