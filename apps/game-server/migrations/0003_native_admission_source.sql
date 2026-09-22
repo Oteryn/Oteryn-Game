@@ -25,7 +25,7 @@ CREATE TABLE game_durability_native_source_floors (
     decision_identity TEXT NOT NULL CHECK (decision_identity <> ''),
     observed_at BIGINT NOT NULL CHECK (observed_at >= 0),
     semantic_facts BYTEA NOT NULL CHECK (octet_length(semantic_facts) > 0),
-    PRIMARY KEY (registration_id, source_authority, operation, semantic_namespace)
+    PRIMARY KEY (registration_id, source_authority, semantic_namespace)
 );
 
 CREATE TABLE game_durability_native_source_observation_history (
@@ -37,7 +37,7 @@ CREATE TABLE game_durability_native_source_observation_history (
     decision_identity TEXT NOT NULL CHECK (decision_identity <> ''),
     observed_at BIGINT NOT NULL CHECK (observed_at >= 0),
     semantic_facts BYTEA NOT NULL CHECK (octet_length(semantic_facts) > 0),
-    PRIMARY KEY (registration_id, source_authority, operation, semantic_namespace, source_revision),
+    PRIMARY KEY (registration_id, source_authority, semantic_namespace, source_revision),
     FOREIGN KEY (registration_id) REFERENCES game_durability_native_source_registration(registration_id)
 );
 
@@ -73,7 +73,7 @@ CREATE TRIGGER game_native_registration_guard BEFORE UPDATE OR DELETE ON game_du
 CREATE FUNCTION game_durability_native_source_floor_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$ BEGIN
     IF TG_OP = 'DELETE' OR NEW.registration_id <> OLD.registration_id
-       OR NEW.source_authority <> OLD.source_authority OR NEW.operation <> OLD.operation
+       OR NEW.source_authority <> OLD.source_authority
        OR NEW.semantic_namespace <> OLD.semantic_namespace
        OR NEW.source_revision <= OLD.source_revision THEN
         RAISE EXCEPTION 'native source floor cannot roll back or be rewritten' USING ERRCODE = '23514';
