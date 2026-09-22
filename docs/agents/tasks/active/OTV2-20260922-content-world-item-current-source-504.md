@@ -4,18 +4,18 @@
 task_id: OTV2-20260922-content-world-item-current-source-504
 title: D6-M1 Item current-source TibiaWiki crosswalk
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-current-source-504
-pr: null
+pr: 767
 base_sha: 3ebdca55840573861a63e6e4de1436ac1a6e60ec
 head_sha: pending
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: item current-source lead"
 created_at: 2026-09-22T16:20:00Z
-updated_at: 2026-09-22T17:15:00Z
+updated_at: 2026-09-22T17:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_current_source_tibiawiki.py
@@ -73,9 +73,11 @@ No Crystal/B1 re-import, source XML reread, identity allocation/remint, schema/r
 ## Implementation / findings
 
 - Collector and self-test authored on the allocated branch.
-- Local synthetic self-test: 15/15 PASS.
+- Local synthetic self-test: 17/17 PASS.
 - Independent local DeepSeek-R1 32B read-only review identified two P1 concerns: contradiction handling and target-cut continuity. Both are covered by the implementation and dedicated tests; no AI output is authority.
-- Real protected-input reproduction and live TibiaWiki collection are in progress.
+- Protected #763 scratch reproduction PASS: 38,157 records / 17,665 source profiles / exact SHA-256 `004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d`.
+- Full live TibiaWiki run PASS across all 38,157 protected identities: MATCHED=22, NOT_FOUND=729, AMBIGUOUS=36,736, CONFLICT=670; full output SHA-256 `005761fa0c464da0f64cedcb7efcfc7afb5f0dc19eded97ed935013d72d095d0`.
+- Discovery coverage remains deliberately bounded: 36,137 identities have no admitted protected discovery signal and remain explicit `WIKI_AMBIGUOUS / NO_ADMITTED_DISCOVERY_SIGNAL`; nothing is guessed.
 
 ## Validation
 
@@ -87,7 +89,7 @@ No Crystal/B1 re-import, source XML reread, identity allocation/remint, schema/r
 ### Component/integration
 
 - command/run: protected #763 native-map export + classification crosswalk reproduction + current-source collector against real TibiaWiki API
-- result: in progress
+- result: PASS on full 38,157 live run; two unchanged-code repeat/cache runs are byte-identical for both full output and manifest
 
 ### E2E
 
@@ -130,11 +132,11 @@ No Crystal/B1 re-import, source XML reread, identity allocation/remint, schema/r
 ## Context checkpoint
 
 ```yaml
-last_progress: collector and self-test published prefreeze; real-input validation running
-status: implementing
+last_progress: full 38157 live current-source run PASS and compact manifest generated
+status: validating
 branch: agent/content-world-item-current-source-504
 head_sha: pending
-pr: null
+pr: 767
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -152,5 +154,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: reproduce protected #763 full scratch crosswalk and execute live current-source collection
+next_action: commit final manifest/task repairs, perform whole-diff review, then freeze exact head
 ```

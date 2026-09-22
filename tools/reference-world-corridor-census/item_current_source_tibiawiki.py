@@ -45,6 +45,7 @@ MAX_CACHE_RECORD_BYTES = 384 * 1024
 MAX_INFOBOX_FIELDS = 128
 MAX_FIELD_KEY_BYTES = 64
 MAX_FIELD_VALUE_BYTES = 2048
+MAX_UNMAPPED_FIELD_VALUE_BYTES = 16 * 1024
 MAX_TITLE_BYTES = 256
 MAX_BATCH_TITLES = 20
 MAX_BATCH_PAGEIDS = 20
@@ -144,18 +145,30 @@ def extract_infobox_item(wikitext: str) -> dict[str, Any]:
     start = wikitext.find(marker)
     if start < 0:
         return {"mapped": {}, "unmapped": {}, "infobox_present": False}
-    tail = wikitext[start + len(marker):]
-    body_lines: list[str] = []
-    closed = False
-    for line in tail.splitlines():
-        if line.strip() == "}}":
-            closed = True
-            break
-        body_lines.append(line)
-    if not closed:
+    depth = 0
+    index = start
+    end: int | None = None
+    while index < len(wikitext) - 1:
+        pair = wikitext[index:index + 2]
+        if pair == "{{":
+            depth += 1
+            index += 2
+            continue
+        if pair == "}}":
+            depth -= 1
+            if depth == 0:
+                end = index
+                break
+            if depth < 0:
+                raise CurrentSourceError("INFOBOX_BRACE_UNDERFLOW")
+            index += 2
+            continue
+        index += 1
+    if end is None or depth != 0:
         raise CurrentSourceError("INFOBOX_UNTERMINATED")
+    body = wikitext[start + len(marker): end]
     raw: dict[str, str] = {}
-    for line in body_lines:
+    for line in body.splitlines():
         stripped = line.strip()
         if not stripped.startswith("|"):
             continue
@@ -164,7 +177,10 @@ def extract_infobox_item(wikitext: str) -> dict[str, Any]:
         key, value = stripped[1:].split("=", 1)
         key, value = key.strip().casefold(), value.strip()
         bounded_text(key, label="FIELD_KEY", max_bytes=MAX_FIELD_KEY_BYTES)
-        bounded_text(value, label="FIELD_VALUE")
+        if len(value.encode("utf-8")) > MAX_UNMAPPED_FIELD_VALUE_BYTES:
+            raise CurrentSourceError(f"INFOBOX_RAW_FIELD_MAX_PLUS_ONE:{key}:{len(value.encode('utf-8'))}")
+        if key in NORMALIZED_FIELDS:
+            bounded_text(value, label="FIELD_VALUE")
         if not key:
             raise CurrentSourceError("INFOBOX_EMPTY_KEY")
         if key in raw and raw[key] != value:
@@ -189,7 +205,16 @@ def extract_infobox_item(wikitext: str) -> dict[str, Any]:
             mapped[key] = {"state": "VALUE" if parsed is not None else "UNPARSED", "value": parsed if parsed is not None else clean_wiki_text(value)}
         else:
             mapped[key] = {"state": "VALUE", "value": clean_wiki_text(value)}
-    unmapped = {key: clean_wiki_text(raw[key]) for key in sorted(raw) if key not in NORMALIZED_FIELDS}
+    unmapped: dict[str, Any] = {}
+    for key in sorted(raw):
+        if key in NORMALIZED_FIELDS:
+            continue
+        value = raw[key]
+        encoded = value.encode("utf-8")
+        if len(encoded) <= MAX_FIELD_VALUE_BYTES:
+            unmapped[key] = {"state": "VALUE", "value": clean_wiki_text(value)}
+        else:
+            unmapped[key] = {"state": "OVERSIZED_DIGEST_ONLY", "utf8_bytes": len(encoded), "sha256": sha256_bytes(encoded)}
     return {"mapped": mapped, "unmapped": unmapped, "infobox_present": True}
 
 

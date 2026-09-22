@@ -86,6 +86,23 @@ def test_bounded_field_rejection() -> None:
     reject(lambda: collector.extract_infobox_item(too_many), "INFOBOX_FIELD_COUNT_MAX_PLUS_ONE")
 
 
+
+def test_oversized_unmapped_field_is_digest_only() -> None:
+    raw = "x" * (collector.MAX_FIELD_VALUE_BYTES + 1)
+    value = collector.extract_infobox_item("{{Infobox_Item\n| notes = " + raw + "\n}}")
+    field = value["unmapped"]["notes"]
+    assert field["state"] == "OVERSIZED_DIGEST_ONLY"
+    assert field["utf8_bytes"] == len(raw)
+    assert len(field["sha256"]) == 64
+
+
+def test_infobox_balanced_nested_parameters_and_templates() -> None:
+    fixture = "{{Infobox_Item|List={{{1|}}}|GetValue={{{GetValue|}}}\n| name = Nested\n| notes = {{Something|x={{Inner|y}}}}\n| armor = 3\n}} trailing"
+    value = collector.extract_infobox_item(fixture)
+    assert value["mapped"]["name"]["value"] == "Nested"
+    assert value["mapped"]["armor"]["value"] == 3
+    assert "notes" in value["unmapped"]
+
 def test_malformed_api_rejected() -> None:
     reject(lambda: collector.validate_api_query({"query": {"pages": []}}), "API_ROOT_INVALID")
     reject(lambda: collector.validate_page_metadata({"pageid": 1, "title": "x", "revisions": []}), "API_REVISION_CARDINALITY_INVALID")
