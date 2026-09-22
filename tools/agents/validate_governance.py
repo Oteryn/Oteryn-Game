@@ -340,6 +340,11 @@ def validate_active_task_packets(
                 errors.append(f"active task packet {relative} has unsupported status {status}")
             if status in terminal_statuses:
                 errors.append(f"active task packet {relative} has terminal status {status}")
+            if status in {"validating", "ready"} and pr is None:
+                errors.append(
+                    f"active task packet {relative} with status {status} "
+                    "must bind a positive canonical pr"
+                )
 
     archive_dir = ROOT / "docs/agents/tasks/archive"
     if archive_dir.is_dir():
