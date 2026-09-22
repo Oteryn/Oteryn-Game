@@ -20,7 +20,7 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "fa9bea9fb2b4ce7cdbabe9679cf4141bcf520947cfeb737faf88212e45f4651e",
+    "rust_linux": "5a695882aba2282b37997b245778efb4cf8e3cb8ceb12f43c8609c2b6e24349a",
     "rust_windows": "f28b0844ae3779d164cb85f5d8ef5bb4532b78baa2cd55e20cdff9e67c47f1d4",
 }
 
@@ -151,8 +151,10 @@ def validate() -> list[str]:
         "                  ['git', 'hash-object', '--', target],\n",
         "              if base_present and not head_present:\n",
         "          pull_after_target = api(f'/pulls/{number_text}')\n",
-        "              output.write(\n",
-        "                  f\"present={'true' if head_blobs['durability_postgres'] is not None else 'false'}\\n\"\n",
+        "              for name, _target in targets:\n",
+        "                  blob = head_blobs[name]\n",
+        "                  output.write(f\"{name}_present={'true' if blob is not None else 'false'}\\n\")\n",
+        "                  output.write(f\"{name}_blob={blob or ''}\\n\")\n",
     ) + tuple(
         f"              ('{name}', '{target}'),\n"
         for name, target in REGISTERED_POSTGRES_TARGETS
@@ -168,13 +170,22 @@ def validate() -> list[str]:
 
     evidence_fragments = (
         "        run: |\n",
-        "          DURABILITY_TARGET_PRESENT: ${{ steps.pg_target.outputs.present }}\n",
         "          run_registered_target() {\n",
-        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
-        '            elif [[ -e "$path" ]]; then\n',
+        '            local classified_present="$3"\n',
+        '            local classified_blob="$4"\n',
+        '                if [[ ! -f "$path" || -L "$path" ]]; then\n',
+        '                checkout_blob="$(git hash-object -- "$path")"\n',
+        '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then\n',
+        '                cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
+        '                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then\n',
     ) + tuple(
-        f"          run_registered_target {name} {target}\n"
+        fragment
         for name, target in REGISTERED_POSTGRES_TARGETS
+        for fragment in (
+            f"          {name.upper()}_PRESENT: ${{{{ steps.pg_target.outputs.{name}_present }}}}\n",
+            f"          {name.upper()}_BLOB: ${{{{ steps.pg_target.outputs.{name}_blob }}}}\n",
+            f'          run_registered_target {name} {target} "${name.upper()}_PRESENT" "${name.upper()}_BLOB"\n',
+        )
     )
     errors.extend(
         require_unconditional_evidence_step(

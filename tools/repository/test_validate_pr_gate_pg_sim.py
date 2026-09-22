@@ -27,6 +27,15 @@ REGISTERED_POSTGRES_TARGETS = {
     "native_admission_source_postgres": "apps/game-server/tests/native_admission_source_postgres.rs",
 }
 
+
+def classification_output(durability_blob: str | None) -> str:
+    lines = []
+    for name in REGISTERED_POSTGRES_TARGETS:
+        blob = durability_blob if name == "durability_postgres" else None
+        lines.append(f"{name}_present={'true' if blob is not None else 'false'}")
+        lines.append(f"{name}_blob={blob or ''}")
+    return "\n".join(lines) + "\n"
+
 # Self-contained snapshot of the protected classifier's >300-file rejection path.
 PROTECTED_PG_CLASSIFIER_FIXTURE = """\
   rust_linux:
@@ -262,7 +271,7 @@ def test_classifiers_bind_aba_to_immutable_authority() -> None:
     assert failure is None
     assert json.loads(dict(line.split("=", 1) for line in output.splitlines())["file_records"]) == immutable
     failure, output = run_classifier(mutable)
-    assert failure is None and output == "present=true\n", (failure, output)
+    assert failure is None and output == classification_output(BLOB_SHA), (failure, output)
 
 
 def test_scope_rejects_comparison_truncation_while_pg_accepts_large_diff() -> None:
@@ -270,7 +279,7 @@ def test_scope_rejects_comparison_truncation_while_pg_accepts_large_diff() -> No
     failure, output = run_classifier(files, immutable_files=files[:300], scope=True)
     assert failure is None and output.endswith("complete=false\n")
     failure, output = run_classifier([{"filename": f"docs/{i}.md"} for i in range(803)])
-    assert failure is None and output == "present=true\n", (failure, output)
+    assert failure is None and output == classification_output(BLOB_SHA), (failure, output)
 
 
 def test_protected_classifier_red_for_valid_803_file_target() -> None:
@@ -331,7 +340,7 @@ def test_classifier_rejects_identity_races() -> None:
     # Two pages and an unchanged file count reproduce the review's race, not a count mismatch.
     files = [{"filename": f"docs/file-{index}.md", "status": "modified"} for index in range(101)]
     failure, output = run_classifier(files)
-    assert failure is None and output == "present=true\n", (failure, output)
+    assert failure is None and output == classification_output(BLOB_SHA), (failure, output)
     mutations = {
         "closed": lambda pull: pull.update(state="closed"),
         "head": lambda pull: pull["head"].update(sha="c" * 40),
@@ -363,10 +372,10 @@ def test_classifier_exact_target_state_matrix() -> None:
     executable = {"path": TARGET, "mode": "100755", "type": "blob", "sha": BLOB_SHA}
     absent = {"path": "docs/readme.md", "mode": "100644", "type": "blob", "sha": "4" * 40}
     cases = (
-        ("large-present", present, present, True, None, "present=true\n"),
-        ("executable-present", executable, executable, True, None, "present=true\n"),
-        ("introduced", absent, present, True, None, "present=true\n"),
-        ("both-absent", absent, absent, False, None, "present=false\n"),
+        ("large-present", present, present, True, None, classification_output(BLOB_SHA)),
+        ("executable-present", executable, executable, True, None, classification_output(BLOB_SHA)),
+        ("introduced", absent, present, True, None, classification_output(BLOB_SHA)),
+        ("both-absent", absent, absent, False, None, classification_output(None)),
         ("removed", present, absent, False, "removed or renamed", ""),
         ("renamed-away", present, absent, False, "removed or renamed", ""),
     )
@@ -477,7 +486,7 @@ def test_classifier_validates_every_tree_entry_before_proving_absence() -> None:
         "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": list(valid_elsewhere)},
     }
     failure, output = run_classifier([], tree_payloads=valid_trees, checkout_present=False)
-    assert failure is None and output == "present=false\n", (failure, output)
+    assert failure is None and output == classification_output(None), (failure, output)
 
     malformed_paths = (None, "", "/absolute", "bad\x00path", "a//b", "./a", "a/../b")
     invalid_entries = [
@@ -567,12 +576,52 @@ def test_postgres_early_exit_cannot_preserve_contract_strings() -> None:
     assert errors, "validator accepted early exit before PG evidence with contract strings intact"
 
 
+def test_post_classification_target_drift_cannot_preserve_contract_strings() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    evidence = load_validator().step_block(
+        load_validator().job_block(baseline, "rust_linux"),
+        "Run registered PostgreSQL E2E targets when allocated",
+    )
+    assert evidence is not None
+    mutations = (
+        evidence.replace('                checkout_blob="$(git hash-object -- "$path")"\n', "", 1),
+        evidence.replace(
+            '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then\n',
+            '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ ]]; then\n',
+            1,
+        ),
+        evidence.replace(
+            '                if [[ ! -f "$path" || -L "$path" ]]; then\n',
+            '                if [[ ! -f "$path" ]]; then\n',
+            1,
+        ),
+        evidence.replace(
+            '                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then\n',
+            '                if [[ -e "$path" ]]; then\n',
+            1,
+        ),
+    )
+    for mutated_evidence in mutations:
+        assert mutated_evidence != evidence
+        mutated = baseline.replace(evidence, mutated_evidence, 1)
+        # The fixed Cargo commands and target mappings remain, but deleting or
+        # mutating a target after classification must no longer validate.
+        for name, target in REGISTERED_POSTGRES_TARGETS.items():
+            assert f"run_registered_target {name} {target}" in mutated
+        errors = validate_mutated_gate(mutated)
+        assert errors, "validator accepted post-classification target drift with old commands intact"
+
+
 def test_fixed_postgres_target_mapping_cannot_be_suppressed() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     baseline_errors = validate_mutated_gate(baseline)
     assert not baseline_errors, baseline_errors
     for name, target in REGISTERED_POSTGRES_TARGETS.items():
-        marker = f"          run_registered_target {name} {target}\n"
+        variable = name.upper()
+        marker = (
+            f'          run_registered_target {name} {target} '
+            f'"${variable}_PRESENT" "${variable}_BLOB"\n'
+        )
         assert baseline.count(marker) == 1, (name, target)
         errors = validate_mutated_gate(baseline.replace(marker, "", 1))
         assert any("rust_linux" in error for error in errors), (name, errors)
@@ -612,6 +661,7 @@ def main() -> int:
         test_protected_classifier_red_for_valid_803_file_target,
         test_evidence_job_failure_cannot_be_tolerated,
         test_postgres_early_exit_cannot_preserve_contract_strings,
+        test_post_classification_target_drift_cannot_preserve_contract_strings,
         test_fixed_postgres_target_mapping_cannot_be_suppressed,
         test_postgres_digest_and_invocation_are_mandatory,
     )

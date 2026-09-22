@@ -720,9 +720,10 @@ jobs:
               raise SystemExit('pull request changed-files count moved during PostgreSQL target classification')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(
-                  f"present={'true' if head_blobs['durability_postgres'] is not None else 'false'}\n"
-              )
+              for name, _target in targets:
+                  blob = head_blobs[name]
+                  output.write(f"{name}_present={'true' if blob is not None else 'false'}\n")
+                  output.write(f"{name}_blob={blob or ''}\n")
           print('Registered PostgreSQL target classification completed on exact base/head.')
           PY
 
@@ -741,37 +742,52 @@ jobs:
       - name: Run registered PostgreSQL E2E targets when allocated
         env:
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-          DURABILITY_TARGET_PRESENT: ${{ steps.pg_target.outputs.present }}
+          DURABILITY_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.durability_postgres_present }}
+          DURABILITY_POSTGRES_BLOB: ${{ steps.pg_target.outputs.durability_postgres_blob }}
+          CHARACTER_AUTHORITY_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.character_authority_postgres_present }}
+          CHARACTER_AUTHORITY_POSTGRES_BLOB: ${{ steps.pg_target.outputs.character_authority_postgres_blob }}
+          RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.runtime_scope_assignment_postgres_present }}
+          RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_BLOB: ${{ steps.pg_target.outputs.runtime_scope_assignment_postgres_blob }}
+          NATIVE_ADMISSION_SOURCE_POSTGRES_PRESENT: ${{ steps.pg_target.outputs.native_admission_source_postgres_present }}
+          NATIVE_ADMISSION_SOURCE_POSTGRES_BLOB: ${{ steps.pg_target.outputs.native_admission_source_postgres_blob }}
         run: |
           set -euo pipefail
-          case "$DURABILITY_TARGET_PRESENT" in
-            true|false) ;;
-            *)
-              echo "Durability PostgreSQL target classification produced an invalid result; failing closed." >&2
-              exit 1
-              ;;
-          esac
-          if [[ "$DURABILITY_TARGET_PRESENT" == "true" && ! -f apps/game-server/tests/durability_postgres.rs ]] || \
-             [[ "$DURABILITY_TARGET_PRESENT" == "false" && -e apps/game-server/tests/durability_postgres.rs ]]; then
-            echo "Durability PostgreSQL target state changed after classification; failing closed." >&2
-            exit 1
-          fi
           run_registered_target() {
             local name="$1"
             local path="$2"
-            if [[ -f "$path" ]]; then
-              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
-            elif [[ -e "$path" ]]; then
-              echo "Registered PostgreSQL target is not a regular file: $path" >&2
-              exit 1
-            else
-              echo "NOT_APPLICABLE: registered PostgreSQL target is absent on this revision: $name -> $path"
-            fi
+            local classified_present="$3"
+            local classified_blob="$4"
+            case "$classified_present" in
+              true)
+                if [[ ! -f "$path" || -L "$path" ]]; then
+                  echo "Registered PostgreSQL target changed from a classified regular file: $path" >&2
+                  exit 1
+                fi
+                local checkout_blob
+                checkout_blob="$(git hash-object -- "$path")"
+                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then
+                  echo "Registered PostgreSQL target blob changed after classification: $path" >&2
+                  exit 1
+                fi
+                cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"
+                ;;
+              false)
+                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then
+                  echo "Registered PostgreSQL target changed from classified absence: $path" >&2
+                  exit 1
+                fi
+                echo "NOT_APPLICABLE: registered PostgreSQL target is absent on this revision: $name -> $path"
+                ;;
+              *)
+                echo "Registered PostgreSQL target classification produced an invalid result: $name" >&2
+                exit 1
+                ;;
+            esac
           }
-          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs
-          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs
-          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs
-          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs
+          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs "$DURABILITY_POSTGRES_PRESENT" "$DURABILITY_POSTGRES_BLOB"
+          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs "$CHARACTER_AUTHORITY_POSTGRES_PRESENT" "$CHARACTER_AUTHORITY_POSTGRES_BLOB"
+          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs "$RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_PRESENT" "$RUNTIME_SCOPE_ASSIGNMENT_POSTGRES_BLOB"
+          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs "$NATIVE_ADMISSION_SOURCE_POSTGRES_PRESENT" "$NATIVE_ADMISSION_SOURCE_POSTGRES_BLOB"
 
       - name: Run synthetic harness
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
