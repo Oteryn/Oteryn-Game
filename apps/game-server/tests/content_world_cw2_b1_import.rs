@@ -697,7 +697,7 @@ fn full_family_limits() -> ProjectEvidenceLimits {
         max_document_bytes: 96_000_000,
         max_total_bytes: 160_000_000,
         max_json_depth: 24,
-        max_decoded_fields: 2_000_000,
+        max_decoded_fields: 5_000_000,
         max_string_bytes: 96_000_000,
         max_locator_bytes: 160,
         max_locator_segments: 8,
@@ -709,6 +709,18 @@ fn full_family_limits() -> ProjectEvidenceLimits {
 
 fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
     protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("protected B1 full Item family")
+}
+
+fn decoded_json_fields(bytes: &[u8]) -> usize {
+    fn count(value: &serde_json::Value) -> usize {
+        1 + match value {
+            serde_json::Value::Array(values) => values.iter().map(count).sum::<usize>(),
+            serde_json::Value::Object(values) => values.values().map(count).sum::<usize>(),
+            _ => 0,
+        }
+    }
+
+    count(&serde_json::from_slice(bytes).expect("canonical JSON document"))
 }
 
 fn decoded_json_string_bytes(bytes: &[u8]) -> usize {
@@ -835,16 +847,22 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
     let snapshot = documents
         .into_snapshot(full_family_limits())
         .expect("full-family snapshot");
-    let measured = snapshot
+    let max_strings = snapshot
         .documents()
         .iter()
         .map(|(locator, bytes)| (locator.as_str(), decoded_json_string_bytes(bytes)))
         .max_by_key(|(_, string_bytes)| *string_bytes)
         .expect("canonical project documents");
+    let max_fields = snapshot
+        .documents()
+        .iter()
+        .map(|(locator, bytes)| (locator.as_str(), decoded_json_fields(bytes)))
+        .max_by_key(|(_, fields)| *fields)
+        .expect("canonical project documents");
     assert_eq!(
-        measured,
-        ("CONTROLLED_RED", 0),
-        "CONTROLLED_RED_CAPTURE_FULL_FAMILY_STRING_BYTES"
+        (max_strings, max_fields),
+        (("CONTROLLED_RED", 0), ("CONTROLLED_RED", 0)),
+        "CONTROLLED_RED_CAPTURE_FULL_FAMILY_JSON_BUDGETS"
     );
     let project = snapshot
         .parse(full_family_limits())
