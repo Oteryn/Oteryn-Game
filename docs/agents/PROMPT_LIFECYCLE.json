@@ -372,7 +372,7 @@
     },
     {
       "prompt_id": "OTV2_TERRA_GAME_CONTROL_PLANE",
-      "path": "docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md",
+      "path": "docs/agents/prompts/retired/OTV2_TERRA_GAME_CONTROL_PLANE.md",
       "version": "1.2",
       "status": "retired",
       "owner": "historical-implementation-programme-control-plane",
