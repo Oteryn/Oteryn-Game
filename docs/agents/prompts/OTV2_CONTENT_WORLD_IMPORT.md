@@ -27,6 +27,24 @@ Nie wracaj do seryjnego importu lub native-bindingu po jednym rekordzie jako nor
 
 Reimport porównuje stary baseline, nowe źródło i lokalne poprawki; nie nadpisuje ich w ciemno. Rename/rechunk nie zmienia PlacementKey, copy jest nowym placementem, ambiguous matching jest konfliktem. Nie zmieniaj Reference/Evolved granicy po cichu.
 
+
+## Guard konwergencji Item Content
+
+Dla rodziny Item sukces mierz zmianą stanu produktu/danych, nie liczbą kolejnych raportów lub generacji. Na wejściu i wyjściu zapisz co najmniej: resolved/ambiguous/conflict identities, `PROVEN|DERIVED` target-continuity, promotable fields oraz już canonical-promoted fields.
+
+Generacja liczy się jako realny przyrost tylko wtedy, gdy robi co najmniej jedno z poniższych:
+
+- zmniejsza unresolved/ambiguous/conflict przez mocniejsze exact bindings;
+- zwiększa liczbę pól z continuity `PROVEN|DERIVED` albo promotable fields;
+- przekazuje niepusty, dokładnie wskazany promotable set do CW3 do canonical promotion;
+- zamyka konkretny wymagany artifact/runtime/client consumer dla już promowanych danych.
+
+Jeżeli `promotable_fields == 0`, **nie** uruchamiaj ani nie proponuj pustej fazy semantic promotion. Następny krok musi być source-resolution/evidence-expansion ukierunkowany na rzeczywisty blocker: przede wszystkim identity ambiguity i continuity do target cut. Używaj exact source IDs/bindings, rewizji historycznych obejmujących target cut oraz niezależnych/official/structured źródeł zgodnie z rejestrem evidence; nie zastępuj dowodu majority vote.
+
+Evidence/schema/rule generation bez zmiany powyższych metryk jest dopuszczalna tylko jako jeden konkretny konieczny prerequisite i musi wskazać następną mutację, która zmieni stan produktu. Nie łańcuchuj kolejnych zero-delta evidence/checkpoint generations bez nowej informacji zewnętrznej albo dokładnego architecture blocker.
+
+Gdy pojawi się niepusty eligible set, przekaż go bezpośrednio do istniejącego CW3/#749 lineage do bulk promotion. Nie twórz po drodze nowego rule engine, parsera, modelu ani schema phase, chyba że dokładnie zweryfikowane pole nie ma reprezentacji w chronionym modelu.
+
 ## Akceptacja
 
 Ta sama przypięta partia i mapping dają ten sam wynik; reimport zachowuje poprawki; missing/duplicate/conflicting records są rozliczone; selected closure jest kompletne albo dokładnie niedopuszczone. Dostarcz źródła/rewizje, pole→binding mapping, counts/loss report i wykonane testy. Nie ogłaszaj runtime/PG/parity PASS po ekstrakcji. Zakończ successor footer; zwykłym odbiorcą zaakceptowanych danych jest CW3, a konkretne nierozstrzygnięte reguły wracają do właściwej decyzji/evidence, nie nowego frameworka.
