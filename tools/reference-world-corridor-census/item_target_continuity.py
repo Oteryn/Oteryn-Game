@@ -255,16 +255,39 @@ def _extract_revision_content(raw: dict[str, Any], collector) -> dict[str, Any]:
     ):
         raise ContinuityError("HISTORY_REVISION_SHAPE_INVALID")
     content = slots["main"].get("content")
-    collector.bounded_text(
-        content,
-        label="WIKITEXT",
-        max_bytes=collector.MAX_WIKITEXT_BYTES,
-    )
-    extracted = collector.extract_infobox_item(content)
+    if not isinstance(content, str):
+        return {
+            "revision_id": revid,
+            "revision_timestamp": timestamp,
+            "source_digest": None,
+            "parse_state": "UNPARSED",
+            "parse_error": "WIKITEXT_NOT_STRING",
+            "normalized_fields": {},
+            "infobox_present": False,
+        }
+    source_digest = sha256_bytes(content.encode("utf-8"))
+    try:
+        collector.bounded_text(
+            content,
+            label="WIKITEXT",
+            max_bytes=collector.MAX_WIKITEXT_BYTES,
+        )
+        extracted = collector.extract_infobox_item(content)
+    except collector.CurrentSourceError as exc:
+        return {
+            "revision_id": revid,
+            "revision_timestamp": timestamp,
+            "source_digest": source_digest,
+            "parse_state": "UNPARSED",
+            "parse_error": str(exc).split(":", 1)[0],
+            "normalized_fields": {},
+            "infobox_present": False,
+        }
     return {
         "revision_id": revid,
         "revision_timestamp": timestamp,
-        "source_digest": sha256_bytes(content.encode("utf-8")),
+        "source_digest": source_digest,
+        "parse_state": "PARSED",
         "normalized_fields": extracted["mapped"],
         "infobox_present": extracted["infobox_present"],
     }
