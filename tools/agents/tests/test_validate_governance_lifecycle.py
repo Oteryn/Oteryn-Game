@@ -175,5 +175,39 @@ class GovernanceLifecycleTests(unittest.TestCase):
 
         self.assertEqual(validator.validate_active_task_live_state(request), [])
 
+    def test_active_task_live_state_can_scope_to_candidate_packets(self) -> None:
+        self.write(
+            "docs/agents/tasks/active/OTV2-selected.md",
+            "# task\n\`\`\`yaml\nstatus: validating\nissue: 30\npr: 40\n\`\`\`\n",
+        )
+        self.write(
+            "docs/agents/tasks/active/OTV2-unrelated-terminal.md",
+            "# task\n\`\`\`yaml\nstatus: validating\nissue: 31\npr: 41\n\`\`\`\n",
+        )
+        requested: list[str] = []
+
+        def request(url: str) -> object:
+            requested.append(url)
+            if url.endswith("/pulls/40"):
+                return {"state": "open", "merged_at": None}
+            if url.endswith("/issues/30"):
+                return {"state": "open"}
+            if url.endswith("/pulls/41"):
+                return {"state": "closed", "merged_at": "2026-09-22T00:00:00Z"}
+            if url.endswith("/issues/31"):
+                return {"state": "open"}
+            raise AssertionError(url)
+
+        self.assertEqual(
+            validator.validate_active_task_live_state(
+                request,
+                {"docs/agents/tasks/active/OTV2-selected.md"},
+            ),
+            [],
+        )
+        self.assertEqual(len(requested), 2)
+        self.assertTrue(all("/40" in url or "/30" in url for url in requested))
+
+
 if __name__ == "__main__":
     unittest.main()
