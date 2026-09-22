@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/control-plane-simplification-745-v2
 issue: 745
-pr: 748
+pr: null
 base_sha: bbda147eedc7b01c39827ab4784b5760032b1237
 head_sha: null
 final_head_sha: null
@@ -69,11 +69,11 @@ No ruleset/protection change, no direct merge/auto-merge substitute, no Merge Qu
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #748 phase-one candidate is path-disjoint from #739, tolerates protected-main advancement without freshness merge-up, and collapses retired coordinator successors directly onto Work
+last_progress: PR #748 phase-one candidate is path-disjoint from #739, tolerates protected-main advancement without freshness merge-up, and collapses retired coordinator successors directly onto Work; Issue #745 remains the canonical live authority across phase 2
 status: validating
 branch: ci/control-plane-simplification-745-v2
 head_sha: null
-pr: 748
+pr: null
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
