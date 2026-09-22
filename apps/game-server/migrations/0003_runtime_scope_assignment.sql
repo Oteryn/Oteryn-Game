@@ -1,0 +1,339 @@
+-- GameNode process-incarnation registration (GAME-NODE-REGISTRATION-BOOTSTRAP-AUTH-V1)
+-- and the Channel-only runtime-scope assignment authority (OPS-SCOPE-ASSIGNMENT-FENCING-V1).
+-- No roles are created here. Every new relation and function is closed to PUBLIC;
+-- deployment provisioning grants the dedicated assignment-writer, control and
+-- GameNode runtime roles separately. Ordinary runtime roles receive no table
+-- mutation privilege and reach registration only through the definer functions.
+
+CREATE FUNCTION game_node_is_uuid_v7(value UUID) RETURNS BOOLEAN
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT value IS NOT NULL
+        AND (get_byte(uuid_send(value), 6) >> 4) = 7
+        AND (get_byte(uuid_send(value), 8) & 192) = 128
+$$;
+
+-- Writer-owned monotonic registration revisions. Never reset or deleted.
+CREATE TABLE game_node_registration_writer (
+    writer_id SMALLINT PRIMARY KEY CHECK (writer_id = 1),
+    registration_revision_high_water NUMERIC(20, 0) NOT NULL
+        CHECK (registration_revision_high_water BETWEEN 0 AND 18446744073709551615)
+);
+INSERT INTO game_node_registration_writer (writer_id, registration_revision_high_water) VALUES (1, 0);
+
+-- One-launch bootstrap authorizations. Only the SHA-256 digest of the launch
+-- secret is retained; a consumed authorization is never reusable.
+CREATE TABLE game_node_bootstrap_authorizations (
+    authorization_digest BYTEA PRIMARY KEY CHECK (octet_length(authorization_digest) = 32),
+    launch_binding TEXT NOT NULL UNIQUE CHECK (
+        octet_length(launch_binding) BETWEEN 1 AND 128
+        AND launch_binding !~ '[^A-Za-z0-9._:-]'
+    ),
+    supersedes_node_id UUID NULL CHECK (supersedes_node_id IS NULL OR game_node_is_uuid_v7(supersedes_node_id)),
+    issued_at BIGINT NOT NULL CHECK (issued_at >= 0),
+    consumed_node_id UUID NULL UNIQUE,
+    consumed_at BIGINT NULL CHECK (consumed_at IS NULL OR consumed_at >= 0),
+    CHECK ((consumed_node_id IS NULL) = (consumed_at IS NULL)),
+    CHECK (consumed_node_id IS NULL OR supersedes_node_id IS NULL OR consumed_node_id <> supersedes_node_id)
+);
+
+-- state: 1 CURRENT, 2 REVOKED, 3 SUPERSEDED. A NodeId names one process incarnation.
+CREATE TABLE game_node_registrations (
+    node_id UUID PRIMARY KEY CHECK (game_node_is_uuid_v7(node_id)),
+    registration_revision NUMERIC(20, 0) NOT NULL UNIQUE
+        CHECK (registration_revision BETWEEN 1 AND 18446744073709551615),
+    authorization_digest BYTEA NOT NULL UNIQUE
+        REFERENCES game_node_bootstrap_authorizations (authorization_digest),
+    launch_binding TEXT NOT NULL,
+    state SMALLINT NOT NULL CHECK (state IN (1, 2, 3)),
+    registered_at BIGINT NOT NULL CHECK (registered_at >= 0),
+    ended_at BIGINT NULL CHECK (ended_at IS NULL OR ended_at >= registered_at),
+    superseded_by UUID NULL REFERENCES game_node_registrations (node_id),
+    CHECK ((state = 1) = (ended_at IS NULL)),
+    CHECK ((state = 3) = (superseded_by IS NOT NULL))
+);
+ALTER TABLE game_node_bootstrap_authorizations
+    ADD CONSTRAINT game_node_authorization_supersedes
+        FOREIGN KEY (supersedes_node_id) REFERENCES game_node_registrations (node_id),
+    ADD CONSTRAINT game_node_authorization_consumed
+        FOREIGN KEY (consumed_node_id) REFERENCES game_node_registrations (node_id);
+
+CREATE FUNCTION game_node_registration_writer_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'DELETE' OR NEW.writer_id <> OLD.writer_id
+       OR NEW.registration_revision_high_water <= OLD.registration_revision_high_water THEN
+        RAISE EXCEPTION 'GameNode registration high-water cannot roll back' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_node_registration_writer_guard BEFORE UPDATE OR DELETE
+    ON game_node_registration_writer FOR EACH ROW EXECUTE FUNCTION game_node_registration_writer_guard();
+
+CREATE FUNCTION game_node_bootstrap_authorization_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'DELETE'
+       OR NEW.authorization_digest <> OLD.authorization_digest
+       OR NEW.launch_binding <> OLD.launch_binding
+       OR NEW.supersedes_node_id IS DISTINCT FROM OLD.supersedes_node_id
+       OR NEW.issued_at <> OLD.issued_at
+       OR OLD.consumed_node_id IS NOT NULL
+       OR NEW.consumed_node_id IS NULL THEN
+        RAISE EXCEPTION 'GameNode bootstrap authorization is single-use and immutable' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_node_bootstrap_authorization_guard BEFORE UPDATE OR DELETE
+    ON game_node_bootstrap_authorizations FOR EACH ROW EXECUTE FUNCTION game_node_bootstrap_authorization_guard();
+
+CREATE FUNCTION game_node_registration_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'DELETE'
+       OR NEW.node_id <> OLD.node_id
+       OR NEW.registration_revision <> OLD.registration_revision
+       OR NEW.authorization_digest <> OLD.authorization_digest
+       OR NEW.launch_binding <> OLD.launch_binding
+       OR NEW.registered_at <> OLD.registered_at
+       OR OLD.state <> 1
+       OR NEW.state = 1 THEN
+        RAISE EXCEPTION 'GameNode registration can only leave CURRENT once' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_node_registration_guard BEFORE UPDATE OR DELETE
+    ON game_node_registrations FOR EACH ROW EXECUTE FUNCTION game_node_registration_guard();
+
+-- GameNode registration boundary. The caller proves one-launch authorization by
+-- presenting its secret; the NodeId is never a credential.
+CREATE FUNCTION game_node_register(p_authorization BYTEA, p_launch_binding TEXT, p_node_id UUID)
+RETURNS NUMERIC
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    v_digest BYTEA;
+    v_authorization game_node_bootstrap_authorizations%ROWTYPE;
+    v_existing game_node_registrations%ROWTYPE;
+    v_revision NUMERIC(20, 0);
+    v_now BIGINT := floor(extract(epoch FROM statement_timestamp()))::BIGINT;
+BEGIN
+    IF p_authorization IS NULL OR octet_length(p_authorization) <> 32
+       OR p_launch_binding IS NULL OR p_node_id IS NULL OR NOT game_node_is_uuid_v7(p_node_id) THEN
+        RAISE EXCEPTION 'GameNode registration rejected' USING ERRCODE = 'OTN01';
+    END IF;
+    v_digest := sha256(p_authorization);
+    SELECT * INTO v_authorization FROM game_node_bootstrap_authorizations
+        WHERE authorization_digest = v_digest FOR UPDATE;
+    IF NOT FOUND OR v_authorization.launch_binding <> p_launch_binding THEN
+        RAISE EXCEPTION 'GameNode registration rejected' USING ERRCODE = 'OTN01';
+    END IF;
+    IF v_authorization.consumed_node_id IS NOT NULL THEN
+        -- Lost-response reconciliation returns the original result only.
+        IF v_authorization.consumed_node_id <> p_node_id THEN
+            RAISE EXCEPTION 'GameNode registration rejected' USING ERRCODE = 'OTN01';
+        END IF;
+        SELECT registration_revision INTO v_revision FROM game_node_registrations
+            WHERE node_id = p_node_id AND authorization_digest = v_digest;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'GameNode registration state is contradictory' USING ERRCODE = 'XX000';
+        END IF;
+        RETURN v_revision;
+    END IF;
+    PERFORM 1 FROM game_node_registrations WHERE node_id = p_node_id;
+    IF FOUND THEN
+        RAISE EXCEPTION 'GameNode registration rejected' USING ERRCODE = 'OTN01';
+    END IF;
+    SELECT registration_revision_high_water INTO v_revision
+        FROM game_node_registration_writer WHERE writer_id = 1 FOR UPDATE;
+    IF NOT FOUND OR v_revision >= 18446744073709551615 THEN
+        RAISE EXCEPTION 'GameNode registration revision unavailable' USING ERRCODE = 'OTN01';
+    END IF;
+    PERFORM 1 FROM game_node_registrations WHERE registration_revision > v_revision;
+    IF FOUND THEN
+        RAISE EXCEPTION 'GameNode registration high-water regressed' USING ERRCODE = 'XX000';
+    END IF;
+    v_revision := v_revision + 1;
+    UPDATE game_node_registration_writer SET registration_revision_high_water = v_revision WHERE writer_id = 1;
+    INSERT INTO game_node_registrations
+        (node_id, registration_revision, authorization_digest, launch_binding, state, registered_at)
+        VALUES (p_node_id, v_revision, v_digest, p_launch_binding, 1, v_now);
+    UPDATE game_node_bootstrap_authorizations SET consumed_node_id = p_node_id, consumed_at = v_now
+        WHERE authorization_digest = v_digest;
+    IF v_authorization.supersedes_node_id IS NOT NULL THEN
+        SELECT * INTO v_existing FROM game_node_registrations
+            WHERE node_id = v_authorization.supersedes_node_id FOR UPDATE;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'GameNode registration state is contradictory' USING ERRCODE = 'XX000';
+        END IF;
+        IF v_existing.state = 1 THEN
+            UPDATE game_node_registrations SET state = 3, ended_at = v_now, superseded_by = p_node_id
+                WHERE node_id = v_authorization.supersedes_node_id;
+        END IF;
+    END IF;
+    RETURN v_revision;
+END; $$;
+
+-- Current-incarnation primitive. Returns true only for the exact current
+-- incarnation and holds a share lock until the caller's transaction ends, so a
+-- concurrent revoke/supersede serializes with the caller's fenced mutation.
+CREATE FUNCTION game_node_lock_current_registration(p_node_id UUID, p_registration_revision NUMERIC)
+RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    PERFORM 1 FROM game_node_registrations
+        WHERE node_id = p_node_id AND registration_revision = p_registration_revision AND state = 1
+        FOR SHARE;
+    RETURN FOUND;
+END; $$;
+
+CREATE FUNCTION game_node_require_current(p_node_id UUID, p_registration_revision NUMERIC)
+RETURNS VOID
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    IF NOT game_node_lock_current_registration(p_node_id, p_registration_revision) THEN
+        RAISE EXCEPTION 'GameNode process incarnation is not current' USING ERRCODE = 'OTN02';
+    END IF;
+END; $$;
+
+-- Assignment writer namespace: writer-allocated source revisions only.
+CREATE TABLE game_runtime_scope_assignment_writer (
+    writer_id SMALLINT PRIMARY KEY CHECK (writer_id = 1),
+    source_revision_high_water NUMERIC(20, 0) NOT NULL
+        CHECK (source_revision_high_water BETWEEN 0 AND 18446744073709551615)
+);
+INSERT INTO game_runtime_scope_assignment_writer (writer_id, source_revision_high_water) VALUES (1, 0);
+
+-- One current record per supported Channel scope. state: 1 ASSIGNED, 2 REVOKED.
+CREATE TABLE game_runtime_scope_assignments (
+    scope_key BYTEA PRIMARY KEY,
+    world_id UUID NOT NULL CHECK (game_node_is_uuid_v7(world_id)),
+    channel_id UUID NOT NULL CHECK (game_node_is_uuid_v7(channel_id)),
+    ownership_generation NUMERIC(20, 0) NOT NULL
+        CHECK (ownership_generation BETWEEN 1 AND 18446744073709551615),
+    state SMALLINT NOT NULL CHECK (state IN (1, 2)),
+    holder_node_id UUID NULL REFERENCES game_node_registrations (node_id),
+    holder_registration_revision NUMERIC(20, 0) NULL,
+    source_revision NUMERIC(20, 0) NOT NULL UNIQUE
+        CHECK (source_revision BETWEEN 1 AND 18446744073709551615),
+    decision_identity TEXT NOT NULL UNIQUE CHECK (octet_length(decision_identity) BETWEEN 1 AND 64),
+    operation_key BYTEA NOT NULL CHECK (octet_length(operation_key) = 32),
+    decided_at BIGINT NOT NULL CHECK (decided_at >= 0),
+    CHECK (scope_key = '\x01'::BYTEA || uuid_send(world_id) || uuid_send(channel_id)),
+    CHECK ((state = 1) = (holder_node_id IS NOT NULL)),
+    CHECK ((holder_node_id IS NULL) = (holder_registration_revision IS NULL))
+);
+
+-- Immutable receipt per accepted operation identity.
+CREATE TABLE game_runtime_scope_assignment_receipts (
+    operation_key BYTEA PRIMARY KEY CHECK (octet_length(operation_key) = 32),
+    command BYTEA NOT NULL CHECK (octet_length(command) BETWEEN 1 AND 1024),
+    scope_key BYTEA NOT NULL REFERENCES game_runtime_scope_assignments (scope_key),
+    ownership_generation NUMERIC(20, 0) NOT NULL
+        CHECK (ownership_generation BETWEEN 1 AND 18446744073709551615),
+    state SMALLINT NOT NULL CHECK (state IN (1, 2)),
+    holder_node_id UUID NULL,
+    holder_registration_revision NUMERIC(20, 0) NULL,
+    source_revision NUMERIC(20, 0) NOT NULL UNIQUE
+        CHECK (source_revision BETWEEN 1 AND 18446744073709551615),
+    decision_identity TEXT NOT NULL UNIQUE CHECK (octet_length(decision_identity) BETWEEN 1 AND 64),
+    decided_at BIGINT NOT NULL CHECK (decided_at >= 0),
+    fenced_publication_revision NUMERIC(20, 0) NULL
+        CHECK (fenced_publication_revision IS NULL OR fenced_publication_revision BETWEEN 1 AND 18446744073709551615),
+    CHECK ((state = 1) = (holder_node_id IS NOT NULL)),
+    CHECK ((holder_node_id IS NULL) = (holder_registration_revision IS NULL))
+);
+
+-- NASG-INFLIGHT durable custody: the exact binding is checkpointed before the
+-- authoritative transaction and is cleared only by that transaction or by
+-- reconciliation under the same row lock.
+CREATE TABLE game_runtime_scope_assignment_slots (
+    writer_registration TEXT PRIMARY KEY CHECK (
+        octet_length(writer_registration) BETWEEN 1 AND 128
+        AND writer_registration !~ '[^A-Za-z0-9._:-]'
+    ),
+    operation_key BYTEA NULL CHECK (operation_key IS NULL OR octet_length(operation_key) = 32),
+    command BYTEA NULL CHECK (command IS NULL OR octet_length(command) BETWEEN 1 AND 1024),
+    checkpointed_at BIGINT NULL CHECK (checkpointed_at IS NULL OR checkpointed_at >= 0),
+    CHECK ((operation_key IS NULL) = (command IS NULL)),
+    CHECK ((command IS NULL) = (checkpointed_at IS NULL))
+);
+
+CREATE FUNCTION game_runtime_scope_assignment_writer_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'DELETE' OR NEW.writer_id <> OLD.writer_id
+       OR NEW.source_revision_high_water <= OLD.source_revision_high_water THEN
+        RAISE EXCEPTION 'runtime-scope assignment writer high-water cannot roll back' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_runtime_scope_assignment_writer_guard BEFORE UPDATE OR DELETE
+    ON game_runtime_scope_assignment_writer FOR EACH ROW EXECUTE FUNCTION game_runtime_scope_assignment_writer_guard();
+
+CREATE FUNCTION game_runtime_scope_assignment_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'DELETE'
+       OR NEW.scope_key <> OLD.scope_key
+       OR NEW.world_id <> OLD.world_id
+       OR NEW.channel_id <> OLD.channel_id
+       OR NEW.ownership_generation <= OLD.ownership_generation
+       OR NEW.source_revision <= OLD.source_revision THEN
+        RAISE EXCEPTION 'runtime-scope assignment cannot roll back, reuse a generation or be deleted' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_runtime_scope_assignment_guard BEFORE UPDATE OR DELETE
+    ON game_runtime_scope_assignments FOR EACH ROW EXECUTE FUNCTION game_runtime_scope_assignment_guard();
+
+CREATE TRIGGER game_runtime_scope_assignment_receipt_immutable BEFORE UPDATE OR DELETE
+    ON game_runtime_scope_assignment_receipts FOR EACH ROW EXECUTE FUNCTION game_durability_reject_history_mutation();
+
+CREATE FUNCTION game_runtime_scope_assignment_slot_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'DELETE' OR NEW.writer_registration <> OLD.writer_registration
+       OR (OLD.operation_key IS NOT NULL AND NEW.operation_key IS NOT NULL
+           AND (NEW.operation_key <> OLD.operation_key OR NEW.command <> OLD.command)) THEN
+        RAISE EXCEPTION 'runtime-scope assignment slot binding is immutable until cleared' USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_runtime_scope_assignment_slot_guard BEFORE UPDATE OR DELETE
+    ON game_runtime_scope_assignment_slots FOR EACH ROW EXECUTE FUNCTION game_runtime_scope_assignment_slot_guard();
+
+-- Readiness fence: once a Channel scope has an assignment record, a Runtime
+-- guard may be ready only for the exact current ASSIGNED generation whose holder
+-- is the current registered process incarnation. Replaced/revoked holders and
+-- older generations cannot publish or restore readiness.
+CREATE FUNCTION game_runtime_guard_requires_current_assignment() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    v_assignment game_runtime_scope_assignments%ROWTYPE;
+BEGIN
+    IF NEW.ready THEN
+        SELECT * INTO v_assignment FROM game_runtime_scope_assignments
+            WHERE scope_key = NEW.scope_key FOR SHARE;
+        IF FOUND AND NOT (
+            v_assignment.state = 1
+            AND v_assignment.ownership_generation = NEW.ownership_generation
+            AND game_node_lock_current_registration(
+                v_assignment.holder_node_id, v_assignment.holder_registration_revision)
+        ) THEN
+            RAISE EXCEPTION 'runtime readiness requires the current scope assignment' USING ERRCODE = '23514';
+        END IF;
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_runtime_guard_requires_current_assignment BEFORE INSERT OR UPDATE
+    ON game_durability_admission_runtime_guards FOR EACH ROW
+    EXECUTE FUNCTION game_runtime_guard_requires_current_assignment();
+
+REVOKE ALL ON TABLE
+    game_node_registration_writer,
+    game_node_bootstrap_authorizations,
+    game_node_registrations,
+    game_runtime_scope_assignment_writer,
+    game_runtime_scope_assignments,
+    game_runtime_scope_assignment_receipts,
+    game_runtime_scope_assignment_slots
+FROM PUBLIC;
+REVOKE ALL ON FUNCTION
+    game_node_register(BYTEA, TEXT, UUID),
+    game_node_lock_current_registration(UUID, NUMERIC),
+    game_node_require_current(UUID, NUMERIC),
+    game_runtime_guard_requires_current_assignment()
+FROM PUBLIC;
