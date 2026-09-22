@@ -314,14 +314,14 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
+      - name: Test canonical PG/SIM gate regressions
+        run: python tools/repository/test_validate_pr_gate_pg_sim.py
+
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
 
       - name: Validate repository policy
         run: python tools/repository/validate_repository_policy.py
-
-      - name: Test canonical PG/SIM gate regressions
-        run: python tools/repository/test_validate_pr_gate_pg_sim.py
 
   dependency_review:
     name: Merge gate / dependency review
