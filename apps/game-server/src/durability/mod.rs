@@ -19,7 +19,8 @@ pub use schema::{MigrationExecutor, SchemaCompatibility};
 mod native_admission_source_linkage {
     use super::DurabilityRoot;
     use super::native_admission_source::{
-        DescriptorRegistration, FreshStoreProvenance, PendingPublication, SourceObservation,
+        DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
+        PendingPublication, SourceObservation,
     };
 
     #[test]
@@ -28,6 +29,20 @@ mod native_admission_source_linkage {
         let _ = std::mem::size_of::<DescriptorRegistration>();
         let _ = std::mem::size_of::<SourceObservation>();
         let _ = std::mem::size_of::<PendingPublication>();
+        let _ = [
+            NativeSourceOperation::ReadAccountSecurityV1,
+            NativeSourceOperation::ReadFreshSigningTrustV1,
+            NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+            NativeSourceOperation::ReadRecoverySigningTrustV2,
+        ];
+        let _ = NativeSourceOperation::parse("ReadAccountSecurityV1");
+        let _ = NativeSourceSubject::account_security("01890f4c-3b2a-7cc2-8d11-9a321b7c0001");
+        let _ = NativeSourceSubject::signing_trust(
+            "urn:oteryn:platform:game-admission",
+            "oteryn-pre-admission-v1",
+            "fresh_admission",
+            "key",
+        );
         let _ = DurabilityRoot::initialize_native_admission_source;
         let _ = DurabilityRoot::register_native_admission_descriptor;
         let _ = DurabilityRoot::accept_native_source_observation;

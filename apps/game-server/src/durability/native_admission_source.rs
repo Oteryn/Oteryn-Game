@@ -6,10 +6,181 @@ use sqlx::Row;
 
 type Result<T> = std::result::Result<T, DurabilityError>;
 
+const SOURCE_AUTHORITY_BYTES: usize = 128;
+const DESCRIPTOR_BYTES: usize = 4096;
+const PENDING_CHECKPOINT_BYTES: usize = 16_384;
+const JSON_STRING_BYTES: usize = 256;
+const HTTP_BODY_BYTES: usize = 8192;
+const FRESH_ISSUER: &str = "urn:oteryn:platform:game-admission";
+const FRESH_PROFILE: &str = "oteryn-pre-admission-v1";
+const RECOVERY_ISSUER: &str = "urn:oteryn:platform:game-recovery";
+const RECOVERY_PROFILE: &str = "oteryn-reauth-recovery-v1";
+const RECOVERY_KEY_PURPOSE: &str = "existing_actor_recovery";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NativeSourceOperation {
+    ReadAccountSecurityV1,
+    ReadFreshSigningTrustV1,
+    ReadRecoveryAccountSecurityV2,
+    ReadRecoverySigningTrustV2,
+}
+
+impl NativeSourceOperation {
+    pub fn parse(value: &str) -> Result<Self> {
+        match value {
+            "ReadAccountSecurityV1" => Ok(Self::ReadAccountSecurityV1),
+            "ReadFreshSigningTrustV1" => Ok(Self::ReadFreshSigningTrustV1),
+            "ReadRecoveryAccountSecurityV2" => Ok(Self::ReadRecoveryAccountSecurityV2),
+            "ReadRecoverySigningTrustV2" => Ok(Self::ReadRecoverySigningTrustV2),
+            _ => Err(DurabilityError::Unavailable),
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::ReadAccountSecurityV1 => "ReadAccountSecurityV1",
+            Self::ReadFreshSigningTrustV1 => "ReadFreshSigningTrustV1",
+            Self::ReadRecoveryAccountSecurityV2 => "ReadRecoveryAccountSecurityV2",
+            Self::ReadRecoverySigningTrustV2 => "ReadRecoverySigningTrustV2",
+        }
+    }
+
+    fn is_account(self) -> bool {
+        matches!(
+            self,
+            Self::ReadAccountSecurityV1 | Self::ReadRecoveryAccountSecurityV2
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum NativeSourceSubjectKind {
+    AccountSecurity {
+        account_id: String,
+    },
+    SigningTrust {
+        issuer: String,
+        profile: String,
+        key_purpose: String,
+        key_id: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSourceSubject {
+    kind: NativeSourceSubjectKind,
+}
+
+impl NativeSourceSubject {
+    pub fn account_security(account_id: impl Into<String>) -> Result<Self> {
+        let account_id = account_id.into();
+        if !canonical_uuid_v7(&account_id) {
+            return Err(DurabilityError::Unavailable);
+        }
+        Ok(Self {
+            kind: NativeSourceSubjectKind::AccountSecurity { account_id },
+        })
+    }
+
+    pub fn signing_trust(
+        issuer: impl Into<String>,
+        profile: impl Into<String>,
+        key_purpose: impl Into<String>,
+        key_id: impl Into<String>,
+    ) -> Result<Self> {
+        let subject = Self {
+            kind: NativeSourceSubjectKind::SigningTrust {
+                issuer: issuer.into(),
+                profile: profile.into(),
+                key_purpose: key_purpose.into(),
+                key_id: key_id.into(),
+            },
+        };
+        if !subject.valid_strings() {
+            return Err(DurabilityError::Unavailable);
+        }
+        Ok(subject)
+    }
+
+    fn valid_strings(&self) -> bool {
+        match &self.kind {
+            NativeSourceSubjectKind::AccountSecurity { account_id } => {
+                canonical_uuid_v7(account_id)
+            }
+            NativeSourceSubjectKind::SigningTrust {
+                issuer,
+                profile,
+                key_purpose,
+                key_id,
+            } => [issuer, profile, key_purpose, key_id]
+                .iter()
+                .all(|value| valid_bounded_text(value, JSON_STRING_BYTES)),
+        }
+    }
+
+    fn valid_for(&self, operation: NativeSourceOperation) -> bool {
+        match (&self.kind, operation) {
+            (NativeSourceSubjectKind::AccountSecurity { .. }, op) => op.is_account(),
+            (
+                NativeSourceSubjectKind::SigningTrust {
+                    issuer,
+                    profile,
+                    key_purpose,
+                    ..
+                },
+                NativeSourceOperation::ReadFreshSigningTrustV1,
+            ) => issuer == FRESH_ISSUER && profile == FRESH_PROFILE && !key_purpose.is_empty(),
+            (
+                NativeSourceSubjectKind::SigningTrust {
+                    issuer,
+                    profile,
+                    key_purpose,
+                    ..
+                },
+                NativeSourceOperation::ReadRecoverySigningTrustV2,
+            ) => {
+                issuer == RECOVERY_ISSUER
+                    && profile == RECOVERY_PROFILE
+                    && key_purpose == RECOVERY_KEY_PURPOSE
+            }
+            _ => false,
+        }
+    }
+
+    fn floor_key(&self) -> String {
+        match &self.kind {
+            NativeSourceSubjectKind::AccountSecurity { account_id } => {
+                format!("account:{account_id}")
+            }
+            NativeSourceSubjectKind::SigningTrust {
+                issuer,
+                profile,
+                key_purpose,
+                ..
+            } => length_bound_tuple("trust", &[issuer, profile, key_purpose]),
+        }
+    }
+
+    fn observation_key(&self) -> String {
+        match &self.kind {
+            NativeSourceSubjectKind::AccountSecurity { account_id } => {
+                format!("account:{account_id}")
+            }
+            NativeSourceSubjectKind::SigningTrust {
+                issuer,
+                profile,
+                key_purpose,
+                key_id,
+            } => length_bound_tuple("trust-observation", &[issuer, profile, key_purpose, key_id]),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FreshStoreProvenance {
     pub namespace: String,
     pub authorization: String,
+    pub source_authority: String,
     pub initialized_at: i64,
 }
 
@@ -23,8 +194,8 @@ pub struct DescriptorRegistration {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceObservation {
     pub source_authority: String,
-    pub operation: String,
-    pub semantic_namespace: String,
+    pub operation: NativeSourceOperation,
+    pub subject: NativeSourceSubject,
     pub source_revision: u64,
     pub decision_identity: String,
     pub observed_at: i64,
@@ -38,20 +209,61 @@ pub struct PendingPublication {
     pub checkpointed_at: i64,
 }
 
-fn valid_text(value: &str) -> bool {
-    !value.is_empty()
+fn valid_bounded_text(value: &str, max: usize) -> bool {
+    !value.is_empty() && value.len() <= max
 }
+
+fn valid_source_authority(value: &str) -> bool {
+    valid_bounded_text(value, SOURCE_AUTHORITY_BYTES)
+        && value.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'/' | b'-')
+        })
+}
+
+fn canonical_uuid_v7(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    bytes.len() == 36
+        && bytes[8] == b'-'
+        && bytes[13] == b'-'
+        && bytes[18] == b'-'
+        && bytes[23] == b'-'
+        && bytes[14] == b'7'
+        && matches!(bytes[19], b'8' | b'9' | b'a' | b'b')
+        && bytes.iter().enumerate().all(|(index, byte)| {
+            matches!(index, 8 | 13 | 18 | 23)
+                || byte.is_ascii_digit()
+                || matches!(byte, b'a'..=b'f')
+        })
+        && value != "00000000-0000-7000-8000-000000000000"
+}
+
+fn length_bound_tuple(prefix: &str, values: &[&String]) -> String {
+    let mut result = String::from(prefix);
+    for value in values {
+        result.push(':');
+        result.push_str(&value.len().to_string());
+        result.push(':');
+        result.push_str(value);
+    }
+    result
+}
+
 fn valid_descriptor(value: &DescriptorRegistration) -> bool {
-    value.revision > 0 && !value.facts.is_empty() && value.installed_at >= 0
+    value.revision > 0
+        && !value.facts.is_empty()
+        && value.facts.len() <= DESCRIPTOR_BYTES
+        && value.installed_at >= 0
 }
+
 fn valid_observation(value: &SourceObservation) -> bool {
-    valid_text(&value.source_authority)
-        && valid_text(&value.operation)
-        && valid_text(&value.semantic_namespace)
+    valid_source_authority(&value.source_authority)
+        && value.subject.valid_strings()
+        && value.subject.valid_for(value.operation)
         && value.source_revision > 0
-        && valid_text(&value.decision_identity)
+        && valid_bounded_text(&value.decision_identity, JSON_STRING_BYTES)
         && value.observed_at >= 0
         && !value.semantic_facts.is_empty()
+        && value.semantic_facts.len() <= HTTP_BODY_BYTES
 }
 
 impl DurabilityRoot {
@@ -60,8 +272,9 @@ impl DurabilityRoot {
         provenance: FreshStoreProvenance,
         descriptor: DescriptorRegistration,
     ) -> Result<()> {
-        if !valid_text(&provenance.namespace)
-            || !valid_text(&provenance.authorization)
+        if !valid_bounded_text(&provenance.namespace, JSON_STRING_BYTES)
+            || !valid_bounded_text(&provenance.authorization, JSON_STRING_BYTES)
+            || !valid_source_authority(&provenance.source_authority)
             || provenance.initialized_at < 0
             || !valid_descriptor(&descriptor)
         {
@@ -69,10 +282,10 @@ impl DurabilityRoot {
         }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let inserted = sqlx::query("INSERT INTO game_durability_native_source_registration (registration_id,bootstrap_namespace,bootstrap_provenance,descriptor_revision,descriptor_facts,initialized_at) VALUES (1,$1,$2,$3::text::numeric(20,0),$4,$5) ON CONFLICT DO NOTHING")
-                .bind(&provenance.namespace).bind(&provenance.authorization).bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(provenance.initialized_at).execute(&mut *tx).await?.rows_affected();
+            let inserted = sqlx::query("INSERT INTO game_durability_native_source_registration (registration_id,bootstrap_namespace,bootstrap_provenance,source_authority,descriptor_revision,descriptor_facts,initialized_at) VALUES (1,$1,$2,$3,$4::text::numeric(20,0),$5,$6) ON CONFLICT DO NOTHING")
+                .bind(&provenance.namespace).bind(&provenance.authorization).bind(&provenance.source_authority).bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(provenance.initialized_at).execute(&mut *tx).await?.rows_affected();
             if inserted == 0 { return Err(DurabilityError::Unavailable); }
-            sqlx::query("INSERT INTO game_durability_native_source_descriptor_history VALUES (1,$1::text::numeric(20,0),$2,$3)")
+            sqlx::query("INSERT INTO game_durability_native_source_descriptor_history (registration_id,descriptor_revision,descriptor_facts,installed_at) VALUES (1,$1::text::numeric(20,0),$2,$3)")
                 .bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_durability_native_source_publication_slots (registration_id,slot_id) VALUES (1,1),(1,2)").execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await
@@ -94,7 +307,7 @@ impl DurabilityRoot {
             let installed_at: i64 = row.try_get(2).map_err(|_| DurabilityError::InvalidStoredState)?;
             if descriptor.revision < current || (descriptor.revision == current && (descriptor.facts != facts || descriptor.installed_at != installed_at)) { return Err(DurabilityError::Unavailable); }
             if descriptor.revision == current { return commit_semantic_transaction(tx, deadline).await; }
-            sqlx::query("INSERT INTO game_durability_native_source_descriptor_history VALUES (1,$1::text::numeric(20,0),$2,$3)").bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_durability_native_source_descriptor_history (registration_id,descriptor_revision,descriptor_facts,installed_at) VALUES (1,$1::text::numeric(20,0),$2,$3)").bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).execute(&mut *tx).await?;
             sqlx::query("UPDATE game_durability_native_source_registration SET descriptor_revision=$1::text::numeric(20,0),descriptor_facts=$2 WHERE registration_id=1").bind(descriptor.revision.to_string()).bind(&descriptor.facts).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await
         })).await
@@ -107,23 +320,30 @@ impl DurabilityRoot {
         if !valid_observation(&observation) {
             return Err(DurabilityError::Unavailable);
         }
+        let operation = observation.operation.as_str();
+        let floor_subject = observation.subject.floor_key();
+        let observation_subject = observation.subject.observation_key();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let row = sqlx::query("SELECT source_revision::text,operation,decision_identity,observed_at,semantic_facts FROM game_durability_native_source_floors WHERE registration_id=1 AND source_authority=$1 AND semantic_namespace=$2 FOR UPDATE")
-                .bind(&observation.source_authority).bind(&observation.semantic_namespace).fetch_optional(&mut *tx).await?;
+            let registered = sqlx::query_scalar::<_, String>("SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE")
+                .fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
+            if registered != observation.source_authority { return Err(DurabilityError::Unavailable); }
+            let row = sqlx::query("SELECT source_revision::text,operation,observation_subject,decision_identity,observed_at,semantic_facts FROM game_durability_native_source_floors WHERE registration_id=1 AND source_authority=$1 AND floor_subject=$2 FOR UPDATE")
+                .bind(&observation.source_authority).bind(&floor_subject).fetch_optional(&mut *tx).await?;
             if let Some(row) = row {
                 let revision: u64 = row.try_get::<String,_>(0).map_err(|_| DurabilityError::InvalidStoredState)?.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
-                let exact = row.try_get::<String,_>(1).ok().as_deref() == Some(observation.operation.as_str())
-                    && row.try_get::<String,_>(2).ok().as_deref() == Some(observation.decision_identity.as_str())
-                    && row.try_get::<i64,_>(3).ok() == Some(observation.observed_at)
-                    && row.try_get::<Vec<u8>,_>(4).ok().as_deref() == Some(observation.semantic_facts.as_slice());
+                let exact = row.try_get::<String,_>(1).ok().as_deref() == Some(operation)
+                    && row.try_get::<String,_>(2).ok().as_deref() == Some(observation_subject.as_str())
+                    && row.try_get::<String,_>(3).ok().as_deref() == Some(observation.decision_identity.as_str())
+                    && row.try_get::<i64,_>(4).ok() == Some(observation.observed_at)
+                    && row.try_get::<Vec<u8>,_>(5).ok().as_deref() == Some(observation.semantic_facts.as_slice());
                 if observation.source_revision < revision || (observation.source_revision == revision && !exact) { return Err(DurabilityError::Unavailable); }
                 if observation.source_revision == revision { return commit_semantic_transaction(tx, deadline).await; }
-                sqlx::query("INSERT INTO game_durability_native_source_observation_history VALUES (1,$1,$2,$3,$4::text::numeric(20,0),$5,$6,$7)").bind(&observation.source_authority).bind(&observation.operation).bind(&observation.semantic_namespace).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
-                sqlx::query("UPDATE game_durability_native_source_floors SET operation=$3,source_revision=$4::text::numeric(20,0),decision_identity=$5,observed_at=$6,semantic_facts=$7 WHERE registration_id=1 AND source_authority=$1 AND semantic_namespace=$2").bind(&observation.source_authority).bind(&observation.semantic_namespace).bind(&observation.operation).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_durability_native_source_observation_history (registration_id,source_authority,operation,floor_subject,observation_subject,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5::text::numeric(20,0),$6,$7,$8)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_durability_native_source_floors SET operation=$3,observation_subject=$4,source_revision=$5::text::numeric(20,0),decision_identity=$6,observed_at=$7,semantic_facts=$8 WHERE registration_id=1 AND source_authority=$1 AND floor_subject=$2").bind(&observation.source_authority).bind(&floor_subject).bind(operation).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
             } else {
-                sqlx::query("INSERT INTO game_durability_native_source_observation_history VALUES (1,$1,$2,$3,$4::text::numeric(20,0),$5,$6,$7)").bind(&observation.source_authority).bind(&observation.operation).bind(&observation.semantic_namespace).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_durability_native_source_floors VALUES (1,$1,$2,$3,$4::text::numeric(20,0),$5,$6,$7)").bind(&observation.source_authority).bind(&observation.operation).bind(&observation.semantic_namespace).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_durability_native_source_observation_history (registration_id,source_authority,operation,floor_subject,observation_subject,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5::text::numeric(20,0),$6,$7,$8)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_durability_native_source_floors (registration_id,source_authority,operation,floor_subject,observation_subject,source_revision,decision_identity,observed_at,semantic_facts) VALUES (1,$1,$2,$3,$4,$5::text::numeric(20,0),$6,$7,$8)").bind(&observation.source_authority).bind(operation).bind(&floor_subject).bind(&observation_subject).bind(observation.source_revision.to_string()).bind(&observation.decision_identity).bind(observation.observed_at).bind(&observation.semantic_facts).execute(&mut *tx).await?;
             }
             commit_semantic_transaction(tx, deadline).await
         })).await
@@ -134,7 +354,10 @@ impl DurabilityRoot {
         operation_binding: Vec<u8>,
         checkpointed_at: i64,
     ) -> Result<i16> {
-        if operation_binding.is_empty() || checkpointed_at < 0 {
+        if operation_binding.is_empty()
+            || operation_binding.len() > PENDING_CHECKPOINT_BYTES
+            || checkpointed_at < 0
+        {
             return Err(DurabilityError::Unavailable);
         }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
@@ -152,6 +375,12 @@ impl DurabilityRoot {
         slot_id: i16,
         operation_binding: Vec<u8>,
     ) -> Result<()> {
+        if !matches!(slot_id, 1 | 2)
+            || operation_binding.is_empty()
+            || operation_binding.len() > PENDING_CHECKPOINT_BYTES
+        {
+            return Err(DurabilityError::Unavailable);
+        }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let changed = sqlx::query("UPDATE game_durability_native_source_publication_slots SET operation_binding=NULL,checkpointed_at=NULL WHERE registration_id=1 AND slot_id=$1 AND operation_binding=$2").bind(slot_id).bind(operation_binding).execute(&mut *tx).await?.rows_affected();
@@ -165,7 +394,12 @@ impl DurabilityRoot {
             sqlx::query_scalar::<_, i16>("SELECT registration_id FROM game_durability_native_source_registration WHERE registration_id=1")
                 .fetch_optional(&mut **holder).await?.ok_or(DurabilityError::Unavailable)?;
             let rows = sqlx::query("SELECT slot_id,operation_binding,checkpointed_at FROM game_durability_native_source_publication_slots WHERE registration_id=1 AND operation_binding IS NOT NULL ORDER BY slot_id").fetch_all(&mut **holder).await?;
-            rows.into_iter().map(|row| Ok(PendingPublication { slot_id: row.try_get(0).map_err(|_| DurabilityError::InvalidStoredState)?, operation_binding: row.try_get(1).map_err(|_| DurabilityError::InvalidStoredState)?, checkpointed_at: row.try_get(2).map_err(|_| DurabilityError::InvalidStoredState)? })).collect()
+            let publications: Vec<PendingPublication> = rows.into_iter().map(|row| Ok(PendingPublication { slot_id: row.try_get(0).map_err(|_| DurabilityError::InvalidStoredState)?, operation_binding: row.try_get(1).map_err(|_| DurabilityError::InvalidStoredState)?, checkpointed_at: row.try_get(2).map_err(|_| DurabilityError::InvalidStoredState)? })).collect::<Result<_>>()?;
+            let aggregate = publications.iter().try_fold(0usize, |total, publication| total.checked_add(publication.operation_binding.len())).ok_or(DurabilityError::InvalidStoredState)?;
+            if publications.len() > 2 || aggregate > 2 * PENDING_CHECKPOINT_BYTES || publications.iter().any(|publication| publication.operation_binding.is_empty() || publication.operation_binding.len() > PENDING_CHECKPOINT_BYTES) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            Ok(publications)
         })).await
     }
 }
