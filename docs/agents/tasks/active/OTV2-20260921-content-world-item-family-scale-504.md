@@ -4,7 +4,7 @@
 task_id: OTV2-20260921-content-world-item-family-scale-504
 title: Full-family Item identity registry and artifact v3
 mode: MIGRATE
-status: authoring
+status: qualification
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-family-scale-504
@@ -14,7 +14,7 @@ decision_comment: 5767823480
 allocation_comment: 5767897229
 base_sha: 0bbaa898e5d5a33f844786054e8c7e82148b6180
 expected_final_authoring_head: null
-pr: null
+pr: 737
 owner: Oteryn: work coordinator / content
 execution_route: api_native_authoring
 publication_route: frozen_api_authored_head
@@ -61,6 +61,11 @@ Identity-only Items use explicit `Unknown` physical/stack semantics, are non-mat
 - source/native uniqueness and closure;
 - existing 64 provenance revalidated against protected B1 evidence;
 - deterministic allocation digest;
+- full-family strict JSON resource profile is bound to the exact measured canonical requirement:
+  - `imports/candidates.json` decoded fields = `2,098,651`;
+  - `imports/candidates.json` decoded string bytes = `42,332,603`;
+  - exact limits must pass and each `exact-1` limit must fail closed;
+- allocation digest = `ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966`;
 - project validation uses indexed Item lookup (no O(n^2) scan);
 - canonical project round-trip;
 - v3 compile deterministic;
