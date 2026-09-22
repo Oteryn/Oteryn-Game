@@ -103,6 +103,35 @@
       ]
     },
     {
+      "program_id": "OTV2_REFERENCE_WORLD_CORRIDOR_CENSUS_511_ALLOCATION_20260910",
+      "path": "docs/agents/programs/archive/OTV2_REFERENCE_WORLD_CORRIDOR_CENSUS_511_ALLOCATION_20260910.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #511 closed on 2026-09-17",
+        "PR #525 merged on 2026-09-10 as bb4c0fce8fa12a38dd1675860de0620ce50ac0a6",
+        "current exact filename search found no live consumer at Issue #740 audit"
+      ],
+      "superseded_by": [
+        "current protected Reference corridor evidence",
+        "live GitHub Content/Reference lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_RUNTIME_ACTOR_CARRIER_PROTOTYPE_ALLOCATION_20260911",
+      "path": "docs/agents/programs/archive/OTV2_RUNTIME_ACTOR_CARRIER_PROTOTYPE_ALLOCATION_20260911.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "PR #568 merged on 2026-09-11 as 90a3f92434e32354ff1aaeac96d038bbc49eba9c",
+        "Issue #530 remains open on later preproduction/resource-evidence work and current exact filename search found no live consumer"
+      ],
+      "superseded_by": [
+        "docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_PREPRODUCTION_ALLOCATION_20260911.md",
+        "live GitHub Issue #530 lifecycle state"
+      ]
+    },
+    {
       "program_id": "OTV2_WP2_GAMESESSION_NONREUSE_AMENDMENT_20260907",
       "path": "docs/agents/programs/archive/OTV2_WP2_GAMESESSION_NONREUSE_AMENDMENT_20260907.md",
       "status": "historical",
