@@ -239,8 +239,12 @@ impl ReferenceArtifactProfile {
             Self::NativeItemBatchV2 => BATCH_MAX_ARTIFACT_BYTES,
             Self::NativeItemFamilyV3 => FAMILY_MAX_ARTIFACT_BYTES,
             Self::TypedItemV4 => match projection {
-                ReferenceArtifactProjection::ServerAuthoritative => TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
-                ReferenceArtifactProjection::ClientSafe => TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+                ReferenceArtifactProjection::ServerAuthoritative => {
+                    TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES
+                }
+                ReferenceArtifactProjection::ClientSafe => {
+                    TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES
+                }
             },
         }
     }
@@ -265,13 +269,19 @@ impl ReferenceArtifactProfile {
         }
     }
 
-    const fn is_typed(self) -> bool { matches!(self, Self::TypedItemV4) }
+    const fn is_typed(self) -> bool {
+        matches!(self, Self::TypedItemV4)
+    }
 
     const fn body_record_limit(self, projection: ReferenceArtifactProjection) -> usize {
         if self.is_typed() {
             match projection {
-                ReferenceArtifactProjection::ServerAuthoritative => TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES,
-                ReferenceArtifactProjection::ClientSafe => TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES,
+                ReferenceArtifactProjection::ServerAuthoritative => {
+                    TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES
+                }
+                ReferenceArtifactProjection::ClientSafe => {
+                    TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES
+                }
             }
         } else {
             MAX_BODY_RECORD_BYTES
@@ -1008,7 +1018,11 @@ fn encode_server_item(
     definitions: &[super::ReferenceDefinition],
 ) -> Result<Vec<u8>, ContentError> {
     if profile.is_typed() {
-        return encode_typed_item(item, ReferenceArtifactProjection::ServerAuthoritative, definitions);
+        return encode_typed_item(
+            item,
+            ReferenceArtifactProjection::ServerAuthoritative,
+            definitions,
+        );
     }
     if !item.semantics.is_all_unknown() {
         return Err(ContentError::InvalidArtifact(
@@ -1034,7 +1048,11 @@ fn encode_server_item(
     for destination in &item.legal_destinations {
         bytes.push(destination_byte(*destination));
     }
-    check_body_record_length(profile, ReferenceArtifactProjection::ServerAuthoritative, bytes.len())?;
+    check_body_record_length(
+        profile,
+        ReferenceArtifactProjection::ServerAuthoritative,
+        bytes.len(),
+    )?;
     Ok(bytes)
 }
 
@@ -1056,7 +1074,11 @@ fn encode_client_item(
         physical_class_byte(item.physical_class),
         stack_class_byte(item.stack_class),
     ];
-    check_body_record_length(profile, ReferenceArtifactProjection::ClientSafe, bytes.len())?;
+    check_body_record_length(
+        profile,
+        ReferenceArtifactProjection::ClientSafe,
+        bytes.len(),
+    )?;
     Ok(bytes)
 }
 
@@ -1119,7 +1141,11 @@ fn parse_server_item(
     if profile.is_typed() {
         return parse_typed_server_item(bytes, identities);
     }
-    check_body_record_length(profile, ReferenceArtifactProjection::ServerAuthoritative, bytes.len())?;
+    check_body_record_length(
+        profile,
+        ReferenceArtifactProjection::ServerAuthoritative,
+        bytes.len(),
+    )?;
     let mut reader = SliceReader::new(bytes);
     if reader.read_u8()? != BODY_RECORD_VERSION {
         return Err(ContentError::InvalidArtifact(
@@ -1173,7 +1199,11 @@ fn parse_client_item(
     if profile.is_typed() {
         return parse_typed_client_item(bytes, identities);
     }
-    check_body_record_length(profile, ReferenceArtifactProjection::ClientSafe, bytes.len())?;
+    check_body_record_length(
+        profile,
+        ReferenceArtifactProjection::ClientSafe,
+        bytes.len(),
+    )?;
     let mut reader = SliceReader::new(bytes);
     if reader.read_u8()? != BODY_RECORD_VERSION {
         return Err(ContentError::InvalidArtifact(
@@ -1234,17 +1264,25 @@ fn read_field<T>(
         1 => super::ReferenceItemField::NotApplicable,
         2 => super::ReferenceItemField::Conflict,
         3 => super::ReferenceItemField::Known(decode(reader)?),
-        _ => return Err(ContentError::InvalidArtifact("invalid Reference Item field state")),
+        _ => {
+            return Err(ContentError::InvalidArtifact(
+                "invalid Reference Item field state",
+            ));
+        }
     })
 }
 
-fn put_bool(bytes: &mut Vec<u8>, value: bool) { bytes.push(u8::from(value)); }
+fn put_bool(bytes: &mut Vec<u8>, value: bool) {
+    bytes.push(u8::from(value));
+}
 
 fn read_bool(reader: &mut SliceReader<'_>) -> Result<bool, ContentError> {
     match reader.read_u8()? {
         0 => Ok(false),
         1 => Ok(true),
-        _ => Err(ContentError::InvalidArtifact("invalid Reference Item boolean")),
+        _ => Err(ContentError::InvalidArtifact(
+            "invalid Reference Item boolean",
+        )),
     }
 }
 
@@ -1261,10 +1299,7 @@ fn put_utf8(bytes: &mut Vec<u8>, value: &str, max: usize) -> Result<(), ContentE
     Ok(())
 }
 
-fn read_utf8(
-    reader: &mut SliceReader<'_>,
-    max: usize,
-) -> Result<String, ContentError> {
+fn read_utf8(reader: &mut SliceReader<'_>, max: usize) -> Result<String, ContentError> {
     let length = usize::from(reader.read_u16()?);
     if length > max {
         return Err(ContentError::LimitExceeded {
@@ -1292,10 +1327,16 @@ fn read_rational(
     reader: &mut SliceReader<'_>,
 ) -> Result<super::ReferenceRationalPercent, ContentError> {
     let numerator = i64::from_be_bytes(
-        reader.take(8)?.try_into().map_err(|_| ContentError::Truncated)?,
+        reader
+            .take(8)?
+            .try_into()
+            .map_err(|_| ContentError::Truncated)?,
     );
     let denominator = u64::from_be_bytes(
-        reader.take(8)?.try_into().map_err(|_| ContentError::Truncated)?,
+        reader
+            .take(8)?
+            .try_into()
+            .map_err(|_| ContentError::Truncated)?,
     );
     super::ReferenceRationalPercent::new(numerator, denominator)
 }
@@ -1317,7 +1358,9 @@ fn target_from_ordinal(
 ) -> Result<super::ReferenceItemTarget, ContentError> {
     let entry = identities
         .get(usize::try_from(ordinal).map_err(|_| ContentError::InvalidSectionBounds)?)
-        .ok_or(ContentError::InvalidArtifact("dangling Reference Item target ordinal"))?;
+        .ok_or(ContentError::InvalidArtifact(
+            "dangling Reference Item target ordinal",
+        ))?;
     super::ReferenceItemTarget::new(
         entry.identity.key().as_str(),
         entry.identity.revision().as_str(),
@@ -1340,18 +1383,35 @@ fn read_target(
     target_from_ordinal(reader.read_u32()?, identities)
 }
 
-fn put_count(bytes: &mut Vec<u8>, actual: usize, limit: usize, resource: &'static str) -> Result<(), ContentError> {
+fn put_count(
+    bytes: &mut Vec<u8>,
+    actual: usize,
+    limit: usize,
+    resource: &'static str,
+) -> Result<(), ContentError> {
     if actual > limit {
-        return Err(ContentError::LimitExceeded { resource, actual, limit });
+        return Err(ContentError::LimitExceeded {
+            resource,
+            actual,
+            limit,
+        });
     }
     bytes.push(u8::try_from(actual).map_err(|_| ContentError::InvalidSectionBounds)?);
     Ok(())
 }
 
-fn read_count(reader: &mut SliceReader<'_>, limit: usize, resource: &'static str) -> Result<usize, ContentError> {
+fn read_count(
+    reader: &mut SliceReader<'_>,
+    limit: usize,
+    resource: &'static str,
+) -> Result<usize, ContentError> {
     let actual = usize::from(reader.read_u8()?);
     if actual > limit {
-        return Err(ContentError::LimitExceeded { resource, actual, limit });
+        return Err(ContentError::LimitExceeded {
+            resource,
+            actual,
+            limit,
+        });
     }
     Ok(actual)
 }
@@ -1388,8 +1448,15 @@ fn encode_typed_item(
     }
     bytes.push(stack_class_byte(item.stack_class));
     if projection == ReferenceArtifactProjection::ServerAuthoritative {
-        put_count(&mut bytes, item.legal_destinations.len(), 1, "Reference Item legal destinations")?;
-        for destination in &item.legal_destinations { bytes.push(destination_byte(*destination)); }
+        put_count(
+            &mut bytes,
+            item.legal_destinations.len(),
+            1,
+            "Reference Item legal destinations",
+        )?;
+        for destination in &item.legal_destinations {
+            bytes.push(destination_byte(*destination));
+        }
     }
     let count_offset = bytes.len();
     put_u16(&mut bytes, 0);
@@ -1398,122 +1465,294 @@ fn encode_typed_item(
         ($id:expr, $field:expr, $body:expr) => {
             if !matches!($field, super::ReferenceItemField::Unknown) {
                 push_group(&mut bytes, $id, |payload| put_field(payload, $field, $body))?;
-                group_count = group_count.checked_add(1).ok_or(ContentError::InvalidSectionBounds)?;
+                group_count = group_count
+                    .checked_add(1)
+                    .ok_or(ContentError::InvalidSectionBounds)?;
             }
         };
     }
-    group!(ITEM_GROUP_PRESENTATION, &semantics.presentation, |out, value| {
-        put_field(out, &value.name, |out, text| put_utf8(out, text, super::REFERENCE_ITEM_MAX_NAME_BYTES))?;
-        put_field(out, &value.description, |out, text| put_utf8(out, text, super::REFERENCE_ITEM_MAX_DESCRIPTION_BYTES))
-    });
-    group!(ITEM_GROUP_CLASSIFICATION, &semantics.classification, |out, value| {
-        put_field(out, &value.item_type, |out, item_type| { out.push(item_type.wire()); Ok(()) })?;
-        put_field(out, &value.capabilities, |out, capabilities| {
-            for capability in capabilities {
-                put_field(out, capability, |out, value| { put_bool(out, *value); Ok(()) })?;
-            }
+    group!(
+        ITEM_GROUP_PRESENTATION,
+        &semantics.presentation,
+        |out, value| {
+            put_field(out, &value.name, |out, text| {
+                put_utf8(out, text, super::REFERENCE_ITEM_MAX_NAME_BYTES)
+            })?;
+            put_field(out, &value.description, |out, text| {
+                put_utf8(out, text, super::REFERENCE_ITEM_MAX_DESCRIPTION_BYTES)
+            })
+        }
+    );
+    group!(
+        ITEM_GROUP_CLASSIFICATION,
+        &semantics.classification,
+        |out, value| {
+            put_field(out, &value.item_type, |out, item_type| {
+                out.push(item_type.wire());
+                Ok(())
+            })?;
+            put_field(out, &value.capabilities, |out, capabilities| {
+                for capability in capabilities {
+                    put_field(out, capability, |out, value| {
+                        put_bool(out, *value);
+                        Ok(())
+                    })?;
+                }
+                Ok(())
+            })
+        }
+    );
+    group!(ITEM_GROUP_PHYSICAL, &semantics.physical, |out, value| {
+        put_field(out, &value.weight, |out, value| {
+            put_u32(out, *value);
+            Ok(())
+        })?;
+        put_field(out, &value.movable, |out, value| {
+            put_bool(out, *value);
+            Ok(())
+        })?;
+        put_field(out, &value.pickupable, |out, value| {
+            put_bool(out, *value);
             Ok(())
         })
     });
-    group!(ITEM_GROUP_PHYSICAL, &semantics.physical, |out, value| {
-        put_field(out, &value.weight, |out, value| { put_u32(out, *value); Ok(()) })?;
-        put_field(out, &value.movable, |out, value| { put_bool(out, *value); Ok(()) })?;
-        put_field(out, &value.pickupable, |out, value| { put_bool(out, *value); Ok(()) })
-    });
     group!(ITEM_GROUP_STACK, &semantics.stack, |out, value| {
-        put_field(out, &value.stackable, |out, value| { put_bool(out, *value); Ok(()) })?;
-        put_field(out, &value.stack_max, |out, value| { put_u16(out, *value); Ok(()) })
+        put_field(out, &value.stackable, |out, value| {
+            put_bool(out, *value);
+            Ok(())
+        })?;
+        put_field(out, &value.stack_max, |out, value| {
+            put_u16(out, *value);
+            Ok(())
+        })
     });
     group!(ITEM_GROUP_EQUIPMENT, &semantics.equipment, |out, value| {
         put_field(out, &value.patterns, |out, patterns| {
-            put_count(out, patterns.len(), super::REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS, "Reference Item Equipment patterns")?;
+            put_count(
+                out,
+                patterns.len(),
+                super::REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS,
+                "Reference Item Equipment patterns",
+            )?;
             for pattern in patterns {
                 out.push(pattern.pattern_id);
-                put_field(out, &pattern.primary_slot, |out, value| { out.push(value.wire()); Ok(()) })?;
+                put_field(out, &pattern.primary_slot, |out, value| {
+                    out.push(value.wire());
+                    Ok(())
+                })?;
                 put_field(out, &pattern.additional_reserved_slots, |out, values| {
-                    put_count(out, values.len(), super::REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS, "Reference Item Equipment additional slots")?;
-                    out.extend(values.iter().map(|value| value.wire())); Ok(())
+                    put_count(
+                        out,
+                        values.len(),
+                        super::REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS,
+                        "Reference Item Equipment additional slots",
+                    )?;
+                    out.extend(values.iter().map(|value| value.wire()));
+                    Ok(())
                 })?;
                 put_field(out, &pattern.mutually_exclusive_groups, |out, values| {
-                    put_count(out, values.len(), super::REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS, "Reference Item Equipment groups")?;
-                    for value in values { put_utf8(out, value.as_str(), MAX_KEY_BYTES)?; } Ok(())
+                    put_count(
+                        out,
+                        values.len(),
+                        super::REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS,
+                        "Reference Item Equipment groups",
+                    )?;
+                    for value in values {
+                        put_utf8(out, value.as_str(), MAX_KEY_BYTES)?;
+                    }
+                    Ok(())
                 })?;
                 put_field(out, &pattern.vocations, |out, values| {
-                    put_count(out, values.len(), super::REFERENCE_ITEM_MAX_BASE_VOCATIONS, "Reference Item Equipment vocations")?;
-                    out.extend(values.iter().map(|value| value.wire())); Ok(())
+                    put_count(
+                        out,
+                        values.len(),
+                        super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+                        "Reference Item Equipment vocations",
+                    )?;
+                    out.extend(values.iter().map(|value| value.wire()));
+                    Ok(())
                 })?;
-                put_field(out, &pattern.level, |out, value| { put_u16(out, *value); Ok(()) })?;
-                put_field(out, &pattern.compatibility_rule, |_out, _| Err(ContentError::InvalidArtifact("Reference Item Equipment compatibility grammar is unsupported in v1")))?;
+                put_field(out, &pattern.level, |out, value| {
+                    put_u16(out, *value);
+                    Ok(())
+                })?;
+                put_field(out, &pattern.compatibility_rule, |_out, _| {
+                    Err(ContentError::InvalidArtifact(
+                        "Reference Item Equipment compatibility grammar is unsupported in v1",
+                    ))
+                })?;
             }
             Ok(())
         })
     });
-    group!(ITEM_GROUP_WEAPON, &semantics.weapon, |out, value| encode_weapon(out, value));
-    group!(ITEM_GROUP_PROTECTION, &semantics.protection, |out, value| encode_protection(out, value));
-    group!(ITEM_GROUP_SKILL_MODIFIERS, &semantics.skill_modifiers, |out, value| encode_skill_modifiers(out, value));
+    group!(ITEM_GROUP_WEAPON, &semantics.weapon, |out, value| {
+        encode_weapon(out, value)
+    });
+    group!(
+        ITEM_GROUP_PROTECTION,
+        &semantics.protection,
+        |out, value| encode_protection(out, value)
+    );
+    group!(
+        ITEM_GROUP_SKILL_MODIFIERS,
+        &semantics.skill_modifiers,
+        |out, value| encode_skill_modifiers(out, value)
+    );
     group!(ITEM_GROUP_CHARGES, &semantics.charges, |out, value| {
-        put_field(out, &value.count, |out, value| { put_u32(out, *value); Ok(()) })
+        put_field(out, &value.count, |out, value| {
+            put_u32(out, *value);
+            Ok(())
+        })
     });
     if projection == ReferenceArtifactProjection::ServerAuthoritative {
         group!(ITEM_GROUP_TEMPORAL, &semantics.temporal, |out, value| {
-            put_field(out, &value.consumption_mode, |out, value| { out.push(value.wire()); Ok(()) })?;
-            put_field(out, &value.duration, |out, value| { out.extend_from_slice(&value.0.to_be_bytes()); Ok(()) })?;
-            put_field(out, &value.stop_duration, |out, value| { put_bool(out, *value); Ok(()) })?;
-            put_field(out, &value.decay_target, |out, value| put_target(out, value, definitions))
+            put_field(out, &value.consumption_mode, |out, value| {
+                out.push(value.wire());
+                Ok(())
+            })?;
+            put_field(out, &value.duration, |out, value| {
+                out.extend_from_slice(&value.0.to_be_bytes());
+                Ok(())
+            })?;
+            put_field(out, &value.stop_duration, |out, value| {
+                put_bool(out, *value);
+                Ok(())
+            })?;
+            put_field(out, &value.decay_target, |out, value| {
+                put_target(out, value, definitions)
+            })
         });
     }
     group!(ITEM_GROUP_CONTAINER, &semantics.container, |out, value| {
-        put_field(out, &value.capacity, |out, value| { put_u16(out, *value); Ok(()) })
-    });
-    group!(ITEM_GROUP_IMBUEMENT, &semantics.imbuement, |out, value| encode_imbuement(out, value));
-    if projection == ReferenceArtifactProjection::ServerAuthoritative {
-        group!(ITEM_GROUP_USE_TRANSFORM, &semantics.use_transform, |out, value| {
-            if value.targets.len() != 10 { return Err(ContentError::InvalidArtifact("Reference Item UseTransform target count")); }
-            for target in &value.targets {
-                put_field(out, &target.target, |out, value| put_target(out, value, definitions))?;
-            }
+        put_field(out, &value.capacity, |out, value| {
+            put_u16(out, *value);
             Ok(())
-        });
-        group!(ITEM_GROUP_TRADE_RESTRICTIONS, &semantics.trade_restrictions, |out, value| encode_trade(out, value));
+        })
+    });
+    group!(ITEM_GROUP_IMBUEMENT, &semantics.imbuement, |out, value| {
+        encode_imbuement(out, value)
+    });
+    if projection == ReferenceArtifactProjection::ServerAuthoritative {
+        group!(
+            ITEM_GROUP_USE_TRANSFORM,
+            &semantics.use_transform,
+            |out, value| {
+                if value.targets.len() != 10 {
+                    return Err(ContentError::InvalidArtifact(
+                        "Reference Item UseTransform target count",
+                    ));
+                }
+                for target in &value.targets {
+                    put_field(out, &target.target, |out, value| {
+                        put_target(out, value, definitions)
+                    })?;
+                }
+                Ok(())
+            }
+        );
+        group!(
+            ITEM_GROUP_TRADE_RESTRICTIONS,
+            &semantics.trade_restrictions,
+            |out, value| encode_trade(out, value)
+        );
         group!(ITEM_GROUP_FLUID, &semantics.fluid, |out, value| {
-            put_field(out, &value.fluid_type, |out, value| { out.push(value.wire()); Ok(()) })
+            put_field(out, &value.fluid_type, |out, value| {
+                out.push(value.wire());
+                Ok(())
+            })
         });
-        group!(ITEM_GROUP_READABLE_WRITEABLE, &semantics.readable_writeable, |out, value| {
-            put_field(out, &value.readable, |out, value| { put_bool(out, *value); Ok(()) })?;
-            put_field(out, &value.writeable, |out, value| { put_bool(out, *value); Ok(()) })?;
-            put_field(out, &value.distance_read, |out, value| { put_bool(out, *value); Ok(()) })?;
-            put_field(out, &value.max_text_length, |out, value| { put_u32(out, *value); Ok(()) })?;
-            put_field(out, &value.write_once_target, |out, value| put_target(out, value, definitions))
-        });
+        group!(
+            ITEM_GROUP_READABLE_WRITEABLE,
+            &semantics.readable_writeable,
+            |out, value| {
+                put_field(out, &value.readable, |out, value| {
+                    put_bool(out, *value);
+                    Ok(())
+                })?;
+                put_field(out, &value.writeable, |out, value| {
+                    put_bool(out, *value);
+                    Ok(())
+                })?;
+                put_field(out, &value.distance_read, |out, value| {
+                    put_bool(out, *value);
+                    Ok(())
+                })?;
+                put_field(out, &value.max_text_length, |out, value| {
+                    put_u32(out, *value);
+                    Ok(())
+                })?;
+                put_field(out, &value.write_once_target, |out, value| {
+                    put_target(out, value, definitions)
+                })
+            }
+        );
     }
     bytes[count_offset..count_offset + 2].copy_from_slice(&group_count.to_be_bytes());
-    check_body_record_length(ReferenceArtifactProfile::TypedItemV4, projection, bytes.len())?;
+    check_body_record_length(
+        ReferenceArtifactProfile::TypedItemV4,
+        projection,
+        bytes.len(),
+    )?;
     Ok(bytes)
 }
 
-fn encode_weapon(bytes: &mut Vec<u8>, value: &super::ReferenceItemWeapon) -> Result<(), ContentError> {
-    put_field(bytes, &value.weapon_type, |out, value| { out.push(value.wire()); Ok(()) })?;
+fn encode_weapon(
+    bytes: &mut Vec<u8>,
+    value: &super::ReferenceItemWeapon,
+) -> Result<(), ContentError> {
+    put_field(bytes, &value.weapon_type, |out, value| {
+        out.push(value.wire());
+        Ok(())
+    })?;
     for field in [&value.attack, &value.defense, &value.extra_defense] {
-        put_field(bytes, field, |out, value| { out.extend_from_slice(&value.0.to_be_bytes()); Ok(()) })?;
+        put_field(bytes, field, |out, value| {
+            out.extend_from_slice(&value.0.to_be_bytes());
+            Ok(())
+        })?;
     }
-    put_field(bytes, &value.range, |out, value| { put_u16(out, value.0); Ok(()) })?;
+    put_field(bytes, &value.range, |out, value| {
+        put_u16(out, value.0);
+        Ok(())
+    })?;
     put_field(bytes, &value.hit_chance, put_rational)?;
     put_field(bytes, &value.max_hit_chance, put_rational)?;
-    put_field(bytes, &value.ammunition, |out, value| { out.push(value.wire()); Ok(()) })?;
+    put_field(bytes, &value.ammunition, |out, value| {
+        out.push(value.wire());
+        Ok(())
+    })?;
     put_field(bytes, &value.elemental, |out, entries| {
-        put_count(out, entries.len(), super::REFERENCE_ITEM_MAX_WEAPON_ELEMENTS, "Reference Item Weapon elements")?;
+        put_count(
+            out,
+            entries.len(),
+            super::REFERENCE_ITEM_MAX_WEAPON_ELEMENTS,
+            "Reference Item Weapon elements",
+        )?;
         for entry in entries {
             out.push(entry.element.wire());
-            put_field(out, &entry.points, |out, value| { out.extend_from_slice(&value.0.to_be_bytes()); Ok(()) })?;
+            put_field(out, &entry.points, |out, value| {
+                out.extend_from_slice(&value.0.to_be_bytes());
+                Ok(())
+            })?;
         }
         Ok(())
     })
 }
 
-fn encode_protection(bytes: &mut Vec<u8>, value: &super::ReferenceItemProtection) -> Result<(), ContentError> {
-    put_field(bytes, &value.armor, |out, value| { out.extend_from_slice(&value.0.to_be_bytes()); Ok(()) })?;
+fn encode_protection(
+    bytes: &mut Vec<u8>,
+    value: &super::ReferenceItemProtection,
+) -> Result<(), ContentError> {
+    put_field(bytes, &value.armor, |out, value| {
+        out.extend_from_slice(&value.0.to_be_bytes());
+        Ok(())
+    })?;
     put_field(bytes, &value.resistances, |out, entries| {
-        put_count(out, entries.len(), super::REFERENCE_ITEM_MAX_RESISTANCES, "Reference Item resistances")?;
+        put_count(
+            out,
+            entries.len(),
+            super::REFERENCE_ITEM_MAX_RESISTANCES,
+            "Reference Item resistances",
+        )?;
         for entry in entries {
             out.push(entry.kind.wire());
             put_field(out, &entry.percent, put_rational)?;
@@ -1526,9 +1765,14 @@ fn modifier_parameter_shape(kind: super::ReferenceSkillModifierKind) -> u8 {
     use super::ReferenceSkillModifierKind as Kind;
     match kind {
         Kind::Invisibility | Kind::ManaShield | Kind::SuppressDrown | Kind::SuppressDrunk => 1,
-        Kind::CleavePercent | Kind::CriticalHitChance | Kind::CriticalHitDamage
-        | Kind::LifeLeechAmount | Kind::LifeLeechChance | Kind::MagicShieldCapacityPercent
-        | Kind::ManaLeechAmount | Kind::ManaLeechChance => 2,
+        Kind::CleavePercent
+        | Kind::CriticalHitChance
+        | Kind::CriticalHitDamage
+        | Kind::LifeLeechAmount
+        | Kind::LifeLeechChance
+        | Kind::MagicShieldCapacityPercent
+        | Kind::ManaLeechAmount
+        | Kind::ManaLeechChance => 2,
         Kind::HealthTicks | Kind::ManaTicks => 3,
         Kind::PerfectShotRange => 4,
         Kind::ElementalBond => 5,
@@ -1543,13 +1787,30 @@ fn encode_modifier_parameter(
 ) -> Result<(), ContentError> {
     use super::ReferenceModifierParameter as Parameter;
     match (modifier_parameter_shape(kind), value) {
-        (1, Parameter::Boolean(value)) => { put_bool(bytes, *value); Ok(()) }
+        (1, Parameter::Boolean(value)) => {
+            put_bool(bytes, *value);
+            Ok(())
+        }
         (2, Parameter::RationalPercent(value)) => put_rational(bytes, value),
-        (3, Parameter::Milliseconds(value)) => { bytes.extend_from_slice(&value.0.to_be_bytes()); Ok(()) }
-        (4, Parameter::Cells(value)) => { put_u16(bytes, value.0); Ok(()) }
-        (5, Parameter::Element(value)) => { bytes.push(value.wire()); Ok(()) }
-        (6, Parameter::SignedPoints(value)) => { bytes.extend_from_slice(&value.0.to_be_bytes()); Ok(()) }
-        _ => Err(ContentError::InvalidArtifact("Reference Item modifier parameter shape")),
+        (3, Parameter::Milliseconds(value)) => {
+            bytes.extend_from_slice(&value.0.to_be_bytes());
+            Ok(())
+        }
+        (4, Parameter::Cells(value)) => {
+            put_u16(bytes, value.0);
+            Ok(())
+        }
+        (5, Parameter::Element(value)) => {
+            bytes.push(value.wire());
+            Ok(())
+        }
+        (6, Parameter::SignedPoints(value)) => {
+            bytes.extend_from_slice(&value.0.to_be_bytes());
+            Ok(())
+        }
+        _ => Err(ContentError::InvalidArtifact(
+            "Reference Item modifier parameter shape",
+        )),
     }
 }
 
@@ -1558,22 +1819,49 @@ fn encode_skill_modifiers(
     value: &super::ReferenceItemSkillModifiers,
 ) -> Result<(), ContentError> {
     put_field(bytes, &value.modifiers, |out, entries| {
-        put_count(out, entries.len(), super::REFERENCE_ITEM_MAX_MODIFIERS, "Reference Item SkillModifiers")?;
+        put_count(
+            out,
+            entries.len(),
+            super::REFERENCE_ITEM_MAX_MODIFIERS,
+            "Reference Item SkillModifiers",
+        )?;
         for entry in entries {
             out.push(entry.kind.wire());
-            put_field(out, &entry.target_domain, |out, value| { out.push(*value); Ok(()) })?;
-            put_field(out, &entry.evaluation_phase, |out, value| { out.push(*value); Ok(()) })?;
-            put_field(out, &entry.priority, |out, value| { out.extend_from_slice(&value.to_be_bytes()); Ok(()) })?;
-            put_field(out, &entry.parameter, |out, value| encode_modifier_parameter(out, entry.kind, value))?;
+            put_field(out, &entry.target_domain, |out, value| {
+                out.push(*value);
+                Ok(())
+            })?;
+            put_field(out, &entry.evaluation_phase, |out, value| {
+                out.push(*value);
+                Ok(())
+            })?;
+            put_field(out, &entry.priority, |out, value| {
+                out.extend_from_slice(&value.to_be_bytes());
+                Ok(())
+            })?;
+            put_field(out, &entry.parameter, |out, value| {
+                encode_modifier_parameter(out, entry.kind, value)
+            })?;
         }
         Ok(())
     })
 }
 
-fn encode_imbuement(bytes: &mut Vec<u8>, value: &super::ReferenceItemImbuement) -> Result<(), ContentError> {
-    put_field(bytes, &value.slot_count, |out, value| { out.push(*value); Ok(()) })?;
+fn encode_imbuement(
+    bytes: &mut Vec<u8>,
+    value: &super::ReferenceItemImbuement,
+) -> Result<(), ContentError> {
+    put_field(bytes, &value.slot_count, |out, value| {
+        out.push(*value);
+        Ok(())
+    })?;
     put_field(bytes, &value.allowed_family_tiers, |out, entries| {
-        put_count(out, entries.len(), super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES, "Reference Item imbuement allowances")?;
+        put_count(
+            out,
+            entries.len(),
+            super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            "Reference Item imbuement allowances",
+        )?;
         for entry in entries {
             out.push(entry.family.wire());
             out.push(match entry.tier {
@@ -1585,25 +1873,48 @@ fn encode_imbuement(bytes: &mut Vec<u8>, value: &super::ReferenceItemImbuement) 
         Ok(())
     })?;
     put_field(bytes, &value.excluded_families, |out, entries| {
-        put_count(out, entries.len(), super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES, "Reference Item excluded imbuement families")?;
+        put_count(
+            out,
+            entries.len(),
+            super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            "Reference Item excluded imbuement families",
+        )?;
         out.extend(entries.iter().map(|entry| entry.wire()));
         Ok(())
     })
 }
 
-fn encode_trade(bytes: &mut Vec<u8>, value: &super::ReferenceItemTradeRestrictions) -> Result<(), ContentError> {
-    put_field(bytes, &value.tradeable, |out, value| { put_bool(out, *value); Ok(()) })?;
-    put_field(bytes, &value.marketable, |out, value| { put_bool(out, *value); Ok(()) })?;
+fn encode_trade(
+    bytes: &mut Vec<u8>,
+    value: &super::ReferenceItemTradeRestrictions,
+) -> Result<(), ContentError> {
+    put_field(bytes, &value.tradeable, |out, value| {
+        put_bool(out, *value);
+        Ok(())
+    })?;
+    put_field(bytes, &value.marketable, |out, value| {
+        put_bool(out, *value);
+        Ok(())
+    })?;
     put_field(bytes, &value.vocations, |out, entries| {
-        put_count(out, entries.len(), super::REFERENCE_ITEM_MAX_BASE_VOCATIONS, "Reference Item trade vocations")?;
+        put_count(
+            out,
+            entries.len(),
+            super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+            "Reference Item trade vocations",
+        )?;
         out.extend(entries.iter().map(|entry| entry.wire()));
         Ok(())
     })?;
     put_field(bytes, &value.account_binding_policy, |_out, _| {
-        Err(ContentError::InvalidArtifact("Reference Item immutable account binding is unsupported in v1"))
+        Err(ContentError::InvalidArtifact(
+            "Reference Item immutable account binding is unsupported in v1",
+        ))
     })?;
     put_field(bytes, &value.character_binding_policy, |_out, _| {
-        Err(ContentError::InvalidArtifact("Reference Item immutable character binding is unsupported in v1"))
+        Err(ContentError::InvalidArtifact(
+            "Reference Item immutable character binding is unsupported in v1",
+        ))
     })
 }
 
@@ -1618,15 +1929,23 @@ fn parse_typed_server_item(
     )?;
     let mut reader = SliceReader::new(bytes);
     if reader.read_u8()? != TYPED_BODY_RECORD_VERSION {
-        return Err(ContentError::InvalidArtifact("unsupported typed Reference Item body version"));
+        return Err(ContentError::InvalidArtifact(
+            "unsupported typed Reference Item body version",
+        ));
     }
     let physical_class = parse_physical_class(reader.read_u8()?)?;
     let materializable = read_bool(&mut reader)?;
     let stack_class = parse_stack_class(reader.read_u8()?)?;
     let destination_count = read_count(&mut reader, 1, "Reference Item legal destinations")?;
     let mut legal_destinations = Vec::with_capacity(destination_count);
-    for _ in 0..destination_count { legal_destinations.push(parse_destination(reader.read_u8()?)?); }
-    let semantics = decode_typed_groups(&mut reader, ReferenceArtifactProjection::ServerAuthoritative, identities)?;
+    for _ in 0..destination_count {
+        legal_destinations.push(parse_destination(reader.read_u8()?)?);
+    }
+    let semantics = decode_typed_groups(
+        &mut reader,
+        ReferenceArtifactProjection::ServerAuthoritative,
+        identities,
+    )?;
     reader.ensure_end()?;
     let definition = super::ReferenceItemDefinition {
         physical_class,
@@ -1636,7 +1955,13 @@ fn parse_typed_server_item(
         semantics: semantics.clone(),
     };
     super::reference_playable::validate_item_definition(&definition)?;
-    Ok(ReferenceServerItem { physical_class, materializable, stack_class, legal_destinations, semantics })
+    Ok(ReferenceServerItem {
+        physical_class,
+        materializable,
+        stack_class,
+        legal_destinations,
+        semantics,
+    })
 }
 
 fn parse_typed_client_item(
@@ -1650,11 +1975,17 @@ fn parse_typed_client_item(
     )?;
     let mut reader = SliceReader::new(bytes);
     if reader.read_u8()? != TYPED_BODY_RECORD_VERSION {
-        return Err(ContentError::InvalidArtifact("unsupported typed Reference Item body version"));
+        return Err(ContentError::InvalidArtifact(
+            "unsupported typed Reference Item body version",
+        ));
     }
     let physical_class = parse_physical_class(reader.read_u8()?)?;
     let stack_class = parse_stack_class(reader.read_u8()?)?;
-    let semantics = decode_typed_groups(&mut reader, ReferenceArtifactProjection::ClientSafe, identities)?;
+    let semantics = decode_typed_groups(
+        &mut reader,
+        ReferenceArtifactProjection::ClientSafe,
+        identities,
+    )?;
     reader.ensure_end()?;
     let definition = super::ReferenceItemDefinition {
         physical_class,
@@ -1664,7 +1995,11 @@ fn parse_typed_client_item(
         semantics: semantics.clone(),
     };
     super::reference_playable::validate_item_definition(&definition)?;
-    Ok(ReferenceClientItem { physical_class, stack_class, semantics })
+    Ok(ReferenceClientItem {
+        physical_class,
+        stack_class,
+        semantics,
+    })
 }
 
 fn decode_typed_groups(
@@ -1673,9 +2008,17 @@ fn decode_typed_groups(
     identities: &[IndexEntry],
 ) -> Result<super::ReferenceItemSemantics, ContentError> {
     let count = usize::from(reader.read_u16()?);
-    let limit = if projection == ReferenceArtifactProjection::ClientSafe { 11 } else { 16 };
+    let limit = if projection == ReferenceArtifactProjection::ClientSafe {
+        11
+    } else {
+        16
+    };
     if count > limit {
-        return Err(ContentError::LimitExceeded { resource: "Reference Item groups", actual: count, limit });
+        return Err(ContentError::LimitExceeded {
+            resource: "Reference Item groups",
+            actual: count,
+            limit,
+        });
     }
     let mut semantics = super::ReferenceItemSemantics::default();
     let mut previous = 0_u8;
@@ -1691,82 +2034,138 @@ fn decode_typed_groups(
         }
         let mut payload = SliceReader::new(reader.take(length)?);
         match group_id {
-            ITEM_GROUP_PRESENTATION => semantics.presentation = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemPresentation {
-                    name: read_field(source, |source| read_utf8(source, super::REFERENCE_ITEM_MAX_NAME_BYTES))?,
-                    description: read_field(source, |source| read_utf8(source, super::REFERENCE_ITEM_MAX_DESCRIPTION_BYTES))?,
-                })
-            })?,
-            ITEM_GROUP_CLASSIFICATION => semantics.classification = read_field(&mut payload, |source| {
-                let item_type = read_field(source, |source| super::ReferenceItemType::from_wire(source.read_u8()?))?;
-                let capabilities = read_field(source, |source| {
-                    let mut capabilities = Vec::with_capacity(24);
-                    for _ in 0..24 { capabilities.push(read_field(source, read_bool)?); }
-                    capabilities.try_into().map_err(|_| ContentError::InvalidArtifact("Reference Item capability count"))
-                })?;
-                Ok(super::ReferenceItemClassification {
-                    item_type,
-                    capabilities,
-                })
-            })?,
-            ITEM_GROUP_PHYSICAL => semantics.physical = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemPhysical {
-                    weight: read_field(source, |source| source.read_u32())?,
-                    movable: read_field(source, read_bool)?,
-                    pickupable: read_field(source, read_bool)?,
-                })
-            })?,
-            ITEM_GROUP_STACK => semantics.stack = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemStack {
-                    stackable: read_field(source, read_bool)?,
-                    stack_max: read_field(source, |source| source.read_u16())?,
-                })
-            })?,
-            ITEM_GROUP_EQUIPMENT => semantics.equipment = read_field(&mut payload, decode_equipment)?,
+            ITEM_GROUP_PRESENTATION => {
+                semantics.presentation = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemPresentation {
+                        name: read_field(source, |source| {
+                            read_utf8(source, super::REFERENCE_ITEM_MAX_NAME_BYTES)
+                        })?,
+                        description: read_field(source, |source| {
+                            read_utf8(source, super::REFERENCE_ITEM_MAX_DESCRIPTION_BYTES)
+                        })?,
+                    })
+                })?
+            }
+            ITEM_GROUP_CLASSIFICATION => {
+                semantics.classification = read_field(&mut payload, |source| {
+                    let item_type = read_field(source, |source| {
+                        super::ReferenceItemType::from_wire(source.read_u8()?)
+                    })?;
+                    let capabilities = read_field(source, |source| {
+                        let mut capabilities = Vec::with_capacity(24);
+                        for _ in 0..24 {
+                            capabilities.push(read_field(source, read_bool)?);
+                        }
+                        capabilities.try_into().map_err(|_| {
+                            ContentError::InvalidArtifact("Reference Item capability count")
+                        })
+                    })?;
+                    Ok(super::ReferenceItemClassification {
+                        item_type,
+                        capabilities,
+                    })
+                })?
+            }
+            ITEM_GROUP_PHYSICAL => {
+                semantics.physical = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemPhysical {
+                        weight: read_field(source, |source| source.read_u32())?,
+                        movable: read_field(source, read_bool)?,
+                        pickupable: read_field(source, read_bool)?,
+                    })
+                })?
+            }
+            ITEM_GROUP_STACK => {
+                semantics.stack = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemStack {
+                        stackable: read_field(source, read_bool)?,
+                        stack_max: read_field(source, |source| source.read_u16())?,
+                    })
+                })?
+            }
+            ITEM_GROUP_EQUIPMENT => {
+                semantics.equipment = read_field(&mut payload, decode_equipment)?
+            }
             ITEM_GROUP_WEAPON => semantics.weapon = read_field(&mut payload, decode_weapon)?,
-            ITEM_GROUP_PROTECTION => semantics.protection = read_field(&mut payload, decode_protection)?,
-            ITEM_GROUP_SKILL_MODIFIERS => semantics.skill_modifiers = read_field(&mut payload, decode_skill_modifiers)?,
-            ITEM_GROUP_CHARGES => semantics.charges = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemCharges { count: read_field(source, |source| source.read_u32())? })
-            })?,
-            ITEM_GROUP_TEMPORAL => semantics.temporal = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemTemporal {
-                    consumption_mode: read_field(source, |source| super::ReferenceTemporalMode::from_wire(source.read_u8()?))?,
-                    duration: read_field(source, |source| Ok(super::ReferenceMilliseconds(source.read_u64()?)))?,
-                    stop_duration: read_field(source, read_bool)?,
-                    decay_target: read_field(source, |source| read_target(source, identities))?,
-                })
-            })?,
-            ITEM_GROUP_CONTAINER => semantics.container = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemContainer { capacity: read_field(source, |source| source.read_u16())? })
-            })?,
-            ITEM_GROUP_IMBUEMENT => semantics.imbuement = read_field(&mut payload, decode_imbuement)?,
-            ITEM_GROUP_USE_TRANSFORM => semantics.use_transform = read_field(&mut payload, |source| {
-                let mut targets = Vec::with_capacity(10);
-                for kind in 1..=10 {
-                    targets.push(super::ReferenceTransformTarget {
-                        kind: super::ReferenceTransformKind::from_wire(kind)?,
-                        target: read_field(source, |source| read_target(source, identities))?,
-                    });
-                }
-                Ok(super::ReferenceItemUseTransform { targets })
-            })?,
-            ITEM_GROUP_TRADE_RESTRICTIONS => semantics.trade_restrictions = read_field(&mut payload, decode_trade)?,
-            ITEM_GROUP_FLUID => semantics.fluid = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemFluid {
-                    fluid_type: read_field(source, |source| super::ReferenceFluidType::from_wire(source.read_u8()?))?,
-                })
-            })?,
-            ITEM_GROUP_READABLE_WRITEABLE => semantics.readable_writeable = read_field(&mut payload, |source| {
-                Ok(super::ReferenceItemReadableWriteable {
-                    readable: read_field(source, read_bool)?,
-                    writeable: read_field(source, read_bool)?,
-                    distance_read: read_field(source, read_bool)?,
-                    max_text_length: read_field(source, |source| source.read_u32())?,
-                    write_once_target: read_field(source, |source| read_target(source, identities))?,
-                })
-            })?,
-            _ => return Err(ContentError::InvalidArtifact("unknown Reference Item group")),
+            ITEM_GROUP_PROTECTION => {
+                semantics.protection = read_field(&mut payload, decode_protection)?
+            }
+            ITEM_GROUP_SKILL_MODIFIERS => {
+                semantics.skill_modifiers = read_field(&mut payload, decode_skill_modifiers)?
+            }
+            ITEM_GROUP_CHARGES => {
+                semantics.charges = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemCharges {
+                        count: read_field(source, |source| source.read_u32())?,
+                    })
+                })?
+            }
+            ITEM_GROUP_TEMPORAL => {
+                semantics.temporal = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemTemporal {
+                        consumption_mode: read_field(source, |source| {
+                            super::ReferenceTemporalMode::from_wire(source.read_u8()?)
+                        })?,
+                        duration: read_field(source, |source| {
+                            Ok(super::ReferenceMilliseconds(source.read_u64()?))
+                        })?,
+                        stop_duration: read_field(source, read_bool)?,
+                        decay_target: read_field(source, |source| read_target(source, identities))?,
+                    })
+                })?
+            }
+            ITEM_GROUP_CONTAINER => {
+                semantics.container = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemContainer {
+                        capacity: read_field(source, |source| source.read_u16())?,
+                    })
+                })?
+            }
+            ITEM_GROUP_IMBUEMENT => {
+                semantics.imbuement = read_field(&mut payload, decode_imbuement)?
+            }
+            ITEM_GROUP_USE_TRANSFORM => {
+                semantics.use_transform = read_field(&mut payload, |source| {
+                    let mut targets = Vec::with_capacity(10);
+                    for kind in 1..=10 {
+                        targets.push(super::ReferenceTransformTarget {
+                            kind: super::ReferenceTransformKind::from_wire(kind)?,
+                            target: read_field(source, |source| read_target(source, identities))?,
+                        });
+                    }
+                    Ok(super::ReferenceItemUseTransform { targets })
+                })?
+            }
+            ITEM_GROUP_TRADE_RESTRICTIONS => {
+                semantics.trade_restrictions = read_field(&mut payload, decode_trade)?
+            }
+            ITEM_GROUP_FLUID => {
+                semantics.fluid = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemFluid {
+                        fluid_type: read_field(source, |source| {
+                            super::ReferenceFluidType::from_wire(source.read_u8()?)
+                        })?,
+                    })
+                })?
+            }
+            ITEM_GROUP_READABLE_WRITEABLE => {
+                semantics.readable_writeable = read_field(&mut payload, |source| {
+                    Ok(super::ReferenceItemReadableWriteable {
+                        readable: read_field(source, read_bool)?,
+                        writeable: read_field(source, read_bool)?,
+                        distance_read: read_field(source, read_bool)?,
+                        max_text_length: read_field(source, |source| source.read_u32())?,
+                        write_once_target: read_field(source, |source| {
+                            read_target(source, identities)
+                        })?,
+                    })
+                })?
+            }
+            _ => {
+                return Err(ContentError::InvalidArtifact(
+                    "unknown Reference Item group",
+                ));
+            }
         }
         payload.ensure_end()?;
         previous = group_id;
@@ -1774,41 +2173,75 @@ fn decode_typed_groups(
     Ok(semantics)
 }
 
-fn decode_equipment(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemEquipment, ContentError> {
+fn decode_equipment(
+    source: &mut SliceReader<'_>,
+) -> Result<super::ReferenceItemEquipment, ContentError> {
     Ok(super::ReferenceItemEquipment {
         patterns: read_field(source, |source| {
-            let count = read_count(source, super::REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS, "Reference Item Equipment patterns")?;
+            let count = read_count(
+                source,
+                super::REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS,
+                "Reference Item Equipment patterns",
+            )?;
             let mut patterns = Vec::with_capacity(count);
             for _ in 0..count {
                 let pattern_id = source.read_u8()?;
-                let primary_slot = read_field(source, |source| super::ReferenceEquipmentSlot::from_wire(source.read_u8()?))?;
+                let primary_slot = read_field(source, |source| {
+                    super::ReferenceEquipmentSlot::from_wire(source.read_u8()?)
+                })?;
                 let additional_reserved_slots = read_field(source, |source| {
-                    let count = read_count(source, super::REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS, "Reference Item Equipment additional slots")?;
+                    let count = read_count(
+                        source,
+                        super::REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS,
+                        "Reference Item Equipment additional slots",
+                    )?;
                     let mut values = Vec::with_capacity(count);
-                    for _ in 0..count { values.push(super::ReferenceEquipmentSlot::from_wire(source.read_u8()?)?); }
+                    for _ in 0..count {
+                        values.push(super::ReferenceEquipmentSlot::from_wire(source.read_u8()?)?);
+                    }
                     Ok(values)
                 })?;
                 let mutually_exclusive_groups = read_field(source, |source| {
-                    let count = read_count(source, super::REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS, "Reference Item Equipment groups")?;
+                    let count = read_count(
+                        source,
+                        super::REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS,
+                        "Reference Item Equipment groups",
+                    )?;
                     let mut values = Vec::with_capacity(count);
                     for _ in 0..count {
-                        values.push(super::ReferenceItemGroupKey::new(&read_utf8(source, MAX_KEY_BYTES)?)?);
+                        values.push(super::ReferenceItemGroupKey::new(&read_utf8(
+                            source,
+                            MAX_KEY_BYTES,
+                        )?)?);
                     }
                     Ok(values)
                 })?;
                 let vocations = read_field(source, |source| {
-                    let count = read_count(source, super::REFERENCE_ITEM_MAX_BASE_VOCATIONS, "Reference Item Equipment vocations")?;
+                    let count = read_count(
+                        source,
+                        super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+                        "Reference Item Equipment vocations",
+                    )?;
                     let mut values = Vec::with_capacity(count);
-                    for _ in 0..count { values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?); }
+                    for _ in 0..count {
+                        values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?);
+                    }
                     Ok(values)
                 })?;
                 let level = read_field(source, |source| source.read_u16())?;
                 let compatibility_rule = read_field(source, |_source| {
-                    Err(ContentError::InvalidArtifact("Reference Item Equipment compatibility grammar is unsupported in v1"))
+                    Err(ContentError::InvalidArtifact(
+                        "Reference Item Equipment compatibility grammar is unsupported in v1",
+                    ))
                 })?;
                 patterns.push(super::ReferenceEquipmentPattern {
-                    pattern_id, primary_slot, additional_reserved_slots,
-                    mutually_exclusive_groups, vocations, level, compatibility_rule,
+                    pattern_id,
+                    primary_slot,
+                    additional_reserved_slots,
+                    mutually_exclusive_groups,
+                    vocations,
+                    level,
+                    compatibility_rule,
                 });
             }
             Ok(patterns)
@@ -1817,43 +2250,86 @@ fn decode_equipment(source: &mut SliceReader<'_>) -> Result<super::ReferenceItem
 }
 
 fn read_i32(source: &mut SliceReader<'_>) -> Result<i32, ContentError> {
-    Ok(i32::from_be_bytes(source.take(4)?.try_into().map_err(|_| ContentError::Truncated)?))
+    Ok(i32::from_be_bytes(
+        source
+            .take(4)?
+            .try_into()
+            .map_err(|_| ContentError::Truncated)?,
+    ))
 }
 
 fn read_i16(source: &mut SliceReader<'_>) -> Result<i16, ContentError> {
-    Ok(i16::from_be_bytes(source.take(2)?.try_into().map_err(|_| ContentError::Truncated)?))
+    Ok(i16::from_be_bytes(
+        source
+            .take(2)?
+            .try_into()
+            .map_err(|_| ContentError::Truncated)?,
+    ))
 }
 
 fn decode_weapon(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemWeapon, ContentError> {
-    let weapon_type = read_field(source, |source| super::ReferenceWeaponType::from_wire(source.read_u8()?))?;
-    let attack = read_field(source, |source| Ok(super::ReferenceSignedPoints(read_i32(source)?)))?;
-    let defense = read_field(source, |source| Ok(super::ReferenceSignedPoints(read_i32(source)?)))?;
-    let extra_defense = read_field(source, |source| Ok(super::ReferenceSignedPoints(read_i32(source)?)))?;
-    let range = read_field(source, |source| Ok(super::ReferenceCells(source.read_u16()?)))?;
+    let weapon_type = read_field(source, |source| {
+        super::ReferenceWeaponType::from_wire(source.read_u8()?)
+    })?;
+    let attack = read_field(source, |source| {
+        Ok(super::ReferenceSignedPoints(read_i32(source)?))
+    })?;
+    let defense = read_field(source, |source| {
+        Ok(super::ReferenceSignedPoints(read_i32(source)?))
+    })?;
+    let extra_defense = read_field(source, |source| {
+        Ok(super::ReferenceSignedPoints(read_i32(source)?))
+    })?;
+    let range = read_field(source, |source| {
+        Ok(super::ReferenceCells(source.read_u16()?))
+    })?;
     let hit_chance = read_field(source, read_rational)?;
     let max_hit_chance = read_field(source, read_rational)?;
-    let ammunition = read_field(source, |source| super::ReferenceAmmoType::from_wire(source.read_u8()?))?;
+    let ammunition = read_field(source, |source| {
+        super::ReferenceAmmoType::from_wire(source.read_u8()?)
+    })?;
     let elemental = read_field(source, |source| {
-        let count = read_count(source, super::REFERENCE_ITEM_MAX_WEAPON_ELEMENTS, "Reference Item Weapon elements")?;
+        let count = read_count(
+            source,
+            super::REFERENCE_ITEM_MAX_WEAPON_ELEMENTS,
+            "Reference Item Weapon elements",
+        )?;
         let mut entries = Vec::with_capacity(count);
         for _ in 0..count {
             entries.push(super::ReferenceElementalAttack {
                 element: super::ReferenceWeaponElement::from_wire(source.read_u8()?)?,
-                points: read_field(source, |source| Ok(super::ReferenceSignedPoints(read_i32(source)?)))?,
+                points: read_field(source, |source| {
+                    Ok(super::ReferenceSignedPoints(read_i32(source)?))
+                })?,
             });
         }
         Ok(entries)
     })?;
     Ok(super::ReferenceItemWeapon {
-        weapon_type, attack, defense, extra_defense, range, hit_chance,
-        max_hit_chance, ammunition, elemental,
+        weapon_type,
+        attack,
+        defense,
+        extra_defense,
+        range,
+        hit_chance,
+        max_hit_chance,
+        ammunition,
+        elemental,
     })
 }
 
-fn decode_protection(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemProtection, ContentError> {
-    let armor = read_field(source, |source| Ok(super::ReferenceSignedPoints(read_i32(source)?)))?;
+fn decode_protection(
+    source: &mut SliceReader<'_>,
+) -> Result<super::ReferenceItemProtection, ContentError> {
+    let armor = read_field(source, |source| {
+        Ok(super::ReferenceSignedPoints(read_i32(source)?))
+    })?;
     let resistances = read_field(source, |source| {
-        let count = read_count(source, super::REFERENCE_ITEM_MAX_RESISTANCES, "Reference Item resistances")?;
+        let count = read_count(
+            source,
+            super::REFERENCE_ITEM_MAX_RESISTANCES,
+            "Reference Item resistances",
+        )?;
         let mut entries = Vec::with_capacity(count);
         for _ in 0..count {
             entries.push(super::ReferenceResistance {
@@ -1876,16 +2352,28 @@ fn decode_modifier_parameter(
         2 => Parameter::RationalPercent(read_rational(source)?),
         3 => Parameter::Milliseconds(super::ReferenceMilliseconds(source.read_u64()?)),
         4 => Parameter::Cells(super::ReferenceCells(source.read_u16()?)),
-        5 => Parameter::Element(super::ReferenceModifierElement::from_wire(source.read_u8()?)?),
+        5 => Parameter::Element(super::ReferenceModifierElement::from_wire(
+            source.read_u8()?,
+        )?),
         6 => Parameter::SignedPoints(super::ReferenceSignedPoints(read_i32(source)?)),
-        _ => return Err(ContentError::InvalidArtifact("Reference Item modifier parameter shape")),
+        _ => {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item modifier parameter shape",
+            ));
+        }
     })
 }
 
-fn decode_skill_modifiers(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemSkillModifiers, ContentError> {
+fn decode_skill_modifiers(
+    source: &mut SliceReader<'_>,
+) -> Result<super::ReferenceItemSkillModifiers, ContentError> {
     Ok(super::ReferenceItemSkillModifiers {
         modifiers: read_field(source, |source| {
-            let count = read_count(source, super::REFERENCE_ITEM_MAX_MODIFIERS, "Reference Item SkillModifiers")?;
+            let count = read_count(
+                source,
+                super::REFERENCE_ITEM_MAX_MODIFIERS,
+                "Reference Item SkillModifiers",
+            )?;
             let mut entries = Vec::with_capacity(count);
             for _ in 0..count {
                 let kind = super::ReferenceSkillModifierKind::from_wire(source.read_u8()?)?;
@@ -1894,7 +2382,9 @@ fn decode_skill_modifiers(source: &mut SliceReader<'_>) -> Result<super::Referen
                     target_domain: read_field(source, |source| source.read_u8())?,
                     evaluation_phase: read_field(source, |source| source.read_u8())?,
                     priority: read_field(source, read_i16)?,
-                    parameter: read_field(source, |source| decode_modifier_parameter(source, kind))?,
+                    parameter: read_field(source, |source| {
+                        decode_modifier_parameter(source, kind)
+                    })?,
                 });
             }
             Ok(entries)
@@ -1902,10 +2392,16 @@ fn decode_skill_modifiers(source: &mut SliceReader<'_>) -> Result<super::Referen
     })
 }
 
-fn decode_imbuement(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemImbuement, ContentError> {
+fn decode_imbuement(
+    source: &mut SliceReader<'_>,
+) -> Result<super::ReferenceItemImbuement, ContentError> {
     let slot_count = read_field(source, |source| source.read_u8())?;
     let allowed_family_tiers = read_field(source, |source| {
-        let count = read_count(source, super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES, "Reference Item imbuement allowances")?;
+        let count = read_count(
+            source,
+            super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            "Reference Item imbuement allowances",
+        )?;
         let mut entries = Vec::with_capacity(count);
         for _ in 0..count {
             let family = super::ReferenceImbuementFamily::from_wire(source.read_u8()?)?;
@@ -1913,38 +2409,70 @@ fn decode_imbuement(source: &mut SliceReader<'_>) -> Result<super::ReferenceItem
                 2 => super::ReferenceImbuementTier::Two,
                 3 => super::ReferenceImbuementTier::Three,
                 10 => super::ReferenceImbuementTier::Ten,
-                _ => return Err(ContentError::InvalidArtifact("unknown Reference Item imbuement tier")),
+                _ => {
+                    return Err(ContentError::InvalidArtifact(
+                        "unknown Reference Item imbuement tier",
+                    ));
+                }
             };
             entries.push(super::ReferenceImbuementAllowance { family, tier });
         }
         Ok(entries)
     })?;
     let excluded_families = read_field(source, |source| {
-        let count = read_count(source, super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES, "Reference Item excluded imbuement families")?;
+        let count = read_count(
+            source,
+            super::REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            "Reference Item excluded imbuement families",
+        )?;
         let mut entries = Vec::with_capacity(count);
-        for _ in 0..count { entries.push(super::ReferenceImbuementFamily::from_wire(source.read_u8()?)?); }
+        for _ in 0..count {
+            entries.push(super::ReferenceImbuementFamily::from_wire(
+                source.read_u8()?,
+            )?);
+        }
         Ok(entries)
     })?;
-    Ok(super::ReferenceItemImbuement { slot_count, allowed_family_tiers, excluded_families })
+    Ok(super::ReferenceItemImbuement {
+        slot_count,
+        allowed_family_tiers,
+        excluded_families,
+    })
 }
 
-fn decode_trade(source: &mut SliceReader<'_>) -> Result<super::ReferenceItemTradeRestrictions, ContentError> {
+fn decode_trade(
+    source: &mut SliceReader<'_>,
+) -> Result<super::ReferenceItemTradeRestrictions, ContentError> {
     let tradeable = read_field(source, read_bool)?;
     let marketable = read_field(source, read_bool)?;
     let vocations = read_field(source, |source| {
-        let count = read_count(source, super::REFERENCE_ITEM_MAX_BASE_VOCATIONS, "Reference Item trade vocations")?;
+        let count = read_count(
+            source,
+            super::REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+            "Reference Item trade vocations",
+        )?;
         let mut values = Vec::with_capacity(count);
-        for _ in 0..count { values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?); }
+        for _ in 0..count {
+            values.push(super::ReferenceBaseVocation::from_wire(source.read_u8()?)?);
+        }
         Ok(values)
     })?;
     let account_binding_policy = read_field(source, |_source| {
-        Err(ContentError::InvalidArtifact("Reference Item immutable account binding is unsupported in v1"))
+        Err(ContentError::InvalidArtifact(
+            "Reference Item immutable account binding is unsupported in v1",
+        ))
     })?;
     let character_binding_policy = read_field(source, |_source| {
-        Err(ContentError::InvalidArtifact("Reference Item immutable character binding is unsupported in v1"))
+        Err(ContentError::InvalidArtifact(
+            "Reference Item immutable character binding is unsupported in v1",
+        ))
     })?;
     Ok(super::ReferenceItemTradeRestrictions {
-        tradeable, marketable, vocations, account_binding_policy, character_binding_policy,
+        tradeable,
+        marketable,
+        vocations,
+        account_binding_policy,
+        character_binding_policy,
     })
 }
 
@@ -2852,7 +3380,9 @@ mod typed_item_codec_tests {
         ))
     }
 
-    fn source_definition(item: ReferenceItemDefinition) -> Result<ReferenceDefinition, ContentError> {
+    fn source_definition(
+        item: ReferenceItemDefinition,
+    ) -> Result<ReferenceDefinition, ContentError> {
         Ok(ReferenceDefinition {
             definition: identity()?,
             kind: ReferenceDefinitionKind::Item(item),
@@ -2860,7 +3390,9 @@ mod typed_item_codec_tests {
         })
     }
 
-    fn worst_definitions(item: ReferenceItemDefinition) -> Result<Vec<ReferenceDefinition>, ContentError> {
+    fn worst_definitions(
+        item: ReferenceItemDefinition,
+    ) -> Result<Vec<ReferenceDefinition>, ContentError> {
         let identity_only = ReferenceItemDefinition {
             physical_class: ReferenceItemPhysicalClass::Unknown,
             materializable: false,
@@ -2873,9 +3405,7 @@ mod typed_item_codec_tests {
                 Ok(ReferenceDefinition {
                     definition: TypedDefinitionRef::new(
                         DefinitionFamily::Item,
-                        ProductionKey::new(&format!(
-                            "oteryn:item.schema.boundary-{ordinal:05}"
-                        ))?,
+                        ProductionKey::new(&format!("oteryn:item.schema.boundary-{ordinal:05}"))?,
                         DefinitionRevisionRef::new("definition-r1")?,
                     ),
                     kind: ReferenceDefinitionKind::Item(identity_only.clone()),
@@ -2934,9 +3464,19 @@ mod typed_item_codec_tests {
                     defense: Known(ReferenceSignedPoints(0)),
                     extra_defense: Known(ReferenceSignedPoints(0)),
                     range: Known(ReferenceCells(if distance { 7 } else { 1 })),
-                    hit_chance: Known(ReferenceRationalPercent::new(if distance { 9 } else { 0 }, if distance { 10 } else { 1 })?),
-                    max_hit_chance: Known(ReferenceRationalPercent::new(if distance { 1 } else { 0 }, 1)?),
-                    ammunition: if distance { Known(ReferenceAmmoType::Arrow) } else { NotApplicable },
+                    hit_chance: Known(ReferenceRationalPercent::new(
+                        if distance { 9 } else { 0 },
+                        if distance { 10 } else { 1 },
+                    )?),
+                    max_hit_chance: Known(ReferenceRationalPercent::new(
+                        if distance { 1 } else { 0 },
+                        1,
+                    )?),
+                    ammunition: if distance {
+                        Known(ReferenceAmmoType::Arrow)
+                    } else {
+                        NotApplicable
+                    },
                     elemental: Known(elements),
                 }),
                 ..Default::default()
@@ -2957,7 +3497,9 @@ mod typed_item_codec_tests {
             .collect()
     }
 
-    fn modifier_parameter(kind: ReferenceSkillModifierKind) -> Result<ReferenceModifierParameter, ContentError> {
+    fn modifier_parameter(
+        kind: ReferenceSkillModifierKind,
+    ) -> Result<ReferenceModifierParameter, ContentError> {
         Ok(match modifier_parameter_shape(kind) {
             1 => ReferenceModifierParameter::Boolean(false),
             2 => ReferenceModifierParameter::RationalPercent(ReferenceRationalPercent::new(0, 1)?),
@@ -2974,16 +3516,20 @@ mod typed_item_codec_tests {
         let target = target()?;
         let capabilities = std::array::from_fn(|index| Known(index % 2 == 0));
         let elements = (1..=5)
-            .map(|wire| Ok(ReferenceElementalAttack {
-                element: ReferenceWeaponElement::from_wire(wire)?,
-                points: Known(ReferenceSignedPoints(0)),
-            }))
+            .map(|wire| {
+                Ok(ReferenceElementalAttack {
+                    element: ReferenceWeaponElement::from_wire(wire)?,
+                    points: Known(ReferenceSignedPoints(0)),
+                })
+            })
             .collect::<Result<Vec<_>, ContentError>>()?;
         let resistances = (1..=12)
-            .map(|wire| Ok(ReferenceResistance {
-                kind: ReferenceResistanceKind::from_wire(wire)?,
-                percent: Known(ReferenceRationalPercent::new(0, 1)?),
-            }))
+            .map(|wire| {
+                Ok(ReferenceResistance {
+                    kind: ReferenceResistanceKind::from_wire(wire)?,
+                    percent: Known(ReferenceRationalPercent::new(0, 1)?),
+                })
+            })
             .collect::<Result<Vec<_>, ContentError>>()?;
         let modifiers = (1..=37)
             .map(|wire| {
@@ -2998,10 +3544,12 @@ mod typed_item_codec_tests {
             })
             .collect::<Result<Vec<_>, ContentError>>()?;
         let allowances = (1..=20)
-            .map(|wire| Ok(ReferenceImbuementAllowance {
-                family: ReferenceImbuementFamily::from_wire(wire)?,
-                tier: ReferenceImbuementTier::Three,
-            }))
+            .map(|wire| {
+                Ok(ReferenceImbuementAllowance {
+                    family: ReferenceImbuementFamily::from_wire(wire)?,
+                    tier: ReferenceImbuementTier::Three,
+                })
+            })
             .collect::<Result<Vec<_>, ContentError>>()?;
         let excluded = (1..=20)
             .map(ReferenceImbuementFamily::from_wire)
@@ -3020,17 +3568,23 @@ mod typed_item_codec_tests {
                     primary_slot: Known(primary_slot),
                     additional_reserved_slots: Known(additional_reserved_slots),
                     mutually_exclusive_groups: Known(group_keys()?),
-                    vocations: Known((1..=5).map(ReferenceBaseVocation::from_wire).collect::<Result<Vec<_>, _>>()?),
+                    vocations: Known(
+                        (1..=5)
+                            .map(ReferenceBaseVocation::from_wire)
+                            .collect::<Result<Vec<_>, _>>()?,
+                    ),
                     level: Known(0),
                     compatibility_rule: Unknown,
                 })
             })
             .collect::<Result<Vec<_>, ContentError>>()?;
         let transforms = (1..=10)
-            .map(|wire| Ok(ReferenceTransformTarget {
-                kind: ReferenceTransformKind::from_wire(wire)?,
-                target: Known(target.clone()),
-            }))
+            .map(|wire| {
+                Ok(ReferenceTransformTarget {
+                    kind: ReferenceTransformKind::from_wire(wire)?,
+                    target: Known(target.clone()),
+                })
+            })
             .collect::<Result<Vec<_>, ContentError>>()?;
         Ok(ReferenceItemDefinition {
             physical_class: ReferenceItemPhysicalClass::Physical,
@@ -3046,51 +3600,89 @@ mod typed_item_codec_tests {
                     item_type: Known(ReferenceItemType::Bed),
                     capabilities: Known(capabilities),
                 }),
-                physical: Known(ReferenceItemPhysical { weight: Known(0), movable: Known(false), pickupable: Known(true) }),
-                stack: Known(ReferenceItemStack { stackable: Known(true), stack_max: Known(100) }),
-                equipment: Known(ReferenceItemEquipment { patterns: Known(patterns) }),
+                physical: Known(ReferenceItemPhysical {
+                    weight: Known(0),
+                    movable: Known(false),
+                    pickupable: Known(true),
+                }),
+                stack: Known(ReferenceItemStack {
+                    stackable: Known(true),
+                    stack_max: Known(100),
+                }),
+                equipment: Known(ReferenceItemEquipment {
+                    patterns: Known(patterns),
+                }),
                 weapon: Known(ReferenceItemWeapon {
                     weapon_type: Known(ReferenceWeaponType::Ammunition),
-                    attack: Known(ReferenceSignedPoints(0)), defense: Known(ReferenceSignedPoints(0)),
-                    extra_defense: Known(ReferenceSignedPoints(0)), range: Known(ReferenceCells(0)),
+                    attack: Known(ReferenceSignedPoints(0)),
+                    defense: Known(ReferenceSignedPoints(0)),
+                    extra_defense: Known(ReferenceSignedPoints(0)),
+                    range: Known(ReferenceCells(0)),
                     hit_chance: Known(ReferenceRationalPercent::new(0, 1)?),
                     max_hit_chance: Known(ReferenceRationalPercent::new(0, 1)?),
-                    ammunition: Known(ReferenceAmmoType::Arrow), elemental: Known(elements),
+                    ammunition: Known(ReferenceAmmoType::Arrow),
+                    elemental: Known(elements),
                 }),
-                protection: Known(ReferenceItemProtection { armor: Known(ReferenceSignedPoints(0)), resistances: Known(resistances) }),
-                skill_modifiers: Known(ReferenceItemSkillModifiers { modifiers: Known(modifiers) }),
+                protection: Known(ReferenceItemProtection {
+                    armor: Known(ReferenceSignedPoints(0)),
+                    resistances: Known(resistances),
+                }),
+                skill_modifiers: Known(ReferenceItemSkillModifiers {
+                    modifiers: Known(modifiers),
+                }),
                 charges: Known(ReferenceItemCharges { count: Known(0) }),
                 temporal: Known(ReferenceItemTemporal {
                     consumption_mode: Known(ReferenceTemporalMode::DurableAbsoluteDeadline),
-                    duration: Known(ReferenceMilliseconds(0)), stop_duration: Known(false),
+                    duration: Known(ReferenceMilliseconds(0)),
+                    stop_duration: Known(false),
                     decay_target: Known(target.clone()),
                 }),
                 container: Known(ReferenceItemContainer { capacity: Known(0) }),
                 imbuement: Known(ReferenceItemImbuement {
-                    slot_count: Known(3), allowed_family_tiers: Known(allowances),
+                    slot_count: Known(3),
+                    allowed_family_tiers: Known(allowances),
                     excluded_families: Known(excluded),
                 }),
-                use_transform: Known(ReferenceItemUseTransform { targets: transforms }),
-                trade_restrictions: Known(ReferenceItemTradeRestrictions {
-                    tradeable: Known(false), marketable: Known(false),
-                    vocations: Known((1..=5).map(ReferenceBaseVocation::from_wire).collect::<Result<Vec<_>, _>>()?),
-                    account_binding_policy: Unknown, character_binding_policy: Unknown,
+                use_transform: Known(ReferenceItemUseTransform {
+                    targets: transforms,
                 }),
-                fluid: Known(ReferenceItemFluid { fluid_type: Known(ReferenceFluidType::Beer) }),
+                trade_restrictions: Known(ReferenceItemTradeRestrictions {
+                    tradeable: Known(false),
+                    marketable: Known(false),
+                    vocations: Known(
+                        (1..=5)
+                            .map(ReferenceBaseVocation::from_wire)
+                            .collect::<Result<Vec<_>, _>>()?,
+                    ),
+                    account_binding_policy: Unknown,
+                    character_binding_policy: Unknown,
+                }),
+                fluid: Known(ReferenceItemFluid {
+                    fluid_type: Known(ReferenceFluidType::Beer),
+                }),
                 readable_writeable: Known(ReferenceItemReadableWriteable {
-                    readable: Known(true), writeable: Known(true), distance_read: Known(true),
-                    max_text_length: Known(0), write_once_target: Known(target),
+                    readable: Known(true),
+                    writeable: Known(true),
+                    distance_read: Known(true),
+                    max_text_length: Known(0),
+                    write_once_target: Known(target),
                 }),
             },
         })
     }
 
     #[test]
-    fn typed_body_matches_accepted_exact_record_maxima_and_round_trips() -> Result<(), ContentError> {
+    fn typed_body_matches_accepted_exact_record_maxima_and_round_trips() -> Result<(), ContentError>
+    {
         let item = worst_item()?;
         let definitions = worst_definitions(item.clone())?;
-        let server = encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?;
-        let client = encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
+        let server = encode_typed_item(
+            &item,
+            ReferenceArtifactProjection::ServerAuthoritative,
+            &definitions,
+        )?;
+        let client =
+            encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
         assert_eq!(server.len(), TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES);
         assert_eq!(client.len(), TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES);
         assert_eq!(
@@ -3101,7 +3693,14 @@ mod typed_item_codec_tests {
             sha256(&client).as_slice(),
             hex_bytes("0f9f25815a61fa292d6a74f89974f8b4bbefcca3d70a19ee023d730e88261e21")
         );
-        assert_eq!(encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?, server);
+        assert_eq!(
+            encode_typed_item(
+                &item,
+                ReferenceArtifactProjection::ServerAuthoritative,
+                &definitions
+            )?,
+            server
+        );
         let index = definitions
             .iter()
             .map(|definition| IndexEntry {
@@ -3111,19 +3710,33 @@ mod typed_item_codec_tests {
                 body_digest: sha256(&server),
             })
             .collect::<Vec<_>>();
-        assert_eq!(parse_typed_server_item(&server, &index)?.semantics, item.semantics);
-        assert_eq!(parse_typed_client_item(&client, &index)?.semantics, item.semantics.client_projection());
+        assert_eq!(
+            parse_typed_server_item(&server, &index)?.semantics,
+            item.semantics
+        );
+        assert_eq!(
+            parse_typed_client_item(&client, &index)?.semantics,
+            item.semantics.client_projection()
+        );
         let mut over = server;
         over.push(0);
         assert!(matches!(
             parse_typed_server_item(&over, &index),
-            Err(ContentError::LimitExceeded { actual: 3_556, limit: 3_555, .. })
+            Err(ContentError::LimitExceeded {
+                actual: 3_556,
+                limit: 3_555,
+                ..
+            })
         ));
         let mut over = client;
         over.push(0);
         assert!(matches!(
             parse_typed_client_item(&over, &index),
-            Err(ContentError::LimitExceeded { actual: 3_434, limit: 3_433, .. })
+            Err(ContentError::LimitExceeded {
+                actual: 3_434,
+                limit: 3_433,
+                ..
+            })
         ));
         Ok(())
     }
@@ -3148,18 +3761,22 @@ mod typed_item_codec_tests {
             assert!(check_artifact_length(profile, artifact, projection).is_ok());
             assert!(check_artifact_length(profile, artifact + 1, projection).is_err());
         }
-        assert!(check_pair_lengths(
-            profile,
-            TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
-            TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
-        )
-        .is_ok());
-        assert!(check_pair_lengths(
-            profile,
-            TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES + 1,
-            TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
-        )
-        .is_err());
+        assert!(
+            check_pair_lengths(
+                profile,
+                TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
+                TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+            )
+            .is_ok()
+        );
+        assert!(
+            check_pair_lengths(
+                profile,
+                TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES + 1,
+                TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -3171,13 +3788,23 @@ mod typed_item_codec_tests {
             legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
             semantics: Default::default(),
         })?];
-        let ReferenceDefinitionKind::Item(materializable) = &definitions[0].kind else { unreachable!() };
+        let ReferenceDefinitionKind::Item(materializable) = &definitions[0].kind else {
+            unreachable!()
+        };
         assert_eq!(
-            encode_typed_item(materializable, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?,
+            encode_typed_item(
+                materializable,
+                ReferenceArtifactProjection::ServerAuthoritative,
+                &definitions
+            )?,
             [2, 1, 1, 1, 1, 1, 0, 0],
         );
         assert_eq!(
-            encode_typed_item(materializable, ReferenceArtifactProjection::ClientSafe, &definitions)?,
+            encode_typed_item(
+                materializable,
+                ReferenceArtifactProjection::ClientSafe,
+                &definitions
+            )?,
             [2, 1, 1, 0, 0],
         );
         let identity_only = ReferenceItemDefinition {
@@ -3189,11 +3816,19 @@ mod typed_item_codec_tests {
         };
         let identity_definitions = [source_definition(identity_only.clone())?];
         assert_eq!(
-            encode_typed_item(&identity_only, ReferenceArtifactProjection::ServerAuthoritative, &identity_definitions)?,
+            encode_typed_item(
+                &identity_only,
+                ReferenceArtifactProjection::ServerAuthoritative,
+                &identity_definitions
+            )?,
             hex_bytes("02020003000000"),
         );
         assert_eq!(
-            encode_typed_item(&identity_only, ReferenceArtifactProjection::ClientSafe, &identity_definitions)?,
+            encode_typed_item(
+                &identity_only,
+                ReferenceArtifactProjection::ClientSafe,
+                &identity_definitions
+            )?,
             hex_bytes("0202030000"),
         );
         let partial = ReferenceItemDefinition {
@@ -3211,9 +3846,18 @@ mod typed_item_codec_tests {
             },
         };
         let partial_definitions = [source_definition(partial.clone())?];
-        let server = encode_typed_item(&partial, ReferenceArtifactProjection::ServerAuthoritative, &partial_definitions)?;
+        let server = encode_typed_item(
+            &partial,
+            ReferenceArtifactProjection::ServerAuthoritative,
+            &partial_definitions,
+        )?;
         assert_eq!(server.len(), 18);
-        let index = [IndexEntry { identity: identity()?, body_offset: 0, body_length: server.len(), body_digest: sha256(&server) }];
+        let index = [IndexEntry {
+            identity: identity()?,
+            body_offset: 0,
+            body_length: server.len(),
+            body_digest: sha256(&server),
+        }];
         let decoded = parse_typed_server_item(&server, &index)?;
         assert!(!decoded.materializable);
         assert_eq!(decoded.semantics.physical, partial.semantics.physical);
@@ -3241,8 +3885,13 @@ mod typed_item_codec_tests {
         for (distance, server_hex, client_hex, server_sha, client_sha) in fixtures {
             let item = oracle_weapon(distance)?;
             let definitions = [source_definition(item.clone())?];
-            let server = encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?;
-            let client = encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
+            let server = encode_typed_item(
+                &item,
+                ReferenceArtifactProjection::ServerAuthoritative,
+                &definitions,
+            )?;
+            let client =
+                encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
             assert_eq!(server, hex_bytes(server_hex));
             assert_eq!(client, hex_bytes(client_hex));
             assert_eq!(sha256(&server).as_slice(), hex_bytes(server_sha));
@@ -3264,25 +3913,38 @@ mod typed_item_codec_tests {
         assert!(ReferenceItemType::from_wire(u8::MAX).is_err());
 
         let mut item = worst_item()?;
-        let ReferenceItemField::Known(stack) = &mut item.semantics.stack else { unreachable!() };
+        let ReferenceItemField::Known(stack) = &mut item.semantics.stack else {
+            unreachable!()
+        };
         stack.stackable = Known(false);
         assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
 
         let mut item = worst_item()?;
-        let ReferenceItemField::Known(equipment) = &mut item.semantics.equipment else { unreachable!() };
-        let ReferenceItemField::Known(patterns) = &mut equipment.patterns else { unreachable!() };
+        let ReferenceItemField::Known(equipment) = &mut item.semantics.equipment else {
+            unreachable!()
+        };
+        let ReferenceItemField::Known(patterns) = &mut equipment.patterns else {
+            unreachable!()
+        };
         let mut third = patterns[1].clone();
         third.pattern_id = 3;
         patterns.push(third);
         assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
 
         let mut item = worst_item()?;
-        let ReferenceItemField::Known(imbuement) = &mut item.semantics.imbuement else { unreachable!() };
+        let ReferenceItemField::Known(imbuement) = &mut item.semantics.imbuement else {
+            unreachable!()
+        };
         imbuement.slot_count = Known(REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS + 1);
         assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
 
         let identity = identity()?;
-        let index = [IndexEntry { identity, body_offset: 0, body_length: 0, body_digest: [0; 32] }];
+        let index = [IndexEntry {
+            identity,
+            body_offset: 0,
+            body_length: 0,
+            body_digest: [0; 32],
+        }];
         for group in [
             ITEM_GROUP_TEMPORAL,
             ITEM_GROUP_USE_TRANSFORM,
