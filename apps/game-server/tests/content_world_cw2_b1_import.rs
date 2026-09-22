@@ -403,7 +403,7 @@ fn batch_limits() -> ProjectEvidenceLimits {
         max_total_bytes: 4_194_304,
         max_json_depth: 24,
         max_decoded_fields: 32_768,
-        max_string_bytes: 2_097_152,
+        max_string_bytes: 96_000_000,
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
@@ -711,6 +711,22 @@ fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
     protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("protected B1 full Item family")
 }
 
+fn decoded_json_string_bytes(bytes: &[u8]) -> usize {
+    fn count(value: &serde_json::Value) -> usize {
+        match value {
+            serde_json::Value::String(value) => value.len(),
+            serde_json::Value::Array(values) => values.iter().map(count).sum(),
+            serde_json::Value::Object(values) => values
+                .iter()
+                .map(|(key, value)| key.len() + count(value))
+                .sum(),
+            _ => 0,
+        }
+    }
+
+    count(&serde_json::from_slice(bytes).expect("canonical JSON document"))
+}
+
 fn full_family_draft(imported: ProtectedCw2B1FullItemFamilyImport) -> ProjectDraft {
     ProjectDraft {
         project_revision: "project-r1".to_owned(),
@@ -740,7 +756,7 @@ fn full_item_family_registry_closes_the_exact_b1_denominator() {
     assert_eq!(imported.allocation_digest_sha256.len(), 64);
     assert_eq!(
         imported.allocation_digest_sha256,
-        "0000000000000000000000000000000000000000000000000000000000000000",
+        "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966",
         "CONTROLLED_RED_CAPTURE_FULL_FAMILY_ALLOCATION_DIGEST"
     );
     assert_eq!(
@@ -816,9 +832,21 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
         full_family_limits(),
     )
     .expect("canonical full-family project");
-    let project = documents
+    let snapshot = documents
         .into_snapshot(full_family_limits())
-        .expect("full-family snapshot")
+        .expect("full-family snapshot");
+    let measured = snapshot
+        .documents()
+        .iter()
+        .map(|(locator, bytes)| (locator.as_str(), decoded_json_string_bytes(bytes)))
+        .max_by_key(|(_, string_bytes)| *string_bytes)
+        .expect("canonical project documents");
+    assert_eq!(
+        measured,
+        ("CONTROLLED_RED", 0),
+        "CONTROLLED_RED_CAPTURE_FULL_FAMILY_STRING_BYTES"
+    );
+    let project = snapshot
         .parse(full_family_limits())
         .expect("parsed full-family project");
     let linked = project.link().expect("linked full-family Items");
