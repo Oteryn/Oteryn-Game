@@ -17,8 +17,14 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ad439cf3b04aaea084521f7be37761d3b1458cc5"
+APPROVED = "ebb2a8a4ec9bcd42ee750c00bb6c9eeff12105df"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
+REGISTERED_POSTGRES_TARGETS = (
+    ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
+    ("character_authority_postgres", "apps/game-server/tests/character_authority_postgres.rs"),
+    ("runtime_scope_assignment_postgres", "apps/game-server/tests/runtime_scope_assignment_postgres.rs"),
+    ("native_admission_source_postgres", "apps/game-server/tests/native_admission_source_postgres.rs"),
+)
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
     "$PSNativeCommandUseErrorActionPreference = $true",
@@ -103,6 +109,23 @@ def main() -> int:
         block = core.indented_yaml_mapping_block(original, job, 2)
         assert block is not None and condition in block, (job, condition)
 
+    postgres = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
+    assert postgres is not None
+    for fragment in (
+        "          BASE_SHA: ${{ github.event.merge_group.base_sha }}",
+        "          HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+        '            if git cat-file -e "$BASE_SHA:$path" 2>/dev/null; then',
+        '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
+        '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
+        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+    ):
+        assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
+    for name, target in REGISTERED_POSTGRES_TARGETS:
+        marker = f"          run_registered_target {name} {target}"
+        assert postgres.count(marker) == 1, marker
+    for forbidden in ("glob(", "rglob(", "fnmatch", "TARGETS_JSON", "fromJSON(", "postgres-target-manifest"):
+        assert forbidden not in postgres, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
+
     windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
     assert windows is not None
     for policy in NATIVE_POLICY:
@@ -138,20 +161,32 @@ def main() -> int:
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
-        "          cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
         "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
-        for replacement in (command.replace("cargo", "echo cargo", 1), "        if: false\n" + command):
+        for replacement in (command.replace("cargo", "echo cargo", 1), command.replace("--test", "--no-run --test", 1)):
             assert validate(original.replace(command, replacement, 1)) != 0
             mutations += 1
+
+    for name, target in REGISTERED_POSTGRES_TARGETS:
+        marker = f"          run_registered_target {name} {target}"
+        assert original.count(marker) == 1
+        assert validate(original.replace(marker, "", 1)) != 0
+        mutations += 1
+
+    deletion_guard = '            if [[ "$base_present" == true && "$head_present" == false ]]; then'
+    assert original.count(deletion_guard) == 1
+    assert validate(original.replace(deletion_guard, '            if [[ "$base_present" == false && "$head_present" == false ]]; then', 1)) != 0
+    mutations += 1
+
     early_exit = original.replace(
-        "          test -f apps/game-server/tests/durability_postgres.rs",
-        "          exit 0\n          test -f apps/game-server/tests/durability_postgres.rs",
+        "          run_registered_target() {",
+        "          exit 0\n          run_registered_target() {",
         1,
     )
-    assert validate(early_exit) != 0
+    assert early_exit != original and validate(early_exit) != 0
     mutations += 1
 
     for fragment in (LIFECYCLE_COMMAND, *NATIVE_POLICY):
