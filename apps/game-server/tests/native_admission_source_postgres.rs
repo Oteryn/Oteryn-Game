@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 // Include the production durability implementation in this dedicated PostgreSQL
 // target. Ordinary workspace runs may skip when the routed PostgreSQL service is
 // absent; only configured PostgreSQL 17.6 runs count as qualification evidence.

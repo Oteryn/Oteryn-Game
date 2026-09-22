@@ -8,6 +8,7 @@ pub mod admission_authority_guards;
 mod admission_journal;
 mod db;
 pub mod fresh_admission;
+#[allow(dead_code)]
 pub mod native_admission_source;
 mod schema;
 
