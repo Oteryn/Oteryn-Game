@@ -529,7 +529,8 @@ def test_classifier_rejects_invalid_changed_file_counts() -> None:
 
 def test_evidence_step_condition_family() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    assert not validate_mutated_gate(baseline), "unmodified gate must pass before mutation checks"
+    baseline_errors = validate_mutated_gate(baseline)
+    assert not baseline_errors, baseline_errors
     for job, name in (
         ("rust_linux", "Run registered PostgreSQL E2E targets when allocated"),
         ("rust_windows", "Verify deterministic simulation golden fixtures"),
@@ -543,7 +544,8 @@ def test_evidence_step_condition_family() -> None:
 
 def test_evidence_job_failure_cannot_be_tolerated() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    assert not validate_mutated_gate(baseline), "stable gate must pass before mutation checks"
+    baseline_errors = validate_mutated_gate(baseline)
+    assert not baseline_errors, baseline_errors
     accepted = []
     for job in ("rust_linux", "rust_windows"):
         marker = f"  {job}:\n"
@@ -567,7 +569,8 @@ def test_postgres_early_exit_cannot_preserve_contract_strings() -> None:
 
 def test_fixed_postgres_target_mapping_cannot_be_suppressed() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    assert not validate_mutated_gate(baseline), "stable gate must pass before fixed-target mutation checks"
+    baseline_errors = validate_mutated_gate(baseline)
+    assert not baseline_errors, baseline_errors
     for name, target in REGISTERED_POSTGRES_TARGETS.items():
         marker = f"          run_registered_target {name} {target}\n"
         assert baseline.count(marker) == 1, (name, target)
