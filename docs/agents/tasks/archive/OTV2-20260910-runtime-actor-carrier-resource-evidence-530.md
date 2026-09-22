@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #537 merged as `2d33d812e578087ac982afc03964fb1917b05b4d`, and the canonical task branch is deleted. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260910-runtime-actor-carrier-resource-evidence-530
 
 ```yaml

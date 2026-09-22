@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #434 merged as `54f19765c07e3b33ce2d9c10ad57df4818434a52`, and the canonical task branch is deleted. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260908-atlas-farm-intelligence-75
 
 ```yaml
