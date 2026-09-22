@@ -2864,6 +2864,59 @@ mod typed_item_codec_tests {
         ReferenceItemTarget::new("oteryn:item.schema.boundary-witness", "definition-r1")
     }
 
+    fn hex_bytes(value: &str) -> Vec<u8> {
+        value
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|pair| {
+                fn nibble(value: u8) -> u8 {
+                    match value {
+                        b'0'..=b'9' => value - b'0',
+                        b'a'..=b'f' => value - b'a' + 10,
+                        _ => panic!("invalid fixture hex"),
+                    }
+                }
+                (nibble(pair[0]) << 4) | nibble(pair[1])
+            })
+            .collect()
+    }
+
+    fn oracle_weapon(distance: bool) -> Result<ReferenceItemDefinition, ContentError> {
+        use ReferenceItemField::{Known, NotApplicable};
+        let elements = (1..=5)
+            .map(|wire| {
+                Ok(ReferenceElementalAttack {
+                    element: ReferenceWeaponElement::from_wire(wire)?,
+                    points: Known(ReferenceSignedPoints(0)),
+                })
+            })
+            .collect::<Result<Vec<_>, ContentError>>()?;
+        Ok(ReferenceItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Physical,
+            materializable: true,
+            stack_class: ReferenceItemStackClass::StackCapable,
+            legal_destinations: vec![ReferenceItemDestination::CharacterInventory],
+            semantics: ReferenceItemSemantics {
+                weapon: Known(ReferenceItemWeapon {
+                    weapon_type: Known(if distance {
+                        ReferenceWeaponType::Distance
+                    } else {
+                        ReferenceWeaponType::Sword
+                    }),
+                    attack: Known(ReferenceSignedPoints(if distance { 35 } else { 42 })),
+                    defense: Known(ReferenceSignedPoints(0)),
+                    extra_defense: Known(ReferenceSignedPoints(0)),
+                    range: Known(ReferenceCells(if distance { 7 } else { 1 })),
+                    hit_chance: Known(ReferenceRationalPercent::new(if distance { 9 } else { 0 }, if distance { 10 } else { 1 })?),
+                    max_hit_chance: Known(ReferenceRationalPercent::new(if distance { 1 } else { 0 }, 1)?),
+                    ammunition: if distance { Known(ReferenceAmmoType::Arrow) } else { NotApplicable },
+                    elemental: Known(elements),
+                }),
+                ..Default::default()
+            },
+        })
+    }
+
     fn group_keys() -> Result<Vec<ReferenceItemGroupKey>, ContentError> {
         let prefix = "oteryn:equipment-group.";
         (0..2)
@@ -3046,6 +3099,22 @@ mod typed_item_codec_tests {
             encode_typed_item(materializable, ReferenceArtifactProjection::ClientSafe, &definitions)?,
             [2, 1, 1, 0, 0],
         );
+        let identity_only = ReferenceItemDefinition {
+            physical_class: ReferenceItemPhysicalClass::Unknown,
+            materializable: false,
+            stack_class: ReferenceItemStackClass::Unknown,
+            legal_destinations: Vec::new(),
+            semantics: Default::default(),
+        };
+        let identity_definitions = [source_definition(identity_only.clone())?];
+        assert_eq!(
+            encode_typed_item(&identity_only, ReferenceArtifactProjection::ServerAuthoritative, &identity_definitions)?,
+            hex_bytes("02020003000000"),
+        );
+        assert_eq!(
+            encode_typed_item(&identity_only, ReferenceArtifactProjection::ClientSafe, &identity_definitions)?,
+            hex_bytes("0202030000"),
+        );
         let partial = ReferenceItemDefinition {
             physical_class: ReferenceItemPhysicalClass::Unknown,
             materializable: false,
@@ -3067,6 +3136,37 @@ mod typed_item_codec_tests {
         let decoded = parse_typed_server_item(&server, &index)?;
         assert!(!decoded.materializable);
         assert_eq!(decoded.semantics.physical, partial.semantics.physical);
+        Ok(())
+    }
+
+    #[test]
+    fn typed_weapon_bytes_match_independent_python_oracle() -> Result<(), ContentError> {
+        let fixtures = [
+            (
+                false,
+                "0201010201010001060058030308030000002a0300000000030000000003000103000000000000000000000000000000010300000000000000000000000000000001010305010300000000020300000000030300000000040300000000050300000000",
+                "0201020001060058030308030000002a0300000000030000000003000103000000000000000000000000000000010300000000000000000000000000000001010305010300000000020300000000030300000000040300000000050300000000",
+                "c7ea4af176b3eebe80390f9a9ee26deb4cdc9f67695ef5e77390f2bc5c6c68b6",
+                "f4396b9af4322ac0841fb9783aa51efb0a333d2d83113c943a4dc28526249114",
+            ),
+            (
+                true,
+                "0201010201010001060059030304030000002303000000000300000000030007030000000000000009000000000000000a030000000000000001000000000000000103010305010300000000020300000000030300000000040300000000050300000000",
+                "0201020001060059030304030000002303000000000300000000030007030000000000000009000000000000000a030000000000000001000000000000000103010305010300000000020300000000030300000000040300000000050300000000",
+                "d4649e3a70e117c485975174cc6c1f0977618a26a9d18bf01539d87be3d7c6a9",
+                "8c1c2aaea9349e75be386299afc350a0d8ac0acb27bb44cf205a3f972f27ee11",
+            ),
+        ];
+        for (distance, server_hex, client_hex, server_sha, client_sha) in fixtures {
+            let item = oracle_weapon(distance)?;
+            let definitions = [source_definition(item.clone())?];
+            let server = encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?;
+            let client = encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
+            assert_eq!(server, hex_bytes(server_hex));
+            assert_eq!(client, hex_bytes(client_hex));
+            assert_eq!(sha256(&server).as_slice(), hex_bytes(server_sha));
+            assert_eq!(sha256(&client).as_slice(), hex_bytes(client_sha));
+        }
         Ok(())
     }
 
