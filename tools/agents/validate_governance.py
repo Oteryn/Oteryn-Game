@@ -355,16 +355,32 @@ def validate_active_task_packets(
             )
 
 
-def validate_active_task_live_state(request: Callable[[str], object]) -> list[str]:
-    """Reject active packets whose canonical GitHub authority is terminal.
+def validate_active_task_live_state(
+    request: Callable[[str], object],
+    packet_paths: set[str] | None = None,
+) -> list[str]:
+    """Reject selected active packets whose canonical GitHub authority is terminal.
 
-    The caller owns authentication and transport. Keeping network access out of
-    the local validator preserves its deterministic offline contract; the
-    hosted inherited-policy validator supplies the authenticated requester.
+    packet_paths=None validates the complete active set for protected-main
+    health. A concrete set validates only candidate-touched packets, so an
+    unrelated lifecycle transition cannot retroactively invalidate an immutable
+    PR head. The caller owns authentication and transport.
     """
     active_dir = ROOT / "docs/agents/tasks/active"
     if not active_dir.is_dir():
         return []
+
+    if packet_paths is not None:
+        invalid = sorted(
+            relative for relative in packet_paths
+            if not (
+                relative.startswith("docs/agents/tasks/active/")
+                and relative.endswith(".md")
+                and relative != "docs/agents/tasks/active/README.md"
+            )
+        )
+        if invalid:
+            raise ValueError(f"invalid active-task scope: {', '.join(invalid)}")
 
     packets: list[tuple[str, int | None, int | None]] = []
     references: set[tuple[str, int]] = set()
@@ -372,6 +388,8 @@ def validate_active_task_live_state(request: Callable[[str], object]) -> list[st
         if path.name == "README.md":
             continue
         relative = path.relative_to(ROOT).as_posix()
+        if packet_paths is not None and relative not in packet_paths:
+            continue
         text = path.read_text(encoding="utf-8")
         issue_match = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
         pr_match = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
