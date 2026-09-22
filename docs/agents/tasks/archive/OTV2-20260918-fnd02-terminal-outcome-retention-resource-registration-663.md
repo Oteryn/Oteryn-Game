@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #666 merged as `c0ab26554669e696ead11526f9977ccfa05a83ec`, and the canonical task branch is deleted. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260918-fnd02-terminal-outcome-retention-resource-registration-663
 
 ```yaml

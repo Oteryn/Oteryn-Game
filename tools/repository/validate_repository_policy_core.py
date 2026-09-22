@@ -50,8 +50,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a19161638
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "18db247edcc40f43900fc99140d911fe3a113c56e0f9584fc8a415d2877fcc50"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "8f95b9f8b67255aa9f26619fe394af9679af100a"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ad439cf3b04aaea084521f7be37761d3b1458cc5"
-EXPECTED_POST_MERGE_RUST_SHA256 = "9f894c3a23e780162a3db0878007118b0cba0cedc5aa64958457322ae8bb0314"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+EXPECTED_POST_MERGE_RUST_SHA256 = "6246f732b4b320036f6bb5266547c4108a163b56f447d42189b25f31f4673174"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -415,7 +415,7 @@ def main() -> int:
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
             "len(files) != changed_files",
-            "previous_filename = item.get('previous_filename')",
+            "{key: item[key] for key in ('filename', 'status', 'previous_filename') if key in item}",
             "Merge gate / trusted-base risk lanes",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
@@ -488,9 +488,27 @@ def main() -> int:
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
                 "image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
-                "test -f apps/game-server/tests/durability_postgres.rs",
-                "cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+                "BASE_SHA: ${{ github.event.merge_group.base_sha }}",
+                "HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+                'git cat-file -e "$BASE_SHA:$path"',
+                'git cat-file -e "$HEAD_SHA:$path"',
+                'if [[ "$base_present" == true && "$head_present" == false ]]; then',
+                "verify_registered_target_binding() {",
+                'cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+                "owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
+                "expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+                "observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+                "if observed_manifest != expected_manifest:",
+                "matches = [target for target in targets if target.get('name') == name]",
+                "if len(matches) != 1 or matches[0].get('kind') != ['test']:",
+                "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
+                "observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
+                'verify_registered_target_binding "$name" "$path"',
+                'cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+                "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
+                "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
+                "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
+                "run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs",
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",

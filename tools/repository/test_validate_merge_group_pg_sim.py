@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import shutil
@@ -17,8 +18,14 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ad439cf3b04aaea084521f7be37761d3b1458cc5"
+APPROVED = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
+REGISTERED_POSTGRES_TARGETS = (
+    ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
+    ("character_authority_postgres", "apps/game-server/tests/character_authority_postgres.rs"),
+    ("runtime_scope_assignment_postgres", "apps/game-server/tests/runtime_scope_assignment_postgres.rs"),
+    ("native_admission_source_postgres", "apps/game-server/tests/native_admission_source_postgres.rs"),
+)
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
     "$PSNativeCommandUseErrorActionPreference = $true",
@@ -103,6 +110,80 @@ def main() -> int:
         block = core.indented_yaml_mapping_block(original, job, 2)
         assert block is not None and condition in block, (job, condition)
 
+    postgres = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
+    assert postgres is not None
+    for fragment in (
+        "          BASE_SHA: ${{ github.event.merge_group.base_sha }}",
+        "          HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+        '            if git cat-file -e "$BASE_SHA:$path" 2>/dev/null; then',
+        '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
+        '            if [[ "$base_present" == true && "$head_present" == false ]]; then',
+        "          verify_registered_target_binding() {",
+        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
+        "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+        "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+        "              if observed_manifest != expected_manifest:",
+        "              matches = [target for target in targets if target.get('name') == name]",
+        "              if len(matches) != 1 or matches[0].get('kind') != ['test']:",
+        "              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
+        "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
+        '              verify_registered_target_binding "$name" "$path"',
+        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+    ):
+        assert fragment in postgres, f"Merge Queue PostgreSQL routing missing: {fragment}"
+    for name, target in REGISTERED_POSTGRES_TARGETS:
+        marker = f"          run_registered_target {name} {target}"
+        assert postgres.count(marker) == 1, marker
+    for forbidden in ("glob(", "rglob(", "fnmatch", "TARGETS_JSON", "fromJSON(", "postgres-target-manifest"):
+        assert forbidden not in postgres, f"Merge Queue PostgreSQL routing is PR/data controlled: {forbidden}"
+
+    marker = '            python - "$metadata" "$name" "$path" <<\'PY\'\n'
+    verifier = textwrap.dedent(postgres.split(marker, 1)[1].split("          PY\n", 1)[0])
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        target = REGISTERED_POSTGRES_TARGETS[0]
+        expected = root / target[1]
+        expected.parent.mkdir(parents=True)
+        expected.write_text("// registered\n", encoding="utf-8")
+        remapped = expected.with_name("remapped.rs")
+        remapped.write_text("// remapped\n", encoding="utf-8")
+        expected_manifest = root / "apps/game-server/Cargo.toml"
+        expected_manifest.write_text("[package]\nname = \"fixture\"\n", encoding="utf-8")
+        wrong_manifest = root / "other/Cargo.toml"
+        wrong_manifest.parent.mkdir(parents=True)
+        wrong_manifest.write_text("[package]\nname = \"wrong\"\n", encoding="utf-8")
+        metadata = root / "metadata.json"
+
+        def package(manifest_path: object = expected_manifest, src_path: Path = expected):
+            return {
+                "name": "oteryn-game-server",
+                "manifest_path": str(manifest_path) if isinstance(manifest_path, Path) else manifest_path,
+                "targets": [{"name": target[0], "kind": ["test"], "src_path": str(src_path)}],
+            }
+
+        def verify(packages: list[dict[str, object]]) -> subprocess.CompletedProcess[str]:
+            metadata.write_text(json.dumps({"packages": packages}), encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, "-c", verifier, str(metadata), target[0], target[1]],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        assert verify([package()]).returncode == 0
+        rejected = verify([package(wrong_manifest)])
+        assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
+        for packages in (
+            [{key: value for key, value in package().items() if key != "manifest_path"}],
+            [package(True)],
+            [package(), package()],
+        ):
+            assert verify(packages).returncode != 0, packages
+        rejected = verify([package(src_path=remapped)])
+        assert rejected.returncode != 0 and "target source is" in rejected.stderr, rejected
+
     windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
     assert windows is not None
     for policy in NATIVE_POLICY:
@@ -138,21 +219,51 @@ def main() -> int:
             assert changed != original and validate(changed) != 0, (job, key)
             mutations += 1
     for command in (
-        "          cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+        '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
         "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
         "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
     ):
         assert command in original
-        for replacement in (command.replace("cargo", "echo cargo", 1), "        if: false\n" + command):
+        for replacement in (
+            command.replace("cargo", "echo cargo", 1),
+            command.replace("oteryn-", "mutated-", 1),
+        ):
+            assert replacement != command
             assert validate(original.replace(command, replacement, 1)) != 0
             mutations += 1
+
+    for name, target in REGISTERED_POSTGRES_TARGETS:
+        marker = f"          run_registered_target {name} {target}"
+        assert original.count(marker) == 1
+        assert validate(original.replace(marker, "", 1)) != 0
+        mutations += 1
+
+    deletion_guard = '            if [[ "$base_present" == true && "$head_present" == false ]]; then'
+    assert original.count(deletion_guard) == 1
+    assert validate(original.replace(deletion_guard, '            if [[ "$base_present" == false && "$head_present" == false ]]; then', 1)) != 0
+    mutations += 1
+
     early_exit = original.replace(
-        "          test -f apps/game-server/tests/durability_postgres.rs",
-        "          exit 0\n          test -f apps/game-server/tests/durability_postgres.rs",
+        "          run_registered_target() {",
+        "          exit 0\n          run_registered_target() {",
         1,
     )
-    assert validate(early_exit) != 0
+    assert early_exit != original and validate(early_exit) != 0
     mutations += 1
+
+    binding_fragments = (
+        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+        "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+        "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+        "              if observed_manifest != expected_manifest:",
+        "              if len(matches) != 1 or matches[0].get('kind') != ['test']:",
+        "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
+        '              verify_registered_target_binding "$name" "$path"',
+    )
+    for fragment in binding_fragments:
+        assert original.count(fragment) == 1, fragment
+        assert validate(original.replace(fragment, "", 1)) != 0, fragment
+        mutations += 1
 
     for fragment in (LIFECYCLE_COMMAND, *NATIVE_POLICY):
         assert original.count(fragment) == 1

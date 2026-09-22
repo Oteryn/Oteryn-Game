@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #678 merged as `8f07f31289719cb4f7247f6d34a2f6c8061b3e6a`, and the canonical task branch is deleted. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260919-626-b-windows-input-platform-preapproval
 
 ```yaml

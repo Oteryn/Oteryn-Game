@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #674 is merged on protected main as `c7688069bc22ac3cde46e48e6b05d8051418fed1`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260919-content-world-cw2-b2-creature-spawn-bindings-504
 
 ```yaml

@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #684 is merged on protected main as `c9778672da3c8060ec0f9a5821391aa30b4a6267`. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260919-content-world-cw2-b4-ability-effect-formula-evidence-504
 
 ```yaml

@@ -1,3 +1,5 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #675 merged as `c2b755b3ff5996a4f18001bbf9f935c5dd59b3b6`, and the canonical task branch is deleted. Any nonterminal/checkpoint wording below is historical provenance only; live GitHub and current protected state supersede it.
+
 # OTV2-20260919-626-a-platform-ipv6-loopback-http
 
 ```yaml
