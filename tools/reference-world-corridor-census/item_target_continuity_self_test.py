@@ -229,6 +229,39 @@ def test_history_fetch_and_cache():
         assert len(client.calls) == calls_after_first
 
 
+def test_history_continuation_is_pre_target_only():
+    class ContinuationClient(FakeClient):
+        def __init__(self, continuation_start):
+            super().__init__()
+            self.continuation_start = continuation_start
+
+        def get_json(self, params):
+            value = super().get_json(params)
+            if params["rvstart"] == self.continuation_start:
+                value.pop("batchcomplete", None)
+                value["continue"] = {
+                    "continue": "||",
+                    "rvcontinue": "synthetic-bounded-continuation",
+                }
+            return value
+
+    collector = FakeCollector()
+
+    pre_client = ContinuationClient("2026-07-27T23:59:59Z")
+    history = continuity.fetch_page_history(pre_client, collector, 101)
+    assert history["pre_target_revision"]["revision_id"] == 1010
+    assert pre_client.calls[0]["rvlimit"] == "1"
+
+    day_client = ContinuationClient(continuity.TARGET_DAY_START)
+    try:
+        continuity.fetch_page_history(day_client, collector, 101)
+    except continuity.ContinuityError as exc:
+        assert str(exc) == "HISTORY_QUERY_CONTINUATION_EXCEEDS_BOUND"
+    else:
+        raise AssertionError("target-day continuation must fail closed")
+    assert day_client.calls[1]["rvlimit"] == str(continuity.MAX_TARGET_DAY_REVISIONS)
+
+
 def test_derived_conflict_and_unknown_rules():
     derived = continuity.classify_candidate(
         {
