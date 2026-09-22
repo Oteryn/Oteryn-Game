@@ -213,7 +213,13 @@ evidence "process_restart=retained witness_store_digest=$store_digest_after"
 # Restore a synthetic database snapshot with only the witness-store binding omitted.
 compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb-dump -uroot \
   --single-transaction --skip-comments --skip-dump-date oteryn_s3a > "$WP5_SCRATCH/database.sql"
-sed '/^INSERT INTO `native_game_evidence_witness_stores`/d' "$WP5_SCRATCH/database.sql" > "$WP5_SCRATCH/database-no-binding.sql"
+awk '
+  /^INSERT INTO `native_game_evidence_witness_stores`/ { omitting = 1 }
+  !omitting { print }
+  omitting && /;$/ { omitting = 0 }
+' "$WP5_SCRATCH/database.sql" > "$WP5_SCRATCH/database-no-binding.sql"
+grep -q '^CREATE TABLE `native_game_evidence_witness_stores`' "$WP5_SCRATCH/database-no-binding.sql"
+! grep -q '^INSERT INTO `native_game_evidence_witness_stores`' "$WP5_SCRATCH/database-no-binding.sql"
 compose stop nginx platform >/dev/null
 compose exec --no-TTY -e MYSQL_PWD="$WP5_DB_ROOT_PASSWORD" db mariadb -uroot \
   -e 'DROP DATABASE oteryn_s3a; CREATE DATABASE oteryn_s3a CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON oteryn_s3a.* TO "oteryn_s3a"@"%"' >/dev/null
