@@ -1262,20 +1262,22 @@ async fn fence_runtime_guard(
     Ok(Some(changes[0].publication_revision))
 }
 
-/// Every allocated writer revision leaves an immutable receipt. Retained history
-/// must match the high-water exactly: history ahead of it (regressed high-water)
-/// or behind it (rolled-back decisions) fails closed pending recovery.
+/// Every allocated writer revision leaves an immutable receipt. The database
+/// validates contiguous coverage and exact equality between each current scope
+/// row and that scope's latest retained receipt while holding the writer lock.
 async fn require_history_matches_high_water(
     tx: &mut Transaction<'_, Postgres>,
     high_water: u64,
 ) -> Result<(), DurabilityError> {
-    let (receipts, assignments): (String, String) = sqlx::query_as(
-        "SELECT (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignment_receipts)::text, \
-                (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignments)::text",
+    let valid: bool = sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
+        .fetch_one(&mut **tx)
+        .await?;
+    let observed: String = sqlx::query_scalar(
+        "SELECT source_revision_high_water::text FROM game_runtime_scope_assignment_writer WHERE writer_id = 1",
     )
     .fetch_one(&mut **tx)
     .await?;
-    if parse_u64_text(&receipts)? != high_water || parse_u64_text(&assignments)? > high_water {
+    if !valid || parse_u64_text(&observed)? != high_water {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(())

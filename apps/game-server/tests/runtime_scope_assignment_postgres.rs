@@ -1923,6 +1923,215 @@ fn history_trailing_the_high_water_fails_closed() -> TestResult {
 }
 
 #[test]
+fn per_scope_restore_fails_reads_mutations_and_readiness() -> TestResult {
+    run("per_scope_history", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let guards = AdmissionGuardStore::from_root(root.clone());
+            let a = scope(1)?;
+            let b = scope(2)?;
+            let node1 = register_proof(&root, 1, None).await?;
+            let node2 = register_proof(&root, 2, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+
+            let now = db_now(&pool).await?;
+            assert_eq!(
+                publish_runtime(&guards, runtime_change(a, None, 1, true, now), now).await?,
+                GuardPublicationDisposition::Applied
+            );
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: a,
+                            target: node1.fact(),
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        2,
+                        AssignmentCommand::Replace {
+                            scope: a,
+                            predecessor: first.assignment.predecessor(),
+                            target: node2.fact(),
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        3,
+                        AssignmentCommand::Assign {
+                            scope: b,
+                            target: node2.fact(),
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(high_water(&pool).await?.0, "3");
+
+            // Restore only A's current row to its revision-1 receipt. All three
+            // receipts and the namespace high-water deliberately survive.
+            let mut restore = pool.begin().await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignments DISABLE TRIGGER game_runtime_scope_assignment_guard")
+                .execute(&mut *restore).await?;
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignments a SET \
+                 ownership_generation=r.ownership_generation, state=r.state, holder_node_id=r.holder_node_id, \
+                 holder_registration_revision=r.holder_registration_revision, source_revision=r.source_revision, \
+                 decision_identity=r.decision_identity, operation_key=r.operation_key, decided_at=r.decided_at \
+                 FROM game_runtime_scope_assignment_receipts r \
+                 WHERE a.scope_key=r.scope_key AND r.source_revision=1",
+            ).execute(&mut *restore).await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignments ENABLE TRIGGER game_runtime_scope_assignment_guard")
+                .execute(&mut *restore).await?;
+            restore.commit().await?;
+
+            assert!(root.read_runtime_scope_assignment(a).await.is_err());
+            let mutation = request(
+                4,
+                AssignmentCommand::Replace {
+                    scope: a,
+                    predecessor: first.assignment.predecessor(),
+                    target: node2.fact(),
+                },
+            )?;
+            assert!(matches!(
+                writer.submit(&mutation).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            assert_eq!(high_water(&pool).await?.0, "3");
+
+            let a_key: Vec<u8> = sqlx::query_scalar(
+                "SELECT scope_key FROM game_runtime_scope_assignment_receipts WHERE source_revision=1",
+            ).fetch_one(&pool).await?;
+            let attested: bool = sqlx::query_scalar(
+                "SELECT game_runtime_attest_readiness($1, encode($2, 'hex')::uuid, $3::numeric, $4)",
+            )
+            .bind(a_key)
+            .bind(node1.fact().node_id().as_bytes().as_slice())
+            .bind(node1.fact().registration_revision().to_string())
+            .bind([1_u8; 32].as_slice())
+            .fetch_one(&pool).await?;
+            assert!(!attested);
+            let fenced = current_runtime(&guards, a).await?;
+            assert!(matches!(
+                publish_ready(
+                    &root,
+                    &node1,
+                    runtime_change(a, Some(&fenced), 1, true, now),
+                    now
+                )
+                .await,
+                Err(AssignmentError::NotCurrentHolder)
+            ));
+            assert_eq!(
+                runtime_ready(&current_runtime(&guards, a).await?),
+                Some((1, false))
+            );
+
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn intermediate_receipt_hole_cannot_be_crossed() -> TestResult {
+    run("receipt_hole", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let node1 = register(&root, 1, None).await?;
+            let node2 = register(&root, 2, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target: node1,
+                        },
+                    )?)
+                    .await,
+            )?;
+            let second = committed(
+                writer
+                    .submit(&request(
+                        2,
+                        AssignmentCommand::Replace {
+                            scope: scope(1)?,
+                            predecessor: first.assignment.predecessor(),
+                            target: node2,
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        3,
+                        AssignmentCommand::Replace {
+                            scope: scope(1)?,
+                            predecessor: second.assignment.predecessor(),
+                            target: node1,
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        4,
+                        AssignmentCommand::Assign {
+                            scope: scope(2)?,
+                            target: node2,
+                        },
+                    )?)
+                    .await,
+            )?;
+
+            // Revision 2 is neither the namespace maximum nor the latest receipt
+            // for its scope, so only the explicit continuity proof catches it.
+            sqlx::query("ALTER TABLE game_runtime_scope_assignment_receipts DISABLE TRIGGER game_runtime_scope_assignment_receipt_immutable")
+                .execute(&pool).await?;
+            sqlx::query(
+                "DELETE FROM game_runtime_scope_assignment_receipts WHERE source_revision=2",
+            )
+            .execute(&pool)
+            .await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignment_receipts ENABLE TRIGGER game_runtime_scope_assignment_receipt_immutable")
+                .execute(&pool).await?;
+            assert!(root.read_runtime_scope_assignment(scope(1)?).await.is_err());
+            assert!(matches!(
+                writer
+                    .submit(&request(
+                        5,
+                        AssignmentCommand::Assign {
+                            scope: scope(3)?,
+                            target: node1,
+                        }
+                    )?)
+                    .await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            assert_eq!(high_water(&pool).await?.0, "4");
+            Ok(())
+        })
+    })
+}
+
+#[test]
 fn duplicate_writer_handles_share_one_nasg_queue() -> TestResult {
     run("shared_queue", |database| {
         Box::pin(async move {
