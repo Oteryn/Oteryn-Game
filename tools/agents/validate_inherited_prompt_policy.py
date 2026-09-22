@@ -127,13 +127,15 @@ def _normalize_positive_integer(raw: object, label: str) -> int:
 def _pull_request_active_task_paths(
     number: int,
     expected_head: str,
-    expected_base: str | None = None,
 ) -> set[str]:
-    """Return active task packets changed by one exact live PR generation."""
+    """Return active task packets changed by one exact-head live PR snapshot.
+
+    Protected main may advance independently of an immutable PR head. Bind the
+    candidate to the exact head and a stable live base snapshot observed during
+    this read instead of requiring the triggering event's historical base SHA.
+    """
     if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
         raise ValueError("expected pull request head SHA is invalid")
-    if expected_base is not None and re.fullmatch(r"[0-9a-f]{40}", expected_base) is None:
-        raise ValueError("expected pull request base SHA is invalid")
 
     pr_url = f"https://api.github.com/repos/{PROVIDER}/pulls/{number}"
     pull = _request(pr_url)
@@ -153,9 +155,7 @@ def _pull_request_active_task_paths(
         raise ValueError("pull request head moved during live-state candidate validation")
     if re.fullmatch(r"[0-9a-f]{40}", base or "") is None:
         raise ValueError("live pull request base SHA is invalid")
-    if expected_base is not None and base != expected_base:
-        raise ValueError("pull request base moved after the triggering event")
-    if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
+    if type(changed_files) is not int or changed_files < 0 or changed_files > 3000:
         raise ValueError("invalid pull request changed-files count")
 
     items: list[dict] = []
@@ -222,8 +222,7 @@ def _active_task_live_scope() -> set[str] | None:
             raise ValueError("pull_request event is missing pull_request payload")
         number = _normalize_positive_integer(event.get("number") or pull.get("number"), "pull_request_number")
         head = pull.get("head", {}).get("sha", "")
-        base = pull.get("base", {}).get("sha", "")
-        return _pull_request_active_task_paths(number, head, base)
+        return _pull_request_active_task_paths(number, head)
 
     inputs = event.get("inputs")
     if not isinstance(inputs, dict):
