@@ -415,6 +415,10 @@ def compile_crosswalk(b1: dict[str, Any], batch: dict[str, Any], registry: dict[
         })
     if len(records) != TARGET_COUNT or outcomes != Counter({"EXACT_ONE": TARGET_COUNT}):
         raise CrosswalkError("CROSSWALK_PARTITION_FAILED")
+    zero_signal_capabilities = [
+        name for name in CLASSIFICATION_CAPABILITIES
+        if classification_capability_records[name] == 0
+    ]
     value = {
         "schema": SCHEMA,
         "compiler_profile": PROFILE,
@@ -457,6 +461,13 @@ def compile_crosswalk(b1: dict[str, Any], batch: dict[str, Any], registry: dict[
             "classification_capabilities": list(CLASSIFICATION_CAPABILITIES),
             "classification_source_signal_rule": "exact admitted field/value signals only; no names or absence inference",
         },
+        "classification_scope": {
+            "source_signal_census_complete": True,
+            "accepted_reference_classification_complete": False,
+            "accepted_reference_state": "UNKNOWN",
+            "zero_direct_ots_signal_capabilities": zero_signal_capabilities,
+            "remaining_gap": "evidence-backed accepted Reference category/capability decisions",
+        },
         "source_profiles": [profiles[key] for key in sorted(profiles)],
         "records": records,
     }
@@ -490,6 +501,7 @@ def manifest(full: dict[str, Any], full_bytes: bytes, producer_path: Path) -> di
             ],
         },
         "counts": full["counts"],
+        "classification_scope": full["classification_scope"],
         "allocation_digest_sha256": full["allocation_digest_sha256"],
         "invariants": {
             "every_native_identity_exactly_once": True,
@@ -506,6 +518,7 @@ def manifest(full: dict[str, Any], full_bytes: bytes, producer_path: Path) -> di
             "No current-source catalogue was supplied or searched.",
             "No OTS observation is accepted as Reference gameplay truth.",
             "Classification and all typed capabilities remain UNKNOWN pending evidence-backed promotion.",
+            "The complete 24-capability source-signal census is not an accepted Item classification result.",
             "This evidence changes no runtime, client, registry, protocol or persistence path.",
         ],
         "non_claims": ["NO_REFERENCE_PARITY", "NO_GAMEPLAY_VALUE_PROMOTION", "NO_CURRENT_SOURCE_VERIFICATION", "NO_PRODUCTION_AUTHORITY"],
