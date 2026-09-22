@@ -98,6 +98,6 @@
   ],
   "active_task_limits": {
     "max_characters": 12000,
-    "max_lines": 240
+    "max_lines": 300
   }
 }
