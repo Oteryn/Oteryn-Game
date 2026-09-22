@@ -13,7 +13,9 @@ use durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
     PendingPublication, SourceObservation,
 };
-use durability::runtime_scope_assignment::{BootstrapSecret, LaunchBinding, NodeRegistrationFact};
+use durability::runtime_scope_assignment::{
+    BootstrapSecret, LaunchBinding, NodeIncarnationProof, NodeRegistrationFact,
+};
 use durability::{DurabilityError, DurabilityRoot};
 use foundation::NodeId;
 use sqlx::{Connection, Executor};
@@ -105,7 +107,7 @@ fn node_id(tag: u8) -> Result<NodeId, Box<dyn std::error::Error>> {
 async fn register_node(
     root: &DurabilityRoot,
     tag: u8,
-) -> Result<NodeRegistrationFact, Box<dyn std::error::Error>> {
+) -> Result<NodeIncarnationProof, Box<dyn std::error::Error>> {
     register_node_superseding(root, tag, None).await
 }
 
@@ -115,7 +117,7 @@ async fn register_node_superseding(
     root: &DurabilityRoot,
     tag: u8,
     supersedes: Option<NodeId>,
-) -> Result<NodeRegistrationFact, Box<dyn std::error::Error>> {
+) -> Result<NodeIncarnationProof, Box<dyn std::error::Error>> {
     let node = node_id(tag)?;
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch =
@@ -295,7 +297,7 @@ fn missing_registration_pending_read_fails_closed() -> Result<(), Box<dyn std::e
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 assert!(matches!(
-                    root.pending_native_source_publications(node).await,
+                    root.pending_native_source_publications(&node).await,
                     Err(DurabilityError::Unavailable)
                 ));
                 Ok::<(), Box<dyn std::error::Error>>(())
@@ -323,14 +325,14 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(node, provenance(), descriptor(1, 1, 10))
+                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
                     .await?;
-                root.register_native_admission_descriptor(node, descriptor(2, 2, 20))
+                root.register_native_admission_descriptor(&node, descriptor(2, 2, 20))
                     .await?;
-                root.register_native_admission_descriptor(node, descriptor(2, 2, 20))
+                root.register_native_admission_descriptor(&node, descriptor(2, 2, 20))
                     .await?;
                 assert!(matches!(
-                    root.register_native_admission_descriptor(node, descriptor(2, 3, 20))
+                    root.register_native_admission_descriptor(&node, descriptor(2, 3, 20))
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -342,9 +344,9 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                     100,
                     vec![1],
                 );
-                root.accept_native_source_observation(node, fresh_10.clone())
+                root.accept_native_source_observation(&node, fresh_10.clone())
                     .await?;
-                root.accept_native_source_observation(node, fresh_10.clone())
+                root.accept_native_source_observation(&node, fresh_10.clone())
                     .await?;
                 let recovery_11 = account_observation(
                     NativeSourceOperation::ReadRecoveryAccountSecurityV2,
@@ -353,10 +355,10 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                     101,
                     vec![2],
                 );
-                root.accept_native_source_observation(node, recovery_11.clone())
+                root.accept_native_source_observation(&node, recovery_11.clone())
                     .await?;
                 assert!(matches!(
-                    root.accept_native_source_observation(node, fresh_10).await,
+                    root.accept_native_source_observation(&node, fresh_10).await,
                     Err(DurabilityError::Unavailable)
                 ));
                 let fresh_12 = account_observation(
@@ -366,10 +368,10 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                     102,
                     vec![3],
                 );
-                root.accept_native_source_observation(node, fresh_12)
+                root.accept_native_source_observation(&node, fresh_12)
                     .await?;
                 assert!(matches!(
-                    root.accept_native_source_observation(node, recovery_11)
+                    root.accept_native_source_observation(&node, recovery_11)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -384,15 +386,15 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                     vec![4],
                 );
                 restarted
-                    .accept_native_source_observation(node, maximum.clone())
+                    .accept_native_source_observation(&node, maximum.clone())
                     .await?;
                 restarted
-                    .accept_native_source_observation(node, maximum)
+                    .accept_native_source_observation(&node, maximum)
                     .await?;
                 assert!(matches!(
                     restarted
                         .accept_native_source_observation(
-                            node,
+                            &node,
                             account_observation(
                                 NativeSourceOperation::ReadAccountSecurityV1,
                                 u64::MAX - 1,
@@ -429,7 +431,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(node, provenance(), descriptor(1, 1, 10))
+                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
                     .await?;
 
                 let wrong = signing_observation(
@@ -441,7 +443,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     1,
                 );
                 assert!(matches!(
-                    root.accept_native_source_observation(node, wrong).await,
+                    root.accept_native_source_observation(&node, wrong).await,
                     Err(DurabilityError::Unavailable)
                 ));
                 let wrong_context = signing_observation(
@@ -453,7 +455,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     1,
                 );
                 assert!(matches!(
-                    root.accept_native_source_observation(node, wrong_context)
+                    root.accept_native_source_observation(&node, wrong_context)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -466,7 +468,8 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     "kid-1",
                     10,
                 );
-                root.accept_native_source_observation(node, key_one).await?;
+                root.accept_native_source_observation(&node, key_one)
+                    .await?;
                 let key_two_lower = signing_observation(
                     NativeSourceOperation::ReadFreshSigningTrustV1,
                     FRESH_ISSUER,
@@ -476,7 +479,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     1,
                 );
                 assert!(matches!(
-                    root.accept_native_source_observation(node, key_two_lower)
+                    root.accept_native_source_observation(&node, key_two_lower)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -488,9 +491,9 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     "kid-2",
                     11,
                 );
-                root.accept_native_source_observation(node, key_two_newer.clone())
+                root.accept_native_source_observation(&node, key_two_newer.clone())
                     .await?;
-                root.accept_native_source_observation(node, key_two_newer)
+                root.accept_native_source_observation(&node, key_two_newer)
                     .await?;
 
                 let maximum_key_id = "k".repeat(64);
@@ -502,9 +505,9 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     &maximum_key_id,
                     12,
                 );
-                root.accept_native_source_observation(node, maximum_key.clone())
+                root.accept_native_source_observation(&node, maximum_key.clone())
                     .await?;
-                root.accept_native_source_observation(node, maximum_key)
+                root.accept_native_source_observation(&node, maximum_key)
                     .await?;
 
                 let recovery = signing_observation(
@@ -515,7 +518,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                     "recovery-kid",
                     1,
                 );
-                root.accept_native_source_observation(node, recovery)
+                root.accept_native_source_observation(&node, recovery)
                     .await?;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
@@ -544,7 +547,7 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                 let node = register_node(&root, 1).await?;
                 let authority = "a".repeat(128);
                 root.initialize_native_admission_source(
-                    node,
+                    &node,
                     provenance_for(&authority),
                     descriptor_with_facts(1, vec![1; 4096], 10),
                 )
@@ -558,7 +561,7 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                     vec![1; 8192],
                 );
                 at_max.source_authority = authority.clone();
-                root.accept_native_source_observation(node, at_max).await?;
+                root.accept_native_source_observation(&node, at_max).await?;
 
                 let mut long_authority = account_observation(
                     NativeSourceOperation::ReadAccountSecurityV1,
@@ -569,7 +572,7 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                 );
                 long_authority.source_authority = "b".repeat(129);
                 assert!(matches!(
-                    root.accept_native_source_observation(node, long_authority)
+                    root.accept_native_source_observation(&node, long_authority)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -582,13 +585,13 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                 );
                 bad_authority.source_authority = "not allowed".into();
                 assert!(matches!(
-                    root.accept_native_source_observation(node, bad_authority)
+                    root.accept_native_source_observation(&node, bad_authority)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 assert!(matches!(
                     root.register_native_admission_descriptor(
-                        node,
+                        &node,
                         descriptor_with_facts(2, vec![2; 4097], 20)
                     )
                     .await,
@@ -604,7 +607,7 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                 );
                 long_decision.source_authority = authority.clone();
                 assert!(matches!(
-                    root.accept_native_source_observation(node, long_decision)
+                    root.accept_native_source_observation(&node, long_decision)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -617,7 +620,8 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                 );
                 long_body.source_authority = authority;
                 assert!(matches!(
-                    root.accept_native_source_observation(node, long_body).await,
+                    root.accept_native_source_observation(&node, long_body)
+                        .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 Ok::<(), Box<dyn std::error::Error>>(())
@@ -641,16 +645,16 @@ fn descriptor_and_floor_rollback_are_rejected_without_losing_current_truth()
             migrate_postgres_17_6(&database_url).await?;
             let root = ready_root(&database_url).await?;
             let node = register_node(&root, 1).await?;
-            root.initialize_native_admission_source(node, provenance(), descriptor(2, 2, 20)).await?;
+            root.initialize_native_admission_source(&node, provenance(), descriptor(2, 2, 20)).await?;
             assert!(matches!(
-                root.register_native_admission_descriptor(node, descriptor(1, 1, 10)).await,
+                root.register_native_admission_descriptor(&node, descriptor(1, 1, 10)).await,
                 Err(DurabilityError::Unavailable)
             ));
             let base = account_observation(
                 NativeSourceOperation::ReadAccountSecurityV1, 20, "fresh:20", 200, vec![1]);
             let advance = account_observation(
                 NativeSourceOperation::ReadAccountSecurityV1, 21, "fresh:21", 201, vec![2]);
-            root.accept_native_source_observation(node, base.clone()).await?;
+            root.accept_native_source_observation(&node, base.clone()).await?;
 
             let mut fault = sqlx::PgConnection::connect(&database_url).await?;
             sqlx::query(
@@ -665,7 +669,7 @@ fn descriptor_and_floor_rollback_are_rejected_without_losing_current_truth()
                  reject_native_source_floor_advance()",
             ).execute(&mut fault).await?;
             assert!(matches!(
-                root.accept_native_source_observation(node, advance.clone()).await,
+                root.accept_native_source_observation(&node, advance.clone()).await,
                 Err(DurabilityError::Database(_))
             ));
             sqlx::query("DROP TRIGGER reject_native_source_floor_advance ON game_durability_native_source_floors")
@@ -676,8 +680,8 @@ fn descriptor_and_floor_rollback_are_rejected_without_losing_current_truth()
             drop(root);
 
             let restarted = ready_root(&database_url).await?;
-            restarted.accept_native_source_observation(node, base).await?;
-            restarted.accept_native_source_observation(node, advance).await?;
+            restarted.accept_native_source_observation(&node, base).await?;
+            restarted.accept_native_source_observation(&node, advance).await?;
             Ok::<(), Box<dyn std::error::Error>>(())
         }.await;
         cleanup_database(&admin_url, &database_name).await?;
@@ -702,31 +706,31 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(node, provenance(), descriptor(1, 1, 10))
+                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
                     .await?;
                 let first = vec![1; 16_384];
                 let second = vec![2; 16_384];
                 let third = vec![3];
                 let first_slot = root
-                    .checkpoint_native_source_publication(node, first.clone(), 300)
+                    .checkpoint_native_source_publication(&node, first.clone(), 300)
                     .await?;
                 drop(root);
 
                 let restarted = ready_root(&database_url).await?;
                 assert_eq!(
                     restarted
-                        .checkpoint_native_source_publication(node, first.clone(), 999)
+                        .checkpoint_native_source_publication(&node, first.clone(), 999)
                         .await?,
                     first_slot
                 );
-                let after_replay = restarted.pending_native_source_publications(node).await?;
+                let after_replay = restarted.pending_native_source_publications(&node).await?;
                 let replayed = pending(&after_replay, &first).ok_or("missing replayed slot")?;
                 assert_eq!(replayed.checkpointed_at, 300);
                 let second_slot = restarted
-                    .checkpoint_native_source_publication(node, second.clone(), 301)
+                    .checkpoint_native_source_publication(&node, second.clone(), 301)
                     .await?;
                 let aggregate: usize = restarted
-                    .pending_native_source_publications(node)
+                    .pending_native_source_publications(&node)
                     .await?
                     .iter()
                     .map(|publication| publication.operation_binding.len())
@@ -734,35 +738,35 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
                 assert_eq!(aggregate, 32_768);
                 assert!(matches!(
                     restarted
-                        .checkpoint_native_source_publication(node, third.clone(), 302)
+                        .checkpoint_native_source_publication(&node, third.clone(), 302)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 assert!(matches!(
                     restarted
-                        .checkpoint_native_source_publication(node, vec![4; 16_385], 303)
+                        .checkpoint_native_source_publication(&node, vec![4; 16_385], 303)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 assert!(matches!(
                     restarted
-                        .clear_native_source_publication(node, first_slot, third.clone())
+                        .clear_native_source_publication(&node, first_slot, third.clone())
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 restarted
-                    .clear_native_source_publication(node, first_slot, first)
+                    .clear_native_source_publication(&node, first_slot, first)
                     .await?;
                 drop(restarted);
 
                 let reconciled = ready_root(&database_url).await?;
-                let remaining = reconciled.pending_native_source_publications(node).await?;
+                let remaining = reconciled.pending_native_source_publications(&node).await?;
                 assert_eq!(remaining.len(), 1);
                 assert_eq!(remaining[0].slot_id, second_slot);
                 assert_eq!(remaining[0].operation_binding, second);
                 assert_eq!(
                     reconciled
-                        .checkpoint_native_source_publication(node, third, 302)
+                        .checkpoint_native_source_publication(&node, third, 302)
                         .await?,
                     first_slot
                 );
@@ -791,7 +795,7 @@ async fn source_state(
 
 async fn every_mutation_is_fenced(
     root: &DurabilityRoot,
-    custody: NodeRegistrationFact,
+    custody: &NodeIncarnationProof,
     database_url: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let before = source_state(database_url).await?;
@@ -858,74 +862,88 @@ fn replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custo
                 migrate_postgres_17_6(&database_url).await?;
                 let first_root = ready_root(&database_url).await?;
                 // An unregistered incarnation cannot initialize custody.
-                let unregistered = NodeRegistrationFact::new(node_id(9)?, 1);
+                let unregistered = NodeIncarnationProof::new(
+                    NodeRegistrationFact::new(node_id(9)?, 1),
+                    BootstrapSecret::from_bytes([9; 32]),
+                );
                 assert!(matches!(
                     first_root
-                        .initialize_native_admission_source(unregistered, provenance(), descriptor(1, 1, 10))
+                        .initialize_native_admission_source(&unregistered, provenance(), descriptor(1, 1, 10))
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 let first = register_node(&first_root, 1).await?;
                 first_root
-                    .initialize_native_admission_source(first, provenance(), descriptor(1, 1, 10))
+                    .initialize_native_admission_source(&first, provenance(), descriptor(1, 1, 10))
                     .await?;
                 first_root
                     .accept_native_source_observation(
-                        first,
+                        &first,
                         account_observation(NativeSourceOperation::ReadAccountSecurityV1, 1, "fresh:1", 100, vec![1]),
                     )
                     .await?;
                 let slot = first_root
-                    .checkpoint_native_source_publication(first, vec![1], 100)
+                    .checkpoint_native_source_publication(&first, vec![1], 100)
                     .await?;
                 assert_eq!(slot, 1);
-                // A wrong-incarnation fact (old receipt shape) is not custody.
-                every_mutation_is_fenced(
-                    &first_root,
-                    NodeRegistrationFact::new(first.node_id(), first.registration_revision() + 1),
-                    &database_url,
-                )
-                .await?;
-                every_mutation_is_fenced(&first_root, unregistered, &database_url).await?;
+                // A wrong-incarnation fact (old receipt shape), an unregistered
+                // incarnation and the holder's public fact without its own secret
+                // are not custody.
+                let wrong_incarnation = NodeIncarnationProof::new(
+                    NodeRegistrationFact::new(first.fact().node_id(), first.fact().registration_revision() + 1),
+                    BootstrapSecret::from_bytes([1; 32]),
+                );
+                let public_fact_only = NodeIncarnationProof::new(first.fact(), BootstrapSecret::from_bytes([7; 32]));
+                for impostor in [&wrong_incarnation, &unregistered, &public_fact_only] {
+                    every_mutation_is_fenced(&first_root, impostor, &database_url).await?;
+                }
 
                 // Restart/replacement: a second root registers a fresh incarnation
                 // that supersedes the first. The old process may keep running.
                 let second_root = ready_root(&database_url).await?;
-                let second = register_node_superseding(&second_root, 2, Some(first.node_id())).await?;
+                let second = register_node_superseding(&second_root, 2, Some(first.fact().node_id())).await?;
                 for root in [&first_root, &second_root] {
-                    every_mutation_is_fenced(root, first, &database_url).await?;
+                    every_mutation_is_fenced(root, &first, &database_url).await?;
                 }
                 // Persisted source state alone does not transfer custody.
-                every_mutation_is_fenced(&second_root, second, &database_url).await?;
+                every_mutation_is_fenced(&second_root, &second, &database_url).await?;
                 assert!(matches!(
-                    first_root.claim_native_admission_source_custody(first).await,
+                    first_root.claim_native_admission_source_custody(&first).await,
                     Err(DurabilityError::Unavailable)
                 ));
-                second_root.claim_native_admission_source_custody(second).await?;
-                second_root.claim_native_admission_source_custody(second).await?;
+                // Knowing the successor's public identity does not let the old
+                // process claim or use custody.
+                let stolen = NodeIncarnationProof::new(second.fact(), BootstrapSecret::from_bytes([1; 32]));
+                assert!(matches!(
+                    first_root.claim_native_admission_source_custody(&stolen).await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                second_root.claim_native_admission_source_custody(&second).await?;
+                second_root.claim_native_admission_source_custody(&second).await?;
+                every_mutation_is_fenced(&first_root, &stolen, &database_url).await?;
 
                 // A different current incarnation cannot seize live custody.
                 let third_root = ready_root(&database_url).await?;
                 let third = register_node(&third_root, 3).await?;
                 assert!(matches!(
-                    third_root.claim_native_admission_source_custody(third).await,
+                    third_root.claim_native_admission_source_custody(&third).await,
                     Err(DurabilityError::Unavailable)
                 ));
-                every_mutation_is_fenced(&third_root, third, &database_url).await?;
+                every_mutation_is_fenced(&third_root, &third, &database_url).await?;
 
                 // The current holder resumes exactly the retained state.
-                let pending_after = second_root.pending_native_source_publications(second).await?;
+                let pending_after = second_root.pending_native_source_publications(&second).await?;
                 assert_eq!(pending_after.len(), 1);
                 assert_eq!(pending_after[0].operation_binding, vec![1]);
-                second_root.clear_native_source_publication(second, slot, vec![1]).await?;
+                second_root.clear_native_source_publication(&second, slot, vec![1]).await?;
                 second_root
                     .accept_native_source_observation(
-                        second,
+                        &second,
                         account_observation(NativeSourceOperation::ReadAccountSecurityV1, 2, "fresh:2", 101, vec![2]),
                     )
                     .await?;
                 second_root
-                    .register_native_admission_descriptor(second, descriptor(2, 2, 20))
+                    .register_native_admission_descriptor(&second, descriptor(2, 2, 20))
                     .await?;
                 assert_eq!(source_state(&database_url).await?, ("2".into(), 0, 2));
 
@@ -936,15 +954,15 @@ fn replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custo
                     "UPDATE game_durability_native_source_registration \
                      SET custody_node_id = encode($1, 'hex')::uuid, custody_registration_revision = $2::text::numeric(20,0)",
                 )
-                .bind(first.node_id().as_bytes().as_slice())
-                .bind(first.registration_revision().to_string())
+                .bind(first.fact().node_id().as_bytes().as_slice())
+                .bind(first.fact().registration_revision().to_string())
                 .execute(&mut admin)
                 .await?;
                 admin.close().await?;
-                every_mutation_is_fenced(&first_root, first, &database_url).await?;
-                every_mutation_is_fenced(&second_root, second, &database_url).await?;
-                second_root.claim_native_admission_source_custody(second).await?;
-                second_root.pending_native_source_publications(second).await?;
+                every_mutation_is_fenced(&first_root, &first, &database_url).await?;
+                every_mutation_is_fenced(&second_root, &second, &database_url).await?;
+                second_root.claim_native_admission_source_custody(&second).await?;
+                second_root.pending_native_source_publications(&second).await?;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;
@@ -970,25 +988,29 @@ fn revoke_serializes_with_current_custody_and_later_mutations_fail_atomically()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(node, provenance(), descriptor(1, 1, 10))
+                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
                     .await?;
                 // An in-flight fenced transaction holds the current-incarnation
                 // share lock; revocation waits for it instead of interleaving.
                 let mut inflight = sqlx::PgConnection::connect(&database_url).await?;
                 sqlx::query("BEGIN").execute(&mut inflight).await?;
-                sqlx::query("SELECT game_node_require_current(encode($1, 'hex')::uuid, $2::text::numeric(20,0))")
-                    .bind(node.node_id().as_bytes().as_slice())
-                    .bind(node.registration_revision().to_string())
-                    .execute(&mut inflight)
-                    .await?;
+                sqlx::query(
+                    "SELECT game_node_require_current(encode($1, 'hex')::uuid, $2::text::numeric(20,0), $3)",
+                )
+                .bind(node.fact().node_id().as_bytes().as_slice())
+                .bind(node.fact().registration_revision().to_string())
+                .bind([1_u8; 32].as_slice())
+                .execute(&mut inflight)
+                .await?;
                 let revoker = ready_root(&database_url).await?;
-                let revocation = tokio::spawn(async move { revoker.revoke_node_registration(node).await });
+                let fact = node.fact();
+                let revocation = tokio::spawn(async move { revoker.revoke_node_registration(fact).await });
                 tokio::time::sleep(std::time::Duration::from_millis(300)).await;
                 assert!(!revocation.is_finished(), "revoke did not serialize with in-flight custody");
                 sqlx::query("COMMIT").execute(&mut inflight).await?;
                 inflight.close().await?;
                 revocation.await?.map_err(|error| format!("{error:?}"))?;
-                every_mutation_is_fenced(&root, node, &database_url).await?;
+                every_mutation_is_fenced(&root, &node, &database_url).await?;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;

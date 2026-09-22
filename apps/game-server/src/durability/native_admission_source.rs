@@ -1,7 +1,9 @@
 //! Durable non-rollback state for the authenticated native-admission source.
 
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
-use super::runtime_scope_assignment::{NodeRegistrationFact, lock_current_registration};
+use super::runtime_scope_assignment::{
+    NodeIncarnationProof, NodeRegistrationFact, prove_current_incarnation,
+};
 use super::{DurabilityError, DurabilityRoot};
 use sqlx::{Postgres, Row, Transaction};
 
@@ -286,18 +288,19 @@ fn valid_observation(value: &SourceObservation) -> bool {
 }
 
 /// Database-visible custody fence shared by every native-source mutation and
-/// reconciliation read. The caller's exact incarnation must be the current
-/// #415 registration (share-locked until commit, so a concurrent revoke or
-/// supersession serializes with this transaction) and the durable custody
+/// reconciliation read. The caller must prove possession of the exact current
+/// #415 incarnation (share-locked until commit, so a concurrent revoke or
+/// supersession serializes with this transaction) and be the durable custody
 /// holder. Process-local state, a retained fact or persisted source state alone
 /// never establishes custody.
 async fn fence_custody(
     tx: &mut Transaction<'_, Postgres>,
-    custody: NodeRegistrationFact,
+    custody: &NodeIncarnationProof,
 ) -> Result<()> {
-    if !lock_current_registration(tx, custody).await? {
+    if !prove_current_incarnation(tx, custody).await? {
         return Err(DurabilityError::Unavailable);
     }
+    let custody = custody.fact();
     let holder = sqlx::query(
         "SELECT uuid_send(custody_node_id), custody_registration_revision::text \
          FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE",
@@ -322,10 +325,11 @@ async fn fence_custody(
 impl DurabilityRoot {
     pub async fn initialize_native_admission_source(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
         provenance: FreshStoreProvenance,
         descriptor: DescriptorRegistration,
     ) -> Result<()> {
+        let custody = custody.clone();
         if !valid_bounded_text(&provenance.namespace, JSON_STRING_BYTES)
             || !valid_bounded_text(&provenance.authorization, JSON_STRING_BYTES)
             || !valid_source_authority(&provenance.source_authority)
@@ -336,7 +340,8 @@ impl DurabilityRoot {
         }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            if !lock_current_registration(&mut tx, custody).await? { return Err(DurabilityError::Unavailable); }
+            if !prove_current_incarnation(&mut tx, &custody).await? { return Err(DurabilityError::Unavailable); }
+            let custody = custody.fact();
             let inserted = sqlx::query("INSERT INTO game_durability_native_source_registration (registration_id,bootstrap_namespace,bootstrap_provenance,source_authority,descriptor_revision,descriptor_facts,initialized_at,custody_node_id,custody_registration_revision) VALUES (1,$1,$2,$3,$4::text::numeric(20,0),$5,$6,encode($7,'hex')::uuid,$8::text::numeric(20,0)) ON CONFLICT DO NOTHING")
                 .bind(&provenance.namespace).bind(&provenance.authorization).bind(&provenance.source_authority).bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(provenance.initialized_at).bind(custody.node_id().as_bytes().as_slice()).bind(custody.registration_revision().to_string()).execute(&mut *tx).await?.rows_affected();
             if inserted == 0 { return Err(DurabilityError::Unavailable); }
@@ -352,11 +357,13 @@ impl DurabilityRoot {
     /// superseded); a live holder keeps exclusive custody.
     pub async fn claim_native_admission_source_custody(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
     ) -> Result<()> {
+        let custody = custody.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            if !lock_current_registration(&mut tx, custody).await? { return Err(DurabilityError::Unavailable); }
+            if !prove_current_incarnation(&mut tx, &custody).await? { return Err(DurabilityError::Unavailable); }
+            let custody = custody.fact();
             let row = sqlx::query("SELECT uuid_send(custody_node_id), custody_registration_revision::text FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE")
                 .fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             let node: Vec<u8> = row.try_get(0).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -366,7 +373,10 @@ impl DurabilityRoot {
                 revision,
             );
             if prior == custody { return commit_semantic_transaction(tx, deadline).await; }
-            if lock_current_registration(&mut tx, prior).await? { return Err(DurabilityError::Unavailable); }
+            // A live prior holder keeps exclusive custody (control-plane currentness check).
+            let prior_current: bool = sqlx::query_scalar("SELECT game_node_lock_current_registration(encode($1,'hex')::uuid, $2::text::numeric(20,0))")
+                .bind(prior.node_id().as_bytes().as_slice()).bind(prior.registration_revision().to_string()).fetch_one(&mut *tx).await?;
+            if prior_current { return Err(DurabilityError::Unavailable); }
             sqlx::query("UPDATE game_durability_native_source_registration SET custody_node_id=encode($1,'hex')::uuid, custody_registration_revision=$2::text::numeric(20,0) WHERE registration_id=1")
                 .bind(custody.node_id().as_bytes().as_slice()).bind(custody.registration_revision().to_string()).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await
@@ -375,15 +385,16 @@ impl DurabilityRoot {
 
     pub async fn register_native_admission_descriptor(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
         descriptor: DescriptorRegistration,
     ) -> Result<()> {
+        let custody = custody.clone();
         if !valid_descriptor(&descriptor) {
             return Err(DurabilityError::Unavailable);
         }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            fence_custody(&mut tx, custody).await?;
+            fence_custody(&mut tx, &custody).await?;
             let row = sqlx::query("SELECT r.descriptor_revision::text,r.descriptor_facts,h.installed_at FROM game_durability_native_source_registration r JOIN game_durability_native_source_descriptor_history h USING (registration_id,descriptor_revision) WHERE r.registration_id=1 FOR UPDATE OF r").fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             let current: u64 = row.try_get::<String,_>(0).map_err(|_| DurabilityError::InvalidStoredState)?.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let facts: Vec<u8> = row.try_get(1).map_err(|_| DurabilityError::InvalidStoredState)?;
@@ -398,9 +409,10 @@ impl DurabilityRoot {
 
     pub async fn accept_native_source_observation(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
         observation: SourceObservation,
     ) -> Result<()> {
+        let custody = custody.clone();
         if !valid_observation(&observation) {
             return Err(DurabilityError::Unavailable);
         }
@@ -410,7 +422,7 @@ impl DurabilityRoot {
         let signing_key_id = observation.subject.signing_key_id().map(str::to_owned);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            fence_custody(&mut tx, custody).await?;
+            fence_custody(&mut tx, &custody).await?;
             let registered = sqlx::query_scalar::<_, String>("SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE")
                 .fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             if registered != observation.source_authority { return Err(DurabilityError::Unavailable); }
@@ -437,10 +449,11 @@ impl DurabilityRoot {
 
     pub async fn checkpoint_native_source_publication(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
         operation_binding: Vec<u8>,
         checkpointed_at: i64,
     ) -> Result<i16> {
+        let custody = custody.clone();
         if operation_binding.is_empty()
             || operation_binding.len() > PENDING_CHECKPOINT_BYTES
             || checkpointed_at < 0
@@ -449,7 +462,7 @@ impl DurabilityRoot {
         }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            fence_custody(&mut tx, custody).await?;
+            fence_custody(&mut tx, &custody).await?;
             if let Some(slot) = sqlx::query_scalar::<_,i16>("SELECT slot_id FROM game_durability_native_source_publication_slots WHERE registration_id=1 AND operation_binding=$1").bind(&operation_binding).fetch_optional(&mut *tx).await? { commit_semantic_transaction(tx, deadline).await?; return Ok(slot); }
             let slot = sqlx::query_scalar::<_,i16>("SELECT slot_id FROM game_durability_native_source_publication_slots WHERE registration_id=1 AND operation_binding IS NULL ORDER BY slot_id FOR UPDATE SKIP LOCKED LIMIT 1").fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             sqlx::query("UPDATE game_durability_native_source_publication_slots SET operation_binding=$1,checkpointed_at=$2 WHERE registration_id=1 AND slot_id=$3 AND operation_binding IS NULL").bind(&operation_binding).bind(checkpointed_at).bind(slot).execute(&mut *tx).await?;
@@ -459,10 +472,11 @@ impl DurabilityRoot {
 
     pub async fn clear_native_source_publication(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
         slot_id: i16,
         operation_binding: Vec<u8>,
     ) -> Result<()> {
+        let custody = custody.clone();
         if !matches!(slot_id, 1 | 2)
             || operation_binding.is_empty()
             || operation_binding.len() > PENDING_CHECKPOINT_BYTES
@@ -471,7 +485,7 @@ impl DurabilityRoot {
         }
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            fence_custody(&mut tx, custody).await?;
+            fence_custody(&mut tx, &custody).await?;
             let changed = sqlx::query("UPDATE game_durability_native_source_publication_slots SET operation_binding=NULL,checkpointed_at=NULL WHERE registration_id=1 AND slot_id=$1 AND operation_binding=$2").bind(slot_id).bind(operation_binding).execute(&mut *tx).await?.rows_affected();
             if changed != 1 { return Err(DurabilityError::Unavailable); }
             commit_semantic_transaction(tx, deadline).await
@@ -480,11 +494,12 @@ impl DurabilityRoot {
 
     pub async fn pending_native_source_publications(
         &self,
-        custody: NodeRegistrationFact,
+        custody: &NodeIncarnationProof,
     ) -> Result<Vec<PendingPublication>> {
+        let custody = custody.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            fence_custody(&mut tx, custody).await?;
+            fence_custody(&mut tx, &custody).await?;
             let rows = sqlx::query("SELECT slot_id,operation_binding,checkpointed_at FROM game_durability_native_source_publication_slots WHERE registration_id=1 AND operation_binding IS NOT NULL ORDER BY slot_id").fetch_all(&mut *tx).await?;
             let publications: Vec<PendingPublication> = rows.into_iter().map(|row| Ok(PendingPublication { slot_id: row.try_get(0).map_err(|_| DurabilityError::InvalidStoredState)?, operation_binding: row.try_get(1).map_err(|_| DurabilityError::InvalidStoredState)?, checkpointed_at: row.try_get(2).map_err(|_| DurabilityError::InvalidStoredState)? })).collect::<Result<_>>()?;
             let aggregate = publications.iter().try_fold(0usize, |total, publication| total.checked_add(publication.operation_binding.len())).ok_or(DurabilityError::InvalidStoredState)?;
