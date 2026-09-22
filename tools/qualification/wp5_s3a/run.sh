@@ -93,6 +93,10 @@ evidence "pins game_admission=$GAME_ADMISSION_SHA platform=$PLATFORM_SHA topolog
 
 compose config --quiet
 compose pull --quiet db nginx
+docker pull --platform linux/amd64 --quiet \
+  'php:8.5.6-fpm-bookworm@sha256:1afa03a1445c747fc2448219aa136727b7365a9566a896a4c0d05968093e4bab'
+docker pull --platform linux/amd64 --quiet \
+  'composer:2.8@sha256:0d264a0f1e5be23ba363447768df7b30c33d542711ea12e37770ed7b13bf4eaa'
 compose build --pull platform
 for image in \
   'php:8.5.6-fpm-bookworm@sha256:1afa03a1445c747fc2448219aa136727b7365a9566a896a4c0d05968093e4bab' \
