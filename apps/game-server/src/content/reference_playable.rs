@@ -282,7 +282,10 @@ pub struct ReferenceRationalPercent {
 
 impl ReferenceRationalPercent {
     pub fn new(numerator: i64, denominator: u64) -> Result<Self, ContentError> {
-        let value = Self { numerator, denominator };
+        let value = Self {
+            numerator,
+            denominator,
+        };
         value.validate()?;
         Ok(value)
     }
@@ -316,7 +319,10 @@ impl ReferenceItemTarget {
     pub fn new(key: &str, revision: &str) -> Result<Self, ContentError> {
         ProductionKey::new(key)?;
         DefinitionRevisionRef::new(revision)?;
-        Ok(Self { key: key.to_owned(), revision: revision.to_owned() })
+        Ok(Self {
+            key: key.to_owned(),
+            revision: revision.to_owned(),
+        })
     }
 
     pub(crate) fn typed_ref(&self) -> Result<TypedDefinitionRef, ContentError> {
@@ -429,7 +435,9 @@ pub struct ReferenceItemSkillModifiers {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReferenceItemCharges { pub count: ReferenceItemField<u32> }
+pub struct ReferenceItemCharges {
+    pub count: ReferenceItemField<u32>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReferenceItemTemporal {
@@ -440,10 +448,16 @@ pub struct ReferenceItemTemporal {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReferenceItemContainer { pub capacity: ReferenceItemField<u16> }
+pub struct ReferenceItemContainer {
+    pub capacity: ReferenceItemField<u16>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum ReferenceImbuementTier { Two, Three, Ten }
+pub enum ReferenceImbuementTier {
+    Two,
+    Three,
+    Ten,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ReferenceImbuementAllowance {
@@ -482,7 +496,9 @@ pub struct ReferenceItemTradeRestrictions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReferenceItemFluid { pub fluid_type: ReferenceItemField<ReferenceFluidType> }
+pub struct ReferenceItemFluid {
+    pub fluid_type: ReferenceItemField<ReferenceFluidType>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReferenceItemReadableWriteable {
@@ -496,22 +512,38 @@ pub struct ReferenceItemReadableWriteable {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ReferenceItemSemantics {
-    #[serde(default)] pub presentation: ReferenceItemField<ReferenceItemPresentation>,
-    #[serde(default)] pub classification: ReferenceItemField<ReferenceItemClassification>,
-    #[serde(default)] pub physical: ReferenceItemField<ReferenceItemPhysical>,
-    #[serde(default)] pub stack: ReferenceItemField<ReferenceItemStack>,
-    #[serde(default)] pub equipment: ReferenceItemField<ReferenceItemEquipment>,
-    #[serde(default)] pub weapon: ReferenceItemField<ReferenceItemWeapon>,
-    #[serde(default)] pub protection: ReferenceItemField<ReferenceItemProtection>,
-    #[serde(default)] pub skill_modifiers: ReferenceItemField<ReferenceItemSkillModifiers>,
-    #[serde(default)] pub charges: ReferenceItemField<ReferenceItemCharges>,
-    #[serde(default)] pub temporal: ReferenceItemField<ReferenceItemTemporal>,
-    #[serde(default)] pub container: ReferenceItemField<ReferenceItemContainer>,
-    #[serde(default)] pub imbuement: ReferenceItemField<ReferenceItemImbuement>,
-    #[serde(default)] pub use_transform: ReferenceItemField<ReferenceItemUseTransform>,
-    #[serde(default)] pub trade_restrictions: ReferenceItemField<ReferenceItemTradeRestrictions>,
-    #[serde(default)] pub fluid: ReferenceItemField<ReferenceItemFluid>,
-    #[serde(default)] pub readable_writeable: ReferenceItemField<ReferenceItemReadableWriteable>,
+    #[serde(default)]
+    pub presentation: ReferenceItemField<ReferenceItemPresentation>,
+    #[serde(default)]
+    pub classification: ReferenceItemField<ReferenceItemClassification>,
+    #[serde(default)]
+    pub physical: ReferenceItemField<ReferenceItemPhysical>,
+    #[serde(default)]
+    pub stack: ReferenceItemField<ReferenceItemStack>,
+    #[serde(default)]
+    pub equipment: ReferenceItemField<ReferenceItemEquipment>,
+    #[serde(default)]
+    pub weapon: ReferenceItemField<ReferenceItemWeapon>,
+    #[serde(default)]
+    pub protection: ReferenceItemField<ReferenceItemProtection>,
+    #[serde(default)]
+    pub skill_modifiers: ReferenceItemField<ReferenceItemSkillModifiers>,
+    #[serde(default)]
+    pub charges: ReferenceItemField<ReferenceItemCharges>,
+    #[serde(default)]
+    pub temporal: ReferenceItemField<ReferenceItemTemporal>,
+    #[serde(default)]
+    pub container: ReferenceItemField<ReferenceItemContainer>,
+    #[serde(default)]
+    pub imbuement: ReferenceItemField<ReferenceItemImbuement>,
+    #[serde(default)]
+    pub use_transform: ReferenceItemField<ReferenceItemUseTransform>,
+    #[serde(default)]
+    pub trade_restrictions: ReferenceItemField<ReferenceItemTradeRestrictions>,
+    #[serde(default)]
+    pub fluid: ReferenceItemField<ReferenceItemFluid>,
+    #[serde(default)]
+    pub readable_writeable: ReferenceItemField<ReferenceItemReadableWriteable>,
 }
 
 impl ReferenceItemSemantics {
@@ -1209,15 +1241,16 @@ pub(crate) fn validate_item_definition(item: &ReferenceItemDefinition) -> Result
 
 fn require_limit(resource: &'static str, actual: usize, limit: usize) -> Result<(), ContentError> {
     if actual > limit {
-        return Err(ContentError::LimitExceeded { resource, actual, limit });
+        return Err(ContentError::LimitExceeded {
+            resource,
+            actual,
+            limit,
+        });
     }
     Ok(())
 }
 
-fn require_sorted_unique<T: Ord>(
-    resource: &'static str,
-    values: &[T],
-) -> Result<(), ContentError> {
+fn require_sorted_unique<T: Ord>(resource: &'static str, values: &[T]) -> Result<(), ContentError> {
     if values.windows(2).any(|pair| pair[0] >= pair[1]) {
         return Err(ContentError::InvalidArtifact(resource));
     }
@@ -1252,7 +1285,11 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
     let semantics = &item.semantics;
     if let Known(value) = &semantics.presentation {
         if let Known(name) = &value.name {
-            require_limit("Reference Item presentation name bytes", name.len(), REFERENCE_ITEM_MAX_NAME_BYTES)?;
+            require_limit(
+                "Reference Item presentation name bytes",
+                name.len(),
+                REFERENCE_ITEM_MAX_NAME_BYTES,
+            )?;
         }
         if let Known(description) = &value.description {
             require_limit(
@@ -1357,26 +1394,43 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         validate_rational_field(&value.hit_chance)?;
         validate_rational_field(&value.max_hit_chance)?;
         if let Known(entries) = &value.elemental {
-            require_limit("Reference Item Weapon elements", entries.len(), REFERENCE_ITEM_MAX_WEAPON_ELEMENTS)?;
+            require_limit(
+                "Reference Item Weapon elements",
+                entries.len(),
+                REFERENCE_ITEM_MAX_WEAPON_ELEMENTS,
+            )?;
             require_sorted_unique(
                 "Reference Item Weapon element order",
-                &entries.iter().map(|entry| entry.element).collect::<Vec<_>>(),
+                &entries
+                    .iter()
+                    .map(|entry| entry.element)
+                    .collect::<Vec<_>>(),
             )?;
         }
     }
     if let Known(value) = &semantics.protection {
         if let Known(entries) = &value.resistances {
-            require_limit("Reference Item resistances", entries.len(), REFERENCE_ITEM_MAX_RESISTANCES)?;
+            require_limit(
+                "Reference Item resistances",
+                entries.len(),
+                REFERENCE_ITEM_MAX_RESISTANCES,
+            )?;
             require_sorted_unique(
                 "Reference Item resistance order",
                 &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
             )?;
-            for entry in entries { validate_rational_field(&entry.percent)?; }
+            for entry in entries {
+                validate_rational_field(&entry.percent)?;
+            }
         }
     }
     if let Known(value) = &semantics.skill_modifiers {
         if let Known(entries) = &value.modifiers {
-            require_limit("Reference Item SkillModifiers", entries.len(), REFERENCE_ITEM_MAX_MODIFIERS)?;
+            require_limit(
+                "Reference Item SkillModifiers",
+                entries.len(),
+                REFERENCE_ITEM_MAX_MODIFIERS,
+            )?;
             require_sorted_unique(
                 "Reference Item SkillModifier order",
                 &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
@@ -1396,21 +1450,33 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         }
     }
     if let Known(value) = &semantics.temporal {
-        if let Known(target) = &value.decay_target { validate_item_target(target)?; }
+        if let Known(target) = &value.decay_target {
+            validate_item_target(target)?;
+        }
     }
     if let Known(value) = &semantics.imbuement {
         if matches!(value.slot_count, Known(slots) if slots > REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS) {
-            return Err(ContentError::InvalidArtifact("Reference Item imbuement slot count"));
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item imbuement slot count",
+            ));
         }
         if let Known(entries) = &value.allowed_family_tiers {
-            require_limit("Reference Item imbuement allowances", entries.len(), REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES)?;
+            require_limit(
+                "Reference Item imbuement allowances",
+                entries.len(),
+                REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            )?;
             require_sorted_unique(
                 "Reference Item imbuement allowance order",
                 &entries.iter().map(|entry| entry.family).collect::<Vec<_>>(),
             )?;
         }
         if let Known(entries) = &value.excluded_families {
-            require_limit("Reference Item excluded imbuement families", entries.len(), REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES)?;
+            require_limit(
+                "Reference Item excluded imbuement families",
+                entries.len(),
+                REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            )?;
             require_sorted_unique("Reference Item excluded imbuement family order", entries)?;
         }
     }
@@ -1422,15 +1488,25 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         }
         require_sorted_unique(
             "Reference Item UseTransform kind order",
-            &value.targets.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
+            &value
+                .targets
+                .iter()
+                .map(|entry| entry.kind)
+                .collect::<Vec<_>>(),
         )?;
         for entry in &value.targets {
-            if let Known(target) = &entry.target { validate_item_target(target)?; }
+            if let Known(target) = &entry.target {
+                validate_item_target(target)?;
+            }
         }
     }
     if let Known(value) = &semantics.trade_restrictions {
         if let Known(vocations) = &value.vocations {
-            require_limit("Reference Item trade vocations", vocations.len(), REFERENCE_ITEM_MAX_BASE_VOCATIONS)?;
+            require_limit(
+                "Reference Item trade vocations",
+                vocations.len(),
+                REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+            )?;
             require_sorted_unique("Reference Item trade vocation order", vocations)?;
         }
         reject_known_unsupported(
@@ -1443,7 +1519,9 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         )?;
     }
     if let Known(value) = &semantics.readable_writeable {
-        if let Known(target) = &value.write_once_target { validate_item_target(target)?; }
+        if let Known(target) = &value.write_once_target {
+            validate_item_target(target)?;
+        }
     }
     Ok(())
 }
@@ -1469,7 +1547,9 @@ fn validate_modifier_parameter(
             if let Parameter::RationalPercent(value) = parameter {
                 value.validate()?;
                 true
-            } else { false }
+            } else {
+                false
+            }
         }
         Kind::HealthTicks | Kind::ManaTicks => matches!(parameter, Parameter::Milliseconds(_)),
         Kind::PerfectShotRange => matches!(parameter, Parameter::Cells(_)),
