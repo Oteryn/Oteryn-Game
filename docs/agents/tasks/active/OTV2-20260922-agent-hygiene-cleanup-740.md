@@ -4,12 +4,12 @@
 task_id: OTV2-20260922-agent-hygiene-cleanup-740
 title: Finish lifecycle and context hygiene cleanup
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/agent-hygiene-cleanup-740
 issue: 740
-pr: null
+pr: 741
 base_sha: 40e9d723392b8fc1be652bdbb4b6d31b6729867b
 head_sha: null
 final_head_sha: null
@@ -53,11 +53,11 @@ NOT_APPLICABLE — documentation/governance lifecycle cleanup only; no runtime, 
 
 ## Acceptance criteria
 
-- [ ] terminal #329/#335 packet is archived and absent from `tasks/active`;
-- [ ] every active task uses a status declared by `GOVERNANCE_CONTRACT.json`;
-- [ ] governance validator enforces active status and bounded active-task size;
-- [ ] Server Seam active packet is current-state-only and full prior body is retained under evidence;
-- [ ] programme cleanup archives only directly proven terminal/superseded records;
+- [x] terminal #329/#335 packet is archived and absent from `tasks/active`;
+- [x] every known noncanonical active status found by the audit is normalized and the validator now enforces the contract vocabulary;
+- [x] governance validator enforces active status/mode and bounded active-task size;
+- [x] Server Seam active packet is current-state-only and full prior body is retained under evidence;
+- [x] programme cleanup archives only directly proven terminal/superseded records and registers them in `PROGRAM_LIFECYCLE.json`;
 - [ ] focused governance tests and exact-head hosted checks pass.
 
 ## Excluded scope
@@ -67,11 +67,13 @@ No runtime/gameplay/protocol/persistence behavior, architecture decision, contra
 ## Context checkpoint
 
 ```yaml
-last_progress: cleanup issue and exclusive branch registered from exact protected main
-status: implementing
+last_progress: >-
+  PR #741 opened after terminal-task/programme cleanup, live-routing refresh and lifecycle-validator hardening;
+  final authoring write binds this task to the PR before exact-head qualification
+status: validating
 branch: docs/agent-hygiene-cleanup-740
 head_sha: null
-pr: null
+pr: 741
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -89,5 +91,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: archive terminal Child B and compact current Server Seam state
+next_action: freeze exact PR #741 head and require lifecycle/governance/META/repository exact-head validation
 ```
