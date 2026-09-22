@@ -3067,6 +3067,14 @@ mod typed_item_codec_tests {
         let client = encode_typed_item(&item, ReferenceArtifactProjection::ClientSafe, &definitions)?;
         assert_eq!(server.len(), TYPED_REFERENCE_ITEM_MAX_SERVER_RECORD_BYTES);
         assert_eq!(client.len(), TYPED_REFERENCE_ITEM_MAX_CLIENT_RECORD_BYTES);
+        assert_eq!(
+            sha256(&server).as_slice(),
+            hex_bytes("19c38b3cd18c7e2765aefb9ec2c7b0da9a31be66eaa30b84c63a7cf9ee132fc5")
+        );
+        assert_eq!(
+            sha256(&client).as_slice(),
+            hex_bytes("0f9f25815a61fa292d6a74f89974f8b4bbefcca3d70a19ee023d730e88261e21")
+        );
         assert_eq!(encode_typed_item(&item, ReferenceArtifactProjection::ServerAuthoritative, &definitions)?, server);
         let identity = identity()?;
         let index = [IndexEntry { identity, body_offset: 0, body_length: server.len(), body_digest: sha256(&server) }];
@@ -3078,7 +3086,47 @@ mod typed_item_codec_tests {
             parse_typed_server_item(&over, &index),
             Err(ContentError::LimitExceeded { actual: 3_556, limit: 3_555, .. })
         ));
+        let mut over = client;
+        over.push(0);
+        assert!(matches!(
+            parse_typed_client_item(&over, &index),
+            Err(ContentError::LimitExceeded { actual: 3_434, limit: 3_433, .. })
+        ));
         Ok(())
+    }
+
+    #[test]
+    fn typed_resource_limits_accept_exact_max_and_reject_max_plus_one() {
+        let profile = ReferenceArtifactProfile::TypedItemV4;
+        for (projection, body, artifact) in [
+            (
+                ReferenceArtifactProjection::ServerAuthoritative,
+                TYPED_REFERENCE_ITEM_MAX_SERVER_BODY_BYTES,
+                TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
+            ),
+            (
+                ReferenceArtifactProjection::ClientSafe,
+                TYPED_REFERENCE_ITEM_MAX_CLIENT_BODY_BYTES,
+                TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+            ),
+        ] {
+            assert!(check_body_section_length(profile, projection, body).is_ok());
+            assert!(check_body_section_length(profile, projection, body + 1).is_err());
+            assert!(check_artifact_length(profile, artifact, projection).is_ok());
+            assert!(check_artifact_length(profile, artifact + 1, projection).is_err());
+        }
+        assert!(check_pair_lengths(
+            profile,
+            TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES,
+            TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+        )
+        .is_ok());
+        assert!(check_pair_lengths(
+            profile,
+            TYPED_REFERENCE_ITEM_MAX_SERVER_ARTIFACT_BYTES + 1,
+            TYPED_REFERENCE_ITEM_MAX_CLIENT_ARTIFACT_BYTES,
+        )
+        .is_err());
     }
 
     #[test]
@@ -3176,18 +3224,46 @@ mod typed_item_codec_tests {
         assert!(ReferenceRationalPercent::new(2, 4).is_err());
         assert!(ReferenceRationalPercent::new(0, 2).is_err());
         assert!(ReferenceRationalPercent::new(1, 0).is_err());
+        let mut noncanonical_rational = Vec::new();
+        noncanonical_rational.extend_from_slice(&2_i64.to_be_bytes());
+        noncanonical_rational.extend_from_slice(&4_u64.to_be_bytes());
+        assert!(read_rational(&mut SliceReader::new(&noncanonical_rational)).is_err());
+        assert!(ReferenceItemType::from_wire(u8::MAX).is_err());
 
         let mut item = worst_item()?;
         let ReferenceItemField::Known(stack) = &mut item.semantics.stack else { unreachable!() };
         stack.stackable = Known(false);
         assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
 
+        let mut item = worst_item()?;
+        let ReferenceItemField::Known(equipment) = &mut item.semantics.equipment else { unreachable!() };
+        let ReferenceItemField::Known(patterns) = &mut equipment.patterns else { unreachable!() };
+        let mut third = patterns[1].clone();
+        third.pattern_id = 3;
+        patterns.push(third);
+        assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
+
+        let mut item = worst_item()?;
+        let ReferenceItemField::Known(imbuement) = &mut item.semantics.imbuement else { unreachable!() };
+        imbuement.slot_count = Known(REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS + 1);
+        assert!(crate::content::reference_playable::validate_item_definition(&item).is_err());
+
         let identity = identity()?;
         let index = [IndexEntry { identity, body_offset: 0, body_length: 0, body_digest: [0; 32] }];
-        let client_with_temporal = [2, 1, 2, 0, 1, ITEM_GROUP_TEMPORAL, 0, 1, 0];
-        assert!(parse_typed_client_item(&client_with_temporal, &index).is_err());
+        for group in [
+            ITEM_GROUP_TEMPORAL,
+            ITEM_GROUP_USE_TRANSFORM,
+            ITEM_GROUP_TRADE_RESTRICTIONS,
+            ITEM_GROUP_FLUID,
+            ITEM_GROUP_READABLE_WRITEABLE,
+        ] {
+            let client_with_server_group = [2, 1, 2, 0, 1, group, 0, 1, 0];
+            assert!(parse_typed_client_item(&client_with_server_group, &index).is_err());
+        }
         let duplicate_group = [2, 1, 2, 0, 2, 1, 0, 1, 0, 1, 0, 1, 0];
         assert!(parse_typed_client_item(&duplicate_group, &index).is_err());
+        let stack_contradiction = [2, 1, 2, 0, 1, ITEM_GROUP_STACK, 0, 4, 3, 3, 0, 0];
+        assert!(parse_typed_client_item(&stack_contradiction, &index).is_err());
         Ok(())
     }
 }
