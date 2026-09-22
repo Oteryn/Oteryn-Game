@@ -10,6 +10,8 @@ const B1_EVIDENCE: &[u8] = include_bytes!(
 const BATCH_PRODUCT: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260921-content-world-cw2-native-item-batch.json"
 );
+const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_098_651;
+const FULL_FAMILY_MAX_STRING_BYTES: usize = 42_332_603;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -403,7 +405,7 @@ fn batch_limits() -> ProjectEvidenceLimits {
         max_total_bytes: 4_194_304,
         max_json_depth: 24,
         max_decoded_fields: 32_768,
-        max_string_bytes: 96_000_000,
+        max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_NATIVE_ITEM_BATCH_COUNT,
@@ -697,7 +699,7 @@ fn full_family_limits() -> ProjectEvidenceLimits {
         max_document_bytes: 96_000_000,
         max_total_bytes: 160_000_000,
         max_json_depth: 24,
-        max_decoded_fields: 5_000_000,
+        max_decoded_fields: FULL_FAMILY_MAX_DECODED_FIELDS,
         max_string_bytes: 96_000_000,
         max_locator_bytes: 160,
         max_locator_segments: 8,
@@ -860,10 +862,34 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
         .max_by_key(|(_, fields)| *fields)
         .expect("canonical project documents");
     assert_eq!(
-        (max_strings, max_fields),
-        (("CONTROLLED_RED", 0), ("CONTROLLED_RED", 0)),
-        "CONTROLLED_RED_CAPTURE_FULL_FAMILY_JSON_BUDGETS"
+        max_strings,
+        ("imports/candidates.json", FULL_FAMILY_MAX_STRING_BYTES)
     );
+    assert_eq!(
+        max_fields,
+        ("imports/candidates.json", FULL_FAMILY_MAX_DECODED_FIELDS)
+    );
+
+    let string_too_small = ProjectEvidenceLimits {
+        max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES - 1,
+        ..full_family_limits()
+    };
+    assert!(matches!(
+        snapshot.parse(string_too_small),
+        Err(ProjectError::InvalidJson(message))
+            if message.contains("project JSON string bytes exceed evidence limit")
+    ));
+
+    let fields_too_small = ProjectEvidenceLimits {
+        max_decoded_fields: FULL_FAMILY_MAX_DECODED_FIELDS - 1,
+        ..full_family_limits()
+    };
+    assert!(matches!(
+        snapshot.parse(fields_too_small),
+        Err(ProjectError::InvalidJson(message))
+            if message.contains("project decoded fields exceed evidence limit")
+    ));
+
     let project = snapshot
         .parse(full_family_limits())
         .expect("parsed full-family project");
