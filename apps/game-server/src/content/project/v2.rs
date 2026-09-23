@@ -369,16 +369,18 @@ impl ProjectV2Declaration {
     fn references(&self) -> Vec<(ProjectV2Family, &ProjectV2DefinitionRef)> {
         let mut references = Vec::new();
         match self {
-            Self::WorldObject { presentation, .. } => {
-                if let Some(reference) = presentation {
-                    references.push((ProjectV2Family::Presentation, reference));
-                }
-            }
-            Self::Area { parent, .. } => {
-                if let Some(reference) = parent {
-                    references.push((ProjectV2Family::Area, reference));
-                }
-            }
+            Self::WorldObject {
+                presentation: Some(reference),
+                ..
+            } => references.push((ProjectV2Family::Presentation, reference)),
+            Self::WorldObject {
+                presentation: None, ..
+            } => {}
+            Self::Area {
+                parent: Some(reference),
+                ..
+            } => references.push((ProjectV2Family::Area, reference)),
+            Self::Area { parent: None, .. } => {}
             Self::Document { .. } => {}
             Self::Achievement {
                 presentation,
