@@ -65,7 +65,7 @@ Default ordinary authoring is repository-native high-level API mutation on the e
 
 During AUTHORING, one writer owns the branch. Fresh-read the live head before each write and stop on unexpected movement. After the final authoring write, require the returned SHA to equal the live branch head, verify the complete bounded delta and owned paths, and freeze that exact remote SHA. Candidate-specific validation/review starts only after freeze.
 
-If a repair is needed after freeze, return to AUTHORING on the same allocated branch, produce a new head, freeze the new SHA and rerun candidate-specific evidence. Missing Git credentials or push capability is not a reason to request Remote Desktop. Do not use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, post-freeze sequential file writes, force/reset/rebase, or Remote Desktop as publication fallbacks. Recovery-specific atomic publication belongs to the active control plane under current root/META policy.
+If a repair is needed after freeze, first return to AUTHORING on the same allocated branch; only then may high-level API writes produce a successor head. Freeze the new SHA and rerun candidate-specific evidence. Missing Git credentials or push capability is not a reason to request Remote Desktop. Do not use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, writes while a head remains frozen, force/reset/rebase, or Remote Desktop as publication fallbacks. Recovery-specific atomic publication belongs to the active control plane under current root/META policy.
 
 ## Acceptance / validation
 
