@@ -234,17 +234,42 @@ def routing_surface(roots: dict[str, str], path: str) -> str:
     return "unknown"
 
 
-def reference_patterns(path: str) -> tuple[str, ...]:
-    """Return bounded literals for exact-file and repository-directory consumers."""
+def file_reference_patterns(path: str) -> tuple[str, ...]:
+    """Return conservative literals for an exact repository-file consumer."""
     parts = PurePosixPath(path).parts
     patterns = {path, parts[-1]}
     if len(parts) >= 2:
         patterns.add("/".join(parts[-2:]))
-        parent = parts[:-1]
-        if len(parent) >= 2:
-            patterns.add("/".join(parent))
-            patterns.add("/".join(parent[-2:]))
     return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
+
+
+def directory_reference_patterns(path: str) -> tuple[str, ...]:
+    """Return non-top-level ancestor paths that may be consumed as directories."""
+    parts = PurePosixPath(path).parts[:-1]
+    patterns = {
+        "/".join(parts[:length])
+        for length in range(2, len(parts) + 1)
+    }
+    return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
+
+
+def standalone_directory_reference(content: bytes, pattern: str) -> bool:
+    """Require a directory path literal boundary, not a prefix of a sibling file."""
+    needle = pattern.encode("utf-8")
+    start = 0
+    while True:
+        index = content.find(needle, start)
+        if index < 0:
+            return False
+        end = index + len(needle)
+        suffix = content[end:end + 2]
+        if (
+            end == len(content)
+            or content[end:end + 1] in {b'"', b"'"}
+            or suffix in {b'/"', b"/'"}
+        ):
+            return True
+        start = index + 1
 
 
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
@@ -260,7 +285,7 @@ def candidate_reference_consumers(
     """Map changed non-Cargo files to exact-candidate product/control consumers.
 
     Candidate content is read as data only. Matching covers exact files plus
-    bounded parent-directory literals across Cargo packages and canonical product
+    bounded, standalone parent-directory literals across Cargo packages and canonical product
     CI workflows. False positives only allocate broader lanes; malformed or
     unavailable evidence fails closed.
     """
@@ -270,16 +295,16 @@ def candidate_reference_consumers(
     unique = sorted(set(paths))
     if not unique or any(not valid_path(path) for path in unique):
         raise ValueError("invalid candidate reference path")
-    patterns: dict[str, set[str]] = {}
-    reverse_patterns: dict[str, set[str]] = {}
+    reverse_files: dict[str, set[str]] = {}
+    reverse_directories: dict[str, set[str]] = {}
     for path in unique:
-        values = set(reference_patterns(path))
-        patterns[path] = values
-        for value in values:
-            reverse_patterns.setdefault(value, set()).add(path)
+        for value in file_reference_patterns(path):
+            reverse_files.setdefault(value, set()).add(path)
+        for value in directory_reference_patterns(path):
+            reverse_directories.setdefault(value, set()).add(path)
 
     command = ["git", "grep", "-l", "-z", "-F"]
-    for pattern in sorted(reverse_patterns):
+    for pattern in sorted(set(reverse_files) | set(reverse_directories)):
         command.extend(["-e", pattern])
     command.extend([sha, "--", *consumer_pathspecs(roots)])
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
@@ -300,11 +325,15 @@ def candidate_reference_consumers(
         control = consumer_path in CANONICAL_CONTROL_PATHS
         if owner is None and not control:
             continue
-        for pattern, targets in reverse_patterns.items():
-            if pattern.encode("utf-8") not in content:
-                continue
-            for target in targets:
-                consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
+        selected: set[str] = set()
+        for pattern, targets in reverse_files.items():
+            if pattern.encode("utf-8") in content:
+                selected.update(targets)
+        for pattern, targets in reverse_directories.items():
+            if standalone_directory_reference(content, pattern):
+                selected.update(targets)
+        for target in selected:
+            consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
     return consumers
 
 
