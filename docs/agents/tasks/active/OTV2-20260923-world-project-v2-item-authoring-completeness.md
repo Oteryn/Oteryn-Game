@@ -4,13 +4,14 @@
 task_id: OTV2-20260923-world-project-v2-item-authoring-completeness
 title: WorldProject/v2 contemporary Item authoring completeness
 mode: IMPLEMENT
-status: authoring
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 504
 base_branch: main
+pr: 792
 branch: agent/world-project-v2-item-authoring-completeness-20260923
 base_sha: a791a52a5963713465c6ac9fc7f412153ab22c1f
-head_sha: pending
+head_sha: pending final metadata commit
 owner: "single autonomous Content/World Item authoring writer"
 owned_paths:
   - apps/game-server/src/content/project/v2.rs
