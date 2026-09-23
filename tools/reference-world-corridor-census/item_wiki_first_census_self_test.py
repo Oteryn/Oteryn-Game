@@ -53,6 +53,7 @@ def page(page_id=1, title="Falcon Plate", armor=18):
         "revision_timestamp": "2026-09-23T00:00:00Z",
         "retrieval_timestamp": "2026-09-23T20:00:00Z",
         "source_digest": "0" * 64,
+        "source_shape": "INFOBOX_ITEM",
         "normalized_fields": {
             "name": {"state": "VALUE", "value": title},
             "armor": {"state": "VALUE", "value": armor},
@@ -167,6 +168,30 @@ def test_compile_census_keeps_full_infobox_partition_without_prose() -> None:
     assert '"content"' not in encoded
 
 
+def test_compile_census_counts_no_infobox_source_shape() -> None:
+    no_infobox = {
+        **page(page_id=2, title="0152551751 (Book)"),
+        "source_shape": "NO_INFOBOX_ITEM",
+        "normalized_fields": {},
+        "unmapped_infobox_fields": {},
+        "infobox_present": False,
+    }
+    full = census.compile_census(
+        [
+            {"page_id": 1, "title": "Falcon Plate"},
+            {"page_id": 2, "title": "0152551751 (Book)"},
+        ],
+        [page(), no_infobox],
+        retrieval_timestamp="2026-09-23T20:00:00Z",
+    )
+    assert full["counts"]["pages_with_infobox"] == 1
+    assert full["counts"]["pages_without_infobox"] == 1
+    assert full["counts"]["source_shapes"] == {
+        "INFOBOX_ITEM": 1,
+        "NO_INFOBOX_ITEM": 1,
+    }
+
+
 def test_compile_rejects_discovery_fetch_mismatch() -> None:
     reject(
         lambda: census.compile_census(
@@ -191,6 +216,8 @@ def test_manifest_is_source_only_and_stable_without_retrieval_timestamp() -> Non
     )
     assert manifest["invariants"]["wiki_first_discovery"] is True
     assert manifest["invariants"]["starts_from_crystal_38157"] is False
+    assert manifest["invariants"]["source_shape_partition_complete"] is True
+    assert manifest["invariants"]["no_infobox_member_dropped"] is True
     assert manifest["invariants"]["identity_resolution_performed"] is False
     assert manifest["invariants"]["semantic_promotion_performed"] is False
     assert manifest["invariants"]["raw_long_form_prose_collected"] is False
@@ -198,19 +225,23 @@ def test_manifest_is_source_only_and_stable_without_retrieval_timestamp() -> Non
     assert manifest["next_gate"] == "WIKI_FIRST_ITEM_IDENTITY_CROSSWALK"
 
 
-def test_normalize_page_rejects_discovered_page_without_infobox() -> None:
+def test_normalize_page_retains_category_member_without_infobox() -> None:
     meta = {
         "page_id": 1,
-        "title": "Not an Item",
+        "title": "0152551751 (Book)",
         "revision_id": 2,
         "revision_timestamp": "2026-09-23T00:00:00Z",
     }
-    reject(
-        lambda: census.normalize_page(
-            meta, "ordinary page text", "2026-09-23T20:00:00Z"
-        ),
-        "DISCOVERED_PAGE_WITHOUT_INFOBOX",
+    record = census.normalize_page(
+        meta,
+        "document page with long-form text but no base Item infobox",
+        "2026-09-23T20:00:00Z",
     )
+    assert record["infobox_present"] is False
+    assert record["source_shape"] == "NO_INFOBOX_ITEM"
+    assert record["normalized_fields"] == {}
+    assert record["unmapped_infobox_fields"] == {}
+    assert "document page" not in json.dumps(record)
 
 
 def test_cache_round_trip_uses_bounded_predecessor_format() -> None:
