@@ -762,7 +762,6 @@ fn protected_empty_v2_declarations_wire_remains_unchanged_without_item_authoring
     );
 }
 
-
 fn wiki_coverage_candidate() -> ProjectV2Draft {
     let mut draft = item_candidate();
     draft.core.records.extend([
@@ -812,10 +811,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
         ProjectV2Family::Presentation,
         "oteryn:reference.presentation.courier",
     );
-    let item = reference(
-        ProjectV2Family::Item,
-        "oteryn:reference.item.weapon-alpha",
-    );
+    let item = reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha");
 
     draft.state.declarations.extend([
         ProjectV2Declaration::Area {
@@ -885,9 +881,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
         .iter_mut()
         .find_map(|declaration| match declaration {
             ProjectV2Declaration::Service {
-                identity,
-                recipes,
-                ..
+                identity, recipes, ..
             } if identity.key == "oteryn:content.service.item-alpha" => Some(recipes),
             _ => None,
         })
@@ -1036,10 +1030,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
             }),
         },
         ProjectV2AuthoringProfile {
-            target: reference(
-                ProjectV2Family::WorldObject,
-                "oteryn:content.object.sign",
-            ),
+            target: reference(ProjectV2Family::WorldObject, "oteryn:content.object.sign"),
             data: ProjectV2AuthoringProfileData::WorldObject(ProjectV2WorldObjectAuthoring {
                 area: Some(area.clone()),
                 interactions: vec![interaction],
@@ -1057,10 +1048,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
         key: "oteryn:placement.library-shelf".into(),
         world: "oteryn:world.reference".into(),
         map_revision: "map-r1".into(),
-        definition: reference(
-            ProjectV2Family::WorldObject,
-            "oteryn:content.object.sign",
-        ),
+        definition: reference(ProjectV2Family::WorldObject, "oteryn:content.object.sign"),
         area: Some(area.clone()),
         document: None,
         parent_placement: None,
@@ -1190,13 +1178,25 @@ fn wiki_authoring_rejects_mutable_state_and_wrong_profile_ownership() {
         .state
         .authoring_profiles
         .iter_mut()
-        .find(|profile| {
-            matches!(
-                &profile.data,
-                ProjectV2AuthoringProfileData::Creature(_)
-            )
-        })
+        .find(|profile| matches!(&profile.data, ProjectV2AuthoringProfileData::Creature(_)))
         .expect("Creature profile");
     creature.target.family = ProjectV2Family::Item;
     assert!(CanonicalProjectDocuments::from_v2_draft(wrong_owner, limits()).is_err());
+}
+
+#[test]
+fn wiki_placement_hierarchy_rejects_parent_cycles() {
+    let mut candidate = wiki_coverage_candidate();
+    let shelf_key = "oteryn:placement.library-shelf";
+    let book_key = "oteryn:placement.library-book";
+
+    let shelf = candidate
+        .state
+        .placements
+        .iter_mut()
+        .find(|placement| placement.key == shelf_key)
+        .expect("shelf placement");
+    shelf.parent_placement = Some(book_key.into());
+
+    assert!(CanonicalProjectDocuments::from_v2_draft(candidate, limits()).is_err());
 }
