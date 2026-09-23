@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Select conservative PR lanes using only a verified protected-base checkout.
+"""Select product CI lanes from the exact candidate tree.
 
-Cargo edges are not a complete file-input graph. The audited non-server snapshot
-binds server-only isolation. Neutral-documentation routing separately compares
-protected consumer drift against an audited protected-main baseline and fails
-closed only when later changes can affect build/document input discovery.
+Cargo metadata owns package dependency closure. Files outside Cargo packages are
+auxiliary unless the exact candidate's product/build sources reference them.
+Canonical routing/build controls remain conservative FULL inputs. This avoids
+historical snapshot repins while keeping real non-Cargo product inputs attached
+to their consuming packages.
 """
 from __future__ import annotations
 
-import difflib
-import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -19,18 +18,24 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 
-AUDITED_INPUT_SHA256 = "220e5dbe065665815eefb8219ac9d4609f5d06afbe15315d7a6d2b200839f3a6"
-AUDITED_DOC_INPUT_SHA256 = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
-AUDITED_DOC_CONSUMER_BASE_SHA = "256aa3b152c944cb8451906effe1f0090c5b798d"
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
+CONTROL_CONSUMER = "__canonical_routing_control__"
 REQUIRED = {
     SERVER: "apps/game-server",
     "oteryn-client": "apps/client",
     "oteryn-synthetic-client-harness": "tools/synthetic-client-harness",
     "oteryn-simulation-determinism": "crates/simulation-determinism",
 }
-BUILD_INPUTS = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml", "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules"}
+BUILD_INPUTS = {
+    "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "rustfmt.toml",
+    "deny.toml", "workspace-boundaries.toml", ".gitattributes", ".gitmodules",
+}
+CANONICAL_CONTROL_PATHS = {
+    ".github/workflows/merge-gate.yml",
+    ".github/workflows/merge-group-gate.yml",
+    ".github/workflows/rust.yml",
+}
 ATLAS_FULLWORLD_PATHS = {
     "tools/game-atlas-fullworld-source/producer.py",
     "tools/game-atlas-fullworld-source/self_test.py",
@@ -56,9 +61,8 @@ DEGRADED_ROUTING_REASONS = {
     "invalid-file-record",
     "missing-rename-source",
     "invalid-rename-source",
-    "unreviewed-consumer-input-snapshot",
-    "unreviewed-document-consumer-inputs",
     "unverified-or-special-candidate-modes",
+    "unverified-reference-consumers",
 }
 UNMODELLED_ROUTING_REASONS = {
     "mixed-or-unowned-surface",
@@ -80,52 +84,25 @@ def routing_health(result: dict) -> str:
 
 
 def valid_path(value) -> bool:
-    return isinstance(value, str) and bool(value) and not any(c in value for c in "\x00\n\r\\") and not value.startswith("/") and ".." not in value.split("/") and str(PurePosixPath(value)) == value
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and not any(c in value for c in "\x00\n\r\\")
+        and not value.startswith("/")
+        and ".." not in value.split("/")
+        and str(PurePosixPath(value)) == value
+    )
 
-
-def external_local_dependency_roots() -> tuple[str, ...]:
-    """Return root-manifest [patch.*] path trees consumed outside workspace membership.
-
-    Cargo accepts manifest constructs that Python's TOML 1.0 parser does not, so keep this
-    deliberately narrow: inspect only patch sections and extract literal path assignments.
-    The root Cargo.toml is already an audited BUILD_INPUT, so any patch-table shape change
-    invalidates the snapshot before a new path tree can be trusted.
-    """
-    roots: set[str] = set()
-    in_patch = False
-    header = re.compile(r"^\s*\[([^\]]+)\]\s*(?:#.*)?$")
-    path_assignment = re.compile(r'\bpath\s*=\s*"([^"]+)"')
-
-    for line in (ROOT / "Cargo.toml").read_text(encoding="utf-8").splitlines():
-        match = header.match(line)
-        if match is not None:
-            in_patch = match.group(1).startswith("patch.")
-            continue
-        if not in_patch:
-            continue
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        path_match = path_assignment.search(line)
-        if path_match is None:
-            continue
-        raw = path_match.group(1)
-        candidate = PurePosixPath(raw)
-        normalized = str(candidate)
-        if candidate.is_absolute() or normalized == "." or not valid_path(normalized):
-            raise ValueError("unsafe patched dependency path")
-        roots.add(normalized)
-
-    return tuple(sorted(roots))
 
 def neutral(path: str) -> bool:
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"} or path.startswith("docs/migration/"):
         return False
-    return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md"} or (path.startswith("docs/") and path.endswith(".md"))
+    return path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md"} or (
+        path.startswith("docs/") and path.endswith(".md")
+    )
 
 
 def agent_governance(path: str) -> bool:
-    """Return paths whose semantics are validated by governance/policy gates, not product builds."""
     if PurePosixPath(path).name in {"AGENTS.md", "AGENTS.override.md"}:
         return True
     if path.startswith("tools/agents/"):
@@ -133,13 +110,13 @@ def agent_governance(path: str) -> bool:
     return path.startswith("docs/agents/") and not path.startswith("docs/agents/evidence/")
 
 
-def agent_task_record(path: str) -> bool:
-    """Return task-lifecycle records owned exclusively by agent governance."""
-    return path.startswith("docs/agents/tasks/")
-
-
-def non_runtime(path: str) -> bool:
-    return neutral(path) or agent_governance(path)
+def canonical_control(path: str) -> bool:
+    return (
+        path in CANONICAL_CONTROL_PATHS
+        or path.startswith(".github/actions/")
+        or path.startswith("tools/repository/")
+        or path.startswith("docs/migration/")
+    )
 
 
 def atlas_fullworld_path(path: str) -> bool:
@@ -217,275 +194,169 @@ def graph(metadata: dict):
     return roots, reverse
 
 
-def audited_input_path(metadata: dict, path: str, include_server: bool = False) -> bool:
-    roots, _ = graph(metadata)
-    prefixes = tuple(root + "/" for name, root in roots.items() if include_server or name != SERVER)
-    prefixes += tuple(root + "/" for root in external_local_dependency_roots())
-    return path in BUILD_INPUTS or path.startswith(".cargo/") or path.startswith(prefixes)
+
+def package_owner(roots: dict[str, str], path: str) -> str | None:
+    owners = [name for name, root in roots.items() if path == root or path.startswith(root + "/")]
+    if len(owners) > 1:
+        raise ValueError("overlapping package ownership")
+    return owners[0] if owners else None
 
 
-def input_digest(metadata: dict, include_server: bool = False) -> str:
+def auxiliary_path(roots: dict[str, str], path: str) -> bool:
+    if package_owner(roots, path) is not None:
+        return False
+    if canonical_control(path):
+        return False
+    if path.startswith("tools/game-atlas-"):
+        return False
+    if (
+        path.startswith(("docs/", ".github/", "tools/"))
+        or PurePosixPath(path).name in {
+            "AGENTS.md", "AGENTS.override.md", "README.md", "CHANGELOG.md",
+            "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "LICENSE-ASSETS.md",
+            "TRADEMARKS.md", ".editorconfig", ".gitignore",
+        }
+    ):
+        return True
+    return False
+
+
+def routing_surface(roots: dict[str, str], path: str) -> str:
+    if canonical_control(path) or path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
+        return "control"
+    disposition = atlas_path_disposition(path)
+    if disposition is not None:
+        return "atlas"
+    if package_owner(roots, path) is not None:
+        return "product"
+    if auxiliary_path(roots, path):
+        return "auxiliary"
+    return "unknown"
+
+
+def file_reference_patterns(path: str) -> tuple[str, ...]:
+    """Return conservative literals for an exact repository-file consumer."""
+    parts = PurePosixPath(path).parts
+    patterns = {path, parts[-1]}
+    if len(parts) >= 2:
+        patterns.add("/".join(parts[-2:]))
+    return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
+
+
+def directory_reference_patterns(path: str) -> tuple[str, ...]:
+    """Return non-top-level ancestor paths that may be consumed as directories."""
+    parts = PurePosixPath(path).parts[:-1]
+    patterns = {
+        "/".join(parts[:length])
+        for length in range(2, len(parts) + 1)
+    }
+    return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
+
+
+def standalone_directory_reference(content: bytes, pattern: str) -> bool:
+    """Require a directory path literal boundary, not a prefix of a sibling file."""
+    needle = pattern.encode("utf-8")
+    start = 0
+    while True:
+        index = content.find(needle, start)
+        if index < 0:
+            return False
+        end = index + len(needle)
+        suffix = content[end:end + 2]
+        if (
+            end == len(content)
+            or content[end:end + 1] in {b'"', b"'"}
+            or suffix in {b'/"', b"/'"}
+        ):
+            return True
+        start = index + 1
+
+
+def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
+    """Scan Cargo packages plus canonical workflows that select product CI."""
+    return sorted(set(roots.values())) + sorted(CANONICAL_CONTROL_PATHS)
+
+
+def candidate_reference_consumers(
+    metadata: dict,
+    sha: str,
+    paths: list[str],
+) -> dict[str, set[str]]:
+    """Map changed non-Cargo files to exact-candidate product/control consumers.
+
+    Candidate content is read as data only. Matching covers exact files plus
+    bounded, standalone parent-directory literals across Cargo packages and canonical product
+    CI workflows. False positives only allocate broader lanes; malformed or
+    unavailable evidence fails closed.
+    """
+    if re.fullmatch(r"[0-9a-f]{40}", sha or "") is None:
+        raise ValueError("invalid candidate SHA")
     roots, _ = graph(metadata)
-    prefixes = tuple(path + "/" for name, path in roots.items() if include_server or name != SERVER)
-    prefixes += tuple(root + "/" for root in external_local_dependency_roots())
-    records = subprocess.check_output(["git", "ls-tree", "-r", "-z", "HEAD"]).split(b"\0")
-    selected = []
-    for record in records:
-        if not record:
+    unique = sorted(set(paths))
+    if not unique or any(not valid_path(path) for path in unique):
+        raise ValueError("invalid candidate reference path")
+    reverse_files: dict[str, set[str]] = {}
+    reverse_directories: dict[str, set[str]] = {}
+    for path in unique:
+        for value in file_reference_patterns(path):
+            reverse_files.setdefault(value, set()).add(path)
+        for value in directory_reference_patterns(path):
+            reverse_directories.setdefault(value, set()).add(path)
+
+    command = ["git", "grep", "-l", "-z", "-F"]
+    for pattern in sorted(set(reverse_files) | set(reverse_directories)):
+        command.extend(["-e", pattern])
+    command.extend([sha, "--", *consumer_pathspecs(roots)])
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if result.returncode not in {0, 1}:
+        raise ValueError("candidate reference scan failed")
+    raw_matches = [item for item in result.stdout.split(b"\0") if item]
+    consumers: dict[str, set[str]] = {path: set() for path in unique}
+    prefix = f"{sha}:"
+    for raw in raw_matches:
+        rendered = raw.decode("utf-8")
+        if not rendered.startswith(prefix):
+            raise ValueError("candidate reference scan returned an unbound path")
+        consumer_path = rendered[len(prefix):]
+        if not valid_path(consumer_path):
+            raise ValueError("invalid consumer path")
+        content = subprocess.check_output(["git", "show", f"{sha}:{consumer_path}"])
+        owner = package_owner(roots, consumer_path)
+        control = consumer_path in CANONICAL_CONTROL_PATHS
+        if owner is None and not control:
             continue
-        info, raw_path = record.split(b"\t", 1)
-        if info.split()[0] not in {b"100644", b"100755"}:
-            raise ValueError("unmodelled symlink/submodule input")
-        path = raw_path.decode("utf-8")
-        if path in BUILD_INPUTS or path.startswith(".cargo/") or path.startswith(prefixes):
-            selected.append(record)
-    return hashlib.sha256(b"\0".join(sorted(selected)) + b"\0").hexdigest()
+        selected: set[str] = set()
+        for pattern, targets in reverse_files.items():
+            if pattern.encode("utf-8") in content:
+                selected.update(targets)
+        for pattern, targets in reverse_directories.items():
+            if standalone_directory_reference(content, pattern):
+                selected.update(targets)
+        for target in selected:
+            consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
+    return consumers
 
 
-def document_consumer_content_safe(path: str, baseline: bytes, current: bytes | None = None) -> bool:
-    """Prove that baseline-to-current drift cannot add or modify a consumer.
-
-    This intentionally is not an absence-of-known-markers test.  Rust is open
-    ended (aliases, grouped imports and macros can all hide filesystem access),
-    so only blank lines and ordinary non-doc line comments are admitted. Rust
-    doc comments are attributes (and macro-visible), while every executable or
-    uncertain line can change behavior, so all of those fail closed.
-    """
-    if path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
-        return False
-    if current is None:
-        current, baseline = baseline, b""
-    if PurePosixPath(path).suffix != ".rs":
-        return baseline == current
-    try:
-        before_lines, current_lines = baseline.splitlines(), current.splitlines()
-        before_comments = rust_ordinary_comment_lines(baseline)
-        current_comments = rust_ordinary_comment_lines(current)
-        if before_comments is None or current_comments is None:
-            return False
-        matcher = difflib.SequenceMatcher(None, before_lines, current_lines, autojunk=False)
-        for tag, before_start, before_end, current_start, current_end in matcher.get_opcodes():
-            if tag == "equal":
-                continue
-            changed = ((before_lines, before_comments, before_start, before_end),
-                       (current_lines, current_comments, current_start, current_end))
-            for lines, comments, start, end in changed:
-                for index in range(start, end):
-                    line = lines[index]
-                    if line.strip() and not comments[index]:
-                        return False
-        return True
-    except (TypeError, UnicodeError):
-        return False
+def expand_reverse_closure(affected: set[str], reverse: dict[str, set[str]]) -> set[str]:
+    pending = list(affected)
+    while pending:
+        for consumer in reverse[pending.pop()] - affected:
+            affected.add(consumer)
+            pending.append(consumer)
+    return affected
 
 
-def rust_ordinary_comment_lines(content: bytes) -> list[bool] | None:
-    """Identify standalone ordinary line comments in proven Rust code context.
-
-    This deliberately small lexer tracks every Rust construct that can span a
-    line and make a leading ``//`` mere content. Unknown or unterminated state
-    is rejected rather than guessed safe.
-    """
-    lines = content.splitlines()
-    ordinary = [False] * len(lines)
-    state = "code"
-    block_depth = 0
-    raw_hashes = 0
-    escaped = False
-    for line_index, line in enumerate(lines):
-        first = len(line) - len(line.lstrip())
-        if state == "code" and line[first:].startswith(b"//"):
-            ordinary[line_index] = not line[first:].startswith((b"///", b"//!"))
-
-        index = 0
-        while index < len(line):
-            if state == "line":
-                break
-            if state == "block":
-                if line.startswith(b"/*", index):
-                    block_depth += 1
-                    index += 2
-                elif line.startswith(b"*/", index):
-                    block_depth -= 1
-                    index += 2
-                    if block_depth == 0:
-                        state = "code"
-                else:
-                    index += 1
-                continue
-            if state == "string":
-                byte = line[index]
-                index += 1
-                if escaped:
-                    escaped = False
-                elif byte == 0x5C:
-                    escaped = True
-                elif byte == 0x22:
-                    state = "code"
-                continue
-            if state == "raw":
-                terminator = b'"' + (b"#" * raw_hashes)
-                if line.startswith(terminator, index):
-                    index += len(terminator)
-                    state = "code"
-                else:
-                    index += 1
-                continue
-
-            if line.startswith(b"//", index):
-                state = "line"
-                break
-            if line.startswith(b"/*", index):
-                state, block_depth = "block", 1
-                index += 2
-                continue
-            raw = re.match(br"(?:br|cr|r)(\#*)\"", line[index:])
-            if raw is not None:
-                state, raw_hashes = "raw", len(raw.group(1))
-                index += len(raw.group(0))
-                continue
-            if line.startswith((b'b"', b'c"'), index):
-                state, escaped = "string", False
-                index += 2
-                continue
-            if line.startswith(b"b'", index):
-                end = rust_character_literal_end(line, index + 1, byte=True)
-                if end is None:
-                    return None
-                index = end
-                continue
-            if line[index] == 0x27:
-                end = rust_character_literal_end(line, index, byte=False)
-                if end is None:
-                    # Lifetimes and labels are not character literals and have
-                    # no lexical state to track. Anything else is uncertain.
-                    lifetime = re.match(br"'[A-Za-z_][A-Za-z0-9_]*(?!')", line[index:])
-                    if lifetime is None:
-                        return None
-                    index += len(lifetime.group(0))
-                    continue
-                index = end
-                continue
-            if line[index] == 0x22:
-                state, escaped = "string", False
-            index += 1
-        if state == "line":
-            state = "code"
-        elif state == "string" and escaped:
-            escaped = False
-    return ordinary if state == "code" else None
-
-
-def rust_character_literal_end(line: bytes, quote: int, *, byte: bool) -> int | None:
-    """Return the byte after a valid Rust character literal, else ``None``.
-
-    Character literals cannot span physical lines. Recognizing their complete
-    token here prevents embedded double quotes from corrupting string/raw-string
-    state; rejecting malformed or uncertain forms keeps the proof fail closed.
-    """
-    index = quote + 1
-    if index >= len(line):
-        return None
-    if line[index] == 0x5C:
-        index += 1
-        if index >= len(line):
-            return None
-        escape = line[index]
-        if escape in b"nrt\\0'\"":
-            index += 1
-        elif escape == ord("x"):
-            digits = line[index + 1:index + 3]
-            if len(digits) != 2 or re.fullmatch(br"[0-9A-Fa-f]{2}", digits) is None:
-                return None
-            if not byte and int(digits, 16) > 0x7F:
-                return None
-            index += 3
-        elif escape == ord("u") and not byte:
-            # Rust requires the first code-point digit after ``{`` to be
-            # hexadecimal; separators may only follow that first digit.
-            match = re.match(br"u\{([0-9A-Fa-f][0-9A-Fa-f_]*)\}", line[index:])
-            if match is None:
-                return None
-            try:
-                digits = match.group(1).replace(b"_", b"")
-                if not 1 <= len(digits) <= 6:
-                    return None
-                value = int(digits, 16)
-                if value > 0x10FFFF or 0xD800 <= value <= 0xDFFF:
-                    return None
-            except ValueError:
-                return None
-            index += len(match.group(0))
-        else:
-            return None
+def auxiliary_result(paths: list[str]) -> dict:
+    governance = any(agent_governance(path) for path in paths)
+    docs = any(neutral(path) for path in paths)
+    workflows = any(path.startswith(".github/") for path in paths)
+    if governance and not docs and not workflows:
+        surface = "agent-governance"
+    elif docs and not governance and not workflows:
+        surface = "docs"
     else:
-        width = 1
-        if line[index] >= 0x80:
-            if byte:
-                return None
-            for candidate in range(2, 5):
-                try:
-                    decoded = line[index:index + candidate].decode("utf-8")
-                except UnicodeDecodeError:
-                    continue
-                if len(decoded) == 1:
-                    width = candidate
-                    break
-            else:
-                return None
-        elif line[index] in b"'\\\t\r\n":
-            return None
-        index += width
-    return index + 1 if index < len(line) and line[index] == 0x27 else None
-
-
-def document_consumers_safe(metadata: dict) -> bool:
-    try:
-        roots, _ = graph(metadata)
-        if re.fullmatch(r"[0-9a-f]{40}", AUDITED_DOC_CONSUMER_BASE_SHA) is None:
-            return False
-        probe = subprocess.run(
-            ["git", "cat-file", "-e", f"{AUDITED_DOC_CONSUMER_BASE_SHA}^{{commit}}"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
-        )
-        if probe.returncode != 0:
-            fetched = subprocess.run(
-                ["git", "fetch", "--no-tags", "--depth=1", "origin", AUDITED_DOC_CONSUMER_BASE_SHA],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
-            )
-            if fetched.returncode != 0:
-                return False
-            subprocess.check_call(
-                ["git", "cat-file", "-e", f"{AUDITED_DOC_CONSUMER_BASE_SHA}^{{commit}}"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-        current = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-        if re.fullmatch(r"[0-9a-f]{40}", current) is None:
-            return False
-        pathspecs = sorted(BUILD_INPUTS) + [".cargo"] + sorted(roots.values())
-        added_deleted_or_typed = subprocess.check_output(
-            ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-             "--diff-filter=ADT", "--name-only", "-z",
-             AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
-        )
-        if added_deleted_or_typed:
-            return False
-        changed = subprocess.check_output(
-            ["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames",
-             "--diff-filter=M", "--name-only", "-z",
-             AUDITED_DOC_CONSUMER_BASE_SHA, current, "--", *pathspecs]
-        )
-        for raw_path in (item for item in changed.split(b"\0") if item):
-            path = raw_path.decode("utf-8")
-            if not valid_path(path):
-                return False
-            baseline = subprocess.check_output(["git", "show", f"{AUDITED_DOC_CONSUMER_BASE_SHA}:{path}"])
-            content = subprocess.check_output(["git", "show", f"{current}:{path}"])
-            if not document_consumer_content_safe(path, baseline, content):
-                return False
-        return True
-    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
-        return False
+        surface = "auxiliary"
+    return dict(rust=False, windows=False, surface=surface, reason="unconsumed-auxiliary-inputs")
 
 
 def candidate_modes_safe(sha: str) -> bool:
@@ -552,138 +423,234 @@ def pr_file_records() -> tuple[list[dict], int, bool]:
     return files, len(files), True
 
 
-def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None,
-             candidate_modes_verified=False, docs_consumers_verified=None) -> dict:
+
+def classify(
+    files,
+    changed_count,
+    metadata,
+    complete=True,
+    *,
+    candidate_modes_verified=False,
+    candidate_sha=None,
+    reference_consumers=None,
+) -> dict:
     try:
         if candidate_modes_verified is not True:
             return full("unverified-or-special-candidate-modes")
-        if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
+        if (
+            complete is not True
+            or type(changed_count) is not int
+            or not isinstance(files, list)
+            or len(files) != changed_count
+            or not files
+        ):
             return full("incomplete-enumeration")
-        paths, filenames = [], set()
-        added_surfaces, removed_surfaces = set(), set()
+
+        roots, reverse = graph(metadata)
+        records: list[tuple[str, str, str | None]] = []
+        paths: list[str] = []
+        filenames: set[str] = set()
+        added_surfaces: set[str] = set()
+        removed_surfaces: set[str] = set()
+
         for item in files:
-            path = item["filename"]
+            if not isinstance(item, dict):
+                return full("invalid-file-record")
+            path = item.get("filename")
             status = item.get("status")
             previous = item.get("previous_filename")
-            if not valid_path(path) or path in filenames or status not in {"added", "modified", "removed", "renamed", "copied", "changed", "unchanged"}:
+            if (
+                not valid_path(path)
+                or path in filenames
+                or status not in {
+                    "added", "modified", "removed", "renamed",
+                    "copied", "changed", "unchanged",
+                }
+            ):
                 return full("invalid-file-record")
             filenames.add(path)
-            paths.append(path)
-            if status == "added":
-                added_surfaces.add(non_runtime(path))
-            elif status == "removed":
-                removed_surfaces.add(non_runtime(path))
             if status == "renamed" and not previous:
                 return full("missing-rename-source")
+            if previous is not None and not valid_path(previous):
+                return full("invalid-rename-source")
+
+            current_surface = routing_surface(roots, path)
+            if status == "added":
+                added_surfaces.add(current_surface)
+            elif status == "removed":
+                removed_surfaces.add(current_surface)
             if previous is not None:
-                if not valid_path(previous):
-                    return full("invalid-rename-source")
-                if non_runtime(path) != non_runtime(previous):
+                previous_surface = routing_surface(roots, previous)
+                if current_surface != previous_surface:
                     return full("cross-surface-rename")
                 paths.append(previous)
+            paths.append(path)
+            records.append((path, status, previous))
+
         if added_surfaces and removed_surfaces and any(
             added != removed for added in added_surfaces for removed in removed_surfaces
         ):
             return full("possible-cross-surface-rename")
-        if all(agent_task_record(path) for path in paths):
-            return dict(
-                rust=False,
-                windows=False,
-                surface="agent-governance",
-                reason="agent-task-record-only",
-            )
-        non_runtime_present = any(non_runtime(path) for path in paths)
-        governance_present = any(agent_governance(path) for path in paths)
-        if non_runtime_present:
-            graph(metadata)
-            proof_surface = "agent-governance" if governance_present else "docs"
-            if docs_consumers_verified is False:
-                return full("unreviewed-document-consumer-inputs", proof_surface)
-            if docs_consumers_verified is not True and (digest != AUDITED_INPUT_SHA256 or docs_digest != AUDITED_DOC_INPUT_SHA256):
-                return full("unreviewed-document-consumer-inputs", proof_surface)
-        if all(non_runtime(path) for path in paths):
-            docs_present = any(neutral(path) and not agent_governance(path) for path in paths)
-            if governance_present:
-                reason = "agent-governance-plus-neutral-documentation" if docs_present else "agent-governance-only"
-                return dict(rust=False, windows=False, surface="agent-governance", reason=reason)
-            return dict(rust=False, windows=False, surface="docs", reason="neutral-documentation")
-        material_paths = [path for path in paths if not agent_governance(path)]
-        if any(path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"} for path in material_paths):
-            return full("explicit-build-or-dependency-input", "dependencies-build")
-        if any(path.startswith((".github/", "tools/repository/", "docs/migration/")) for path in material_paths):
-            return full("explicit-build-or-control-input", "control-plane")
-        roots, reverse = graph(metadata)
-        affected = set()
+
+        for path in paths:
+            if path.startswith(".cargo/") or PurePosixPath(path).name in BUILD_INPUTS | {"build.rs"}:
+                return full("explicit-build-or-dependency-input", "dependencies-build")
+            if canonical_control(path):
+                return full("explicit-build-or-control-input", "control-plane")
+            if atlas_path_disposition(path) == "full":
+                return full("explicit-atlas-non-cargo-full", "atlas")
+
+        scan_paths = sorted(set(paths))
+        if reference_consumers is None:
+            reference_consumers = {path: set() for path in scan_paths}
+            auxiliary_scan_paths = [
+                path
+                for path in scan_paths
+                if package_owner(roots, path) is None
+                and atlas_path_disposition(path) is None
+            ]
+            if auxiliary_scan_paths:
+                if re.fullmatch(r"[0-9a-f]{40}", candidate_sha or "") is None:
+                    return full("unverified-reference-consumers")
+                reference_consumers.update(
+                    candidate_reference_consumers(metadata, candidate_sha, auxiliary_scan_paths)
+                )
+        if (
+            not isinstance(reference_consumers, dict)
+            or any(path not in reference_consumers for path in scan_paths)
+        ):
+            return full("unverified-reference-consumers")
+
+        affected: set[str] = set()
+        auxiliary: list[str] = []
+        unknown: list[str] = []
         atlas_fullworld = False
-        for path in material_paths:
-            if neutral(path):
-                continue
+
+        for path in scan_paths:
             disposition = atlas_path_disposition(path)
             if disposition == "atlas-fullworld":
                 atlas_fullworld = True
                 continue
-            if disposition == "full":
-                return full("explicit-atlas-non-cargo-full", "atlas")
-            owners = [name for name, root in roots.items() if path.startswith(root + "/")]
-            if len(owners) != 1 or PurePosixPath(path).suffix not in {".rs", ".sql"}:
-                return full("unmodelled-input")
-            affected.add(owners[0])
-        pending = list(affected)
-        while pending:
-            for consumer in reverse[pending.pop()] - affected:
+
+            owner = package_owner(roots, path)
+            if owner is not None:
+                affected.add(owner)
+            elif auxiliary_path(roots, path):
+                auxiliary.append(path)
+            else:
+                unknown.append(path)
+
+            consumers = reference_consumers.get(path)
+            if not isinstance(consumers, (set, list, tuple)):
+                return full("unverified-reference-consumers")
+            for consumer in consumers:
+                if consumer == CONTROL_CONSUMER:
+                    return full("canonical-control-consumer-affected", "control-plane")
+                if consumer not in roots:
+                    return full("unverified-reference-consumers")
                 affected.add(consumer)
-                pending.append(consumer)
-        if not affected:
-            if atlas_fullworld:
-                return dict(rust=False, windows=False, surface="atlas-fullworld", reason="audited-atlas-fullworld-source")
-            return full("mixed-or-unowned-surface")
+
+        unresolved = [
+            path for path in unknown
+            if not reference_consumers.get(path)
+        ]
+        if unresolved:
+            return full("unmodelled-input")
+
+        expand_reverse_closure(affected, reverse)
+
         if affected & WINDOWS:
-            surface = "simulation" if "oteryn-simulation-determinism" in affected else "shared" if SERVER in affected else "client"
+            surface = (
+                "simulation" if "oteryn-simulation-determinism" in affected
+                else "shared" if SERVER in affected
+                else "client"
+            )
             return full("windows-consumer-affected", surface)
-        if SERVER not in affected or affected != {SERVER}:
-            return full("mixed-or-unowned-surface")
-        if digest != AUDITED_INPUT_SHA256:
-            return full("unreviewed-consumer-input-snapshot")
-        surface = "durability" if any(any(token in path for token in ("/durability/", "/migrations/", "postgres", "reconnect")) for path in material_paths) else "server"
-        reason = "server-only-reverse-closure-and-audited-inputs"
+
+        if affected:
+            if affected != {SERVER}:
+                return full("mixed-or-unowned-surface")
+            material = scan_paths
+            surface = "durability" if any(
+                any(token in path for token in ("/durability/", "/migrations/", "postgres", "reconnect"))
+                for path in material
+            ) else "server"
+            reason = "server-only-exact-consumer-closure"
+            if atlas_fullworld:
+                reason += "-plus-atlas-fullworld"
+            return dict(rust=True, windows=False, surface=surface, reason=reason)
+
         if atlas_fullworld:
-            reason += "-plus-atlas-fullworld"
-        return dict(rust=True, windows=False, surface=surface, reason=reason)
-    except (KeyError, TypeError, ValueError, AttributeError):
+            return dict(
+                rust=False,
+                windows=False,
+                surface="atlas-fullworld",
+                reason="audited-atlas-fullworld-source",
+            )
+
+        if auxiliary and len(auxiliary) == len(scan_paths):
+            return auxiliary_result(auxiliary)
+
+        return full("mixed-or-unowned-surface")
+    except (
+        OSError,
+        KeyError,
+        TypeError,
+        ValueError,
+        AttributeError,
+        subprocess.SubprocessError,
+        UnicodeError,
+    ):
         return full("classifier-input-failure")
 
 
 def classify_post_merge(event, metadata) -> dict:
-    """Reuse PR risk semantics only for a verified, complete protected-main push."""
+    """Apply the same exact-candidate routing semantics to protected-main pushes."""
     try:
-        if (os.environ.get("GITHUB_EVENT_NAME") != "push"
-                or os.environ.get("GITHUB_REF") != "refs/heads/main"
-                or os.environ.get("GITHUB_REF_PROTECTED") != "true"
-                or os.environ.get("GITHUB_REPOSITORY") != "Oteryn/Oteryn-Game"
-                or event["repository"]["full_name"] != "Oteryn/Oteryn-Game"
-                or event["ref"] != "refs/heads/main"
-                or any(event[key] is not False for key in ("forced", "created", "deleted"))):
+        if (
+            os.environ.get("GITHUB_EVENT_NAME") != "push"
+            or os.environ.get("GITHUB_REF") != "refs/heads/main"
+            or os.environ.get("GITHUB_REF_PROTECTED") != "true"
+            or os.environ.get("GITHUB_REPOSITORY") != "Oteryn/Oteryn-Game"
+            or event["repository"]["full_name"] != "Oteryn/Oteryn-Game"
+            or event["ref"] != "refs/heads/main"
+            or any(event[key] is not False for key in ("forced", "created", "deleted"))
+        ):
             return full("not-a-normal-protected-main-push")
         before, after = event["before"], event["after"]
-        if any(not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None or sha == "0" * 40 for sha in (before, after)):
+        if any(
+            not isinstance(sha, str)
+            or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+            or sha == "0" * 40
+            for sha in (before, after)
+        ):
             return full("invalid-push-range")
         if before == after or after != os.environ.get("GITHUB_SHA"):
             return full("push-identity-mismatch")
         actual = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-        if actual != after or subprocess.check_output(["git", "rev-parse", "--is-shallow-repository"]).strip() != b"false":
+        if (
+            actual != after
+            or subprocess.check_output(["git", "rev-parse", "--is-shallow-repository"]).strip() != b"false"
+        ):
             return full("unverified-or-incomplete-protected-checkout")
         subprocess.check_output(["git", "merge-base", "--is-ancestor", before, after], stderr=subprocess.PIPE)
         files = git_diff_records(before, after)
-        result = classify(files, len(files), metadata, input_digest(metadata),
-                          docs_digest=input_digest(metadata, include_server=True),
-                          candidate_modes_verified=candidate_modes_safe(after),
-                          docs_consumers_verified=document_consumers_safe(metadata))
-        if result["rust"] is False and result["windows"] is False and result["surface"] in {"docs", "agent-governance"}:
-            return result
-        if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability"}:
-            return result
-        return full(result["reason"], result["surface"])
-    except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
+        return classify(
+            files,
+            len(files),
+            metadata,
+            candidate_modes_verified=candidate_modes_safe(after),
+            candidate_sha=after,
+        )
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        IndexError,
+        TypeError,
+        AttributeError,
+        subprocess.SubprocessError,
+    ):
         return full("post-merge-input-or-git-failure")
 
 
@@ -692,36 +659,42 @@ def main() -> int:
     atlas_fullworld = True
     try:
         post_merge = sys.argv[1] == "--post-merge"
-        metadata = json.loads(Path(sys.argv[2] if post_merge else sys.argv[1]).read_text(encoding="utf-8"))
+        metadata = json.loads(
+            Path(sys.argv[2] if post_merge else sys.argv[1]).read_text(encoding="utf-8")
+        )
         if post_merge:
-            result = classify_post_merge(json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")), metadata)
+            result = classify_post_merge(
+                json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")),
+                metadata,
+            )
         else:
             files, changed_count, complete = pr_file_records()
             atlas_fullworld = atlas_fullworld_required(files, changed_count, complete)
-            digest = input_digest(metadata)
-            non_runtime_candidate = (
-                isinstance(files, list) and bool(files)
-                and any(
-                    isinstance(item, dict)
-                    and (
-                        (isinstance(item.get("filename"), str) and non_runtime(item["filename"]))
-                        or
-                        (isinstance(item.get("previous_filename"), str) and non_runtime(item["previous_filename"]))
-                    )
-                    for item in files
-                )
+            expected_head = os.environ["EXPECTED_HEAD"].strip().lower()
+            result = classify(
+                files,
+                changed_count,
+                metadata,
+                complete=complete,
+                candidate_modes_verified=candidate_modes_safe(expected_head),
+                candidate_sha=expected_head,
             )
-            result = classify(files, changed_count, metadata, digest,
-                              complete=complete,
-                              docs_digest=input_digest(metadata, include_server=True),
-                              candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]),
-                              docs_consumers_verified=document_consumers_safe(metadata) if non_runtime_candidate else None)
-    except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        IndexError,
+        TypeError,
+        AttributeError,
+        subprocess.SubprocessError,
+    ):
         result = full("classifier-or-metadata-failure")
+
     health = routing_health(result)
     print(json.dumps(result | {"routing_health": health}, sort_keys=True))
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-        output.write(f"rust={str(result['rust']).lower()}\nwindows={str(result['windows']).lower()}\n")
+        output.write(f"rust={str(result['rust']).lower()}\n")
+        output.write(f"windows={str(result['windows']).lower()}\n")
         if not post_merge:
             output.write(f"atlas_fullworld={str(atlas_fullworld).lower()}\n")
             output.write(f"surface={result['surface']}\n")
