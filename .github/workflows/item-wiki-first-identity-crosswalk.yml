@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: item-wiki-first-identity-crosswalk-\${{ github.event.pull_request.number || github.ref }}
+  group: item-wiki-first-identity-crosswalk-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,12 +28,12 @@ jobs:
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Verify exact head
         env:
-          EXPECTED_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Set up Python
@@ -188,9 +188,9 @@ jobs:
       - name: Upload full and compact crosswalk evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: item-wiki-first-identity-crosswalk-\${{ github.event.pull_request.head.sha || github.sha }}
+          name: item-wiki-first-identity-crosswalk-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
-            \${{ runner.temp }}/item-wiki-first-identity-crosswalk/crosswalk-first.json
-            \${{ runner.temp }}/item-wiki-first-identity-crosswalk/manifest-first.json
+            ${{ runner.temp }}/item-wiki-first-identity-crosswalk/crosswalk-first.json
+            ${{ runner.temp }}/item-wiki-first-identity-crosswalk/manifest-first.json
           if-no-files-found: error
           retention-days: 14
