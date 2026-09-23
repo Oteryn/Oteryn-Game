@@ -183,3 +183,46 @@ def routing_contract_cases(classifier) -> tuple[RoutingContractCase, ...]:
             ),
         ),
     )
+
+def verify_routing_contract_cases(classifier, metadata: dict) -> tuple[str, ...]:
+    """Run every canonical case and fail on any behavioral contract drift."""
+
+    names: list[str] = []
+    seen: set[str] = set()
+    for case in routing_contract_cases(classifier):
+        if not case.name or case.name in seen:
+            raise ValueError(f"invalid or duplicate routing contract case name: {case.name!r}")
+        seen.add(case.name)
+        if not case.paths or len(set(case.paths)) != len(case.paths):
+            raise ValueError(f"{case.name}: paths must be non-empty and unique")
+
+        expected = case.expected()
+        if (
+            len(expected) != len(case.expected_fields)
+            or not {"rust", "windows"} <= set(expected)
+            or not set(expected) <= {"rust", "windows", "surface", "reason"}
+        ):
+            raise ValueError(f"{case.name}: invalid expected field set")
+
+        records = [
+            {"filename": path, "status": "modified"}
+            for path in case.paths
+        ]
+        result = classifier.classify(
+            records,
+            len(records),
+            metadata,
+            candidate_modes_verified=True,
+            reference_consumers=case.reference_consumers(),
+        )
+        mismatches = {
+            key: {"expected": value, "actual": result.get(key)}
+            for key, value in expected.items()
+            if result.get(key) != value
+        }
+        if mismatches:
+            raise ValueError(
+                f"{case.name}: routing contract drift {mismatches}; full result={result}"
+            )
+        names.append(case.name)
+    return tuple(names)
