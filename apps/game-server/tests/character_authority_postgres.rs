@@ -369,7 +369,38 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].event_id, first.event_id);
+    assert_eq!(
+        pending[0].server_build_id,
+        durability::character_authority::SERVER_BUILD_ID
+    );
     assert_eq!(Some(&pending[0].payload), first.payload.as_ref());
+    // A pending event keeps its originating build across an upgrade: the
+    // publisher reads the stored value, never the current process's build.
+    let mut previous = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *previous)
+        .await?;
+    sqlx::query(
+        "UPDATE game_character_audit_outbox SET server_build_id = 'oteryn-game-server/0.0.0-previous'",
+    )
+    .execute(&mut *previous)
+    .await?;
+    previous.commit().await?;
+    assert!(
+        sqlx::query("UPDATE game_character_audit_outbox SET server_build_id = 'rewritten'")
+            .execute(&pool)
+            .await
+            .is_err()
+    );
+    let redelivered = root
+        .pending_character_audit(&authority, 8)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        redelivered[0].server_build_id,
+        "oteryn-game-server/0.0.0-previous"
+    );
+    let pending = redelivered;
     assert_eq!(
         root.pending_character_audit(&authority, 8)
             .await

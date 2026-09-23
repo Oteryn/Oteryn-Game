@@ -19,6 +19,12 @@ const MAX_CONTEXT_BYTES: usize = 128;
 const MAX_OPERATION_BINDING_BYTES: usize = 1024;
 const MAX_HOLD_REASON_BYTES: usize = 512;
 const MAX_AUDIT_BATCH: u16 = 64;
+/// Bounded identity of this server build, recorded with every audit event so a
+/// redelivery after an upgrade keeps the originating EventEnvelope value.
+pub const SERVER_BUILD_ID: &str = match option_env!("OTERYN_SERVER_BUILD_ID") {
+    Some(build) => build,
+    None => concat!("oteryn-game-server/", env!("CARGO_PKG_VERSION")),
+};
 
 #[derive(Debug)]
 pub enum CharacterAuthorityError {
@@ -85,6 +91,8 @@ pub struct CharacterAuditDelivery {
     pub event_id: [u8; 16],
     pub transaction_id: [u8; 16],
     pub occurred_at: i64,
+    /// Originating server build for the EventEnvelope, captured at commit.
+    pub server_build_id: String,
     pub payload: Vec<u8>,
 }
 
@@ -177,8 +185,8 @@ impl DurabilityRoot {
             let payload = encode_bootstrap(&account, &character, &world);
             sqlx::query("INSERT INTO game_character_roots(character_id, account_id, world_id, lifecycle, character_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, 1, 1, $4, $5, $6, $7)")
                 .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).execute(&mut *tx).await?;
-            sqlx::query("INSERT INTO game_character_audit_outbox(event_id, transaction_id, transaction_ordinal, transaction_count, event_type_id, schema_revision, retention_profile_id, character_id, occurred_at, expires_at, payload, payload_sha256, publication_state) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, $3, $4, $5, encode($6,'hex')::uuid, floor(extract(epoch FROM statement_timestamp())*1000)::bigint, floor(extract(epoch FROM statement_timestamp())*1000)::bigint + 7776000000, $7, sha256($7), 1)")
-                .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED)).bind(i64::from(EVENT_SCHEMA_REVISION)).bind(RETENTION_PROFILE).bind(character.as_slice()).bind(&payload).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_audit_outbox(event_id, transaction_id, transaction_ordinal, transaction_count, event_type_id, schema_revision, retention_profile_id, character_id, occurred_at, expires_at, payload, payload_sha256, server_build_id, publication_state) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, $3, $4, $5, encode($6,'hex')::uuid, floor(extract(epoch FROM statement_timestamp())*1000)::bigint, floor(extract(epoch FROM statement_timestamp())*1000)::bigint + 7776000000, $7, sha256($7), $8, 1)")
+                .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED)).bind(i64::from(EVENT_SCHEMA_REVISION)).bind(RETENTION_PROFILE).bind(character.as_slice()).bind(&payload).bind(SERVER_BUILD_ID).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id) VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, 1, encode($6,'hex')::uuid, encode($7,'hex')::uuid)")
                 .bind(operation.as_slice()).bind(command_binding).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(event.as_slice()).bind(transaction.as_slice()).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -293,7 +301,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let rows = sqlx::query("SELECT event_id::text, transaction_id::text, occurred_at, payload FROM game_character_audit_outbox WHERE publication_state = 1 ORDER BY occurred_at, event_id LIMIT $1")
+            let rows = sqlx::query("SELECT event_id::text, transaction_id::text, occurred_at, server_build_id, payload FROM game_character_audit_outbox WHERE publication_state = 1 ORDER BY occurred_at, event_id LIMIT $1")
                 .bind(i64::from(limit)).fetch_all(&mut *tx).await?;
             let mut deliveries = Vec::with_capacity(rows.len());
             for row in &rows {
@@ -301,6 +309,7 @@ impl DurabilityRoot {
                     event_id: uuid_text(row.try_get("event_id")?)?,
                     transaction_id: uuid_text(row.try_get("transaction_id")?)?,
                     occurred_at: row.try_get("occurred_at")?,
+                    server_build_id: row.try_get("server_build_id")?,
                     payload: row.try_get("payload")?,
                 });
             }

@@ -67,6 +67,8 @@ CREATE TABLE game_character_audit_outbox (
     payload_sha256 BYTEA NOT NULL CHECK (octet_length(payload_sha256) = 32),
     -- CHARACTER_AUTHORITY_DURABLE_AUDIT_RETENTION_V1: P90D rolling ceiling from commit.
     expires_at BIGINT NOT NULL CHECK (expires_at = occurred_at + 7776000000),
+    -- Originating bounded server build, captured atomically for the EventEnvelope.
+    server_build_id TEXT NOT NULL CHECK (octet_length(server_build_id) BETWEEN 1 AND 128 AND server_build_id !~ '[^A-Za-z0-9._:/+-]'),
     publication_state SMALLINT NOT NULL CHECK (publication_state IN (1,2)),
     published_at BIGINT NULL CHECK (published_at IS NULL OR published_at >= occurred_at),
     CHECK ((publication_state = 2) = (published_at IS NOT NULL)),
@@ -119,11 +121,11 @@ CREATE FUNCTION game_character_audit_guard() RETURNS trigger LANGUAGE plpgsql AS
         IF OLD.publication_state = 1 AND NEW.publication_state = 2
            AND (NEW.event_id, NEW.transaction_id, NEW.transaction_ordinal, NEW.transaction_count,
                 NEW.event_type_id, NEW.schema_revision, NEW.retention_profile_id, NEW.character_id,
-                NEW.occurred_at, NEW.payload, NEW.payload_sha256, NEW.expires_at)
+                NEW.occurred_at, NEW.payload, NEW.payload_sha256, NEW.expires_at, NEW.server_build_id)
              IS NOT DISTINCT FROM
                (OLD.event_id, OLD.transaction_id, OLD.transaction_ordinal, OLD.transaction_count,
                 OLD.event_type_id, OLD.schema_revision, OLD.retention_profile_id, OLD.character_id,
-                OLD.occurred_at, OLD.payload, OLD.payload_sha256, OLD.expires_at) THEN
+                OLD.occurred_at, OLD.payload, OLD.payload_sha256, OLD.expires_at, OLD.server_build_id) THEN
             RETURN NEW;
         END IF;
     ELSIF OLD.expires_at <= floor(extract(epoch FROM clock_timestamp()) * 1000)::BIGINT
