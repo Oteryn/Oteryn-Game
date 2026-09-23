@@ -1,3 +1,15 @@
+CREATE TABLE game_character_recovery_admissions (
+    authority_scope_id TEXT NOT NULL CHECK (octet_length(authority_scope_id) BETWEEN 1 AND 128),
+    recovery_generation NUMERIC(20,0) PRIMARY KEY CHECK (recovery_generation BETWEEN 1 AND 18446744073709551615),
+    recovery_event_id UUID NOT NULL UNIQUE,
+    predecessor_generation NUMERIC(20,0) NOT NULL CHECK (predecessor_generation >= 0 AND predecessor_generation < recovery_generation),
+    issued_at NUMERIC(20,0) NOT NULL CHECK (issued_at BETWEEN 1 AND 18446744073709551615),
+    issuer_identity TEXT NOT NULL CHECK (octet_length(issuer_identity) BETWEEN 1 AND 128),
+    reconciled_at BIGINT NOT NULL CHECK (reconciled_at >= 0),
+    CHECK (recovery_generation = predecessor_generation + 1),
+    CHECK (get_byte(uuid_send(recovery_event_id), 6) >> 4 = 7)
+);
+
 CREATE TABLE game_character_account_guards (
     account_id UUID PRIMARY KEY CHECK (account_id <> '00000000-0000-0000-0000-000000000000'::uuid)
 );
@@ -55,3 +67,4 @@ END; $$;
 CREATE TRIGGER game_character_root_immutable BEFORE UPDATE OR DELETE ON game_character_roots FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 CREATE TRIGGER game_character_receipt_immutable BEFORE UPDATE OR DELETE ON game_character_operation_receipts FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 CREATE TRIGGER game_character_audit_immutable BEFORE UPDATE OR DELETE ON game_character_audit_outbox FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
+CREATE TRIGGER game_character_recovery_admission_immutable BEFORE UPDATE OR DELETE ON game_character_recovery_admissions FOR EACH ROW EXECUTE FUNCTION game_character_immutable();

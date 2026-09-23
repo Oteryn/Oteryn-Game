@@ -5,6 +5,7 @@
 
 extern crate self as oteryn_game_server;
 
+pub mod character_recovery_fence;
 pub mod content;
 pub mod domain;
 pub mod durability;

@@ -7,6 +7,9 @@ use super::character_authority_audit::{
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
+use crate::character_recovery_fence::{
+    CharacterRecoveryFenceV1, CharacterRecoveryTransition, SealedCharacterRecoveryFence,
+};
 use oteryn_game_server::domain::{AccountId, CharacterId, CharacterRevision, WorldId};
 use sqlx::Row;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -97,6 +100,7 @@ impl DurabilityRoot {
     /// operator-authorized incarnation in the same transaction as the write.
     pub async fn bootstrap_character(
         &self,
+        recovery: &SealedCharacterRecoveryFence<'_>,
         proof: &NodeIncarnationProof,
         command: BootstrapCommand,
     ) -> Result<CharacterAuthorityRecord> {
@@ -124,8 +128,10 @@ impl DurabilityRoot {
         let ruleset = command.ruleset_revision;
         let content = command.content_revision;
         let starter = command.starter_template_revision;
+        let recovery = recovery.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
             prove_current_incarnation(&mut tx, &proof).await.map_err(|_| DurabilityError::Unavailable)?;
             sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES (encode($1, 'hex')::uuid) ON CONFLICT DO NOTHING")
                 .bind(account.as_slice()).execute(&mut *tx).await?;
@@ -156,11 +162,14 @@ impl DurabilityRoot {
 
     pub async fn read_current_character(
         &self,
+        recovery: &SealedCharacterRecoveryFence<'_>,
         character_id: CharacterId,
     ) -> Result<CharacterAuthorityRecord> {
         let character = *character_id.as_bytes();
+        let recovery = recovery.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
             let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.payload FROM game_character_roots r JOIN game_character_operation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
             let record = decode_current_row(&row)?;
@@ -168,6 +177,100 @@ impl DurabilityRoot {
             Ok(Ok(record))
         })).await?
     }
+
+    /// Admit a fresh store only after Operations has explicitly created generation one.
+    pub async fn admit_fresh_character_recovery(
+        &self,
+        recovery: &CharacterRecoveryTransition<'_>,
+    ) -> Result<()> {
+        if recovery.record.recovery_generation != 1 || recovery.record.predecessor_generation != 0 {
+            return Err(CharacterAuthorityError::Rejected);
+        }
+        let record = recovery.record.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox)")
+                .fetch_one(&mut *tx).await?;
+            if existing != 0 { return Ok(Err(CharacterAuthorityError::Conflict)); }
+            insert_recovery_admission(&mut tx, &record).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(()))
+        })).await?
+    }
+
+    /// Reconcile a strict external successor while the exclusive generation guard is held.
+    pub async fn reconcile_character_recovery(
+        &self,
+        recovery: &CharacterRecoveryTransition<'_>,
+    ) -> Result<()> {
+        let record = recovery.record.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let current: Option<String> = sqlx::query_scalar("SELECT recovery_generation::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR UPDATE")
+                .fetch_optional(&mut *tx).await?;
+            let current = current.ok_or(DurabilityError::Unavailable)?.parse::<u64>().map_err(|_| DurabilityError::Unavailable)?;
+            if current == record.recovery_generation {
+                assert_recovery_fence(&mut tx, &record).await?;
+            } else if current == record.predecessor_generation {
+                insert_recovery_admission(&mut tx, &record).await?;
+            } else {
+                return Ok(Err(CharacterAuthorityError::Conflict));
+            }
+            // This is the explicit reconciliation point. Domain-specific integrity checks grow
+            // here; restored receipts/audit/outbox never replace the external predecessor proof.
+            sqlx::query("SELECT 1 FROM game_character_roots r LEFT JOIN game_character_operation_receipts o USING (character_id) LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id WHERE o.character_id IS NULL OR a.event_id IS NULL LIMIT 1")
+                .fetch_optional(&mut *tx).await?
+                .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(()))
+        })).await?
+    }
+}
+
+async fn insert_recovery_admission(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+) -> std::result::Result<(), DurabilityError> {
+    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, issued_at, issuer_identity, reconciled_at) VALUES ($1, $2::numeric, encode($3,'hex')::uuid, $4::numeric, $5::numeric, $6, floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
+        .bind(&record.authority_scope_id)
+        .bind(record.recovery_generation.to_string())
+        .bind(record.recovery_event_id.as_slice())
+        .bind(record.predecessor_generation.to_string())
+        .bind(record.issued_at.to_string())
+        .bind(&record.issuer_identity)
+        .execute(&mut **tx).await?;
+    Ok(())
+}
+
+async fn assert_recovery_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+) -> std::result::Result<(), DurabilityError> {
+    let row = sqlx::query("SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE")
+        .fetch_optional(&mut **tx).await?
+        .ok_or(DurabilityError::Unavailable)?;
+    let generation = row
+        .try_get::<String, _>("recovery_generation")?
+        .parse::<u64>()
+        .map_err(|_| DurabilityError::Unavailable)?;
+    let predecessor = row
+        .try_get::<String, _>("predecessor_generation")?
+        .parse::<u64>()
+        .map_err(|_| DurabilityError::Unavailable)?;
+    let issued_at = row
+        .try_get::<String, _>("issued_at")?
+        .parse::<u64>()
+        .map_err(|_| DurabilityError::Unavailable)?;
+    if row.try_get::<String, _>("authority_scope_id")? != record.authority_scope_id
+        || generation != record.recovery_generation
+        || uuid_text(row.try_get("recovery_event_id")?)? != record.recovery_event_id
+        || predecessor != record.predecessor_generation
+        || issued_at != record.issued_at
+        || row.try_get::<String, _>("issuer_identity")? != record.issuer_identity
+    {
+        return Err(DurabilityError::Unavailable);
+    }
+    Ok(())
 }
 
 fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
