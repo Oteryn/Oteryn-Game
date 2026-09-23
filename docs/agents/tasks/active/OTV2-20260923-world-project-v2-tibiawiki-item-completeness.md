@@ -4,12 +4,13 @@
 task_id: OTV2-20260923-world-project-v2-tibiawiki-item-completeness
 title: Canonical WorldProject/v2 + contemporary Item completeness
 mode: IMPLEMENT
-status: authoring
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
+pr: 789
 branch: agent/world-project-v2-tibiawiki-item-completeness-r2-20260923
 base_sha: ec8803bd1a37600acd0ff544811871e8fb2c40cf
-head_sha: pending
+head_sha: pending final metadata commit
 owner: "single autonomous Content/World implementation agent"
 owned_paths:
   - apps/game-server/src/content/project_v2.rs
