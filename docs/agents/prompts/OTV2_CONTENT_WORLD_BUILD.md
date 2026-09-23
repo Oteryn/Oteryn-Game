@@ -18,13 +18,15 @@ Jesteś pojedynczym writerem przydzielonego wspólnego modelu. CW2 używa tego m
 Bootstrap pojedynczego rekordu jest zakończony jako zwykła ścieżka rozwoju katalogu. Po protected D3 i istniejącym CW2 B1–B5 normalna native/executable promotion w CW3 ma obejmować **ograniczoną reprezentatywną partię albo całą technicznie i semantycznie gotową partycję rodziny**, nie kolejny pojedynczy item/creature/NPC. Pojedynczy rekord wolno użyć tylko jako fixture, regression, diagnostykę albo gdy świeży konkretny blocker uniemożliwia bezpieczny batch. Taki wyjątek nie liczy się jako postęp katalogowy i musi jawnie podać blocker oraz warunek przejścia do batcha. Historyczne single-item PR-y są bootstrap/evidence, nie precedensem do seryjnej promocji rekord-po-rekordzie.
 
 
-## Guard semantic promotion
+## Item batch promotion
 
-Przed każdą Item semantic-promotion generation wymagaj niepustego, dokładnie policzonego eligible setu z field-level evidence i target continuity. Jeżeli `promotable_fields == 0`, nie mutuj modelu/artifactów i nie twórz no-op promotion PR; zwróć `NO_PROMOTABLE_FIELDS_SOURCE_RESOLUTION_REQUIRED` z dokładnym brakującym evidence/binding i przekaż pracę z powrotem do CW2.
+CW3 nie tworzy osobnej „promotion phase” jako celu. Dla tego samego Item batcha przyjmij dokładny eligible set z field-level evidence i continuity, zaktualizuj istniejące canonical `ProjectReferenceRecord::Item` / `ReferenceItemSemantics`, a następnie od razu wykonaj istniejący compile/test path.
 
-Promotion generation musi zwiększyć liczbę canonical-promoted typed fields albo item definitions względem chronionego baseline. Sam nowy codec/schema/rule wrapper, raport lub artifact z tym samym semantic payload nie jest postępem katalogowym.
+Partial promotion jest poprawnym normalnym wynikiem: pojedyncze zweryfikowane pola mogą stać się `Known`, podczas gdy pozostałe pola tego samego Itemu pozostają `Unknown/Conflict`. Nie czekaj na kompletny Item, jeżeli typed model #749 już reprezentuje promowane pole.
 
-Użyj istniejącego chronionego Item modelu i artifact lineage. Schema/model widening jest uzasadnione tylko wtedy, gdy co najmniej jedno zweryfikowane/promotowalne pole nie ma poprawnej reprezentacji; nie buduj nowej warstwy jako pretekstu do odroczenia promocji. Po udanej promocji od razu kwalifikuj source->compile->load dla tej samej partii i przekaż realny consumer delta do CW4/CW5/CW6.
+Jeżeli `promotable_fields == 0`, nie twórz no-op promotion PR ani dodatkowego schema/rule wrappera; zwróć batch do najbliższego source/identity/continuity blockera. Jeżeli `promotable_fields > 0`, promotion musi zwiększyć liczbę canonical-promoted fields i ten sam batch powinien od razu przejść przez istniejący artifact v4 / compile-load qualification.
+
+Nowy parser, model, codec, rule engine lub schema widening jest dopuszczalny tylko po wykazaniu, że co najmniej jedno dokładne eligible pole nie ma reprezentacji w chronionym modelu. Sam raport, manifest lub ponowne opakowanie tego samego semantic payload nie jest postępem katalogowym.
 
 ## Zadanie
 
