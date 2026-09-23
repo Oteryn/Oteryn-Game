@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous wiki-first Item identity crosswalk writer"
 created_at: 2026-09-23T23:19:00+02:00
-updated_at: 2026-09-23T23:41:16+02:00
+updated_at: 2026-09-24T00:00:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk.py
@@ -125,16 +125,16 @@ PR #805 remains open and owns only the predecessor census lifecycle path; this t
 
 - exact head: pending
 - method/reviewer: implementing/coordinating agent
-- material findings: first workflow generation had an expression-escaping defect and was repaired before retained evidence; current full-run generation has no matcher/source invariant failure
-- verdict: pre-freeze self-review PASS; final whole-diff exact-head review pending after evidence commit
+- material findings: first workflow generation had an expression-escaping defect and was repaired before retained evidence; independent Codex review of frozen head `e24f4c404ccf74a7a7ac4a3fc43addcad32a3529` then found two valid P2 workflow-governance gaps: incomplete path-trigger coverage for repository-owned reproduction inputs and conditional retained-manifest comparison. Both are repaired in successor authoring; matcher/data semantics were not changed.
+- verdict: AUTHORING reopened only for the two accepted P2 workflow findings; successor exact-head whole-diff review pending
 
 ## Independent review
 
 - required: YES — bound META AI review policy classifies material GitHub Actions workflow changes as high-risk/control-plane review surface; one deep review is required after deterministic final-head qualification
-- exact head: pending
-- method/auditor: pending or NOT_APPLICABLE
-- material findings: pending or NOT_APPLICABLE
-- verdict: pending or NOT_APPLICABLE
+- exact head: first review `e24f4c404ccf74a7a7ac4a3fc43addcad32a3529`; successor re-review pending
+- method/auditor: native GitHub Codex deep review
+- material findings: two P2 workflow findings accepted: broaden trigger coverage to every repository-owned reproduction input; require retained manifest presence and unconditional byte comparison
+- verdict: first reviewed head superseded by accepted P2 repairs; one successor exact-head re-review required
 
 ## PR and closeout
 
@@ -148,27 +148,27 @@ PR #805 remains open and owns only the predecessor census lifecycle path; this t
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: PR #807 full hosted run 35923485090 / job 107392876571 PASS; deterministic 6918-row disposition manifest captured for retained evidence
+last_progress: accepted both P2 findings from independent review of e24f4c4 and repaired workflow trigger coverage plus unconditional retained-manifest verification in 1d4d77fd33470e68021053ec8abdf3be0152d280
 status: validating
 branch: agent/item-wiki-first-identity-crosswalk-20260923
-head_sha: 02ef01daf0c3f69e63b536b5af1b5748f3964b47
+head_sha: 1d4d77fd33470e68021053ec8abdf3be0152d280
 pr: 807
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pre-evidence-02ef01d
-ci_checks_for_current_head: 3
-ci_run_ids: [35923485090, 35923485080, 35923485028, 35923485061]
-ci_job_ids: [107392876571, 107392876948, 107392877080]
-runner_assignment_state: active
+ci_check_generation: successor-repair-pending-freeze
+ci_checks_for_current_head: 0
+ci_run_ids: []
+ci_job_ids: []
+runner_assignment_state: pending
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: retain exact manifest from successful run as compact repository evidence, freeze returned successor head, then perform fresh exact-head qualification and required independent deep review
+next_action: freeze the successor head returned by this task-record update, rerun complete exact-head qualification, then request one successor independent deep review; no further mutation unless a new material finding is accepted
 \`\`\`
