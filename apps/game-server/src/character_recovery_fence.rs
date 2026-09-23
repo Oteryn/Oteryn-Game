@@ -46,15 +46,31 @@ pub struct CharacterRecoveryStore {
 }
 
 pub struct SealedCharacterRecoveryFence<'a> {
-    pub record: CharacterRecoveryFenceV1,
+    record: CharacterRecoveryFenceV1,
     _generation: RwLockReadGuard<'a, ()>,
     _process: File,
 }
 
 pub struct CharacterRecoveryTransition<'a> {
-    pub record: CharacterRecoveryFenceV1,
+    record: CharacterRecoveryFenceV1,
     _generation: RwLockWriteGuard<'a, ()>,
     _process: File,
+}
+
+impl SealedCharacterRecoveryFence<'_> {
+    /// The externally locked record, immutable for the life of the seal.
+    #[must_use]
+    pub const fn record(&self) -> &CharacterRecoveryFenceV1 {
+        &self.record
+    }
+}
+
+impl CharacterRecoveryTransition<'_> {
+    /// The retained successor record, immutable for the life of the transition.
+    #[must_use]
+    pub const fn record(&self) -> &CharacterRecoveryFenceV1 {
+        &self.record
+    }
 }
 
 impl CharacterRecoveryStore {

@@ -268,7 +268,7 @@ impl DurabilityRoot {
         &self,
         seal: &'f SealedCharacterRecoveryFence<'s>,
     ) -> Result<ReconciledCharacterAuthority<'f, 's>> {
-        let record = seal.record.clone();
+        let record = seal.record().clone();
         let checked = record.clone();
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -294,10 +294,12 @@ impl DurabilityRoot {
         &self,
         recovery: &CharacterRecoveryTransition<'_>,
     ) -> Result<()> {
-        if recovery.record.recovery_generation != 1 || recovery.record.predecessor_generation != 0 {
+        if recovery.record().recovery_generation != 1
+            || recovery.record().predecessor_generation != 0
+        {
             return Err(CharacterAuthorityError::Rejected);
         }
-        let record = recovery.record.clone();
+        let record = recovery.record().clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             // Any surviving Character row is evidence of prior state: never "fresh".
@@ -315,7 +317,7 @@ impl DurabilityRoot {
         &self,
         recovery: &CharacterRecoveryTransition<'_>,
     ) -> Result<()> {
-        let record = recovery.record.clone();
+        let record = recovery.record().clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let current: Option<String> = sqlx::query_scalar("SELECT recovery_generation::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR UPDATE")

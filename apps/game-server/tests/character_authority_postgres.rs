@@ -175,10 +175,10 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
     let db_generation: String = sqlx::query_scalar("SELECT max(recovery_generation)::text FROM game_character_recovery_admissions")
         .fetch_one(&mut connection).await.expect("DB generation");
     assert_eq!(db_generation, "1");
-    assert_eq!(transition.record.recovery_generation, 2, "older DB stays distinguishable while the external retained directory remains advanced");
+    assert_eq!(transition.record().recovery_generation, 2, "older DB stays distinguishable while the external retained directory remains advanced");
     sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, predecessor_digest, issued_at, issuer_identity, reconciled_at) VALUES ('character-primary', 2, encode($1,'hex')::uuid, 1, $2, 200, 'game-ops', 200)")
         .bind(id(12).as_slice())
-        .bind(transition.record.predecessor_digest.as_slice())
+        .bind(transition.record().predecessor_digest.as_slice())
         .execute(&mut connection)
         .await
         .expect("explicit recovery reconciliation");
@@ -810,6 +810,19 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             .await
             .is_err()
     );
+    // A temporary relation cannot shadow the holds table inside the guard: the
+    // expired but held event still refuses direct deletion.
+    let mut shadow = pool.begin().await?;
+    sqlx::query("CREATE TEMP TABLE game_character_audit_legal_holds (event_id UUID, released_at BIGINT) ON COMMIT DROP")
+        .execute(&mut *shadow)
+        .await?;
+    assert!(
+        sqlx::query("DELETE FROM game_character_audit_outbox")
+            .execute(&mut *shadow)
+            .await
+            .is_err()
+    );
+    shadow.rollback().await?;
     // TRUNCATE bypasses row triggers; every Character relation refuses it.
     for table in [
         "game_character_audit_legal_holds",
@@ -954,6 +967,19 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         );
         tamper.rollback().await?;
     }
+    // Root revisions keep the interpretation grammar even when row triggers are
+    // bypassed, so reconciliation never reopens unrepresentable context.
+    let mut tamper = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tamper)
+        .await?;
+    assert!(
+        sqlx::query("UPDATE game_character_roots SET profile_revision = '-profile'")
+            .execute(&mut *tamper)
+            .await
+            .is_err()
+    );
+    tamper.rollback().await?;
     // An active legal hold whose audit event is missing is lost retention.
     sqlx::query("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'case-2', 'security:alice', 1)")
         .bind(id(26).as_slice())
@@ -1039,7 +1065,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         recovery
             .seal_current()
             .map_err(|e| format!("{e:?}"))?
-            .record
+            .record()
             .recovery_generation,
         1
     );
@@ -1064,7 +1090,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         issuer_identity: "game-ops".to_owned(),
     })
     .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(transition.record.predecessor_digest, generation_one);
+    assert_eq!(transition.record().predecessor_digest, generation_one);
     for issued_at in ["101", "100"] {
         let mut restore = pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")

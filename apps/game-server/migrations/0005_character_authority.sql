@@ -44,10 +44,11 @@ CREATE TABLE game_character_roots (
     world_id UUID NOT NULL,
     lifecycle SMALLINT NOT NULL CHECK (lifecycle = 1),
     character_revision NUMERIC(20,0) NOT NULL CHECK (character_revision BETWEEN 1 AND 18446744073709551615),
-    profile_revision TEXT NOT NULL CHECK (octet_length(profile_revision) BETWEEN 1 AND 128),
-    ruleset_revision TEXT NOT NULL CHECK (octet_length(ruleset_revision) BETWEEN 1 AND 128),
-    content_revision TEXT NOT NULL CHECK (octet_length(content_revision) BETWEEN 1 AND 128),
-    starter_template_revision TEXT NOT NULL CHECK (octet_length(starter_template_revision) BETWEEN 1 AND 128),
+    -- Same revision grammar as CharacterInterpretationV1.
+    profile_revision TEXT NOT NULL CHECK (profile_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    ruleset_revision TEXT NOT NULL CHECK (ruleset_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    content_revision TEXT NOT NULL CHECK (content_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    starter_template_revision TEXT NOT NULL CHECK (starter_template_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
     CHECK (game_character_is_uuid_v7(character_id)),
     CHECK (game_character_is_uuid_v7(account_id)),
     CHECK (game_character_is_uuid_v7(world_id))
@@ -274,10 +275,26 @@ RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
     END IF;
 END; $$;
 
-DO $$ BEGIN
-    EXECUTE format('ALTER FUNCTION game_character_configure_interpretation(text, text, text, text) SET search_path = %I, pg_temp', current_schema());
-    EXECUTE format('ALTER FUNCTION game_character_place_legal_hold(uuid, text, text) SET search_path = %I, pg_temp', current_schema());
-    EXECUTE format('ALTER FUNCTION game_character_release_legal_hold(uuid, text) SET search_path = %I, pg_temp', current_schema());
+-- Every Character function, including the row and statement guards, resolves
+-- relations through a fixed search_path (this schema, then pg_temp), so a
+-- caller's temporary or search-path object can never shadow a guarded table.
+DO $$
+DECLARE
+    v_function TEXT;
+BEGIN
+    FOREACH v_function IN ARRAY ARRAY[
+        'game_character_is_uuid_v7(uuid)',
+        'game_character_uuid_v7()',
+        'game_character_intent_floor_guard()',
+        'game_character_immutable()',
+        'game_character_audit_guard()',
+        'game_character_audit_hold_guard()',
+        'game_character_configure_interpretation(text, text, text, text)',
+        'game_character_place_legal_hold(uuid, text, text)',
+        'game_character_release_legal_hold(uuid, text)'
+    ] LOOP
+        EXECUTE format('ALTER FUNCTION %s SET search_path = %I, pg_temp', v_function, current_schema());
+    END LOOP;
 END $$;
 
 -- Row triggers do not fire for TRUNCATE; refuse it on every Character relation
@@ -301,6 +318,9 @@ CREATE TRIGGER game_character_bootstrap_intent_floors_no_truncate BEFORE TRUNCAT
     FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
 CREATE TRIGGER game_character_interpretations_no_truncate BEFORE TRUNCATE ON game_character_interpretations
     FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_character_reject_truncate() SET search_path = %I, pg_temp', current_schema());
+END $$;
 
 REVOKE ALL ON TABLE
     game_character_recovery_admissions,
