@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
+CONTROL_CONSUMER = "__canonical_routing_control__"
 REQUIRED = {
     SERVER: "apps/game-server",
     "oteryn-client": "apps/client",
@@ -234,20 +235,21 @@ def routing_surface(roots: dict[str, str], path: str) -> str:
 
 
 def reference_patterns(path: str) -> tuple[str, ...]:
-    """Return conservative literal patterns that can reveal a repository-file consumer."""
+    """Return bounded literals for exact-file and repository-directory consumers."""
     parts = PurePosixPath(path).parts
-    patterns = {path}
-    if len(parts) == 1:
-        patterns.add(parts[0])
-    else:
+    patterns = {path, parts[-1]}
+    if len(parts) >= 2:
         patterns.add("/".join(parts[-2:]))
-        patterns.add(parts[-1])
+        parent = parts[:-1]
+        if len(parent) >= 2:
+            patterns.add("/".join(parent))
+            patterns.add("/".join(parent[-2:]))
     return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
 
 
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
-    """Only Cargo packages can make an auxiliary file a product-build input."""
-    return sorted(set(roots.values()))
+    """Scan Cargo packages plus canonical workflows that select product CI."""
+    return sorted(set(roots.values())) + sorted(CANONICAL_CONTROL_PATHS)
 
 
 def candidate_reference_consumers(
@@ -257,10 +259,10 @@ def candidate_reference_consumers(
 ) -> dict[str, set[str]]:
     """Map changed non-Cargo files to exact-candidate product/control consumers.
 
-    Candidate content is read as data only. Matching is deliberately conservative:
-    full paths, parent/basename suffixes and basenames are searched across every
-    Cargo package plus canonical routing controls. False positives may allocate a
-    broader lane; malformed or unavailable evidence fails closed.
+    Candidate content is read as data only. Matching covers exact files plus
+    bounded parent-directory literals across Cargo packages and canonical product
+    CI workflows. False positives only allocate broader lanes; malformed or
+    unavailable evidence fails closed.
     """
     if re.fullmatch(r"[0-9a-f]{40}", sha or "") is None:
         raise ValueError("invalid candidate SHA")
@@ -295,13 +297,14 @@ def candidate_reference_consumers(
             raise ValueError("invalid consumer path")
         content = subprocess.check_output(["git", "show", f"{sha}:{consumer_path}"])
         owner = package_owner(roots, consumer_path)
-        if owner is None:
+        control = consumer_path in CANONICAL_CONTROL_PATHS
+        if owner is None and not control:
             continue
         for pattern, targets in reverse_patterns.items():
             if pattern.encode("utf-8") not in content:
                 continue
             for target in targets:
-                consumers[target].add(owner)
+                consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
     return consumers
 
 
@@ -512,6 +515,8 @@ def classify(
             if not isinstance(consumers, (set, list, tuple)):
                 return full("unverified-reference-consumers")
             for consumer in consumers:
+                if consumer == CONTROL_CONSUMER:
+                    return full("canonical-control-consumer-affected", "control-plane")
                 if consumer not in roots:
                     return full("unverified-reference-consumers")
                 affected.add(consumer)
