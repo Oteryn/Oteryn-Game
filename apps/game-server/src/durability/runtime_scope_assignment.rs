@@ -13,7 +13,7 @@
 //! serialization, so no stale readiness can be restored.
 
 use super::admission_authority_guards::{
-    AdmissionGuardStore, GuardPublicationDisposition, encode_guard,
+    AdmissionGuardStore, GuardPublicationDisposition, decode_guard, encode_guard,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -959,16 +959,18 @@ impl RuntimeScopeAssignmentWriter {
                         Some((slot_key, slot_command)) if slot_key == key.0.as_slice() => {
                             // A restored checkpoint can outlive its commit: the
                             // immutable receipt decides before the slot does.
-                            let receipt = load_receipt(&mut tx, &key).await?;
-                            clear_slot(&mut tx, &registration).await?;
-                            commit_semantic_transaction(tx, deadline).await?;
-                            return Ok(Ok(match receipt {
+                            // A receipt bound to a different command keeps the
+                            // slot as custody evidence and changes nothing.
+                            let outcome = match load_receipt(&mut tx, &key).await? {
                                 Some((receipt, stored)) if stored == slot_command => {
                                     ReconcileOutcome::Committed(receipt)
                                 }
                                 Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
                                 None => ReconcileOutcome::Absent,
-                            }));
+                            };
+                            clear_slot(&mut tx, &registration).await?;
+                            commit_semantic_transaction(tx, deadline).await?;
+                            return Ok(Ok(outcome));
                         }
                         Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
                         None => {}
@@ -1657,18 +1659,25 @@ async fn require_guard_covers_latest_fence(
     scope_key: &[u8],
     scope: RuntimeScopeRefV1,
 ) -> Result<(), DurabilityError> {
-    let latest: Option<Option<String>> = sqlx::query_scalar(
-        "SELECT fenced_publication_revision::text \
+    let latest = sqlx::query(
+        "SELECT fenced_publication_revision::text AS fenced, \
+                ownership_generation::text AS generation, decision_identity \
          FROM game_runtime_scope_assignment_receipts WHERE scope_key = $1 \
          ORDER BY source_revision DESC LIMIT 1",
     )
     .bind(scope_key)
     .fetch_optional(&mut **tx)
     .await?;
-    let Some(Some(fenced)) = latest else {
+    let Some(latest) = latest else {
+        return Ok(());
+    };
+    let fenced: Option<String> = latest.try_get("fenced")?;
+    let Some(fenced) = fenced else {
         return Ok(());
     };
     let fenced = parse_u64_text(&fenced)?;
+    let generation = parse_u64_text(&latest.try_get::<String, _>("generation")?)?;
+    let decision: String = latest.try_get("decision_identity")?;
     let store = AdmissionGuardStore::from_root(root.clone());
     let key = AdmissionAuthorityGuardKeyV1::Runtime(scope);
     let current = store
@@ -1676,6 +1685,40 @@ async fn require_guard_covers_latest_fence(
         .await?
         .ok_or(DurabilityError::InvalidStoredState)?;
     if current.publication_revision < fenced {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    // The exact fence publication must still be retained: same Runtime guard,
+    // same publication authority, this receipt's decision and generation, and
+    // not ready. A dropped or substituted fence revision fails closed.
+    let candidates: Vec<String> = sqlx::query_scalar(
+        "SELECT change_json FROM game_durability_admission_guard_history \
+         WHERE publication_revision = $1::text::numeric(20,0) AND decision_identity = $2",
+    )
+    .bind(fenced.to_string())
+    .bind(&decision)
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut retained = false;
+    for payload in &candidates {
+        let change = decode_guard(payload, MAX_ADMISSION_GUARD_BYTES)?;
+        if change.key != key {
+            continue;
+        }
+        retained = change.publication_revision == fenced
+            && change.source.authority == current.source.authority
+            && change.source.purpose == AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness
+            && change.source.decision_identity == decision
+            && matches!(
+                change.state,
+                AdmissionAuthorityGuardStateV1::Runtime {
+                    ready: false,
+                    ownership_generation,
+                    ..
+                } if ownership_generation == generation
+            );
+        break;
+    }
+    if !retained {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(())
