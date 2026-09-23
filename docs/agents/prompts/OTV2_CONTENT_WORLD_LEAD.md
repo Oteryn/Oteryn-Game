@@ -24,17 +24,18 @@ Utrzymuj tylko aktualną tabelę przyrost/owner/head/dependency/next action w ju
 Przed planowanym substantial worker release przekaż aktywnemu control plane potrzebę świeżego sprawdzenia capability/integration zgodnie ze związaną polityką. Nie traktuj historycznego quota lub braku narzędzia jako wiecznego statusu; nie zastępuj brakującego normalnego publish route rekonstrukcją Git objects.
 
 
-## Guard konwergencji Item Content
+## Item batch convergence
 
-Dla Item programme utrzymuj krótki scoreboard `baseline -> current`: unresolved/ambiguous/conflict identities, `PROVEN|DERIVED` continuity, promotable fields, canonical-promoted fields oraz liczba itemów przechodzących rzeczywisty artifact/runtime/client path.
+Dla Item programme utrzymuj jeden krótki batch scoreboard `baseline -> current`: resolved/ambiguous/conflict identities, `PROVEN|DERIVED`, promotable fields, canonical-promoted fields oraz downstream coverage.
 
-Kolejność docelowa to:
+Domyślnie prowadź **jeden Item batch przez pełną użyteczną ścieżkę**, a nie serię projektów:
+`resolve -> verify -> continuity-if-needed -> promote -> compile/test`.
 
-`resolve identity/source -> verify field + target continuity -> promote canonical values -> compile/load -> runtime/client -> E2E`.
+Nie twórz osobnego taska, PR-a, lifecycle closeoutu ani successor generation dla każdego logicznego podkroku. Podział jest dopuszczalny tylko wtedy, gdy wymusza go realna granica ownership/custody, execution surface, materialna decyzja architektoniczna albo obowiązkowy niezależny gate. Taki podział pozostaje jednym batchiem i nie resetuje celu ani scoreboardu.
 
-Nie dodawaj nowej fazy tylko dlatego, że poprzednia zakończyła się green. Jeżeli `promotable_fields == 0`, nie kieruj pracy do semantic promotion ani do kolejnego schema/rule layer; skieruj ją do najmniejszego source-resolution/evidence-expansion, który może zmniejszyć ambiguity albo zwiększyć `PROVEN|DERIVED`. Gdy eligible set staje się niepusty, priorytetem jest jego rzeczywista promocja przez istniejący CW3 lineage.
+Nie wymagaj ukończenia całego Itemu przed promocją. Jeśli dokładne pola są promotowalne i istniejący #749 typed model je reprezentuje, promuj je częściowo, pozostawiając inne pola jako `UNKNOWN/CONFLICT`. Evidence/checkpoint z zerowym delta jest zapisem stanu, nie nową fazą.
 
-Evidence-only przyrost z zerową zmianą scoreboardu może zamknąć jeden konkretny prerequisite, ale nie może automatycznie rodzić następnego evidence-only przyrostu. Bez nowej informacji lub dokładnego architecture blocker uznaj dalszy taki łańcuch za dryf i wróć do najbliższego kroku zmieniającego stan produktu.
+Jeżeli eligible set jest pusty, ten sam batch wraca do najbliższego blocker-reducing source/identity/continuity kroku. Jeżeli eligible set jest niepusty, priorytetem jest natychmiastowa canonical promotion i compile/test; nie dispatchuj kolejnego verifiera/rule layer tylko dlatego, że poprzedni check był green.
 
 ## Akceptacja
 
