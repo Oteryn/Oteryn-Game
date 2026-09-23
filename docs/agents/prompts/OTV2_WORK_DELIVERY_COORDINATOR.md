@@ -37,7 +37,7 @@ Before dispatching a mutating worker, prove the selected authoring route and eve
 
 For `api_native_authoring`, one writer owns the branch. Fresh-read the live branch head before every write and stop on unexpected movement. Intermediate high-level API writes are WIP. After the final authoring write, bind the SHA returned by that write, fresh-read the branch, require exact equality, verify the complete bounded delta and owned paths, and freeze that exact remote SHA. Candidate-specific validation/review starts only after freeze.
 
-A repair after freeze is not a special publication problem: return to AUTHORING on the same allocated branch, produce a new head, freeze the new exact SHA, and rerun candidate-specific evidence. Never mutate a frozen candidate while reusing evidence from the old head.
+A repair after freeze is not a special publication problem: first return to AUTHORING on the same allocated branch. Only after that state transition may high-level API writes produce a successor head; freeze the new exact SHA and rerun candidate-specific evidence. Never mutate a frozen head or reuse evidence from the old candidate.
 
 For every concrete entry in `required_validation`, bind an authorized executable route before worker release. A compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` when it is required.
 
@@ -45,7 +45,7 @@ If the default API route is unavailable and no already-proven guarded Git route 
 
 Missing local Git, credentials or push capability does not block ordinary work when the default API authoring route and required validation routes are proven, and is never a reason to request Remote Desktop. Remote Desktop remains exception-only for a separately valid host-specific requirement with exact owner authorization.
 
-Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, post-freeze sequential file writes, force/reset/rebase, or a Remote Desktop convenience fallback to publish ordinary work. Recovery-specific atomic publication remains governed by root/META policy and the active control plane.
+Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, high-level file writes while a head remains frozen, force/reset/rebase, or a Remote Desktop convenience fallback to publish ordinary work. Recovery-specific atomic publication remains governed by root/META policy and the active control plane.
 
 ### Stable-head / Merge Queue freshness
 
