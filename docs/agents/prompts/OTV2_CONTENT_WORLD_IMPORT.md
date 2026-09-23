@@ -28,22 +28,19 @@ Nie wracaj do seryjnego importu lub native-bindingu po jednym rekordzie jako nor
 Reimport porównuje stary baseline, nowe źródło i lokalne poprawki; nie nadpisuje ich w ciemno. Rename/rechunk nie zmienia PlacementKey, copy jest nowym placementem, ambiguous matching jest konfliktem. Nie zmieniaj Reference/Evolved granicy po cichu.
 
 
-## Guard konwergencji Item Content
+## Item batch pipeline
 
-Dla rodziny Item sukces mierz zmianą stanu produktu/danych, nie liczbą kolejnych raportów lub generacji. Na wejściu i wyjściu zapisz co najmniej: resolved/ambiguous/conflict identities, `PROVEN|DERIVED` target-continuity, promotable fields oraz już canonical-promoted fields.
+Dla rodziny Item domyślną jednostką pracy jest **jedna rzeczywista partia danych**, nie osobna generacja dla każdego kroku. Prowadź tę samą partię możliwie ciągle przez:
 
-Generacja liczy się jako realny przyrost tylko wtedy, gdy robi co najmniej jedno z poniższych:
+`resolve identity/source -> verify fields -> prove target continuity tylko gdzie potrzebna -> canonical promotion -> compile/test`.
 
-- zmniejsza unresolved/ambiguous/conflict przez mocniejsze exact bindings;
-- zwiększa liczbę pól z continuity `PROVEN|DERIVED` albo promotable fields;
-- przekazuje niepusty, dokładnie wskazany promotable set do CW3 do canonical promotion;
-- zamyka konkretny wymagany artifact/runtime/client consumer dla już promowanych danych.
+Nie twórz osobnego taska/PR/checkpointu wyłącznie dlatego, że skończył się jeden z tych podkroków. Rozdzielenie jest uzasadnione tylko przez realną granicę custody/owned paths, wymagany inny execution surface, materialny architecture blocker albo niezależny obowiązkowy gate. W takim przypadku zachowaj jeden wspólny Item batch ID i przekaż dokładny wynik bez nowej fazy analitycznej.
 
-Jeżeli `promotable_fields == 0`, **nie** uruchamiaj ani nie proponuj pustej fazy semantic promotion. Następny krok musi być source-resolution/evidence-expansion ukierunkowany na rzeczywisty blocker: przede wszystkim identity ambiguity i continuity do target cut. Używaj exact source IDs/bindings, rewizji historycznych obejmujących target cut oraz niezależnych/official/structured źródeł zgodnie z rejestrem evidence; nie zastępuj dowodu majority vote.
+Evidence manifests, counts i digests są dowodem oraz outputem batcha, a nie samodzielnym celem. Continuity do target cut wykonuj tylko dla pól, które nie mają już wystarczającego target-date evidence; nie buduj dodatkowego bridge/rule layer dla pola, które można bezpośrednio sklasyfikować.
 
-Evidence/schema/rule generation bez zmiany powyższych metryk jest dopuszczalna tylko jako jeden konkretny konieczny prerequisite i musi wskazać następną mutację, która zmieni stan produktu. Nie łańcuchuj kolejnych zero-delta evidence/checkpoint generations bez nowej informacji zewnętrznej albo dokładnego architecture blocker.
+Na wejściu i wyjściu batcha zapisz krótki delta scoreboard: resolved/ambiguous/conflict identities, `PROVEN|DERIVED`, promotable fields i canonical-promoted fields. Batch ma realny postęp wtedy, gdy zmienia te liczby albo dostarcza już promowane dane do compile/load. Sam raport, manifest, schema wrapper lub lifecycle checkpoint z zerowym delta nie jest kolejnym etapem pracy.
 
-Gdy pojawi się niepusty eligible set, przekaż go bezpośrednio do istniejącego CW3/#749 lineage do bulk promotion. Nie twórz po drodze nowego rule engine, parsera, modelu ani schema phase, chyba że dokładnie zweryfikowane pole nie ma reprezentacji w chronionym modelu.
+Jeżeli `promotable_fields == 0`, pracuj dalej w tej samej partii nad najbliższym source/identity/continuity blockerem zamiast uruchamiać pustą semantic promotion. Gdy eligible set staje się niepusty, przekaż go natychmiast do istniejącego #749/CW3 lineage; nie czekaj na kompletność całego itemu i nie twórz nowego parsera/modelu/rule engine, jeżeli istniejący typed model potrafi reprezentować dokładne pole.
 
 ## Akceptacja
 
