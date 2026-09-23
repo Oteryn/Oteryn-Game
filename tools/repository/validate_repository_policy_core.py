@@ -423,7 +423,7 @@ def main() -> int:
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
             "Merge gate / routing contract",
-            "Verify protected-base routing snapshot health",
+            "Verify protected-base routing contract health",
             "git diff --check \"$EXPECTED_BASE\" \"$EXPECTED_HEAD\"",
             "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
