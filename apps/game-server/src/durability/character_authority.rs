@@ -133,7 +133,7 @@ impl DurabilityRoot {
                 .bind(account.as_slice()).execute(&mut *tx).await?;
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
                 .bind(account.as_slice()).fetch_one(&mut *tx).await?;
-            if let Some(row) = sqlx::query("SELECT o.command_binding, o.character_id::text, o.event_id::text, o.transaction_id::text, a.payload FROM game_character_operation_receipts o LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id WHERE o.operation_id = encode($1, 'hex')::uuid")
+            if let Some(row) = sqlx::query("SELECT o.command_binding, o.character_id::text, o.event_id::text, o.transaction_id::text, a.payload FROM game_character_operation_receipts o LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id AND a.character_id = o.character_id WHERE o.operation_id = encode($1, 'hex')::uuid")
                 .bind(operation.as_slice()).fetch_optional(&mut *tx).await? {
                 let old: Vec<u8> = row.try_get("command_binding")?;
                 if old != command_binding { return Ok(Err(CharacterAuthorityError::Conflict)); }
@@ -168,7 +168,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, a.payload FROM game_character_roots r JOIN game_character_operation_receipts o USING (character_id) LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
+            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, a.payload FROM game_character_roots r JOIN game_character_operation_receipts o USING (character_id) LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id AND a.character_id = r.character_id WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
             let record = decode_current_row(&row)?;
             commit_semantic_transaction(tx, deadline).await?;
@@ -187,7 +187,8 @@ impl DurabilityRoot {
         let record = recovery.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox)")
+            // Any surviving Character row is evidence of prior state: never "fresh".
+            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds)")
                 .fetch_one(&mut *tx).await?;
             if existing != 0 { return Ok(Err(CharacterAuthorityError::Conflict)); }
             insert_recovery_admission(&mut tx, &record).await?;
@@ -216,8 +217,22 @@ impl DurabilityRoot {
             }
             // This is the explicit reconciliation point. Domain-specific integrity checks grow
             // here; restored receipts/audit/outbox never replace the external predecessor proof.
-            // Audit events legitimately expire, so only the authority receipt is required.
-            sqlx::query("SELECT 1 FROM game_character_roots r LEFT JOIN game_character_operation_receipts o USING (character_id) WHERE o.character_id IS NULL LIMIT 1")
+            // Every root needs its exact receipt; a retained audit event must bind to that
+            // receipt and root. Audit events legitimately expire, so absence is allowed.
+            sqlx::query(
+                "SELECT 1 FROM game_character_roots r \
+                   LEFT JOIN game_character_operation_receipts o USING (character_id) \
+                   LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
+                  WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
+                     OR o.character_revision <> r.character_revision \
+                     OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
+                         OR a.transaction_id <> o.transaction_id OR a.payload_sha256 <> sha256(a.payload))) \
+                 UNION ALL \
+                 SELECT 1 FROM game_character_audit_outbox a \
+                   LEFT JOIN game_character_operation_receipts o ON o.event_id = a.event_id \
+                  WHERE o.event_id IS NULL OR o.character_id <> a.character_id \
+                 LIMIT 1",
+            )
                 .fetch_optional(&mut *tx).await?
                 .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
             commit_semantic_transaction(tx, deadline).await?;

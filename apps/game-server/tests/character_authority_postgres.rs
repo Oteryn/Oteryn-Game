@@ -503,6 +503,124 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     .await?;
     assert_eq!(columns, 0, "receipts retain no payload copy");
     drop(fence);
+
+    // A malformed (non-UUIDv7) recovery event never advances the external register.
+    let mut malformed = id(12);
+    malformed[6] = 0x40;
+    assert!(matches!(
+        recovery.begin_recovery(1, malformed, 300),
+        Err(CharacterRecoveryError::Rejected)
+    ));
+    assert_eq!(
+        recovery
+            .seal_current()
+            .map_err(|e| format!("{e:?}"))?
+            .record
+            .recovery_generation,
+        1
+    );
+
+    // Post-restore reconciliation refuses a receipt that contradicts its root.
+    let transition = recovery
+        .begin_recovery(1, id(12), 300)
+        .map_err(|e| format!("{e:?}"))?;
+    let mut tamper = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tamper)
+        .await?;
+    sqlx::query("UPDATE game_character_operation_receipts SET world_id = encode($1,'hex')::uuid")
+        .bind(id(91).as_slice())
+        .execute(&mut *tamper)
+        .await?;
+    tamper.commit().await?;
+    assert!(
+        root.reconcile_character_recovery(&transition)
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_recovery_admissions"
+        )
+        .await?,
+        1
+    );
+    let mut repair = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query("UPDATE game_character_operation_receipts SET world_id = encode($1,'hex')::uuid")
+        .bind(id(90).as_slice())
+        .execute(&mut *repair)
+        .await?;
+    repair.commit().await?;
+    root.reconcile_character_recovery(&transition)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_recovery_admissions"
+        )
+        .await?,
+        2
+    );
+    drop(transition);
+    pool.close().await;
+    std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+#[test]
+fn fresh_store_admission_refuses_any_prior_character_row() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "fresh").await?;
+            let result = fresh_refusal(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn fresh_refusal(database: &Database) -> TestResult {
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    // A dangling account guard alone is evidence of prior Character state.
+    sqlx::query(
+        "INSERT INTO game_character_account_guards(account_id) VALUES (encode($1,'hex')::uuid)",
+    )
+    .bind(id(31).as_slice())
+    .execute(&pool)
+    .await?;
+    let retained = std::env::temp_dir().join(format!("oteryn-character-fresh-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    let fresh = recovery
+        .authorize_fresh_store(id(11), 100)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(matches!(
+        root.admit_fresh_character_recovery(&fresh).await,
+        Err(CharacterAuthorityError::Conflict)
+    ));
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_recovery_admissions"
+        )
+        .await?,
+        0
+    );
+    drop(fresh);
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
     Ok(())

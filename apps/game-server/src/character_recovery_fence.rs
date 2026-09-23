@@ -124,7 +124,9 @@ impl CharacterRecoveryStore {
         recovery_event_id: [u8; 16],
         issued_at: u64,
     ) -> Result<CharacterRecoveryTransition<'_>, CharacterRecoveryError> {
-        if recovery_event_id == [0; 16] || issued_at == 0 {
+        // Only a canonical UUIDv7 (version 7, RFC variant) is admissible in the
+        // Character store; reject before the external register can advance.
+        if recovery_event_id[6] >> 4 != 7 || recovery_event_id[8] & 0xc0 != 0x80 || issued_at == 0 {
             return Err(CharacterRecoveryError::Rejected);
         }
         let successor = expected_predecessor
