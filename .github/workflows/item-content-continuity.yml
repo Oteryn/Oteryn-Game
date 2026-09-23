@@ -156,7 +156,7 @@ jobs:
           manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
           counts = manifest['counts']
           assert counts['candidate_fields'] == 69
-          assert sum(counts['continuity'].values()) == 67
+          assert sum(counts['continuity'].values()) == 69
           assert set(counts['continuity']) == {'DERIVED','UNKNOWN','CONFLICT'}
           assert manifest['continuity_policy']['max_classification'] == 'DERIVED'
           assert manifest['invariants']['proven_continuity_emitted'] is False
