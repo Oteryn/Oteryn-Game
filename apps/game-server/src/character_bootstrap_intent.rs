@@ -3,13 +3,15 @@
 //! The Platform Account authority owns and authenticates the intent; Game only
 //! decodes the exact bounded producer wire and binds it to the Character
 //! operation receipt. Only the `OPERATOR_CONTROL_PLANE_BOOTSTRAP` variant is
-//! enabled. A [`CharacterBootstrapIntentV1`] has no field constructor: it is
-//! produced only by decoding the complete producer decision. Like the S1 evidence
-//! codec, the decoder does not itself authenticate a source; callers pass only
-//! bytes returned by the purpose-separated mTLS reconciliation read
-//! (`native_admission_source::read_character_bootstrap_intent`).
+//! enabled. Outside this crate a [`CharacterBootstrapIntentV1`] is obtained only
+//! from [`read_authenticated_intent`], which couples the strict decoder to the
+//! purpose-separated TLS 1.3 mTLS reconciliation read and the configured issuer
+//! trust; there is no public constructor from caller-supplied bytes or fields.
 
 use oteryn_game_server::domain::{AccountId, WorldId};
+use oteryn_game_server::native_admission_source::{
+    QueuePermit, SourceError, descriptor::ProducerDescriptor, read_character_bootstrap_intent,
+};
 use serde::Deserialize;
 
 pub const CONTRACT_VERSION: u8 = 1;
@@ -205,7 +207,7 @@ fn revision(value: String) -> Result<String, InvalidIntent> {
 /// Unknown, duplicate or missing members, any other variant, issuer, operation
 /// or audience, non-canonical identities or numbers and an out-of-bound source
 /// validity window are rejected.
-pub fn decode_producer_response(
+pub(crate) fn decode_producer_response(
     raw: &[u8],
     expected_operation_id: [u8; 16],
 ) -> Result<CharacterBootstrapIntentV1, InvalidIntent> {
@@ -250,6 +252,64 @@ pub fn decode_producer_response(
         issued_at_source,
         expires_at_source,
     })
+}
+
+/// Why an authenticated intent read produced no intent.
+#[derive(Debug)]
+pub enum IntentReadError {
+    /// Transport, peer authentication or producer outcome (bounded unavailable).
+    Source(SourceError),
+    /// The authenticated producer body is not an exact V1 decision.
+    Invalid(InvalidIntent),
+}
+
+/// Read one operation's current intent from the configured Platform issuer over
+/// the authenticated mTLS route and strictly decode that exact body. This is
+/// the only public way to obtain a [`CharacterBootstrapIntentV1`].
+pub async fn read_authenticated_intent(
+    descriptor: &ProducerDescriptor,
+    operation_id: [u8; 16],
+    permit: &mut QueuePermit<'_>,
+) -> Result<CharacterBootstrapIntentV1, IntentReadError> {
+    let raw =
+        read_character_bootstrap_intent(descriptor, &encode_read_request(operation_id), permit)
+            .await
+            .map_err(IntentReadError::Source)?;
+    decode_producer_response(&raw, operation_id).map_err(IntentReadError::Invalid)
+}
+
+/// Game-owned current interpretation context, from the server's own
+/// configuration. Intent revisions are requested context, never authority:
+/// bootstrap commits only when they equal this exactly.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharacterInterpretationV1 {
+    revisions: [String; 4],
+}
+
+impl CharacterInterpretationV1 {
+    pub fn new(
+        profile_revision: &str,
+        ruleset_revision: &str,
+        content_revision: &str,
+        starter_template_revision: &str,
+    ) -> Result<Self, InvalidIntent> {
+        Ok(Self {
+            revisions: [
+                revision(profile_revision.to_owned())?,
+                revision(ruleset_revision.to_owned())?,
+                revision(content_revision.to_owned())?,
+                revision(starter_template_revision.to_owned())?,
+            ],
+        })
+    }
+
+    #[must_use]
+    pub fn admits(&self, intent: &CharacterBootstrapIntentV1) -> bool {
+        self.revisions
+            .iter()
+            .map(String::as_str)
+            .eq(intent.interpretation())
+    }
 }
 
 /// Exact bounded reconciliation request body for one operation.

@@ -12,7 +12,9 @@ use crate::character_recovery_fence::{
     recovery_record_digest,
 };
 use oteryn_game_server::admission_evidence::{Facts, Request, Response, decode_response};
-use oteryn_game_server::character_bootstrap_intent::CharacterBootstrapIntentV1;
+use oteryn_game_server::character_bootstrap_intent::{
+    CharacterBootstrapIntentV1, CharacterInterpretationV1,
+};
 use oteryn_game_server::domain::{AccountId, CharacterId, CharacterRevision, WorldId};
 use sqlx::Row;
 
@@ -110,12 +112,16 @@ impl DurabilityRoot {
     /// floor for the intent's AccountId and the unexpired intent are proven; the
     /// intent source high-water advances; and the Character root, receipt with
     /// the complete intent binding, audit event and pending outbox commit.
+    /// The intent's world and interpretation are requested context: the world
+    /// must currently have an assigned Channel (#415) and the revisions must
+    /// equal the Game-configured interpretation.
     /// An exact retry returns the committed result; changed reuse conflicts.
     pub async fn bootstrap_character(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         proof: &NodeIncarnationProof,
         intent: &CharacterBootstrapIntentV1,
+        interpretation: &CharacterInterpretationV1,
     ) -> Result<CharacterAuthorityRecord> {
         let operation = intent.operation_id();
         let intent_binding = intent.binding();
@@ -125,6 +131,7 @@ impl DurabilityRoot {
         {
             return Err(CharacterAuthorityError::Rejected);
         }
+        let admitted_interpretation = interpretation.admits(intent);
         let proof = proof.clone();
         let account = *intent.account_id().as_bytes();
         let world = *intent.target_world_id().as_bytes();
@@ -162,7 +169,13 @@ impl DurabilityRoot {
             // time never refreshes the intent.
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
                 .fetch_one(&mut *tx).await?;
-            if issued_at > now || expires_at <= now {
+            if issued_at > now || expires_at <= now || !admitted_interpretation {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            // Game-owned current world: at least one currently assigned Channel,
+            // share-locked so a concurrent revocation serializes with this commit.
+            if sqlx::query("SELECT scope_key FROM game_runtime_scope_assignments WHERE world_id = encode($1, 'hex')::uuid AND state = 1 LIMIT 1 FOR SHARE")
+                .bind(world.as_slice()).fetch_optional(&mut *tx).await?.is_none() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
             // Independent prerequisite: current allowed Platform account security.

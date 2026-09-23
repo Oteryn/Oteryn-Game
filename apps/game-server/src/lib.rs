@@ -580,3 +580,4 @@ mod v2_reconciled_prepared_budget_regression_tests {
 }
 
 pub mod admission_evidence;
+pub mod native_admission_source;

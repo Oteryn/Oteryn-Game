@@ -46,6 +46,11 @@ pub struct TransientCapacity {
     active: std::sync::atomic::AtomicUsize,
     queued: std::sync::atomic::AtomicUsize,
 }
+impl Default for TransientCapacity {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl TransientCapacity {
     pub const fn new() -> Self {
         Self {

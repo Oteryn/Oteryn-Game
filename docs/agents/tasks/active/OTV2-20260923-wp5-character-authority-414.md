@@ -81,9 +81,11 @@ Focused Rust/protobuf checks run locally. The registered `character_authority_po
   - only the `OPERATOR_CONTROL_PLANE_BOOTSTRAP` variant, with the fixed issuer, operation and audience;
   - canonical UUIDs and decimals;
   - a source validity window of 1–300 s.
-- The decoder does not authenticate by itself, like the S1 codec. Authenticated bytes come from the purpose-separated TLS 1.3 mTLS read `native_admission_source::read_character_bootstrap_intent`:
+- The decoder is crate-private. The only public way to obtain an intent is `read_authenticated_intent`. It couples the decoder to the purpose-separated TLS 1.3 mTLS read `native_admission_source::read_character_bootstrap_intent`:
   - it uses its own `Operation` path, `/internal/v1/game-auth/character-bootstrap-intents/read`, and an issuer-bound descriptor;
   - every non-200 response is bounded unavailability.
+- The S1 transport module is now compiled into the library.
+- The intent's world and revisions are requested context, not authority. In the same transaction, the world must currently have an assigned Channel (#415 assignment, share-locked). The four revisions must equal the Game-configured `CharacterInterpretationV1`.
 - A new bootstrap proves all of the following in one transaction before committing:
   - the recovery fence;
   - the current #415 incarnation;
@@ -99,5 +101,5 @@ Focused Rust/protobuf checks run locally. The registered `character_authority_po
   - the S1 transport `descriptor.rs` and `mod.rs`: one operation variant and the narrow read;
   - its transport test crate.
 - Qualification on local PostgreSQL 17.6:
-  - `authenticated_intent_qualification_matrix` covers the #795 matrix: missing, denied and stale S2; exact and concurrent retries; changed reuse; stale and contradictory revisions; expired and future intents; injected outbox failure rolling back the high-water; concurrent distinct operations; restart; a replaced #415 proof; and a dropped or regressed restored high-water;
+  - `authenticated_intent_qualification_matrix` covers the #795 matrix: missing, denied and stale S2; an unassigned world; mismatched interpretation; exact and concurrent retries; changed reuse; stale and contradictory revisions; expired and future intents; injected outbox failure rolling back the high-water; concurrent distinct operations; restart; a replaced #415 proof; and a dropped or regressed restored high-water;
   - mutation checks confirm that disabling the S2 gate, the high-water comparison or the high-water presence check each fails the matrix.

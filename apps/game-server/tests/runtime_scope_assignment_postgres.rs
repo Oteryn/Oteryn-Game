@@ -21,6 +21,9 @@ mod durability;
 #[allow(dead_code, unused_imports)]
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/native_admission_source/mod.rs"]
+pub mod native_admission_source;
 
 use durability::admission_authority_guards::{AdmissionGuardStore, GuardPublicationDisposition};
 use durability::runtime_scope_assignment::{
