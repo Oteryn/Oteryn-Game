@@ -58,7 +58,7 @@ impl Display for WorldProjectV2Error {
                 write!(formatter, "duplicate WorldProject/v2 transition: {value}")
             }
             Self::InvalidReference(value) => write!(formatter, "invalid v2 reference: {value}"),
-            Self::InvalidItemOverlay(value) => write!(formatter, "invalid v2 Item overlay: {value}"),
+            Self::InvalidItemOverlay(value) => {\n                write!(formatter, "invalid v2 Item overlay: {value}")\n            }
             Self::InvalidForgeProfile => write!(formatter, "invalid v2 Forge profile"),
             Self::InvalidProficiencyProfile(value) => {
                 write!(formatter, "invalid v2 proficiency profile: {value}")
