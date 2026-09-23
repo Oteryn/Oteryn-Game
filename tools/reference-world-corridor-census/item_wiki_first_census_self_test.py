@@ -132,6 +132,25 @@ def test_space_spelled_infobox_is_parsed() -> None:
     assert value["unmapped"]["forgeclass"]["value"] == "Class 4"
 
 
+def test_namespace_case_whitespace_infobox_is_parsed() -> None:
+    value = census._extract_infobox(
+        "{{  Predefinição : INFOBOX_item  \n"
+        "| name = Falcon Plate\n"
+        "| armor = 18\n"
+        "}}"
+    )
+    assert value["infobox_present"] is True
+    assert value["mapped"]["name"]["value"] == "Falcon Plate"
+    assert value["mapped"]["armor"]["value"] == 18
+
+
+def test_subtemplate_name_is_not_misparsed_as_item_infobox() -> None:
+    value = census._extract_infobox(
+        "{{Infobox Item/Template\n| name = Not A Direct Item Infobox\n}}"
+    )
+    assert value["infobox_present"] is False
+
+
 def test_compile_census_keeps_full_infobox_partition_without_prose() -> None:
     discovered = [{"page_id": 1, "title": "Falcon Plate"}]
     full = census.compile_census(
