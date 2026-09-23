@@ -288,8 +288,12 @@ def candidate_reference_consumers(
         raise ValueError("candidate reference scan failed")
     raw_matches = [item for item in result.stdout.split(b"\0") if item]
     consumers: dict[str, set[str]] = {path: set() for path in unique}
+    prefix = f"{sha}:"
     for raw in raw_matches:
-        consumer_path = raw.decode("utf-8")
+        rendered = raw.decode("utf-8")
+        if not rendered.startswith(prefix):
+            raise ValueError("candidate reference scan returned an unbound path")
+        consumer_path = rendered[len(prefix):]
         if not valid_path(consumer_path):
             raise ValueError("invalid consumer path")
         content = subprocess.check_output(["git", "show", f"{sha}:{consumer_path}"])
