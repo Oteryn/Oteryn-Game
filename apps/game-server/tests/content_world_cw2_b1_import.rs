@@ -785,15 +785,15 @@ fn count_promoted_atoms(semantics: &ReferenceItemSemantics) -> usize {
         }
         assert!(matches!(&protection.resistances, Unknown));
     }
-    if let Known(charges) = &semantics.charges {
-        if matches!(&charges.count, Known(_)) {
-            count += 1;
-        }
+    if let Known(charges) = &semantics.charges
+        && matches!(&charges.count, Known(_))
+    {
+        count += 1;
     }
-    if let Known(container) = &semantics.container {
-        if matches!(&container.capacity, Known(_)) {
-            count += 1;
-        }
+    if let Known(container) = &semantics.container
+        && matches!(&container.capacity, Known(_))
+    {
+        count += 1;
     }
     count
 }
