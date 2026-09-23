@@ -470,9 +470,19 @@ def classify(
 
         scan_paths = sorted(set(paths))
         if reference_consumers is None:
-            if re.fullmatch(r"[0-9a-f]{40}", candidate_sha or "") is None:
-                return full("unverified-reference-consumers")
-            reference_consumers = candidate_reference_consumers(metadata, candidate_sha, scan_paths)
+            reference_consumers = {path: set() for path in scan_paths}
+            auxiliary_scan_paths = [
+                path
+                for path in scan_paths
+                if package_owner(roots, path) is None
+                and atlas_path_disposition(path) is None
+            ]
+            if auxiliary_scan_paths:
+                if re.fullmatch(r"[0-9a-f]{40}", candidate_sha or "") is None:
+                    return full("unverified-reference-consumers")
+                reference_consumers.update(
+                    candidate_reference_consumers(metadata, candidate_sha, auxiliary_scan_paths)
+                )
         if (
             not isinstance(reference_consumers, dict)
             or any(path not in reference_consumers for path in scan_paths)
