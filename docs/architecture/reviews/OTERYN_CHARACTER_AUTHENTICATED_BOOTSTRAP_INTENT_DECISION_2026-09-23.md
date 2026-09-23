@@ -6,9 +6,9 @@ Status: architecture decision candidate for Issue #791. No implementation author
 
 This decision closes only the missing authenticated creation intent required by the bounded WP5 Character Authority first slice. It does not enable ordinary player-facing Character creation, naming or quota policy, Character transfer, World transfer, rename, retirement, Platform writes or a second Character system.
 
-Parent control plane: #162  
-Source-readiness programme: #319  
-Blocked material implementation: #790 / WP5 #414
+- Parent control plane: #162
+- Source-readiness programme: #319
+- Blocked material implementation: #790 / WP5 #414
 
 ## Decision
 
