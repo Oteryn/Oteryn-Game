@@ -152,6 +152,29 @@ def test_subtemplate_name_is_not_misparsed_as_item_infobox() -> None:
     assert value["infobox_present"] is False
 
 
+def test_normalize_page_retains_conflicting_infobox_as_parse_error() -> None:
+    meta = {
+        "page_id": 3,
+        "title": "Conflicting Vendor Item",
+        "revision_id": 103,
+        "revision_timestamp": "2026-09-23T00:00:00Z",
+    }
+    record = census.normalize_page(
+        meta,
+        "{{Infobox Item\n"
+        "| name = Conflicting Vendor Item\n"
+        "| npcvalue = 10\n"
+        "| npcvalue = 20\n"
+        "}}",
+        "2026-09-23T20:00:00Z",
+    )
+    assert record["infobox_present"] is True
+    assert record["source_shape"] == "INFOBOX_ITEM_PARSE_ERROR"
+    assert record["source_parse_error"] == "INFOBOX_DUPLICATE_CONFLICT:npcvalue"
+    assert record["normalized_fields"] == {}
+    assert record["unmapped_infobox_fields"] == {}
+
+
 def test_compile_census_keeps_full_infobox_partition_without_prose() -> None:
     discovered = [{"page_id": 1, "title": "Falcon Plate"}]
     full = census.compile_census(
@@ -168,26 +191,38 @@ def test_compile_census_keeps_full_infobox_partition_without_prose() -> None:
     assert '"content"' not in encoded
 
 
-def test_compile_census_counts_no_infobox_source_shape() -> None:
+def test_compile_census_counts_all_source_shapes() -> None:
     no_infobox = {
         **page(page_id=2, title="0152551751 (Book)"),
         "source_shape": "NO_INFOBOX_ITEM",
+        "source_parse_error": None,
         "normalized_fields": {},
         "unmapped_infobox_fields": {},
         "infobox_present": False,
+    }
+    parse_error = {
+        **page(page_id=3, title="Conflicting Vendor Item"),
+        "source_shape": "INFOBOX_ITEM_PARSE_ERROR",
+        "source_parse_error": "INFOBOX_DUPLICATE_CONFLICT:npcvalue",
+        "normalized_fields": {},
+        "unmapped_infobox_fields": {},
+        "infobox_present": True,
     }
     full = census.compile_census(
         [
             {"page_id": 1, "title": "Falcon Plate"},
             {"page_id": 2, "title": "0152551751 (Book)"},
+            {"page_id": 3, "title": "Conflicting Vendor Item"},
         ],
-        [page(), no_infobox],
+        [page(), no_infobox, parse_error],
         retrieval_timestamp="2026-09-23T20:00:00Z",
     )
-    assert full["counts"]["pages_with_infobox"] == 1
+    assert full["counts"]["pages_with_infobox"] == 2
     assert full["counts"]["pages_without_infobox"] == 1
+    assert full["counts"]["infobox_parse_errors"] == 1
     assert full["counts"]["source_shapes"] == {
         "INFOBOX_ITEM": 1,
+        "INFOBOX_ITEM_PARSE_ERROR": 1,
         "NO_INFOBOX_ITEM": 1,
     }
 
@@ -218,6 +253,7 @@ def test_manifest_is_source_only_and_stable_without_retrieval_timestamp() -> Non
     assert manifest["invariants"]["starts_from_crystal_38157"] is False
     assert manifest["invariants"]["source_shape_partition_complete"] is True
     assert manifest["invariants"]["no_infobox_member_dropped"] is True
+    assert manifest["invariants"]["infobox_conflict_never_guessed"] is True
     assert manifest["invariants"]["identity_resolution_performed"] is False
     assert manifest["invariants"]["semantic_promotion_performed"] is False
     assert manifest["invariants"]["raw_long_form_prose_collected"] is False
