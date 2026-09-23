@@ -1,0 +1,210 @@
+{
+  "schema": "OTERYN_ITEM_SOURCE_DENOMINATOR_CENSUS/v1",
+  "status": "STRUCTURAL_CENSUS_COMPLETE_NO_PRODUCT_RECLASSIFICATION",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "path": "data/items/items.xml",
+    "git_blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+    "bytes": 3819874,
+    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+  },
+  "producer": {
+    "path": "tools/reference-world-corridor-census/item_source_denominator_census.py",
+    "branch": "docs/item-source-denominator-census-20260923",
+    "note": "Reproduces the census from the exact pinned items.xml and reuses protected B1 field_disposition semantics."
+  },
+  "counts": {
+    "source_xml_item_nodes": 17669,
+    "direct_id_nodes": 14689,
+    "range_nodes": 2980,
+    "reversed_range_nodes_excluded": 4,
+    "valid_xml_definitions": 17665,
+    "expanded_source_item_identities": 38157,
+    "game_item_candidate_definitions": 12419
+  },
+  "range_distribution": {
+    "min": 2,
+    "median": 4,
+    "p90": 16,
+    "p95": 23,
+    "p99": 54,
+    "max": 752,
+    "length_le_2": 1129,
+    "length_le_5": 1923,
+    "length_le_10": 2409,
+    "length_gt_100": 12
+  },
+  "name_census": {
+    "unique_exact_names": 9213,
+    "unique_normalized_names": 9201,
+    "duplicate_normalized_name_groups": 2390,
+    "definitions_in_duplicate_normalized_name_groups": 10854,
+    "max_definitions_for_one_normalized_name": 423,
+    "top_duplicate_normalized_names": [
+      {
+        "name": "reserved sprite",
+        "definitions": 423
+      },
+      {
+        "name": "ramp",
+        "definitions": 302
+      },
+      {
+        "name": "closed door",
+        "definitions": 285
+      },
+      {
+        "name": "open door",
+        "definitions": 203
+      },
+      {
+        "name": "unknown item",
+        "definitions": 175
+      },
+      {
+        "name": "stairs",
+        "definitions": 103
+      },
+      {
+        "name": "gate of expertise",
+        "definitions": 100
+      },
+      {
+        "name": "stone wall",
+        "definitions": 96
+      },
+      {
+        "name": "bed",
+        "definitions": 59
+      },
+      {
+        "name": "stone floor",
+        "definitions": 46
+      },
+      {
+        "name": "wall",
+        "definitions": 40
+      },
+      {
+        "name": "flower pot",
+        "definitions": 38
+      },
+      {
+        "name": "shallow water",
+        "definitions": 38
+      },
+      {
+        "name": "stone",
+        "definitions": 33
+      },
+      {
+        "name": "archway",
+        "definitions": 33
+      },
+      {
+        "name": "sand",
+        "definitions": 28
+      },
+      {
+        "name": "wooden floor",
+        "definitions": 28
+      },
+      {
+        "name": "dead orc",
+        "definitions": 28
+      },
+      {
+        "name": "grass",
+        "definitions": 27
+      },
+      {
+        "name": "hole",
+        "definitions": 27
+      }
+    ],
+    "interpretation": "This is a source-name vocabulary metric, not a canonical Item count; duplicate names can still represent distinct definitions."
+  },
+  "signal_contract": {
+    "G": "At least one source field classified GAME_ITEM_CANDIDATE by the protected B1 mapper.",
+    "P": "At least one primarytype source taxonomy observation.",
+    "W": "At least one source field classified UNSUPPORTED because it belongs to world/interaction/housing semantics rather than current GAME-ITEM B1.",
+    "warning": "Signals describe source shape only. They do not decide canonical Oteryn identity or whether a definition is player-visible."
+  },
+  "signal_partition": {
+    "---": {
+      "definitions": 2694,
+      "expanded_ids": 14641
+    },
+    "-P-": {
+      "definitions": 2212,
+      "expanded_ids": 9541
+    },
+    "-PW": {
+      "definitions": 65,
+      "expanded_ids": 94
+    },
+    "--W": {
+      "definitions": 275,
+      "expanded_ids": 352
+    },
+    "G--": {
+      "definitions": 5268,
+      "expanded_ids": 5466
+    },
+    "G-W": {
+      "definitions": 509,
+      "expanded_ids": 544
+    },
+    "GP-": {
+      "definitions": 6330,
+      "expanded_ids": 7183
+    },
+    "GPW": {
+      "definitions": 312,
+      "expanded_ids": 336
+    }
+  },
+  "aggregate_partition": {
+    "gameplay_no_world_signal": {
+      "definitions": 11598,
+      "expanded_ids": 12649
+    },
+    "gameplay_with_world_overlap": {
+      "definitions": 821,
+      "expanded_ids": 880
+    },
+    "taxonomy_only_no_world_signal": {
+      "definitions": 2212,
+      "expanded_ids": 9541
+    },
+    "world_only_no_gameplay_signal": {
+      "definitions": 340,
+      "expanded_ids": 446
+    },
+    "residual_no_gameplay_taxonomy_or_world_signal": {
+      "definitions": 2694,
+      "expanded_ids": 14641
+    }
+  },
+  "findings": [
+    "38157 is the expanded source-ID closure, not a count of distinct player items.",
+    "17665 valid XML definitions are the correct structural denominator before semantic deduplication.",
+    "9201 normalized source names show that the source vocabulary is roughly nine thousand labels even before removing world/technical names.",
+    "14641 expanded IDs come from only 2694 residual definitions with no admitted gameplay candidate, primarytype taxonomy or B1 world/interaction signal; this is the largest single source of ID-count inflation.",
+    "9541 expanded IDs come from only 2212 primarytype-only definitions with no admitted gameplay or B1 world signal, another large range-expansion multiplier.",
+    "12419 definitions have at least one B1 GAME_ITEM_CANDIDATE field, but this still includes state/transform relations and is not equivalent to a player-inventory catalogue."
+  ],
+  "next_decision": {
+    "required": "SEMANTIC_DEDUPLICATION_AND_PRODUCT_ROLE_PARTITION",
+    "objective": "Derive player/catalog objects, world/interactable objects, technical/state variants and donor-only residuals from the 17665 valid definitions rather than from 38157 expanded IDs.",
+    "do_not_use_as_product_denominator": 38157
+  },
+  "non_claims": [
+    "NO_CANONICAL_ITEM_COUNT",
+    "NO_REFERENCE_PARITY",
+    "NO_SEMANTIC_PROMOTION",
+    "NO_IDENTITY_REMINT",
+    "NO_RUNTIME_OR_CLIENT_MUTATION"
+  ]
+}
