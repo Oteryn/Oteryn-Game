@@ -217,7 +217,7 @@ jobs:
             python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
           fi
 
-      - name: Verify protected-base routing snapshot health
+      - name: Verify protected-base routing contract health
         env:
           EXPECTED_HEAD: ${{ needs.scope.outputs.base_sha }}
         run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"
@@ -385,8 +385,7 @@ jobs:
       contents: read
     outputs:
       routing_health: ${{ steps.contract.outputs.routing_health }}
-      snapshot_declared: ${{ steps.contract.outputs.snapshot_declared }}
-      snapshot_actual: ${{ steps.contract.outputs.snapshot_actual }}
+      consumer_edges: ${{ steps.contract.outputs.consumer_edges }}
     steps:
       - name: Check out exact head with history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -401,7 +400,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "265aa0a94a7a16497847ad1ac2e4730cb2ec6fda"
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "f4853390ec18bbf84e08868805eba7b15d939213"
 
       - name: Verify candidate diff whitespace
         env:
@@ -417,7 +416,7 @@ jobs:
       - name: Build exact candidate Cargo metadata
         run: cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/routing-contract-metadata.json"
 
-      - name: Verify routing snapshot and classifier matrix
+      - name: Verify exact candidate routing contract
         id: contract
         env:
           EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
