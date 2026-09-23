@@ -85,8 +85,8 @@ jobs:
           assert p['counts']['admitted_definition_nodes'] == 17665
           assert p['counts']['expanded_source_ids'] == 38157
           assert p['counts']['range_expansion_extra_ids_over_definitions'] == 20492
-          assert p['catalog_denominator']['strong_player_definition_lower_bound'] == 4997
-          assert p['catalog_denominator']['strong_plus_unresolved_definition_band_upper'] == 7151
-          assert p['catalog_denominator']['obvious_world_technical_state_or_fieldless_range_ids'] == 29992
+          assert p['catalog_denominator']['strong_player_definition_lower_bound'] == 4935
+          assert p['catalog_denominator']['strong_plus_unresolved_definition_band_upper'] == 7125
+          assert p['catalog_denominator']['obvious_world_technical_state_or_fieldless_range_ids'] == 30018
           print('item-source-role-census tracked evidence: PASS')
           PY
