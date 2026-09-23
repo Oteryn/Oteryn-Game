@@ -5,6 +5,9 @@
 //! canonical document set. Filesystem containment, no-follow admission, alias detection, staging,
 //! journalling and atomic publication belong to a later boundary.
 
+mod v2;
+pub use v2::*;
+
 use super::{
     CanonicalReferencePlayableContent, ClientProjectionClass, ContentError, ContentLockBinding,
     ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, PackageManifestBinding,
@@ -396,6 +399,7 @@ pub struct WorldProject {
     imports: ImportDocument,
     metadata: MetadataDocument,
     manifest_bytes: Vec<u8>,
+    v2: Option<ProjectV2State>,
 }
 
 impl WorldProject {
@@ -409,6 +413,14 @@ impl WorldProject {
 
     pub fn author_metadata(&self) -> &[AuthorMetadataEntry] {
         &self.metadata.entries
+    }
+
+    pub fn v2(&self) -> Option<&ProjectV2State> {
+        self.v2.as_ref()
+    }
+
+    pub fn migrate_to_v2(&self) -> ProjectV2Draft {
+        ProjectV2Draft::from_project(self)
     }
 
     pub fn lower_reference_source(&self) -> Result<ReferencePlayableContentSource, ProjectError> {
@@ -446,6 +458,12 @@ impl WorldProject {
         &self,
         limits: ProjectEvidenceLimits,
     ) -> Result<CanonicalProjectDocuments, ProjectError> {
+        if self.v2.is_some() {
+            return CanonicalProjectDocuments::from_v2_draft(
+                ProjectV2Draft::from_project(self),
+                limits,
+            );
+        }
         CanonicalProjectDocuments::from_draft(
             ProjectDraft {
                 project_revision: self.root.project_revision.clone(),
@@ -1146,8 +1164,11 @@ impl ProjectCapturePlan {
         }
 
         let root: RootDocument = parse_strict(root_bytes, limits)?;
-        if root.schema != WORLD_PROJECT_ROOT_SCHEMA
-            || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE
+        let is_v2 = root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA
+            && root.source_profile == WORLD_PROJECT_V2_SOURCE_PROFILE;
+        if !is_v2
+            && (root.schema != WORLD_PROJECT_ROOT_SCHEMA
+                || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE)
         {
             return Err(ProjectError::InvalidProject(
                 "unsupported project root profile",
@@ -1161,8 +1182,18 @@ impl ProjectCapturePlan {
 
         let manifest: ManifestDocumentRoot = parse_strict(manifest_bytes, limits)?;
         let lock: LockDocument = parse_strict(lock_bytes, limits)?;
-        if manifest.schema != WORLD_PROJECT_MANIFEST_SCHEMA
-            || lock.schema != WORLD_PROJECT_LOCK_SCHEMA
+        if manifest.schema
+            != if is_v2 {
+                WORLD_PROJECT_V2_MANIFEST_SCHEMA
+            } else {
+                WORLD_PROJECT_MANIFEST_SCHEMA
+            }
+            || lock.schema
+                != if is_v2 {
+                    WORLD_PROJECT_V2_LOCK_SCHEMA
+                } else {
+                    WORLD_PROJECT_LOCK_SCHEMA
+                }
         {
             return Err(ProjectError::InvalidProject(
                 "unsupported control document schema",
@@ -1280,28 +1311,32 @@ impl ProjectCapturePlan {
                 sha256: document.sha256.clone(),
             });
         }
-        require_role(
-            &by_role,
-            "reference-records",
-            "records/",
-            WORLD_PROJECT_REFERENCE_SCHEMA,
-        )?;
-        require_role(
-            &by_role,
-            "import-candidates",
-            "imports/",
-            WORLD_PROJECT_IMPORT_SCHEMA,
-        )?;
-        require_role(
-            &by_role,
-            "author-metadata",
-            "metadata/",
-            WORLD_PROJECT_METADATA_SCHEMA,
-        )?;
-        if by_role.len() != 3 {
-            return Err(ProjectError::InvalidProject(
-                "unsupported manifest document role",
-            ));
+        if is_v2 {
+            validate_v2_roles(&by_role)?;
+        } else {
+            require_role(
+                &by_role,
+                "reference-records",
+                "records/",
+                WORLD_PROJECT_REFERENCE_SCHEMA,
+            )?;
+            require_role(
+                &by_role,
+                "import-candidates",
+                "imports/",
+                WORLD_PROJECT_IMPORT_SCHEMA,
+            )?;
+            require_role(
+                &by_role,
+                "author-metadata",
+                "metadata/",
+                WORLD_PROJECT_METADATA_SCHEMA,
+            )?;
+            if by_role.len() != 3 {
+                return Err(ProjectError::InvalidProject(
+                    "unsupported manifest document role",
+                ));
+            }
         }
 
         Ok(Self {
@@ -1356,6 +1391,9 @@ fn parse_snapshot(
         return Err(ProjectError::InvalidProject(
             "manifest document set mismatch",
         ));
+    }
+    if plan.root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA {
+        return parse_v2_snapshot(snapshot, limits, plan, manifest_bytes);
     }
     let reference_infos = require_role(
         &by_role,
@@ -1475,6 +1513,7 @@ fn parse_snapshot(
         imports,
         metadata,
         manifest_bytes: manifest_bytes.to_vec(),
+        v2: None,
     })
 }
 
