@@ -7,6 +7,18 @@ on:
     paths:
       - tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk.py
       - tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk_self_test.py
+      - tools/reference-world-corridor-census/item_wiki_first_census.py
+      - tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
+      - tools/reference-world-corridor-census/item_current_source_tibiawiki.py
+      - tools/reference-world-corridor-census/item_classification_crosswalk.py
+      - tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py
+      - apps/game-server/examples/export_reference_item_identity_map.rs
+      - apps/game-server/src/content/**
+      - docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json
+      - docs/agents/evidence/OTV2-20260921-content-world-cw2-native-item-batch.json
+      - docs/agents/evidence/OTV2-20260921-content-world-item-family-scale-registry.json
+      - docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json
+      - docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json
       - docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json
       - docs/agents/tasks/active/OTV2-20260923-item-wiki-first-identity-crosswalk.md
       - .github/workflows/item-wiki-first-identity-crosswalk.yml
@@ -179,9 +191,8 @@ jobs:
           print("ITEM_WIKI_FIRST_IDENTITY_CROSSWALK_MANIFEST_END")
           PY
 
-          if test -f docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json; then
-            cmp "$MANIFEST" docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json
-          fi
+          test -f docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json
+          cmp "$MANIFEST" docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json
 
           sha256sum "$ROOT/crosswalk-first.json" "$MANIFEST"
 
