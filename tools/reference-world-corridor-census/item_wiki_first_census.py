@@ -270,10 +270,10 @@ def compile_census(
         overlap = set(mapped) & set(unmapped)
         if overlap:
             raise CensusError(f"CENSUS_FIELD_PARTITION_OVERLAP:{sorted(overlap)[0]}")
-        mapped_keys.update(mapped)
-        unmapped_keys.update(unmapped)
-        field_keys.update(mapped)
-        field_keys.update(unmapped)
+        mapped_keys.update(mapped.keys())
+        unmapped_keys.update(unmapped.keys())
+        field_keys.update(mapped.keys())
+        field_keys.update(unmapped.keys())
         page.pop("retrieval_timestamp", None)
         stable_pages.append(page)
 
