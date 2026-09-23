@@ -167,6 +167,7 @@ def test_non_derived_record_fails_closed():
 def test_duplicate_atomic_field_fails_closed():
     value = continuity()
     value["records"][1]["native_key"] = value["records"][0]["native_key"]
+    value["records"][1]["source_item_id"] = value["records"][0]["source_item_id"]
     value["records"][1]["field_path"] = value["records"][0]["field_path"]
     expect_error(
         lambda: promotion.compile_promotion(
