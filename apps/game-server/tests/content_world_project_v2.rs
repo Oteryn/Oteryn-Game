@@ -1200,3 +1200,26 @@ fn wiki_placement_hierarchy_rejects_parent_cycles() {
 
     assert!(CanonicalProjectDocuments::from_v2_draft(candidate, limits()).is_err());
 }
+
+#[test]
+fn wiki_area_hierarchy_rejects_parent_cycles() {
+    let mut candidate = wiki_coverage_candidate();
+    let area = candidate
+        .state
+        .declarations
+        .iter_mut()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Area {
+                identity, parent, ..
+            } if identity.key == "oteryn:content.area.thais" => Some((identity.clone(), parent)),
+            _ => None,
+        })
+        .expect("Area declaration");
+    *area.1 = Some(ProjectV2DefinitionRef {
+        family: ProjectV2Family::Area,
+        key: area.0.key,
+        revision: area.0.revision,
+    });
+
+    assert!(CanonicalProjectDocuments::from_v2_draft(candidate, limits()).is_err());
+}
