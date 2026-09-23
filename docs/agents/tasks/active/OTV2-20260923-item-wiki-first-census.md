@@ -4,7 +4,7 @@
 task_id: OTV2-20260923-item-wiki-first-census
 title: Wiki-first TibiaWiki Item census
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-census-20260923
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item wiki-first census writer"
 created_at: 2026-09-23T21:19:00+02:00
-updated_at: 2026-09-23T22:03:00+02:00
+updated_at: 2026-09-23T22:05:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_census.py
@@ -81,14 +81,14 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Discovery starts from direct main-namespace membership in TibiaWiki `Categoria:Itens`, never from template dependency or the 38,157 Crystal-derived identity closure.
-- [ ] Discovery pagination, continuation, response shape, duplicate IDs/titles and maximum page/request bounds fail closed.
-- [ ] Every admitted category member is fetched at an exact current revision and records its source shape explicitly: Item infobox present or no Item infobox. Lack of the infobox never deletes a category-admitted Item from the census.
-- [ ] Both already-normalized and previously-unmapped bounded infobox fields are retained when the Item infobox parses losslessly; source-level infobox conflicts/errors retain the page as an explicit INFOBOX_ITEM_PARSE_ERROR without guessing a field value.
-- [ ] Long-form article/book body text and raw wikitext are not retained in the product or committed manifest.
-- [ ] Full scratch output is not committed; compact manifest records page/field counts, digests, invariants and limitations.
-- [ ] No Oteryn identity minting, Crystal/OTS identity resolution, semantic promotion, runtime/client mutation or balance change occurs.
-- [ ] Focused self-test plus one live hosted wiki-first census pass on the frozen exact head.
+- [x] Discovery starts from direct main-namespace membership in TibiaWiki `Categoria:Itens`, never from template dependency or the 38,157 Crystal-derived identity closure.
+- [x] Discovery pagination, continuation, response shape, duplicate IDs/titles and maximum page/request bounds fail closed.
+- [x] Every admitted category member is fetched at an exact current revision and records its source shape explicitly: Item infobox present or no Item infobox. Lack of the infobox never deletes a category-admitted Item from the census.
+- [x] Both already-normalized and previously-unmapped bounded infobox fields are retained when the Item infobox parses losslessly; source-level infobox conflicts/errors retain the page as an explicit INFOBOX_ITEM_PARSE_ERROR without guessing a field value.
+- [x] Long-form article/book body text and raw wikitext are not retained in the product or committed manifest.
+- [x] Full scratch output is not committed; compact manifest records page/field counts, digests, invariants and limitations.
+- [x] No Oteryn identity minting, Crystal/OTS identity resolution, semantic promotion, runtime/client mutation or balance change occurs.
+- [x] Focused self-test plus one live hosted wiki-first census pass on the frozen exact head.
 - [ ] Repository-required exact-head PR qualification passes before Merge Queue admission.
 
 ## Excluded scope
@@ -110,12 +110,12 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 ### Focused
 
 - command/run: `python tools/reference-world-corridor-census/item_wiki_first_census_self_test.py`
-- result: pending exact-head PR #803 generation
+- result: PASS in run `35911900308`, job `107353574189`; predecessor self-test 17/17 and wiki-first census self-test PASS before live collection
 
 ### Component/integration
 
 - command/run: hosted live `item_wiki_first_census.py` against TibiaWiki public MediaWiki API
-- result: pending authored candidate
+- result: PASS in run `35911900308`, job `107353574189`: 6,918 category members fetched; 5,475 INFOBOX_ITEM; 7 INFOBOX_ITEM_PARSE_ERROR; 1,436 NO_INFOBOX_ITEM; 83 distinct infobox fields; stable digest `389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a`
 
 ### E2E
 
@@ -135,8 +135,8 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 
 - exact head: pending
 - method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- material findings: repaired six bounded generations: checkout expression escaping; Counter key aggregation; unsafe template-dependency discovery; MediaWiki Item infobox spelling; heterogeneous no-infobox Item pages; explicit conflicting-infobox parse-error retention
+- verdict: implementation semantics and retained evidence internally consistent; fresh final exact-head PR qualification still required after evidence/task closeout write
 
 ## Independent review
 
@@ -148,7 +148,7 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: bounded to collector, synthetic test, focused workflow, exact compact evidence manifest and this task packet; no runtime/schema/WorldProject/Reference semantic mutation
 - unresolved review threads: pending
 - related/superseded PRs: #767 #770 #774 #782 #792 #798
 - protected auto-merge: forbidden substitute; native Merge Queue only
@@ -158,8 +158,8 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact-head live wiki-first census PASS on e7754959 with 6918 pages / 83 infobox fields; AUTHORING reopened only to retain the exact compact manifest artifact in repository evidence and bind closeout metadata
-status: implementing
+last_progress: exact run 35911900308 artifact 10773896508 retained byte-for-byte as repository evidence; final task metadata write is the freeze boundary
+status: validating
 branch: agent/item-wiki-first-census-20260923
 head_sha: null
 pr: 803
@@ -180,5 +180,5 @@ ci_recovery_actions_for_current_head: 6
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit exact manifest from run 35911900308 artifact 10773896508, update task closeout metadata, then freeze a final successor head for fresh exact-head qualification
+next_action: freeze returned successor head, verify bounded delta, run fresh exact-head PR #803 qualification, then submit only through governed Merge Queue when native capability is available
 ```
