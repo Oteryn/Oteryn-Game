@@ -193,7 +193,9 @@ expected = {
     "source_authority": "platform", "account_id": account_id,
     "purpose": purpose, "scope": scope, "allowed": True,
 }
-if any(response.get(key) != value for key, value in expected.items()):
+# Exact JSON types: Python equates 1/True, which the Game decoder rejects.
+if any(type(response.get(key)) is not type(value) or response.get(key) != value
+       for key, value in expected.items()):
     raise SystemExit("observed response has wrong operation, binding, authority, or result")
 for key, allow_zero in (
     ("source_revision", False), ("source_observed_at", False),
@@ -261,7 +263,9 @@ expected = {
     "profile": "oteryn-pre-admission-v1", "key_purpose": "fresh_admission",
     "key_id": "fresh-key-1", "trusted": expected_trusted == "true",
 }
-if any(response.get(key) != value for key, value in expected.items()):
+# Exact JSON types: Python equates 1/True, which the Game decoder rejects.
+if any(type(response.get(key)) is not type(value) or response.get(key) != value
+       for key, value in expected.items()):
     raise SystemExit("observed trust response has wrong operation, binding, authority, or result")
 for key, allow_zero in (("source_revision", False), ("source_observed_at", False), ("clock_uncertainty_seconds", True)):
     value = response.get(key)
@@ -480,6 +484,30 @@ if validate_observed_account "$WP5_SCRATCH/regressed-response" \
   exit 1
 fi
 evidence "revision_regression_self_test=rejected floor=$replacement_restored_revision"
+
+# Deterministically prove that a type-confused body (valid except for
+# "allowed":1 or "version":true) is rejected, as the exact Game decoder does.
+for mutation in allowed version; do
+  python3 - "$WP5_SCRATCH/replacement-restored-response" "$WP5_SCRATCH/type-confused-response" "$mutation" <<'PY'
+import json
+import sys
+source, destination, mutation = sys.argv[1:]
+response = json.load(open(source))
+if mutation == "allowed":
+    response["allowed"] = 1
+else:
+    response["version"] = True
+with open(destination, "w") as output:
+    json.dump(response, output, separators=(",", ":"))
+PY
+  if validate_observed_account "$WP5_SCRATCH/type-confused-response" \
+    ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+    "$replacement_restored_revision" at_least 2>/dev/null; then
+    echo "type-confused recovery body ($mutation) was accepted" >&2
+    exit 1
+  fi
+done
+evidence "json_type_self_test=rejected allowed_int=true version_bool=true"
 
 # Account witness-ahead rollback and explicit forward-only reconciliation.
 observed_generation() {
