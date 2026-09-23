@@ -6,6 +6,8 @@
 
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod character_authority;
+pub mod character_authority_audit;
 mod db;
 pub mod fresh_admission;
 pub mod native_admission_source;
