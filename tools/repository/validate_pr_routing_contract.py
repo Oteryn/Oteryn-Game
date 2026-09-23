@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate PR routing snapshot health against the exact candidate tree."""
+"""Validate exact-candidate impact-routing semantics and consumer evidence."""
 from __future__ import annotations
 
 import importlib.util
@@ -10,7 +10,6 @@ import re
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parents[2]
 CLASSIFIER_PATH = Path(__file__).with_name("classify_pr_test_lanes.py")
 
 
@@ -45,8 +44,9 @@ def changed_records(module, base: str, head: str) -> list[dict]:
     raise ValueError("invalid changed-file enumeration state")
 
 
-def changed_audited_inputs(module, metadata: dict, records: list[dict]) -> list[str]:
-    affected: set[str] = set()
+def record_paths(module, records: list[dict]) -> list[str]:
+    paths: list[str] = []
+    seen: set[str] = set()
     for item in records:
         if not isinstance(item, dict):
             raise ValueError("invalid changed-file record")
@@ -56,60 +56,112 @@ def changed_audited_inputs(module, metadata: dict, records: list[dict]) -> list[
                 continue
             if not module.valid_path(path):
                 raise ValueError("invalid changed-file path")
-            if module.audited_input_path(metadata, path):
-                affected.add(path)
-    return sorted(affected)
-
-
-def evaluate_snapshot_health(
-    module,
-    metadata: dict,
-    actual: str,
-    records: list[dict] | None = None,
-    *,
-    protected_main: bool = False,
-) -> tuple[str, list[str]]:
-    if actual == module.AUDITED_INPUT_SHA256:
-        return "healthy", []
-    if protected_main:
-        return "stale-protected-main", []
-    changed = changed_audited_inputs(module, metadata, records or [])
-    return ("degraded-candidate" if changed else "stale-inherited"), changed
+            if path not in seen:
+                seen.add(path)
+                paths.append(path)
+    if not paths:
+        raise ValueError("empty changed-file set")
+    return paths
 
 
 def verify_classifier_matrix(module, metadata: dict) -> None:
-    digest = module.AUDITED_INPUT_SHA256
-    docs_digest = module.AUDITED_DOC_INPUT_SHA256
-
-    def classify(paths, *, docs_consumers_verified=None):
+    def classify(paths, *, consumers=None):
         records = [dict(filename=path, status="modified") for path in paths]
+        if consumers is None:
+            consumers = {path: set() for path in paths}
         return module.classify(
             records,
             len(records),
             metadata,
-            digest,
-            docs_digest=docs_digest,
             candidate_modes_verified=True,
-            docs_consumers_verified=docs_consumers_verified,
+            reference_consumers=consumers,
         )
 
     server = f"{module.REQUIRED[module.SERVER]}/src/lib.rs"
-    atlas = sorted(module.ATLAS_FULLWORLD_PATHS)[0]
     client = f"{module.REQUIRED['oteryn-client']}/src/lib.rs"
+    evidence = "docs/agents/evidence/runtime-input.json"
+    standalone_workflow = ".github/workflows/offline-content.yml"
+    offline_tool = "tools/reference-world-corridor-census/offline.py"
 
     result = classify([server])
-    if not (result["rust"] is True and result["windows"] is False and result["surface"] == "server"):
+    if result != {
+        "rust": True,
+        "windows": False,
+        "surface": "server",
+        "reason": "server-only-exact-consumer-closure",
+    }:
         raise ValueError(f"server-only routing contract changed: {result}")
 
-    result = classify([server, atlas])
+    result = classify([client])
+    if not (result["rust"] is True and result["windows"] is True):
+        raise ValueError(f"client routing contract changed: {result}")
+
+    for path in ("AGENTS.md", "docs/architecture/example.md", evidence, standalone_workflow, offline_tool):
+        result = classify([path])
+        if not (
+            result["rust"] is False
+            and result["windows"] is False
+            and result["reason"] == "unconsumed-auxiliary-inputs"
+        ):
+            raise ValueError(f"unconsumed auxiliary routing changed for {path}: {result}")
+
+    result = classify([evidence], consumers={evidence: {module.SERVER}})
     if not (
         result["rust"] is True
         and result["windows"] is False
-        and result["surface"] == "server"
-        and result["reason"].endswith("-plus-atlas-fullworld")
+        and result["reason"] == "server-only-exact-consumer-closure"
     ):
-        raise ValueError(f"server + Atlas routing contract changed: {result}")
+        raise ValueError(f"server-consumed auxiliary routing changed: {result}")
 
+    result = classify([evidence], consumers={evidence: {"oteryn-client"}})
+    if not (result["rust"] is True and result["windows"] is True):
+        raise ValueError(f"client-consumed auxiliary routing changed: {result}")
+
+    helper = "tools/content/helper.py"
+    result = classify([helper], consumers={helper: {module.CONTROL_CONSUMER}})
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "canonical-control-consumer-affected"
+    ):
+        raise ValueError(f"canonical-workflow consumer routing changed: {result}")
+
+    for path in (
+        "Cargo.lock",
+        ".github/workflows/merge-gate.yml",
+        ".github/workflows/merge-group-gate.yml",
+        ".github/workflows/rust.yml",
+        "tools/repository/classify_pr_test_lanes.py",
+    ):
+        result = classify([path])
+        if not (result["rust"] is True and result["windows"] is True):
+            raise ValueError(f"control/build input must stay FULL for {path}: {result}")
+
+    incident = [
+        ".github/workflows/item-wiki-first-census.yml",
+        "docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json",
+        "docs/agents/tasks/active/OTV2-20260923-item-wiki-first-census.md",
+        "tools/reference-world-corridor-census/item_wiki_first_census.py",
+        "tools/reference-world-corridor-census/item_wiki_first_census_self_test.py",
+    ]
+    result = classify(incident)
+    if not (
+        result["rust"] is False
+        and result["windows"] is False
+        and result["reason"] == "unconsumed-auxiliary-inputs"
+    ):
+        raise ValueError(f"PR #803 regression shape changed: {result}")
+
+    unknown = "unowned/input.bin"
+    result = classify([unknown])
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "unmodelled-input"
+    ):
+        raise ValueError(f"unknown-input fail-closed contract changed: {result}")
+
+    atlas = sorted(module.ATLAS_FULLWORLD_PATHS)[0]
     result = classify([atlas])
     if result != {
         "rust": False,
@@ -119,114 +171,46 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
     }:
         raise ValueError(f"Atlas-only routing contract changed: {result}")
 
-    result = classify([client])
-    if not (result["rust"] is True and result["windows"] is True):
-        raise ValueError(f"client routing contract changed: {result}")
 
-    result = classify(["tools/unreviewed/routing_probe.py"])
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "unmodelled-input"
-    ):
-        raise ValueError(f"unknown-input fail-closed contract changed: {result}")
-
-    result = classify(["Cargo.lock"])
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "explicit-build-or-dependency-input"
-    ):
-        raise ValueError(f"build-input fail-closed contract changed: {result}")
-
-    result = classify(["AGENTS.md"], docs_consumers_verified=True)
-    if result != {
-        "rust": False,
-        "windows": False,
-        "surface": "agent-governance",
-        "reason": "agent-governance-only",
-    }:
-        raise ValueError(f"agent-governance routing contract changed: {result}")
-
-    result = classify(["AGENTS.md"], docs_consumers_verified=False)
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "unreviewed-document-consumer-inputs"
-    ):
-        raise ValueError(f"agent-governance consumer-proof contract changed: {result}")
-
-    result = module.classify(
-        [{
-            "filename": "docs/agents/tasks/archive/task.md",
-            "status": "renamed",
-            "previous_filename": "docs/agents/tasks/active/task.md",
-        }],
-        1,
-        metadata,
-        "stale-runtime-snapshot",
-        docs_digest="stale-doc-snapshot",
-        candidate_modes_verified=True,
-        docs_consumers_verified=False,
-    )
-    if result != {
-        "rust": False,
-        "windows": False,
-        "surface": "agent-governance",
-        "reason": "agent-task-record-only",
-    }:
-        raise ValueError(f"agent task-record closeout routing changed: {result}")
-
-    result = classify([server, "AGENTS.md"], docs_consumers_verified=True)
-    if not (result["rust"] is True and result["windows"] is False and result["surface"] == "server"):
-        raise ValueError(f"server + governance routing contract changed: {result}")
-
-    result = classify([server, "AGENTS.md"], docs_consumers_verified=False)
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "unreviewed-document-consumer-inputs"
-    ):
-        raise ValueError(f"server + governance consumer-proof contract changed: {result}")
-
-    result = classify(["docs/agents/evidence/runtime-input.json"])
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "unmodelled-input"
-    ):
-        raise ValueError(f"runtime-consumed agent-evidence fail-closed contract changed: {result}")
+def validate_reference_map(module, metadata: dict, head: str, paths: list[str]) -> tuple[dict[str, set[str]], int]:
+    references = module.candidate_reference_consumers(metadata, head, paths)
+    roots, _ = module.graph(metadata)
+    allowed = set(roots) | {module.CONTROL_CONSUMER}
+    edges = 0
+    if set(references) != set(paths):
+        raise ValueError("candidate reference map does not cover the complete changed-path set")
+    for path, consumers in references.items():
+        if not isinstance(consumers, set) or not consumers <= allowed:
+            raise ValueError(f"invalid candidate consumer set for {path}")
+        edges += len(consumers)
+    return references, edges
 
 
-def write_summary(health: str, declared: str, actual: str, changed: list[str]) -> None:
+def write_summary(paths: list[str], edges: int) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if not path:
         return
     lines = [
-        "### Routing contract health",
+        "### Exact-candidate routing contract",
         "",
-        f"- Health: **{health}**",
-        f"- Declared non-server snapshot: `{declared}`",
-        f"- Candidate non-server snapshot: `{actual}`",
+        "- Health: **healthy**",
+        f"- Changed/renamed paths inspected: {len(paths)}",
+        f"- Exact product/control consumer edges: {edges}",
+        "",
+        "Classifier routing matrix: **PASS**",
+        "",
     ]
-    if changed:
-        lines.append(f"- Candidate-caused audited inputs: {len(changed)}")
-        lines.extend(f"  - `{item}`" for item in changed[:20])
-        if len(changed) > 20:
-            lines.append(f"  - … and {len(changed) - 20} more")
-    lines.extend(["", "Classifier routing matrix: **PASS**", ""])
     with open(path, "a", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
 
-def write_outputs(health: str, declared: str, actual: str) -> None:
+def write_outputs(edges: int) -> None:
     path = os.environ.get("GITHUB_OUTPUT")
     if not path:
         return
     with open(path, "a", encoding="utf-8") as handle:
-        handle.write(f"routing_health={health}\n")
-        handle.write(f"snapshot_declared={declared}\n")
-        handle.write(f"snapshot_actual={actual}\n")
+        handle.write("routing_health=healthy\n")
+        handle.write(f"consumer_edges={edges}\n")
 
 
 def main() -> int:
@@ -243,48 +227,27 @@ def main() -> int:
         actual_head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip().lower()
         if actual_head != expected_head:
             raise ValueError("checked-out revision does not match expected head")
+        if not module.candidate_modes_safe(expected_head):
+            raise ValueError("exact candidate contains unsupported Git modes")
 
         verify_classifier_matrix(module, metadata)
-        declared = module.AUDITED_INPUT_SHA256
-        actual = module.input_digest(metadata)
 
-        records = None
-        if actual != declared and not protected_main:
+        if protected_main:
+            paths = ["tools/repository/classify_pr_test_lanes.py"]
+            edges = 0
+        else:
             base = exact_sha("EXPECTED_BASE")
             records = changed_records(module, base, expected_head)
-        health, changed = evaluate_snapshot_health(
-            module,
-            metadata,
-            actual,
-            records,
-            protected_main=protected_main,
-        )
+            paths = record_paths(module, records)
+            _references, edges = validate_reference_map(module, metadata, expected_head, paths)
 
-        write_summary(health, declared, actual, changed)
-        write_outputs(health, declared, actual)
-
-        if health == "healthy":
-            print(f"ROUTING_CONTRACT_HEALTHY snapshot={actual}")
-            return 0
-        if health == "degraded-candidate":
-            print(
-                "::warning::ROUTING_CONTRACT_DEGRADED_BY_CANDIDATE "
-                f"declared={declared} actual={actual} changed_audited_inputs={len(changed)}"
-            )
-            return 0
-        if health == "stale-inherited":
-            print(
-                "::warning::ROUTING_CONTRACT_STALE_INHERITED "
-                f"declared={declared} actual={actual}; "
-                "candidate changed no audited routing inputs and trusted-base health is checked separately"
-            )
-            return 0
-
+        write_summary(paths, edges)
+        write_outputs(edges)
         print(
-            f"ROUTING_CONTRACT_STALE health={health} declared={declared} actual={actual}",
-            file=sys.stderr,
+            f"ROUTING_CONTRACT_HEALTHY exact_head={expected_head} "
+            f"paths={len(paths)} consumer_edges={edges}"
         )
-        return 1
+        return 0
     except (
         OSError,
         ValueError,
@@ -294,6 +257,7 @@ def main() -> int:
         AttributeError,
         json.JSONDecodeError,
         subprocess.SubprocessError,
+        UnicodeError,
     ) as exc:
         print(f"ROUTING_CONTRACT_INVALID: {exc}", file=sys.stderr)
         return 1
