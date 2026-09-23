@@ -6,9 +6,9 @@ Status: architecture decision candidate for Issue #791. No implementation author
 
 This decision closes the Character Authority no-authority-resurrection gap between ordinary process restart and Character PostgreSQL restore/PITR. It does not select a backup vendor, physical storage product, deployment topology, RPO/RTO, backup cadence or automatic conflict-resolution policy.
 
-- Parent control plane: #162
-- Source-readiness programme: #319
-- Blocked material implementation: #790 / WP5 #414
+Parent control plane: #162
+Source-readiness programme: #319
+Blocked material implementation: #790 / WP5 #414
 
 ## Decision
 
