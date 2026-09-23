@@ -4,18 +4,18 @@
 task_id: OTV2-20260923-item-wiki-first-identity-crosswalk
 title: Wiki-first TibiaWiki Item identity crosswalk
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-identity-crosswalk-20260923
-pr: null
+pr: 807
 base_sha: c07240d50473b8697cbe10641028cd0e7eb2d1e4
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous wiki-first Item identity crosswalk writer"
 created_at: 2026-09-23T23:19:00+02:00
-updated_at: 2026-09-23T23:19:00+02:00
+updated_at: 2026-09-23T23:41:16+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk.py
@@ -74,7 +74,7 @@ reason: deterministic read-only identity evidence compilation; no production/run
 - [x] The disposition partition must close exactly 6,918 source pages.
 - [x] No new Oteryn Item identity can be minted.
 - [x] No semantic field promotion occurs.
-- [ ] Full hosted wiki-first crosswalk completes successfully and emits a compact deterministic manifest.
+- [x] Full hosted wiki-first crosswalk completes successfully and emits a compact deterministic manifest.
 - [ ] Retained manifest is committed and reproduced byte-for-byte on the exact final head.
 - [ ] Repository-required exact-head qualification is green.
 - [ ] Integration uses only the protected Merge Queue route.
@@ -104,8 +104,8 @@ PR #805 remains open and owns only the predecessor census lifecycle path; this t
 
 ### Component/integration
 
-- command/run: protected native-map export + #763 classification crosswalk reproduction + live #803 wiki-first census + exact pinned Crystal catalogue + full crosswalk twice
-- result: pending hosted PR workflow
+- command/run: PR #807 run `35923485090`, job `107392876571`: protected native-map export + #763 classification crosswalk reproduction + live #803 wiki-first census + exact pinned Crystal catalogue + full crosswalk twice
+- result: PASS — `EXACT_MATCH=1129`, `PROBABLE_MATCH=2734`, `AMBIGUOUS=482`, `CONFLICT=141`, `NO_MATCH=2432`, `ALIAS_OR_DUPLICATE=0`; exact coverage `16.319746%`; exact+probable coverage `55.839838%`; full output SHA-256 `f5bb9724bff51b99c35789dea986635e73fa9bdc6df77bc7f4e4a105768bed80`; manifest SHA-256 `713e35e411a37c22e7950611277120f8c6e92310a8559fbcbd8ac132d65152fd`; artifact `10777848349`
 
 ### E2E
 
@@ -114,23 +114,23 @@ PR #805 remains open and owns only the predecessor census lifecycle path; this t
 
 ### Exact-head CI
 
-- final head: pending
+- final head: pending final evidence commit/freeze
 - trigger source: pull_request
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: content evidence tooling
-- result: pending
+- workflow/run/job: first full hosted qualification `35923485090` / `107392876571` PASS on pre-evidence head `02ef01daf0c3f69e63b536b5af1b5748f3964b47`; final exact-head rerun pending
+- runner assignment: GitHub-hosted Ubuntu 24.04 for focused/full crosswalk workflow
+- classification: content evidence tooling plus read-only Actions workflow
+- result: full crosswalk PASS; final aggregate exact-head qualification pending after retained evidence commit
 
 ## Self-review
 
 - exact head: pending
 - method/reviewer: implementing/coordinating agent
-- material findings: pending whole-diff review
-- verdict: pending
+- material findings: first workflow generation had an expression-escaping defect and was repaired before retained evidence; current full-run generation has no matcher/source invariant failure
+- verdict: pre-freeze self-review PASS; final whole-diff exact-head review pending after evidence commit
 
 ## Independent review
 
-- required: pending risk-policy classification after exact-head deterministic qualification
+- required: YES — bound META AI review policy classifies material GitHub Actions workflow changes as high-risk/control-plane review surface; one deep review is required after deterministic final-head qualification
 - exact head: pending
 - method/auditor: pending or NOT_APPLICABLE
 - material findings: pending or NOT_APPLICABLE
@@ -148,19 +148,19 @@ PR #805 remains open and owns only the predecessor census lifecycle path; this t
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: deterministic compiler, 16-test synthetic suite and hosted full-run workflow authored
-status: implementing
+last_progress: PR #807 full hosted run 35923485090 / job 107392876571 PASS; deterministic 6918-row disposition manifest captured for retained evidence
+status: validating
 branch: agent/item-wiki-first-identity-crosswalk-20260923
-head_sha: null
-pr: null
+head_sha: 02ef01daf0c3f69e63b536b5af1b5748f3964b47
+pr: 807
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_check_generation: pre-evidence-02ef01d
+ci_checks_for_current_head: 3
+ci_run_ids: [35923485090, 35923485080, 35923485028, 35923485061]
+ci_job_ids: [107392876571, 107392876948, 107392877080]
+runner_assignment_state: active
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -170,5 +170,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open canonical PR and run the first hosted full crosswalk to obtain deterministic retained evidence
+next_action: retain exact manifest from successful run as compact repository evidence, freeze returned successor head, then perform fresh exact-head qualification and required independent deep review
 \`\`\`
