@@ -988,6 +988,10 @@ impl RuntimeScopeAssignmentWriter {
                         Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
                         None => {}
                     }
+                    // Only a fully retained authority history can prove the
+                    // absence of a receipt; a regressed one fails closed.
+                    let high_water = writer_high_water(&mut tx, true).await?;
+                    require_history_matches_high_water(&mut tx, high_water).await?;
                     let outcome = match load_receipt(&mut tx, &key).await? {
                         Some((receipt, stored)) if stored == command => {
                             ReconcileOutcome::Committed(receipt)

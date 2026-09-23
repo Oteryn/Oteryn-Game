@@ -1682,6 +1682,19 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                 Err(AssignmentError::Ambiguous)
             ));
             ensure_ready(&root).await?;
+            // Regressed history cannot prove non-commit: reconciliation fails
+            // closed until the retained maximum is restored.
+            assert!(matches!(
+                writer.reconcile(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            ensure_ready(&root).await?;
+            // Restore the retained maximum through the ordinary monotonic guard.
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 1",
+            )
+            .execute(&pool)
+            .await?;
             assert_eq!(
                 writer
                     .reconcile(&replace)
@@ -1689,12 +1702,6 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
             );
-            // Restore the retained maximum through the ordinary monotonic guard.
-            sqlx::query(
-                "UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 1",
-            )
-            .execute(&pool)
-            .await?;
 
             // A sparse history (receipt 1 plus a receipt at the maximum, with
             // the high-water at the maximum) is invalid retained history, not a
@@ -2161,13 +2168,12 @@ fn history_trailing_the_high_water_fails_closed() -> TestResult {
                 Err(AssignmentError::Ambiguous)
             ));
             ensure_ready(&root).await?;
-            assert_eq!(
-                writer
-                    .reconcile(&replace)
-                    .await
-                    .map_err(|e| format!("{e:?}"))?,
-                ReconcileOutcome::Absent
-            );
+            // Trailing history cannot prove non-commit: reconciliation fails closed.
+            assert!(matches!(
+                writer.reconcile(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            ensure_ready(&root).await?;
             assert_eq!(high_water(&pool).await?.0, "2");
 
             // The same exact-equality rule protects the registration namespace.
@@ -2962,7 +2968,53 @@ fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
                     .reconcile(&assign)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
-                ReconcileOutcome::Committed(receipt)
+                ReconcileOutcome::Committed(receipt.clone())
+            );
+            // A partial restore that drops the committed receipt while the
+            // high-water and assignment survive cannot be classified as a
+            // non-commit: reconciliation fails closed and keeps custody.
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignment_slots SET operation_key = $1, command = $2, checkpointed_at = 0 \
+                 WHERE writer_registration = 'writer-a'",
+            )
+            .bind(key(1).as_bytes().as_slice())
+            .bind(assign.encode().map_err(|e| format!("{e:?}"))?)
+            .execute(&pool)
+            .await?;
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "CREATE TABLE snap_receipt AS SELECT * FROM game_runtime_scope_assignment_receipts",
+                "SET LOCAL session_replication_role = replica",
+                "DELETE FROM game_runtime_scope_assignment_receipts",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert!(!matches!(
+                writer.reconcile(&assign).await,
+                Ok(ReconcileOutcome::Absent)
+            ));
+            ensure_ready(&root).await?;
+            let retained: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT operation_key FROM game_runtime_scope_assignment_slots WHERE writer_registration = 'writer-a'",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(retained.as_deref(), Some(key(1).as_bytes().as_slice()));
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "SET LOCAL session_replication_role = replica",
+                "INSERT INTO game_runtime_scope_assignment_receipts SELECT * FROM snap_receipt",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert_eq!(
+                writer
+                    .reconcile(&assign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Committed(receipt.clone())
             );
             // One assignment-writer registration per process root, for the
             // root's lifetime: dropping every handle does not release it.
