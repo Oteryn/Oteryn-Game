@@ -4,7 +4,7 @@
 task_id: OTV2-20260923-item-wiki-first-census
 title: Wiki-first TibiaWiki Item census
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-census-20260923
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item wiki-first census writer"
 created_at: 2026-09-23T21:19:00+02:00
-updated_at: 2026-09-23T21:36:00+02:00
+updated_at: 2026-09-23T21:37:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_census.py
@@ -96,7 +96,7 @@ No identity crosswalk, no field-verification promotion, no WorldProject populati
 
 ## Implementation / findings
 
-Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicated workflow run `35910105739` failed before tests: `actions/checkout` received a literal backslash-prefixed SHA because the authored YAML escaped GitHub expression syntax as `\\${{ ... }}`. This is accepted as a workflow-only P1 qualification defect; collector semantics were not executed. AUTHORING was reopened for the exact expression-escape repair. The workflow successor removes exactly five literal backslashes before GitHub expression tokens; no collector, self-test or scope semantics changed.\n\nThe implementation reuses the protected bounded TibiaWiki request/cache/Infobox parser primitives rather than forking a second HTTP or Item parser. The new discovery direction is independent of Crystal identities and enumerates main-namespace pages that directly transclude `Predefinição:Infobox Item`. A small compatibility shim accepts the MediaWiki-equivalent space/underscore spelling of the infobox marker without changing the protected predecessor collector. PR #803 was opened from the four-path authored candidate. Its base is protected main `6b2c5237cebcc9cf757747478a2990cde4109750`; the only protected-main change since admission base `79a1d6966b7fbe41e8366ea873d207c59d441033` is the path-disjoint archive move for the completed #798 task.
+Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicated workflow run `35910105739` failed before tests: `actions/checkout` received a literal backslash-prefixed SHA because the authored YAML escaped GitHub expression syntax as `\\${{ ... }}`. This is accepted as a workflow-only P1 qualification defect; collector semantics were not executed. AUTHORING was reopened for the exact expression-escape repair. The workflow successor removes exactly five literal backslashes before GitHub expression tokens; no collector, self-test or scope semantics changed.\n\nSuccessor `53cfa7a9e0c45cf9b23a1c676ab0327479ae8f51` passed checkout and predecessor self-test, then new self-test failed before live collection in `compile_census`: `Counter.update(mapping)` attempted to add dict field payloads as counts. This is accepted as a local aggregation bug. AUTHORING is reopened for the minimal three-site change to count mapping keys rather than mapping values.\n\nThe implementation reuses the protected bounded TibiaWiki request/cache/Infobox parser primitives rather than forking a second HTTP or Item parser. The new discovery direction is independent of Crystal identities and enumerates main-namespace pages that directly transclude `Predefinição:Infobox Item`. A small compatibility shim accepts the MediaWiki-equivalent space/underscore spelling of the infobox marker without changing the protected predecessor collector. PR #803 was opened from the four-path authored candidate. Its base is protected main `6b2c5237cebcc9cf757747478a2990cde4109750`; the only protected-main change since admission base `79a1d6966b7fbe41e8366ea873d207c59d441033` is the path-disjoint archive move for the completed #798 task.
 
 ## Validation
 
@@ -151,8 +151,8 @@ Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicate
 ## Context checkpoint
 
 ```yaml
-last_progress: checkout-only workflow escape defect from candidate 7df3227a repaired without collector changes; successor metadata write is the new freeze boundary
-status: validating
+last_progress: successor passed checkout; focused self-test exposed Counter mapping-value aggregation bug before live source collection; minimal key-count repair authorized
+status: implementing
 branch: agent/item-wiki-first-census-20260923
 head_sha: null
 pr: 803
@@ -168,10 +168,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
-ci_recovery_actions_for_current_head: 1
+repair_cycles_for_current_gate: 2
+ci_recovery_actions_for_current_head: 2
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze returned successor head and inspect fresh PR #803 qualification plus live census artifact
+next_action: change only the three Counter updates to count mapping keys, then refreeze and rerun exact-head qualification
 ```
