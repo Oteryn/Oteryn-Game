@@ -784,8 +784,12 @@ pub enum LootAlgorithmDocument {
 impl LootAlgorithmDocument {
     fn lower(self) -> ReferenceLootSelectionAlgorithm {
         match self {
-            Self::IndependentBernoulliPpm => ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm,
-            Self::WeightedSingleSelection => ReferenceLootSelectionAlgorithm::WeightedSingleSelection,
+            Self::IndependentBernoulliPpm => {
+                ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
+            }
+            Self::WeightedSingleSelection => {
+                ReferenceLootSelectionAlgorithm::WeightedSingleSelection
+            }
             Self::GuaranteedEntries => ReferenceLootSelectionAlgorithm::GuaranteedEntries,
             Self::NestedGroups => ReferenceLootSelectionAlgorithm::NestedGroups,
         }

@@ -372,21 +372,32 @@ fn project_keeps_terrain_world_objects_and_loot_typed_and_client_safe() {
     assert_eq!(expected.len(), 6, "existing v1 six-document writer");
     let project = parse(expected.clone()).expect("typed project parses");
     assert_eq!(
-        project.canonical_documents(limits()).expect("rewrite").documents(),
+        project
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
         &expected
     );
-    let linked = project.link().expect("existing Reference linker validates typed closure");
+    let linked = project
+        .link()
+        .expect("existing Reference linker validates typed closure");
     assert_eq!(linked.definitions.len(), 7);
     let client = linked.client_safe_definitions();
-    assert!(client
-        .iter()
-        .any(|entry| entry.definition.family() == DefinitionFamily::Terrain));
-    assert!(client
-        .iter()
-        .any(|entry| entry.definition.family() == DefinitionFamily::LocalObject));
-    assert!(!client
-        .iter()
-        .any(|entry| entry.definition.family() == DefinitionFamily::Loot));
+    assert!(
+        client
+            .iter()
+            .any(|entry| entry.definition.family() == DefinitionFamily::Terrain)
+    );
+    assert!(
+        client
+            .iter()
+            .any(|entry| entry.definition.family() == DefinitionFamily::LocalObject)
+    );
+    assert!(
+        !client
+            .iter()
+            .any(|entry| entry.definition.family() == DefinitionFamily::Loot)
+    );
 }
 
 #[test]
@@ -396,7 +407,10 @@ fn new_project_families_reject_wrong_shape_and_unsupported_loot_semantics() {
         identity: identity("Loot", "oteryn:reference.loot.wrong-item"),
         algorithm: LootAlgorithmDocument::GuaranteedEntries,
         entries: vec![LootEntryDocument {
-            item: reference("Creature", "oteryn:reference.creature.project-owned-courier"),
+            item: reference(
+                "Creature",
+                "oteryn:reference.creature.project-owned-courier",
+            ),
             min_count: 1,
             max_count: 1,
             probability_ppm: None,
@@ -405,15 +419,19 @@ fn new_project_families_reject_wrong_shape_and_unsupported_loot_semantics() {
     assert!(CanonicalProjectDocuments::from_draft(wrong_item, limits()).is_err());
 
     let mut empty_states = draft();
-    empty_states.records.push(ProjectReferenceRecord::LocalObject {
-        identity: identity("LocalObject", "oteryn:reference.object.empty"),
-        client_projection: ProjectionDocument::ClientSafe,
-        states: vec![],
-    });
-    assert!(parse(documents(empty_states))
-        .expect("source parses")
-        .link()
-        .is_err());
+    empty_states
+        .records
+        .push(ProjectReferenceRecord::LocalObject {
+            identity: identity("LocalObject", "oteryn:reference.object.empty"),
+            client_projection: ProjectionDocument::ClientSafe,
+            states: vec![],
+        });
+    assert!(
+        parse(documents(empty_states))
+            .expect("source parses")
+            .link()
+            .is_err()
+    );
 
     let mut unsupported = draft();
     unsupported.records.push(ProjectReferenceRecord::Loot {
@@ -426,10 +444,12 @@ fn new_project_families_reject_wrong_shape_and_unsupported_loot_semantics() {
             probability_ppm: None,
         }],
     });
-    assert!(parse(documents(unsupported))
-        .expect("source parses")
-        .link()
-        .is_err());
+    assert!(
+        parse(documents(unsupported))
+            .expect("source parses")
+            .link()
+            .is_err()
+    );
 
     let mut untyped = draft();
     untyped.records.push(ProjectReferenceRecord::Generic {
