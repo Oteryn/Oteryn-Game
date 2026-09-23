@@ -7,6 +7,14 @@ LANGUAGE sql IMMUTABLE AS $$
        AND (get_byte(uuid_send(value), 8) & 192) = 128
 $$;
 
+-- Canonical RFC 4122/9562 UUID of version 1-8 (the Platform issuer decision
+-- identity the authenticated intent decoder accepts); never nil.
+CREATE FUNCTION game_character_is_rfc_uuid(value UUID) RETURNS BOOLEAN
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT (get_byte(uuid_send(value), 6) >> 4) BETWEEN 1 AND 8
+       AND (get_byte(uuid_send(value), 8) & 192) = 128
+$$;
+
 -- Producer-owned UUIDv7 allocation (48-bit Unix ms + 74 random bits).
 CREATE FUNCTION game_character_uuid_v7() RETURNS UUID
 LANGUAGE plpgsql VOLATILE AS $$
@@ -95,7 +103,7 @@ CREATE TABLE game_character_operation_receipts (
     -- Durable TransactionId identity; unique beyond audit expiry.
     transaction_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(transaction_id)),
     -- CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1 decision bound by command_binding.
-    issuer_decision_id UUID NOT NULL UNIQUE,
+    issuer_decision_id UUID NOT NULL UNIQUE CHECK (game_character_is_rfc_uuid(issuer_decision_id)),
     intent_source_revision BIGINT NOT NULL UNIQUE CHECK (intent_source_revision > 0),
     issued_at_source BIGINT NOT NULL CHECK (issued_at_source >= 0),
     expires_at_source BIGINT NOT NULL,
@@ -122,7 +130,7 @@ CREATE TABLE game_character_interpretations (
 CREATE TABLE game_character_bootstrap_intent_floors (
     issuer_scope SMALLINT PRIMARY KEY CHECK (issuer_scope = 1),
     source_revision BIGINT NOT NULL CHECK (source_revision > 0),
-    issuer_decision_id UUID NOT NULL,
+    issuer_decision_id UUID NOT NULL CHECK (game_character_is_rfc_uuid(issuer_decision_id)),
     intent_binding BYTEA NOT NULL CHECK (octet_length(intent_binding) BETWEEN 1 AND 1024)
 );
 
@@ -284,6 +292,7 @@ DECLARE
 BEGIN
     FOREACH v_function IN ARRAY ARRAY[
         'game_character_is_uuid_v7(uuid)',
+        'game_character_is_rfc_uuid(uuid)',
         'game_character_uuid_v7()',
         'game_character_intent_floor_guard()',
         'game_character_immutable()',
@@ -334,6 +343,7 @@ REVOKE ALL ON TABLE
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_character_is_uuid_v7(uuid),
+    game_character_is_rfc_uuid(uuid),
     game_character_uuid_v7(),
     game_character_immutable(),
     game_character_audit_guard(),

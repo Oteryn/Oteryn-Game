@@ -980,6 +980,21 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             .is_err()
     );
     tamper.rollback().await?;
+    // Restored issuer decision identities keep the decoder's UUID semantics.
+    for statement in [
+        "UPDATE game_character_operation_receipts SET issuer_decision_id = '00000000-0000-0000-0000-000000000000'",
+        "UPDATE game_character_bootstrap_intent_floors SET issuer_decision_id = '3f0c5b7e-1d2a-4c3b-4a8f-000000000001'",
+    ] {
+        let mut tamper = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tamper)
+            .await?;
+        assert!(
+            sqlx::query(statement).execute(&mut *tamper).await.is_err(),
+            "{statement}"
+        );
+        tamper.rollback().await?;
+    }
     // An active legal hold whose audit event is missing is lost retention.
     sqlx::query("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'case-2', 'security:alice', 1)")
         .bind(id(26).as_slice())
