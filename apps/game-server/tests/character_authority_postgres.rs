@@ -296,23 +296,34 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             .map_err(|e| format!("{e:?}"))?;
     }
     let fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
     let node = register(&root, 1, None).await?;
 
     // Mutation, receipt, audit event and outbox commit together; a replay of the
     // exact operation returns the same stable identities, a changed one conflicts.
     let first = root
-        .bootstrap_character(&fence, &node, command(21, 31)?)
+        .bootstrap_character(&authority, &node, command(21, 31)?)
         .await
         .map_err(|e| format!("{e:?}"))?;
     let replay = root
-        .bootstrap_character(&fence, &node, command(21, 31)?)
+        .bootstrap_character(&authority, &node, command(21, 31)?)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replay, first);
     assert!(matches!(
-        root.bootstrap_character(&fence, &node, command(21, 32)?)
+        root.bootstrap_character(&authority, &node, command(21, 32)?)
             .await,
         Err(CharacterAuthorityError::Conflict)
+    ));
+    // Operation identities must be canonical UUIDv7 (version and RFC variant).
+    let mut invalid = command(23, 34)?;
+    invalid.operation_id[8] = 0x40;
+    assert!(matches!(
+        root.bootstrap_character(&authority, &node, invalid).await,
+        Err(CharacterAuthorityError::Rejected)
     ));
     let decoded = audit::CharacterAuthorityBootstrappedV1::decode(
         first.payload.as_deref().ok_or("payload retained")?,
@@ -327,7 +338,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         assert_eq!(count(&pool, table).await?, expected, "{table}");
     }
     assert_eq!(
-        root.read_current_character(&fence, first.character_id)
+        root.read_current_character(&authority, first.character_id)
             .await
             .map_err(|e| format!("{e:?}"))?,
         first
@@ -336,7 +347,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // A superseded incarnation cannot mutate; its successor can.
     let successor = register(&root, 2, Some(1)).await?;
     let stale = root
-        .bootstrap_character(&fence, &node, command(22, 33)?)
+        .bootstrap_character(&authority, &node, command(22, 33)?)
         .await;
     assert!(
         matches!(stale, Err(CharacterAuthorityError::Unavailable(_))),
@@ -351,25 +362,25 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // At-least-once publication: pending until the exact acknowledgement,
     // and acknowledging again is a no-op.
     let pending = root
-        .pending_character_audit(&fence, 8)
+        .pending_character_audit(&authority, 8)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].event_id, first.event_id);
     assert_eq!(Some(&pending[0].payload), first.payload.as_ref());
     assert_eq!(
-        root.pending_character_audit(&fence, 8)
+        root.pending_character_audit(&authority, 8)
             .await
             .map_err(|e| format!("{e:?}"))?,
         pending
     );
     for _ in 0..2 {
-        root.acknowledge_character_audit(&fence, first.event_id)
+        root.acknowledge_character_audit(&authority, first.event_id)
             .await
             .map_err(|e| format!("{e:?}"))?;
     }
     assert!(
-        root.pending_character_audit(&fence, 8)
+        root.pending_character_audit(&authority, 8)
             .await
             .map_err(|e| format!("{e:?}"))?
             .is_empty()
@@ -377,7 +388,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
 
     // Not yet expired: ordinary expiry deletes nothing and direct deletion fails.
     assert_eq!(
-        root.expire_character_audit(&fence, 8)
+        root.expire_character_audit(&authority, 8)
             .await
             .map_err(|e| format!("{e:?}"))?,
         0
@@ -408,7 +419,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // An explicit legal hold blocks ordinary expiry until its single release.
     let hold = root
         .place_character_audit_legal_hold(
-            &fence,
+            &authority,
             first.event_id,
             "case-1 investigation",
             "security:alice",
@@ -417,7 +428,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     assert!(matches!(
         root.place_character_audit_legal_hold(
-            &fence,
+            &authority,
             first.event_id,
             "duplicate",
             "security:alice"
@@ -426,7 +437,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         Err(CharacterAuthorityError::Conflict)
     ));
     assert_eq!(
-        root.expire_character_audit(&fence, 8)
+        root.expire_character_audit(&authority, 8)
             .await
             .map_err(|e| format!("{e:?}"))?,
         0
@@ -462,11 +473,11 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .await?,
         1
     );
-    root.release_character_audit_legal_hold(&fence, hold, "security:bob")
+    root.release_character_audit_legal_hold(&authority, hold, "security:bob")
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert!(matches!(
-        root.release_character_audit_legal_hold(&fence, hold, "security:bob")
+        root.release_character_audit_legal_hold(&authority, hold, "security:bob")
             .await,
         Err(CharacterAuthorityError::Conflict)
     ));
@@ -474,7 +485,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // Ordinary expiry deletes the player-linked event, envelope and payload;
     // authority state and its receipt remain, with no analytics copy.
     assert_eq!(
-        root.expire_character_audit(&fence, 8)
+        root.expire_character_audit(&authority, 8)
             .await
             .map_err(|e| format!("{e:?}"))?,
         1
@@ -484,13 +495,13 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         0
     );
     let current = root
-        .read_current_character(&fence, first.character_id)
+        .read_current_character(&authority, first.character_id)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(current.event_id, first.event_id);
     assert_eq!(current.payload, None);
     let replayed = root
-        .bootstrap_character(&fence, &node, command(21, 31)?)
+        .bootstrap_character(&authority, &node, command(21, 31)?)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replayed.character_id, first.character_id);
@@ -503,6 +514,64 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     .await?;
     assert_eq!(columns, 0, "receipts retain no payload copy");
     drop(fence);
+
+    // An authority capability is issued only over an intact store: a receipt whose
+    // command binding no longer reconstructs from its root fails closed.
+    let mut tamper = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tamper)
+        .await?;
+    sqlx::query("UPDATE game_character_operation_receipts SET command_binding = '\\x00'::bytea || command_binding")
+        .execute(&mut *tamper)
+        .await?;
+    tamper.commit().await?;
+    let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    assert!(root.open_character_authority(&sealed).await.is_err());
+    drop(sealed);
+    let mut repair = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query("UPDATE game_character_operation_receipts SET command_binding = substring(command_binding FROM 2)")
+        .execute(&mut *repair)
+        .await?;
+    repair.commit().await?;
+    let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    root.open_character_authority(&sealed)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    drop(sealed);
+
+    // Another authority scope's successor cannot claim this database's predecessor.
+    let foreign_dir =
+        std::env::temp_dir().join(format!("oteryn-character-foreign-{}", database.name));
+    let _ = std::fs::remove_dir_all(&foreign_dir);
+    std::fs::create_dir(&foreign_dir)?;
+    let foreign = CharacterRecoveryStore::open(&foreign_dir, "character-other", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    drop(
+        foreign
+            .authorize_fresh_store(id(14), 100)
+            .map_err(|e| format!("{e:?}"))?,
+    );
+    let foreign_successor = foreign
+        .begin_recovery(1, id(15), 400)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(
+        root.reconcile_character_recovery(&foreign_successor)
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_recovery_admissions"
+        )
+        .await?,
+        1
+    );
+    drop(foreign_successor);
+    std::fs::remove_dir_all(foreign_dir)?;
 
     // A malformed (non-UUIDv7) recovery event never advances the external register.
     let mut malformed = id(12);

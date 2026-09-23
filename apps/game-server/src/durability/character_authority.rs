@@ -32,6 +32,17 @@ impl From<DurabilityError> for CharacterAuthorityError {
     }
 }
 
+/// Authority capability issued only after the sealed recovery fence matched the
+/// database and the complete Character integrity check passed in this process.
+pub struct ReconciledCharacterAuthority<'f, 's> {
+    record: CharacterRecoveryFenceV1,
+    _seal: &'f SealedCharacterRecoveryFence<'s>,
+}
+
+fn uuid_v7_shape(value: &[u8; 16]) -> bool {
+    value[6] >> 4 == 7 && value[8] & 0xc0 == 0x80
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BootstrapCommand {
     pub operation_id: [u8; 16],
@@ -93,11 +104,11 @@ impl DurabilityRoot {
     /// operator-authorized incarnation in the same transaction as the write.
     pub async fn bootstrap_character(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         proof: &NodeIncarnationProof,
         command: BootstrapCommand,
     ) -> Result<CharacterAuthorityRecord> {
-        if command.operation_id.iter().all(|byte| *byte == 0)
+        if !uuid_v7_shape(&command.operation_id)
             || ![
                 &command.profile_revision,
                 &command.ruleset_revision,
@@ -121,7 +132,7 @@ impl DurabilityRoot {
         let ruleset = command.ruleset_revision;
         let content = command.content_revision;
         let starter = command.starter_template_revision;
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -160,11 +171,11 @@ impl DurabilityRoot {
 
     pub async fn read_current_character(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         character_id: CharacterId,
     ) -> Result<CharacterAuthorityRecord> {
         let character = *character_id.as_bytes();
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -174,6 +185,31 @@ impl DurabilityRoot {
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(record))
         })).await?
+    }
+
+    /// Issue the authority capability for a sealed recovery fence: the database's
+    /// latest admission must equal the fence and the full integrity check must pass.
+    pub async fn open_character_authority<'f, 's>(
+        &self,
+        seal: &'f SealedCharacterRecoveryFence<'s>,
+    ) -> Result<ReconciledCharacterAuthority<'f, 's>> {
+        let record = seal.record.clone();
+        let checked = record.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &checked).await?;
+                    verify_character_integrity(&mut tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok::<(), CharacterAuthorityError>(()))
+                })
+            })
+            .await??;
+        Ok(ReconciledCharacterAuthority {
+            record,
+            _seal: seal,
+        })
     }
 
     /// Admit a fresh store only after Operations has explicitly created generation one.
@@ -203,6 +239,7 @@ impl DurabilityRoot {
         recovery: &CharacterRecoveryTransition<'_>,
     ) -> Result<()> {
         let record = recovery.record.clone();
+        let predecessor = recovery.predecessor.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             let current: Option<String> = sqlx::query_scalar("SELECT recovery_generation::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR UPDATE")
@@ -211,30 +248,14 @@ impl DurabilityRoot {
             if current == record.recovery_generation {
                 assert_recovery_fence(&mut tx, &record).await?;
             } else if current == record.predecessor_generation {
+                assert_predecessor_admission(&mut tx, &record, predecessor.as_ref()).await?;
                 insert_recovery_admission(&mut tx, &record).await?;
             } else {
                 return Ok(Err(CharacterAuthorityError::Conflict));
             }
             // This is the explicit reconciliation point. Domain-specific integrity checks grow
             // here; restored receipts/audit/outbox never replace the external predecessor proof.
-            // Every root needs its exact receipt; a retained audit event must bind to that
-            // receipt and root. Audit events legitimately expire, so absence is allowed.
-            sqlx::query(
-                "SELECT 1 FROM game_character_roots r \
-                   LEFT JOIN game_character_operation_receipts o USING (character_id) \
-                   LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
-                  WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
-                     OR o.character_revision <> r.character_revision \
-                     OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
-                         OR a.transaction_id <> o.transaction_id OR a.payload_sha256 <> sha256(a.payload))) \
-                 UNION ALL \
-                 SELECT 1 FROM game_character_audit_outbox a \
-                   LEFT JOIN game_character_operation_receipts o ON o.event_id = a.event_id \
-                  WHERE o.event_id IS NULL OR o.character_id <> a.character_id \
-                 LIMIT 1",
-            )
-                .fetch_optional(&mut *tx).await?
-                .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
+            verify_character_integrity(&mut tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(()))
         })).await?
@@ -244,13 +265,13 @@ impl DurabilityRoot {
     /// at-least-once: an event stays pending until its exact acknowledgement.
     pub async fn pending_character_audit(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         limit: u16,
     ) -> Result<Vec<CharacterAuditDelivery>> {
         if limit == 0 || limit > MAX_AUDIT_BATCH {
             return Err(CharacterAuthorityError::Rejected);
         }
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -273,10 +294,10 @@ impl DurabilityRoot {
     /// Record the exact published event. Replaying an acknowledgement is a no-op.
     pub async fn acknowledge_character_audit(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         event_id: [u8; 16],
     ) -> Result<()> {
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -298,7 +319,7 @@ impl DurabilityRoot {
     /// Place an explicit legal hold on one retained event; it blocks ordinary expiry.
     pub async fn place_character_audit_legal_hold(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         event_id: [u8; 16],
         reason: &str,
         authorizing_actor: &str,
@@ -309,7 +330,7 @@ impl DurabilityRoot {
         }
         let reason = reason.to_owned();
         let actor = authorizing_actor.to_owned();
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -334,7 +355,7 @@ impl DurabilityRoot {
     /// Release an active hold; the event returns to its ordinary expiry.
     pub async fn release_character_audit_legal_hold(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         hold_id: [u8; 16],
         releasing_actor: &str,
     ) -> Result<()> {
@@ -342,7 +363,7 @@ impl DurabilityRoot {
             return Err(CharacterAuthorityError::Rejected);
         }
         let actor = releasing_actor.to_owned();
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -360,13 +381,13 @@ impl DurabilityRoot {
     /// registered P90D ceiling. No pseudonymous copy is retained.
     pub async fn expire_character_audit(
         &self,
-        recovery: &SealedCharacterRecoveryFence<'_>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
         batch: u16,
     ) -> Result<u64> {
         if batch == 0 || batch > MAX_AUDIT_BATCH {
             return Err(CharacterAuthorityError::Rejected);
         }
-        let recovery = recovery.record.clone();
+        let recovery = authority.record.clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
@@ -473,4 +494,57 @@ fn read_record_row(
         transaction_id: uuid_text(row.try_get("transaction_id")?)?,
         payload: row.try_get("payload")?,
     })
+}
+
+/// Complete first-slice integrity: each root has its exact receipt, including the
+/// reconstructed command binding; every retained audit event binds to that
+/// receipt and root with an intact payload hash. Expired events may be absent.
+async fn verify_character_integrity(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<(), DurabilityError> {
+    sqlx::query(
+        "SELECT 1 FROM game_character_roots r \
+           LEFT JOIN game_character_operation_receipts o USING (character_id) \
+           LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
+          WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
+             OR o.character_revision <> r.character_revision \
+             OR o.command_binding <> uuid_send(r.account_id) || uuid_send(r.world_id) \
+                || int2send(octet_length(r.profile_revision)::int2) || convert_to(r.profile_revision, 'UTF8') \
+                || int2send(octet_length(r.ruleset_revision)::int2) || convert_to(r.ruleset_revision, 'UTF8') \
+                || int2send(octet_length(r.content_revision)::int2) || convert_to(r.content_revision, 'UTF8') \
+                || int2send(octet_length(r.starter_template_revision)::int2) || convert_to(r.starter_template_revision, 'UTF8') \
+             OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
+                 OR a.transaction_id <> o.transaction_id OR a.payload_sha256 <> sha256(a.payload))) \
+         UNION ALL \
+         SELECT 1 FROM game_character_audit_outbox a \
+           LEFT JOIN game_character_operation_receipts o ON o.event_id = a.event_id \
+          WHERE o.event_id IS NULL OR o.character_id <> a.character_id \
+         LIMIT 1",
+    )
+    .fetch_optional(&mut **tx)
+    .await?
+    .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))
+}
+
+/// The database's current admission must be this transition's predecessor for
+/// the same authority scope and issuer, and the exact observed predecessor
+/// record when the external register still had it.
+async fn assert_predecessor_admission(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+    predecessor: Option<&CharacterRecoveryFenceV1>,
+) -> std::result::Result<(), DurabilityError> {
+    let row = sqlx::query("SELECT authority_scope_id, issuer_identity, recovery_generation::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1")
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or(DurabilityError::Unavailable)?;
+    if row.try_get::<String, _>("authority_scope_id")? != record.authority_scope_id
+        || row.try_get::<String, _>("issuer_identity")? != record.issuer_identity
+    {
+        return Err(DurabilityError::Unavailable);
+    }
+    match predecessor {
+        Some(predecessor) => assert_recovery_fence(tx, predecessor).await,
+        None => Ok(()),
+    }
 }

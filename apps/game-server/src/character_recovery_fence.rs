@@ -49,6 +49,9 @@ pub struct SealedCharacterRecoveryFence<'a> {
 
 pub struct CharacterRecoveryTransition<'a> {
     pub record: CharacterRecoveryFenceV1,
+    /// The exact predecessor record this transition replaced, when observed.
+    /// An exact ambiguous reconciliation no longer has it (`None`).
+    pub predecessor: Option<CharacterRecoveryFenceV1>,
     _generation: RwLockWriteGuard<'a, ()>,
     _process: File,
 }
@@ -145,21 +148,26 @@ impl CharacterRecoveryStore {
             issued_at,
             issuer_identity: self.issuer_identity.clone(),
         };
-        match self.read_optional()? {
-            None if expected_predecessor == 0 => self.replace(&proposed)?,
-            Some(current) if current == proposed => {}
+        let predecessor = match self.read_optional()? {
+            None if expected_predecessor == 0 => {
+                self.replace(&proposed)?;
+                None
+            }
+            Some(current) if current == proposed => None,
             Some(current) if current.recovery_generation == expected_predecessor => {
                 self.require_configured_identity(&current)?;
                 self.replace(&proposed)?;
+                Some(current)
             }
             Some(_) => return Err(CharacterRecoveryError::Conflict),
             None => return Err(CharacterRecoveryError::Conflict),
-        }
+        };
         if self.read_exact()? != proposed {
             return Err(CharacterRecoveryError::Unavailable);
         }
         Ok(CharacterRecoveryTransition {
             record: proposed,
+            predecessor,
             _generation: generation,
             _process: process,
         })

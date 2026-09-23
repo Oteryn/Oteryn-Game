@@ -60,7 +60,8 @@ mod native_admission_source_linkage {
 mod character_authority_linkage {
     use super::DurabilityRoot;
     use super::character_authority::{
-        BootstrapCommand, CharacterAuditDelivery, CharacterAuthorityError, CharacterAuthorityRecord,
+        BootstrapCommand, CharacterAuditDelivery, CharacterAuthorityError,
+        CharacterAuthorityRecord, ReconciledCharacterAuthority,
     };
 
     #[test]
@@ -69,6 +70,7 @@ mod character_authority_linkage {
         let _ = std::mem::size_of::<CharacterAuditDelivery>();
         let _ = std::mem::size_of::<CharacterAuthorityError>();
         let _ = std::mem::size_of::<CharacterAuthorityRecord>();
+        let _ = std::mem::size_of::<ReconciledCharacterAuthority<'_, '_>>();
         let _ = CharacterAuthorityError::Rejected;
         let _ = CharacterAuthorityError::Conflict;
         let _ = |error: CharacterAuthorityError| match error {
@@ -76,6 +78,7 @@ mod character_authority_linkage {
             _ => None,
         };
         let _ = DurabilityRoot::bootstrap_character;
+        let _ = DurabilityRoot::open_character_authority;
         let _ = DurabilityRoot::read_current_character;
         let _ = DurabilityRoot::admit_fresh_character_recovery;
         let _ = DurabilityRoot::reconcile_character_recovery;
