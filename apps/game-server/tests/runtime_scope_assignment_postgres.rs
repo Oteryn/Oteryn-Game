@@ -4,6 +4,12 @@
 // runs count as qualification evidence.
 extern crate self as oteryn_game_server;
 #[allow(dead_code, unused_imports)]
+#[path = "../src/character_recovery_fence.rs"]
+pub mod character_recovery_fence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/domain/mod.rs"]
+pub mod domain;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/durability/mod.rs"]
 mod durability;
 #[allow(dead_code, unused_imports)]

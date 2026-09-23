@@ -1,6 +1,12 @@
 // Include the unchanged Foundation source in this test crate so privately sealed
 // fixture owners and Durability use one type universe, without a production seal.
 extern crate self as oteryn_game_server;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/character_recovery_fence.rs"]
+pub mod character_recovery_fence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/domain/mod.rs"]
+pub mod domain;
 #[path = "../src/foundation/mod.rs"]
 pub mod foundation;
 

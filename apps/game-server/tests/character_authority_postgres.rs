@@ -1,14 +1,31 @@
 #![allow(clippy::expect_used)]
+// Dedicated PostgreSQL target for WP5 #414 Character authority. Ordinary
+// workspace runs skip when the routed PostgreSQL service is absent; only
+// configured PostgreSQL 17.6 runs count as qualification evidence.
+extern crate self as oteryn_game_server;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/character_recovery_fence.rs"]
+pub mod character_recovery_fence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/domain/mod.rs"]
+pub mod domain;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/durability/mod.rs"]
+mod durability;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/foundation/mod.rs"]
+pub mod foundation;
 
+use durability::DurabilityRoot;
+use durability::character_authority::{BootstrapCommand, CharacterAuthorityError};
+use durability::character_authority_audit as audit;
+use durability::runtime_scope_assignment::{BootstrapSecret, LaunchBinding, NodeIncarnationProof};
 use oteryn_game_server::character_recovery_fence::{
     CharacterRecoveryError, CharacterRecoveryStore,
 };
 use oteryn_game_server::domain::{AccountId, CharacterId, WorldId};
 use prost::Message;
-use sqlx::Connection;
-
-#[path = "../src/durability/character_authority_audit.rs"]
-mod audit;
+use sqlx::{Connection, Executor};
 
 fn id(seed: u8) -> [u8; 16] {
     [
@@ -145,4 +162,323 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         .expect("cleanup");
     std::fs::remove_dir_all(retained).expect("retained cleanup");
         });
+}
+
+type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+struct Database {
+    admin_url: String,
+    name: String,
+    url: String,
+}
+
+impl Database {
+    async fn create(admin_url: String, test_name: &str) -> TestResult<Self> {
+        if !admin_url.starts_with("postgresql://oteryn_test_admin:")
+            || !admin_url.ends_with("@127.0.0.1:5432/postgres")
+        {
+            return Err("unsafe PostgreSQL test admin URL".into());
+        }
+        let suffix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let name = format!("ca_{test_name}_{suffix}");
+        let mut admin = sqlx::PgConnection::connect(&admin_url).await?;
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE DATABASE {name}"
+            ))))
+            .await?;
+        admin.close().await?;
+        let prefix = admin_url
+            .strip_suffix("/postgres")
+            .ok_or("invalid admin URL")?;
+        let url = format!("{prefix}/{name}");
+        let mut connection = sqlx::PgConnection::connect(&url).await?;
+        let version: String = sqlx::query_scalar("SHOW server_version_num")
+            .fetch_one(&mut connection)
+            .await?;
+        assert_eq!(
+            version, "170006",
+            "canonical target requires PostgreSQL 17.6"
+        );
+        sqlx::migrate!("./migrations").run(&mut connection).await?;
+        connection.close().await?;
+        Ok(Self {
+            admin_url,
+            name,
+            url,
+        })
+    }
+
+    async fn cleanup(self) -> TestResult {
+        let mut admin = sqlx::PgConnection::connect(&self.admin_url).await?;
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DROP DATABASE {} WITH (FORCE)",
+                self.name
+            ))))
+            .await?;
+        admin.close().await?;
+        Ok(())
+    }
+}
+
+async fn register(
+    root: &DurabilityRoot,
+    tag: u8,
+    supersedes: Option<u8>,
+) -> TestResult<NodeIncarnationProof> {
+    let secret = BootstrapSecret::from_bytes([tag; 32]);
+    let launch = LaunchBinding::new(&format!("launch-{tag}")).map_err(|e| format!("{e:?}"))?;
+    let node = foundation::NodeId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?;
+    let supersedes = supersedes
+        .map(|previous| foundation::NodeId::decode(&id(previous)))
+        .transpose()
+        .map_err(|e| format!("{e:?}"))?;
+    root.issue_node_bootstrap_authorization(&secret, &launch, supersedes)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    Ok(root
+        .register_node_incarnation(&secret, &launch, node)
+        .await
+        .map_err(|e| format!("{e:?}"))?)
+}
+
+fn command(operation: u8, account: u8) -> TestResult<BootstrapCommand> {
+    Ok(BootstrapCommand {
+        operation_id: id(operation),
+        account_id: AccountId::from_bytes(id(account)).map_err(|e| format!("{e:?}"))?,
+        world_id: WorldId::from_bytes(id(90)).map_err(|e| format!("{e:?}"))?,
+        profile_revision: "profile-1".to_owned(),
+        ruleset_revision: "ruleset-1".to_owned(),
+        content_revision: "content-1".to_owned(),
+        starter_template_revision: "starter-1".to_owned(),
+    })
+}
+
+async fn count(pool: &sqlx::PgPool, sql: &'static str) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(sql).fetch_one(pool).await?)
+}
+
+#[test]
+fn bootstrap_is_atomic_and_audit_is_published_held_and_expired() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "authority").await?;
+            let result = bootstrap_audit_flow(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn bootstrap_audit_flow(database: &Database) -> TestResult {
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    let retained = std::env::temp_dir().join(format!("oteryn-character-api-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    {
+        let fresh = recovery
+            .authorize_fresh_store(id(11), 100)
+            .map_err(|e| format!("{e:?}"))?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    let fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let node = register(&root, 1, None).await?;
+
+    // Mutation, receipt, audit event and outbox commit together; a replay of the
+    // exact operation returns the same stable identities, a changed one conflicts.
+    let first = root
+        .bootstrap_character(&fence, &node, command(21, 31)?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let replay = root
+        .bootstrap_character(&fence, &node, command(21, 31)?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(replay, first);
+    assert!(matches!(
+        root.bootstrap_character(&fence, &node, command(21, 32)?)
+            .await,
+        Err(CharacterAuthorityError::Conflict)
+    ));
+    let decoded = audit::CharacterAuthorityBootstrappedV1::decode(
+        first.payload.as_deref().ok_or("payload retained")?,
+    )?;
+    assert_eq!(decoded.account_id, id(31).to_vec());
+    assert_eq!(decoded.character_id, first.character_id.as_bytes().to_vec());
+    for (table, expected) in [
+        ("SELECT count(*) FROM game_character_roots", 1),
+        ("SELECT count(*) FROM game_character_operation_receipts", 1),
+        ("SELECT count(*) FROM game_character_audit_outbox", 1),
+    ] {
+        assert_eq!(count(&pool, table).await?, expected, "{table}");
+    }
+    assert_eq!(
+        root.read_current_character(&fence, first.character_id)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        first
+    );
+
+    // A superseded incarnation cannot mutate; its successor can.
+    let successor = register(&root, 2, Some(1)).await?;
+    let stale = root
+        .bootstrap_character(&fence, &node, command(22, 33)?)
+        .await;
+    assert!(
+        matches!(stale, Err(CharacterAuthorityError::Unavailable(_))),
+        "{stale:?}"
+    );
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM game_character_roots").await?,
+        1
+    );
+    let node = successor;
+
+    // At-least-once publication: pending until the exact acknowledgement,
+    // and acknowledging again is a no-op.
+    let pending = root
+        .pending_character_audit(&fence, 8)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].event_id, first.event_id);
+    assert_eq!(Some(&pending[0].payload), first.payload.as_ref());
+    assert_eq!(
+        root.pending_character_audit(&fence, 8)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        pending
+    );
+    for _ in 0..2 {
+        root.acknowledge_character_audit(&fence, first.event_id)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    assert!(
+        root.pending_character_audit(&fence, 8)
+            .await
+            .map_err(|e| format!("{e:?}"))?
+            .is_empty()
+    );
+
+    // Not yet expired: ordinary expiry deletes nothing and direct deletion fails.
+    assert_eq!(
+        root.expire_character_audit(&fence, 8)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        0
+    );
+    assert!(
+        sqlx::query("DELETE FROM game_character_audit_outbox")
+            .execute(&pool)
+            .await
+            .is_err()
+    );
+    assert!(
+        sqlx::query("UPDATE game_character_audit_outbox SET payload = '\\x00'")
+            .execute(&pool)
+            .await
+            .is_err()
+    );
+
+    // Age the record past the P90D ceiling (test-only clock substitution).
+    let mut aged = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *aged)
+        .await?;
+    sqlx::query("UPDATE game_character_audit_outbox SET occurred_at = occurred_at - 7776000001, expires_at = expires_at - 7776000001, published_at = occurred_at - 7776000001")
+        .execute(&mut *aged)
+        .await?;
+    aged.commit().await?;
+
+    // An explicit legal hold blocks ordinary expiry until its single release.
+    let hold = root
+        .place_character_audit_legal_hold(
+            &fence,
+            first.event_id,
+            "case-1 investigation",
+            "security:alice",
+        )
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(matches!(
+        root.place_character_audit_legal_hold(
+            &fence,
+            first.event_id,
+            "duplicate",
+            "security:alice"
+        )
+        .await,
+        Err(CharacterAuthorityError::Conflict)
+    ));
+    assert_eq!(
+        root.expire_character_audit(&fence, 8)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        0
+    );
+    assert!(
+        sqlx::query("DELETE FROM game_character_audit_outbox")
+            .execute(&pool)
+            .await
+            .is_err()
+    );
+    root.release_character_audit_legal_hold(&fence, hold, "security:bob")
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(matches!(
+        root.release_character_audit_legal_hold(&fence, hold, "security:bob")
+            .await,
+        Err(CharacterAuthorityError::Conflict)
+    ));
+
+    // Ordinary expiry deletes the player-linked event, envelope and payload;
+    // authority state and its receipt remain, with no analytics copy.
+    assert_eq!(
+        root.expire_character_audit(&fence, 8)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        1
+    );
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM game_character_audit_outbox").await?,
+        0
+    );
+    let current = root
+        .read_current_character(&fence, first.character_id)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(current.event_id, first.event_id);
+    assert_eq!(current.payload, None);
+    let replayed = root
+        .bootstrap_character(&fence, &node, command(21, 31)?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(replayed.character_id, first.character_id);
+    assert_eq!(replayed.event_id, first.event_id);
+    assert_eq!(replayed.payload, None);
+    let columns = count(
+        &pool,
+        "SELECT count(*) FROM information_schema.columns WHERE table_name = 'game_character_operation_receipts' AND column_name = 'payload'",
+    )
+    .await?;
+    assert_eq!(columns, 0, "receipts retain no payload copy");
+    drop(fence);
+    pool.close().await;
+    std::fs::remove_dir_all(retained)?;
+    Ok(())
 }
