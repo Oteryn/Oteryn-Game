@@ -4,7 +4,7 @@
 task_id: OTV2-20260923-item-wiki-first-census
 title: Wiki-first TibiaWiki Item census
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-census-20260923
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item wiki-first census writer"
 created_at: 2026-09-23T21:19:00+02:00
-updated_at: 2026-09-23T21:45:00+02:00
+updated_at: 2026-09-23T21:47:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_census.py
@@ -151,8 +151,8 @@ Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicate
 ## Context checkpoint
 
 ```yaml
-last_progress: live source identified Abyssador as template-discovery false positive; embeddedin root rejected, category-membership replacement authorized
-status: implementing
+last_progress: discovery root switched from Item-template dependencies to direct namespace-0 Categoria:Itens membership; focused tests updated; metadata write is the new freeze boundary
+status: validating
 branch: agent/item-wiki-first-census-20260923
 head_sha: null
 pr: 803
@@ -173,5 +173,5 @@ ci_recovery_actions_for_current_head: 4
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: switch discovery and tests from embeddedin to direct Categoria:Itens membership, preserve infobox admission check, then refreeze
+next_action: freeze returned successor head and inspect fresh exact-head PR #803 tests plus live category census
 ```
