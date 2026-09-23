@@ -37,7 +37,7 @@ class DiscoveryClient:
 
 
 def discovered_response(rows, continuation=None):
-    value = {"query": {"embeddedin": rows}}
+    value = {"query": {"categorymembers": rows}}
     if continuation is not None:
         value["continue"] = continuation
     return value
@@ -69,7 +69,7 @@ def test_discovery_paginates_and_sorts_deterministically() -> None:
         [
             discovered_response(
                 [{"pageid": 2, "ns": 0, "title": "Zulu"}],
-                {"continue": "-||", "eicontinue": "2|Zulu"},
+                {"continue": "-||", "cmcontinue": "2|Zulu"},
             ),
             discovered_response([{"pageid": 1, "ns": 0, "title": "Alpha"}]),
         ]
@@ -80,9 +80,9 @@ def test_discovery_paginates_and_sorts_deterministically() -> None:
         {"page_id": 2, "title": "Zulu"},
     ]
     assert len(client.calls) == 2
-    assert all(call["list"] == "embeddedin" for call in client.calls)
+    assert all(call["list"] == "categorymembers" for call in client.calls)
     assert all(
-        call["eititle"] == census.ITEM_TEMPLATE_TITLE for call in client.calls
+        call["cmtitle"] == census.ITEM_CATEGORY_TITLE for call in client.calls
     )
 
 
@@ -105,7 +105,7 @@ def test_discovery_rejects_page_id_title_conflict() -> None:
         [
             discovered_response(
                 [{"pageid": 1, "ns": 0, "title": "Alpha"}],
-                {"continue": "-||", "eicontinue": "1|Alpha"},
+                {"continue": "-||", "cmcontinue": "1|Alpha"},
             ),
             discovered_response(
                 [{"pageid": 1, "ns": 0, "title": "Beta"}]
