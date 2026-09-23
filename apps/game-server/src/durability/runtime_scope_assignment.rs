@@ -1089,23 +1089,17 @@ async fn authoritative_transition(
     {
         rejection = Some(AssignmentRejection::TargetNotCurrent);
     }
-    let source_revision = high_water.checked_add(1);
+    let source_revision = successor_source_revision(high_water);
     let generation = match &current {
         None => Some(1),
         Some(current) => current.ownership_generation.checked_add(1),
     };
-    let rejection = rejection
-        .or_else(|| {
-            source_revision
-                .is_none()
-                .then_some(AssignmentRejection::SourceRevisionExhausted)
-        })
-        .or_else(|| {
-            generation
-                .is_none()
-                .then_some(AssignmentRejection::GenerationExhausted)
-        });
-    let (Some(source_revision), Some(ownership_generation), None) =
+    let rejection = rejection.or_else(|| source_revision.err()).or_else(|| {
+        generation
+            .is_none()
+            .then_some(AssignmentRejection::GenerationExhausted)
+    });
+    let (Ok(source_revision), Some(ownership_generation), None) =
         (source_revision, generation, rejection)
     else {
         clear_slot(tx, registration).await?;
@@ -1507,4 +1501,28 @@ fn has_sql_state(error: &sqlx::Error, expected: &str) -> bool {
         .as_database_error()
         .and_then(|database| database.code())
         .is_some_and(|code| code == expected)
+}
+
+/// Writer-owned successor revision. Only a valid, fully retained history
+/// reaches this point; the exhausted namespace rejects rather than wrapping.
+fn successor_source_revision(high_water: u64) -> Result<u64, AssignmentRejection> {
+    high_water
+        .checked_add(1)
+        .ok_or(AssignmentRejection::SourceRevisionExhausted)
+}
+
+#[cfg(test)]
+mod successor_revision_tests {
+    use super::{AssignmentRejection, successor_source_revision};
+
+    #[test]
+    fn source_revision_successor_is_checked() {
+        assert_eq!(successor_source_revision(0), Ok(1));
+        assert_eq!(successor_source_revision(41), Ok(42));
+        assert_eq!(successor_source_revision(u64::MAX - 1), Ok(u64::MAX));
+        assert_eq!(
+            successor_source_revision(u64::MAX),
+            Err(AssignmentRejection::SourceRevisionExhausted)
+        );
+    }
 }

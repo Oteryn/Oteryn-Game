@@ -1606,9 +1606,11 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
             .execute(&pool)
             .await?;
 
-            // Checked successor overflow rejects permanently without mutation.
-            // Consistent retained history at the maximum revision (a synthetic
-            // receipt for another decision), so only checked overflow can reject.
+            // A sparse history (receipt 1 plus a receipt at the maximum, with
+            // the high-water at the maximum) is invalid retained history, not a
+            // valid overflow fixture: the continuity check fails closed before
+            // any successor revision is allocated. Checked successor overflow
+            // itself is covered by `source_revision_successor_is_checked`.
             sqlx::query(
                 "INSERT INTO game_runtime_scope_assignment_receipts \
                  (operation_key, command, scope_key, ownership_generation, state, holder_node_id, \
@@ -1623,16 +1625,24 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
             sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 18446744073709551615")
                 .execute(&pool)
                 .await?;
-            assert_eq!(
-                rejected(writer.submit(&replace).await)?,
-                AssignmentRejection::SourceRevisionExhausted
-            );
-            let current = root
-                .read_runtime_scope_assignment(channel)
-                .await
-                .map_err(|e| format!("{e:?}"))?
-                .ok_or("absent")?;
-            assert_eq!(current, first.assignment);
+            assert!(matches!(
+                writer.submit(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            assert_eq!(high_water(&pool).await?.0, "18446744073709551615");
+            assert!(matches!(
+                root.read_runtime_scope_assignment(channel).await,
+                Err(AssignmentError::Unavailable(
+                    DurabilityError::InvalidStoredState
+                ))
+            ));
+            let current: (String, String) = sqlx::query_as(
+                "SELECT ownership_generation::text, source_revision::text \
+                 FROM game_runtime_scope_assignments",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(current, ("1".to_owned(), "1".to_owned()));
 
             let database2 = Database::create("generation_overflow").await?;
             let overflow = async {
@@ -1643,7 +1653,7 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                     .await
                     .map_err(|e| format!("{e:?}"))?;
                 let first = committed(writer.submit(&request(1, AssignmentCommand::Assign { scope: channel, target: node })?).await)?;
-                sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation = 18446744073709551615, source_revision = 2")
+                sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation = 18446744073709551615, source_revision = 2, decision_identity = 'runtime-scope-assignment:2', operation_key = '\\x98'::bytea || substring(operation_key FROM 2)")
                     .execute(&pool2)
                     .await?;
                 sqlx::query(
@@ -1837,6 +1847,7 @@ fn restricted_assignment_writer_can_mutate_and_read_authoritative_state() -> Tes
                     "GRANT MAINTAIN ON TABLE \
                      game_durability_admission_account_guards, \
                      game_durability_admission_character_guards, \
+                     game_durability_admission_guard_history, \
                      game_durability_admission_lifecycle_receipts, \
                      game_durability_admission_signing_trust_guards, \
                      game_durability_control_loss_continuity, \
@@ -1870,6 +1881,7 @@ fn restricted_assignment_writer_can_mutate_and_read_authoritative_state() -> Tes
                 ),
                 format!(
                     "GRANT EXECUTE ON FUNCTION \
+                     game_node_is_uuid_v7(UUID), \
                      game_node_lock_current_registration(UUID, NUMERIC), \
                      game_runtime_scope_assignment_history_valid() TO {writer_role}"
                 ),
