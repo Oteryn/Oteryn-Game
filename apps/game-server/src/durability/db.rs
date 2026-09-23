@@ -992,6 +992,13 @@ impl DurabilityRoot {
         Arc::as_ptr(&self.maintenance) as usize
     }
 
+    /// Liveness of this root's identity; it expires only when every clone of
+    /// the root is gone, so a reused identity is never mistaken for this root.
+    pub(crate) fn root_liveness(&self) -> std::sync::Weak<dyn std::any::Any + Send + Sync> {
+        let liveness: Arc<dyn std::any::Any + Send + Sync> = self.maintenance.clone();
+        Arc::downgrade(&liveness)
+    }
+
     pub(crate) fn try_issue_semantic_pass(&self) -> Result<IssuedSemanticPass, DurabilityError> {
         let holder = self.try_acquire_ready()?;
         Ok(IssuedSemanticPass {

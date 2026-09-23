@@ -627,6 +627,8 @@ pub enum AssignmentOutcome {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReconcileOutcome {
     Committed(AssignmentReceipt),
+    /// The operation key committed a different exact command.
+    Conflict,
     Absent,
 }
 
@@ -798,6 +800,17 @@ fn writer_registry() -> &'static WriterRegistry {
     REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// Process-lifetime root-to-registration binding. It is never released when
+/// handles drop, so a root's durable slot custody cannot be bypassed by
+/// opening another registration name after the last handle is gone.
+type WriterBindings = Mutex<HashMap<usize, (RootLiveness, Arc<str>)>>;
+type RootLiveness = Weak<dyn std::any::Any + Send + Sync>;
+
+fn writer_bindings() -> &'static WriterBindings {
+    static BINDINGS: OnceLock<WriterBindings> = OnceLock::new();
+    BINDINGS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 /// Single logical assignment-writer registration with the NASG queue and one
 /// end-to-end in-flight slot whose exact binding is durably checkpointed.
 #[derive(Clone)]
@@ -839,6 +852,20 @@ impl RuntimeScopeAssignmentWriter {
             return Err(AssignmentError::InvalidInput);
         }
         let registration: Arc<str> = Arc::from(writer_registration);
+        {
+            // NASG accounting is per assignment-writer process: one writer
+            // registration per root for the root's lifetime.
+            let mut bindings = writer_bindings()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            bindings.retain(|_, (liveness, _)| liveness.strong_count() > 0);
+            let (_, bound) = bindings
+                .entry(root.root_identity())
+                .or_insert_with(|| (root.root_liveness(), registration.clone()));
+            if **bound != *registration {
+                return Err(AssignmentError::Unsupported);
+            }
+        }
         let restore = registration.clone();
         let occupied = root
             .try_issue_semantic_pass()?
@@ -871,14 +898,6 @@ impl RuntimeScopeAssignmentWriter {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             registry.retain(|_, shared| shared.strong_count() > 0);
-            // NASG accounting is per assignment-writer process: one live
-            // writer registration per root, never a second independent queue.
-            if registry
-                .keys()
-                .any(|(root_id, name)| *root_id == root.root_identity() && *name != registration)
-            {
-                return Err(AssignmentError::Unsupported);
-            }
             let key = (root.root_identity(), registration.clone());
             match registry.get(&key).and_then(Weak::upgrade) {
                 Some(shared) => {
@@ -942,10 +961,17 @@ impl RuntimeScopeAssignmentWriter {
         }
     }
 
-    /// Authoritative reconciliation of one exact operation identity under the
-    /// slot lock. An occupied matching slot proves the operation did not commit.
-    pub async fn reconcile(&self, key: OperationKey) -> Result<ReconcileOutcome, AssignmentError> {
-        let _permit = self.admit(OPERATION_KEY_BYTES, Some(key)).await?;
+    /// Authoritative reconciliation of one exact operation (key and canonical
+    /// command) under the slot lock. The outcome is a deterministic function of
+    /// the immutable receipt and the caller's exact command, so a lost response
+    /// can be reconciled again with the same answer after custody is cleared.
+    pub async fn reconcile(
+        &self,
+        request: &AssignmentRequest,
+    ) -> Result<ReconcileOutcome, AssignmentError> {
+        let command = request.encode()?;
+        let key = request.operation_key;
+        let _permit = self.admit(command.len(), Some(key)).await?;
         let registration = self.registration.clone();
         let pass = self.root.try_issue_semantic_pass()?;
         let reconciled = tokio::time::timeout(
@@ -955,32 +981,25 @@ impl RuntimeScopeAssignmentWriter {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     lock_admission_relations(&mut tx).await?;
                     let slot = lock_slot(&mut tx, &registration).await?;
-                    match slot {
-                        Some((slot_key, slot_command)) if slot_key == key.0.as_slice() => {
-                            // A restored checkpoint can outlive its commit: the
-                            // immutable receipt decides before the slot does.
-                            // A receipt bound to a different command keeps the
-                            // slot as custody evidence and changes nothing.
-                            let outcome = match load_receipt(&mut tx, &key).await? {
-                                Some((receipt, stored)) if stored == slot_command => {
-                                    ReconcileOutcome::Committed(receipt)
-                                }
-                                Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
-                                None => ReconcileOutcome::Absent,
-                            };
-                            clear_slot(&mut tx, &registration).await?;
-                            commit_semantic_transaction(tx, deadline).await?;
-                            return Ok(Ok(outcome));
-                        }
+                    match &slot {
+                        // Custody answers only for its own exact binding.
+                        Some((slot_key, slot_command))
+                            if slot_key == key.0.as_slice() && *slot_command == command => {}
                         Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
                         None => {}
                     }
-                    let receipt = load_receipt(&mut tx, &key).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(match receipt {
-                        Some((receipt, _)) => ReconcileOutcome::Committed(receipt),
+                    let outcome = match load_receipt(&mut tx, &key).await? {
+                        Some((receipt, stored)) if stored == command => {
+                            ReconcileOutcome::Committed(receipt)
+                        }
+                        Some(_) => ReconcileOutcome::Conflict,
                         None => ReconcileOutcome::Absent,
-                    }))
+                    };
+                    if slot.is_some() {
+                        clear_slot(&mut tx, &registration).await?;
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(outcome))
                 })
             }),
         )

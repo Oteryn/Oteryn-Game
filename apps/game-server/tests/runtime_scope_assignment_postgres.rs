@@ -1321,7 +1321,7 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
                 Err(AssignmentError::ReconcileRequired)
             ));
             assert!(matches!(
-                writer.reconcile(key(2)).await,
+                writer.reconcile(&blocked).await,
                 Err(AssignmentError::ReconcileRequired)
             ));
             // A restarted writer restores the same slot custody.
@@ -1337,7 +1337,13 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
             // Under the slot lock an occupied matching slot proves non-commit.
             assert_eq!(
                 restarted
-                    .reconcile(key(1))
+                    .reconcile(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target
+                        }
+                    )?)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -1359,7 +1365,13 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
             assert_eq!(retried.assignment.source_revision, 1);
             assert_eq!(
                 restarted
-                    .reconcile(key(1))
+                    .reconcile(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target
+                        }
+                    )?)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Committed(retried)
@@ -1518,7 +1530,7 @@ fn rollback_after_each_tentative_effect_and_lost_commit_reconcile_exactly() -> T
                 );
                 assert_eq!(
                     writer
-                        .reconcile(key(1))
+                        .reconcile(&command)
                         .await
                         .map_err(|e| format!("{e:?}"))?,
                     ReconcileOutcome::Absent
@@ -1551,7 +1563,7 @@ fn rollback_after_each_tentative_effect_and_lost_commit_reconcile_exactly() -> T
             ensure_ready(&root).await?;
             assert_eq!(
                 writer
-                    .reconcile(key(1))
+                    .reconcile(&command)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -1561,7 +1573,7 @@ fn rollback_after_each_tentative_effect_and_lost_commit_reconcile_exactly() -> T
             let receipt = committed(writer.submit(&command).await)?;
             assert_eq!(
                 writer
-                    .reconcile(key(1))
+                    .reconcile(&command)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Committed(receipt.clone())
@@ -1672,7 +1684,7 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
             ensure_ready(&root).await?;
             assert_eq!(
                 writer
-                    .reconcile(key(2))
+                    .reconcile(&replace)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -2151,7 +2163,7 @@ fn history_trailing_the_high_water_fails_closed() -> TestResult {
             ensure_ready(&root).await?;
             assert_eq!(
                 writer
-                    .reconcile(key(3))
+                    .reconcile(&replace)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -2466,7 +2478,13 @@ fn duplicate_writer_handles_share_one_nasg_queue() -> TestResult {
             ensure_ready(&root).await?;
             assert_eq!(
                 second_handle
-                    .reconcile(key(1))
+                    .reconcile(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target
+                        }
+                    )?)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -2657,21 +2675,20 @@ fn restored_guard_behind_latest_fence_and_stale_row_fail_closed() -> TestResult 
                 runtime_guard_publication_revision: Some(2),
                 ..second.predecessor()
             };
-            let outcome = writer
-                .submit(&request(
-                    3,
-                    AssignmentCommand::Revoke {
-                        scope: channel,
-                        predecessor: stale,
-                    },
-                )?)
-                .await;
+            let revoke = request(
+                3,
+                AssignmentCommand::Revoke {
+                    scope: channel,
+                    predecessor: stale,
+                },
+            )?;
+            let outcome = writer.submit(&revoke).await;
             assert!(
                 !matches!(outcome, Ok(AssignmentOutcome::Committed(_))),
                 "revoke committed across a missing guard fence: {outcome:?}"
             );
             ensure_ready(&root).await?;
-            let _ = writer.reconcile(key(3)).await;
+            let _ = writer.reconcile(&revoke).await;
             assert_eq!(high_water(&pool).await?.0, "2");
 
             // Also roll the assignment row back to the first decision: guard and
@@ -2777,24 +2794,23 @@ fn dropped_or_substituted_fence_history_fails_closed() -> TestResult {
             }
             restore.commit().await?;
             assert!(root.read_runtime_scope_predecessor(channel).await.is_err());
-            let outcome = writer
-                .submit(&request(
-                    2,
-                    AssignmentCommand::Revoke {
-                        scope: channel,
-                        predecessor: AssignmentPredecessor {
-                            runtime_guard_publication_revision: Some(3),
-                            ..first.predecessor()
-                        },
+            let revoke = request(
+                2,
+                AssignmentCommand::Revoke {
+                    scope: channel,
+                    predecessor: AssignmentPredecessor {
+                        runtime_guard_publication_revision: Some(3),
+                        ..first.predecessor()
                     },
-                )?)
-                .await;
+                },
+            )?;
+            let outcome = writer.submit(&revoke).await;
             assert!(
                 !matches!(outcome, Ok(AssignmentOutcome::Committed(_))),
                 "revoke committed across a missing fence revision: {outcome:?}"
             );
             ensure_ready(&root).await?;
-            let _ = writer.reconcile(key(2)).await;
+            let _ = writer.reconcile(&revoke).await;
             assert_eq!(high_water(&pool).await?.0, "1");
 
             // Restoring the exact fence row restores the proof.
@@ -2882,13 +2898,15 @@ fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
             .await?;
             assert_eq!(
                 writer
-                    .reconcile(key(1))
+                    .reconcile(&assign)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
-                ReconcileOutcome::Committed(receipt)
+                ReconcileOutcome::Committed(receipt.clone())
             );
             // A restored slot whose command differs from the retained receipt
-            // for the same operation key keeps its custody evidence.
+            // for the same operation key: a caller asking about another command
+            // cannot clear that custody; the slot's own exact command reconciles
+            // deterministically to a conflict, again after custody is cleared.
             let foreign = request(
                 1,
                 AssignmentCommand::Assign {
@@ -2904,23 +2922,62 @@ fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
             .bind(foreign.encode().map_err(|e| format!("{e:?}"))?)
             .execute(&pool)
             .await?;
+            assert!(matches!(
+                writer.reconcile(&assign).await,
+                Err(AssignmentError::ReconcileRequired)
+            ));
+            let retained: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT operation_key FROM game_runtime_scope_assignment_slots WHERE writer_registration = 'writer-a'",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(retained.as_deref(), Some(key(1).as_bytes().as_slice()));
             for _ in 0..2 {
-                assert!(matches!(
-                    writer.reconcile(key(1)).await,
-                    Err(AssignmentError::ReconcileRequired)
-                ));
-                let retained: Option<Vec<u8>> = sqlx::query_scalar(
-                    "SELECT operation_key FROM game_runtime_scope_assignment_slots WHERE writer_registration = 'writer-a'",
-                )
-                .fetch_one(&pool)
-                .await?;
-                assert_eq!(retained.as_deref(), Some(key(1).as_bytes().as_slice()));
+                assert_eq!(
+                    writer
+                        .reconcile(&foreign)
+                        .await
+                        .map_err(|e| format!("{e:?}"))?,
+                    ReconcileOutcome::Conflict
+                );
             }
-            // One assignment-writer registration per process root.
+            // A changed-command replay is a conflict whose lost response still
+            // reconciles to that conflict; the original command stays committed.
+            assert_eq!(
+                writer
+                    .submit(&foreign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict)
+            );
+            assert_eq!(
+                writer
+                    .reconcile(&foreign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Conflict
+            );
+            assert_eq!(
+                writer
+                    .reconcile(&assign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Committed(receipt)
+            );
+            // One assignment-writer registration per process root, for the
+            // root's lifetime: dropping every handle does not release it.
             assert!(matches!(
                 RuntimeScopeAssignmentWriter::open(root.clone(), "writer-b").await,
                 Err(AssignmentError::Unsupported)
             ));
+            drop(writer);
+            assert!(matches!(
+                RuntimeScopeAssignmentWriter::open(root.clone(), "writer-b").await,
+                Err(AssignmentError::Unsupported)
+            ));
+            RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
             pool.close().await;
             Ok(())
         })
