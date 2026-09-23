@@ -380,11 +380,16 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *previous)
         .await?;
-    sqlx::query(
-        "UPDATE game_character_audit_outbox SET server_build_id = 'oteryn-game-server/0.0.0-previous'",
-    )
-    .execute(&mut *previous)
-    .await?;
+    for table in [
+        "game_character_audit_outbox",
+        "game_character_operation_receipts",
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "UPDATE {table} SET server_build_id = 'oteryn-game-server/0.0.0-previous'"
+        )))
+        .execute(&mut *previous)
+        .await?;
+    }
     previous.commit().await?;
     assert!(
         sqlx::query("UPDATE game_character_audit_outbox SET server_build_id = 'rewritten'")
@@ -401,6 +406,29 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         "oteryn-game-server/0.0.0-previous"
     );
     let pending = redelivered;
+    // Substituting the retained envelope's build alone contradicts the durable
+    // receipt binding, so authority is refused until it is repaired.
+    let mut substitute = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *substitute)
+        .await?;
+    sqlx::query("UPDATE game_character_audit_outbox SET server_build_id = 'substituted-build'")
+        .execute(&mut *substitute)
+        .await?;
+    substitute.commit().await?;
+    let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    assert!(root.open_character_authority(&sealed).await.is_err());
+    drop(sealed);
+    let mut repair = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query(
+        "UPDATE game_character_audit_outbox SET server_build_id = 'oteryn-game-server/0.0.0-previous'",
+    )
+    .execute(&mut *repair)
+    .await?;
+    repair.commit().await?;
     assert_eq!(
         root.pending_character_audit(&authority, 8)
             .await
@@ -585,7 +613,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .bind(second.character_id.as_bytes().as_slice())
         .execute(&mut *repair)
         .await?;
-    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid)")
+    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid, 'orphan-build')")
         .bind(id(25).as_slice())
         .bind(id(36).as_slice())
         .bind(id(37).as_slice())
