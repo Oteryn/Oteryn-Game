@@ -687,10 +687,7 @@ fn modern_item_authoring_and_shop_relations_round_trip_without_runtime_lowering(
     let reference = parsed
         .lower_reference_source()
         .expect("reference projection");
-    assert!(reference
-        .definitions
-        .iter()
-        .any(|definition| definition.definition.key().as_str() == "oteryn:reference.item.weapon-alpha"));
+    assert_eq!(reference.definitions.len(), 5);
 }
 
 #[test]
