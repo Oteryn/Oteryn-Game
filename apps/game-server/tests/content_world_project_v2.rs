@@ -615,6 +615,11 @@ fn item_candidate() -> ProjectV2Draft {
             edible: true,
             regeneration_seconds: Some(60),
         }),
+        use_observation: Some(ProjectV2ItemUseObservation {
+            damage: Some(ProjectV2ItemDamageObservation::Range { min: 60, max: 80 }),
+            damage_type: Some("Energy".into()),
+            mana_cost: Some(13),
+        }),
         lifecycle: Some(ProjectV2ItemLifecycle {
             enchantable: Some(true),
             destructible: Some(false),
@@ -657,6 +662,12 @@ fn modern_item_authoring_and_shop_relations_round_trip_without_runtime_lowering(
     let item = &state.item_authoring[0];
     assert_eq!(item.forge.expect("forge").classification, 4);
     assert_eq!(item.forge.expect("forge").max_tier, 10);
+    assert_eq!(
+        item.use_observation
+            .as_ref()
+            .and_then(|value| value.mana_cost),
+        Some(13)
+    );
     assert_eq!(
         item.proficiency
             .as_ref()
