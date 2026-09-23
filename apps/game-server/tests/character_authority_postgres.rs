@@ -327,9 +327,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         root.bootstrap_character(&authority, &node, invalid).await,
         Err(CharacterAuthorityError::Rejected)
     ));
-    let decoded = audit::CharacterAuthorityBootstrappedV1::decode(
-        first.payload.as_deref().ok_or("payload retained")?,
-    )?;
+    let decoded = audit::CharacterAuthorityBootstrappedV1::decode(first.payload.as_slice())?;
     assert_eq!(decoded.account_id, id(31).to_vec());
     assert_eq!(decoded.character_id, first.character_id.as_bytes().to_vec());
     for (table, expected) in [
@@ -373,7 +371,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         pending[0].server_build_id,
         durability::character_authority::SERVER_BUILD_ID
     );
-    assert_eq!(Some(&pending[0].payload), first.payload.as_ref());
+    assert_eq!(pending[0].payload, first.payload);
     // A pending event keeps its originating build across an upgrade: the
     // publisher reads the stored value, never the current process's build.
     let mut previous = pool.begin().await?;
@@ -406,6 +404,25 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         "oteryn-game-server/0.0.0-previous"
     );
     let pending = redelivered;
+    // Shifting the envelope's occurrence time (and its retention deadline)
+    // contradicts the durable receipt, so authority is refused.
+    for shift in ["- 1000", "+ 1000"] {
+        let mut shifted = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *shifted)
+            .await?;
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "UPDATE game_character_audit_outbox SET occurred_at = occurred_at {shift}, expires_at = expires_at {shift}"
+        )))
+        .execute(&mut *shifted)
+        .await?;
+        shifted.commit().await?;
+        if shift == "- 1000" {
+            let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+            assert!(root.open_character_authority(&sealed).await.is_err());
+            drop(sealed);
+        }
+    }
     // Substituting the retained envelope's build alone contradicts the durable
     // receipt binding, so authority is refused until it is repaired.
     let mut substitute = pool.begin().await?;
@@ -475,6 +492,11 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     sqlx::query("UPDATE game_character_audit_outbox SET occurred_at = occurred_at - 7776000001, expires_at = expires_at - 7776000001, published_at = occurred_at - 7776000001")
         .execute(&mut *aged)
         .await?;
+    sqlx::query(
+        "UPDATE game_character_operation_receipts SET occurred_at = occurred_at - 7776000001",
+    )
+    .execute(&mut *aged)
+    .await?;
     aged.commit().await?;
 
     // An explicit legal hold blocks ordinary expiry until its single release.
@@ -560,14 +582,15 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(current.event_id, first.event_id);
-    assert_eq!(current.payload, None);
+    // Payload bytes are re-derived from retained authority after expiry.
+    assert_eq!(current.payload, first.payload);
     let replayed = root
         .bootstrap_character(&authority, &node, command(21, 31)?)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replayed.character_id, first.character_id);
     assert_eq!(replayed.event_id, first.event_id);
-    assert_eq!(replayed.payload, None);
+    assert_eq!(replayed.payload, first.payload);
     let columns = count(
         &pool,
         "SELECT count(*) FROM information_schema.columns WHERE table_name = 'game_character_operation_receipts' AND column_name = 'payload'",
@@ -613,7 +636,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .bind(second.character_id.as_bytes().as_slice())
         .execute(&mut *repair)
         .await?;
-    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid, 'orphan-build')")
+    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id, occurred_at) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid, 'orphan-build', 1)")
         .bind(id(25).as_slice())
         .bind(id(36).as_slice())
         .bind(id(37).as_slice())
