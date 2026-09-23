@@ -129,11 +129,13 @@ fn typed_family_linked(
     Ok((linked, selected))
 }
 
-
 fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>>
 {
     let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
-    assert_eq!(promoted.promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(
+        promoted.promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+    );
     assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
     let canonical = CanonicalProjectDocuments::from_draft(
         ProjectDraft {
