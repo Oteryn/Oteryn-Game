@@ -6,7 +6,11 @@
 
 pub mod admission_authority_guards;
 mod admission_journal;
+// Legacy PostgreSQL test crates path-load this module behind their own crate alias. The
+// production library target is the canonical compilation boundary for Character authority.
+#[cfg(not(test))]
 pub mod character_authority;
+#[cfg(not(test))]
 pub mod character_authority_audit;
 mod db;
 pub mod fresh_admission;

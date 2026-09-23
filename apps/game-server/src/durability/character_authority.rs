@@ -7,12 +7,6 @@ use super::character_authority_audit::{
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
 use super::{DurabilityError, DurabilityRoot};
-#[cfg(test)]
-#[path = "../domain/mod.rs"]
-mod character_domain;
-#[cfg(test)]
-use character_domain::{AccountId, CharacterId, CharacterRevision, WorldId};
-#[cfg(not(test))]
 use oteryn_game_server::domain::{AccountId, CharacterId, CharacterRevision, WorldId};
 use sqlx::Row;
 use std::sync::atomic::{AtomicU64, Ordering};

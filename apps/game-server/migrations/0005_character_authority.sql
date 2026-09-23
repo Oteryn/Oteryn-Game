@@ -55,4 +55,3 @@ END; $$;
 CREATE TRIGGER game_character_root_immutable BEFORE UPDATE OR DELETE ON game_character_roots FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 CREATE TRIGGER game_character_receipt_immutable BEFORE UPDATE OR DELETE ON game_character_operation_receipts FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 CREATE TRIGGER game_character_audit_immutable BEFORE UPDATE OR DELETE ON game_character_audit_outbox FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
-
