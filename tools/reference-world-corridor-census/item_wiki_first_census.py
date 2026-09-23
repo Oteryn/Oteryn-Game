@@ -159,10 +159,7 @@ def normalize_page(
     if len(encoded) > predecessor.MAX_WIKITEXT_BYTES:
         raise CensusError(f"WIKITEXT_MAX_PLUS_ONE:{len(encoded)}")
     extracted = _extract_infobox(wikitext)
-    if not extracted["infobox_present"]:
-        raise CensusError(
-            f"DISCOVERED_PAGE_WITHOUT_INFOBOX:{meta['page_id']}:{meta['title']}"
-        )
+    infobox_present = extracted["infobox_present"] is True
     return {
         "source": SOURCE_ID,
         "source_role": SOURCE_ROLE,
@@ -172,9 +169,10 @@ def normalize_page(
         "revision_timestamp": meta["revision_timestamp"],
         "retrieval_timestamp": retrieval_timestamp,
         "source_digest": sha256_bytes(encoded),
+        "source_shape": "INFOBOX_ITEM" if infobox_present else "NO_INFOBOX_ITEM",
         "normalized_fields": extracted["mapped"],
         "unmapped_infobox_fields": extracted["unmapped"],
-        "infobox_present": True,
+        "infobox_present": infobox_present,
     }
 
 
@@ -221,8 +219,14 @@ def collect_discovered_pages(
             if page_id in cached_by_page:
                 record = dict(cached_by_page[page_id])
                 record["retrieval_timestamp"] = retrieval_timestamp
-                if not record.get("infobox_present"):
-                    raise CensusError(f"DISCOVERED_CACHE_WITHOUT_INFOBOX:{page_id}")
+                expected_shape = (
+                    "INFOBOX_ITEM"
+                    if record.get("infobox_present") is True
+                    else "NO_INFOBOX_ITEM"
+                )
+                if record.get("source_shape") not in (None, expected_shape):
+                    raise CensusError(f"DISCOVERED_CACHE_SOURCE_SHAPE_INVALID:{page_id}")
+                record["source_shape"] = expected_shape
             else:
                 record = normalize_page(
                     meta, content_by_page[page_id], retrieval_timestamp
@@ -257,6 +261,7 @@ def compile_census(
     field_keys: Counter[str] = Counter()
     mapped_keys: Counter[str] = Counter()
     unmapped_keys: Counter[str] = Counter()
+    source_shapes: Counter[str] = Counter()
     stable_pages: list[dict[str, Any]] = []
     for page_id in sorted(
         page_by_id,
@@ -269,8 +274,12 @@ def compile_census(
         page = dict(page_by_id[page_id])
         if str(page.get("title")) != discovered_by_id[page_id]:
             raise CensusError("CENSUS_TITLE_DRIFT")
-        if page.get("infobox_present") is not True:
-            raise CensusError("CENSUS_INFOBOX_MISSING")
+        infobox_present = page.get("infobox_present")
+        if not isinstance(infobox_present, bool):
+            raise CensusError("CENSUS_INFOBOX_STATE_INVALID")
+        expected_shape = "INFOBOX_ITEM" if infobox_present else "NO_INFOBOX_ITEM"
+        if page.get("source_shape") != expected_shape:
+            raise CensusError("CENSUS_SOURCE_SHAPE_INVALID")
         mapped = page.get("normalized_fields")
         unmapped = page.get("unmapped_infobox_fields")
         if not isinstance(mapped, dict) or not isinstance(unmapped, dict):
@@ -282,6 +291,7 @@ def compile_census(
         unmapped_keys.update(unmapped.keys())
         field_keys.update(mapped.keys())
         field_keys.update(unmapped.keys())
+        source_shapes.update([expected_shape])
         page.pop("retrieval_timestamp", None)
         stable_pages.append(page)
 
@@ -312,9 +322,12 @@ def compile_census(
         "counts": {
             "discovered_pages": len(discovered),
             "fetched_pages": len(stable_pages),
-            "pages_with_infobox": sum(
-                1 for page in stable_pages if page["infobox_present"]
-            ),
+            "pages_with_infobox": source_shapes["INFOBOX_ITEM"],
+            "pages_without_infobox": source_shapes["NO_INFOBOX_ITEM"],
+            "source_shapes": {
+                "INFOBOX_ITEM": source_shapes["INFOBOX_ITEM"],
+                "NO_INFOBOX_ITEM": source_shapes["NO_INFOBOX_ITEM"],
+            },
             "distinct_infobox_fields": len(field_keys),
             "mapped_field_occurrences": sum(mapped_keys.values()),
             "unmapped_field_occurrences": sum(unmapped_keys.values()),
@@ -372,9 +385,11 @@ def build_manifest(
         "invariants": {
             "wiki_first_discovery": True,
             "starts_from_crystal_38157": False,
-            "all_discovered_pages_have_infobox": (
-                counts["discovered_pages"] == counts["pages_with_infobox"]
+            "source_shape_partition_complete": (
+                counts["discovered_pages"]
+                == counts["pages_with_infobox"] + counts["pages_without_infobox"]
             ),
+            "no_infobox_member_dropped": True,
             "identity_resolution_performed": False,
             "semantic_promotion_performed": False,
             "raw_long_form_prose_collected": False,
@@ -383,8 +398,9 @@ def build_manifest(
         "limitations": [
             (
                 "This generation inventories direct namespace-0 members of "
-                "TibiaWiki Categoria:Itens; every admitted member must still "
-                "parse as an Item infobox page."
+                "TibiaWiki Categoria:Itens. Members without the base Item "
+                "infobox remain explicit NO_INFOBOX_ITEM source shapes rather "
+                "than being dropped or interpreted from long-form prose."
             ),
             (
                 "TibiaWiki is structured source evidence, not Reference "
