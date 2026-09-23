@@ -743,7 +743,6 @@ fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
     protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("protected B1 full Item family")
 }
 
-
 fn promoted_family_import() -> ProtectedCw2B1PromotedItemFamilyImport {
     protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)
         .expect("protected B1 promoted Item family")
@@ -800,15 +799,18 @@ fn count_promoted_atoms(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_materialization_drift() {
+fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_materialization_drift()
+{
     let base = full_family_import();
     let promoted = promoted_family_import();
 
-    assert_eq!(promoted.promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(
+        promoted.promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+    );
     assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
     assert_eq!(
-        promoted.family.allocation_digest_sha256,
-        base.allocation_digest_sha256,
+        promoted.family.allocation_digest_sha256, base.allocation_digest_sha256,
         "semantic promotion must not change the protected identity allocation"
     );
     assert_eq!(promoted.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -826,10 +828,7 @@ fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_mat
             else {
                 panic!("full family contains only Items");
             };
-            (
-                identity.key.clone(),
-                (*materializable, *stack_class),
-            )
+            (identity.key.clone(), (*materializable, *stack_class))
         })
         .collect::<BTreeMap<_, _>>();
 
