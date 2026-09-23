@@ -86,7 +86,8 @@ mod runtime_scope_assignment_linkage {
         let _ = NodeRegistrationFact::new;
         let _ = NodeRegistrationFact::node_id;
         let _ = NodeRegistrationFact::registration_revision;
-        let _ = RuntimeScopeAssignment::predecessor;
+        let _ = super::runtime_scope_assignment::AssignmentReceipt::predecessor;
+        let _ = DurabilityRoot::read_runtime_scope_predecessor;
         let _ = AssignmentRequest::encode;
         let _ = DurabilityRoot::issue_node_bootstrap_authorization;
         let _ = DurabilityRoot::register_node_incarnation;
@@ -124,6 +125,7 @@ mod runtime_scope_assignment_linkage {
         let predecessor = AssignmentPredecessor {
             ownership_generation: 1,
             source_revision: 1,
+            runtime_guard_publication_revision: Some(1),
         };
         let Ok(actor) = ControlActor::new("operator") else {
             return;
