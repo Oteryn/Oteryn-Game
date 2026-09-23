@@ -4,7 +4,7 @@
 task_id: OTV2-20260922-control-plane-simplification-745
 title: Simplify candidate qualification and coordinator authority
 mode: GOVERNANCE
-status: validating
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/control-plane-simplification-745-phase2
@@ -73,7 +73,7 @@ No ruleset/protection weakening, direct merge/auto-merge substitute, product/run
 ```yaml
 last_progress: >-
   Phase 2 implementation and first exact-head qualification/review are green; governed MQ exposed one real task-packet merge conflict after protected-main movement, and this approved normal merge-up reconciles only that conflict while preserving the four disjoint material control-plane paths
-status: validating
+status: waiting
 branch: ci/control-plane-simplification-745-phase2
 head_sha: null
 pr: null
@@ -93,6 +93,6 @@ repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: commit and push the non-force main merge-up, freeze the successor exact head, rerun exact-head CI and independent review, submit through governed Merge Queue, require real merge_group game-gate SUCCESS and protected-main readback, then archive this task and close Issue #745
+blocker: PROTECTED_INTEGRATION_PENDING
+next_action: freeze the reconciled successor exact head, rerun exact-head CI and independent review, submit through governed Merge Queue, require real merge_group game-gate SUCCESS and protected-main readback, then archive this task and close Issue #745
 ```
