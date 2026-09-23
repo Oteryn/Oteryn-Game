@@ -437,6 +437,31 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
             .await
             .is_err()
     );
+    // TRUNCATE bypasses row triggers; every Character relation refuses it.
+    for table in [
+        "game_character_audit_legal_holds",
+        "game_character_audit_outbox",
+        "game_character_operation_receipts",
+        "game_character_roots",
+        "game_character_account_guards",
+        "game_character_recovery_admissions",
+    ] {
+        assert!(
+            sqlx::query(sqlx::AssertSqlSafe(format!("TRUNCATE {table} CASCADE")))
+                .execute(&pool)
+                .await
+                .is_err(),
+            "{table}"
+        );
+    }
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_audit_legal_holds WHERE released_at IS NULL"
+        )
+        .await?,
+        1
+    );
     root.release_character_audit_legal_hold(&fence, hold, "security:bob")
         .await
         .map_err(|e| format!("{e:?}"))?;

@@ -135,6 +135,24 @@ END; $$;
 CREATE TRIGGER game_character_audit_hold_guard BEFORE UPDATE OR DELETE ON game_character_audit_legal_holds
     FOR EACH ROW EXECUTE FUNCTION game_character_audit_hold_guard();
 
+-- Row triggers do not fire for TRUNCATE; refuse it on every Character relation
+-- so no statement can erase authority, receipts, unexpired audit or holds.
+CREATE FUNCTION game_character_reject_truncate() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    RAISE EXCEPTION 'Character authority relations cannot be truncated' USING ERRCODE = '23514';
+END; $$;
+CREATE TRIGGER game_character_recovery_admissions_no_truncate BEFORE TRUNCATE ON game_character_recovery_admissions
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_account_guards_no_truncate BEFORE TRUNCATE ON game_character_account_guards
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_roots_no_truncate BEFORE TRUNCATE ON game_character_roots
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_audit_outbox_no_truncate BEFORE TRUNCATE ON game_character_audit_outbox
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_operation_receipts_no_truncate BEFORE TRUNCATE ON game_character_operation_receipts
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_audit_legal_holds_no_truncate BEFORE TRUNCATE ON game_character_audit_legal_holds
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+
 REVOKE ALL ON TABLE
     game_character_recovery_admissions,
     game_character_account_guards,
@@ -147,5 +165,6 @@ REVOKE ALL ON FUNCTION
     game_character_uuid_v7(),
     game_character_immutable(),
     game_character_audit_guard(),
-    game_character_audit_hold_guard()
+    game_character_audit_hold_guard(),
+    game_character_reject_truncate()
 FROM PUBLIC;
