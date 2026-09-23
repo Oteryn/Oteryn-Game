@@ -343,7 +343,7 @@ pub struct ProjectV2ExactRatio {
     pub denominator: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "value", deny_unknown_fields)]
 pub enum ProjectV2AugmentValue {
     Boolean(bool),
@@ -987,12 +987,12 @@ fn validate_v2_state(
                 validate_v2_source_text("v2 Item tertiary taxonomy", value, limits)?;
             }
         }
-        if let Some(forge) = item.forge {
-            if forge.classification == 0 || forge.max_tier == 0 {
-                return Err(ProjectError::InvalidProject(
-                    "v2 Item Forge profile requires nonzero class and max tier",
-                ));
-            }
+        if let Some(forge) = item.forge
+            && (forge.classification == 0 || forge.max_tier == 0)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item Forge profile requires nonzero class and max tier",
+            ));
         }
         if let Some(ability) = &item.use_ability {
             if ability.family != ProjectV2Family::Ability {
