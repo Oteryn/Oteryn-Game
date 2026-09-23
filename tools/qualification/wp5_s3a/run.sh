@@ -111,6 +111,12 @@ for image in \
   [[ "$arch" == linux/amd64 ]] || { echo "S3_RESULT=BLOCKED reason=image_architecture image=${image%%@*}"; exit 2; }
 done
 evidence 'images=immutable linux_amd64=true php=8.5.6 mariadb=11.8.8 nginx=1.29 composer=2.8'
+# The composed topology is executed by the runner's Docker Engine and Compose;
+# record their exact versions with the result.
+docker_engine_version="$(docker version --format '{{.Server.Version}}')"
+docker_compose_version="$(docker compose version --short)"
+[[ -n "$docker_engine_version" && -n "$docker_compose_version" ]]
+evidence "docker_engine=$docker_engine_version docker_compose=$docker_compose_version"
 
 compose up --detach --wait db platform nginx
 witness_owner="$(compose exec --no-TTY platform stat -c '%U:%G' /var/lib/oteryn-witness)"
@@ -300,11 +306,19 @@ if revision_relation not in {"positive", "at_least", "greater"}:
     raise SystemExit("unknown source revision relation")
 if int(response["clock_uncertainty_seconds"]) > 5:
     raise SystemExit("observed trust response exceeds clock uncertainty bound")
-padding = "=" * (-len(response["public_key"]) % 4)
+# The Game decoder accepts only the exact 43-character unpadded URL-safe
+# encoding of 32 bytes (URL_SAFE_NO_PAD, canonical trailing bits).
+encoded_key = response["public_key"]
+if (not isinstance(encoded_key, str) or len(encoded_key) != 43
+        or any(ch not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+               for ch in encoded_key)):
+    raise SystemExit("observed trust response has malformed key material")
 try:
-    public_key = base64.urlsafe_b64decode(response["public_key"] + padding)
+    public_key = base64.urlsafe_b64decode(encoded_key + "=")
 except Exception as error:
     raise SystemExit("observed trust response has malformed key material") from error
+if len(public_key) != 32 or base64.urlsafe_b64encode(public_key).decode().rstrip("=") != encoded_key:
+    raise SystemExit("observed trust response has non-canonical key material")
 if public_key != bytes([int(expected_key_byte)]) * 32:
     raise SystemExit("observed trust response has wrong key material")
 PY
