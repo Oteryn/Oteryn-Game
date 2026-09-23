@@ -1432,6 +1432,41 @@ async fn intent_matrix(database: &Database) -> TestResult {
         savepoint.rollback().await?;
     }
     unprivileged.rollback().await?;
+    // Deployment model: an operator role holding only EXECUTE acts through the
+    // SECURITY DEFINER procedures but cannot write the tables directly, and
+    // the revision grammar holds at the SQL boundary.
+    let mut operator = pool.begin().await?;
+    sqlx::query("CREATE ROLE character_operator_probe NOLOGIN")
+        .execute(&mut *operator)
+        .await?;
+    sqlx::query("GRANT EXECUTE ON FUNCTION game_character_configure_interpretation(text, text, text, text), game_character_place_legal_hold(uuid, text, text), game_character_release_legal_hold(uuid, text) TO character_operator_probe")
+        .execute(&mut *operator)
+        .await?;
+    sqlx::query("SET LOCAL ROLE character_operator_probe")
+        .execute(&mut *operator)
+        .await?;
+    let revision: i64 = sqlx::query_scalar(
+        "SELECT game_character_configure_interpretation('profile-9', 'ruleset-9', 'content-9', 'starter-9')",
+    )
+    .fetch_one(&mut *operator)
+    .await?;
+    assert_eq!(revision, 3, "appended after the two committed revisions");
+    for statement in [
+        "INSERT INTO game_character_interpretations VALUES (9, 'p', 'r', 'c', 's', 0)",
+        "SELECT game_character_configure_interpretation('-profile', 'r', 'c', 's')",
+        "SELECT game_character_configure_interpretation('profilé', 'r', 'c', 's')",
+    ] {
+        let mut savepoint = operator.begin().await?;
+        assert!(
+            sqlx::query(statement)
+                .execute(&mut *savepoint)
+                .await
+                .is_err(),
+            "{statement}"
+        );
+        savepoint.rollback().await?;
+    }
+    operator.rollback().await?;
     assert!(
         sqlx::query("UPDATE game_character_interpretations SET content_revision = 'content-3'")
             .execute(&pool)

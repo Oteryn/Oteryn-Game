@@ -107,10 +107,11 @@ CREATE TABLE game_character_operation_receipts (
 -- revisions are requested context and must equal the current one.
 CREATE TABLE game_character_interpretations (
     interpretation_revision BIGINT PRIMARY KEY CHECK (interpretation_revision > 0),
-    profile_revision TEXT NOT NULL CHECK (octet_length(profile_revision) BETWEEN 1 AND 128),
-    ruleset_revision TEXT NOT NULL CHECK (octet_length(ruleset_revision) BETWEEN 1 AND 128),
-    content_revision TEXT NOT NULL CHECK (octet_length(content_revision) BETWEEN 1 AND 128),
-    starter_template_revision TEXT NOT NULL CHECK (octet_length(starter_template_revision) BETWEEN 1 AND 128),
+    -- Same grammar as CharacterInterpretationV1, enforced for every writer.
+    profile_revision TEXT NOT NULL CHECK (profile_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    ruleset_revision TEXT NOT NULL CHECK (ruleset_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    content_revision TEXT NOT NULL CHECK (content_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
+    starter_template_revision TEXT NOT NULL CHECK (starter_template_revision ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'),
     configured_at BIGINT NOT NULL CHECK (configured_at >= 0)
 );
 
@@ -204,14 +205,16 @@ CREATE TRIGGER game_character_audit_hold_guard BEFORE INSERT OR UPDATE OR DELETE
 
 -- Operator-only procedures. They are not reachable from the Game server
 -- process: EXECUTE is revoked from PUBLIC below and granted only to the
--- privileged operator role of a deployment. The row guards above still enforce
--- the retention and history invariants for every writer.
+-- privileged operator role of a deployment, which needs no table privilege.
+-- They run as SECURITY DEFINER with a fixed search_path (this schema, then
+-- pg_temp), so the procedure is the authorization boundary. The row guards
+-- above still enforce the retention and history invariants for every writer.
 
 -- Configure the Game-owned current Character interpretation. History is
 -- append-only; configuring the current value again returns its revision.
 CREATE FUNCTION game_character_configure_interpretation(
     p_profile TEXT, p_ruleset TEXT, p_content TEXT, p_starter TEXT
-) RETURNS BIGINT LANGUAGE plpgsql AS $$
+) RETURNS BIGINT LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
     v_current game_character_interpretations%ROWTYPE;
 BEGIN
@@ -234,7 +237,7 @@ END; $$;
 -- (same event, reason and actor) returns the committed hold.
 CREATE FUNCTION game_character_place_legal_hold(
     p_event_id UUID, p_reason TEXT, p_actor TEXT
-) RETURNS UUID LANGUAGE plpgsql AS $$
+) RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
     v_hold game_character_audit_legal_holds%ROWTYPE;
     v_hold_id UUID;
@@ -261,7 +264,7 @@ END; $$;
 
 -- Release an active legal hold once; the event returns to ordinary expiry.
 CREATE FUNCTION game_character_release_legal_hold(p_hold_id UUID, p_actor TEXT)
-RETURNS VOID LANGUAGE plpgsql AS $$ BEGIN
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN
     UPDATE game_character_audit_legal_holds
        SET released_at = greatest(started_at, floor(extract(epoch FROM statement_timestamp()) * 1000)::BIGINT),
            released_by = p_actor
@@ -270,6 +273,12 @@ RETURNS VOID LANGUAGE plpgsql AS $$ BEGIN
         RAISE EXCEPTION 'Character audit legal hold is not active' USING ERRCODE = '23514';
     END IF;
 END; $$;
+
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_character_configure_interpretation(text, text, text, text) SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_character_place_legal_hold(uuid, text, text) SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_character_release_legal_hold(uuid, text) SET search_path = %I, pg_temp', current_schema());
+END $$;
 
 -- Row triggers do not fire for TRUNCATE; refuse it on every Character relation
 -- so no statement can erase authority, receipts, unexpired audit or holds.
