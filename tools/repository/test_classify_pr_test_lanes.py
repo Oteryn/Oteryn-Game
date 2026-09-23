@@ -838,15 +838,37 @@ def main() -> int:
             "reason": "agent-governance-only",
         }, (path, result)
         result = classify([path], docs_consumers_verified=False)
-        assert result["rust"] is True and result["windows"] is True, (path, result)
-        assert result["reason"] == "unreviewed-document-consumer-inputs", (path, result)
+        assert result == {
+            "rust": False,
+            "windows": False,
+            "surface": "agent-governance",
+            "reason": "agent-governance-only",
+        }, (path, result)
         result = classify([path], digest="stale-runtime-snapshot", docs_digest="stale-doc-snapshot")
-        assert result["rust"] is True and result["windows"] is True, (path, result)
-        result = classify(
-            [path], digest="stale-runtime-snapshot", docs_digest="stale-doc-snapshot",
-            docs_consumers_verified=True,
-        )
-        assert result["rust"] is False and result["windows"] is False, (path, result)
+        assert result == {
+            "rust": False,
+            "windows": False,
+            "surface": "agent-governance",
+            "reason": "agent-governance-only",
+        }, (path, result)
+
+    closeout_rename = [{
+        "filename": "docs/agents/tasks/archive/task.md",
+        "status": "renamed",
+        "previous_filename": "docs/agents/tasks/active/task.md",
+    }]
+    result = classify(
+        closeout_rename,
+        digest="stale-runtime-snapshot",
+        docs_digest="stale-doc-snapshot",
+        docs_consumers_verified=False,
+    )
+    assert result == {
+        "rust": False,
+        "windows": False,
+        "surface": "agent-governance",
+        "reason": "agent-governance-only",
+    }, result
     for paths in ([server, "apps/client/src/lib.rs"], [server, "unknown/input.dat"],
                   [{"filename": server, "status": "renamed", "previous_filename": "apps/client/src/old.rs"}],
                   [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}],
@@ -868,8 +890,8 @@ def main() -> int:
     result = classify([server, "docs/agents/tasks/active/task.md"], docs_consumers_verified=True)
     assert result["rust"] and not result["windows"], result
     result = classify([server, "docs/agents/tasks/active/task.md"], docs_consumers_verified=False)
-    assert result["rust"] and result["windows"], result
-    assert result["reason"] == "unreviewed-document-consumer-inputs", result
+    assert result["rust"] and not result["windows"], result
+    assert result["surface"] == "server", result
     result = classify(["apps/client/src/lib.rs", "docs/agents/tasks/active/task.md"], docs_consumers_verified=True)
     assert result["rust"] and result["windows"], result
     result = classify(["AGENTS.md", "docs/architecture/example.md"])
