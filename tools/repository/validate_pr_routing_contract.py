@@ -166,7 +166,7 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
 def validate_reference_map(module, metadata: dict, head: str, paths: list[str]) -> tuple[dict[str, set[str]], int]:
     references = module.candidate_reference_consumers(metadata, head, paths)
     roots, _ = module.graph(metadata)
-    allowed = set(roots) | {module.CONTROL_CONSUMER}
+    allowed = set(roots)
     edges = 0
     if set(references) != set(paths):
         raise ValueError("candidate reference map does not cover the complete changed-path set")
