@@ -2,7 +2,7 @@
 
 - Date: 2026-09-23
 - Gate: CONTENT-504 / CW1 successor
-- Status: owner-requested canonical v2; implementation and protected review pending
+- Status: canonical v2 protected by #788; contemporary Item authoring completeness extension under protected review
 - Supersedes: only the editable-source shape of `OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v1`
 - Does not select: new runtime mechanics, World Bundle encoding, production activation or full-world resource maxima
 
@@ -48,3 +48,31 @@ Appearance bindings connect an exact Presentation definition to a stable asset k
 Test v1 byte preservation, explicit migration, v2 round-trip and regrouping independence, all family variants, stable definition/placement separation, wrong-family and missing-revision references, duplicate identity/alias, unknown fields/roles, manifest/digest/lock corruption, metadata authority exclusion, candidate-only lowering, bounded inputs and filesystem containment. Repository CI and the normal protected Merge Queue qualify the implementation.
 
 What becomes harder later: changing a published v2 field or authority classification requires a new schema revision and migration. Evidence that warrants supersession includes a real family corpus, owner-accepted gameplay semantics, measured source cost or a security/compatibility defect. Permanent World Bundle format, full NPC/Quest/House/Encounter mechanics, production maxima and Studio UI remain separately owned decisions.
+
+
+## Item authoring completeness amendment — TibiaWiki 2026 audit
+
+The protected base v2 can retain editor aliases/tags and generic candidate observations, but the current TibiaWiki Item surface exposes structural relationships that must not be flattened into free-form fields or forced into the executable v1 Item schema. V2 therefore carries an optional typed `item_authoring` overlay inside the existing `declarative-definitions` document. It is bound to an exact existing Item definition and is source-only: it does not lower into `ReferenceItemSemantics` merely by being present.
+
+The overlay covers:
+
+- Item -> Presentation binding; the existing Presentation -> Asset binding remains the single appearance/asset path;
+- source taxonomy `primary / secondary / tertiary`;
+- immutable Exaltation Forge source metadata `classification / max_tier`;
+- Weapon Proficiency levels, perk declarations and Perk Shaping capabilities;
+- typed augment targets (Ability, auto attack, offensive rune, creature class or stable generic target), optional Effect references, exact bounded rank values, and source-only candidate fields for semantics without an accepted runtime owner;
+- Item -> Interaction and Item -> Ability use bindings plus required magic level;
+- source-only use observations for legacy/current Infobox `damage`, `damagetype` and `mana`; these preserve evidence for wand/rod/rune-like items while Ability/Effect/Formula remains the sole execution path;
+- edible/regeneration source facts;
+- enchantable/destructible source facts and typed lifecycle Interaction bindings;
+- source implementation/removal observations.
+
+The existing editor role remains the v2 home for noncanonical Item aliases, tags, categories and notes. These values never redirect identity or grant gameplay capabilities.
+
+NPC buy/sell prices are represented as typed `Service` offers referencing exact Item definitions. They are not Item fields. TibiaWiki `droppedby`, raid-drop and event-drop lists remain reverse discovery/evidence for Creature/Loot/Encounter relationships and must not be serialized into Item authoring. Wiki-estimated `value` and premium/store pricing are likewise editor/provenance or future commerce-owner evidence unless an accepted Oteryn economy contract gives them authoritative semantics.
+
+Fields already owned by the executable Item model — including weight, stackability, equipment requirements, attack/defense/range/hit, elemental attack, armor/resistances, skill modifiers including Elemental Bond/Mantra, charges, duration, container capacity, readable/writeable state and imbuement semantics — continue to use the existing Reference Item path. V2 does not duplicate them.
+
+Mutable runtime state is explicitly excluded: current Forge tier, proficiency XP/unlocks/selected perks/ranks, active imbues, remaining charges/timers, stack quantity, container contents/custody, current enchanted form and live quest/runtime state remain with ItemInstance/Character/Progression/Durability or their accepted owner.
+
+Compatibility is additive for already protected v2 documents: `item_authoring` and Service `offers` are omitted from canonical JSON when empty and default to empty when absent, so v2 snapshots produced by #788 with no Item extension preserve their canonical bytes under the extended reader/writer.

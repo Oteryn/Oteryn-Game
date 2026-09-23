@@ -143,6 +143,8 @@ pub enum ProjectV2Declaration {
     },
     Service {
         identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        offers: Vec<ProjectV2ServiceOffer>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Interaction {
@@ -255,6 +257,16 @@ impl ProjectV2Declaration {
                         .map(|reference| (ProjectV2Family::Service, reference)),
                 )
                 .collect(),
+            Self::Service { offers, .. } => {
+                let mut references = Vec::with_capacity(offers.len().saturating_mul(2));
+                for offer in offers {
+                    references.push((ProjectV2Family::Item, &offer.item));
+                    if let Some(currency) = &offer.currency {
+                        references.push((ProjectV2Family::Item, currency));
+                    }
+                }
+                references
+            }
             _ => Vec::new(),
         }
     }
@@ -275,6 +287,227 @@ pub enum ProjectV2CandidateValue {
     Integer(i64),
     Boolean(bool),
     SourceId(u64),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemTaxonomy {
+    pub primary: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secondary: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tertiary: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemForgeProfile {
+    pub classification: u8,
+    pub max_tier: u8,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemConsumableProfile {
+    pub edible: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub regeneration_seconds: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "value", deny_unknown_fields)]
+pub enum ProjectV2ItemDamageObservation {
+    Integer(i64),
+    Range { min: i64, max: i64 },
+    Text(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemUseObservation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage: Option<ProjectV2ItemDamageObservation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mana_cost: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemLifecycle {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enchantable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub destructible: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub enchant_interactions: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub destroy_interactions: Vec<ProjectV2DefinitionRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemSourceLifecycle {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub implemented: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub removed: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ExactRatio {
+    pub numerator: i64,
+    pub denominator: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "value", deny_unknown_fields)]
+pub enum ProjectV2AugmentValue {
+    Boolean(bool),
+    SignedPoints(i64),
+    RationalPercent(ProjectV2ExactRatio),
+    Milliseconds(u64),
+    Cells(u16),
+    Count(u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2AugmentRankValue {
+    pub rank: u8,
+    pub value: ProjectV2AugmentValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", deny_unknown_fields)]
+pub enum ProjectV2AugmentTarget {
+    Ability { ability: ProjectV2DefinitionRef },
+    AutoAttack,
+    OffensiveRune,
+    CreatureClass { class_key: String },
+    Generic { target_key: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2AugmentBinding {
+    pub key: String,
+    pub target: ProjectV2AugmentTarget,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub rank_values: Vec<ProjectV2AugmentRankValue>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+impl ProjectV2AugmentBinding {
+    fn canonicalize(&mut self) {
+        self.rank_values.sort_by_key(|value| value.rank);
+        self.fields
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ProficiencyLevel {
+    pub level: u8,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub perks: Vec<ProjectV2AugmentBinding>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2PerkShaping {
+    pub max_rank: u8,
+    pub replace_slots: u8,
+    pub refine_enabled: bool,
+    pub reshape_enabled: bool,
+    pub clear_enabled: bool,
+    pub lunar_ascension_enabled: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cost_service: Option<ProjectV2DefinitionRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2WeaponProficiencyProfile {
+    pub levels: Vec<ProjectV2ProficiencyLevel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shaping: Option<ProjectV2PerkShaping>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemAuthoring {
+    pub item: ProjectV2DefinitionRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub presentation: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub taxonomy: Option<ProjectV2ItemTaxonomy>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forge: Option<ProjectV2ItemForgeProfile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub proficiency: Option<ProjectV2WeaponProficiencyProfile>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub augments: Vec<ProjectV2AugmentBinding>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub on_use_interactions: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub use_ability: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_magic_level: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub consumable: Option<ProjectV2ItemConsumableProfile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub use_observation: Option<ProjectV2ItemUseObservation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifecycle: Option<ProjectV2ItemLifecycle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_lifecycle: Option<ProjectV2ItemSourceLifecycle>,
+}
+
+impl ProjectV2ItemAuthoring {
+    fn canonicalize(&mut self) {
+        self.augments
+            .sort_by(|left, right| left.key.cmp(&right.key));
+        for augment in &mut self.augments {
+            augment.canonicalize();
+        }
+        self.on_use_interactions.sort();
+        if let Some(lifecycle) = &mut self.lifecycle {
+            lifecycle.enchant_interactions.sort();
+            lifecycle.destroy_interactions.sort();
+        }
+        if let Some(proficiency) = &mut self.proficiency {
+            proficiency.levels.sort_by_key(|level| level.level);
+            for level in &mut proficiency.levels {
+                level.perks.sort_by(|left, right| left.key.cmp(&right.key));
+                for perk in &mut level.perks {
+                    perk.canonicalize();
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum ProjectV2ServiceOfferDirection {
+    BuyFromPlayer,
+    SellToPlayer,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ServiceOffer {
+    pub item: ProjectV2DefinitionRef,
+    pub direction: ProjectV2ServiceOfferDirection,
+    pub unit_price: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub currency: Option<ProjectV2DefinitionRef>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -380,6 +613,7 @@ pub struct ProjectV2EditorEntry {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ProjectV2State {
     pub declarations: Vec<ProjectV2Declaration>,
+    pub item_authoring: Vec<ProjectV2ItemAuthoring>,
     pub worlds: Vec<ProjectV2World>,
     pub placements: Vec<ProjectV2Placement>,
     pub appearance_bindings: Vec<ProjectV2AppearanceBinding>,
@@ -418,6 +652,8 @@ impl ProjectV2Draft {
 struct DeclarationsDocument {
     schema: String,
     records: Vec<ProjectV2Declaration>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    item_authoring: Vec<ProjectV2ItemAuthoring>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -548,6 +784,7 @@ pub(super) fn parse_v2_snapshot(
     .validate(limits)?;
     let state = ProjectV2State {
         declarations: declarations.records,
+        item_authoring: declarations.item_authoring,
         worlds: worlds.worlds,
         placements: worlds.placements,
         appearance_bindings: bindings.bindings,
@@ -569,6 +806,104 @@ pub(super) fn parse_v2_snapshot(
         manifest_bytes: manifest_bytes.to_vec(),
         v2: Some(state),
     })
+}
+
+fn validate_v2_source_text(
+    field: &'static str,
+    value: &str,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, value.len(), limits.max_string_bytes)?;
+    if value.trim() != value || value.is_empty() || value.chars().any(char::is_control) {
+        return Err(ProjectError::InvalidProject("invalid v2 source text"));
+    }
+    Ok(())
+}
+
+fn validate_v2_candidate_fields(fields: &[ProjectV2CandidateField]) -> Result<(), ProjectError> {
+    let mut previous: Option<&str> = None;
+    for field in fields {
+        ProductionKey::new(&field.field_path)?;
+        if previous.is_some_and(|prior| prior >= field.field_path.as_str()) {
+            return Err(ProjectError::InvalidProject(
+                "v2 candidate fields are not sorted and unique",
+            ));
+        }
+        previous = Some(&field.field_path);
+    }
+    Ok(())
+}
+
+fn gcd_v2(mut left: u64, mut right: u64) -> u64 {
+    while right != 0 {
+        let remainder = left % right;
+        left = right;
+        right = remainder;
+    }
+    left
+}
+
+fn validate_v2_augment(
+    augment: &ProjectV2AugmentBinding,
+    require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    ProductionKey::new(&augment.key)?;
+    match &augment.target {
+        ProjectV2AugmentTarget::Ability { ability } => {
+            if ability.family != ProjectV2Family::Ability {
+                return Err(ProjectError::InvalidProject(
+                    "v2 augment Ability target family mismatch",
+                ));
+            }
+            require_ref(ability)?;
+        }
+        ProjectV2AugmentTarget::CreatureClass { class_key } => {
+            ProductionKey::new(class_key)?;
+        }
+        ProjectV2AugmentTarget::Generic { target_key } => {
+            ProductionKey::new(target_key)?;
+        }
+        ProjectV2AugmentTarget::AutoAttack | ProjectV2AugmentTarget::OffensiveRune => {}
+    }
+    if let Some(effect) = &augment.effect {
+        if effect.family != ProjectV2Family::Effect {
+            return Err(ProjectError::InvalidProject(
+                "v2 augment effect family mismatch",
+            ));
+        }
+        require_ref(effect)?;
+    }
+    limits.check(
+        "v2 augment rank values",
+        augment.rank_values.len(),
+        limits.max_reference_records,
+    )?;
+    if augment
+        .rank_values
+        .windows(2)
+        .any(|pair| pair[0].rank >= pair[1].rank)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 augment ranks are not sorted and unique",
+        ));
+    }
+    for rank in &augment.rank_values {
+        if let ProjectV2AugmentValue::RationalPercent(ratio) = rank.value
+            && (ratio.denominator == 0
+                || gcd_v2(ratio.numerator.unsigned_abs(), ratio.denominator) != 1)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 augment rational percent is not canonical",
+            ));
+        }
+    }
+    limits.check(
+        "v2 augment candidate fields",
+        augment.fields.len(),
+        limits.max_reference_records,
+    )?;
+    validate_v2_candidate_fields(&augment.fields)
 }
 
 fn validate_v2_state(
@@ -595,16 +930,7 @@ fn validate_v2_state(
     for declaration in &state.declarations {
         let identity = declaration.identity();
         identity.validate()?;
-        let mut previous_field: Option<&str> = None;
-        for field in declaration.fields() {
-            ProductionKey::new(&field.field_path)?;
-            if previous_field.is_some_and(|prior| prior >= field.field_path.as_str()) {
-                return Err(ProjectError::InvalidProject(
-                    "v2 candidate fields are not sorted and unique",
-                ));
-            }
-            previous_field = Some(&field.field_path);
-        }
+        validate_v2_candidate_fields(declaration.fields())?;
         let key = (declaration.family(), identity.key.as_str());
         if previous.is_some_and(|prior| prior >= key) {
             return Err(ProjectError::InvalidProject(
@@ -639,6 +965,218 @@ fn validate_v2_state(
                 ));
             }
             require_ref(reference)?;
+        }
+    }
+
+    limits.check(
+        "v2 item authoring",
+        state.item_authoring.len(),
+        limits.max_reference_records,
+    )?;
+    if state
+        .item_authoring
+        .windows(2)
+        .any(|pair| pair[0].item >= pair[1].item)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item authoring is not identity sorted and unique",
+        ));
+    }
+    for item in &state.item_authoring {
+        if item.item.family != ProjectV2Family::Item {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item authoring requires Item target",
+            ));
+        }
+        require_ref(&item.item)?;
+        if let Some(presentation) = &item.presentation {
+            if presentation.family != ProjectV2Family::Presentation {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item presentation family mismatch",
+                ));
+            }
+            require_ref(presentation)?;
+        }
+        if let Some(taxonomy) = &item.taxonomy {
+            validate_v2_source_text("v2 Item primary taxonomy", &taxonomy.primary, limits)?;
+            if let Some(value) = &taxonomy.secondary {
+                validate_v2_source_text("v2 Item secondary taxonomy", value, limits)?;
+            }
+            if let Some(value) = &taxonomy.tertiary {
+                validate_v2_source_text("v2 Item tertiary taxonomy", value, limits)?;
+            }
+        }
+        if let Some(forge) = item.forge
+            && (forge.classification == 0 || forge.max_tier == 0)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item Forge profile requires nonzero class and max tier",
+            ));
+        }
+        if let Some(ability) = &item.use_ability {
+            if ability.family != ProjectV2Family::Ability {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item use Ability family mismatch",
+                ));
+            }
+            require_ref(ability)?;
+        }
+        if let Some(consumable) = item.consumable
+            && consumable.regeneration_seconds == Some(0)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item regeneration seconds must be positive when present",
+            ));
+        }
+        if let Some(observation) = &item.use_observation {
+            if let Some(damage) = &observation.damage {
+                match damage {
+                    ProjectV2ItemDamageObservation::Range { min, max } if min > max => {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 Item damage observation range is inverted",
+                        ));
+                    }
+                    ProjectV2ItemDamageObservation::Text(value) => {
+                        validate_v2_source_text("v2 Item damage source text", value, limits)?;
+                    }
+                    ProjectV2ItemDamageObservation::Integer(_)
+                    | ProjectV2ItemDamageObservation::Range { .. } => {}
+                }
+            }
+            if let Some(value) = &observation.damage_type {
+                validate_v2_source_text("v2 Item damage type source text", value, limits)?;
+            }
+        }
+        limits.check(
+            "v2 Item augments",
+            item.augments.len(),
+            limits.max_reference_records,
+        )?;
+        if item
+            .augments
+            .windows(2)
+            .any(|pair| pair[0].key >= pair[1].key)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item augments are not key sorted and unique",
+            ));
+        }
+        for augment in &item.augments {
+            validate_v2_augment(augment, &require_ref, limits)?;
+        }
+        if let Some(proficiency) = &item.proficiency {
+            if proficiency.levels.is_empty() {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item proficiency requires at least one level",
+                ));
+            }
+            limits.check(
+                "v2 Item proficiency levels",
+                proficiency.levels.len(),
+                limits.max_reference_records,
+            )?;
+            if proficiency
+                .levels
+                .windows(2)
+                .any(|pair| pair[0].level == 0 || pair[0].level >= pair[1].level)
+                || proficiency
+                    .levels
+                    .last()
+                    .is_some_and(|level| level.level == 0)
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item proficiency levels are not positive sorted and unique",
+                ));
+            }
+            for level in &proficiency.levels {
+                limits.check(
+                    "v2 Item proficiency perks",
+                    level.perks.len(),
+                    limits.max_reference_records,
+                )?;
+                if level
+                    .perks
+                    .windows(2)
+                    .any(|pair| pair[0].key >= pair[1].key)
+                {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Item proficiency perks are not key sorted and unique",
+                    ));
+                }
+                for perk in &level.perks {
+                    validate_v2_augment(perk, &require_ref, limits)?;
+                }
+            }
+            if let Some(shaping) = &proficiency.shaping {
+                if shaping.max_rank == 0 {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Item perk shaping max rank must be positive",
+                    ));
+                }
+                if let Some(service) = &shaping.cost_service {
+                    if service.family != ProjectV2Family::Service {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 Item perk shaping Service family mismatch",
+                        ));
+                    }
+                    require_ref(service)?;
+                }
+            }
+        }
+        limits.check(
+            "v2 Item on-use interactions",
+            item.on_use_interactions.len(),
+            limits.max_reference_records,
+        )?;
+        if item
+            .on_use_interactions
+            .windows(2)
+            .any(|pair| pair[0] >= pair[1])
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item on-use interactions are not sorted and unique",
+            ));
+        }
+        for interaction in &item.on_use_interactions {
+            if interaction.family != ProjectV2Family::Interaction {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item on-use Interaction family mismatch",
+                ));
+            }
+            require_ref(interaction)?;
+        }
+        if let Some(lifecycle) = &item.lifecycle {
+            for interactions in [
+                &lifecycle.enchant_interactions,
+                &lifecycle.destroy_interactions,
+            ] {
+                limits.check(
+                    "v2 Item lifecycle interactions",
+                    interactions.len(),
+                    limits.max_reference_records,
+                )?;
+                if interactions.windows(2).any(|pair| pair[0] >= pair[1]) {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Item lifecycle interactions are not sorted and unique",
+                    ));
+                }
+                for interaction in interactions {
+                    if interaction.family != ProjectV2Family::Interaction {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 Item lifecycle Interaction family mismatch",
+                        ));
+                    }
+                    require_ref(interaction)?;
+                }
+            }
+        }
+        if let Some(source_lifecycle) = &item.source_lifecycle {
+            if let Some(value) = &source_lifecycle.implemented {
+                validate_v2_source_text("v2 Item implemented source text", value, limits)?;
+            }
+            if let Some(value) = &source_lifecycle.removed {
+                validate_v2_source_text("v2 Item removed source text", value, limits)?;
+            }
         }
     }
     limits.check(
@@ -887,6 +1425,16 @@ impl CanonicalProjectDocuments {
             declaration
                 .fields_mut()
                 .sort_by(|a, b| a.field_path.cmp(&b.field_path));
+            if let ProjectV2Declaration::Service { offers, .. } = declaration {
+                offers.sort();
+            }
+        }
+        draft
+            .state
+            .item_authoring
+            .sort_by(|left, right| left.item.cmp(&right.item));
+        for item in &mut draft.state.item_authoring {
+            item.canonicalize();
         }
         draft.state.worlds.sort_by(|a, b| a.key.cmp(&b.key));
         draft.state.placements.sort_by(|a, b| a.key.cmp(&b.key));
@@ -935,6 +1483,7 @@ impl CanonicalProjectDocuments {
             budget.encode(&DeclarationsDocument {
                 schema: DECLARATIONS_SCHEMA.to_owned(),
                 records: draft.state.declarations,
+                item_authoring: draft.state.item_authoring,
             })?,
         );
         managed.insert(
