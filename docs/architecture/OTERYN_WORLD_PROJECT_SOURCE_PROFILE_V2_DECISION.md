@@ -62,13 +62,14 @@ The overlay covers:
 - Weapon Proficiency levels, perk declarations and Perk Shaping capabilities;
 - typed augment targets (Ability, auto attack, offensive rune, creature class or stable generic target), optional Effect references, exact bounded rank values, and source-only candidate fields for semantics without an accepted runtime owner;
 - Item -> Interaction and Item -> Ability use bindings plus required magic level;
+- source-only use observations for legacy/current Infobox `damage`, `damagetype` and `mana`; these preserve evidence for wand/rod/rune-like items while Ability/Effect/Formula remains the sole execution path;
 - edible/regeneration source facts;
 - enchantable/destructible source facts and typed lifecycle Interaction bindings;
 - source implementation/removal observations.
 
 The existing editor role remains the v2 home for noncanonical Item aliases, tags, categories and notes. These values never redirect identity or grant gameplay capabilities.
 
-NPC buy/sell prices are represented as typed `Service` offers referencing exact Item definitions. They are not Item fields. TibiaWiki `droppedby`, raid-drop and event-drop lists remain reverse discovery/evidence for Creature/Loot/Encounter relationships and must not be serialized into Item authoring.
+NPC buy/sell prices are represented as typed `Service` offers referencing exact Item definitions. They are not Item fields. TibiaWiki `droppedby`, raid-drop and event-drop lists remain reverse discovery/evidence for Creature/Loot/Encounter relationships and must not be serialized into Item authoring. Wiki-estimated `value` and premium/store pricing are likewise editor/provenance or future commerce-owner evidence unless an accepted Oteryn economy contract gives them authoritative semantics.
 
 Fields already owned by the executable Item model — including weight, stackability, equipment requirements, attack/defense/range/hit, elemental attack, armor/resistances, skill modifiers including Elemental Bond/Mantra, charges, duration, container capacity, readable/writeable state and imbuement semantics — continue to use the existing Reference Item path. V2 does not duplicate them.
 
