@@ -197,15 +197,22 @@ expected = {
 if any(type(response.get(key)) is not type(value) or response.get(key) != value
        for key, value in expected.items()):
     raise SystemExit("observed response has wrong operation, binding, authority, or result")
-for key, allow_zero in (
-    ("source_revision", False), ("source_observed_at", False),
-    ("clock_uncertainty_seconds", True), ("minimum_valid_generation", False),
+# Mirror the exact Game decoder: text members are at most 256 bytes, numeric
+# tokens are canonical ASCII digits bounded by u64 (source_observed_at: at most
+# 19 digits and i64), and positive where the decoder requires it.
+if any(isinstance(value, str) and len(value.encode("utf-8")) > 256 for value in response.values()):
+    raise SystemExit("observed response has an oversized text member")
+for key, allow_zero, maximum, digits in (
+    ("source_revision", False, 2**64 - 1, 20), ("source_observed_at", False, 2**63 - 1, 19),
+    ("clock_uncertainty_seconds", True, 2**64 - 1, 20),
+    ("minimum_valid_generation", False, 2**64 - 1, 20),
 ):
     value = response.get(key)
-    if not isinstance(value, str) or not value.isascii() or not value.isdigit():
+    if (not isinstance(value, str) or not value.isascii() or not value.isdigit()
+            or len(value) > digits):
         raise SystemExit(f"observed response has malformed {key}")
     parsed = int(value)
-    if str(parsed) != value or (parsed == 0 and not allow_zero):
+    if str(parsed) != value or (parsed == 0 and not allow_zero) or parsed > maximum:
         raise SystemExit(f"observed response has non-canonical {key}")
 if response["decision_identity"] != response["source_revision"]:
     raise SystemExit("observed response has invalid decision provenance")
@@ -267,12 +274,19 @@ expected = {
 if any(type(response.get(key)) is not type(value) or response.get(key) != value
        for key, value in expected.items()):
     raise SystemExit("observed trust response has wrong operation, binding, authority, or result")
-for key, allow_zero in (("source_revision", False), ("source_observed_at", False), ("clock_uncertainty_seconds", True)):
+# Mirror the exact Game decoder bounds (see the account validator).
+if any(isinstance(value, str) and len(value.encode("utf-8")) > 256 for value in response.values()):
+    raise SystemExit("observed trust response has an oversized text member")
+for key, allow_zero, maximum, digits in (
+    ("source_revision", False, 2**64 - 1, 20), ("source_observed_at", False, 2**63 - 1, 19),
+    ("clock_uncertainty_seconds", True, 2**64 - 1, 20),
+):
     value = response.get(key)
-    if not isinstance(value, str) or not value.isascii() or not value.isdigit():
+    if (not isinstance(value, str) or not value.isascii() or not value.isdigit()
+            or len(value) > digits):
         raise SystemExit(f"observed trust response has malformed {key}")
     parsed = int(value)
-    if str(parsed) != value or (parsed == 0 and not allow_zero):
+    if str(parsed) != value or (parsed == 0 and not allow_zero) or parsed > maximum:
         raise SystemExit(f"observed trust response has non-canonical {key}")
 if response["decision_identity"] != response["source_revision"]:
     raise SystemExit("observed trust response has invalid decision provenance")
@@ -485,9 +499,10 @@ if validate_observed_account "$WP5_SCRATCH/regressed-response" \
 fi
 evidence "revision_regression_self_test=rejected floor=$replacement_restored_revision"
 
-# Deterministically prove that a type-confused body (valid except for
-# "allowed":1 or "version":true) is rejected, as the exact Game decoder does.
-for mutation in allowed version; do
+# Deterministically prove that a type-confused or out-of-range body (valid
+# except for "allowed":1, "version":true, a source_revision above u64 or a
+# source_observed_at above i64) is rejected, as the exact Game decoder does.
+for mutation in allowed version revision_overflow observed_at_overflow; do
   python3 - "$WP5_SCRATCH/replacement-restored-response" "$WP5_SCRATCH/type-confused-response" "$mutation" <<'PY'
 import json
 import sys
@@ -495,8 +510,15 @@ source, destination, mutation = sys.argv[1:]
 response = json.load(open(source))
 if mutation == "allowed":
     response["allowed"] = 1
-else:
+elif mutation == "version":
     response["version"] = True
+elif mutation == "revision_overflow":
+    # One above u64::MAX; also exceeds every recovery floor.
+    response["source_revision"] = str(2**64)
+    response["decision_identity"] = response["source_revision"]
+else:
+    # One above i64::MAX.
+    response["source_observed_at"] = str(2**63)
 with open(destination, "w") as output:
     json.dump(response, output, separators=(",", ":"))
 PY
@@ -507,7 +529,7 @@ PY
     exit 1
   fi
 done
-evidence "json_type_self_test=rejected allowed_int=true version_bool=true"
+evidence "json_type_self_test=rejected allowed_int=true version_bool=true u64_overflow=true i64_overflow=true"
 
 # Account witness-ahead rollback and explicit forward-only reconciliation.
 observed_generation() {
