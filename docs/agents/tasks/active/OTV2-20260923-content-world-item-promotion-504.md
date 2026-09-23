@@ -7,15 +7,15 @@ mode: IMPLEMENT
 status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: agent/content-world-item-semantic-promotion-504-r3
-pr: 780
+branch: agent/content-world-item-semantic-promotion-504-r4
+pr: 782
 base_sha: 19c15ebf8377608db5b72cf7082dc856c4fd76be
-head_sha: 91b21201a2e16682da152234260c4f46799dc143
+head_sha: 1c2aa8973b870bb471c44439248ddf5f18bb41fb
 final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item product batch writer"
 created_at: 2026-09-23T07:34:00Z
-updated_at: 2026-09-23T08:23:00Z
+updated_at: 2026-09-23T08:39:37Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_semantic_promotion.py
@@ -109,30 +109,30 @@ No broad rediscovery, no fields beyond the exact eligible 69, no automatic mater
 
 A deterministic promotion-packet compiler and fail-closed synthetic tests are implemented. The packet strips mutable source revision metadata and retains only exact identity, field path, source value and accepted typed conversion.
 
-Precursor #776 exact-head promotion workflow `35834279290`, job `107093955608`, completed SUCCESS on the byte-identical eight-path implementation: 69 promoted fields across 23 items, packet SHA-256 `3e117c1f722e11d5b2e6339a512cd5ee906128e9644643083bef1d3632b4d1c1`; full protected identity/current/verification/continuity reproduction passed; the exact 69-row packet reproduced byte-identically; focused canonical importer plus artifact-v4 server-authoritative/client-safe roundtrip passed. #776 was superseded only because its old base predates the protected routing-contract fix. #779 replayed all eight owned-path blobs byte-for-byte on the refreshed protected base, then exact-head Merge Gate exposed only `cargo fmt --check` in job `107100545990`. The frozen #779 candidate was not mutated. #780/r3 applies exactly the 23 repo-pinned rustfmt hunks to the three Rust files; every hunk matched uniquely, and the resulting three blob SHAs are identical to the independently produced parallel format repair on the superseded #779 branch. Promotion semantics/evidence/workflow remain unchanged.
+Precursor #776 exact-head promotion workflow `35834279290`, job `107093955608`, completed SUCCESS on the byte-identical eight-path implementation: 69 promoted fields across 23 items, packet SHA-256 `3e117c1f722e11d5b2e6339a512cd5ee906128e9644643083bef1d3632b4d1c1`; full protected identity/current/verification/continuity reproduction passed; the exact 69-row packet reproduced byte-identically; focused canonical importer plus artifact-v4 server-authoritative/client-safe roundtrip passed. #776 was superseded only because its old base predates the protected routing-contract fix. #779 replayed all eight owned-path blobs byte-for-byte on the refreshed protected base, then exact-head Merge Gate exposed only `cargo fmt --check` in job `107100545990`. The frozen #779 candidate was not mutated. #780/r3 applies exactly the 23 repo-pinned rustfmt hunks to the three Rust files; every hunk matched uniquely, and the resulting three blob SHAs are identical to the independently produced parallel format repair on the superseded #779 branch. Promotion semantics/evidence/workflow remain unchanged. #780 exact-head semantic-promotion workflow `35837247344` / `107103557120` then passed on the r3 semantics, while Merge Gate Rust Linux job `107103962880` failed only two `clippy::collapsible_if` findings in the promotion-count test helper. Frozen #780 was not mutated. #782/r4 collapses exactly those two nested test-only conditionals into Rust 1.94 let-chains; no product semantics, evidence, workflow, identity, parser/model/schema, routing or gameplay scope changed.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python tools/reference-world-corridor-census/item_semantic_promotion_self_test.py` in precursor workflow `35834279290`, job `107093955608`
-- result: PASS; final #780 exact-head rerun required
+- result: PASS on #780 semantic-promotion workflow `35837247344` / `107103557120`; final #782 exact-head rerun required
 
 ### Component/integration
 
 - command/run: protected identity/current/verification/continuity reproduction -> promotion packet -> canonical Rust application -> artifact v4 compile/load
-- result: precursor #776 PASS in `35834279290` / `107093955608`; 69 fields / 23 items / packet SHA-256 `3e117c1f722e11d5b2e6339a512cd5ee906128e9644643083bef1d3632b4d1c1`; final #779 exact-head rerun required
+- result: precursor #776 PASS in `35834279290` / `107093955608`; #780 semantic-promotion workflow also PASS with identical 69 fields / 23 items / packet SHA-256 `3e117c1f722e11d5b2e6339a512cd5ee906128e9644643083bef1d3632b4d1c1`; final #782 exact-head rerun required
 
 ### E2E
 
 - scenario: full 38,157 Project -> Reference -> v4 server/client roundtrip for exact 69 promoted atomic fields
-- result: precursor exact test `protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client` PASS; final #779 exact-head rerun required
+- result: precursor exact test `protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client` PASS and #780 semantic-promotion workflow PASS; final #782 exact-head rerun required
 
 ### Exact-head CI
 
 - final head: recorded in immutable PR/check evidence after this final authoring mutation; a commit cannot contain its own SHA
 - trigger source: pull_request
-- workflow/run/job: pending final frozen #780 generation; precursor product proof `35834279290` / `107093955608` SUCCESS
+- workflow/run/job: pending final frozen #782 generation; #780 product proof `35837247344` / `107103557120` SUCCESS
 - runner assignment: repository-selected GitHub hosted runners
 - classification: required final refreshed-base candidate qualification
 - result: pending
@@ -154,9 +154,9 @@ Precursor #776 exact-head promotion workflow `35834279290`, job `107093955608`, 
 
 ## PR and closeout
 
-- changed-file review: #780 retains the same eight owned paths; r3 delta over frozen #779 is formatting-only in three Rust files; final frozen whole-diff review pending
+- changed-file review: #782 retains the same eight owned paths; r4 delta over frozen #780 is Clippy-only in one Rust test file plus this task binding; final frozen whole-diff review pending
 - unresolved review threads: 0 at r3 admission
-- related protected predecessors: #749, #763, #767, #770, #773, #774, #775; superseded implementation PRs #776 and #779 closed unmerged
+- related protected predecessors: #749, #763, #767, #770, #773, #774, #775; superseded implementation PRs #776, #779 and #780 closed/unmerged after #782 establishment
 - protected Merge Queue: pending final frozen-head qualification
 - merge commit/result: pending
 - ownership release: pending in this same product batch; no ordinary lifecycle-only successor
@@ -164,27 +164,27 @@ Precursor #776 exact-head promotion workflow `35834279290`, job `107093955608`, 
 ## Context checkpoint
 
 ~~~yaml
-last_progress: #776 product proof PASS; #779 refreshed-base candidate exposed format-only blocker; exact CI rustfmt repair applied as successor PR #780
+last_progress: #780 semantic-promotion workflow PASS; exact Rust Linux blocker reduced to two test-only collapsible_if findings; r4 repair applied and PR #782 established
 status: validating
-branch: agent/content-world-item-semantic-promotion-504-r3
-head_sha: 91b21201a2e16682da152234260c4f46799dc143
-pr: 780
+branch: agent/content-world-item-semantic-promotion-504-r4
+head_sha: 1c2aa8973b870bb471c44439248ddf5f18bb41fb
+pr: 782
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
 ci_check_generation: pending final authoring commit
 ci_checks_for_current_head: 0
-ci_run_ids: [35834279290, 35836186158, 35836186088]
-ci_job_ids: [107093955608, 107100171811, 107100545990]
-runner_assignment_state: precursor_product_success_r2_format_failure_repaired
+ci_run_ids: [35834279290, 35837247344, 35837247354]
+ci_job_ids: [107093955608, 107103557120, 107103962880]
+runner_assignment_state: product_success_clippy_only_failure_repaired
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
-ci_recovery_actions_for_current_head: 2
+repair_cycles_for_current_gate: 3
+ci_recovery_actions_for_current_head: 3
 stall_warnings: 0
 owner_action_required: NONE
 blocker: null
-next_action: freeze the branch head returned by this final task-metadata mutation and require fresh #780 exact-head CI
+next_action: freeze the branch head returned by this final task-metadata mutation and require fresh #782 exact-head semantic-promotion workflow plus full Merge Gate
 ~~~
