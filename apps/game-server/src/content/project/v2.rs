@@ -2047,16 +2047,19 @@ fn validate_v2_state(
                     "v2 Area parent chain contains a cycle",
                 ));
             }
-            current = state.declarations.iter().find_map(|candidate| match candidate {
-                ProjectV2Declaration::Area {
-                    identity: candidate_identity,
-                    parent,
-                    ..
-                } if candidate_identity.key == area_key => {
-                    parent.as_ref().map(|reference| reference.key.as_str())
-                }
-                _ => None,
-            });
+            current = state
+                .declarations
+                .iter()
+                .find_map(|candidate| match candidate {
+                    ProjectV2Declaration::Area {
+                        identity: candidate_identity,
+                        parent,
+                        ..
+                    } if candidate_identity.key == area_key => {
+                        parent.as_ref().map(|reference| reference.key.as_str())
+                    }
+                    _ => None,
+                });
         }
     }
 
