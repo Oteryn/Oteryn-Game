@@ -4,7 +4,7 @@
 task_id: OTV2-20260923-item-wiki-first-census
 title: Wiki-first TibiaWiki Item census
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-census-20260923
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item wiki-first census writer"
 created_at: 2026-09-23T21:19:00+02:00
-updated_at: 2026-09-23T21:42:00+02:00
+updated_at: 2026-09-23T21:45:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_census.py
@@ -35,7 +35,7 @@ external_repositories: []
 
 ## Outcome
 
-Replace the old Crystal-first discovery direction for the next Item population wave with one bounded TibiaWiki-first census. Discover current main-namespace pages directly using the Item infobox template, fetch only bounded infobox source evidence, retain the complete infobox field partition in scratch output, and emit a compact manifest suitable for the next multi-signal identity-crosswalk gate.
+Replace the old Crystal-first discovery direction for the next Item population wave with one bounded TibiaWiki-first census. Discover current main-namespace pages directly from `Categoria:Itens`, fetch only bounded infobox source evidence, retain the complete infobox field partition in scratch output, and emit a compact manifest suitable for the next multi-signal identity-crosswalk gate.
 
 ## Architecture and source of truth
 
@@ -43,7 +43,7 @@ Replace the old Crystal-first discovery direction for the next Item population w
 - PROVEN: the archived PR #767 Crystal-first current-source run started from 38,157 protected identities and closed at MATCHED=22, NOT_FOUND=729, AMBIGUOUS=36,736, CONFLICT=670. That result is retained as predecessor evidence, not reused as the discovery root.
 - PROVEN: TibiaWiki remains structured reference data, not Reference gameplay truth.
 - PROVEN: long-form TibiaWiki/Tibia prose and book bodies are outside the permitted bulk corpus; only bounded Infobox Item fields are collected.
-- DERIVED: direct main-namespace transclusion of the TibiaWiki Item infobox is the narrowest current wiki-first discovery surface that avoids starting from Crystal identity.
+- PROVEN: live candidate `ba04ce3827233e4b66de004418e6f66aa861b7de` showed that `embeddedin` for the Item template admits non-Item page `Abyssador`, so template dependency is not a safe Item identity census root.\n- DERIVED: direct main-namespace membership in `Categoria:Itens` is the narrower wiki-owned discovery surface; admitted members still must parse as Item infobox pages before the census can qualify.
 
 ## High-risk authority/recovery qualification
 
@@ -80,7 +80,7 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Discovery starts from TibiaWiki Item infobox transclusion in namespace 0, never from the 38,157 Crystal-derived identity closure.
+- [ ] Discovery starts from direct main-namespace membership in TibiaWiki `Categoria:Itens`, never from template dependency or the 38,157 Crystal-derived identity closure.
 - [ ] Discovery pagination, continuation, response shape, duplicate IDs/titles and maximum page/request bounds fail closed.
 - [ ] Every admitted page is fetched at an exact current revision and contains an Item infobox.
 - [ ] Both already-normalized and previously-unmapped bounded infobox fields are retained in deterministic scratch output.
@@ -96,7 +96,7 @@ No identity crosswalk, no field-verification promotion, no WorldProject populati
 
 ## Implementation / findings
 
-Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicated workflow run `35910105739` failed before tests: `actions/checkout` received a literal backslash-prefixed SHA because the authored YAML escaped GitHub expression syntax as `\\${{ ... }}`. This is accepted as a workflow-only P1 qualification defect; collector semantics were not executed. AUTHORING was reopened for the exact expression-escape repair. The workflow successor removes exactly five literal backslashes before GitHub expression tokens; no collector, self-test or scope semantics changed.\n\nSuccessor `53cfa7a9e0c45cf9b23a1c676ab0327479ae8f51` passed checkout and predecessor self-test, then new self-test failed before live collection in `compile_census`: `Counter.update(mapping)` attempted to add dict field payloads as counts. This is accepted as a local aggregation bug. AUTHORING is reopened for the minimal four-call change to count mapping keys rather than mapping values.\n\nSuccessor `955bdd3dfb69c99c43f22b026325283cb4ae7c69` passed both focused self-test suites and entered live source collection. Live run `35910507151` then rejected discovered `page_id=25288` as `DISCOVERED_PAGE_WITHOUT_INFOBOX`. Because discovery itself came from MediaWiki `embeddedin` for the Item template, the bounded working inference is template-invocation spelling normalization rather than identity evidence. AUTHORING was reopened only to recognize MediaWiki-equivalent case/whitespace/optional namespace-prefix spellings, add synthetic coverage, and include the page title in any residual rejection. The successor uses one bounded regex for the direct base Item infobox invocation and explicitly rejects subtemplate names.\n\nThe implementation reuses the protected bounded TibiaWiki request/cache/Infobox parser primitives rather than forking a second HTTP or Item parser. The new discovery direction is independent of Crystal identities and enumerates main-namespace pages that directly transclude `Predefinição:Infobox Item`. A small compatibility shim accepts the MediaWiki-equivalent space/underscore spelling of the infobox marker without changing the protected predecessor collector. PR #803 was opened from the four-path authored candidate. Its base is protected main `6b2c5237cebcc9cf757747478a2990cde4109750`; the only protected-main change since admission base `79a1d6966b7fbe41e8366ea873d207c59d441033` is the path-disjoint archive move for the completed #798 task.
+Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicated workflow run `35910105739` failed before tests: `actions/checkout` received a literal backslash-prefixed SHA because the authored YAML escaped GitHub expression syntax as `\\${{ ... }}`. This is accepted as a workflow-only P1 qualification defect; collector semantics were not executed. AUTHORING was reopened for the exact expression-escape repair. The workflow successor removes exactly five literal backslashes before GitHub expression tokens; no collector, self-test or scope semantics changed.\n\nSuccessor `53cfa7a9e0c45cf9b23a1c676ab0327479ae8f51` passed checkout and predecessor self-test, then new self-test failed before live collection in `compile_census`: `Counter.update(mapping)` attempted to add dict field payloads as counts. This is accepted as a local aggregation bug. AUTHORING is reopened for the minimal four-call change to count mapping keys rather than mapping values.\n\nSuccessor `955bdd3dfb69c99c43f22b026325283cb4ae7c69` passed both focused self-test suites and entered live source collection. Live run `35910507151` then rejected discovered `page_id=25288` as `DISCOVERED_PAGE_WITHOUT_INFOBOX`. Because discovery itself came from MediaWiki `embeddedin` for the Item template, the bounded working inference is template-invocation spelling normalization rather than identity evidence. AUTHORING was reopened only to recognize MediaWiki-equivalent case/whitespace/optional namespace-prefix spellings, add synthetic coverage, and include the page title in any residual rejection. The successor uses one bounded regex for the direct base Item infobox invocation and explicitly rejects subtemplate names. Live rerun `35910837495` still admitted `Abyssador`; because that page is a Creature/Boss, the finding rejects `embeddedin` itself as the census root rather than expanding the parser to misclassify a creature.\n\nThe implementation reuses the protected bounded TibiaWiki request/cache/Infobox parser primitives rather than forking a second HTTP or Item parser. The new discovery direction is independent of Crystal identities and enumerates direct main-namespace members of `Categoria:Itens`. A small compatibility shim accepts the MediaWiki-equivalent space/underscore spelling of the infobox marker without changing the protected predecessor collector. PR #803 was opened from the four-path authored candidate. Its base is protected main `6b2c5237cebcc9cf757747478a2990cde4109750`; the only protected-main change since admission base `79a1d6966b7fbe41e8366ea873d207c59d441033` is the path-disjoint archive move for the completed #798 task.
 
 ## Validation
 
@@ -151,8 +151,8 @@ Candidate `7df3227a2639343531a5c9ccb4464c5a1ac34fc7` was unfrozen after dedicate
 ## Context checkpoint
 
 ```yaml
-last_progress: Item infobox marker normalization broadened for MediaWiki-equivalent spellings; two synthetic cases added; title retained in any residual live rejection
-status: validating
+last_progress: live source identified Abyssador as template-discovery false positive; embeddedin root rejected, category-membership replacement authorized
+status: implementing
 branch: agent/item-wiki-first-census-20260923
 head_sha: null
 pr: 803
@@ -168,10 +168,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
-ci_recovery_actions_for_current_head: 3
+repair_cycles_for_current_gate: 4
+ci_recovery_actions_for_current_head: 4
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze returned successor head and inspect fresh exact-head PR #803 focused tests plus live census result
+next_action: switch discovery and tests from embeddedin to direct Categoria:Itens membership, preserve infobox admission check, then refreeze
 ```
