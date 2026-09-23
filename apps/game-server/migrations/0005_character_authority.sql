@@ -85,7 +85,8 @@ CREATE TABLE game_character_operation_receipts (
     character_revision NUMERIC(20,0) NOT NULL CHECK (character_revision = 1),
     -- Stable audit identity; the event itself expires under its retention profile.
     event_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(event_id)),
-    transaction_id UUID NOT NULL CHECK (game_character_is_uuid_v7(transaction_id)),
+    -- Durable TransactionId identity; unique beyond audit expiry.
+    transaction_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(transaction_id)),
     CHECK (game_character_is_uuid_v7(operation_id))
 );
 

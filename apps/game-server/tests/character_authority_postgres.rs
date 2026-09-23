@@ -771,6 +771,58 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         2
     );
     drop(transition);
+    let concurrent_fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let roots_before: i64 = count(&pool, "SELECT count(*) FROM game_character_roots").await?;
+    // Concurrent reuse of one operation identity with different accounts from two
+    // independent roots yields one commit and one deterministic Conflict.
+    let url = database.url.clone();
+    let barrier = std::sync::Barrier::new(2);
+    let outcomes: Vec<String> = std::thread::scope(|scope| {
+        let handles: Vec<_> = [41_u8, 42]
+            .into_iter()
+            .map(|account| {
+                let (url, barrier, fence, node) = (&url, &barrier, &concurrent_fence, &node);
+                scope.spawn(move || -> String {
+                    let run = || -> TestResult<String> {
+                        let runtime = tokio::runtime::Builder::new_current_thread()
+                            .enable_all()
+                            .build()?;
+                        runtime.block_on(async {
+                            let root = DurabilityRoot::connect_test_runtime(url)?;
+                            assert!(root.maintain_ready_once().await?);
+                            let authority = root
+                                .open_character_authority(fence)
+                                .await
+                                .map_err(|e| format!("{e:?}"))?;
+                            barrier.wait();
+                            Ok(
+                                match root
+                                    .bootstrap_character(&authority, node, command(40, account)?)
+                                    .await
+                                {
+                                    Ok(_) => "committed".to_owned(),
+                                    Err(CharacterAuthorityError::Conflict) => "conflict".to_owned(),
+                                    Err(error) => format!("{error:?}"),
+                                },
+                            )
+                        })
+                    };
+                    run().unwrap_or_else(|error| format!("error: {error}"))
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|handle| handle.join().unwrap_or_else(|_| "panicked".to_owned()))
+            .collect()
+    });
+    let mut sorted = outcomes.clone();
+    sorted.sort();
+    assert_eq!(sorted, ["committed", "conflict"], "{outcomes:?}");
+    let roots_after: i64 = count(&pool, "SELECT count(*) FROM game_character_roots").await?;
+    assert_eq!(roots_after, roots_before + 1);
+    drop(concurrent_fence);
+
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
     Ok(())

@@ -153,6 +153,10 @@ impl DurabilityRoot {
             if !prove_current_incarnation(&mut tx, &proof).await? {
                 return Err(DurabilityError::Unavailable);
             }
+            // Serialize the operation identity before any account-scoped lock, so a
+            // concurrent reuse with another account observes the committed receipt.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-operation:' || encode($1, 'hex'), 0))")
+                .bind(operation.as_slice()).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES (encode($1, 'hex')::uuid) ON CONFLICT DO NOTHING")
                 .bind(account.as_slice()).execute(&mut *tx).await?;
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
