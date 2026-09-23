@@ -99,6 +99,7 @@ fn candidate() -> ProjectV2Draft {
                 ProjectV2Declaration::Service {
                     identity: identity("service.courier"),
                     offers: vec![],
+                    recipes: vec![],
                     fields: vec![],
                 },
                 ProjectV2Declaration::Interaction {
@@ -126,6 +127,7 @@ fn candidate() -> ProjectV2Draft {
                 },
             ],
             item_authoring: vec![],
+            authoring_profiles: vec![],
             worlds: vec![ProjectV2World {
                 key: "oteryn:world.reference".into(),
                 world_id: core().world_id,
@@ -143,6 +145,9 @@ fn candidate() -> ProjectV2Draft {
                 world: "oteryn:world.reference".into(),
                 map_revision: "map-r1".into(),
                 definition: npc.clone(),
+                area: None,
+                document: None,
+                parent_placement: None,
                 coordinate_frame: "global-target-2026-07-28".into(),
                 x: 100,
                 y: 200,
@@ -519,6 +524,7 @@ fn item_candidate() -> ProjectV2Draft {
                 unit_price: 125_000,
                 currency: None,
             }],
+            recipes: vec![],
             fields: vec![],
         });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
@@ -527,6 +533,7 @@ fn item_candidate() -> ProjectV2Draft {
             ProjectV2Family::Presentation,
             "oteryn:reference.presentation.courier",
         )),
+        document: None,
         taxonomy: Some(ProjectV2ItemTaxonomy {
             primary: "Weapons".into(),
             secondary: Some("Fist".into()),
@@ -741,6 +748,7 @@ fn protected_empty_v2_declarations_wire_remains_unchanged_without_item_authoring
         serde_json::from_slice(&documents.documents()["definitions/declarations.json"])
             .expect("declarations");
     assert!(declarations.get("item_authoring").is_none());
+    assert!(declarations.get("authoring_profiles").is_none());
     let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
         .expect("admit")
         .parse(limits())
