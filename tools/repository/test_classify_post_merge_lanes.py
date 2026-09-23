@@ -188,7 +188,7 @@ def main() -> int:
 
         # Canonical routing controls and Cargo/build inputs remain FULL.
         for index, (path, value) in enumerate((
-            (".github/workflows/rust.yml", "name: rust\n"),
+            (".github/workflows/rust.yml", "name: rust-changed\n"),
             ("tools/repository/probe.py", "print('control')\n"),
             ("Cargo.lock", "changed\n"),
         )):
