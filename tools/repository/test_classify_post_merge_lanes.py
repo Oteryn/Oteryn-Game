@@ -127,6 +127,15 @@ def main() -> int:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("{}\n", encoding="utf-8")
 
+        control = root / ".github/workflows"
+        control.mkdir(parents=True, exist_ok=True)
+        (control / "merge-gate.yml").write_text("run: python tools/control/helper.py\n", encoding="utf-8")
+        (control / "merge-group-gate.yml").write_text("name: merge-group\n", encoding="utf-8")
+        (control / "rust.yml").write_text("name: rust\n", encoding="utf-8")
+        helper = root / "tools/control/helper.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        helper.write_text("print('helper')\n", encoding="utf-8")
+
         git(root, "add", ".")
         git(root, "commit", "-qm", "base")
         base = git(root, "rev-parse", "HEAD")
@@ -156,6 +165,13 @@ def main() -> int:
         head = commit_change(root, "docs/runtime/client.json", '{"v":1}\n', "client evidence")
         result = classify(root, meta, base, head)
         assert result["rust"] is True and result["windows"] is True, result
+
+        # Canonical workflow consumers remain FULL even when the helper is non-Cargo.
+        git(root, "checkout", "-q", base)
+        head = commit_change(root, "tools/control/helper.py", "print('changed')\n", "control helper")
+        result = classify(root, meta, base, head)
+        assert result["rust"] is True and result["windows"] is True, result
+        assert result["reason"] == "canonical-control-consumer-affected", result
 
         # Direct package changes still route through Cargo reverse closure.
         git(root, "checkout", "-q", base)
