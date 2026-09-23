@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Wiki-first TibiaWiki Item census for Oteryn Content/World evidence.
 
-Discovery starts from the public TibiaWiki Item infobox template rather than from
+Discovery starts from direct TibiaWiki `Categoria:Itens` membership rather than from
 the protected Crystal-derived 38,157 identity closure. The product is source
 evidence only: it does not mint Oteryn identities, resolve Crystal/OTS identity,
 promote Reference semantics, or copy long-form page/book prose.
@@ -30,7 +30,7 @@ PROFILE = "OTERYN_ITEM_WIKI_FIRST_CENSUS_COLLECTOR/v1"
 SOURCE_ROLE = predecessor.SOURCE_ROLE
 SOURCE_ID = predecessor.SOURCE_ID
 API_BASE = predecessor.API_BASE
-ITEM_TEMPLATE_TITLE = "Predefinição:Infobox Item"
+ITEM_CATEGORY_TITLE = "Categoria:Itens"
 MAX_DISCOVERY_REQUESTS = 128
 MAX_DISCOVERED_PAGES = 20_000
 MAX_CONTINUE_FIELDS = 16
@@ -69,7 +69,7 @@ def _validate_continue(value: Any) -> dict[str, str] | None:
     return output
 
 
-def _validate_embeddedin_response(
+def _validate_categorymembers_response(
     value: Any,
 ) -> tuple[list[dict[str, Any]], dict[str, str] | None]:
     if not isinstance(value, dict):
@@ -77,7 +77,7 @@ def _validate_embeddedin_response(
     query = value.get("query")
     if not isinstance(query, dict):
         raise CensusError("DISCOVERY_QUERY_INVALID")
-    rows = query.get("embeddedin")
+    rows = query.get("categorymembers")
     if not isinstance(rows, list):
         raise CensusError("DISCOVERY_ROWS_INVALID")
     output: list[dict[str, Any]] = []
@@ -97,7 +97,7 @@ def _validate_embeddedin_response(
 
 
 def discover_item_pages(client: predecessor.ApiClient) -> list[dict[str, Any]]:
-    """Return the bounded deterministic set of main-namespace Item infobox transcluders."""
+    """Return the bounded deterministic set of direct main-namespace Item category members."""
     found: dict[int, str] = {}
     continuation: dict[str, str] | None = {"continue": ""}
     requests = 0
@@ -109,15 +109,15 @@ def discover_item_pages(client: predecessor.ApiClient) -> list[dict[str, Any]]:
             "action": "query",
             "format": "json",
             "formatversion": "2",
-            "list": "embeddedin",
-            "eititle": ITEM_TEMPLATE_TITLE,
-            "einamespace": "0",
-            "eifilterredir": "nonredirects",
-            "eilimit": "max",
+            "list": "categorymembers",
+            "cmtitle": ITEM_CATEGORY_TITLE,
+            "cmnamespace": "0",
+            "cmtype": "page",
+            "cmlimit": "max",
             **continuation,
         }
         value = client.get_json(params)
-        rows, continuation = _validate_embeddedin_response(value)
+        rows, continuation = _validate_categorymembers_response(value)
         for row in rows:
             page_id, title = int(row["page_id"]), str(row["title"])
             existing = found.get(page_id)
@@ -295,8 +295,8 @@ def compile_census(
             "role": SOURCE_ROLE,
             "api": API_BASE,
             "discovery": {
-                "kind": "MEDIAWIKI_EMBEDDEDIN",
-                "template": ITEM_TEMPLATE_TITLE,
+                "kind": "MEDIAWIKI_CATEGORYMEMBERS",
+                "category": ITEM_CATEGORY_TITLE,
                 "namespace": 0,
             },
         },
@@ -382,9 +382,9 @@ def build_manifest(
         },
         "limitations": [
             (
-                "This generation inventories pages that directly transclude the "
-                "TibiaWiki Item infobox in namespace 0; redirects and pages "
-                "without that template are outside this census."
+                "This generation inventories direct namespace-0 members of "
+                "TibiaWiki Categoria:Itens; every admitted member must still "
+                "parse as an Item infobox page."
             ),
             (
                 "TibiaWiki is structured source evidence, not Reference "
