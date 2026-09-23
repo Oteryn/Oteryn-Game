@@ -51,6 +51,20 @@ fn registered_payload_encoding_matches_descriptor_shape() {
     );
 }
 
+/// Registered schema revision 1 payload bytes are pinned. Stored payloads are
+/// retained only until expiry and later re-derived from authority state, so an
+/// encoder change that alters these bytes must be a new schema revision.
+#[test]
+fn registered_payload_bytes_are_pinned_for_schema_revision_one() {
+    let bytes = audit::encode_bootstrap(&id(1), &id(2), &id(3));
+    let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+    assert_eq!(
+        hex,
+        "0a100102030405067008800a0b0c0d0e0f0112100202030405067008800a0b0c0d0e0f02\
+         1a100302030405067008800a0b0c0d0e0f03200128013001"
+    );
+}
+
 #[test]
 fn authority_identifiers_are_distinct_uuidv7_types() {
     assert!(AccountId::from_bytes(id(1)).is_ok());
@@ -498,6 +512,36 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     .execute(&mut *aged)
     .await?;
     aged.commit().await?;
+
+    // Database boundary: a direct DELETE that starts while a hold is being
+    // placed waits on the retention lock and then sees the committed hold.
+    let mut holding = pool.begin().await?;
+    sqlx::query("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'case-race', 'security:alice', 1)")
+        .bind(id(29).as_slice())
+        .bind(first.event_id.as_slice())
+        .execute(&mut *holding)
+        .await?;
+    let racer = pool.clone();
+    let delete = tokio::spawn(async move {
+        sqlx::query("DELETE FROM game_character_audit_outbox")
+            .execute(&racer)
+            .await
+            .is_err()
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    holding.commit().await?;
+    assert!(
+        delete.await?,
+        "direct delete removed an event held concurrently"
+    );
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM game_character_audit_outbox").await?,
+        1
+    );
+    sqlx::query("UPDATE game_character_audit_legal_holds SET released_at = 2, released_by = 'security:bob' WHERE hold_id = encode($1,'hex')::uuid")
+        .bind(id(29).as_slice())
+        .execute(&pool)
+        .await?;
 
     // An explicit legal hold blocks ordinary expiry until its single release.
     let hold = root

@@ -132,10 +132,15 @@ CREATE FUNCTION game_character_audit_guard() RETURNS trigger LANGUAGE plpgsql AS
                 OLD.occurred_at, OLD.payload, OLD.payload_sha256, OLD.expires_at, OLD.server_build_id) THEN
             RETURN NEW;
         END IF;
-    ELSIF OLD.expires_at <= floor(extract(epoch FROM clock_timestamp()) * 1000)::BIGINT
-          AND NOT EXISTS (SELECT 1 FROM game_character_audit_legal_holds
-                          WHERE event_id = OLD.event_id AND released_at IS NULL) THEN
-        RETURN OLD;
+    ELSE
+        -- Serialize with hold placement at the database boundary, then check
+        -- holds in a later statement that sees every committed hold.
+        PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:character-audit-retention', 0));
+        IF OLD.expires_at <= floor(extract(epoch FROM clock_timestamp()) * 1000)::BIGINT
+           AND NOT EXISTS (SELECT 1 FROM game_character_audit_legal_holds
+                           WHERE event_id = OLD.event_id AND released_at IS NULL) THEN
+            RETURN OLD;
+        END IF;
     END IF;
     RAISE EXCEPTION 'Character audit record is immutable until unheld ordinary expiry' USING ERRCODE = '23514';
 END; $$;
@@ -143,6 +148,11 @@ CREATE TRIGGER game_character_audit_guard BEFORE UPDATE OR DELETE ON game_charac
     FOR EACH ROW EXECUTE FUNCTION game_character_audit_guard();
 
 CREATE FUNCTION game_character_audit_hold_guard() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    -- Every hold change takes the same retention lock as audit deletion.
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:character-audit-retention', 0));
+    IF TG_OP = 'INSERT' THEN
+        RETURN NEW;
+    END IF;
     IF TG_OP = 'UPDATE' AND OLD.released_at IS NULL AND NEW.released_at IS NOT NULL
        AND (NEW.hold_id, NEW.event_id, NEW.reason, NEW.authorizing_actor, NEW.started_at)
            IS NOT DISTINCT FROM (OLD.hold_id, OLD.event_id, OLD.reason, OLD.authorizing_actor, OLD.started_at) THEN
@@ -150,7 +160,7 @@ CREATE FUNCTION game_character_audit_hold_guard() RETURNS trigger LANGUAGE plpgs
     END IF;
     RAISE EXCEPTION 'Character audit legal hold is append-only until its single release' USING ERRCODE = '23514';
 END; $$;
-CREATE TRIGGER game_character_audit_hold_guard BEFORE UPDATE OR DELETE ON game_character_audit_legal_holds
+CREATE TRIGGER game_character_audit_hold_guard BEFORE INSERT OR UPDATE OR DELETE ON game_character_audit_legal_holds
     FOR EACH ROW EXECUTE FUNCTION game_character_audit_hold_guard();
 
 -- Row triggers do not fire for TRUNCATE; refuse it on every Character relation

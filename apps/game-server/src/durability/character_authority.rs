@@ -82,8 +82,10 @@ pub struct CharacterAuthorityRecord {
     pub event_id: [u8; 16],
     pub transaction_id: [u8; 16],
     /// Registered audit payload bytes. They are the deterministic encoding of
-    /// the retained authority identities, so an exact retry returns the same
-    /// bytes even after the audit event reached ordinary expiry.
+    /// the retained authority identities, pinned byte for byte for schema
+    /// revision 1 by `registered_payload_bytes_are_pinned_for_schema_revision_one`.
+    /// An exact retry therefore returns the same bytes even after ordinary
+    /// expiry deleted the event, without retaining the payload past P90D.
     pub payload: Vec<u8>,
 }
 
