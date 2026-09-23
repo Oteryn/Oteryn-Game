@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-semantic-promotion-504
-pr: null
+pr: 776
 base_sha: 899d43de62d64d030bf0a894eac24956c7899287
 head_sha: pending
 final_head_sha: null
