@@ -743,6 +743,123 @@ fn full_family_import() -> ProtectedCw2B1FullItemFamilyImport {
     protected_cw2_b1_full_item_family_import(B1_EVIDENCE).expect("protected B1 full Item family")
 }
 
+fn promoted_family_import() -> ProtectedCw2B1PromotedItemFamilyImport {
+    protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)
+        .expect("protected B1 promoted Item family")
+}
+
+fn count_promoted_atoms(semantics: &ReferenceItemSemantics) -> usize {
+    use ReferenceItemField::{Known, Unknown};
+
+    let mut count = 0_usize;
+    if let Known(presentation) = &semantics.presentation {
+        if matches!(&presentation.name, Known(_)) {
+            count += 1;
+        }
+        assert!(matches!(&presentation.description, Unknown));
+    }
+    if let Known(weapon) = &semantics.weapon {
+        if matches!(&weapon.attack, Known(_)) {
+            count += 1;
+        }
+        if matches!(&weapon.defense, Known(_)) {
+            count += 1;
+        }
+        if matches!(&weapon.extra_defense, Known(_)) {
+            count += 1;
+        }
+        if matches!(&weapon.range, Known(_)) {
+            count += 1;
+        }
+        if matches!(&weapon.hit_chance, Known(_)) {
+            count += 1;
+        }
+        assert!(matches!(&weapon.weapon_type, Unknown));
+        assert!(matches!(&weapon.max_hit_chance, Unknown));
+        assert!(matches!(&weapon.ammunition, Unknown));
+        assert!(matches!(&weapon.elemental, Unknown));
+    }
+    if let Known(protection) = &semantics.protection {
+        if matches!(&protection.armor, Known(_)) {
+            count += 1;
+        }
+        assert!(matches!(&protection.resistances, Unknown));
+    }
+    if let Known(charges) = &semantics.charges
+        && matches!(&charges.count, Known(_))
+    {
+        count += 1;
+    }
+    if let Known(container) = &semantics.container
+        && matches!(&container.capacity, Known(_))
+    {
+        count += 1;
+    }
+    count
+}
+
+#[test]
+fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_materialization_drift()
+{
+    let base = full_family_import();
+    let promoted = promoted_family_import();
+
+    assert_eq!(
+        promoted.promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+    );
+    assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+    assert_eq!(
+        promoted.family.allocation_digest_sha256, base.allocation_digest_sha256,
+        "semantic promotion must not change the protected identity allocation"
+    );
+    assert_eq!(promoted.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+
+    let base_shape = base
+        .records
+        .iter()
+        .map(|record| {
+            let ProjectReferenceRecord::Item {
+                identity,
+                materializable,
+                stack_class,
+                ..
+            } = record
+            else {
+                panic!("full family contains only Items");
+            };
+            (identity.key.clone(), (*materializable, *stack_class))
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    let mut atom_count = 0_usize;
+    let mut promoted_items = 0_usize;
+    for record in &promoted.family.records {
+        let ProjectReferenceRecord::Item {
+            identity,
+            materializable,
+            stack_class,
+            semantics,
+            ..
+        } = record
+        else {
+            panic!("promoted full family contains only Items");
+        };
+        assert_eq!(
+            base_shape.get(&identity.key),
+            Some(&(*materializable, *stack_class)),
+            "promotion changed materializable/stack shape for {}",
+            identity.key
+        );
+        let atoms = count_promoted_atoms(semantics);
+        atom_count += atoms;
+        promoted_items += usize::from(atoms > 0);
+    }
+
+    assert_eq!(atom_count, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+}
+
 fn decoded_json_fields(bytes: &[u8]) -> usize {
     fn count(value: &serde_json::Value) -> usize {
         1 + match value {
