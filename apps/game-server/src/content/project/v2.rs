@@ -126,6 +126,7 @@ pub enum ProjectV2Declaration {
     WorldObject {
         identity: ProjectV2Identity,
         presentation: Option<ProjectV2DefinitionRef>,
+        fields: Vec<ProjectV2CandidateField>,
     },
     #[serde(rename = "NPC")]
     Npc {
@@ -134,27 +135,35 @@ pub enum ProjectV2Declaration {
         behavior: Option<ProjectV2DefinitionRef>,
         dialogue: Option<ProjectV2DefinitionRef>,
         services: Vec<ProjectV2DefinitionRef>,
+        fields: Vec<ProjectV2CandidateField>,
     },
     Dialogue {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
     Service {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
     Interaction {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
     Quest {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
     Transition {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
     House {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
     Encounter {
         identity: ProjectV2Identity,
+        fields: Vec<ProjectV2CandidateField>,
     },
 }
 
@@ -177,13 +186,41 @@ impl ProjectV2Declaration {
         match self {
             Self::WorldObject { identity, .. }
             | Self::Npc { identity, .. }
-            | Self::Dialogue { identity }
-            | Self::Service { identity }
-            | Self::Interaction { identity }
-            | Self::Quest { identity }
-            | Self::Transition { identity }
-            | Self::House { identity }
-            | Self::Encounter { identity } => identity,
+            | Self::Dialogue { identity, .. }
+            | Self::Service { identity, .. }
+            | Self::Interaction { identity, .. }
+            | Self::Quest { identity, .. }
+            | Self::Transition { identity, .. }
+            | Self::House { identity, .. }
+            | Self::Encounter { identity, .. } => identity,
+        }
+    }
+
+    fn fields(&self) -> &[ProjectV2CandidateField] {
+        match self {
+            Self::WorldObject { fields, .. }
+            | Self::Npc { fields, .. }
+            | Self::Dialogue { fields, .. }
+            | Self::Service { fields, .. }
+            | Self::Interaction { fields, .. }
+            | Self::Quest { fields, .. }
+            | Self::Transition { fields, .. }
+            | Self::House { fields, .. }
+            | Self::Encounter { fields, .. } => fields,
+        }
+    }
+
+    fn fields_mut(&mut self) -> &mut Vec<ProjectV2CandidateField> {
+        match self {
+            Self::WorldObject { fields, .. }
+            | Self::Npc { fields, .. }
+            | Self::Dialogue { fields, .. }
+            | Self::Service { fields, .. }
+            | Self::Interaction { fields, .. }
+            | Self::Quest { fields, .. }
+            | Self::Transition { fields, .. }
+            | Self::House { fields, .. }
+            | Self::Encounter { fields, .. } => fields,
         }
     }
 
@@ -223,12 +260,40 @@ impl ProjectV2Declaration {
     }
 }
 
+/// Evidence-carrying source observations, with no executable field interpretation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2CandidateField {
+    pub field_path: String,
+    pub value: ProjectV2CandidateValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "value", deny_unknown_fields)]
+pub enum ProjectV2CandidateValue {
+    Text(String),
+    Integer(i64),
+    Boolean(bool),
+    SourceId(u64),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2Bounds {
+    pub min_x: i64,
+    pub min_y: i64,
+    pub max_x_exclusive: i64,
+    pub max_y_exclusive: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2World {
     pub key: String,
     pub world_id: String,
     pub coordinate_frame: String,
+    pub bounds: ProjectV2Bounds,
+    pub floors: Vec<i16>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -246,8 +311,16 @@ pub struct ProjectV2Placement {
     pub coordinate_frame: String,
     pub x: i32,
     pub y: i32,
-    pub z: i32,
+    pub floor: i16,
+    pub presentation_order: ProjectV2PresentationOrder,
     pub disposition: ProjectV2Disposition,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2PresentationOrder {
+    pub plane: i32,
+    pub order: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -285,6 +358,8 @@ pub enum ProjectV2EvidenceClass {
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2Source {
     pub key: String,
+    /// Binds this authoring source to the complete v1 provenance/reimport batch.
+    pub import_batch_id: String,
     pub revision: String,
     pub sha256: String,
     pub evidence: ProjectV2EvidenceClass,
@@ -480,7 +555,7 @@ pub(super) fn parse_v2_snapshot(
         sources: sources.sources,
         editor: editor.entries,
     };
-    validate_v2_state(&state, &reference.records, limits)?;
+    validate_v2_state(&state, &reference.records, &imports.batches, limits)?;
     Ok(WorldProject {
         root: plan.root,
         manifest: plan.manifest,
@@ -499,6 +574,7 @@ pub(super) fn parse_v2_snapshot(
 fn validate_v2_state(
     state: &ProjectV2State,
     records: &[ProjectReferenceRecord],
+    imports: &[ImportBatch],
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
     let mut identities = BTreeSet::new();
@@ -519,6 +595,14 @@ fn validate_v2_state(
     for declaration in &state.declarations {
         let identity = declaration.identity();
         identity.validate()?;
+        let mut previous_field: Option<&str> = None;
+        for field in declaration.fields() {
+            ProductionKey::new(&field.field_path)?;
+            if previous_field.is_some_and(|prior| prior >= field.field_path.as_str()) {
+                return Err(ProjectError::InvalidProject("v2 candidate fields are not sorted and unique"));
+            }
+            previous_field = Some(&field.field_path);
+        }
         let key = (declaration.family(), identity.key.as_str());
         if previous.is_some_and(|prior| prior >= key) {
             return Err(ProjectError::InvalidProject(
@@ -561,11 +645,25 @@ fn validate_v2_state(
         limits.max_reference_records,
     )?;
     let mut worlds = BTreeMap::new();
+    let mut world_ids = BTreeSet::new();
     for world in &state.worlds {
         ProductionKey::new(&world.key)?;
         decode_world_id(&world.world_id)?;
         super::super::CoordinateFrameRef::new(&world.coordinate_frame)?;
-        if worlds.insert(&world.key, &world.coordinate_frame).is_some() {
+        let bounds = &world.bounds;
+        if bounds.min_x < i64::from(i32::MIN)
+            || bounds.min_y < i64::from(i32::MIN)
+            || bounds.max_x_exclusive > i64::from(i32::MAX) + 1
+            || bounds.max_y_exclusive > i64::from(i32::MAX) + 1
+            || bounds.min_x >= bounds.max_x_exclusive
+            || bounds.min_y >= bounds.max_y_exclusive
+            || world.floors.is_empty()
+            || world.floors.windows(2).any(|pair| pair[0] >= pair[1])
+        {
+            return Err(ProjectError::InvalidProject("invalid v2 world bounds or floors"));
+        }
+        limits.check("v2 world floors", world.floors.len(), limits.max_reference_records)?;
+        if worlds.insert(&world.key, world).is_some() || !world_ids.insert(&world.world_id) {
             return Err(ProjectError::InvalidProject("duplicate v2 world identity"));
         }
     }
@@ -584,17 +682,29 @@ fn validate_v2_state(
         limits.max_reference_records,
     )?;
     let mut keys = BTreeSet::new();
+    let mut orders = BTreeSet::new();
     for placement in &state.placements {
         ProductionKey::new(&placement.key)?;
         ProductionAtom::new("v2 map revision", &placement.map_revision)?;
         super::super::CoordinateFrameRef::new(&placement.coordinate_frame)?;
         require_ref(&placement.definition)?;
-        if worlds.get(&placement.world).map(|frame| frame.as_str())
-            != Some(placement.coordinate_frame.as_str())
+        let world = worlds.get(&placement.world).ok_or(ProjectError::InvalidProject(
+            "v2 placement world is missing",
+        ))?;
+        if world.coordinate_frame != placement.coordinate_frame
+            || i64::from(placement.x) < world.bounds.min_x
+            || i64::from(placement.x) >= world.bounds.max_x_exclusive
+            || i64::from(placement.y) < world.bounds.min_y
+            || i64::from(placement.y) >= world.bounds.max_y_exclusive
+            || world.floors.binary_search(&placement.floor).is_err()
         {
             return Err(ProjectError::InvalidProject(
-                "v2 placement world/frame mismatch",
+                "v2 placement world/frame/position mismatch",
             ));
+        }
+        if !orders.insert((&placement.world, placement.x, placement.y, placement.floor,
+            &placement.presentation_order)) {
+            return Err(ProjectError::InvalidProject("duplicate v2 presentation order at tile"));
         }
         if !keys.insert(&placement.key) {
             return Err(ProjectError::InvalidProject(
@@ -669,6 +779,11 @@ fn validate_v2_state(
         ProductionKey::new(&source.key)?;
         ProductionAtom::new("v2 source revision", &source.revision)?;
         Sha256HexDigest::new(&source.sha256)?;
+        let batch = imports.iter().find(|batch| batch.batch_id == source.import_batch_id)
+            .ok_or(ProjectError::InvalidProject("v2 source import batch is missing"))?;
+        if batch.source_revision != source.revision || batch.source_artifact_sha256 != source.sha256 {
+            return Err(ProjectError::InvalidProject("v2 source disagrees with import batch"));
+        }
         if !source_keys.insert((&source.key, &source.revision)) {
             return Err(ProjectError::InvalidProject("duplicate v2 source"));
         }
@@ -744,6 +859,9 @@ impl CanonicalProjectDocuments {
             .state
             .declarations
             .sort_by(|a, b| (a.family(), &a.identity().key).cmp(&(b.family(), &b.identity().key)));
+        for declaration in &mut draft.state.declarations {
+            declaration.fields_mut().sort_by(|a, b| a.field_path.cmp(&b.field_path));
+        }
         draft.state.worlds.sort_by(|a, b| a.key.cmp(&b.key));
         draft.state.placements.sort_by(|a, b| a.key.cmp(&b.key));
         draft
@@ -764,7 +882,7 @@ impl CanonicalProjectDocuments {
             entry.tags.sort();
         }
         draft.core.validate(limits)?;
-        validate_v2_state(&draft.state, &draft.core.records, limits)?;
+        validate_v2_state(&draft.state, &draft.core.records, &draft.core.imports, limits)?;
         limits.check(
             "project documents",
             3 + ROLE_SPECS.len(),

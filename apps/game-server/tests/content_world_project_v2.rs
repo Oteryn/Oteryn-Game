@@ -82,37 +82,56 @@ fn candidate() -> ProjectV2Draft {
                         ProjectV2Family::Service,
                         "oteryn:content.service.courier",
                     )],
+                    fields: vec![],
                 },
                 ProjectV2Declaration::WorldObject {
                     identity: identity("object.sign"),
                     presentation: Some(presentation.clone()),
+                    fields: vec![],
                 },
                 ProjectV2Declaration::Dialogue {
                     identity: identity("dialogue.courier"),
+                    fields: vec![ProjectV2CandidateField {
+                        field_path: "oteryn:source.dialogue-text".into(),
+                        value: ProjectV2CandidateValue::Text("hello".into()),
+                    }],
                 },
                 ProjectV2Declaration::Service {
                     identity: identity("service.courier"),
+                    fields: vec![],
                 },
                 ProjectV2Declaration::Interaction {
                     identity: identity("interaction.courier"),
+                    fields: vec![],
                 },
                 ProjectV2Declaration::Quest {
                     identity: identity("quest.courier"),
+                    fields: vec![ProjectV2CandidateField {
+                        field_path: "oteryn:source.stage-id".into(),
+                        value: ProjectV2CandidateValue::SourceId(11),
+                    }],
                 },
                 ProjectV2Declaration::Transition {
                     identity: identity("transition.courier"),
+                    fields: vec![],
                 },
                 ProjectV2Declaration::House {
                     identity: identity("house.courier"),
+                    fields: vec![],
                 },
                 ProjectV2Declaration::Encounter {
                     identity: identity("encounter.courier"),
+                    fields: vec![],
                 },
             ],
             worlds: vec![ProjectV2World {
                 key: "oteryn:world.reference".into(),
                 world_id: core().world_id,
                 coordinate_frame: core().coordinate_frame,
+                bounds: ProjectV2Bounds {
+                    min_x: 0, min_y: 0, max_x_exclusive: 256, max_y_exclusive: 256,
+                },
+                floors: vec![7],
             }],
             placements: vec![ProjectV2Placement {
                 key: "oteryn:placement.courier".into(),
@@ -122,7 +141,8 @@ fn candidate() -> ProjectV2Draft {
                 coordinate_frame: "global-target-2026-07-28".into(),
                 x: 100,
                 y: 200,
-                z: 7,
+                floor: 7,
+                presentation_order: ProjectV2PresentationOrder { plane: 0, order: 0 },
                 disposition: ProjectV2Disposition::CandidateOnly,
             }],
             appearance_bindings: vec![ProjectV2AppearanceBinding {
@@ -134,12 +154,7 @@ fn candidate() -> ProjectV2Draft {
                 identity: asset,
                 sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
             }],
-            sources: vec![ProjectV2Source {
-                key: "oteryn:source.reference".into(),
-                revision: "source-r1".into(),
-                sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
-                evidence: ProjectV2EvidenceClass::Unknown,
-            }],
+            sources: vec![],
             editor: vec![ProjectV2EditorEntry {
                 target: npc,
                 display_name: "Courier".into(),
@@ -159,17 +174,39 @@ fn canonical(value: &Value) -> Vec<u8> {
     bytes
 }
 
-fn rebind_manifest_and_lock(documents: &mut std::collections::BTreeMap<String, Vec<u8>>, manifest: &Value) {
+fn rebind_manifest_and_lock(
+    documents: &mut std::collections::BTreeMap<String, Vec<u8>>,
+    manifest: &Value,
+) {
     let manifest_bytes = canonical(manifest);
     let package = PackageManifestBinding::new(
         ProductionKey::new(manifest["package_key"].as_str().expect("package key")).expect("key"),
-        ProductionAtom::new("revision", manifest["package_revision"].as_str().expect("revision")).expect("revision"),
-        ProductionAtom::new("schema", manifest["semantic_schema_version"].as_str().expect("schema")).expect("schema"),
-        ProductionAtom::new("license", manifest["licensing_metadata"].as_str().expect("license")).expect("license"),
+        ProductionAtom::new(
+            "revision",
+            manifest["package_revision"].as_str().expect("revision"),
+        )
+        .expect("revision"),
+        ProductionAtom::new(
+            "schema",
+            manifest["semantic_schema_version"]
+                .as_str()
+                .expect("schema"),
+        )
+        .expect("schema"),
+        ProductionAtom::new(
+            "license",
+            manifest["licensing_metadata"].as_str().expect("license"),
+        )
+        .expect("license"),
         Sha256HexDigest::new(&world_project_sha256(&manifest_bytes)).expect("digest"),
     );
     let mut lock: Value = serde_json::from_slice(&documents["content.lock.json"]).expect("lock");
-    lock["entries"][0]["package_provenance_digest"] = json!(package.package_provenance_digest().expect("provenance").as_str());
+    lock["entries"][0]["package_provenance_digest"] = json!(
+        package
+            .package_provenance_digest()
+            .expect("provenance")
+            .as_str()
+    );
     let lock_bytes = canonical(&lock);
     let mut root: Value = serde_json::from_slice(&documents["project.json"]).expect("root");
     root["manifest_sha256"] = json!(world_project_sha256(&manifest_bytes));
@@ -230,6 +267,7 @@ fn all_v2_declarative_families_round_trip_without_lowering_candidates() {
     let state = project.v2().expect("v2 state");
     assert_eq!(state.declarations.len(), 9);
     assert_eq!(state.placements.len(), 1);
+    assert_eq!(state.worlds[0].floors, [7]);
     assert_eq!(state.editor[0].aliases, ["Courier", "Messenger"]);
     assert_eq!(
         project
@@ -270,6 +308,42 @@ fn typed_references_and_author_aliases_fail_closed() {
     let mut invalid_tag = candidate();
     invalid_tag.state.editor[0].tags.push("quest-reward".into());
     assert!(CanonicalProjectDocuments::from_v2_draft(invalid_tag, limits()).is_err());
+
+    let mut duplicate_field = candidate();
+    if let ProjectV2Declaration::Dialogue { fields, .. } = &mut duplicate_field.state.declarations[2] {
+        fields.push(fields[0].clone());
+    }
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate_field, limits()).is_err());
+
+    let mut orphan_source = candidate();
+    orphan_source.state.sources.push(ProjectV2Source {
+        key: "oteryn:source.reference".into(), import_batch_id: "absent".into(),
+        revision: "source-r1".into(),
+        sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
+        evidence: ProjectV2EvidenceClass::Unknown,
+    });
+    assert!(CanonicalProjectDocuments::from_v2_draft(orphan_source, limits()).is_err());
+}
+
+#[test]
+fn spatial_bounds_floors_and_presentation_order_follow_the_native_contract() {
+    let mut out_of_bounds = candidate();
+    out_of_bounds.state.placements[0].x = 256;
+    assert!(CanonicalProjectDocuments::from_v2_draft(out_of_bounds, limits()).is_err());
+
+    let mut unknown_floor = candidate();
+    unknown_floor.state.placements[0].floor = 6;
+    assert!(CanonicalProjectDocuments::from_v2_draft(unknown_floor, limits()).is_err());
+
+    let mut unsorted_floors = candidate();
+    unsorted_floors.state.worlds[0].floors = vec![7, 6];
+    assert!(CanonicalProjectDocuments::from_v2_draft(unsorted_floors, limits()).is_err());
+
+    let mut duplicate_order = candidate();
+    let mut second = duplicate_order.state.placements[0].clone();
+    second.key = "oteryn:placement.second".into();
+    duplicate_order.state.placements.push(second);
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate_order, limits()).is_err());
 }
 
 #[test]
@@ -295,14 +369,25 @@ fn v2_inventory_digest_and_bounded_document_count_are_enforced() {
 
 #[test]
 fn v2_role_and_strict_schema_reject_undeclared_authority() {
-    let documents = CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
     let mut unknown_role = documents.documents().clone();
-    let mut manifest: Value = serde_json::from_slice(&unknown_role["manifest.json"]).expect("manifest");
-    let role = manifest["documents"].as_array_mut().expect("inventory").iter_mut()
-        .find(|entry| entry["role"] == "declarative-definitions").expect("role");
+    let mut manifest: Value =
+        serde_json::from_slice(&unknown_role["manifest.json"]).expect("manifest");
+    let role = manifest["documents"]
+        .as_array_mut()
+        .expect("inventory")
+        .iter_mut()
+        .find(|entry| entry["role"] == "declarative-definitions")
+        .expect("role");
     role["role"] = json!("executable-definitions");
     rebind_manifest_and_lock(&mut unknown_role, &manifest);
-    assert!(ProjectSnapshot::new(unknown_role, limits()).expect("admit").parse(limits()).is_err());
+    assert!(
+        ProjectSnapshot::new(unknown_role, limits())
+            .expect("admit")
+            .parse(limits())
+            .is_err()
+    );
 
     let mut unknown_field = documents.documents().clone();
     let path = "worlds/world.json";
@@ -310,11 +395,36 @@ fn v2_role_and_strict_schema_reject_undeclared_authority() {
     world["placements"][0]["runtime_instance"] = json!("implicit");
     let bytes = canonical(&world);
     unknown_field.insert(path.into(), bytes.clone());
-    let mut manifest: Value = serde_json::from_slice(&unknown_field["manifest.json"]).expect("manifest");
-    let entry = manifest["documents"].as_array_mut().expect("inventory").iter_mut()
-        .find(|entry| entry["locator"] == path).expect("entry");
+    let mut manifest: Value =
+        serde_json::from_slice(&unknown_field["manifest.json"]).expect("manifest");
+    let entry = manifest["documents"]
+        .as_array_mut()
+        .expect("inventory")
+        .iter_mut()
+        .find(|entry| entry["locator"] == path)
+        .expect("entry");
     entry["byte_length"] = json!(bytes.len());
     entry["sha256"] = json!(world_project_sha256(&bytes));
     rebind_manifest_and_lock(&mut unknown_field, &manifest);
-    assert!(ProjectSnapshot::new(unknown_field, limits()).expect("admit").parse(limits()).is_err());
+    assert!(
+        ProjectSnapshot::new(unknown_field, limits())
+            .expect("admit")
+            .parse(limits())
+            .is_err()
+    );
+}
+
+#[test]
+fn relocating_one_managed_document_keeps_v2_semantic_identity() {
+    let original = CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let mut moved = original.documents().clone();
+    let declaration_bytes = moved.remove("definitions/declarations.json").expect("declarations");
+    moved.insert("definitions/moved.json".into(), declaration_bytes);
+    let mut manifest: Value = serde_json::from_slice(&moved["manifest.json"]).expect("manifest");
+    let entry = manifest["documents"].as_array_mut().expect("inventory").iter_mut()
+        .find(|entry| entry["role"] == "declarative-definitions").expect("role");
+    entry["locator"] = json!("definitions/moved.json");
+    rebind_manifest_and_lock(&mut moved, &manifest);
+    let parsed = ProjectSnapshot::new(moved, limits()).expect("admit moved project").parse(limits()).expect("parse moved project");
+    assert_eq!(parsed.canonical_documents(limits()).expect("canonical rewrite").documents(), original.documents());
 }
