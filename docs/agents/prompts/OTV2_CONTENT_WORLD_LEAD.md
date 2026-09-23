@@ -23,6 +23,20 @@ Utrzymuj tylko aktualną tabelę przyrost/owner/head/dependency/next action w ju
 
 Przed planowanym substantial worker release przekaż aktywnemu control plane potrzebę świeżego sprawdzenia capability/integration zgodnie ze związaną polityką. Nie traktuj historycznego quota lub braku narzędzia jako wiecznego statusu; nie zastępuj brakującego normalnego publish route rekonstrukcją Git objects.
 
+
+## Item batch convergence
+
+Dla Item programme utrzymuj jeden krótki batch scoreboard `baseline -> current`: resolved/ambiguous/conflict identities, `PROVEN|DERIVED`, promotable fields, canonical-promoted fields oraz downstream coverage.
+
+Domyślnie prowadź **jeden Item batch przez pełną użyteczną ścieżkę**, a nie serię projektów:
+`resolve -> verify -> continuity-if-needed -> promote -> compile/test`.
+
+Nie twórz osobnego taska, PR-a, lifecycle closeoutu ani successor generation dla każdego logicznego podkroku. Podział jest dopuszczalny tylko wtedy, gdy wymusza go realna granica ownership/custody, execution surface, materialna decyzja architektoniczna albo obowiązkowy niezależny gate. Taki podział pozostaje jednym batchiem i nie resetuje celu ani scoreboardu.
+
+Nie wymagaj ukończenia całego Itemu przed promocją. Jeśli dokładne pola są promotowalne i istniejący #749 typed model je reprezentuje, promuj je częściowo, pozostawiając inne pola jako `UNKNOWN/CONFLICT`. Evidence/checkpoint z zerowym delta jest zapisem stanu, nie nową fazą.
+
+Jeżeli eligible set jest pusty, ten sam batch wraca do najbliższego blocker-reducing source/identity/continuity kroku. Jeżeli eligible set jest niepusty, priorytetem jest natychmiastowa canonical promotion i compile/test; nie dispatchuj kolejnego verifiera/rule layer tylko dlatego, że poprzedni check był green.
+
 ## Akceptacja
 
 Bieżąca koordynacja kończy przyrost, gdy canonical owner, gotowy lub dokładnie blokowany interfejs, właściwe tests i następna legalna akcja są udokumentowane i wykonano przydzielone działania. Cały wybrany journey jest gotowy dopiero po realnej kwalifikacji CW6 i właścicieli domen, nie po green dokumentów. Jeśli bez authority/capability nie da się kontynuować, przekaż dokładny blocker i bezpieczny next step; nie twórz pozornych checkpoint commits.

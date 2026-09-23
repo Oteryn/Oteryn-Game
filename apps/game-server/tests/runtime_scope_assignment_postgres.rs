@@ -1321,7 +1321,7 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
                 Err(AssignmentError::ReconcileRequired)
             ));
             assert!(matches!(
-                writer.reconcile(key(2)).await,
+                writer.reconcile(&blocked).await,
                 Err(AssignmentError::ReconcileRequired)
             ));
             // A restarted writer restores the same slot custody.
@@ -1337,7 +1337,13 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
             // Under the slot lock an occupied matching slot proves non-commit.
             assert_eq!(
                 restarted
-                    .reconcile(key(1))
+                    .reconcile(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target
+                        }
+                    )?)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -1359,7 +1365,13 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
             assert_eq!(retried.assignment.source_revision, 1);
             assert_eq!(
                 restarted
-                    .reconcile(key(1))
+                    .reconcile(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target
+                        }
+                    )?)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Committed(retried)
@@ -1518,7 +1530,7 @@ fn rollback_after_each_tentative_effect_and_lost_commit_reconcile_exactly() -> T
                 );
                 assert_eq!(
                     writer
-                        .reconcile(key(1))
+                        .reconcile(&command)
                         .await
                         .map_err(|e| format!("{e:?}"))?,
                     ReconcileOutcome::Absent
@@ -1551,7 +1563,7 @@ fn rollback_after_each_tentative_effect_and_lost_commit_reconcile_exactly() -> T
             ensure_ready(&root).await?;
             assert_eq!(
                 writer
-                    .reconcile(key(1))
+                    .reconcile(&command)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -1561,7 +1573,7 @@ fn rollback_after_each_tentative_effect_and_lost_commit_reconcile_exactly() -> T
             let receipt = committed(writer.submit(&command).await)?;
             assert_eq!(
                 writer
-                    .reconcile(key(1))
+                    .reconcile(&command)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Committed(receipt.clone())
@@ -1670,19 +1682,26 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                 Err(AssignmentError::Ambiguous)
             ));
             ensure_ready(&root).await?;
-            assert_eq!(
-                writer
-                    .reconcile(key(2))
-                    .await
-                    .map_err(|e| format!("{e:?}"))?,
-                ReconcileOutcome::Absent
-            );
+            // Regressed history cannot prove non-commit: reconciliation fails
+            // closed until the retained maximum is restored.
+            assert!(matches!(
+                writer.reconcile(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            ensure_ready(&root).await?;
             // Restore the retained maximum through the ordinary monotonic guard.
             sqlx::query(
                 "UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 1",
             )
             .execute(&pool)
             .await?;
+            assert_eq!(
+                writer
+                    .reconcile(&replace)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Absent
+            );
 
             // A sparse history (receipt 1 plus a receipt at the maximum, with
             // the high-water at the maximum) is invalid retained history, not a
@@ -2149,13 +2168,12 @@ fn history_trailing_the_high_water_fails_closed() -> TestResult {
                 Err(AssignmentError::Ambiguous)
             ));
             ensure_ready(&root).await?;
-            assert_eq!(
-                writer
-                    .reconcile(key(3))
-                    .await
-                    .map_err(|e| format!("{e:?}"))?,
-                ReconcileOutcome::Absent
-            );
+            // Trailing history cannot prove non-commit: reconciliation fails closed.
+            assert!(matches!(
+                writer.reconcile(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            ensure_ready(&root).await?;
             assert_eq!(high_water(&pool).await?.0, "2");
 
             // The same exact-equality rule protects the registration namespace.
@@ -2466,7 +2484,13 @@ fn duplicate_writer_handles_share_one_nasg_queue() -> TestResult {
             ensure_ready(&root).await?;
             assert_eq!(
                 second_handle
-                    .reconcile(key(1))
+                    .reconcile(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target
+                        }
+                    )?)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
                 ReconcileOutcome::Absent
@@ -2657,21 +2681,20 @@ fn restored_guard_behind_latest_fence_and_stale_row_fail_closed() -> TestResult 
                 runtime_guard_publication_revision: Some(2),
                 ..second.predecessor()
             };
-            let outcome = writer
-                .submit(&request(
-                    3,
-                    AssignmentCommand::Revoke {
-                        scope: channel,
-                        predecessor: stale,
-                    },
-                )?)
-                .await;
+            let revoke = request(
+                3,
+                AssignmentCommand::Revoke {
+                    scope: channel,
+                    predecessor: stale,
+                },
+            )?;
+            let outcome = writer.submit(&revoke).await;
             assert!(
                 !matches!(outcome, Ok(AssignmentOutcome::Committed(_))),
                 "revoke committed across a missing guard fence: {outcome:?}"
             );
             ensure_ready(&root).await?;
-            let _ = writer.reconcile(key(3)).await;
+            let _ = writer.reconcile(&revoke).await;
             assert_eq!(high_water(&pool).await?.0, "2");
 
             // Also roll the assignment row back to the first decision: guard and
@@ -2714,6 +2737,144 @@ fn restored_guard_behind_latest_fence_and_stale_row_fail_closed() -> TestResult 
 }
 
 #[test]
+fn dropped_or_substituted_fence_history_fails_closed() -> TestResult {
+    run("fence_history_restore", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let guards = AdmissionGuardStore::from_root(root.clone());
+            let channel = scope(1)?;
+            let a = register(&root, 1, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let now = db_now(&pool).await?;
+            publish_runtime(&guards, runtime_change(channel, None, 1, true, now), now).await?;
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: channel,
+                            target: a,
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(first.fenced_publication_revision, Some(2));
+            // A later standalone non-ready publication moves the guard beyond
+            // the fence; the retained fence revision still proves the decision.
+            let fenced = current_runtime(&guards, channel).await?;
+            let now = db_now(&pool).await?;
+            publish_runtime(
+                &guards,
+                runtime_change(channel, Some(&fenced), 1, false, now),
+                now,
+            )
+            .await?;
+            root.read_runtime_scope_predecessor(channel)
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+
+            // Substituted provenance at the fence revision fails closed.
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                "CREATE TABLE snap_fence AS SELECT * FROM game_durability_admission_guard_history WHERE publication_revision = 2",
+                "UPDATE game_durability_admission_guard_history SET decision_identity = 'substituted-decision' WHERE publication_revision = 2",
+                "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert!(root.read_runtime_scope_predecessor(channel).await.is_err());
+
+            // A dropped fence revision behind a consistent newer guard fails closed.
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                "DELETE FROM game_durability_admission_guard_history WHERE publication_revision = 2",
+                "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert!(root.read_runtime_scope_predecessor(channel).await.is_err());
+            let revoke = request(
+                2,
+                AssignmentCommand::Revoke {
+                    scope: channel,
+                    predecessor: AssignmentPredecessor {
+                        runtime_guard_publication_revision: Some(3),
+                        ..first.predecessor()
+                    },
+                },
+            )?;
+            let outcome = writer.submit(&revoke).await;
+            assert!(
+                !matches!(outcome, Ok(AssignmentOutcome::Committed(_))),
+                "revoke committed across a missing fence revision: {outcome:?}"
+            );
+            ensure_ready(&root).await?;
+            let _ = writer.reconcile(&revoke).await;
+            assert_eq!(high_water(&pool).await?.0, "1");
+
+            // Restoring the exact fence row restores the proof.
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                "INSERT INTO game_durability_admission_guard_history SELECT * FROM snap_fence",
+                "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            root.read_runtime_scope_predecessor(channel)
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+
+            // The exact fence payload moved under another guard key, or with a
+            // disagreeing SQL mirror, is not this guard's fence.
+            for tamper in [
+                "UPDATE game_durability_admission_guard_history SET guard_key = guard_key || '\\x00'::bytea \
+                 WHERE change_json IN (SELECT change_json FROM snap_fence)",
+                "UPDATE game_durability_admission_guard_history SET source_revision = source_revision + 100 \
+                 WHERE change_json IN (SELECT change_json FROM snap_fence)",
+            ] {
+                let mut restore = pool.begin().await?;
+                for statement in [
+                    "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                    tamper,
+                    "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+                ] {
+                    sqlx::query(statement).execute(&mut *restore).await?;
+                }
+                restore.commit().await?;
+                assert!(
+                    root.read_runtime_scope_predecessor(channel).await.is_err(),
+                    "accepted tampered fence row: {tamper}"
+                );
+                let mut restore = pool.begin().await?;
+                for statement in [
+                    "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                    "DELETE FROM game_durability_admission_guard_history WHERE change_json IN (SELECT change_json FROM snap_fence)",
+                    "INSERT INTO game_durability_admission_guard_history SELECT * FROM snap_fence",
+                    "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+                ] {
+                    sqlx::query(statement).execute(&mut *restore).await?;
+                }
+                restore.commit().await?;
+                root.read_runtime_scope_predecessor(channel)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?;
+            }
+            pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+#[test]
 fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
     run("slot_restore_reconcile", |database| {
         Box::pin(async move {
@@ -2743,16 +2904,132 @@ fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
             .await?;
             assert_eq!(
                 writer
-                    .reconcile(key(1))
+                    .reconcile(&assign)
                     .await
                     .map_err(|e| format!("{e:?}"))?,
-                ReconcileOutcome::Committed(receipt)
+                ReconcileOutcome::Committed(receipt.clone())
             );
-            // One assignment-writer registration per process root.
+            // A restored slot whose command differs from the retained receipt
+            // for the same operation key: a caller asking about another command
+            // cannot clear that custody; the slot's own exact command reconciles
+            // deterministically to a conflict, again after custody is cleared.
+            let foreign = request(
+                1,
+                AssignmentCommand::Assign {
+                    scope: scope(2)?,
+                    target: a,
+                },
+            )?;
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignment_slots SET operation_key = $1, command = $2, checkpointed_at = 0 \
+                 WHERE writer_registration = 'writer-a'",
+            )
+            .bind(key(1).as_bytes().as_slice())
+            .bind(foreign.encode().map_err(|e| format!("{e:?}"))?)
+            .execute(&pool)
+            .await?;
+            assert!(matches!(
+                writer.reconcile(&assign).await,
+                Err(AssignmentError::ReconcileRequired)
+            ));
+            let retained: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT operation_key FROM game_runtime_scope_assignment_slots WHERE writer_registration = 'writer-a'",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(retained.as_deref(), Some(key(1).as_bytes().as_slice()));
+            for _ in 0..2 {
+                assert_eq!(
+                    writer
+                        .reconcile(&foreign)
+                        .await
+                        .map_err(|e| format!("{e:?}"))?,
+                    ReconcileOutcome::Conflict
+                );
+            }
+            // A changed-command replay is a conflict whose lost response still
+            // reconciles to that conflict; the original command stays committed.
+            assert_eq!(
+                writer
+                    .submit(&foreign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict)
+            );
+            assert_eq!(
+                writer
+                    .reconcile(&foreign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Conflict
+            );
+            assert_eq!(
+                writer
+                    .reconcile(&assign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Committed(receipt.clone())
+            );
+            // A partial restore that drops the committed receipt while the
+            // high-water and assignment survive cannot be classified as a
+            // non-commit: reconciliation fails closed and keeps custody.
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignment_slots SET operation_key = $1, command = $2, checkpointed_at = 0 \
+                 WHERE writer_registration = 'writer-a'",
+            )
+            .bind(key(1).as_bytes().as_slice())
+            .bind(assign.encode().map_err(|e| format!("{e:?}"))?)
+            .execute(&pool)
+            .await?;
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "CREATE TABLE snap_receipt AS SELECT * FROM game_runtime_scope_assignment_receipts",
+                "SET LOCAL session_replication_role = replica",
+                "DELETE FROM game_runtime_scope_assignment_receipts",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert!(!matches!(
+                writer.reconcile(&assign).await,
+                Ok(ReconcileOutcome::Absent)
+            ));
+            ensure_ready(&root).await?;
+            let retained: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT operation_key FROM game_runtime_scope_assignment_slots WHERE writer_registration = 'writer-a'",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(retained.as_deref(), Some(key(1).as_bytes().as_slice()));
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "SET LOCAL session_replication_role = replica",
+                "INSERT INTO game_runtime_scope_assignment_receipts SELECT * FROM snap_receipt",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert_eq!(
+                writer
+                    .reconcile(&assign)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Committed(receipt.clone())
+            );
+            // One assignment-writer registration per process root, for the
+            // root's lifetime: dropping every handle does not release it.
             assert!(matches!(
                 RuntimeScopeAssignmentWriter::open(root.clone(), "writer-b").await,
                 Err(AssignmentError::Unsupported)
             ));
+            drop(writer);
+            assert!(matches!(
+                RuntimeScopeAssignmentWriter::open(root.clone(), "writer-b").await,
+                Err(AssignmentError::Unsupported)
+            ));
+            RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
             pool.close().await;
             Ok(())
         })

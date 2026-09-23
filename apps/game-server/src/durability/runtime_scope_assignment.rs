@@ -13,7 +13,7 @@
 //! serialization, so no stale readiness can be restored.
 
 use super::admission_authority_guards::{
-    AdmissionGuardStore, GuardPublicationDisposition, encode_guard,
+    AdmissionGuardStore, GuardPublicationDisposition, Writer, decode_guard, encode_guard, write_key,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -627,6 +627,8 @@ pub enum AssignmentOutcome {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReconcileOutcome {
     Committed(AssignmentReceipt),
+    /// The operation key committed a different exact command.
+    Conflict,
     Absent,
 }
 
@@ -798,6 +800,17 @@ fn writer_registry() -> &'static WriterRegistry {
     REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// Process-lifetime root-to-registration binding. It is never released when
+/// handles drop, so a root's durable slot custody cannot be bypassed by
+/// opening another registration name after the last handle is gone.
+type WriterBindings = Mutex<HashMap<usize, (RootLiveness, Arc<str>)>>;
+type RootLiveness = Weak<dyn std::any::Any + Send + Sync>;
+
+fn writer_bindings() -> &'static WriterBindings {
+    static BINDINGS: OnceLock<WriterBindings> = OnceLock::new();
+    BINDINGS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 /// Single logical assignment-writer registration with the NASG queue and one
 /// end-to-end in-flight slot whose exact binding is durably checkpointed.
 #[derive(Clone)]
@@ -839,6 +852,20 @@ impl RuntimeScopeAssignmentWriter {
             return Err(AssignmentError::InvalidInput);
         }
         let registration: Arc<str> = Arc::from(writer_registration);
+        {
+            // NASG accounting is per assignment-writer process: one writer
+            // registration per root for the root's lifetime.
+            let mut bindings = writer_bindings()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            bindings.retain(|_, (liveness, _)| liveness.strong_count() > 0);
+            let (_, bound) = bindings
+                .entry(root.root_identity())
+                .or_insert_with(|| (root.root_liveness(), registration.clone()));
+            if **bound != *registration {
+                return Err(AssignmentError::Unsupported);
+            }
+        }
         let restore = registration.clone();
         let occupied = root
             .try_issue_semantic_pass()?
@@ -871,14 +898,6 @@ impl RuntimeScopeAssignmentWriter {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             registry.retain(|_, shared| shared.strong_count() > 0);
-            // NASG accounting is per assignment-writer process: one live
-            // writer registration per root, never a second independent queue.
-            if registry
-                .keys()
-                .any(|(root_id, name)| *root_id == root.root_identity() && *name != registration)
-            {
-                return Err(AssignmentError::Unsupported);
-            }
             let key = (root.root_identity(), registration.clone());
             match registry.get(&key).and_then(Weak::upgrade) {
                 Some(shared) => {
@@ -942,10 +961,17 @@ impl RuntimeScopeAssignmentWriter {
         }
     }
 
-    /// Authoritative reconciliation of one exact operation identity under the
-    /// slot lock. An occupied matching slot proves the operation did not commit.
-    pub async fn reconcile(&self, key: OperationKey) -> Result<ReconcileOutcome, AssignmentError> {
-        let _permit = self.admit(OPERATION_KEY_BYTES, Some(key)).await?;
+    /// Authoritative reconciliation of one exact operation (key and canonical
+    /// command) under the slot lock. The outcome is a deterministic function of
+    /// the immutable receipt and the caller's exact command, so a lost response
+    /// can be reconciled again with the same answer after custody is cleared.
+    pub async fn reconcile(
+        &self,
+        request: &AssignmentRequest,
+    ) -> Result<ReconcileOutcome, AssignmentError> {
+        let command = request.encode()?;
+        let key = request.operation_key;
+        let _permit = self.admit(command.len(), Some(key)).await?;
         let registration = self.registration.clone();
         let pass = self.root.try_issue_semantic_pass()?;
         let reconciled = tokio::time::timeout(
@@ -955,30 +981,29 @@ impl RuntimeScopeAssignmentWriter {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     lock_admission_relations(&mut tx).await?;
                     let slot = lock_slot(&mut tx, &registration).await?;
-                    match slot {
-                        Some((slot_key, slot_command)) if slot_key == key.0.as_slice() => {
-                            // A restored checkpoint can outlive its commit: the
-                            // immutable receipt decides before the slot does.
-                            let receipt = load_receipt(&mut tx, &key).await?;
-                            clear_slot(&mut tx, &registration).await?;
-                            commit_semantic_transaction(tx, deadline).await?;
-                            return Ok(Ok(match receipt {
-                                Some((receipt, stored)) if stored == slot_command => {
-                                    ReconcileOutcome::Committed(receipt)
-                                }
-                                Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
-                                None => ReconcileOutcome::Absent,
-                            }));
-                        }
+                    match &slot {
+                        // Custody answers only for its own exact binding.
+                        Some((slot_key, slot_command))
+                            if slot_key == key.0.as_slice() && *slot_command == command => {}
                         Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
                         None => {}
                     }
-                    let receipt = load_receipt(&mut tx, &key).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
-                    Ok(Ok(match receipt {
-                        Some((receipt, _)) => ReconcileOutcome::Committed(receipt),
+                    // Only a fully retained authority history can prove the
+                    // absence of a receipt; a regressed one fails closed.
+                    let high_water = writer_high_water(&mut tx, true).await?;
+                    require_history_matches_high_water(&mut tx, high_water).await?;
+                    let outcome = match load_receipt(&mut tx, &key).await? {
+                        Some((receipt, stored)) if stored == command => {
+                            ReconcileOutcome::Committed(receipt)
+                        }
+                        Some(_) => ReconcileOutcome::Conflict,
                         None => ReconcileOutcome::Absent,
-                    }))
+                    };
+                    if slot.is_some() {
+                        clear_slot(&mut tx, &registration).await?;
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(outcome))
                 })
             }),
         )
@@ -1657,18 +1682,25 @@ async fn require_guard_covers_latest_fence(
     scope_key: &[u8],
     scope: RuntimeScopeRefV1,
 ) -> Result<(), DurabilityError> {
-    let latest: Option<Option<String>> = sqlx::query_scalar(
-        "SELECT fenced_publication_revision::text \
+    let latest = sqlx::query(
+        "SELECT fenced_publication_revision::text AS fenced, \
+                ownership_generation::text AS generation, decision_identity \
          FROM game_runtime_scope_assignment_receipts WHERE scope_key = $1 \
          ORDER BY source_revision DESC LIMIT 1",
     )
     .bind(scope_key)
     .fetch_optional(&mut **tx)
     .await?;
-    let Some(Some(fenced)) = latest else {
+    let Some(latest) = latest else {
+        return Ok(());
+    };
+    let fenced: Option<String> = latest.try_get("fenced")?;
+    let Some(fenced) = fenced else {
         return Ok(());
     };
     let fenced = parse_u64_text(&fenced)?;
+    let generation = parse_u64_text(&latest.try_get::<String, _>("generation")?)?;
+    let decision: String = latest.try_get("decision_identity")?;
     let store = AdmissionGuardStore::from_root(root.clone());
     let key = AdmissionAuthorityGuardKeyV1::Runtime(scope);
     let current = store
@@ -1676,6 +1708,47 @@ async fn require_guard_covers_latest_fence(
         .await?
         .ok_or(DurabilityError::InvalidStoredState)?;
     if current.publication_revision < fenced {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    // The exact fence publication must still be retained under this guard's
+    // key: every SQL mirror must agree with its payload, which must carry the
+    // same publication authority, this receipt's decision and generation, and
+    // not ready. A dropped, moved or substituted fence revision fails closed.
+    let mut encoded_key = Writer::new(MAX_ADMISSION_GUARD_BYTES);
+    write_key(&mut encoded_key, &key)?;
+    let row = sqlx::query(
+        "SELECT source_authority, source_revision::text AS source_revision, \
+                decision_identity, change_json \
+         FROM game_durability_admission_guard_history \
+         WHERE guard_key = $1 AND publication_revision = $2::text::numeric(20,0)",
+    )
+    .bind(&encoded_key.bytes)
+    .bind(fenced.to_string())
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(DurabilityError::InvalidStoredState)?;
+    let authority: String = row.try_get("source_authority")?;
+    let source_revision = parse_u64_text(&row.try_get::<String, _>("source_revision")?)?;
+    let mirrored_decision: String = row.try_get("decision_identity")?;
+    let payload: String = row.try_get("change_json")?;
+    let change = decode_guard(&payload, MAX_ADMISSION_GUARD_BYTES)?;
+    let retained = change.key == key
+        && change.publication_revision == fenced
+        && change.source.authority == authority
+        && change.source.source_revision == source_revision
+        && change.source.decision_identity == mirrored_decision
+        && change.source.authority == current.source.authority
+        && change.source.purpose == AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness
+        && change.source.decision_identity == decision
+        && matches!(
+            change.state,
+            AdmissionAuthorityGuardStateV1::Runtime {
+                ready: false,
+                ownership_generation,
+                ..
+            } if ownership_generation == generation
+        );
+    if !retained {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(())

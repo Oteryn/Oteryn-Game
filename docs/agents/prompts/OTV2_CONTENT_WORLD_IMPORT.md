@@ -27,6 +27,21 @@ Nie wracaj do seryjnego importu lub native-bindingu po jednym rekordzie jako nor
 
 Reimport porównuje stary baseline, nowe źródło i lokalne poprawki; nie nadpisuje ich w ciemno. Rename/rechunk nie zmienia PlacementKey, copy jest nowym placementem, ambiguous matching jest konfliktem. Nie zmieniaj Reference/Evolved granicy po cichu.
 
+
+## Item batch pipeline
+
+Dla rodziny Item domyślną jednostką pracy jest **jedna rzeczywista partia danych**, nie osobna generacja dla każdego kroku. Prowadź tę samą partię możliwie ciągle przez:
+
+`resolve identity/source -> verify fields -> prove target continuity tylko gdzie potrzebna -> canonical promotion -> compile/test`.
+
+Nie twórz osobnego taska/PR/checkpointu wyłącznie dlatego, że skończył się jeden z tych podkroków. Rozdzielenie jest uzasadnione tylko przez realną granicę custody/owned paths, wymagany inny execution surface, materialny architecture blocker albo niezależny obowiązkowy gate. W takim przypadku zachowaj jeden wspólny Item batch ID i przekaż dokładny wynik bez nowej fazy analitycznej.
+
+Evidence manifests, counts i digests są dowodem oraz outputem batcha, a nie samodzielnym celem. Continuity do target cut wykonuj tylko dla pól, które nie mają już wystarczającego target-date evidence; nie buduj dodatkowego bridge/rule layer dla pola, które można bezpośrednio sklasyfikować.
+
+Na wejściu i wyjściu batcha zapisz krótki delta scoreboard: resolved/ambiguous/conflict identities, `PROVEN|DERIVED`, promotable fields i canonical-promoted fields. Batch ma realny postęp wtedy, gdy zmienia te liczby albo dostarcza już promowane dane do compile/load. Sam raport, manifest, schema wrapper lub lifecycle checkpoint z zerowym delta nie jest kolejnym etapem pracy.
+
+Jeżeli `promotable_fields == 0`, pracuj dalej w tej samej partii nad najbliższym source/identity/continuity blockerem zamiast uruchamiać pustą semantic promotion. Gdy eligible set staje się niepusty, przekaż go natychmiast do istniejącego #749/CW3 lineage; nie czekaj na kompletność całego itemu i nie twórz nowego parsera/modelu/rule engine, jeżeli istniejący typed model potrafi reprezentować dokładne pole.
+
 ## Akceptacja
 
 Ta sama przypięta partia i mapping dają ten sam wynik; reimport zachowuje poprawki; missing/duplicate/conflicting records są rozliczone; selected closure jest kompletne albo dokładnie niedopuszczone. Dostarcz źródła/rewizje, pole→binding mapping, counts/loss report i wykonane testy. Nie ogłaszaj runtime/PG/parity PASS po ekstrakcji. Zakończ successor footer; zwykłym odbiorcą zaakceptowanych danych jest CW3, a konkretne nierozstrzygnięte reguły wracają do właściwej decyzji/evidence, nie nowego frameworka.
