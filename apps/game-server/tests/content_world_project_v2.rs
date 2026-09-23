@@ -129,7 +129,10 @@ fn candidate() -> ProjectV2Draft {
                 world_id: core().world_id,
                 coordinate_frame: core().coordinate_frame,
                 bounds: ProjectV2Bounds {
-                    min_x: 0, min_y: 0, max_x_exclusive: 256, max_y_exclusive: 256,
+                    min_x: 0,
+                    min_y: 0,
+                    max_x_exclusive: 256,
+                    max_y_exclusive: 256,
                 },
                 floors: vec![7],
             }],
@@ -310,14 +313,17 @@ fn typed_references_and_author_aliases_fail_closed() {
     assert!(CanonicalProjectDocuments::from_v2_draft(invalid_tag, limits()).is_err());
 
     let mut duplicate_field = candidate();
-    if let ProjectV2Declaration::Dialogue { fields, .. } = &mut duplicate_field.state.declarations[2] {
+    if let ProjectV2Declaration::Dialogue { fields, .. } =
+        &mut duplicate_field.state.declarations[2]
+    {
         fields.push(fields[0].clone());
     }
     assert!(CanonicalProjectDocuments::from_v2_draft(duplicate_field, limits()).is_err());
 
     let mut orphan_source = candidate();
     orphan_source.state.sources.push(ProjectV2Source {
-        key: "oteryn:source.reference".into(), import_batch_id: "absent".into(),
+        key: "oteryn:source.reference".into(),
+        import_batch_id: "absent".into(),
         revision: "source-r1".into(),
         sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
         evidence: ProjectV2EvidenceClass::Unknown,
@@ -416,15 +422,31 @@ fn v2_role_and_strict_schema_reject_undeclared_authority() {
 
 #[test]
 fn relocating_one_managed_document_keeps_v2_semantic_identity() {
-    let original = CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let original =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
     let mut moved = original.documents().clone();
-    let declaration_bytes = moved.remove("definitions/declarations.json").expect("declarations");
+    let declaration_bytes = moved
+        .remove("definitions/declarations.json")
+        .expect("declarations");
     moved.insert("definitions/moved.json".into(), declaration_bytes);
     let mut manifest: Value = serde_json::from_slice(&moved["manifest.json"]).expect("manifest");
-    let entry = manifest["documents"].as_array_mut().expect("inventory").iter_mut()
-        .find(|entry| entry["role"] == "declarative-definitions").expect("role");
+    let entry = manifest["documents"]
+        .as_array_mut()
+        .expect("inventory")
+        .iter_mut()
+        .find(|entry| entry["role"] == "declarative-definitions")
+        .expect("role");
     entry["locator"] = json!("definitions/moved.json");
     rebind_manifest_and_lock(&mut moved, &manifest);
-    let parsed = ProjectSnapshot::new(moved, limits()).expect("admit moved project").parse(limits()).expect("parse moved project");
-    assert_eq!(parsed.canonical_documents(limits()).expect("canonical rewrite").documents(), original.documents());
+    let parsed = ProjectSnapshot::new(moved, limits())
+        .expect("admit moved project")
+        .parse(limits())
+        .expect("parse moved project");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("canonical rewrite")
+            .documents(),
+        original.documents()
+    );
 }

@@ -599,7 +599,9 @@ fn validate_v2_state(
         for field in declaration.fields() {
             ProductionKey::new(&field.field_path)?;
             if previous_field.is_some_and(|prior| prior >= field.field_path.as_str()) {
-                return Err(ProjectError::InvalidProject("v2 candidate fields are not sorted and unique"));
+                return Err(ProjectError::InvalidProject(
+                    "v2 candidate fields are not sorted and unique",
+                ));
             }
             previous_field = Some(&field.field_path);
         }
@@ -660,9 +662,15 @@ fn validate_v2_state(
             || world.floors.is_empty()
             || world.floors.windows(2).any(|pair| pair[0] >= pair[1])
         {
-            return Err(ProjectError::InvalidProject("invalid v2 world bounds or floors"));
+            return Err(ProjectError::InvalidProject(
+                "invalid v2 world bounds or floors",
+            ));
         }
-        limits.check("v2 world floors", world.floors.len(), limits.max_reference_records)?;
+        limits.check(
+            "v2 world floors",
+            world.floors.len(),
+            limits.max_reference_records,
+        )?;
         if worlds.insert(&world.key, world).is_some() || !world_ids.insert(&world.world_id) {
             return Err(ProjectError::InvalidProject("duplicate v2 world identity"));
         }
@@ -688,9 +696,11 @@ fn validate_v2_state(
         ProductionAtom::new("v2 map revision", &placement.map_revision)?;
         super::super::CoordinateFrameRef::new(&placement.coordinate_frame)?;
         require_ref(&placement.definition)?;
-        let world = worlds.get(&placement.world).ok_or(ProjectError::InvalidProject(
-            "v2 placement world is missing",
-        ))?;
+        let world = worlds
+            .get(&placement.world)
+            .ok_or(ProjectError::InvalidProject(
+                "v2 placement world is missing",
+            ))?;
         if world.coordinate_frame != placement.coordinate_frame
             || i64::from(placement.x) < world.bounds.min_x
             || i64::from(placement.x) >= world.bounds.max_x_exclusive
@@ -702,9 +712,16 @@ fn validate_v2_state(
                 "v2 placement world/frame/position mismatch",
             ));
         }
-        if !orders.insert((&placement.world, placement.x, placement.y, placement.floor,
-            &placement.presentation_order)) {
-            return Err(ProjectError::InvalidProject("duplicate v2 presentation order at tile"));
+        if !orders.insert((
+            &placement.world,
+            placement.x,
+            placement.y,
+            placement.floor,
+            &placement.presentation_order,
+        )) {
+            return Err(ProjectError::InvalidProject(
+                "duplicate v2 presentation order at tile",
+            ));
         }
         if !keys.insert(&placement.key) {
             return Err(ProjectError::InvalidProject(
@@ -779,10 +796,17 @@ fn validate_v2_state(
         ProductionKey::new(&source.key)?;
         ProductionAtom::new("v2 source revision", &source.revision)?;
         Sha256HexDigest::new(&source.sha256)?;
-        let batch = imports.iter().find(|batch| batch.batch_id == source.import_batch_id)
-            .ok_or(ProjectError::InvalidProject("v2 source import batch is missing"))?;
-        if batch.source_revision != source.revision || batch.source_artifact_sha256 != source.sha256 {
-            return Err(ProjectError::InvalidProject("v2 source disagrees with import batch"));
+        let batch = imports
+            .iter()
+            .find(|batch| batch.batch_id == source.import_batch_id)
+            .ok_or(ProjectError::InvalidProject(
+                "v2 source import batch is missing",
+            ))?;
+        if batch.source_revision != source.revision || batch.source_artifact_sha256 != source.sha256
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 source disagrees with import batch",
+            ));
         }
         if !source_keys.insert((&source.key, &source.revision)) {
             return Err(ProjectError::InvalidProject("duplicate v2 source"));
@@ -860,7 +884,9 @@ impl CanonicalProjectDocuments {
             .declarations
             .sort_by(|a, b| (a.family(), &a.identity().key).cmp(&(b.family(), &b.identity().key)));
         for declaration in &mut draft.state.declarations {
-            declaration.fields_mut().sort_by(|a, b| a.field_path.cmp(&b.field_path));
+            declaration
+                .fields_mut()
+                .sort_by(|a, b| a.field_path.cmp(&b.field_path));
         }
         draft.state.worlds.sort_by(|a, b| a.key.cmp(&b.key));
         draft.state.placements.sort_by(|a, b| a.key.cmp(&b.key));
@@ -882,7 +908,12 @@ impl CanonicalProjectDocuments {
             entry.tags.sort();
         }
         draft.core.validate(limits)?;
-        validate_v2_state(&draft.state, &draft.core.records, &draft.core.imports, limits)?;
+        validate_v2_state(
+            &draft.state,
+            &draft.core.records,
+            &draft.core.imports,
+            limits,
+        )?;
         limits.check(
             "project documents",
             3 + ROLE_SPECS.len(),
