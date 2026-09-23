@@ -6,6 +6,7 @@ import copy
 import contextlib
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -232,7 +233,11 @@ def test_trusted_job_mutations():
                  block.replace("rust=true", "rust=false"),
                  block.replace("windows=true", "windows=false"),
                  block.replace("atlas_fullworld=true", "atlas_fullworld=false"),
-                 block.replace("          python -I", "          exit 0\n          python -I")]
+                 block.replace("          python -I", "          exit 0\n          python -I"),
+                 block.replace(
+                     '        run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"\n',
+                     "        run: python -c 'pass'\n",
+                 )]
     for changed in mutations:
         assert changed != block
         mutated = original.replace(block, changed, 1)
@@ -250,6 +255,10 @@ def test_trusted_job_mutations():
         routing.replace(
             '        run: python -I tools/repository/validate_pr_routing_contract.py "$RUNNER_TEMP/routing-contract-metadata.json"\n',
             "        run: python -c 'pass'\n",
+        ),
+        routing.replace(
+            '          git diff --check "$EXPECTED_BASE" "$EXPECTED_HEAD"\n',
+            "          true\n",
         ),
     ]
     for changed in routing_mutations:
@@ -449,7 +458,40 @@ def test_routing_contract_helpers(module):
         protected_main=True,
     )
     assert health == "stale-protected-main" and changed == []
-    print("Routing contract helpers PASS: healthy, candidate-degraded, inherited-stale and protected-main-stale states")
+
+    expected_head = "a" * 40
+    expected_base = "b" * 40
+    with tempfile.TemporaryDirectory() as directory:
+        metadata_path = Path(directory) / "metadata.json"
+        metadata_path.write_text(json.dumps(fixture()), encoding="utf-8")
+        with patch.object(validator, "load_classifier", return_value=module), \
+                patch.object(module, "input_digest", return_value=stale), \
+                patch.object(
+                    validator,
+                    "changed_records",
+                    return_value=[{"filename": "apps/game-server/src/lib.rs", "status": "modified"}],
+                ), \
+                patch.object(validator.subprocess, "check_output", return_value=expected_head + "\n"), \
+                patch.dict(
+                    os.environ,
+                    {"EXPECTED_HEAD": expected_head, "EXPECTED_BASE": expected_base},
+                    clear=False,
+                ), \
+                patch.object(sys, "argv", [str(ROUTING_CONTRACT), str(metadata_path)]):
+            assert validator.main() == 0, "inherited candidate drift must be advisory"
+
+        with patch.object(validator, "load_classifier", return_value=module), \
+                patch.object(module, "input_digest", return_value=stale), \
+                patch.object(validator.subprocess, "check_output", return_value=expected_head + "\n"), \
+                patch.dict(os.environ, {"EXPECTED_HEAD": expected_head}, clear=False), \
+                patch.object(
+                    sys,
+                    "argv",
+                    [str(ROUTING_CONTRACT), "--protected-main", str(metadata_path)],
+                ):
+            assert validator.main() == 1, "protected-main routing drift must remain fail closed"
+
+    print("Routing contract helpers PASS: inherited candidate drift is advisory while protected-main drift stays fatal")
 
 
 def test_bounded_document_consumer_drift(module):

@@ -1,0 +1,113 @@
+name: WP5 S3-A real interoperability qualification
+
+on:
+  push:
+    branches:
+      - agent/wp5-s3a-real-interop-qualification-319
+  pull_request:
+    paths:
+      - apps/game-server/tests/native_admission_source_real_interop.rs
+      - .github/workflows/wp5-s3a-real-interop.yml
+      - tools/qualification/wp5_s3a/compose.yml
+      - tools/qualification/wp5_s3a/platform-fpm.Dockerfile
+      - tools/qualification/wp5_s3a/nginx.conf
+      - tools/qualification/wp5_s3a/run.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wp5-s3a-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  composed-qualification:
+    name: S3-A / real Platform producer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact candidate and closed path ownership
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ADMITTED_MAIN: cf5c5f35476559450b6bbaf87dce519f7eead9d0
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git merge-base --is-ancestor "$ADMITTED_MAIN" HEAD
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          python - <<'PY'
+          import subprocess
+
+          allowed = {
+              ".github/workflows/wp5-s3a-real-interop.yml",
+              "apps/game-server/tests/native_admission_source_real_interop.rs",
+              "tools/qualification/wp5_s3a/compose.yml",
+              "tools/qualification/wp5_s3a/nginx.conf",
+              "tools/qualification/wp5_s3a/platform-fpm.Dockerfile",
+              "tools/qualification/wp5_s3a/run.sh",
+          }
+          diff_base = subprocess.check_output(
+              ["git", "merge-base", "origin/main", "HEAD"], text=True
+          ).strip()
+          changed = set(subprocess.check_output(
+              ["git", "diff", "--name-only", diff_base, "HEAD"],
+              text=True,
+          ).splitlines())
+          if changed != allowed:
+              raise SystemExit(f"closed path mismatch: {sorted(changed)}")
+          print("S3_EVIDENCE path_scope=closed paths=6")
+          PY
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 623435ec1b907d6d9770b767806c90300252a71c
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 623435ec1b907d6d9770b767806c90300252a71c
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
+
+      - name: Validate retained harness and topology
+        env:
+          GAME_SOURCE: ${{ github.workspace }}
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          WP5_PKI: ${{ runner.temp }}/wp5-s3a-static-pki
+          WP5_SCRATCH: ${{ runner.temp }}/wp5-s3a-static-scratch
+          WP5_PORT: "18443"
+          WP5_PROJECT: wp5s3astatic
+          WP5_DB_PASSWORD: synthetic-static-password
+          WP5_DB_ROOT_PASSWORD: synthetic-static-root-password
+          WP5_APP_KEY: base64:c3ludGhldGljLXN0YXRpYy1hcHAta2V5LTAwMDAwMDAwMDA=
+          WP5_TOPOLOGY_REVISION: wp5-s3a-v1
+          WP5_FSYNC_FAULT: none
+        run: |
+          set -euo pipefail
+          mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
+          git diff --check
+          bash -n tools/qualification/wp5_s3a/run.sh
+          docker compose --project-name "$WP5_PROJECT" --file tools/qualification/wp5_s3a/compose.yml config --quiet
+          cargo +1.94.0 fmt --all --check
+          cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop --no-run
+          echo 'S3_EVIDENCE static_validation=PASS rust=compiled compose=configured shell=parsed'
+
+      - name: Run real composed qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/wp5-s3a-evidence.txt"
+          bash tools/qualification/wp5_s3a/run.sh | tee "$evidence"
+          grep -E '^S3_(EVIDENCE |RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true

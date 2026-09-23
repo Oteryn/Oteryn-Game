@@ -217,6 +217,11 @@ jobs:
             python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
           fi
 
+      - name: Verify protected-base routing snapshot health
+        env:
+          EXPECTED_HEAD: ${{ needs.scope.outputs.base_sha }}
+        run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"
+
       - name: Summarize trusted-base routing
         env:
           RUST: ${{ steps.classify.outputs.rust }}
@@ -396,7 +401,15 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "8f95b9f8b67255aa9f26619fe394af9679af100a"
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "5966c4c183fd87a13dfc6a6fe11ffa4e16e59bdd"
+
+      - name: Verify candidate diff whitespace
+        env:
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+        run: |
+          git cat-file -e "${EXPECTED_BASE}^{commit}"
+          git diff --check "$EXPECTED_BASE" "$EXPECTED_HEAD"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
