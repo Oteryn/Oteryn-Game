@@ -38,7 +38,16 @@
     "production_requires_registered_profile": true,
     "ordinary_unbounded_retention_forbidden": true,
     "legal_hold_is_explicit_exception": true,
-    "required_profile_fields": ["purpose","privacy_class","finite_retention_duration_or_ceiling","permitted_roles","export_redaction_policy","deletion_or_anonymization_policy","legal_hold_policy","policy_revision"]
+    "required_profile_fields": ["purpose","privacy_class","finite_retention_duration_or_ceiling","permitted_roles","export_redaction_policy","deletion_or_anonymization_policy","legal_hold_policy","policy_revision"],
+    "profile_identity_semantics": "IMMUTABLE_POLICY_IDENTITY_ON_FIRST_EVENT_ADMISSION",
+    "in_place_policy_change_after_admission": "FORBIDDEN",
+    "successor_policy_requirement": "NEW_IMMUTABLE_PROFILE_ID_WITH_POSITIVE_POLICY_REVISION",
+    "successor_rollout_scope": "FUTURE_ADMISSION_ONLY_AFTER_REVIEWED_ACTIVATION_BOUNDARY",
+    "existing_envelope_binding": "ORIGINAL_RETENTION_PROFILE_ID",
+    "rollback_scope": "FUTURE_ADMISSION_ONLY_BY_EXPLICIT_REVIEWED_REGISTRY_REVISION",
+    "rollback_existing_event_mutation": "FORBIDDEN_INCLUDING_EVENT_ID_PAYLOAD_BYTES_AND_RETENTION_PROFILE_ID",
+    "existing_event_policy_change_requirement": "SEPARATELY_OWNER_AUTHORIZED_REVIEWED_MIGRATION_OR_SUPERSESSION",
+    "existing_event_migration_registered": false
   },
   "retention_profiles": [
     {
