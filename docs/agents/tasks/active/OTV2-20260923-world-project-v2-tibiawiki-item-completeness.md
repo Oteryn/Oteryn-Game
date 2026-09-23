@@ -7,6 +7,7 @@ mode: IMPLEMENT
 status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
+pr: 786
 branch: agent/world-project-v2-tibiawiki-item-completeness-20260923
 base_sha: 74c626509a0efd7c80157189b9d74c59ab0b3894
 head_sha: pending final metadata commit
