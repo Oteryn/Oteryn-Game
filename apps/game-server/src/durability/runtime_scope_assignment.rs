@@ -316,15 +316,19 @@ impl DurabilityRoot {
                     .await?;
                     match state {
                         Some(1) => {
-                            sqlx::query(
-                                "UPDATE game_node_registrations SET state = 2, \
-                                 ended_at = greatest(registered_at, \
-                                     floor(extract(epoch FROM statement_timestamp()))::bigint) \
-                                 WHERE node_id = encode($1, 'hex')::uuid",
+                            // The single ending path allocates a writer revision
+                            // and records the immutable ending with the row.
+                            let ended: bool = sqlx::query_scalar(
+                                "SELECT game_node_end_registration(encode($1, 'hex')::uuid, \
+                                 $2::text::numeric(20,0), 2::smallint, NULL)",
                             )
                             .bind(fact.node_id.as_bytes().as_slice())
-                            .execute(&mut *tx)
+                            .bind(fact.registration_revision.to_string())
+                            .fetch_one(&mut *tx)
                             .await?;
+                            if !ended {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
                         }
                         Some(2) => {}
                         Some(3) | None => return Ok(Err(RegistrationError::Rejected)),
