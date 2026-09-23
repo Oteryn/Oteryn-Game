@@ -46,9 +46,9 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7"
 )
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "0a9e53c6cf2053facca7cacaca4debd93a08d05fc80d693e2977c7a145941614"
-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "dba82005c28a698814aa2c2ab293171673d6df3ef38f72b16ba3ce5a76ac1939"
-EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "265aa0a94a7a16497847ad1ac2e4730cb2ec6fda"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "cec3f4a4f352fb0dbf997900b690f0b73b7367ae9c4e6314534444c54aa7f40e"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "06a146be3287d33ef61e0abd40625f9b0e4828e65989894db222bc39ca13e24d"
+EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "0ccc8860a39ffbe5ac8696e013cbef83a1c401c5"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
 EXPECTED_POST_MERGE_RUST_SHA256 = "6246f732b4b320036f6bb5266547c4108a163b56f447d42189b25f31f4673174"
@@ -383,7 +383,7 @@ def main() -> int:
             if routing_contract_block else None
         )
         if routing_contract_digest != EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256:
-            errors.append("merge gate routing contract job must exactly match the reviewed exact-head snapshot-health contract")
+            errors.append("merge gate routing contract job must exactly match the reviewed exact-head consumer-routing contract")
         atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
         atlas_fullworld_digest = (
             hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
