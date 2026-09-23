@@ -246,7 +246,7 @@ def compile_census(payload: bytes) -> dict[str, object]:
         "interpretation": {
             "expanded_38157_is_not_distinct_player_item_count": True,
             "preferred_structural_denominator": "valid_xml_definitions",
-            "preferred_named_object_upper_bound": "unique_normalized_names",
+            "name_vocabulary_metric": "unique_normalized_names",
             "canonical_item_identity_decision": "NOT_PERFORMED",
             "semantic_promotion": "NOT_PERFORMED",
         },
