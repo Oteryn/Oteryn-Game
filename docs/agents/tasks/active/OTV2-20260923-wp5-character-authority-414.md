@@ -85,8 +85,12 @@ Focused Rust/protobuf checks run locally. The registered `character_authority_po
   - it uses its own `Operation` path, `/internal/v1/game-auth/character-bootstrap-intents/read`, and an issuer-bound descriptor;
   - every non-200 response is bounded unavailability.
 - The S1 transport module is now compiled into the library.
-- The intent's world and revisions are requested context, not authority. In the same transaction, the world must currently have an assigned Channel (#415 assignment, share-locked). The four revisions must equal the current Game-owned interpretation. Bootstrap resolves that interpretation inside its own transaction, share-locked; the caller never supplies it. It is set only by the operator's durable, append-only `configure_character_interpretation`, which requires the #414 capability and the current #415 incarnation.
-- An exact replay of a legal-hold placement returns the committed `hold_id`, so the hold stays releasable after a lost response.
+- The intent's world and revisions are requested context, not authority. In the same transaction, the world must currently have an assigned Channel (#415 assignment, share-locked). The four revisions must equal the current Game-owned interpretation. Bootstrap resolves that interpretation inside its own transaction, share-locked; the caller never supplies it. Owner decision (2026-09-23): operator actions stay out of the Game server process.
+  - The server has no API that configures the interpretation or places or releases legal holds.
+  - The operator uses these SQL procedures: `game_character_configure_interpretation`, which is append-only and idempotent; `game_character_place_legal_hold`, where an exact replay returns the committed hold; and `game_character_release_legal_hold`, which releases a hold once.
+  - EXECUTE on these procedures is revoked from PUBLIC, and only a deployment's privileged operator role holds it.
+  - The row guards still enforce the history and retention invariants for every writer.
+  - A test proves that an unprivileged role cannot execute the procedures.
 - A new bootstrap proves all of the following in one transaction before committing:
   - the recovery fence;
   - the current #415 incarnation;

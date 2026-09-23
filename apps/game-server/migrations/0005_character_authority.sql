@@ -202,6 +202,75 @@ END; $$;
 CREATE TRIGGER game_character_audit_hold_guard BEFORE INSERT OR UPDATE OR DELETE ON game_character_audit_legal_holds
     FOR EACH ROW EXECUTE FUNCTION game_character_audit_hold_guard();
 
+-- Operator-only procedures. They are not reachable from the Game server
+-- process: EXECUTE is revoked from PUBLIC below and granted only to the
+-- privileged operator role of a deployment. The row guards above still enforce
+-- the retention and history invariants for every writer.
+
+-- Configure the Game-owned current Character interpretation. History is
+-- append-only; configuring the current value again returns its revision.
+CREATE FUNCTION game_character_configure_interpretation(
+    p_profile TEXT, p_ruleset TEXT, p_content TEXT, p_starter TEXT
+) RETURNS BIGINT LANGUAGE plpgsql AS $$
+DECLARE
+    v_current game_character_interpretations%ROWTYPE;
+BEGIN
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:character-interpretation', 0));
+    SELECT * INTO v_current FROM game_character_interpretations
+        ORDER BY interpretation_revision DESC LIMIT 1;
+    IF FOUND AND (v_current.profile_revision, v_current.ruleset_revision,
+                  v_current.content_revision, v_current.starter_template_revision)
+                 = (p_profile, p_ruleset, p_content, p_starter) THEN
+        RETURN v_current.interpretation_revision;
+    END IF;
+    INSERT INTO game_character_interpretations(interpretation_revision, profile_revision,
+        ruleset_revision, content_revision, starter_template_revision, configured_at)
+    VALUES (COALESCE(v_current.interpretation_revision, 0) + 1, p_profile, p_ruleset,
+        p_content, p_starter, floor(extract(epoch FROM statement_timestamp()) * 1000)::BIGINT);
+    RETURN COALESCE(v_current.interpretation_revision, 0) + 1;
+END; $$;
+
+-- Place an explicit legal hold on a retained audit event. An exact replay
+-- (same event, reason and actor) returns the committed hold.
+CREATE FUNCTION game_character_place_legal_hold(
+    p_event_id UUID, p_reason TEXT, p_actor TEXT
+) RETURNS UUID LANGUAGE plpgsql AS $$
+DECLARE
+    v_hold game_character_audit_legal_holds%ROWTYPE;
+    v_hold_id UUID;
+BEGIN
+    PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:character-audit-retention', 0));
+    PERFORM 1 FROM game_character_audit_outbox WHERE event_id = p_event_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Character audit event is not retained' USING ERRCODE = '23514';
+    END IF;
+    SELECT * INTO v_hold FROM game_character_audit_legal_holds
+        WHERE event_id = p_event_id AND released_at IS NULL;
+    IF FOUND THEN
+        IF v_hold.reason = p_reason AND v_hold.authorizing_actor = p_actor THEN
+            RETURN v_hold.hold_id;
+        END IF;
+        RAISE EXCEPTION 'Character audit event already has an active legal hold' USING ERRCODE = '23505';
+    END IF;
+    INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at)
+    VALUES (game_character_uuid_v7(), p_event_id, p_reason, p_actor,
+        floor(extract(epoch FROM statement_timestamp()) * 1000)::BIGINT)
+    RETURNING hold_id INTO v_hold_id;
+    RETURN v_hold_id;
+END; $$;
+
+-- Release an active legal hold once; the event returns to ordinary expiry.
+CREATE FUNCTION game_character_release_legal_hold(p_hold_id UUID, p_actor TEXT)
+RETURNS VOID LANGUAGE plpgsql AS $$ BEGIN
+    UPDATE game_character_audit_legal_holds
+       SET released_at = greatest(started_at, floor(extract(epoch FROM statement_timestamp()) * 1000)::BIGINT),
+           released_by = p_actor
+     WHERE hold_id = p_hold_id AND released_at IS NULL;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Character audit legal hold is not active' USING ERRCODE = '23514';
+    END IF;
+END; $$;
+
 -- Row triggers do not fire for TRUNCATE; refuse it on every Character relation
 -- so no statement can erase authority, receipts, unexpired audit or holds.
 CREATE FUNCTION game_character_reject_truncate() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
@@ -241,5 +310,8 @@ REVOKE ALL ON FUNCTION
     game_character_audit_guard(),
     game_character_audit_hold_guard(),
     game_character_reject_truncate(),
-    game_character_intent_floor_guard()
+    game_character_intent_floor_guard(),
+    game_character_configure_interpretation(text, text, text, text),
+    game_character_place_legal_hold(uuid, text, text),
+    game_character_release_legal_hold(uuid, text)
 FROM PUBLIC;

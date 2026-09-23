@@ -29,7 +29,6 @@ const ACCOUNT_SECURITY_SCOPE: &str = "fresh_admission";
 /// Existing FND-04 fresh security freshness window (seconds, less the source's
 /// declared clock uncertainty); see `fnd04_verifier::fresh_source_deadline`.
 const ACCOUNT_SECURITY_FRESH_SECONDS: i64 = 5;
-const MAX_HOLD_REASON_BYTES: usize = 512;
 const MAX_AUDIT_BATCH: u16 = 64;
 /// Bounded identity of this server build, recorded with every audit event so a
 /// redelivery after an upgrade keeps the originating EventEnvelope value.
@@ -219,43 +218,6 @@ impl DurabilityRoot {
         })).await?
     }
 
-    /// Record the Game-owned current Character interpretation (operator
-    /// configuration). History is append-only; configuring the current value
-    /// again returns its revision. Requires the current #415 incarnation.
-    pub async fn configure_character_interpretation(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        proof: &NodeIncarnationProof,
-        interpretation: &CharacterInterpretationV1,
-    ) -> Result<i64> {
-        let proof = proof.clone();
-        let interpretation = interpretation.clone();
-        let recovery = authority.record_for(self)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            if !prove_current_incarnation(&mut tx, &proof).await? {
-                return Err(DurabilityError::Unavailable);
-            }
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-interpretation', 0))")
-                .execute(&mut *tx).await?;
-            let current = current_interpretation(&mut tx).await?;
-            if let Some((revision, value)) = &current
-                && *value == interpretation
-            {
-                let revision = *revision;
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(Ok(revision));
-            }
-            let revision = current.map_or(1, |(revision, _)| revision + 1);
-            let [profile, ruleset, content, starter] = interpretation.revisions();
-            sqlx::query("INSERT INTO game_character_interpretations(interpretation_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, configured_at) VALUES ($1, $2, $3, $4, $5, floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
-                .bind(revision).bind(profile).bind(ruleset).bind(content).bind(starter).execute(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(revision))
-        })).await?
-    }
-
     /// Reconcile an uncertain bootstrap outcome by its operation identity alone,
     /// without re-authorizing: the committed result, or `None` if nothing
     /// committed. An expired intent can therefore still be reconciled.
@@ -425,81 +387,6 @@ impl DurabilityRoot {
                         .bind(event_id.as_slice()).execute(&mut *tx).await?;
                 }
                 Some(_) => {}
-            }
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(()))
-        })).await?
-    }
-
-    /// Place an explicit legal hold on one retained event; it blocks ordinary expiry.
-    pub async fn place_character_audit_legal_hold(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        event_id: [u8; 16],
-        reason: &str,
-        authorizing_actor: &str,
-    ) -> Result<[u8; 16]> {
-        if reason.is_empty() || reason.len() > MAX_HOLD_REASON_BYTES || !bounded(authorizing_actor)
-        {
-            return Err(CharacterAuthorityError::Rejected);
-        }
-        let reason = reason.to_owned();
-        let actor = authorizing_actor.to_owned();
-        let recovery = authority.record_for(self)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            // Holds and expiry serialize on one retention lock; each later
-            // statement then sees every committed hold (READ COMMITTED).
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-audit-retention', 0))")
-                .execute(&mut *tx).await?;
-            let retained: Option<i32> = sqlx::query_scalar("SELECT 1 FROM game_character_audit_outbox WHERE event_id = encode($1,'hex')::uuid FOR UPDATE")
-                .bind(event_id.as_slice()).fetch_optional(&mut *tx).await?;
-            if retained.is_none() {
-                return Ok(Err(CharacterAuthorityError::Rejected));
-            }
-            // An exact replay (same event, reason and actor) after a lost
-            // response returns the committed hold, so it stays releasable.
-            if let Some(active) = sqlx::query("SELECT hold_id::text, reason, authorizing_actor FROM game_character_audit_legal_holds WHERE event_id = encode($1,'hex')::uuid AND released_at IS NULL")
-                .bind(event_id.as_slice()).fetch_optional(&mut *tx).await? {
-                if active.try_get::<String, _>("reason")? != reason || active.try_get::<String, _>("authorizing_actor")? != actor {
-                    return Ok(Err(CharacterAuthorityError::Conflict));
-                }
-                let hold = uuid_text(&active.try_get::<String, _>("hold_id")?)?;
-                commit_semantic_transaction(tx, deadline).await?;
-                return Ok(Ok(hold));
-            }
-            let hold: String = sqlx::query_scalar("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (game_character_uuid_v7(), encode($1,'hex')::uuid, $2, $3, floor(extract(epoch FROM statement_timestamp())*1000)::bigint) RETURNING hold_id::text")
-                .bind(event_id.as_slice()).bind(reason).bind(actor).fetch_one(&mut *tx).await?;
-            let hold = uuid_text(&hold)?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(hold))
-        })).await?
-    }
-
-    /// Release an active hold; the event returns to its ordinary expiry.
-    pub async fn release_character_audit_legal_hold(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        hold_id: [u8; 16],
-        releasing_actor: &str,
-    ) -> Result<()> {
-        if !bounded(releasing_actor) {
-            return Err(CharacterAuthorityError::Rejected);
-        }
-        let actor = releasing_actor.to_owned();
-        let recovery = authority.record_for(self)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            // Holds and expiry serialize on one retention lock; each later
-            // statement then sees every committed hold (READ COMMITTED).
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-audit-retention', 0))")
-                .execute(&mut *tx).await?;
-            let released = sqlx::query("UPDATE game_character_audit_legal_holds SET released_at = greatest(started_at, floor(extract(epoch FROM statement_timestamp())*1000)::bigint), released_by = $2 WHERE hold_id = encode($1,'hex')::uuid AND released_at IS NULL")
-                .bind(hold_id.as_slice()).bind(actor).execute(&mut *tx).await?;
-            if released.rows_affected() != 1 {
-                return Ok(Err(CharacterAuthorityError::Conflict));
             }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(()))

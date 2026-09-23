@@ -352,10 +352,50 @@ impl Wire {
     }
 }
 
-/// Game-configured current interpretation of the first slice.
-fn interpretation() -> TestResult<CharacterInterpretationV1> {
-    CharacterInterpretationV1::new("profile-1", "ruleset-1", "content-1", "starter-1")
-        .map_err(|e| format!("{e:?}").into())
+/// Operator-only procedure: configure the Game-owned current interpretation.
+async fn configure(pool: &sqlx::PgPool, value: [&str; 4]) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT game_character_configure_interpretation($1, $2, $3, $4)")
+            .bind(value[0])
+            .bind(value[1])
+            .bind(value[2])
+            .bind(value[3])
+            .fetch_one(pool)
+            .await?,
+    )
+}
+
+/// Operator-only procedure: place an explicit legal hold.
+async fn place_hold(
+    pool: &sqlx::PgPool,
+    event: [u8; 16],
+    reason: &str,
+    actor: &str,
+) -> TestResult<[u8; 16]> {
+    let hold: String = sqlx::query_scalar(
+        "SELECT game_character_place_legal_hold(encode($1,'hex')::uuid, $2, $3)::text",
+    )
+    .bind(event.as_slice())
+    .bind(reason)
+    .bind(actor)
+    .fetch_one(pool)
+    .await?;
+    let hex: String = hold.chars().filter(|c| *c != '-').collect();
+    let mut out = [0u8; 16];
+    for (index, byte) in out.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)?;
+    }
+    Ok(out)
+}
+
+/// Operator-only procedure: release an active legal hold once.
+async fn release_hold(pool: &sqlx::PgPool, hold: [u8; 16], actor: &str) -> TestResult {
+    sqlx::query("SELECT game_character_release_legal_hold(encode($1,'hex')::uuid, $2)")
+        .bind(hold.as_slice())
+        .bind(actor)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 /// Game-owned current world evidence: assign one Channel of `world` (#415).
@@ -496,9 +536,10 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     let node = register(&root, 1, None).await?;
     initialize_s2(&root, &node).await?;
     assign_world(&root, &node, 90, 95).await?;
-    root.configure_character_interpretation(&authority, &node, &interpretation()?)
-        .await
-        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?,
+        1
+    );
 
     // Mutation, receipt, audit event and outbox commit together; a replay of the
     // exact operation returns the same stable identities, a changed one conflicts.
@@ -732,38 +773,31 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .await?;
 
     // An explicit legal hold blocks ordinary expiry until its single release.
-    let hold = root
-        .place_character_audit_legal_hold(
-            &authority,
-            first.event_id,
-            "case-1 investigation",
-            "security:alice",
-        )
-        .await
-        .map_err(|e| format!("{e:?}"))?;
+    // Holds are operator-only procedures, not a Game server API.
+    let hold = place_hold(
+        &pool,
+        first.event_id,
+        "case-1 investigation",
+        "security:alice",
+    )
+    .await?;
     // An exact replay after a lost response returns the committed hold, so it
     // stays releasable; a different placement on the same event conflicts.
     assert_eq!(
-        root.place_character_audit_legal_hold(
-            &authority,
+        place_hold(
+            &pool,
             first.event_id,
             "case-1 investigation",
-            "security:alice",
-        )
-        .await
-        .map_err(|e| format!("{e:?}"))?,
-        hold
-    );
-    assert!(matches!(
-        root.place_character_audit_legal_hold(
-            &authority,
-            first.event_id,
-            "duplicate",
             "security:alice"
         )
-        .await,
-        Err(CharacterAuthorityError::Conflict)
-    ));
+        .await?,
+        hold
+    );
+    assert!(
+        place_hold(&pool, first.event_id, "duplicate", "security:alice")
+            .await
+            .is_err()
+    );
     assert_eq!(
         root.expire_character_audit(&authority, 8)
             .await
@@ -801,14 +835,8 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .await?,
         1
     );
-    root.release_character_audit_legal_hold(&authority, hold, "security:bob")
-        .await
-        .map_err(|e| format!("{e:?}"))?;
-    assert!(matches!(
-        root.release_character_audit_legal_hold(&authority, hold, "security:bob")
-            .await,
-        Err(CharacterAuthorityError::Conflict)
-    ));
+    release_hold(&pool, hold, "security:bob").await?;
+    assert!(release_hold(&pool, hold, "security:bob").await.is_err());
 
     // Ordinary expiry deletes the player-linked event, envelope and payload;
     // authority state and its receipt remain, with no analytics copy.
@@ -1365,11 +1393,10 @@ async fn intent_matrix(database: &Database) -> TestResult {
     let other_content =
         CharacterInterpretationV1::new("profile-1", "ruleset-1", "content-2", "starter-1")
             .map_err(|e| format!("{e:?}"))?;
-    for (value, expected) in [(other_content.clone(), 1), (other_content, 1)] {
+    let other_content = other_content.revisions();
+    for expected in [1, 1] {
         assert_eq!(
-            root.configure_character_interpretation(&authority, &node, &value)
-                .await
-                .map_err(|e| format!("{e:?}"))?,
+            configure(&pool, other_content).await?,
             expected,
             "configuring the current value again is idempotent"
         );
@@ -1378,11 +1405,33 @@ async fn intent_matrix(database: &Database) -> TestResult {
         root.bootstrap_character(&authority, &node, &valid).await
     ));
     assert_eq!(
-        root.configure_character_interpretation(&authority, &node, &interpretation()?)
-            .await
-            .map_err(|e| format!("{e:?}"))?,
+        configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?,
         2
     );
+    // The operator procedures are not executable by an unprivileged role such
+    // as a Game server role (EXECUTE is revoked from PUBLIC).
+    let mut unprivileged = pool.begin().await?;
+    sqlx::query("CREATE ROLE character_server_probe NOLOGIN")
+        .execute(&mut *unprivileged)
+        .await?;
+    sqlx::query("SET LOCAL ROLE character_server_probe")
+        .execute(&mut *unprivileged)
+        .await?;
+    for procedure in [
+        "SELECT game_character_configure_interpretation('a', 'b', 'c', 'd')",
+        "SELECT game_character_release_legal_hold(game_character_uuid_v7(), 'x')",
+    ] {
+        let mut savepoint = unprivileged.begin().await?;
+        assert!(
+            sqlx::query(procedure)
+                .execute(&mut *savepoint)
+                .await
+                .is_err(),
+            "{procedure}"
+        );
+        savepoint.rollback().await?;
+    }
+    unprivileged.rollback().await?;
     assert!(
         sqlx::query("UPDATE game_character_interpretations SET content_revision = 'content-3'")
             .execute(&pool)
