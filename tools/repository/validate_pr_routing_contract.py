@@ -251,6 +251,13 @@ def main() -> int:
                 f"declared={declared} actual={actual} changed_audited_inputs={len(changed)}"
             )
             return 0
+        if health == "stale-inherited":
+            print(
+                "::warning::ROUTING_CONTRACT_STALE_INHERITED "
+                f"declared={declared} actual={actual}; "
+                "candidate changed no audited routing inputs and trusted-base health is checked separately"
+            )
+            return 0
 
         print(
             f"ROUTING_CONTRACT_STALE health={health} declared={declared} actual={actual}",

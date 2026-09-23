@@ -1,3 +1,10 @@
+> **CORRECTION — exact protected #770 final head supersedes the original pre-final counts below.**
+> Protected final head `8ac4c20dd6d2790592f7c0a0cd921733c3157207` passed exact-head Item field verification in run `35773500272`, job `106900759673`.
+> Final compiler SHA-256: `b6532886dc224d18024ded38260049ed8dae9bc7429e1a2e387a51d7ae391a86`.
+> Final exact-head result: 38,157 identities x 107 atomic field slots = 4,082,799 slots; `CORROBORATED_CURRENT=69`, `OTS_ONLY=30,216`, `CONFLICT=8`, `UNKNOWN=4,052,506`; all 4,082,799 promotion states remain BLOCKED; full output SHA-256 `ad3d3b16801979bd67fbf5e14f1d36f6e321f3526d133b17efa9e49a80d224f2`.
+> The earlier `53 / 2,022,321 / 67 / 29,307 / 322` counts in this archived historical body came from a pre-final authoring head and are retained below only as provenance, not current protected truth.
+>
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Canonical PR #770 merged through governed Merge Queue from frozen head `8ac4c20dd6d2790592f7c0a0cd921733c3157207` as protected `main@d72bb070b91aa86ffce1dc610dfa89710be42792`. Real merge-group `35774787270` and aggregate `game-gate` job `106908205635` completed SUCCESS. Exact-head field verification closed 38,157 identities x 53 logical field slots = 2,022,321 slots: CORROBORATED_CURRENT=67, OTS_ONLY=29,307, CONFLICT=322, UNKNOWN=1,992,625; all promotion states remained BLOCKED because target continuity was not yet proven/derived. No Crystal/B1 reimport, identity regeneration, semantic promotion, runtime/client/schema mutation or second Item system occurred. Writer custody is released. The next programme gate is target continuity evidence, then semantic promotion only for eligible atomic fields.
 # OTV2-20260922-content-world-item-field-verification-504
 
 ~~~yaml
