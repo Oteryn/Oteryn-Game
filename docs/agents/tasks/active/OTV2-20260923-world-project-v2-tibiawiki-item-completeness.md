@@ -4,11 +4,12 @@
 task_id: OTV2-20260923-world-project-v2-tibiawiki-item-completeness
 title: Canonical WorldProject/v2 + contemporary Item completeness
 mode: IMPLEMENT
-status: authoring
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/world-project-v2-tibiawiki-item-completeness-20260923
 base_sha: 74c626509a0efd7c80157189b9d74c59ab0b3894
+head_sha: pending final metadata commit
 owner: "single autonomous Content/World implementation agent"
 owned_paths:
   - apps/game-server/src/content/project_v2.rs
@@ -46,3 +47,19 @@ TibiaWiki remains structured reference evidence only; this task imports no wiki 
 
 - Rust unit tests in the v2 module must prove strict serde, duplicate identity rejection, typed-reference family checks, Item instance-state exclusion, relationship routing, and v1 runtime record reuse.
 - Repository exact-head CI / game-gate must qualify the frozen PR head before integration.
+
+## Implemented v2 coverage
+
+- Existing v1 executable ProjectReferenceRecord remains the only runtime-lowerable representation for accepted families.
+- Added declarative v2 carrier in `apps/game-server/src/content/project_v2.rs`.
+- Added typed Item v2 overlay for appearance/aliases/tags/taxonomy, Forge metadata, proficiency binding, augment binding, on-use interactions, magic-level requirements, enchantable/destructible lifecycle and source implementation/removal provenance.
+- Added typed ProficiencyDefinition with levels, perks and Perk Shaping bounds (refine/reshape/clear/lunar ascension declarations).
+- Added typed AugmentDefinition with Ability/auto-attack/offensive-rune/creature-class/generic target domains and exact rational rank values.
+- Added typed InteractionDefinition with closed trigger family and Ability/Effect/Service/Quest/Item-transform/NativeRule execution bindings.
+- Added NPC/Dialogue/Service/Quest/House/Encounter, assets, placements/transitions, provenance and editor metadata carriers.
+- Mutable ItemInstance/progression state is structurally excluded by strict serde.
+- NPC prices/shop offers route through Service; drop relationships route through Loot/Creature/Encounter instead of Item semantics.
+
+## Validation status
+
+Local compilation is not claimed. The branch uses repository-native authoring and will rely on exact-head hosted Rust/semantic/game-gate qualification after candidate freeze.
