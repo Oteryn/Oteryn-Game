@@ -76,7 +76,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "2.1",
+      "version": "2.2",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation and no authority expansion.",
@@ -791,7 +791,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_LEAD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-technical-lead",
       "scope": "Subordinate Content/World technical coordination and exact next-increment proposal; read-only without documentary authority, no allocation, runtime or merge authority.",
@@ -813,7 +813,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_IMPORT",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_IMPORT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-import",
       "scope": "Allocated Game-owned source extraction, semantic mapping and candidate catalogue import; no implicit source redistribution, runtime or parity-promotion authority.",
@@ -824,7 +824,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_BUILD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_BUILD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-build",
       "scope": "Allocated shared Content model, compiler, indexed artifacts and loader/activation implementation through existing boundaries; read-only without exact custody and required decisions.",
