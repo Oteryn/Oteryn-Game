@@ -761,3 +761,442 @@ fn protected_empty_v2_declarations_wire_remains_unchanged_without_item_authoring
         documents.documents()
     );
 }
+
+
+fn wiki_coverage_candidate() -> ProjectV2Draft {
+    let mut draft = item_candidate();
+    draft.core.records.extend([
+        ProjectReferenceRecord::Generic {
+            identity: DefinitionIdentityDocument {
+                family: "Behavior".into(),
+                key: "oteryn:reference.behavior.wiki-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ServerOnly,
+        },
+        ProjectReferenceRecord::Creature {
+            identity: DefinitionIdentityDocument {
+                family: "Creature".into(),
+                key: "oteryn:reference.creature.wiki-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ClientSafe,
+            presentation: DefinitionReferenceDocument {
+                family: "Presentation".into(),
+                key: "oteryn:reference.presentation.courier".into(),
+                revision: "definition-r1".into(),
+            },
+            behavior: DefinitionReferenceDocument {
+                family: "Behavior".into(),
+                key: "oteryn:reference.behavior.wiki-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            loot: None,
+        },
+    ]);
+
+    let interaction = reference(
+        ProjectV2Family::Interaction,
+        "oteryn:content.interaction.item-alpha",
+    );
+    let area = reference(ProjectV2Family::Area, "oteryn:content.area.thais");
+    let document = reference(
+        ProjectV2Family::Document,
+        "oteryn:content.document.library-alpha",
+    );
+    let achievement = reference(
+        ProjectV2Family::Achievement,
+        "oteryn:content.achievement.alpha",
+    );
+    let presentation = reference(
+        ProjectV2Family::Presentation,
+        "oteryn:reference.presentation.courier",
+    );
+    let item = reference(
+        ProjectV2Family::Item,
+        "oteryn:reference.item.weapon-alpha",
+    );
+
+    draft.state.declarations.extend([
+        ProjectV2Declaration::Area {
+            identity: identity("area.thais"),
+            parent: None,
+            fields: vec![],
+        },
+        ProjectV2Declaration::Document {
+            identity: identity("document.library-alpha"),
+            document_type: ProjectV2DocumentType::Book,
+            title: Some("Oteryn Library Alpha".into()),
+            author: Some("Oteryn".into()),
+            language: Some("en".into()),
+            content: vec!["Project-owned readable content.".into()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Achievement {
+            identity: identity("achievement.alpha"),
+            presentation: Some(presentation.clone()),
+            source_id: Some(1),
+            degree: Some(2),
+            points: Some(3),
+            secret: Some(false),
+            premium: Some(false),
+            unlock_interactions: vec![interaction.clone()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Outfit {
+            identity: identity("outfit.alpha"),
+            presentations: vec![presentation.clone()],
+            premium: Some(true),
+            acquisition_interactions: vec![interaction.clone()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Mount {
+            identity: identity("mount.alpha"),
+            presentation: Some(presentation),
+            speed_bonus: Some(10),
+            premium: Some(true),
+            taming_item: Some(item.clone()),
+            acquisition_interactions: vec![interaction.clone()],
+            fields: vec![],
+        },
+        ProjectV2Declaration::Charm {
+            identity: identity("charm.alpha"),
+            charm_type: ProjectV2CharmType::Major,
+            ranks: vec![ProjectV2CharmRank {
+                rank: 1,
+                points_cost: 100,
+                chance: Some(ProjectV2ExactRatio {
+                    numerator: 1,
+                    denominator: 10,
+                }),
+                effect: Some(reference(
+                    ProjectV2Family::Effect,
+                    "oteryn:reference.effect.item-alpha",
+                )),
+                fields: vec![],
+            }],
+            fields: vec![],
+        },
+    ]);
+
+    let service = draft
+        .state
+        .declarations
+        .iter_mut()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Service {
+                identity,
+                recipes,
+                ..
+            } if identity.key == "oteryn:content.service.item-alpha" => Some(recipes),
+            _ => None,
+        })
+        .expect("item service");
+    service.push(ProjectV2ServiceRecipe {
+        key: "oteryn:recipe.weapon-alpha".into(),
+        inputs: vec![ProjectV2ItemQuantity {
+            item: item.clone(),
+            quantity: 2,
+        }],
+        outputs: vec![ProjectV2ItemQuantity {
+            item: item.clone(),
+            quantity: 1,
+        }],
+        fee: Some(500),
+        currency: None,
+    });
+
+    draft.state.item_authoring[0].document = Some(document.clone());
+
+    draft.state.authoring_profiles.extend([
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::Creature,
+                "oteryn:reference.creature.wiki-alpha",
+            ),
+            data: ProjectV2AuthoringProfileData::Creature(ProjectV2CreatureAuthoring {
+                health: Some(1_000),
+                experience: Some(500),
+                speed: Some(220),
+                armor: Some(30),
+                mitigation: Some(ProjectV2ExactRatio {
+                    numerator: 1,
+                    denominator: 20,
+                }),
+                resistances: vec![ProjectV2Resistance {
+                    damage_type: "Fire".into(),
+                    percent: ProjectV2ExactRatio {
+                        numerator: 1,
+                        denominator: 5,
+                    },
+                }],
+                immunities: vec!["Paralysis".into()],
+                pushable: Some(false),
+                pushes_objects: Some(true),
+                pass_through: Some(false),
+                abilities: vec![reference(
+                    ProjectV2Family::Ability,
+                    "oteryn:reference.ability.item-alpha",
+                )],
+                bestiary: Some(ProjectV2BestiaryProfile {
+                    difficulty: "Medium".into(),
+                    occurrence: Some("Common".into()),
+                    kill_thresholds: vec![5, 50, 500],
+                    charm_points: 25,
+                }),
+                bosstiary: Some(ProjectV2BosstiaryProfile {
+                    category: "Bane".into(),
+                    prowess_kills: 5,
+                    expertise_kills: 20,
+                    mastery_kills: 60,
+                    boss_points: 5,
+                }),
+                familiar: Some(ProjectV2FamiliarProfile {
+                    vocation: Some("Monk".into()),
+                    summon_ability: Some(reference(
+                        ProjectV2Family::Ability,
+                        "oteryn:reference.ability.item-alpha",
+                    )),
+                    duration_seconds: Some(900),
+                    mana_cost: Some(300),
+                    owner_speed_bonus: Some(10),
+                }),
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::Ability,
+                "oteryn:reference.ability.item-alpha",
+            ),
+            data: ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+                incantation: Some("exori alpha".into()),
+                vocations: vec!["Monk".into()],
+                required_level: Some(30),
+                group: Some("Attack".into()),
+                cooldown_ms: Some(8_000),
+                group_cooldown_ms: Some(2_000),
+                premium: Some(true),
+                mana_cost: Some(150),
+                base_power: Some(85),
+                range: Some(7),
+                damage_type: Some("Physical".into()),
+                acquisition_interactions: vec![interaction.clone()],
+                augments: vec![],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::Quest, "oteryn:content.quest.courier"),
+            data: ProjectV2AuthoringProfileData::Quest(ProjectV2QuestAuthoring {
+                required_level: Some(20),
+                premium: Some(false),
+                repeatable: Some(false),
+                prerequisites: vec![],
+                reward_items: vec![ProjectV2ItemQuantity {
+                    item: item.clone(),
+                    quantity: 1,
+                }],
+                reward_achievements: vec![achievement],
+                encounters: vec![reference(
+                    ProjectV2Family::Encounter,
+                    "oteryn:content.encounter.courier",
+                )],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::House, "oteryn:content.house.courier"),
+            data: ProjectV2AuthoringProfileData::House(ProjectV2HouseAuthoring {
+                area: Some(area.clone()),
+                size_sqm: Some(120),
+                rent_amount: Some(10_000),
+                rent_currency: None,
+                beds: Some(2),
+                floors: Some(2),
+                rooms: Some(4),
+                player_ownable: Some(true),
+                streets: vec!["Harbour Lane".into()],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::Encounter,
+                "oteryn:content.encounter.courier",
+            ),
+            data: ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+                encounter_type: ProjectV2EncounterType::Raid,
+                scope: ProjectV2EncounterScope::World,
+                areas: vec![area.clone()],
+                cooldown_seconds: Some(3_600),
+                repeatable: Some(true),
+                interactions: vec![interaction.clone()],
+                fields: vec![],
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(
+                ProjectV2Family::WorldObject,
+                "oteryn:content.object.sign",
+            ),
+            data: ProjectV2AuthoringProfileData::WorldObject(ProjectV2WorldObjectAuthoring {
+                area: Some(area.clone()),
+                interactions: vec![interaction],
+                transitions: vec![reference(
+                    ProjectV2Family::Transition,
+                    "oteryn:content.transition.courier",
+                )],
+                document: Some(document.clone()),
+                fields: vec![],
+            }),
+        },
+    ]);
+
+    let parent = ProjectV2Placement {
+        key: "oteryn:placement.library-shelf".into(),
+        world: "oteryn:world.reference".into(),
+        map_revision: "map-r1".into(),
+        definition: reference(
+            ProjectV2Family::WorldObject,
+            "oteryn:content.object.sign",
+        ),
+        area: Some(area.clone()),
+        document: None,
+        parent_placement: None,
+        coordinate_frame: "global-target-2026-07-28".into(),
+        x: 101,
+        y: 200,
+        floor: 7,
+        presentation_order: ProjectV2PresentationOrder { plane: 0, order: 1 },
+        disposition: ProjectV2Disposition::CandidateOnly,
+    };
+    let child = ProjectV2Placement {
+        key: "oteryn:placement.library-book".into(),
+        world: "oteryn:world.reference".into(),
+        map_revision: "map-r1".into(),
+        definition: item,
+        area: Some(area),
+        document: Some(document),
+        parent_placement: Some(parent.key.clone()),
+        coordinate_frame: "global-target-2026-07-28".into(),
+        x: 101,
+        y: 200,
+        floor: 7,
+        presentation_order: ProjectV2PresentationOrder { plane: 1, order: 0 },
+        disposition: ProjectV2Disposition::CandidateOnly,
+    };
+    draft.state.placements.extend([child, parent]);
+    draft
+}
+
+#[test]
+fn wiki_wide_static_authoring_round_trips_without_runtime_lowering() {
+    let documents = CanonicalProjectDocuments::from_v2_draft(wiki_coverage_candidate(), limits())
+        .expect("wiki-wide v2 documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit wiki-wide v2")
+        .parse(limits())
+        .expect("parse wiki-wide v2");
+    let state = parsed.v2().expect("v2 state");
+
+    assert_eq!(state.authoring_profiles.len(), 6);
+    assert_eq!(
+        state
+            .declarations
+            .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Document { .. }))
+            .count(),
+        1
+    );
+    assert_eq!(
+        state.item_authoring[0]
+            .document
+            .as_ref()
+            .expect("Item Document")
+            .family,
+        ProjectV2Family::Document
+    );
+    let book = state
+        .placements
+        .iter()
+        .find(|placement| placement.key == "oteryn:placement.library-book")
+        .expect("book placement");
+    assert_eq!(
+        book.parent_placement.as_deref(),
+        Some("oteryn:placement.library-shelf")
+    );
+    assert_eq!(
+        book.document.as_ref().expect("placement Document").family,
+        ProjectV2Family::Document
+    );
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("canonical rewrite")
+            .documents(),
+        documents.documents()
+    );
+
+    let reference = parsed
+        .lower_reference_source()
+        .expect("reference projection remains executable-only");
+    assert_eq!(reference.definitions.len(), 7);
+}
+
+#[test]
+fn wiki_authoring_rejects_mutable_state_and_wrong_profile_ownership() {
+    let documents = CanonicalProjectDocuments::from_v2_draft(wiki_coverage_candidate(), limits())
+        .expect("wiki-wide v2 documents");
+
+    for (kind, field, value) in [
+        ("Document", "player_written_text", json!("mutable")),
+        ("Achievement", "unlocked", json!(true)),
+    ] {
+        let mut changed = documents.documents().clone();
+        let path = "definitions/declarations.json";
+        let mut declarations: Value = serde_json::from_slice(&changed[path]).expect("declarations");
+        let record = declarations["records"]
+            .as_array_mut()
+            .expect("records")
+            .iter_mut()
+            .find(|record| record["kind"] == kind)
+            .expect("target declaration");
+        record[field] = value;
+        let bytes = canonical(&declarations);
+        changed.insert(path.into(), bytes.clone());
+        let mut manifest: Value =
+            serde_json::from_slice(&changed["manifest.json"]).expect("manifest");
+        let entry = manifest["documents"]
+            .as_array_mut()
+            .expect("inventory")
+            .iter_mut()
+            .find(|entry| entry["locator"] == path)
+            .expect("entry");
+        entry["byte_length"] = json!(bytes.len());
+        entry["sha256"] = json!(world_project_sha256(&bytes));
+        rebind_manifest_and_lock(&mut changed, &manifest);
+        assert!(
+            ProjectSnapshot::new(changed, limits())
+                .expect("admit")
+                .parse(limits())
+                .is_err(),
+            "mutable field admitted into {kind}: {field}"
+        );
+    }
+
+    let mut wrong_owner = wiki_coverage_candidate();
+    let creature = wrong_owner
+        .state
+        .authoring_profiles
+        .iter_mut()
+        .find(|profile| {
+            matches!(
+                &profile.data,
+                ProjectV2AuthoringProfileData::Creature(_)
+            )
+        })
+        .expect("Creature profile");
+    creature.target.family = ProjectV2Family::Item;
+    assert!(CanonicalProjectDocuments::from_v2_draft(wrong_owner, limits()).is_err());
+}
