@@ -234,12 +234,12 @@ jobs:
           {
             echo '### Trusted-base PR routing'
             echo
-            echo "- Rust: `$RUST`"
-            echo "- Windows: `$WINDOWS`"
-            echo "- Atlas fullworld: `$ATLAS_FULLWORLD`"
-            echo "- Surface: `$SURFACE`"
-            echo "- Reason: `$REASON`"
-            echo "- Routing health: `$ROUTING_HEALTH`"
+            printf -- '- Rust: `%s`\n' "$RUST"
+            printf -- '- Windows: `%s`\n' "$WINDOWS"
+            printf -- '- Atlas fullworld: `%s`\n' "$ATLAS_FULLWORLD"
+            printf -- '- Surface: `%s`\n' "$SURFACE"
+            printf -- '- Reason: `%s`\n' "$REASON"
+            printf -- '- Routing health: `%s`\n' "$ROUTING_HEALTH"
           } >> "$GITHUB_STEP_SUMMARY"
 
   governance:
