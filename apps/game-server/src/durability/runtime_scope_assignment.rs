@@ -305,6 +305,13 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    // Writer-then-registration lock order, as in registration,
+                    // currentness checks and game_node_end_registration.
+                    sqlx::query(
+                        "SELECT 1 FROM game_node_registration_writer WHERE writer_id = 1 FOR UPDATE",
+                    )
+                    .execute(&mut *tx)
+                    .await?;
                     let state: Option<i16> = sqlx::query_scalar(
                         "SELECT state FROM game_node_registrations \
                          WHERE node_id = encode($1, 'hex')::uuid \
@@ -674,6 +681,7 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(None);
                     };
+                    require_guard_covers_latest_fence(&root, &mut tx, &key, scope).await?;
                     let guard = runtime_guard_publication_revision(&root, &mut tx, scope).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Some(AssignmentPredecessor {
@@ -863,6 +871,14 @@ impl RuntimeScopeAssignmentWriter {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             registry.retain(|_, shared| shared.strong_count() > 0);
+            // NASG accounting is per assignment-writer process: one live
+            // writer registration per root, never a second independent queue.
+            if registry
+                .keys()
+                .any(|(root_id, name)| *root_id == root.root_identity() && *name != registration)
+            {
+                return Err(AssignmentError::Unsupported);
+            }
             let key = (root.root_identity(), registration.clone());
             match registry.get(&key).and_then(Weak::upgrade) {
                 Some(shared) => {
@@ -940,10 +956,19 @@ impl RuntimeScopeAssignmentWriter {
                     lock_admission_relations(&mut tx).await?;
                     let slot = lock_slot(&mut tx, &registration).await?;
                     match slot {
-                        Some((slot_key, _)) if slot_key == key.0.as_slice() => {
+                        Some((slot_key, slot_command)) if slot_key == key.0.as_slice() => {
+                            // A restored checkpoint can outlive its commit: the
+                            // immutable receipt decides before the slot does.
+                            let receipt = load_receipt(&mut tx, &key).await?;
                             clear_slot(&mut tx, &registration).await?;
                             commit_semantic_transaction(tx, deadline).await?;
-                            return Ok(Ok(ReconcileOutcome::Absent));
+                            return Ok(Ok(match receipt {
+                                Some((receipt, stored)) if stored == slot_command => {
+                                    ReconcileOutcome::Committed(receipt)
+                                }
+                                Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
+                                None => ReconcileOutcome::Absent,
+                            }));
                         }
                         Some(_) => return Ok(Err(AssignmentError::ReconcileRequired)),
                         None => {}
@@ -1115,6 +1140,7 @@ async fn authoritative_transition(
     require_history_matches_high_water(tx, high_water).await?;
     let current = load_assignment(tx, &scope_key, true).await?;
     // Admission relations are locked, so the guard binding cannot move here.
+    require_guard_covers_latest_fence(root, tx, &scope_key, scope).await?;
     let guard_revision = runtime_guard_publication_revision(root, tx, scope).await?;
     let matches = |current: &RuntimeScopeAssignment, predecessor: AssignmentPredecessor| {
         current.ownership_generation == predecessor.ownership_generation
@@ -1221,17 +1247,16 @@ async fn authoritative_transition(
     .bind(decided_at)
     .execute(&mut **tx)
     .await?;
-    // The fence runs after the assignment row advances: the Runtime guard
-    // trigger admits only publications carrying the current generation.
-    let fenced_publication_revision = fence_runtime_guard(
-        root,
-        tx,
-        scope,
-        ownership_generation,
-        &assignment.decision_identity,
-        decided_at,
-    )
-    .await?;
+    // Every decision on a guarded scope fences the guard at the next
+    // publication revision; the receipt retains that exact binding.
+    let fenced_publication_revision = runtime_guard_publication_revision(root, tx, scope)
+        .await?
+        .map(|revision| {
+            revision
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)
+        })
+        .transpose()?;
     sqlx::query(
         "UPDATE game_runtime_scope_assignment_writer \
          SET source_revision_high_water = $1::text::numeric(20,0) WHERE writer_id = 1",
@@ -1260,6 +1285,21 @@ async fn authoritative_transition(
     .bind(fenced_publication_revision.map(|revision| revision.to_string()))
     .execute(&mut **tx)
     .await?;
+    // The fence runs once the assignment row, high-water and receipt are
+    // consistent: the Runtime guard trigger validates authoritative history
+    // and admits only publications carrying the current generation.
+    let fenced = fence_runtime_guard(
+        root,
+        tx,
+        scope,
+        ownership_generation,
+        &assignment.decision_identity,
+        decided_at,
+    )
+    .await?;
+    if fenced != fenced_publication_revision {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     clear_slot(tx, registration).await?;
     Ok(AssignmentOutcome::Committed(AssignmentReceipt {
         operation_key: key,
@@ -1604,6 +1644,41 @@ async fn runtime_guard(
             _ => Err(DurabilityError::InvalidStoredState),
         },
     }
+}
+
+/// A partial restore must not roll the Runtime guard back behind the fence
+/// recorded by the scope's latest retained receipt. Guard publications only
+/// advance, and `load_locked` already rejects a current row that trails its
+/// own history, so the current guard must be at or beyond that fence;
+/// otherwise the predecessor binding is untrustworthy.
+async fn require_guard_covers_latest_fence(
+    root: &DurabilityRoot,
+    tx: &mut Transaction<'_, Postgres>,
+    scope_key: &[u8],
+    scope: RuntimeScopeRefV1,
+) -> Result<(), DurabilityError> {
+    let latest: Option<Option<String>> = sqlx::query_scalar(
+        "SELECT fenced_publication_revision::text \
+         FROM game_runtime_scope_assignment_receipts WHERE scope_key = $1 \
+         ORDER BY source_revision DESC LIMIT 1",
+    )
+    .bind(scope_key)
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some(Some(fenced)) = latest else {
+        return Ok(());
+    };
+    let fenced = parse_u64_text(&fenced)?;
+    let store = AdmissionGuardStore::from_root(root.clone());
+    let key = AdmissionAuthorityGuardKeyV1::Runtime(scope);
+    let current = store
+        .load_locked(tx, &key)
+        .await?
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if current.publication_revision < fenced {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
 }
 
 async fn runtime_guard_publication_revision(

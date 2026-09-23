@@ -527,6 +527,11 @@ BEGIN
     IF NOT FOUND THEN
         RETURN NEW;
     END IF;
+    -- A partially restored assignment row is never trusted for any Runtime
+    -- publication: authoritative retained history must validate first.
+    IF NOT game_runtime_scope_assignment_history_valid() THEN
+        RAISE EXCEPTION 'runtime publication requires valid assignment history' USING ERRCODE = '23514';
+    END IF;
     IF v_assignment.ownership_generation <> NEW.ownership_generation THEN
         RAISE EXCEPTION 'runtime publication requires the current assignment generation' USING ERRCODE = '23514';
     END IF;
