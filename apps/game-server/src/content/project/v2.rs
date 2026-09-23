@@ -472,7 +472,8 @@ pub struct ProjectV2ItemAuthoring {
 
 impl ProjectV2ItemAuthoring {
     fn canonicalize(&mut self) {
-        self.augments.sort_by(|left, right| left.key.cmp(&right.key));
+        self.augments
+            .sort_by(|left, right| left.key.cmp(&right.key));
         for augment in &mut self.augments {
             augment.canonicalize();
         }
@@ -508,7 +509,6 @@ pub struct ProjectV2ServiceOffer {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub currency: Option<ProjectV2DefinitionRef>,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -808,7 +808,6 @@ pub(super) fn parse_v2_snapshot(
     })
 }
 
-
 fn validate_v2_source_text(
     field: &'static str,
     value: &str,
@@ -890,14 +889,13 @@ fn validate_v2_augment(
         ));
     }
     for rank in &augment.rank_values {
-        if let ProjectV2AugmentValue::RationalPercent(ratio) = rank.value {
-            if ratio.denominator == 0
-                || gcd_v2(ratio.numerator.unsigned_abs(), ratio.denominator) != 1
-            {
-                return Err(ProjectError::InvalidProject(
-                    "v2 augment rational percent is not canonical",
-                ));
-            }
+        if let ProjectV2AugmentValue::RationalPercent(ratio) = rank.value
+            && (ratio.denominator == 0
+                || gcd_v2(ratio.numerator.unsigned_abs(), ratio.denominator) != 1)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 augment rational percent is not canonical",
+            ));
         }
     }
     limits.check(
@@ -1081,7 +1079,10 @@ fn validate_v2_state(
                 .levels
                 .windows(2)
                 .any(|pair| pair[0].level == 0 || pair[0].level >= pair[1].level)
-                || proficiency.levels.last().is_some_and(|level| level.level == 0)
+                || proficiency
+                    .levels
+                    .last()
+                    .is_some_and(|level| level.level == 0)
             {
                 return Err(ProjectError::InvalidProject(
                     "v2 Item proficiency levels are not positive sorted and unique",
