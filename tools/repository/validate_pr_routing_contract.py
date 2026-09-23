@@ -117,6 +117,15 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
     if not (result["rust"] is True and result["windows"] is True):
         raise ValueError(f"client-consumed auxiliary routing changed: {result}")
 
+    helper = "tools/content/helper.py"
+    result = classify([helper], consumers={helper: {module.CONTROL_CONSUMER}})
+    if not (
+        result["rust"] is True
+        and result["windows"] is True
+        and result["reason"] == "canonical-control-consumer-affected"
+    ):
+        raise ValueError(f"canonical-workflow consumer routing changed: {result}")
+
     for path in (
         "Cargo.lock",
         ".github/workflows/merge-gate.yml",
@@ -166,7 +175,7 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
 def validate_reference_map(module, metadata: dict, head: str, paths: list[str]) -> tuple[dict[str, set[str]], int]:
     references = module.candidate_reference_consumers(metadata, head, paths)
     roots, _ = module.graph(metadata)
-    allowed = set(roots)
+    allowed = set(roots) | {module.CONTROL_CONSUMER}
     edges = 0
     if set(references) != set(paths):
         raise ValueError("candidate reference map does not cover the complete changed-path set")
