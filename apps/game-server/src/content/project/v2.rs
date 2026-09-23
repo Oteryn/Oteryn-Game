@@ -314,6 +314,25 @@ pub struct ProjectV2ItemConsumableProfile {
     pub regeneration_seconds: Option<u32>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "value", deny_unknown_fields)]
+pub enum ProjectV2ItemDamageObservation {
+    Integer(i64),
+    Range { min: i64, max: i64 },
+    Text(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemUseObservation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage: Option<ProjectV2ItemDamageObservation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mana_cost: Option<u32>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2ItemLifecycle {
@@ -443,6 +462,8 @@ pub struct ProjectV2ItemAuthoring {
     pub required_magic_level: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub consumable: Option<ProjectV2ItemConsumableProfile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub use_observation: Option<ProjectV2ItemUseObservation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lifecycle: Option<ProjectV2ItemLifecycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1008,6 +1029,25 @@ fn validate_v2_state(
             return Err(ProjectError::InvalidProject(
                 "v2 Item regeneration seconds must be positive when present",
             ));
+        }
+        if let Some(observation) = &item.use_observation {
+            if let Some(damage) = &observation.damage {
+                match damage {
+                    ProjectV2ItemDamageObservation::Range { min, max } if min > max => {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 Item damage observation range is inverted",
+                        ));
+                    }
+                    ProjectV2ItemDamageObservation::Text(value) => {
+                        validate_v2_source_text("v2 Item damage source text", value, limits)?;
+                    }
+                    ProjectV2ItemDamageObservation::Integer(_)
+                    | ProjectV2ItemDamageObservation::Range { .. } => {}
+                }
+            }
+            if let Some(value) = &observation.damage_type {
+                validate_v2_source_text("v2 Item damage type source text", value, limits)?;
+            }
         }
         limits.check(
             "v2 Item augments",
