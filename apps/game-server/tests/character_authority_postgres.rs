@@ -2,6 +2,7 @@
 
 use oteryn_game_server::domain::{AccountId, CharacterId, WorldId};
 use prost::Message;
+use sqlx::Connection;
 
 #[path = "../src/durability/character_authority_audit.rs"]
 mod audit;
@@ -47,33 +48,33 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         eprintln!("character_authority_postgres requires configured PostgreSQL 17.6");
         return;
     };
-    let pool = sqlx::PgPool::connect(&admin)
+    let mut connection = sqlx::PgConnection::connect(&admin)
         .await
         .expect("connect PostgreSQL");
     let schema = format!("character_authority_{}", std::process::id());
     sqlx::query(sqlx::AssertSqlSafe(format!("CREATE SCHEMA {schema}")))
-        .execute(&pool)
+        .execute(&mut connection)
         .await
         .expect("schema");
     sqlx::query(sqlx::AssertSqlSafe(format!("SET search_path TO {schema}")))
-        .execute(&pool)
+        .execute(&mut connection)
         .await
         .expect("path");
     sqlx::raw_sql(include_str!("../migrations/0005_character_authority.sql"))
-        .execute(&pool)
+        .execute(&mut connection)
         .await
         .expect("migration");
-    let mut tx = pool.begin().await.expect("tx");
+    let mut tx = connection.begin().await.expect("tx");
     sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES ('01890f4c-3b2a-7cc2-8d11-9a321b7c0001')").execute(&mut *tx).await.expect("guard");
     sqlx::query("INSERT INTO game_character_roots VALUES ('01890f4c-3b2a-7cc2-8d11-9a321b7c0002','01890f4c-3b2a-7cc2-8d11-9a321b7c0001','01890f4c-3b2a-7cc2-8d11-9a321b7c0003',1,1,'p','r','c','s')").execute(&mut *tx).await.expect("root");
     tx.rollback().await.expect("rollback");
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_roots")
-        .fetch_one(&pool)
+        .fetch_one(&mut connection)
         .await
         .expect("count");
     assert_eq!(count, 0, "rollback cannot leave an unaudited root");
     sqlx::query(sqlx::AssertSqlSafe(format!("DROP SCHEMA {schema} CASCADE")))
-        .execute(&pool)
+        .execute(&mut connection)
         .await
         .expect("cleanup");
         });
