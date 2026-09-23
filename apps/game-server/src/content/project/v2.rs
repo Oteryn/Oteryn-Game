@@ -805,7 +805,9 @@ impl ProjectV2AuthoringProfile {
             ProjectV2AuthoringProfileData::Ability(profile) => {
                 profile.vocations.sort();
                 profile.acquisition_interactions.sort();
-                profile.augments.sort_by(|left, right| left.key.cmp(&right.key));
+                profile
+                    .augments
+                    .sort_by(|left, right| left.key.cmp(&right.key));
                 for augment in &mut profile.augments {
                     augment.canonicalize();
                 }
@@ -1475,13 +1477,8 @@ fn validate_v2_augment(
     validate_v2_candidate_fields(&augment.fields)
 }
 
-fn validate_v2_ratio(
-    ratio: ProjectV2ExactRatio,
-    error: &'static str,
-) -> Result<(), ProjectError> {
-    if ratio.denominator == 0
-        || gcd_v2(ratio.numerator.unsigned_abs(), ratio.denominator) != 1
-    {
+fn validate_v2_ratio(ratio: ProjectV2ExactRatio, error: &'static str) -> Result<(), ProjectError> {
+    if ratio.denominator == 0 || gcd_v2(ratio.numerator.unsigned_abs(), ratio.denominator) != 1 {
         return Err(ProjectError::InvalidProject(error));
     }
     Ok(())
@@ -1515,11 +1512,7 @@ fn validate_v2_item_quantities(
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
     limits.check(label, values.len(), limits.max_reference_records)?;
-    if values.is_empty()
-        || values
-            .windows(2)
-            .any(|pair| pair[0].item >= pair[1].item)
-    {
+    if values.is_empty() || values.windows(2).any(|pair| pair[0].item >= pair[1].item) {
         return Err(ProjectError::InvalidProject(
             "v2 Item quantities are empty, duplicated or unsorted",
         ));
@@ -1639,7 +1632,11 @@ fn validate_v2_declaration(
             }
         }
         ProjectV2Declaration::Service { recipes, .. } => {
-            limits.check("v2 Service recipes", recipes.len(), limits.max_reference_records)?;
+            limits.check(
+                "v2 Service recipes",
+                recipes.len(),
+                limits.max_reference_records,
+            )?;
             if recipes.windows(2).any(|pair| pair[0].key >= pair[1].key) {
                 return Err(ProjectError::InvalidProject(
                     "v2 Service recipes are not key sorted and unique",
@@ -1720,11 +1717,7 @@ fn validate_v2_authoring_profile(
                     "v2 Creature resistance percent is not canonical",
                 )?;
             }
-            if value
-                .immunities
-                .windows(2)
-                .any(|pair| pair[0] >= pair[1])
-            {
+            if value.immunities.windows(2).any(|pair| pair[0] >= pair[1]) {
                 return Err(ProjectError::InvalidProject(
                     "v2 Creature immunities are not sorted and unique",
                 ));
@@ -1741,11 +1734,7 @@ fn validate_v2_authoring_profile(
                 limits,
             )?;
             if let Some(bestiary) = &value.bestiary {
-                validate_v2_source_text(
-                    "v2 Bestiary difficulty",
-                    &bestiary.difficulty,
-                    limits,
-                )?;
+                validate_v2_source_text("v2 Bestiary difficulty", &bestiary.difficulty, limits)?;
                 if let Some(occurrence) = &bestiary.occurrence {
                     validate_v2_source_text("v2 Bestiary occurrence", occurrence, limits)?;
                 }
@@ -1753,7 +1742,10 @@ fn validate_v2_authoring_profile(
                     .kill_thresholds
                     .windows(2)
                     .any(|pair| pair[0] == 0 || pair[0] >= pair[1])
-                    || bestiary.kill_thresholds.last().is_some_and(|value| *value == 0)
+                    || bestiary
+                        .kill_thresholds
+                        .last()
+                        .is_some_and(|value| *value == 0)
                 {
                     return Err(ProjectError::InvalidProject(
                         "v2 Bestiary kill thresholds are not positive sorted and unique",
@@ -1761,11 +1753,7 @@ fn validate_v2_authoring_profile(
                 }
             }
             if let Some(bosstiary) = &value.bosstiary {
-                validate_v2_source_text(
-                    "v2 Bosstiary category",
-                    &bosstiary.category,
-                    limits,
-                )?;
+                validate_v2_source_text("v2 Bosstiary category", &bosstiary.category, limits)?;
                 if bosstiary.prowess_kills == 0
                     || bosstiary.prowess_kills >= bosstiary.expertise_kills
                     || bosstiary.expertise_kills >= bosstiary.mastery_kills
@@ -2420,6 +2408,23 @@ fn validate_v2_state(
                     "v2 parent placement world or map revision mismatch",
                 ));
             }
+        }
+    }
+    for placement in &state.placements {
+        let mut seen = BTreeSet::new();
+        let mut current = Some(placement);
+        while let Some(node) = current {
+            if !seen.insert(node.key.as_str()) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 placement parent chain contains a cycle",
+                ));
+            }
+            current = node.parent_placement.as_ref().and_then(|parent_key| {
+                state
+                    .placements
+                    .iter()
+                    .find(|candidate| &candidate.key == parent_key)
+            });
         }
     }
     limits.check(
