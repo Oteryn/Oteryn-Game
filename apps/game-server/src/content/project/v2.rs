@@ -53,6 +53,12 @@ pub enum ProjectV2Family {
     Presentation,
     LocalObject,
     WorldObject,
+    Area,
+    Document,
+    Achievement,
+    Outfit,
+    Mount,
+    Charm,
     Item,
     Creature,
     Ability,
@@ -128,6 +134,74 @@ pub enum ProjectV2Declaration {
         presentation: Option<ProjectV2DefinitionRef>,
         fields: Vec<ProjectV2CandidateField>,
     },
+    Area {
+        identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        parent: Option<ProjectV2DefinitionRef>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
+    Document {
+        identity: ProjectV2Identity,
+        document_type: ProjectV2DocumentType,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        author: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        language: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        content: Vec<String>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
+    Achievement {
+        identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        presentation: Option<ProjectV2DefinitionRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        source_id: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        degree: Option<u8>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        points: Option<u16>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        secret: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        premium: Option<bool>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        unlock_interactions: Vec<ProjectV2DefinitionRef>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
+    Outfit {
+        identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        presentations: Vec<ProjectV2DefinitionRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        premium: Option<bool>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        acquisition_interactions: Vec<ProjectV2DefinitionRef>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
+    Mount {
+        identity: ProjectV2Identity,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        presentation: Option<ProjectV2DefinitionRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        speed_bonus: Option<i32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        premium: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        taming_item: Option<ProjectV2DefinitionRef>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        acquisition_interactions: Vec<ProjectV2DefinitionRef>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
+    Charm {
+        identity: ProjectV2Identity,
+        charm_type: ProjectV2CharmType,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        ranks: Vec<ProjectV2CharmRank>,
+        fields: Vec<ProjectV2CandidateField>,
+    },
     #[serde(rename = "NPC")]
     Npc {
         identity: ProjectV2Identity,
@@ -145,6 +219,8 @@ pub enum ProjectV2Declaration {
         identity: ProjectV2Identity,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         offers: Vec<ProjectV2ServiceOffer>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        recipes: Vec<ProjectV2ServiceRecipe>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Interaction {
@@ -173,6 +249,12 @@ impl ProjectV2Declaration {
     fn family(&self) -> ProjectV2Family {
         match self {
             Self::WorldObject { .. } => ProjectV2Family::WorldObject,
+            Self::Area { .. } => ProjectV2Family::Area,
+            Self::Document { .. } => ProjectV2Family::Document,
+            Self::Achievement { .. } => ProjectV2Family::Achievement,
+            Self::Outfit { .. } => ProjectV2Family::Outfit,
+            Self::Mount { .. } => ProjectV2Family::Mount,
+            Self::Charm { .. } => ProjectV2Family::Charm,
             Self::Npc { .. } => ProjectV2Family::Npc,
             Self::Dialogue { .. } => ProjectV2Family::Dialogue,
             Self::Service { .. } => ProjectV2Family::Service,
@@ -187,6 +269,12 @@ impl ProjectV2Declaration {
     fn identity(&self) -> &ProjectV2Identity {
         match self {
             Self::WorldObject { identity, .. }
+            | Self::Area { identity, .. }
+            | Self::Document { identity, .. }
+            | Self::Achievement { identity, .. }
+            | Self::Outfit { identity, .. }
+            | Self::Mount { identity, .. }
+            | Self::Charm { identity, .. }
             | Self::Npc { identity, .. }
             | Self::Dialogue { identity, .. }
             | Self::Service { identity, .. }
@@ -201,6 +289,12 @@ impl ProjectV2Declaration {
     fn fields(&self) -> &[ProjectV2CandidateField] {
         match self {
             Self::WorldObject { fields, .. }
+            | Self::Area { fields, .. }
+            | Self::Document { fields, .. }
+            | Self::Achievement { fields, .. }
+            | Self::Outfit { fields, .. }
+            | Self::Mount { fields, .. }
+            | Self::Charm { fields, .. }
             | Self::Npc { fields, .. }
             | Self::Dialogue { fields, .. }
             | Self::Service { fields, .. }
@@ -215,6 +309,12 @@ impl ProjectV2Declaration {
     fn fields_mut(&mut self) -> &mut Vec<ProjectV2CandidateField> {
         match self {
             Self::WorldObject { fields, .. }
+            | Self::Area { fields, .. }
+            | Self::Document { fields, .. }
+            | Self::Achievement { fields, .. }
+            | Self::Outfit { fields, .. }
+            | Self::Mount { fields, .. }
+            | Self::Charm { fields, .. }
             | Self::Npc { fields, .. }
             | Self::Dialogue { fields, .. }
             | Self::Service { fields, .. }
@@ -226,49 +326,161 @@ impl ProjectV2Declaration {
         }
     }
 
-    fn references(&self) -> Vec<(ProjectV2Family, &ProjectV2DefinitionRef)> {
+    fn canonicalize(&mut self) {
+        self.fields_mut()
+            .sort_by(|left, right| left.field_path.cmp(&right.field_path));
         match self {
-            Self::WorldObject { presentation, .. } => presentation
-                .iter()
-                .map(|reference| (ProjectV2Family::Presentation, reference))
-                .collect(),
+            Self::Service {
+                offers, recipes, ..
+            } => {
+                offers.sort();
+                recipes.sort_by(|left, right| left.key.cmp(&right.key));
+                for recipe in recipes {
+                    recipe.canonicalize();
+                }
+            }
+            Self::Achievement {
+                unlock_interactions,
+                ..
+            } => unlock_interactions.sort(),
+            Self::Outfit {
+                presentations,
+                acquisition_interactions,
+                ..
+            } => {
+                presentations.sort();
+                acquisition_interactions.sort();
+            }
+            Self::Mount {
+                acquisition_interactions,
+                ..
+            } => acquisition_interactions.sort(),
+            Self::Charm { ranks, .. } => {
+                ranks.sort_by_key(|rank| rank.rank);
+                for rank in ranks {
+                    rank.fields
+                        .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn references(&self) -> Vec<(ProjectV2Family, &ProjectV2DefinitionRef)> {
+        let mut references = Vec::new();
+        match self {
+            Self::WorldObject { presentation, .. } => {
+                if let Some(reference) = presentation {
+                    references.push((ProjectV2Family::Presentation, reference));
+                }
+            }
+            Self::Area { parent, .. } => {
+                if let Some(reference) = parent {
+                    references.push((ProjectV2Family::Area, reference));
+                }
+            }
+            Self::Document { .. } => {}
+            Self::Achievement {
+                presentation,
+                unlock_interactions,
+                ..
+            } => {
+                if let Some(reference) = presentation {
+                    references.push((ProjectV2Family::Presentation, reference));
+                }
+                references.extend(
+                    unlock_interactions
+                        .iter()
+                        .map(|reference| (ProjectV2Family::Interaction, reference)),
+                );
+            }
+            Self::Outfit {
+                presentations,
+                acquisition_interactions,
+                ..
+            } => {
+                references.extend(
+                    presentations
+                        .iter()
+                        .map(|reference| (ProjectV2Family::Presentation, reference)),
+                );
+                references.extend(
+                    acquisition_interactions
+                        .iter()
+                        .map(|reference| (ProjectV2Family::Interaction, reference)),
+                );
+            }
+            Self::Mount {
+                presentation,
+                taming_item,
+                acquisition_interactions,
+                ..
+            } => {
+                if let Some(reference) = presentation {
+                    references.push((ProjectV2Family::Presentation, reference));
+                }
+                if let Some(reference) = taming_item {
+                    references.push((ProjectV2Family::Item, reference));
+                }
+                references.extend(
+                    acquisition_interactions
+                        .iter()
+                        .map(|reference| (ProjectV2Family::Interaction, reference)),
+                );
+            }
+            Self::Charm { ranks, .. } => {
+                for rank in ranks {
+                    if let Some(reference) = &rank.effect {
+                        references.push((ProjectV2Family::Effect, reference));
+                    }
+                }
+            }
             Self::Npc {
                 presentation,
                 behavior,
                 dialogue,
                 services,
                 ..
-            } => presentation
-                .iter()
-                .map(|reference| (ProjectV2Family::Presentation, reference))
-                .chain(
-                    behavior
-                        .iter()
-                        .map(|reference| (ProjectV2Family::Behavior, reference)),
-                )
-                .chain(
-                    dialogue
-                        .iter()
-                        .map(|reference| (ProjectV2Family::Dialogue, reference)),
-                )
-                .chain(
+            } => {
+                if let Some(reference) = presentation {
+                    references.push((ProjectV2Family::Presentation, reference));
+                }
+                if let Some(reference) = behavior {
+                    references.push((ProjectV2Family::Behavior, reference));
+                }
+                if let Some(reference) = dialogue {
+                    references.push((ProjectV2Family::Dialogue, reference));
+                }
+                references.extend(
                     services
                         .iter()
                         .map(|reference| (ProjectV2Family::Service, reference)),
-                )
-                .collect(),
-            Self::Service { offers, .. } => {
-                let mut references = Vec::with_capacity(offers.len().saturating_mul(2));
+                );
+            }
+            Self::Service {
+                offers, recipes, ..
+            } => {
                 for offer in offers {
                     references.push((ProjectV2Family::Item, &offer.item));
                     if let Some(currency) = &offer.currency {
                         references.push((ProjectV2Family::Item, currency));
                     }
                 }
-                references
+                for recipe in recipes {
+                    for input in &recipe.inputs {
+                        references.push((ProjectV2Family::Item, &input.item));
+                    }
+                    for output in &recipe.outputs {
+                        references.push((ProjectV2Family::Item, &output.item));
+                    }
+                    if let Some(currency) = &recipe.currency {
+                        references.push((ProjectV2Family::Item, currency));
+                    }
+                }
             }
-            _ => Vec::new(),
+            _ => {}
         }
+        references
     }
 }
 
@@ -287,6 +499,351 @@ pub enum ProjectV2CandidateValue {
     Integer(i64),
     Boolean(bool),
     SourceId(u64),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProjectV2DocumentType {
+    Book,
+    Letter,
+    Note,
+    Diary,
+    Report,
+    Scroll,
+    Parchment,
+    Tablet,
+    Inscription,
+    Notice,
+    Other,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProjectV2CharmType {
+    Major,
+    Minor,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2CharmRank {
+    pub rank: u8,
+    pub points_cost: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chance: Option<ProjectV2ExactRatio>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ItemQuantity {
+    pub item: ProjectV2DefinitionRef,
+    pub quantity: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ServiceRecipe {
+    pub key: String,
+    pub inputs: Vec<ProjectV2ItemQuantity>,
+    pub outputs: Vec<ProjectV2ItemQuantity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub currency: Option<ProjectV2DefinitionRef>,
+}
+
+impl ProjectV2ServiceRecipe {
+    fn canonicalize(&mut self) {
+        self.inputs.sort();
+        self.outputs.sort();
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2Resistance {
+    pub damage_type: String,
+    pub percent: ProjectV2ExactRatio,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2BestiaryProfile {
+    pub difficulty: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub kill_thresholds: Vec<u32>,
+    pub charm_points: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2BosstiaryProfile {
+    pub category: String,
+    pub prowess_kills: u32,
+    pub expertise_kills: u32,
+    pub mastery_kills: u32,
+    pub boss_points: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2FamiliarProfile {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vocation: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub summon_ability: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_seconds: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mana_cost: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_speed_bonus: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2CreatureAuthoring {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speed: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub armor: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mitigation: Option<ProjectV2ExactRatio>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub resistances: Vec<ProjectV2Resistance>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub immunities: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pushable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pushes_objects: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pass_through: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub abilities: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bestiary: Option<ProjectV2BestiaryProfile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bosstiary: Option<ProjectV2BosstiaryProfile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub familiar: Option<ProjectV2FamiliarProfile>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2AbilityAuthoring {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub incantation: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub vocations: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_level: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub group_cooldown_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub premium: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mana_cost: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base_power: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub range: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub acquisition_interactions: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub augments: Vec<ProjectV2AugmentBinding>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2QuestAuthoring {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_level: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub premium: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repeatable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub prerequisites: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reward_items: Vec<ProjectV2ItemQuantity>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reward_achievements: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub encounters: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2HouseAuthoring {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub area: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size_sqm: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rent_amount: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rent_currency: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub beds: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub floors: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rooms: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub player_ownable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub streets: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProjectV2EncounterType {
+    Generic,
+    Boss,
+    Raid,
+    WorldChange,
+    MiniWorldChange,
+    Arena,
+    WorldQuest,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProjectV2EncounterScope {
+    World,
+    Channel,
+    Instance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2EncounterAuthoring {
+    pub encounter_type: ProjectV2EncounterType,
+    pub scope: ProjectV2EncounterScope,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub areas: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cooldown_seconds: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub repeatable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub interactions: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2WorldObjectAuthoring {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub area: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub interactions: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub transitions: Vec<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<ProjectV2CandidateField>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "profile", deny_unknown_fields)]
+pub enum ProjectV2AuthoringProfileData {
+    Creature(ProjectV2CreatureAuthoring),
+    Ability(ProjectV2AbilityAuthoring),
+    Quest(ProjectV2QuestAuthoring),
+    House(ProjectV2HouseAuthoring),
+    Encounter(ProjectV2EncounterAuthoring),
+    WorldObject(ProjectV2WorldObjectAuthoring),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2AuthoringProfile {
+    pub target: ProjectV2DefinitionRef,
+    pub data: ProjectV2AuthoringProfileData,
+}
+
+impl ProjectV2AuthoringProfile {
+    fn canonicalize(&mut self) {
+        match &mut self.data {
+            ProjectV2AuthoringProfileData::Creature(profile) => {
+                profile
+                    .resistances
+                    .sort_by(|left, right| left.damage_type.cmp(&right.damage_type));
+                profile.immunities.sort();
+                profile.abilities.sort();
+                if let Some(bestiary) = &mut profile.bestiary {
+                    bestiary.kill_thresholds.sort();
+                }
+                profile
+                    .fields
+                    .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+            }
+            ProjectV2AuthoringProfileData::Ability(profile) => {
+                profile.vocations.sort();
+                profile.acquisition_interactions.sort();
+                profile.augments.sort_by(|left, right| left.key.cmp(&right.key));
+                for augment in &mut profile.augments {
+                    augment.canonicalize();
+                }
+                profile
+                    .fields
+                    .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+            }
+            ProjectV2AuthoringProfileData::Quest(profile) => {
+                profile.prerequisites.sort();
+                profile.reward_items.sort();
+                profile.reward_achievements.sort();
+                profile.encounters.sort();
+                profile
+                    .fields
+                    .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+            }
+            ProjectV2AuthoringProfileData::House(profile) => {
+                profile.streets.sort();
+                profile
+                    .fields
+                    .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+            }
+            ProjectV2AuthoringProfileData::Encounter(profile) => {
+                profile.areas.sort();
+                profile.interactions.sort();
+                profile
+                    .fields
+                    .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+            }
+            ProjectV2AuthoringProfileData::WorldObject(profile) => {
+                profile.interactions.sort();
+                profile.transitions.sort();
+                profile
+                    .fields
+                    .sort_by(|left, right| left.field_path.cmp(&right.field_path));
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -447,6 +1004,8 @@ pub struct ProjectV2ItemAuthoring {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub presentation: Option<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub taxonomy: Option<ProjectV2ItemTaxonomy>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub forge: Option<ProjectV2ItemForgeProfile>,
@@ -541,6 +1100,12 @@ pub struct ProjectV2Placement {
     pub world: String,
     pub map_revision: String,
     pub definition: ProjectV2DefinitionRef,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub area: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document: Option<ProjectV2DefinitionRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_placement: Option<String>,
     pub coordinate_frame: String,
     pub x: i32,
     pub y: i32,
@@ -614,6 +1179,7 @@ pub struct ProjectV2EditorEntry {
 pub struct ProjectV2State {
     pub declarations: Vec<ProjectV2Declaration>,
     pub item_authoring: Vec<ProjectV2ItemAuthoring>,
+    pub authoring_profiles: Vec<ProjectV2AuthoringProfile>,
     pub worlds: Vec<ProjectV2World>,
     pub placements: Vec<ProjectV2Placement>,
     pub appearance_bindings: Vec<ProjectV2AppearanceBinding>,
@@ -654,6 +1220,8 @@ struct DeclarationsDocument {
     records: Vec<ProjectV2Declaration>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     item_authoring: Vec<ProjectV2ItemAuthoring>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    authoring_profiles: Vec<ProjectV2AuthoringProfile>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -785,6 +1353,7 @@ pub(super) fn parse_v2_snapshot(
     let state = ProjectV2State {
         declarations: declarations.records,
         item_authoring: declarations.item_authoring,
+        authoring_profiles: declarations.authoring_profiles,
         worlds: worlds.worlds,
         placements: worlds.placements,
         appearance_bindings: bindings.bindings,
@@ -906,6 +1475,516 @@ fn validate_v2_augment(
     validate_v2_candidate_fields(&augment.fields)
 }
 
+fn validate_v2_ratio(
+    ratio: ProjectV2ExactRatio,
+    error: &'static str,
+) -> Result<(), ProjectError> {
+    if ratio.denominator == 0
+        || gcd_v2(ratio.numerator.unsigned_abs(), ratio.denominator) != 1
+    {
+        return Err(ProjectError::InvalidProject(error));
+    }
+    Ok(())
+}
+
+fn validate_v2_ref_list(
+    values: &[ProjectV2DefinitionRef],
+    family: ProjectV2Family,
+    label: &'static str,
+    error: &'static str,
+    require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(label, values.len(), limits.max_reference_records)?;
+    if values.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return Err(ProjectError::InvalidProject(error));
+    }
+    for reference in values {
+        if reference.family != family {
+            return Err(ProjectError::InvalidProject(error));
+        }
+        require_ref(reference)?;
+    }
+    Ok(())
+}
+
+fn validate_v2_item_quantities(
+    values: &[ProjectV2ItemQuantity],
+    label: &'static str,
+    require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(label, values.len(), limits.max_reference_records)?;
+    if values.is_empty()
+        || values
+            .windows(2)
+            .any(|pair| pair[0].item >= pair[1].item)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Item quantities are empty, duplicated or unsorted",
+        ));
+    }
+    for value in values {
+        if value.quantity == 0 || value.item.family != ProjectV2Family::Item {
+            return Err(ProjectError::InvalidProject(
+                "v2 Item quantity requires a positive Item reference",
+            ));
+        }
+        require_ref(&value.item)?;
+    }
+    Ok(())
+}
+
+fn validate_v2_declaration(
+    declaration: &ProjectV2Declaration,
+    require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    match declaration {
+        ProjectV2Declaration::Document {
+            title,
+            author,
+            language,
+            content,
+            ..
+        } => {
+            if let Some(value) = title {
+                validate_v2_source_text("v2 Document title", value, limits)?;
+            }
+            if let Some(value) = author {
+                validate_v2_source_text("v2 Document author", value, limits)?;
+            }
+            if let Some(value) = language {
+                validate_v2_source_text("v2 Document language", value, limits)?;
+            }
+            limits.check(
+                "v2 Document content paragraphs",
+                content.len(),
+                limits.max_reference_records,
+            )?;
+            for paragraph in content {
+                validate_v2_source_text("v2 Document paragraph", paragraph, limits)?;
+            }
+        }
+        ProjectV2Declaration::Achievement {
+            source_id,
+            unlock_interactions,
+            ..
+        } => {
+            if source_id == &Some(0) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Achievement source id must be positive",
+                ));
+            }
+            validate_v2_ref_list(
+                unlock_interactions,
+                ProjectV2Family::Interaction,
+                "v2 Achievement interactions",
+                "v2 Achievement interactions are invalid",
+                require_ref,
+                limits,
+            )?;
+        }
+        ProjectV2Declaration::Outfit {
+            presentations,
+            acquisition_interactions,
+            ..
+        } => {
+            validate_v2_ref_list(
+                presentations,
+                ProjectV2Family::Presentation,
+                "v2 Outfit presentations",
+                "v2 Outfit presentations are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_ref_list(
+                acquisition_interactions,
+                ProjectV2Family::Interaction,
+                "v2 Outfit acquisition interactions",
+                "v2 Outfit acquisition interactions are invalid",
+                require_ref,
+                limits,
+            )?;
+        }
+        ProjectV2Declaration::Mount {
+            acquisition_interactions,
+            ..
+        } => {
+            validate_v2_ref_list(
+                acquisition_interactions,
+                ProjectV2Family::Interaction,
+                "v2 Mount acquisition interactions",
+                "v2 Mount acquisition interactions are invalid",
+                require_ref,
+                limits,
+            )?;
+        }
+        ProjectV2Declaration::Charm { ranks, .. } => {
+            limits.check("v2 Charm ranks", ranks.len(), limits.max_reference_records)?;
+            if ranks
+                .windows(2)
+                .any(|pair| pair[0].rank == 0 || pair[0].rank >= pair[1].rank)
+                || ranks.last().is_some_and(|rank| rank.rank == 0)
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Charm ranks are not positive sorted and unique",
+                ));
+            }
+            for rank in ranks {
+                if let Some(chance) = rank.chance {
+                    validate_v2_ratio(chance, "v2 Charm chance is not canonical")?;
+                }
+                validate_v2_candidate_fields(&rank.fields)?;
+            }
+        }
+        ProjectV2Declaration::Service { recipes, .. } => {
+            limits.check("v2 Service recipes", recipes.len(), limits.max_reference_records)?;
+            if recipes.windows(2).any(|pair| pair[0].key >= pair[1].key) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Service recipes are not key sorted and unique",
+                ));
+            }
+            for recipe in recipes {
+                ProductionKey::new(&recipe.key)?;
+                validate_v2_item_quantities(
+                    &recipe.inputs,
+                    "v2 Service recipe inputs",
+                    require_ref,
+                    limits,
+                )?;
+                validate_v2_item_quantities(
+                    &recipe.outputs,
+                    "v2 Service recipe outputs",
+                    require_ref,
+                    limits,
+                )?;
+                if let Some(currency) = &recipe.currency {
+                    if currency.family != ProjectV2Family::Item {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 Service recipe currency requires Item",
+                        ));
+                    }
+                    require_ref(currency)?;
+                }
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+fn validate_v2_authoring_profile(
+    profile: &ProjectV2AuthoringProfile,
+    require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    require_ref(&profile.target)?;
+    match &profile.data {
+        ProjectV2AuthoringProfileData::Creature(value) => {
+            if profile.target.family != ProjectV2Family::Creature {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Creature authoring requires Creature target",
+                ));
+            }
+            if value.health == Some(0) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Creature health must be positive when present",
+                ));
+            }
+            if let Some(ratio) = value.mitigation {
+                validate_v2_ratio(ratio, "v2 Creature mitigation is not canonical")?;
+            }
+            limits.check(
+                "v2 Creature resistances",
+                value.resistances.len(),
+                limits.max_reference_records,
+            )?;
+            if value
+                .resistances
+                .windows(2)
+                .any(|pair| pair[0].damage_type >= pair[1].damage_type)
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Creature resistances are not sorted and unique",
+                ));
+            }
+            for resistance in &value.resistances {
+                validate_v2_source_text(
+                    "v2 Creature resistance damage type",
+                    &resistance.damage_type,
+                    limits,
+                )?;
+                validate_v2_ratio(
+                    resistance.percent,
+                    "v2 Creature resistance percent is not canonical",
+                )?;
+            }
+            if value
+                .immunities
+                .windows(2)
+                .any(|pair| pair[0] >= pair[1])
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Creature immunities are not sorted and unique",
+                ));
+            }
+            for immunity in &value.immunities {
+                validate_v2_source_text("v2 Creature immunity", immunity, limits)?;
+            }
+            validate_v2_ref_list(
+                &value.abilities,
+                ProjectV2Family::Ability,
+                "v2 Creature abilities",
+                "v2 Creature abilities are invalid",
+                require_ref,
+                limits,
+            )?;
+            if let Some(bestiary) = &value.bestiary {
+                validate_v2_source_text(
+                    "v2 Bestiary difficulty",
+                    &bestiary.difficulty,
+                    limits,
+                )?;
+                if let Some(occurrence) = &bestiary.occurrence {
+                    validate_v2_source_text("v2 Bestiary occurrence", occurrence, limits)?;
+                }
+                if bestiary
+                    .kill_thresholds
+                    .windows(2)
+                    .any(|pair| pair[0] == 0 || pair[0] >= pair[1])
+                    || bestiary.kill_thresholds.last().is_some_and(|value| *value == 0)
+                {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Bestiary kill thresholds are not positive sorted and unique",
+                    ));
+                }
+            }
+            if let Some(bosstiary) = &value.bosstiary {
+                validate_v2_source_text(
+                    "v2 Bosstiary category",
+                    &bosstiary.category,
+                    limits,
+                )?;
+                if bosstiary.prowess_kills == 0
+                    || bosstiary.prowess_kills >= bosstiary.expertise_kills
+                    || bosstiary.expertise_kills >= bosstiary.mastery_kills
+                {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Bosstiary thresholds are invalid",
+                    ));
+                }
+            }
+            if let Some(familiar) = &value.familiar {
+                if let Some(vocation) = &familiar.vocation {
+                    validate_v2_source_text("v2 Familiar vocation", vocation, limits)?;
+                }
+                if let Some(ability) = &familiar.summon_ability {
+                    if ability.family != ProjectV2Family::Ability {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 Familiar summon ability family mismatch",
+                        ));
+                    }
+                    require_ref(ability)?;
+                }
+                if familiar.duration_seconds == Some(0) {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 Familiar duration must be positive when present",
+                    ));
+                }
+            }
+            validate_v2_candidate_fields(&value.fields)?;
+        }
+        ProjectV2AuthoringProfileData::Ability(value) => {
+            if profile.target.family != ProjectV2Family::Ability {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Ability authoring requires Ability target",
+                ));
+            }
+            for (label, candidate) in [
+                ("v2 Ability incantation", value.incantation.as_ref()),
+                ("v2 Ability group", value.group.as_ref()),
+                ("v2 Ability damage type", value.damage_type.as_ref()),
+            ] {
+                if let Some(candidate) = candidate {
+                    validate_v2_source_text(label, candidate, limits)?;
+                }
+            }
+            if value.vocations.windows(2).any(|pair| pair[0] >= pair[1]) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Ability vocations are not sorted and unique",
+                ));
+            }
+            for vocation in &value.vocations {
+                validate_v2_source_text("v2 Ability vocation", vocation, limits)?;
+            }
+            validate_v2_ref_list(
+                &value.acquisition_interactions,
+                ProjectV2Family::Interaction,
+                "v2 Ability acquisition interactions",
+                "v2 Ability acquisition interactions are invalid",
+                require_ref,
+                limits,
+            )?;
+            limits.check(
+                "v2 Ability augments",
+                value.augments.len(),
+                limits.max_reference_records,
+            )?;
+            if value
+                .augments
+                .windows(2)
+                .any(|pair| pair[0].key >= pair[1].key)
+            {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Ability augments are not sorted and unique",
+                ));
+            }
+            for augment in &value.augments {
+                validate_v2_augment(augment, require_ref, limits)?;
+            }
+            validate_v2_candidate_fields(&value.fields)?;
+        }
+        ProjectV2AuthoringProfileData::Quest(value) => {
+            if profile.target.family != ProjectV2Family::Quest {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Quest authoring requires Quest target",
+                ));
+            }
+            validate_v2_ref_list(
+                &value.prerequisites,
+                ProjectV2Family::Quest,
+                "v2 Quest prerequisites",
+                "v2 Quest prerequisites are invalid",
+                require_ref,
+                limits,
+            )?;
+            if !value.reward_items.is_empty() {
+                validate_v2_item_quantities(
+                    &value.reward_items,
+                    "v2 Quest reward items",
+                    require_ref,
+                    limits,
+                )?;
+            }
+            validate_v2_ref_list(
+                &value.reward_achievements,
+                ProjectV2Family::Achievement,
+                "v2 Quest reward achievements",
+                "v2 Quest reward achievements are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_ref_list(
+                &value.encounters,
+                ProjectV2Family::Encounter,
+                "v2 Quest encounters",
+                "v2 Quest encounters are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_candidate_fields(&value.fields)?;
+        }
+        ProjectV2AuthoringProfileData::House(value) => {
+            if profile.target.family != ProjectV2Family::House {
+                return Err(ProjectError::InvalidProject(
+                    "v2 House authoring requires House target",
+                ));
+            }
+            if let Some(area) = &value.area {
+                if area.family != ProjectV2Family::Area {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 House area family mismatch",
+                    ));
+                }
+                require_ref(area)?;
+            }
+            if let Some(currency) = &value.rent_currency {
+                if currency.family != ProjectV2Family::Item {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 House rent currency requires Item",
+                    ));
+                }
+                require_ref(currency)?;
+            }
+            if value.streets.windows(2).any(|pair| pair[0] >= pair[1]) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 House streets are not sorted and unique",
+                ));
+            }
+            for street in &value.streets {
+                validate_v2_source_text("v2 House street", street, limits)?;
+            }
+            validate_v2_candidate_fields(&value.fields)?;
+        }
+        ProjectV2AuthoringProfileData::Encounter(value) => {
+            if profile.target.family != ProjectV2Family::Encounter {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Encounter authoring requires Encounter target",
+                ));
+            }
+            validate_v2_ref_list(
+                &value.areas,
+                ProjectV2Family::Area,
+                "v2 Encounter areas",
+                "v2 Encounter areas are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_ref_list(
+                &value.interactions,
+                ProjectV2Family::Interaction,
+                "v2 Encounter interactions",
+                "v2 Encounter interactions are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_candidate_fields(&value.fields)?;
+        }
+        ProjectV2AuthoringProfileData::WorldObject(value) => {
+            if profile.target.family != ProjectV2Family::WorldObject {
+                return Err(ProjectError::InvalidProject(
+                    "v2 WorldObject authoring requires WorldObject target",
+                ));
+            }
+            if let Some(area) = &value.area {
+                if area.family != ProjectV2Family::Area {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 WorldObject area family mismatch",
+                    ));
+                }
+                require_ref(area)?;
+            }
+            validate_v2_ref_list(
+                &value.interactions,
+                ProjectV2Family::Interaction,
+                "v2 WorldObject interactions",
+                "v2 WorldObject interactions are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_ref_list(
+                &value.transitions,
+                ProjectV2Family::Transition,
+                "v2 WorldObject transitions",
+                "v2 WorldObject transitions are invalid",
+                require_ref,
+                limits,
+            )?;
+            if let Some(document) = &value.document {
+                if document.family != ProjectV2Family::Document {
+                    return Err(ProjectError::InvalidProject(
+                        "v2 WorldObject document family mismatch",
+                    ));
+                }
+                require_ref(document)?;
+            }
+            validate_v2_candidate_fields(&value.fields)?;
+        }
+    }
+    Ok(())
+}
+
 fn validate_v2_state(
     state: &ProjectV2State,
     records: &[ProjectReferenceRecord],
@@ -966,6 +2045,25 @@ fn validate_v2_state(
             }
             require_ref(reference)?;
         }
+        validate_v2_declaration(declaration, &require_ref, limits)?;
+    }
+
+    limits.check(
+        "v2 authoring profiles",
+        state.authoring_profiles.len(),
+        limits.max_reference_records,
+    )?;
+    if state
+        .authoring_profiles
+        .windows(2)
+        .any(|pair| pair[0].target >= pair[1].target)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 authoring profiles are not target sorted and unique",
+        ));
+    }
+    for profile in &state.authoring_profiles {
+        validate_v2_authoring_profile(profile, &require_ref, limits)?;
     }
 
     limits.check(
@@ -996,6 +2094,14 @@ fn validate_v2_state(
                 ));
             }
             require_ref(presentation)?;
+        }
+        if let Some(document) = &item.document {
+            if document.family != ProjectV2Family::Document {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Item document family mismatch",
+                ));
+            }
+            require_ref(document)?;
         }
         if let Some(taxonomy) = &item.taxonomy {
             validate_v2_source_text("v2 Item primary taxonomy", &taxonomy.primary, limits)?;
@@ -1234,6 +2340,30 @@ fn validate_v2_state(
         ProductionAtom::new("v2 map revision", &placement.map_revision)?;
         super::super::CoordinateFrameRef::new(&placement.coordinate_frame)?;
         require_ref(&placement.definition)?;
+        if let Some(area) = &placement.area {
+            if area.family != ProjectV2Family::Area {
+                return Err(ProjectError::InvalidProject(
+                    "v2 placement area family mismatch",
+                ));
+            }
+            require_ref(area)?;
+        }
+        if let Some(document) = &placement.document {
+            if document.family != ProjectV2Family::Document {
+                return Err(ProjectError::InvalidProject(
+                    "v2 placement document family mismatch",
+                ));
+            }
+            require_ref(document)?;
+        }
+        if let Some(parent) = &placement.parent_placement {
+            ProductionKey::new(parent)?;
+            if parent == &placement.key {
+                return Err(ProjectError::InvalidProject(
+                    "v2 placement cannot parent itself",
+                ));
+            }
+        }
         let world = worlds
             .get(&placement.world)
             .ok_or(ProjectError::InvalidProject(
@@ -1275,6 +2405,22 @@ fn validate_v2_state(
         return Err(ProjectError::InvalidProject(
             "v2 placements are not identity sorted",
         ));
+    }
+    for placement in &state.placements {
+        if let Some(parent_key) = &placement.parent_placement {
+            let parent = state
+                .placements
+                .iter()
+                .find(|candidate| &candidate.key == parent_key)
+                .ok_or(ProjectError::InvalidProject(
+                    "v2 parent placement is missing",
+                ))?;
+            if parent.world != placement.world || parent.map_revision != placement.map_revision {
+                return Err(ProjectError::InvalidProject(
+                    "v2 parent placement world or map revision mismatch",
+                ));
+            }
+        }
     }
     limits.check(
         "v2 assets",
@@ -1422,12 +2568,14 @@ impl CanonicalProjectDocuments {
             .declarations
             .sort_by(|a, b| (a.family(), &a.identity().key).cmp(&(b.family(), &b.identity().key)));
         for declaration in &mut draft.state.declarations {
-            declaration
-                .fields_mut()
-                .sort_by(|a, b| a.field_path.cmp(&b.field_path));
-            if let ProjectV2Declaration::Service { offers, .. } = declaration {
-                offers.sort();
-            }
+            declaration.canonicalize();
+        }
+        draft
+            .state
+            .authoring_profiles
+            .sort_by(|left, right| left.target.cmp(&right.target));
+        for profile in &mut draft.state.authoring_profiles {
+            profile.canonicalize();
         }
         draft
             .state
@@ -1484,6 +2632,7 @@ impl CanonicalProjectDocuments {
                 schema: DECLARATIONS_SCHEMA.to_owned(),
                 records: draft.state.declarations,
                 item_authoring: draft.state.item_authoring,
+                authoring_profiles: draft.state.authoring_profiles,
             })?,
         );
         managed.insert(
