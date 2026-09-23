@@ -1,14 +1,14 @@
 {
   "catalog_denominator": {
     "note": "The band is a source-role scaling estimate, not Reference truth. Fieldless range variants may still be player-visible presentation variants; mixed residuals remain deliberately unforced.",
-    "obvious_world_technical_state_or_fieldless_range_definitions": 10514,
-    "obvious_world_technical_state_or_fieldless_range_ids": 29992,
-    "strong_player_definition_lower_bound": 4997,
-    "strong_player_expanded_ids": 5514,
-    "strong_plus_unresolved_definition_band_upper": 7151,
-    "strong_plus_unresolved_expanded_id_band_upper": 8165,
-    "unresolved_direct_or_simple_definitions": 2154,
-    "unresolved_direct_or_simple_expanded_ids": 2651
+    "obvious_world_technical_state_or_fieldless_range_definitions": 10540,
+    "obvious_world_technical_state_or_fieldless_range_ids": 30018,
+    "strong_player_definition_lower_bound": 4935,
+    "strong_player_expanded_ids": 5452,
+    "strong_plus_unresolved_definition_band_upper": 7125,
+    "strong_plus_unresolved_expanded_id_band_upper": 8139,
+    "unresolved_direct_or_simple_definitions": 2190,
+    "unresolved_direct_or_simple_expanded_ids": 2687
   },
   "counts": {
     "admitted_definition_nodes": 17665,
@@ -419,12 +419,12 @@
     "PLAYER_CATALOG_STRONG:primarytype:trophies": 54,
     "PLAYER_CATALOG_STRONG:primarytype:valuables": 172,
     "PLAYER_CATALOG_STRONG:primarytype:wands": 27,
-    "PLAYER_CATALOG_STRONG:strong_gameplay_field": 218,
+    "PLAYER_CATALOG_STRONG:strong_gameplay_field": 156,
     "RANGE_VARIANT_NO_FIELDS:range_no_fields": 1024,
-    "RESIDUAL_OTHER:other": 149,
+    "RESIDUAL_OTHER:other": 185,
     "SIMPLE_PRESENTATION_CANDIDATE:simple_presentation": 1139,
-    "STATE_VARIANT_DECAY:decay_duration": 3401,
-    "STATE_VARIANT_TRANSFORM:transform_relation": 274,
+    "STATE_VARIANT_DECAY:decay_duration": 3414,
+    "STATE_VARIANT_TRANSFORM:transform_relation": 287,
     "TECHNICAL_PLACEHOLDER:placeholder_name": 652,
     "WORLD_OBJECT_INTERACTION:primarytype:animals": 39,
     "WORLD_OBJECT_INTERACTION:primarytype:annelids": 1,
@@ -537,10 +537,10 @@
       "range_nodes": 0
     },
     "PLAYER_CATALOG_STRONG": {
-      "definition_nodes": 4997,
-      "direct_nodes": 4879,
-      "distinct_normalized_names": 4477,
-      "expanded_source_ids": 5514,
+      "definition_nodes": 4935,
+      "direct_nodes": 4817,
+      "distinct_normalized_names": 4432,
+      "expanded_source_ids": 5452,
       "range_nodes": 118
     },
     "RANGE_VARIANT_NO_FIELDS": {
@@ -551,10 +551,10 @@
       "range_nodes": 1024
     },
     "RESIDUAL_OTHER": {
-      "definition_nodes": 149,
-      "direct_nodes": 135,
-      "distinct_normalized_names": 108,
-      "expanded_source_ids": 184,
+      "definition_nodes": 185,
+      "direct_nodes": 171,
+      "distinct_normalized_names": 141,
+      "expanded_source_ids": 220,
       "range_nodes": 14
     },
     "SIMPLE_PRESENTATION_CANDIDATE": {
@@ -565,17 +565,17 @@
       "range_nodes": 104
     },
     "STATE_VARIANT_DECAY": {
-      "definition_nodes": 3401,
-      "direct_nodes": 3397,
-      "distinct_normalized_names": 872,
-      "expanded_source_ids": 3409,
+      "definition_nodes": 3414,
+      "direct_nodes": 3410,
+      "distinct_normalized_names": 884,
+      "expanded_source_ids": 3422,
       "range_nodes": 4
     },
     "STATE_VARIANT_TRANSFORM": {
-      "definition_nodes": 274,
-      "direct_nodes": 254,
-      "distinct_normalized_names": 89,
-      "expanded_source_ids": 307,
+      "definition_nodes": 287,
+      "direct_nodes": 267,
+      "distinct_normalized_names": 101,
+      "expanded_source_ids": 320,
       "range_nodes": 20
     },
     "TECHNICAL_PLACEHOLDER": {
@@ -951,6 +951,22 @@
       },
       {
         "expanded_source_ids": 1,
+        "name": "costume bag",
+        "reason": "other",
+        "source": {
+          "id": 653
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "costume bag",
+        "reason": "other",
+        "source": {
+          "id": 655
+        }
+      },
+      {
+        "expanded_source_ids": 1,
         "name": "sanctified grave",
         "reason": "other",
         "source": {
@@ -980,23 +996,6 @@
         "reason": "other",
         "source": {
           "id": 2820
-        }
-      },
-      {
-        "expanded_source_ids": 1,
-        "name": "book",
-        "reason": "other",
-        "source": {
-          "id": 2821
-        }
-      },
-      {
-        "expanded_source_ids": 9,
-        "name": "book",
-        "reason": "other",
-        "source": {
-          "fromid": 2824,
-          "toid": 2832
         }
       }
     ],
