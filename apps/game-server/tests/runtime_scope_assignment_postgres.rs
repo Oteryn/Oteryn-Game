@@ -2810,6 +2810,42 @@ fn dropped_or_substituted_fence_history_fails_closed() -> TestResult {
             root.read_runtime_scope_predecessor(channel)
                 .await
                 .map_err(|e| format!("{e:?}"))?;
+
+            // The exact fence payload moved under another guard key, or with a
+            // disagreeing SQL mirror, is not this guard's fence.
+            for tamper in [
+                "UPDATE game_durability_admission_guard_history SET guard_key = guard_key || '\\x00'::bytea \
+                 WHERE change_json IN (SELECT change_json FROM snap_fence)",
+                "UPDATE game_durability_admission_guard_history SET source_revision = source_revision + 100 \
+                 WHERE change_json IN (SELECT change_json FROM snap_fence)",
+            ] {
+                let mut restore = pool.begin().await?;
+                for statement in [
+                    "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                    tamper,
+                    "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+                ] {
+                    sqlx::query(statement).execute(&mut *restore).await?;
+                }
+                restore.commit().await?;
+                assert!(
+                    root.read_runtime_scope_predecessor(channel).await.is_err(),
+                    "accepted tampered fence row: {tamper}"
+                );
+                let mut restore = pool.begin().await?;
+                for statement in [
+                    "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                    "DELETE FROM game_durability_admission_guard_history WHERE change_json IN (SELECT change_json FROM snap_fence)",
+                    "INSERT INTO game_durability_admission_guard_history SELECT * FROM snap_fence",
+                    "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+                ] {
+                    sqlx::query(statement).execute(&mut *restore).await?;
+                }
+                restore.commit().await?;
+                root.read_runtime_scope_predecessor(channel)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?;
+            }
             pool.close().await;
             Ok(())
         })

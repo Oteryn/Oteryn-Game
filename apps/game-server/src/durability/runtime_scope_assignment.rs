@@ -13,7 +13,7 @@
 //! serialization, so no stale readiness can be restored.
 
 use super::admission_authority_guards::{
-    AdmissionGuardStore, GuardPublicationDisposition, decode_guard, encode_guard,
+    AdmissionGuardStore, GuardPublicationDisposition, Writer, decode_guard, encode_guard, write_key,
 };
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
@@ -1687,37 +1687,44 @@ async fn require_guard_covers_latest_fence(
     if current.publication_revision < fenced {
         return Err(DurabilityError::InvalidStoredState);
     }
-    // The exact fence publication must still be retained: same Runtime guard,
+    // The exact fence publication must still be retained under this guard's
+    // key: every SQL mirror must agree with its payload, which must carry the
     // same publication authority, this receipt's decision and generation, and
-    // not ready. A dropped or substituted fence revision fails closed.
-    let candidates: Vec<String> = sqlx::query_scalar(
-        "SELECT change_json FROM game_durability_admission_guard_history \
-         WHERE publication_revision = $1::text::numeric(20,0) AND decision_identity = $2",
+    // not ready. A dropped, moved or substituted fence revision fails closed.
+    let mut encoded_key = Writer::new(MAX_ADMISSION_GUARD_BYTES);
+    write_key(&mut encoded_key, &key)?;
+    let row = sqlx::query(
+        "SELECT source_authority, source_revision::text AS source_revision, \
+                decision_identity, change_json \
+         FROM game_durability_admission_guard_history \
+         WHERE guard_key = $1 AND publication_revision = $2::text::numeric(20,0)",
     )
+    .bind(&encoded_key.bytes)
     .bind(fenced.to_string())
-    .bind(&decision)
-    .fetch_all(&mut **tx)
-    .await?;
-    let mut retained = false;
-    for payload in &candidates {
-        let change = decode_guard(payload, MAX_ADMISSION_GUARD_BYTES)?;
-        if change.key != key {
-            continue;
-        }
-        retained = change.publication_revision == fenced
-            && change.source.authority == current.source.authority
-            && change.source.purpose == AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness
-            && change.source.decision_identity == decision
-            && matches!(
-                change.state,
-                AdmissionAuthorityGuardStateV1::Runtime {
-                    ready: false,
-                    ownership_generation,
-                    ..
-                } if ownership_generation == generation
-            );
-        break;
-    }
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(DurabilityError::InvalidStoredState)?;
+    let authority: String = row.try_get("source_authority")?;
+    let source_revision = parse_u64_text(&row.try_get::<String, _>("source_revision")?)?;
+    let mirrored_decision: String = row.try_get("decision_identity")?;
+    let payload: String = row.try_get("change_json")?;
+    let change = decode_guard(&payload, MAX_ADMISSION_GUARD_BYTES)?;
+    let retained = change.key == key
+        && change.publication_revision == fenced
+        && change.source.authority == authority
+        && change.source.source_revision == source_revision
+        && change.source.decision_identity == mirrored_decision
+        && change.source.authority == current.source.authority
+        && change.source.purpose == AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness
+        && change.source.decision_identity == decision
+        && matches!(
+            change.state,
+            AdmissionAuthorityGuardStateV1::Runtime {
+                ready: false,
+                ownership_generation,
+                ..
+            } if ownership_generation == generation
+        );
     if !retained {
         return Err(DurabilityError::InvalidStoredState);
     }
