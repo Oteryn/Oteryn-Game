@@ -342,6 +342,124 @@ fn structural_project_round_trip_links_through_the_existing_reference_graph() {
 }
 
 #[test]
+fn project_keeps_terrain_world_objects_and_loot_typed_and_client_safe() {
+    let mut candidate = draft();
+    candidate.records.extend([
+        ProjectReferenceRecord::Generic {
+            identity: identity("Terrain", "oteryn:reference.terrain.project-floor"),
+            client_projection: ProjectionDocument::ClientSafe,
+        },
+        ProjectReferenceRecord::LocalObject {
+            identity: identity("LocalObject", "oteryn:reference.object.project-door"),
+            client_projection: ProjectionDocument::ClientSafe,
+            states: vec![
+                "oteryn:reference.state.closed".to_owned(),
+                "oteryn:reference.state.open".to_owned(),
+            ],
+        },
+        ProjectReferenceRecord::Loot {
+            identity: identity("Loot", "oteryn:reference.loot.project-courier"),
+            algorithm: LootAlgorithmDocument::GuaranteedEntries,
+            entries: vec![LootEntryDocument {
+                item: reference("Item", "oteryn:reference.item.project-owned-token"),
+                min_count: 1,
+                max_count: 2,
+                probability_ppm: None,
+            }],
+        },
+    ]);
+    let expected = documents(candidate);
+    assert_eq!(expected.len(), 6, "existing v1 six-document writer");
+    let project = parse(expected.clone()).expect("typed project parses");
+    assert_eq!(
+        project
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        &expected
+    );
+    let linked = project
+        .link()
+        .expect("existing Reference linker validates typed closure");
+    assert_eq!(linked.definitions.len(), 7);
+    let client = linked.client_safe_definitions();
+    assert!(
+        client
+            .iter()
+            .any(|entry| entry.definition.family() == DefinitionFamily::Terrain)
+    );
+    assert!(
+        client
+            .iter()
+            .any(|entry| entry.definition.family() == DefinitionFamily::LocalObject)
+    );
+    assert!(
+        !client
+            .iter()
+            .any(|entry| entry.definition.family() == DefinitionFamily::Loot)
+    );
+}
+
+#[test]
+fn new_project_families_reject_wrong_shape_and_unsupported_loot_semantics() {
+    let mut wrong_item = draft();
+    wrong_item.records.push(ProjectReferenceRecord::Loot {
+        identity: identity("Loot", "oteryn:reference.loot.wrong-item"),
+        algorithm: LootAlgorithmDocument::GuaranteedEntries,
+        entries: vec![LootEntryDocument {
+            item: reference(
+                "Creature",
+                "oteryn:reference.creature.project-owned-courier",
+            ),
+            min_count: 1,
+            max_count: 1,
+            probability_ppm: None,
+        }],
+    });
+    assert!(CanonicalProjectDocuments::from_draft(wrong_item, limits()).is_err());
+
+    let mut empty_states = draft();
+    empty_states
+        .records
+        .push(ProjectReferenceRecord::LocalObject {
+            identity: identity("LocalObject", "oteryn:reference.object.empty"),
+            client_projection: ProjectionDocument::ClientSafe,
+            states: vec![],
+        });
+    assert!(
+        parse(documents(empty_states))
+            .expect("source parses")
+            .link()
+            .is_err()
+    );
+
+    let mut unsupported = draft();
+    unsupported.records.push(ProjectReferenceRecord::Loot {
+        identity: identity("Loot", "oteryn:reference.loot.weighted"),
+        algorithm: LootAlgorithmDocument::WeightedSingleSelection,
+        entries: vec![LootEntryDocument {
+            item: reference("Item", "oteryn:reference.item.project-owned-token"),
+            min_count: 1,
+            max_count: 1,
+            probability_ppm: None,
+        }],
+    });
+    assert!(
+        parse(documents(unsupported))
+            .expect("source parses")
+            .link()
+            .is_err()
+    );
+
+    let mut untyped = draft();
+    untyped.records.push(ProjectReferenceRecord::Generic {
+        identity: identity("Loot", "oteryn:reference.loot.generic"),
+        client_projection: ProjectionDocument::ServerOnly,
+    });
+    assert!(CanonicalProjectDocuments::from_draft(untyped, limits()).is_err());
+}
+
+#[test]
 fn structural_project_fails_closed_on_shape_and_exact_reference_errors() {
     let mut generic = draft();
     generic.records.push(ProjectReferenceRecord::Generic {
@@ -1145,13 +1263,16 @@ fn regrouped_record_documents_preserve_semantic_identity() {
         "coordinate_frame": record_value["coordinate_frame"],
         "records": records[2..],
     }));
-    grouped.insert("records/a.json".to_owned(), first.clone());
-    grouped.insert("records/b.json".to_owned(), second.clone());
+    grouped.insert("records/definitions/part-a.json".to_owned(), first.clone());
+    grouped.insert("records/definitions/part-b.json".to_owned(), second.clone());
 
     let mut manifest: Value = serde_json::from_slice(&grouped["manifest.json"]).expect("manifest");
     let inventory = manifest["documents"].as_array_mut().expect("inventory");
     inventory.retain(|entry| entry["role"] != "reference-records");
-    for (locator, bytes) in [("records/a.json", first), ("records/b.json", second)] {
+    for (locator, bytes) in [
+        ("records/definitions/part-a.json", first),
+        ("records/definitions/part-b.json", second),
+    ] {
         inventory.push(json!({
             "role": "reference-records",
             "schema": WORLD_PROJECT_REFERENCE_SCHEMA,

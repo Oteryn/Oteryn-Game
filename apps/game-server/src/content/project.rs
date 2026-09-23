@@ -13,6 +13,7 @@ use super::{
     ReferenceDefinition, ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
     ReferenceFormulaDefinition, ReferenceItemDefinition, ReferenceItemDestination,
     ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStackClass,
+    ReferenceLootDefinition, ReferenceLootEntry, ReferenceLootSelectionAlgorithm,
     ReferencePlayableContentSource, Sha256HexDigest, TypedDefinitionRef, link_reference_playable,
 };
 use crate::foundation::WorldId;
@@ -565,6 +566,16 @@ pub enum ProjectReferenceRecord {
         behavior: DefinitionReferenceDocument,
         loot: Option<DefinitionReferenceDocument>,
     },
+    Loot {
+        identity: DefinitionIdentityDocument,
+        algorithm: LootAlgorithmDocument,
+        entries: Vec<LootEntryDocument>,
+    },
+    LocalObject {
+        identity: DefinitionIdentityDocument,
+        client_projection: ProjectionDocument,
+        states: Vec<String>,
+    },
 }
 
 impl ProjectReferenceRecord {
@@ -575,7 +586,9 @@ impl ProjectReferenceRecord {
             | Self::Formula { identity, .. }
             | Self::Item { identity, .. }
             | Self::Generic { identity, .. }
-            | Self::Creature { identity, .. } => identity,
+            | Self::Creature { identity, .. }
+            | Self::Loot { identity, .. }
+            | Self::LocalObject { identity, .. } => identity,
         }
     }
 
@@ -681,7 +694,9 @@ impl ProjectReferenceRecord {
                 let family = parse_family(&identity.family)?;
                 if !matches!(
                     family,
-                    DefinitionFamily::Presentation | DefinitionFamily::Behavior
+                    DefinitionFamily::Terrain
+                        | DefinitionFamily::Presentation
+                        | DefinitionFamily::Behavior
                 ) {
                     return Err(ProjectError::InvalidProject(
                         "unsupported generic Reference family",
@@ -719,7 +734,86 @@ impl ProjectReferenceRecord {
                     client_projection: client_projection.lower(),
                 })
             }
+            Self::Loot {
+                identity,
+                algorithm,
+                entries,
+            } => {
+                require_family(&identity.family, DefinitionFamily::Loot)?;
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::Loot(ReferenceLootDefinition {
+                        algorithm: algorithm.lower(),
+                        entries: entries
+                            .iter()
+                            .map(LootEntryDocument::lower)
+                            .collect::<Result<_, _>>()?,
+                    }),
+                    client_projection: ClientProjectionClass::ServerOnly,
+                })
+            }
+            Self::LocalObject {
+                identity,
+                client_projection,
+                states,
+            } => {
+                require_family(&identity.family, DefinitionFamily::LocalObject)?;
+                Ok(ReferenceDefinition {
+                    definition: identity.lower()?,
+                    kind: ReferenceDefinitionKind::LocalObjectStates(
+                        states
+                            .iter()
+                            .map(|state| ProductionKey::new(state).map_err(ProjectError::from))
+                            .collect::<Result<_, _>>()?,
+                    ),
+                    client_projection: client_projection.lower(),
+                })
+            }
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LootAlgorithmDocument {
+    IndependentBernoulliPpm,
+    WeightedSingleSelection,
+    GuaranteedEntries,
+    NestedGroups,
+}
+
+impl LootAlgorithmDocument {
+    fn lower(self) -> ReferenceLootSelectionAlgorithm {
+        match self {
+            Self::IndependentBernoulliPpm => {
+                ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
+            }
+            Self::WeightedSingleSelection => {
+                ReferenceLootSelectionAlgorithm::WeightedSingleSelection
+            }
+            Self::GuaranteedEntries => ReferenceLootSelectionAlgorithm::GuaranteedEntries,
+            Self::NestedGroups => ReferenceLootSelectionAlgorithm::NestedGroups,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LootEntryDocument {
+    pub item: DefinitionReferenceDocument,
+    pub min_count: u32,
+    pub max_count: u32,
+    pub probability_ppm: Option<u32>,
+}
+
+impl LootEntryDocument {
+    fn lower(&self) -> Result<ReferenceLootEntry, ProjectError> {
+        require_family(&self.item.family, DefinitionFamily::Item)?;
+        Ok(ReferenceLootEntry {
+            item: self.item.lower()?,
+            min_count: self.min_count,
+            max_count: self.max_count,
+            probability_ppm: self.probability_ppm,
+        })
     }
 }
 
@@ -1677,10 +1771,13 @@ fn sorted_metadata(mut metadata: Vec<AuthorMetadataEntry>) -> Vec<AuthorMetadata
 
 fn parse_family(value: &str) -> Result<DefinitionFamily, ProjectError> {
     match value {
+        "Terrain" => Ok(DefinitionFamily::Terrain),
         "Presentation" => Ok(DefinitionFamily::Presentation),
+        "LocalObject" => Ok(DefinitionFamily::LocalObject),
         "Behavior" => Ok(DefinitionFamily::Behavior),
         "Creature" => Ok(DefinitionFamily::Creature),
         "Item" => Ok(DefinitionFamily::Item),
+        "Loot" => Ok(DefinitionFamily::Loot),
         "Ability" => Ok(DefinitionFamily::Ability),
         "Effect" => Ok(DefinitionFamily::Effect),
         "Formula" => Ok(DefinitionFamily::Formula),
