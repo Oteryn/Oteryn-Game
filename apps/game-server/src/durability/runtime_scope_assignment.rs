@@ -452,11 +452,13 @@ impl ControlActor {
     }
 }
 
-/// Exact predecessor CAS: the committed generation and writer source revision.
+/// Exact predecessor CAS: the committed generation, writer source revision and
+/// the Runtime guard publication binding (`None` when the scope has no guard).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AssignmentPredecessor {
     pub ownership_generation: u64,
     pub source_revision: u64,
+    pub runtime_guard_publication_revision: Option<u64>,
 }
 
 /// Closed first-slice command family. Callers cannot submit writer revisions,
@@ -530,6 +532,14 @@ impl AssignmentRequest {
                 }
                 encoded.extend_from_slice(&predecessor.ownership_generation.to_be_bytes());
                 encoded.extend_from_slice(&predecessor.source_revision.to_be_bytes());
+                match predecessor.runtime_guard_publication_revision {
+                    None => encoded.push(0),
+                    Some(0) => return Err(AssignmentError::InvalidInput),
+                    Some(revision) => {
+                        encoded.push(1);
+                        encoded.extend_from_slice(&revision.to_be_bytes());
+                    }
+                }
             }
             AssignmentCommand::Assign { .. } => {}
         }
@@ -565,23 +575,26 @@ pub struct RuntimeScopeAssignment {
     pub decided_at: i64,
 }
 
-impl RuntimeScopeAssignment {
-    #[must_use]
-    pub const fn predecessor(&self) -> AssignmentPredecessor {
-        AssignmentPredecessor {
-            ownership_generation: self.ownership_generation,
-            source_revision: self.source_revision,
-        }
-    }
-}
-
 /// Immutable committed receipt for one operation identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AssignmentReceipt {
     pub operation_key: OperationKey,
     pub assignment: RuntimeScopeAssignment,
-    /// Runtime guard publication revision written as the `ready = false` fence.
+    /// Runtime guard publication revision written as the `ready = false` fence
+    /// (present whenever the scope has a Runtime guard).
     pub fenced_publication_revision: Option<u64>,
+}
+
+impl AssignmentReceipt {
+    /// Exact CAS predecessor as committed by this decision.
+    #[must_use]
+    pub const fn predecessor(&self) -> AssignmentPredecessor {
+        AssignmentPredecessor {
+            ownership_generation: self.assignment.ownership_generation,
+            source_revision: self.assignment.source_revision,
+            runtime_guard_publication_revision: self.fenced_publication_revision,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -631,6 +644,39 @@ impl DurabilityRoot {
                     }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(current)
+                })
+            })
+            .await?)
+    }
+
+    /// Current exact CAS predecessor for a replace/revoke: the authoritative
+    /// assignment plus the Runtime guard publication binding, read together.
+    pub async fn read_runtime_scope_predecessor(
+        &self,
+        scope: RuntimeScopeRefV1,
+    ) -> Result<Option<AssignmentPredecessor>, AssignmentError> {
+        let (world_id, channel_id) = channel_scope(scope)?;
+        let key = scope_key(world_id, channel_id);
+        let root = self.clone();
+        Ok(self
+            .try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    let high_water = writer_high_water(&mut tx, false).await?;
+                    require_history_matches_high_water(&mut tx, high_water).await?;
+                    let Some(current) = load_assignment(&mut tx, &key, false).await? else {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(None);
+                    };
+                    let guard = runtime_guard_publication_revision(&root, &mut tx, scope).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Some(AssignmentPredecessor {
+                        ownership_generation: current.ownership_generation,
+                        source_revision: current.source_revision,
+                        runtime_guard_publication_revision: guard,
+                    }))
                 })
             })
             .await?)
@@ -1064,18 +1110,25 @@ async fn authoritative_transition(
     let high_water = writer_high_water(tx, true).await?;
     require_history_matches_high_water(tx, high_water).await?;
     let current = load_assignment(tx, &scope_key, true).await?;
+    // Admission relations are locked, so the guard binding cannot move here.
+    let guard_revision = runtime_guard_publication_revision(root, tx, scope).await?;
+    let matches = |current: &RuntimeScopeAssignment, predecessor: AssignmentPredecessor| {
+        current.ownership_generation == predecessor.ownership_generation
+            && current.source_revision == predecessor.source_revision
+            && guard_revision == predecessor.runtime_guard_publication_revision
+    };
     let rejection = match (typed, &current) {
         (AssignmentCommand::Assign { .. }, None) => None,
         (AssignmentCommand::Assign { .. }, Some(_)) => {
             Some(AssignmentRejection::PredecessorMismatch)
         }
         (AssignmentCommand::Replace { predecessor, .. }, Some(current))
-            if current.predecessor() == predecessor =>
+            if matches(current, predecessor) =>
         {
             None
         }
         (AssignmentCommand::Revoke { predecessor, .. }, Some(current))
-            if current.predecessor() == predecessor =>
+            if matches(current, predecessor) =>
         {
             (current.state != AssignmentState::Assigned).then_some(AssignmentRejection::NotAssigned)
         }
@@ -1091,7 +1144,13 @@ async fn authoritative_transition(
     }
     let source_revision = successor_source_revision(high_water);
     let generation = match &current {
-        None => Some(1),
+        // A pre-existing Runtime guard never sees its generation regress.
+        None => Some(
+            runtime_guard_generation(root, tx, scope)
+                .await?
+                .unwrap_or(1)
+                .max(1),
+        ),
         Some(current) => current.ownership_generation.checked_add(1),
     };
     let rejection = rejection.or_else(|| source_revision.err()).or_else(|| {
@@ -1112,8 +1171,6 @@ async fn authoritative_transition(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
             .fetch_one(&mut **tx)
             .await?;
-    let fenced_publication_revision =
-        fence_runtime_guard(root, tx, scope, &decision_identity, decided_at).await?;
     let (state, holder) = match typed {
         AssignmentCommand::Assign { target, .. } | AssignmentCommand::Replace { target, .. } => {
             (AssignmentState::Assigned, Some(target))
@@ -1160,6 +1217,17 @@ async fn authoritative_transition(
     .bind(decided_at)
     .execute(&mut **tx)
     .await?;
+    // The fence runs after the assignment row advances: the Runtime guard
+    // trigger admits only publications carrying the current generation.
+    let fenced_publication_revision = fence_runtime_guard(
+        root,
+        tx,
+        scope,
+        ownership_generation,
+        &assignment.decision_identity,
+        decided_at,
+    )
+    .await?;
     sqlx::query(
         "UPDATE game_runtime_scope_assignment_writer \
          SET source_revision_high_water = $1::text::numeric(20,0) WHERE writer_id = 1",
@@ -1196,13 +1264,17 @@ async fn authoritative_transition(
     }))
 }
 
-/// Atomically force an existing ready Runtime guard to `ready = false` as the
-/// next monotonic Runtime source revision, attributed to the assignment decision. Absent or non-ready guards
-/// stay closed; the database trigger prevents later stale readiness.
+/// Atomically move an existing Runtime guard to `ready = false` at the new
+/// assignment generation, as the next monotonic Runtime source revision
+/// attributed to the assignment decision. Every decision on a guarded scope
+/// writes this successor, so the receipt carries the exact post-commit guard
+/// publication binding; absent guards stay absent. The database trigger then
+/// rejects any publication for an older generation.
 async fn fence_runtime_guard(
     root: &DurabilityRoot,
     tx: &mut Transaction<'_, Postgres>,
     scope: RuntimeScopeRefV1,
+    ownership_generation: u64,
     decision_identity: &str,
     now: i64,
 ) -> Result<Option<u64>, DurabilityError> {
@@ -1213,8 +1285,14 @@ async fn fence_runtime_guard(
     };
     let mut successor = current.clone();
     match &mut successor.state {
-        AdmissionAuthorityGuardStateV1::Runtime { ready, .. } if *ready => *ready = false,
-        AdmissionAuthorityGuardStateV1::Runtime { .. } => return Ok(None),
+        AdmissionAuthorityGuardStateV1::Runtime {
+            ready,
+            ownership_generation: generation,
+            ..
+        } if *generation <= ownership_generation => {
+            *ready = false;
+            *generation = ownership_generation;
+        }
         _ => return Err(DurabilityError::InvalidStoredState),
     }
     successor.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
@@ -1501,6 +1579,47 @@ fn has_sql_state(error: &sqlx::Error, expected: &str) -> bool {
         .as_database_error()
         .and_then(|database| database.code())
         .is_some_and(|code| code == expected)
+}
+
+async fn runtime_guard(
+    root: &DurabilityRoot,
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+) -> Result<Option<(u64, u64)>, DurabilityError> {
+    let store = AdmissionGuardStore::from_root(root.clone());
+    match store
+        .load_locked(tx, &AdmissionAuthorityGuardKeyV1::Runtime(scope))
+        .await?
+    {
+        None => Ok(None),
+        Some(change) => match change.state {
+            AdmissionAuthorityGuardStateV1::Runtime {
+                ownership_generation,
+                ..
+            } => Ok(Some((change.publication_revision, ownership_generation))),
+            _ => Err(DurabilityError::InvalidStoredState),
+        },
+    }
+}
+
+async fn runtime_guard_publication_revision(
+    root: &DurabilityRoot,
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+) -> Result<Option<u64>, DurabilityError> {
+    Ok(runtime_guard(root, tx, scope)
+        .await?
+        .map(|(revision, _)| revision))
+}
+
+async fn runtime_guard_generation(
+    root: &DurabilityRoot,
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+) -> Result<Option<u64>, DurabilityError> {
+    Ok(runtime_guard(root, tx, scope)
+        .await?
+        .map(|(_, generation)| generation))
 }
 
 /// Writer-owned successor revision. Only a valid, fully retained history

@@ -587,10 +587,12 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 AssignmentPredecessor {
                     ownership_generation: 1,
                     source_revision: 5,
+                    runtime_guard_publication_revision: None,
                 },
                 AssignmentPredecessor {
                     ownership_generation: 2,
                     source_revision: 1,
+                    runtime_guard_publication_revision: None,
                 },
             ] {
                 let jumped = request(
@@ -612,7 +614,7 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 4,
                 AssignmentCommand::Replace {
                     scope: channel,
-                    predecessor: first.assignment.predecessor(),
+                    predecessor: first.predecessor(),
                     target: node2,
                 },
             )?;
@@ -630,7 +632,7 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 5,
                 AssignmentCommand::Revoke {
                     scope: channel,
-                    predecessor: second.assignment.predecessor(),
+                    predecessor: second.predecessor(),
                 },
             )?;
             let third = committed(writer.submit(&revoke).await)?;
@@ -646,7 +648,7 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 6,
                 AssignmentCommand::Revoke {
                     scope: channel,
-                    predecessor: third.assignment.predecessor(),
+                    predecessor: third.predecessor(),
                 },
             )?;
             assert_eq!(
@@ -658,7 +660,7 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 7,
                 AssignmentCommand::Replace {
                     scope: channel,
-                    predecessor: third.assignment.predecessor(),
+                    predecessor: third.predecessor(),
                     target: node1,
                 },
             )?;
@@ -716,12 +718,12 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 },
                 AssignmentCommand::Replace {
                     scope: instance,
-                    predecessor: fourth.assignment.predecessor(),
+                    predecessor: fourth.predecessor(),
                     target: node1,
                 },
                 AssignmentCommand::Revoke {
                     scope: instance,
-                    predecessor: fourth.assignment.predecessor(),
+                    predecessor: fourth.predecessor(),
                 },
             ] {
                 assert!(matches!(
@@ -819,7 +821,7 @@ fn initial_and_replacement_targets_must_be_current_registered_incarnations() -> 
                     tag,
                     AssignmentCommand::Replace {
                         scope: channel,
-                        predecessor: assigned.assignment.predecessor(),
+                        predecessor: assigned.predecessor(),
                         target,
                     },
                 )?;
@@ -835,7 +837,7 @@ fn initial_and_replacement_targets_must_be_current_registered_incarnations() -> 
                         30,
                         AssignmentCommand::Replace {
                             scope: channel,
-                            predecessor: assigned.assignment.predecessor(),
+                            predecessor: assigned.predecessor(),
                             target: other_current,
                         },
                     )?)
@@ -956,14 +958,51 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             let ready = current_runtime(&guards, channel).await?;
             assert_eq!(runtime_ready(&ready), Some((1, true)));
 
-            // Replace advances generation and forces readiness false in the same commit.
+            // The predecessor CAS binds the Runtime guard publication: a replace
+            // authorized against the fenced publication cannot apply after the
+            // guard advanced, and an unknown binding is rejected too.
+            for stale in [
+                first.predecessor(),
+                AssignmentPredecessor {
+                    runtime_guard_publication_revision: None,
+                    ..first.predecessor()
+                },
+            ] {
+                assert_eq!(
+                    rejected(
+                        writer
+                            .submit(&request(
+                                20,
+                                AssignmentCommand::Replace {
+                                    scope: channel,
+                                    predecessor: stale,
+                                    target: node2.fact(),
+                                },
+                            )?)
+                            .await
+                    )?,
+                    AssignmentRejection::PredecessorMismatch
+                );
+            }
+            let current = root
+                .read_runtime_scope_predecessor(channel)
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                .ok_or("absent predecessor")?;
+            assert_eq!(
+                current.runtime_guard_publication_revision,
+                Some(ready.publication_revision)
+            );
+
+            // Replace advances generation and moves the guard to the new
+            // generation with readiness false in the same commit.
             let second = committed(
                 writer
                     .submit(&request(
                         2,
                         AssignmentCommand::Replace {
                             scope: channel,
-                            predecessor: first.assignment.predecessor(),
+                            predecessor: current,
                             target: node2.fact(),
                         },
                     )?)
@@ -974,7 +1013,7 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                 Some(ready.publication_revision + 1)
             );
             let fenced = current_runtime(&guards, channel).await?;
-            assert_eq!(runtime_ready(&fenced), Some((1, false)));
+            assert_eq!(runtime_ready(&fenced), Some((2, false)));
             // The replaced process keeps running with its genuine proof and learns
             // the new generation and holder's public identity: it still cannot
             // restore readiness for either generation.
@@ -997,9 +1036,31 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             }
             assert_eq!(
                 runtime_ready(&current_runtime(&guards, channel).await?),
-                Some((1, false))
+                Some((2, false))
             );
-            // A non-ready observation for the new generation is always permitted.
+            // The replaced process cannot keep advancing the guard chain with
+            // ready = false: its old generation is below the fenced guard
+            // (typed CAS: Stale) and any generation other than the current
+            // assignment generation is refused by the database fence.
+            assert_eq!(
+                publish_runtime(
+                    &guards,
+                    runtime_change(channel, Some(&fenced), 1, false, now),
+                    now
+                )
+                .await?,
+                GuardPublicationDisposition::Stale
+            );
+            assert!(matches!(
+                publish_runtime(
+                    &guards,
+                    runtime_change(channel, Some(&fenced), 3, false, now),
+                    now
+                )
+                .await,
+                Err(DurabilityError::Database(_))
+            ));
+            // A non-ready observation for the current generation is permitted.
             assert_eq!(
                 publish_runtime(
                     &guards,
@@ -1026,25 +1087,35 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
             ));
             // Revoke also advances generation; no readiness survives it.
             let node3 = register_proof(&root, 3, None).await?;
+            let predecessor = root
+                .read_runtime_scope_predecessor(channel)
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                .ok_or("absent predecessor")?;
             let third = committed(
                 writer
                     .submit(&request(
                         3,
                         AssignmentCommand::Replace {
                             scope: channel,
-                            predecessor: second.assignment.predecessor(),
+                            predecessor,
                             target: node3.fact(),
                         },
                     )?)
                     .await,
             )?;
-            assert_eq!(third.fenced_publication_revision, None);
+            assert_eq!(
+                third.fenced_publication_revision,
+                Some(closed.publication_revision + 1)
+            );
+            let fenced = current_runtime(&guards, channel).await?;
+            assert_eq!(runtime_ready(&fenced), Some((3, false)));
             let now = db_now(&pool).await?;
             assert_eq!(
                 publish_ready(
                     &root,
                     &node3,
-                    runtime_change(channel, Some(&closed), 3, true, now),
+                    runtime_change(channel, Some(&fenced), 3, true, now),
                     now
                 )
                 .await
@@ -1052,13 +1123,18 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                 GuardPublicationDisposition::Applied
             );
             let ready = current_runtime(&guards, channel).await?;
+            let predecessor = root
+                .read_runtime_scope_predecessor(channel)
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                .ok_or("absent predecessor")?;
             let fourth = committed(
                 writer
                     .submit(&request(
                         4,
                         AssignmentCommand::Revoke {
                             scope: channel,
-                            predecessor: third.assignment.predecessor(),
+                            predecessor,
                         },
                     )?)
                     .await,
@@ -1068,7 +1144,7 @@ fn assignment_mutations_atomically_fence_readiness_and_reject_stale_publication(
                 Some(ready.publication_revision + 1)
             );
             let revoked = current_runtime(&guards, channel).await?;
-            assert_eq!(runtime_ready(&revoked), Some((3, false)));
+            assert_eq!(runtime_ready(&revoked), Some((4, false)));
             let now = db_now(&pool).await?;
             for generation in [3, 4] {
                 assert!(matches!(
@@ -1145,6 +1221,7 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
             predecessor: AssignmentPredecessor {
                 ownership_generation: u64::MAX,
                 source_revision: u64::MAX,
+                runtime_guard_publication_revision: Some(u64::MAX),
             },
             target: NodeRegistrationFact::new(node(1)?, u64::MAX),
         },
@@ -1157,6 +1234,7 @@ fn nasg_bounds_queue_inflight_and_operation_key_limits() -> TestResult {
             predecessor: AssignmentPredecessor {
                 ownership_generation: 0,
                 source_revision: 1,
+                runtime_guard_publication_revision: None,
             },
         },
         ..max_actor.clone()
@@ -1322,7 +1400,7 @@ fn concurrent_authorized_actors_from_one_predecessor_have_one_cas_winner() -> Te
                 RuntimeScopeAssignmentWriter::open(ready_root(&database.url).await?, "writer-c")
                     .await
                     .map_err(|e| format!("{e:?}"))?;
-            let predecessor = first.assignment.predecessor();
+            let predecessor = first.predecessor();
             let request_b = request(
                 2,
                 AssignmentCommand::Replace {
@@ -1583,7 +1661,7 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                 2,
                 AssignmentCommand::Replace {
                     scope: channel,
-                    predecessor: first.assignment.predecessor(),
+                    predecessor: first.predecessor(),
                     target: node2,
                 },
             )?;
@@ -1670,7 +1748,7 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                 sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 2")
                     .execute(&pool2)
                     .await?;
-                let predecessor = AssignmentPredecessor { ownership_generation: u64::MAX, source_revision: 2 };
+                let predecessor = AssignmentPredecessor { ownership_generation: u64::MAX, source_revision: 2, runtime_guard_publication_revision: None };
                 assert_eq!(
                     rejected(writer.submit(&request(2, AssignmentCommand::Revoke { scope: channel, predecessor })?).await)?,
                     AssignmentRejection::GenerationExhausted
@@ -1976,6 +2054,7 @@ fn database_outage_cannot_make_cached_state_sufficient() -> TestResult {
                         predecessor: AssignmentPredecessor {
                             ownership_generation: 1,
                             source_revision: 1,
+                            runtime_guard_publication_revision: None,
                         },
                         target: node2,
                     },
@@ -2058,7 +2137,7 @@ fn history_trailing_the_high_water_fails_closed() -> TestResult {
                 3,
                 AssignmentCommand::Replace {
                     scope: scope(1)?,
-                    predecessor: first.assignment.predecessor(),
+                    predecessor: first.predecessor(),
                     target: node2,
                 },
             )?;
@@ -2143,7 +2222,7 @@ fn per_scope_restore_fails_reads_mutations_and_readiness() -> TestResult {
                         2,
                         AssignmentCommand::Replace {
                             scope: a,
-                            predecessor: first.assignment.predecessor(),
+                            predecessor: first.predecessor(),
                             target: node2.fact(),
                         },
                     )?)
@@ -2184,7 +2263,7 @@ fn per_scope_restore_fails_reads_mutations_and_readiness() -> TestResult {
                 4,
                 AssignmentCommand::Replace {
                     scope: a,
-                    predecessor: first.assignment.predecessor(),
+                    predecessor: first.predecessor(),
                     target: node2.fact(),
                 },
             )?;
@@ -2217,9 +2296,10 @@ fn per_scope_restore_fails_reads_mutations_and_readiness() -> TestResult {
                 .await,
                 Err(AssignmentError::NotCurrentHolder)
             ));
+            // The replacement fence already moved A's guard to generation 2.
             assert_eq!(
                 runtime_ready(&current_runtime(&guards, a).await?),
-                Some((1, false))
+                Some((2, false))
             );
 
             Ok(())
@@ -2255,7 +2335,7 @@ fn intermediate_receipt_hole_cannot_be_crossed() -> TestResult {
                         2,
                         AssignmentCommand::Replace {
                             scope: scope(1)?,
-                            predecessor: first.assignment.predecessor(),
+                            predecessor: first.predecessor(),
                             target: node2,
                         },
                     )?)
@@ -2267,7 +2347,7 @@ fn intermediate_receipt_hole_cannot_be_crossed() -> TestResult {
                         3,
                         AssignmentCommand::Replace {
                             scope: scope(1)?,
-                            predecessor: second.assignment.predecessor(),
+                            predecessor: second.predecessor(),
                             target: node1,
                         },
                     )?)

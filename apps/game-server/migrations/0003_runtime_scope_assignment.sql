@@ -406,40 +406,45 @@ BEGIN
     RETURN TRUE;
 END; $$;
 
--- Readiness fence: once a Channel scope has an assignment record, a Runtime
--- guard may become ready only for the exact current ASSIGNED generation, only
--- while its holder is the current registered incarnation, and only in a
--- transaction where that holder attested possession of its incarnation
--- secret. Replaced/revoked holders, public NodeId claims and older
--- generations cannot publish or restore readiness.
+-- Readiness fence: once a Channel scope has an assignment record, every
+-- Runtime guard publication for that scope must carry the exact current
+-- assignment generation, so a replaced/revoked process cannot keep advancing
+-- the guard chain for an older generation (ready or not). A guard may become
+-- ready only for the current ASSIGNED generation, only while its holder is the
+-- current registered incarnation, and only in a transaction where that holder
+-- attested possession of its incarnation secret. The assignment writer's own
+-- fence runs after the assignment row advances, so it satisfies the same rule.
 CREATE FUNCTION game_runtime_guard_requires_current_assignment() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 DECLARE
     v_assignment game_runtime_scope_assignments%ROWTYPE;
 BEGIN
+    SELECT * INTO v_assignment FROM game_runtime_scope_assignments
+        WHERE scope_key = NEW.scope_key FOR SHARE;
+    IF NOT FOUND THEN
+        RETURN NEW;
+    END IF;
+    IF v_assignment.ownership_generation <> NEW.ownership_generation THEN
+        RAISE EXCEPTION 'runtime publication requires the current assignment generation' USING ERRCODE = '23514';
+    END IF;
     IF NEW.ready THEN
-        SELECT * INTO v_assignment FROM game_runtime_scope_assignments
-            WHERE scope_key = NEW.scope_key FOR SHARE;
-        IF FOUND THEN
-            IF NOT (
-                v_assignment.state = 1
-                AND v_assignment.ownership_generation = NEW.ownership_generation
-                AND game_node_lock_current_registration(
-                    v_assignment.holder_node_id, v_assignment.holder_registration_revision)
-            ) THEN
-                RAISE EXCEPTION 'runtime readiness requires the current scope assignment' USING ERRCODE = '23514';
-            END IF;
-            -- Checked, not consumed: INSERT .. ON CONFLICT DO UPDATE fires both
-            -- the insert and update row triggers. The attesting publisher
-            -- removes its own attestation before commit.
-            PERFORM 1 FROM game_runtime_readiness_attestations
-                WHERE attested_xact = pg_current_xact_id() AND scope_key = NEW.scope_key
-                  AND holder_node_id = v_assignment.holder_node_id
-                  AND holder_registration_revision = v_assignment.holder_registration_revision
-                  AND ownership_generation = v_assignment.ownership_generation;
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'runtime readiness requires an attested current holder' USING ERRCODE = '23514';
-            END IF;
+        IF NOT (
+            v_assignment.state = 1
+            AND game_node_lock_current_registration(
+                v_assignment.holder_node_id, v_assignment.holder_registration_revision)
+        ) THEN
+            RAISE EXCEPTION 'runtime readiness requires the current scope assignment' USING ERRCODE = '23514';
+        END IF;
+        -- Checked, not consumed: INSERT .. ON CONFLICT DO UPDATE fires both
+        -- the insert and update row triggers. The attesting publisher
+        -- removes its own attestation before commit.
+        PERFORM 1 FROM game_runtime_readiness_attestations
+            WHERE attested_xact = pg_current_xact_id() AND scope_key = NEW.scope_key
+              AND holder_node_id = v_assignment.holder_node_id
+              AND holder_registration_revision = v_assignment.holder_registration_revision
+              AND ownership_generation = v_assignment.ownership_generation;
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'runtime readiness requires an attested current holder' USING ERRCODE = '23514';
         END IF;
     END IF;
     RETURN NEW;
