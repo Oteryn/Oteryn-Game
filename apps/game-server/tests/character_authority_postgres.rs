@@ -128,7 +128,7 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
     let fresh = recovery
         .authorize_fresh_store(id(11), 100)
         .expect("explicit fresh authorization");
-    sqlx::query("INSERT INTO game_character_recovery_admissions VALUES ('character-primary', 1, encode($1,'hex')::uuid, 0, 100, 'game-ops', 100)")
+    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, issued_at, issuer_identity, reconciled_at) VALUES ('character-primary', 1, encode($1,'hex')::uuid, 0, 100, 'game-ops', 100)")
         .bind(id(11).as_slice())
         .execute(&mut connection)
         .await
@@ -141,8 +141,9 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         .fetch_one(&mut connection).await.expect("DB generation");
     assert_eq!(db_generation, "1");
     assert_eq!(transition.record.recovery_generation, 2, "older DB stays distinguishable while the external retained directory remains advanced");
-    sqlx::query("INSERT INTO game_character_recovery_admissions VALUES ('character-primary', 2, encode($1,'hex')::uuid, 1, 200, 'game-ops', 200)")
+    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, predecessor_event_id, predecessor_issued_at, issued_at, issuer_identity, reconciled_at) VALUES ('character-primary', 2, encode($1,'hex')::uuid, 1, encode($2,'hex')::uuid, 100, 200, 'game-ops', 200)")
         .bind(id(12).as_slice())
+        .bind(id(11).as_slice())
         .execute(&mut connection)
         .await
         .expect("explicit recovery reconciliation");
@@ -513,8 +514,69 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     )
     .await?;
     assert_eq!(columns, 0, "receipts retain no payload copy");
-    drop(fence);
 
+    // The capability is bound to the root whose database it checked.
+    let other_root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(other_root.maintain_ready_once().await?);
+    assert!(matches!(
+        other_root.pending_character_audit(&authority, 8).await,
+        Err(CharacterAuthorityError::Rejected)
+    ));
+
+    // Retained payloads are checked semantically, not only by their stored hash;
+    // a receipt without its root is rejected.
+    let second = root
+        .bootstrap_character(&authority, &node, command(24, 35)?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let mut tamper = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tamper)
+        .await?;
+    sqlx::query("UPDATE game_character_audit_outbox SET payload = payload || '\\x00'::bytea, payload_sha256 = sha256(payload || '\\x00'::bytea) WHERE character_id = encode($1,'hex')::uuid")
+        .bind(second.character_id.as_bytes().as_slice())
+        .execute(&mut *tamper)
+        .await?;
+    tamper.commit().await?;
+    let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    assert!(root.open_character_authority(&sealed).await.is_err());
+    drop(sealed);
+    let mut repair = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query("UPDATE game_character_audit_outbox SET payload = substring(payload FROM 1 FOR octet_length(payload) - 1) WHERE character_id = encode($1,'hex')::uuid")
+        .bind(second.character_id.as_bytes().as_slice())
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query("UPDATE game_character_audit_outbox SET payload_sha256 = sha256(payload) WHERE character_id = encode($1,'hex')::uuid")
+        .bind(second.character_id.as_bytes().as_slice())
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid)")
+        .bind(id(25).as_slice())
+        .bind(id(36).as_slice())
+        .bind(id(37).as_slice())
+        .execute(&mut *repair)
+        .await?;
+    repair.commit().await?;
+    let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    assert!(root.open_character_authority(&sealed).await.is_err());
+    drop(sealed);
+    let mut repair = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *repair)
+        .await?;
+    sqlx::query(
+        "DELETE FROM game_character_operation_receipts WHERE operation_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(25).as_slice())
+    .execute(&mut *repair)
+    .await?;
+    repair.commit().await?;
+
+    drop(authority);
+    drop(fence);
     // An authority capability is issued only over an intact store: a receipt whose
     // command binding no longer reconstructs from its root fails closed.
     let mut tamper = pool.begin().await?;
@@ -590,9 +652,36 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     );
 
     // Post-restore reconciliation refuses a receipt that contradicts its root.
+    let first_attempt = recovery
+        .begin_recovery(1, id(12), 300)
+        .map_err(|e| format!("{e:?}"))?;
+    drop(first_attempt);
+    // An exact ambiguous re-run keeps the successor's retained predecessor
+    // evidence, so a contradictory predecessor admission is refused.
     let transition = recovery
         .begin_recovery(1, id(12), 300)
         .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(transition.record.predecessor_event_id, id(11));
+    assert_eq!(transition.record.predecessor_issued_at, 100);
+    for issued_at in ["101", "100"] {
+        let mut restore = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *restore)
+            .await?;
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "UPDATE game_character_recovery_admissions SET issued_at = {issued_at} WHERE recovery_generation = 1"
+        )))
+        .execute(&mut *restore)
+        .await?;
+        restore.commit().await?;
+        if issued_at == "101" {
+            assert!(
+                root.reconcile_character_recovery(&transition)
+                    .await
+                    .is_err()
+            );
+        }
+    }
     let mut tamper = pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tamper)

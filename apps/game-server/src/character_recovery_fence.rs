@@ -28,6 +28,10 @@ pub struct CharacterRecoveryFenceV1 {
     pub recovery_generation: u64,
     pub recovery_event_id: [u8; 16],
     pub predecessor_generation: u64,
+    /// Exact predecessor evidence retained in the successor itself (all zero
+    /// only for generation one), so a restart can validate the replaced record.
+    pub predecessor_event_id: [u8; 16],
+    pub predecessor_issued_at: u64,
     pub issued_at: u64,
     pub issuer_identity: String,
 }
@@ -49,9 +53,6 @@ pub struct SealedCharacterRecoveryFence<'a> {
 
 pub struct CharacterRecoveryTransition<'a> {
     pub record: CharacterRecoveryFenceV1,
-    /// The exact predecessor record this transition replaced, when observed.
-    /// An exact ambiguous reconciliation no longer has it (`None`).
-    pub predecessor: Option<CharacterRecoveryFenceV1>,
     _generation: RwLockWriteGuard<'a, ()>,
     _process: File,
 }
@@ -140,34 +141,43 @@ impl CharacterRecoveryStore {
             .write()
             .map_err(|_| CharacterRecoveryError::Unavailable)?;
         let process = self.lock(FlockOperation::LockExclusive)?;
-        let proposed = CharacterRecoveryFenceV1 {
+        let mut proposed = CharacterRecoveryFenceV1 {
             authority_scope_id: self.authority_scope_id.clone(),
             recovery_generation: successor,
             recovery_event_id,
             predecessor_generation: expected_predecessor,
+            predecessor_event_id: [0; 16],
+            predecessor_issued_at: 0,
             issued_at,
             issuer_identity: self.issuer_identity.clone(),
         };
-        let predecessor = match self.read_optional()? {
-            None if expected_predecessor == 0 => {
-                self.replace(&proposed)?;
-                None
+        match self.read_optional()? {
+            None if expected_predecessor == 0 => self.replace(&proposed)?,
+            // Exact ambiguous re-run: the retained successor carries its evidence.
+            Some(current)
+                if current.recovery_generation == successor
+                    && CharacterRecoveryFenceV1 {
+                        predecessor_event_id: [0; 16],
+                        predecessor_issued_at: 0,
+                        ..current.clone()
+                    } == proposed =>
+            {
+                proposed = current;
             }
-            Some(current) if current == proposed => None,
             Some(current) if current.recovery_generation == expected_predecessor => {
                 self.require_configured_identity(&current)?;
+                proposed.predecessor_event_id = current.recovery_event_id;
+                proposed.predecessor_issued_at = current.issued_at;
                 self.replace(&proposed)?;
-                Some(current)
             }
             Some(_) => return Err(CharacterRecoveryError::Conflict),
             None => return Err(CharacterRecoveryError::Conflict),
-        };
+        }
         if self.read_exact()? != proposed {
             return Err(CharacterRecoveryError::Unavailable);
         }
         Ok(CharacterRecoveryTransition {
             record: proposed,
-            predecessor,
             _generation: generation,
             _process: process,
         })
@@ -291,20 +301,27 @@ fn encode(record: &CharacterRecoveryFenceV1) -> Result<Vec<u8>, CharacterRecover
                 .ok_or(CharacterRecoveryError::Rejected)?
         || record.recovery_event_id == [0; 16]
         || record.issued_at == 0
+        || (record.predecessor_generation == 0)
+            != (record.predecessor_event_id == [0; 16] && record.predecessor_issued_at == 0)
+        || (record.predecessor_generation != 0
+            && (record.predecessor_event_id == [0; 16] || record.predecessor_issued_at == 0))
     {
         return Err(CharacterRecoveryError::Rejected);
     }
-    let event = record
-        .recovery_event_id
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
+    let hex = |bytes: &[u8; 16]| {
+        bytes
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
     let value = format!(
-        "{MAGIC}\nscope={}\ngeneration={}\nevent={}\npredecessor={}\nissued_at={}\nissuer={}\n",
+        "{MAGIC}\nscope={}\ngeneration={}\nevent={}\npredecessor={}\npredecessor_event={}\npredecessor_issued_at={}\nissued_at={}\nissuer={}\n",
         record.authority_scope_id,
         record.recovery_generation,
-        event,
+        hex(&record.recovery_event_id),
         record.predecessor_generation,
+        hex(&record.predecessor_event_id),
+        record.predecessor_issued_at,
         record.issued_at,
         record.issuer_identity
     );
@@ -321,7 +338,7 @@ fn decode(bytes: &[u8]) -> Result<CharacterRecoveryFenceV1, CharacterRecoveryErr
         .ok_or(CharacterRecoveryError::Unavailable)?
         .split('\n')
         .collect::<Vec<_>>();
-    if lines.len() != 7 || lines[0] != MAGIC {
+    if lines.len() != 9 || lines[0] != MAGIC {
         return Err(CharacterRecoveryError::Unavailable);
     }
     let field = |index: usize, prefix: &str| {
@@ -334,31 +351,39 @@ fn decode(bytes: &[u8]) -> Result<CharacterRecoveryFenceV1, CharacterRecoveryErr
     let recovery_generation = field(2, "generation=")?
         .parse::<u64>()
         .map_err(|_| CharacterRecoveryError::Unavailable)?;
-    let event = field(3, "event=")?;
-    if event.len() != 32
-        || !event
-            .bytes()
-            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
-    {
-        return Err(CharacterRecoveryError::Unavailable);
-    }
-    let mut recovery_event_id = [0; 16];
-    for (index, byte) in recovery_event_id.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&event[index * 2..index * 2 + 2], 16)
-            .map_err(|_| CharacterRecoveryError::Unavailable)?;
-    }
-    let predecessor_generation = field(4, "predecessor=")?
-        .parse::<u64>()
-        .map_err(|_| CharacterRecoveryError::Unavailable)?;
-    let issued_at = field(5, "issued_at=")?
-        .parse::<u64>()
-        .map_err(|_| CharacterRecoveryError::Unavailable)?;
-    let issuer_identity = field(6, "issuer=")?.to_owned();
+    let id = |value: &str| -> Result<[u8; 16], CharacterRecoveryError> {
+        if value.len() != 32
+            || !value
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+        {
+            return Err(CharacterRecoveryError::Unavailable);
+        }
+        let mut out = [0; 16];
+        for (index, byte) in out.iter_mut().enumerate() {
+            *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16)
+                .map_err(|_| CharacterRecoveryError::Unavailable)?;
+        }
+        Ok(out)
+    };
+    let number = |index: usize, prefix: &str| -> Result<u64, CharacterRecoveryError> {
+        field(index, prefix)?
+            .parse::<u64>()
+            .map_err(|_| CharacterRecoveryError::Unavailable)
+    };
+    let recovery_event_id = id(field(3, "event=")?)?;
+    let predecessor_generation = number(4, "predecessor=")?;
+    let predecessor_event_id = id(field(5, "predecessor_event=")?)?;
+    let predecessor_issued_at = number(6, "predecessor_issued_at=")?;
+    let issued_at = number(7, "issued_at=")?;
+    let issuer_identity = field(8, "issuer=")?.to_owned();
     let record = CharacterRecoveryFenceV1 {
         authority_scope_id,
         recovery_generation,
         recovery_event_id,
         predecessor_generation,
+        predecessor_event_id,
+        predecessor_issued_at,
         issued_at,
         issuer_identity,
     };
