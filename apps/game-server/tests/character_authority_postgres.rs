@@ -496,22 +496,25 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     let node = register(&root, 1, None).await?;
     initialize_s2(&root, &node).await?;
     assign_world(&root, &node, 90, 95).await?;
+    root.configure_character_interpretation(&authority, &node, &interpretation()?)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
 
     // Mutation, receipt, audit event and outbox commit together; a replay of the
     // exact operation returns the same stable identities, a changed one conflicts.
     let first_intent = intent(21, 31, 1)?;
     allow(&root, &node, 31).await?;
     let first = root
-        .bootstrap_character(&authority, &node, &first_intent, &interpretation()?)
+        .bootstrap_character(&authority, &node, &first_intent)
         .await
         .map_err(|e| format!("{e:?}"))?;
     let replay = root
-        .bootstrap_character(&authority, &node, &first_intent, &interpretation()?)
+        .bootstrap_character(&authority, &node, &first_intent)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replay, first);
     assert!(matches!(
-        root.bootstrap_character(&authority, &node, &intent(21, 32, 2)?, &interpretation()?)
+        root.bootstrap_character(&authority, &node, &intent(21, 32, 2)?)
             .await,
         Err(CharacterAuthorityError::Conflict)
     ));
@@ -543,7 +546,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     allow(&root, &node, 33).await?;
     let successor = register(&root, 2, Some(1)).await?;
     let stale = root
-        .bootstrap_character(&authority, &node, &intent(22, 33, 3)?, &interpretation()?)
+        .bootstrap_character(&authority, &node, &intent(22, 33, 3)?)
         .await;
     assert!(
         matches!(stale, Err(CharacterAuthorityError::Unavailable(_))),
@@ -738,6 +741,19 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         )
         .await
         .map_err(|e| format!("{e:?}"))?;
+    // An exact replay after a lost response returns the committed hold, so it
+    // stays releasable; a different placement on the same event conflicts.
+    assert_eq!(
+        root.place_character_audit_legal_hold(
+            &authority,
+            first.event_id,
+            "case-1 investigation",
+            "security:alice",
+        )
+        .await
+        .map_err(|e| format!("{e:?}"))?,
+        hold
+    );
     assert!(matches!(
         root.place_character_audit_legal_hold(
             &authority,
@@ -814,7 +830,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // Payload bytes are re-derived from retained authority after expiry.
     assert_eq!(current.payload, first.payload);
     let replayed = root
-        .bootstrap_character(&authority, &node, &first_intent, &interpretation()?)
+        .bootstrap_character(&authority, &node, &first_intent)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replayed.character_id, first.character_id);
@@ -839,7 +855,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // a receipt without its root is rejected.
     allow(&root, &node, 35).await?;
     let second = root
-        .bootstrap_character(&authority, &node, &intent(24, 35, 4)?, &interpretation()?)
+        .bootstrap_character(&authority, &node, &intent(24, 35, 4)?)
         .await
         .map_err(|e| format!("{e:?}"))?;
     let mut tamper = pool.begin().await?;
@@ -1111,15 +1127,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
                                 .map_err(|e| format!("{e:?}"))?;
                             barrier.wait();
                             Ok(
-                                match root
-                                    .bootstrap_character(
-                                        &authority,
-                                        node,
-                                        reused,
-                                        &interpretation()?,
-                                    )
-                                    .await
-                                {
+                                match root.bootstrap_character(&authority, node, reused).await {
                                     Ok(_) => "committed".to_owned(),
                                     Err(CharacterAuthorityError::Conflict) => "conflict".to_owned(),
                                     Err(error) => format!("{error:?}"),
@@ -1255,12 +1263,7 @@ fn concurrently(
                                     .map_err(|e| format!("{e:?}"))?;
                                 barrier.wait();
                                 Ok(root
-                                    .bootstrap_character(
-                                        &authority,
-                                        node,
-                                        intent,
-                                        &interpretation()?,
-                                    )
+                                    .bootstrap_character(&authority, node, intent)
                                     .await
                                     .map_err(|e| format!("{e:?}")))
                             })
@@ -1336,43 +1339,64 @@ async fn intent_matrix(database: &Database) -> TestResult {
     // absent, denied or stale evidence rejects with zero authoritative writes.
     let valid = intent(60, 70, 10)?;
     assert!(rejected(
-        root.bootstrap_character(&authority, &node, &valid, &interpretation()?)
-            .await
+        root.bootstrap_character(&authority, &node, &valid).await
     ));
     observe_account(&root, &node, 70, false, now_secs()?).await?;
     assert!(rejected(
-        root.bootstrap_character(&authority, &node, &valid, &interpretation()?)
-            .await
+        root.bootstrap_character(&authority, &node, &valid).await
     ));
     observe_account(&root, &node, 70, true, now_secs()? - 10).await?;
     assert!(rejected(
-        root.bootstrap_character(&authority, &node, &valid, &interpretation()?)
-            .await
+        root.bootstrap_character(&authority, &node, &valid).await
     ));
     assert_eq!(totals(&pool).await?, [0; 5]);
 
     // World and interpretation are requested context: a world with no currently
-    // assigned Channel, or revisions other than the Game-configured ones, reject.
+    // assigned Channel, no configured Game-owned interpretation, or a different
+    // one rejects; the intent's revisions alone never authorize.
     allow(&root, &node, 70).await?;
     assert!(rejected(
-        root.bootstrap_character(&authority, &node, &valid, &interpretation()?)
-            .await
+        root.bootstrap_character(&authority, &node, &valid).await
     ));
     assign_world(&root, &node, 90, 95).await?;
+    assert!(rejected(
+        root.bootstrap_character(&authority, &node, &valid).await
+    ));
     let other_content =
         CharacterInterpretationV1::new("profile-1", "ruleset-1", "content-2", "starter-1")
             .map_err(|e| format!("{e:?}"))?;
+    for (value, expected) in [(other_content.clone(), 1), (other_content, 1)] {
+        assert_eq!(
+            root.configure_character_interpretation(&authority, &node, &value)
+                .await
+                .map_err(|e| format!("{e:?}"))?,
+            expected,
+            "configuring the current value again is idempotent"
+        );
+    }
     assert!(rejected(
-        root.bootstrap_character(&authority, &node, &valid, &other_content)
-            .await
+        root.bootstrap_character(&authority, &node, &valid).await
     ));
+    assert_eq!(
+        root.configure_character_interpretation(&authority, &node, &interpretation()?)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        2
+    );
+    assert!(
+        sqlx::query("UPDATE game_character_interpretations SET content_revision = 'content-3'")
+            .execute(&pool)
+            .await
+            .is_err(),
+        "interpretation history is append-only"
+    );
     assert_eq!(totals(&pool).await?, [0; 5]);
 
     // Valid intent + current security + process proof + recovery fence: exactly
     // one Character, revision, receipt, audit event, outbox row and floor.
     allow(&root, &node, 70).await?;
     let first = root
-        .bootstrap_character(&authority, &node, &valid, &interpretation()?)
+        .bootstrap_character(&authority, &node, &valid)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(totals(&pool).await?, [1, 1, 1, 1, 1]);
@@ -1392,7 +1416,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
     // Exact retry before or after a lost response returns the same result;
     // reconciliation by operation identity alone never re-authorizes.
     assert_eq!(
-        root.bootstrap_character(&authority, &node, &valid, &interpretation()?)
+        root.bootstrap_character(&authority, &node, &valid)
             .await
             .map_err(|e| format!("{e:?}"))?,
         first
@@ -1421,8 +1445,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
         changed_context.decode()?,
     ] {
         assert!(matches!(
-            root.bootstrap_character(&authority, &node, &changed, &interpretation()?)
-                .await,
+            root.bootstrap_character(&authority, &node, &changed).await,
             Err(CharacterAuthorityError::Conflict)
         ));
     }
@@ -1443,8 +1466,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
         future.decode()?,
     ] {
         assert!(rejected(
-            root.bootstrap_character(&authority, &node, &refused, &interpretation()?)
-                .await
+            root.bootstrap_character(&authority, &node, &refused).await
         ));
     }
     assert_eq!(totals(&pool).await?, [1, 1, 1, 1, 1]);
@@ -1460,7 +1482,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
     .await?;
     let after_failure = intent(64, 72, 13)?;
     assert!(matches!(
-        root.bootstrap_character(&authority, &node, &after_failure, &interpretation()?)
+        root.bootstrap_character(&authority, &node, &after_failure)
             .await,
         Err(CharacterAuthorityError::Unavailable(_))
     ));
@@ -1470,7 +1492,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
         .execute(&pool)
         .await?;
     allow(&root, &node, 72).await?;
-    root.bootstrap_character(&authority, &node, &after_failure, &interpretation()?)
+    root.bootstrap_character(&authority, &node, &after_failure)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(floor(&pool).await?, 13);
@@ -1526,7 +1548,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
     allow(&root, &node, 76).await?;
     let _successor = register(&root, 2, Some(1)).await?;
     assert!(matches!(
-        root.bootstrap_character(&authority, &node, &intent(68, 76, 17)?, &interpretation()?)
+        root.bootstrap_character(&authority, &node, &intent(68, 76, 17)?)
             .await,
         Err(CharacterAuthorityError::Unavailable(_))
     ));

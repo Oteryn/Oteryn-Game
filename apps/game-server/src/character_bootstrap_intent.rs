@@ -278,9 +278,10 @@ pub async fn read_authenticated_intent(
     decode_producer_response(&raw, operation_id).map_err(IntentReadError::Invalid)
 }
 
-/// Game-owned current interpretation context, from the server's own
-/// configuration. Intent revisions are requested context, never authority:
-/// bootstrap commits only when they equal this exactly.
+/// Game-owned Character interpretation context. The current value is durable
+/// operator configuration (`configure_character_interpretation`) that bootstrap
+/// resolves inside its own transaction. Intent revisions are requested context,
+/// never authority: bootstrap commits only when they equal it exactly.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharacterInterpretationV1 {
     revisions: [String; 4],
@@ -301,6 +302,16 @@ impl CharacterInterpretationV1 {
                 revision(starter_template_revision.to_owned())?,
             ],
         })
+    }
+
+    #[must_use]
+    pub fn revisions(&self) -> [&str; 4] {
+        [
+            &self.revisions[0],
+            &self.revisions[1],
+            &self.revisions[2],
+            &self.revisions[3],
+        ]
     }
 
     #[must_use]

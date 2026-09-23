@@ -102,6 +102,18 @@ CREATE TABLE game_character_operation_receipts (
     CHECK (game_character_is_uuid_v7(operation_id))
 );
 
+-- Game-owned Character interpretation (operator configuration). Append-only;
+-- the current interpretation is the highest revision. Bootstrap intent
+-- revisions are requested context and must equal the current one.
+CREATE TABLE game_character_interpretations (
+    interpretation_revision BIGINT PRIMARY KEY CHECK (interpretation_revision > 0),
+    profile_revision TEXT NOT NULL CHECK (octet_length(profile_revision) BETWEEN 1 AND 128),
+    ruleset_revision TEXT NOT NULL CHECK (octet_length(ruleset_revision) BETWEEN 1 AND 128),
+    content_revision TEXT NOT NULL CHECK (octet_length(content_revision) BETWEEN 1 AND 128),
+    starter_template_revision TEXT NOT NULL CHECK (octet_length(starter_template_revision) BETWEEN 1 AND 128),
+    configured_at BIGINT NOT NULL CHECK (configured_at >= 0)
+);
+
 -- Retained source high-water of the single enabled intent issuer/variant scope
 -- (OTERYN_PLATFORM_CHARACTER_AUTHORITY / OPERATOR_CONTROL_PLANE_BOOTSTRAP).
 -- It only advances, together with the receipt of the decision it names.
@@ -128,6 +140,7 @@ END; $$;
 CREATE TRIGGER game_character_root_immutable BEFORE UPDATE OR DELETE ON game_character_roots FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 CREATE TRIGGER game_character_receipt_immutable BEFORE UPDATE OR DELETE ON game_character_operation_receipts FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 CREATE TRIGGER game_character_recovery_admission_immutable BEFORE UPDATE OR DELETE ON game_character_recovery_admissions FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
+CREATE TRIGGER game_character_interpretation_immutable BEFORE UPDATE OR DELETE ON game_character_interpretations FOR EACH ROW EXECUTE FUNCTION game_character_immutable();
 
 -- Explicit legal holds: reason, authorizing actor, start and affected record.
 -- Release returns the record to ordinary expiry; a hold never deletes or copies it.
@@ -208,6 +221,8 @@ CREATE TRIGGER game_character_audit_legal_holds_no_truncate BEFORE TRUNCATE ON g
     FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
 CREATE TRIGGER game_character_bootstrap_intent_floors_no_truncate BEFORE TRUNCATE ON game_character_bootstrap_intent_floors
     FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_interpretations_no_truncate BEFORE TRUNCATE ON game_character_interpretations
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
 
 REVOKE ALL ON TABLE
     game_character_recovery_admissions,
@@ -216,7 +231,8 @@ REVOKE ALL ON TABLE
     game_character_audit_outbox,
     game_character_operation_receipts,
     game_character_audit_legal_holds,
-    game_character_bootstrap_intent_floors
+    game_character_bootstrap_intent_floors,
+    game_character_interpretations
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_character_is_uuid_v7(uuid),

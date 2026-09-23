@@ -81,6 +81,7 @@ mod character_authority_linkage {
         };
         let _ = DurabilityRoot::bootstrap_character;
         let _ = DurabilityRoot::reconcile_character_bootstrap;
+        let _ = DurabilityRoot::configure_character_interpretation;
         let _ = oteryn_game_server::character_bootstrap_intent::read_authenticated_intent;
         let _ = oteryn_game_server::character_bootstrap_intent::CharacterInterpretationV1::new;
         let _ = DurabilityRoot::open_character_authority;

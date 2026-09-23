@@ -114,14 +114,14 @@ impl DurabilityRoot {
     /// the complete intent binding, audit event and pending outbox commit.
     /// The intent's world and interpretation are requested context: the world
     /// must currently have an assigned Channel (#415) and the revisions must
-    /// equal the Game-configured interpretation.
+    /// equal the current Game-owned interpretation, which is resolved from the
+    /// durable configuration inside this transaction, never from the caller.
     /// An exact retry returns the committed result; changed reuse conflicts.
     pub async fn bootstrap_character(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         proof: &NodeIncarnationProof,
         intent: &CharacterBootstrapIntentV1,
-        interpretation: &CharacterInterpretationV1,
     ) -> Result<CharacterAuthorityRecord> {
         let operation = intent.operation_id();
         let intent_binding = intent.binding();
@@ -131,7 +131,7 @@ impl DurabilityRoot {
         {
             return Err(CharacterAuthorityError::Rejected);
         }
-        let admitted_interpretation = interpretation.admits(intent);
+        let requested = intent.clone();
         let proof = proof.clone();
         let account = *intent.account_id().as_bytes();
         let world = *intent.target_world_id().as_bytes();
@@ -169,8 +169,16 @@ impl DurabilityRoot {
             // time never refreshes the intent.
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
                 .fetch_one(&mut *tx).await?;
-            if issued_at > now || expires_at <= now || !admitted_interpretation {
+            if issued_at > now || expires_at <= now {
                 return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            // Game-owned current interpretation, share-locked against a
+            // concurrent reconfiguration.
+            sqlx::query("SELECT pg_advisory_xact_lock_shared(hashtextextended('oteryn:character-interpretation', 0))")
+                .execute(&mut *tx).await?;
+            match current_interpretation(&mut tx).await? {
+                Some((_, current)) if current.admits(&requested) => {}
+                _ => return Ok(Err(CharacterAuthorityError::Rejected)),
             }
             // Game-owned current world: at least one currently assigned Channel,
             // share-locked so a concurrent revocation serializes with this commit.
@@ -208,6 +216,43 @@ impl DurabilityRoot {
                 .bind(operation.as_slice()).bind(&intent_binding).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(event.as_slice()).bind(transaction.as_slice()).bind(SERVER_BUILD_ID).bind(occurred_at).bind(decision.as_slice()).bind(source_revision).bind(issued_at).bind(expires_at).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(CharacterAuthorityRecord { account_id: AccountId::from_bytes(account).map_err(|_| DurabilityError::Unavailable)?, character_id: CharacterId::from_bytes(character).map_err(|_| DurabilityError::Unavailable)?, world_id: WorldId::from_bytes(world).map_err(|_| DurabilityError::Unavailable)?, revision: CharacterRevision::new(1).map_err(|_| DurabilityError::Unavailable)?, event_id: event, transaction_id: transaction, payload }))
+        })).await?
+    }
+
+    /// Record the Game-owned current Character interpretation (operator
+    /// configuration). History is append-only; configuring the current value
+    /// again returns its revision. Requires the current #415 incarnation.
+    pub async fn configure_character_interpretation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        proof: &NodeIncarnationProof,
+        interpretation: &CharacterInterpretationV1,
+    ) -> Result<i64> {
+        let proof = proof.clone();
+        let interpretation = interpretation.clone();
+        let recovery = authority.record_for(self)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            if !prove_current_incarnation(&mut tx, &proof).await? {
+                return Err(DurabilityError::Unavailable);
+            }
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-interpretation', 0))")
+                .execute(&mut *tx).await?;
+            let current = current_interpretation(&mut tx).await?;
+            if let Some((revision, value)) = &current
+                && *value == interpretation
+            {
+                let revision = *revision;
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok(Ok(revision));
+            }
+            let revision = current.map_or(1, |(revision, _)| revision + 1);
+            let [profile, ruleset, content, starter] = interpretation.revisions();
+            sqlx::query("INSERT INTO game_character_interpretations(interpretation_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision, configured_at) VALUES ($1, $2, $3, $4, $5, floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
+                .bind(revision).bind(profile).bind(ruleset).bind(content).bind(starter).execute(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(revision))
         })).await?
     }
 
@@ -294,7 +339,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             // Any surviving Character row is evidence of prior state: never "fresh".
-            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds) + (SELECT count(*) FROM game_character_bootstrap_intent_floors)")
+            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds) + (SELECT count(*) FROM game_character_bootstrap_intent_floors) + (SELECT count(*) FROM game_character_interpretations)")
                 .fetch_one(&mut *tx).await?;
             if existing != 0 { return Ok(Err(CharacterAuthorityError::Conflict)); }
             insert_recovery_admission(&mut tx, &record).await?;
@@ -413,10 +458,16 @@ impl DurabilityRoot {
             if retained.is_none() {
                 return Ok(Err(CharacterAuthorityError::Rejected));
             }
-            let active: Option<i32> = sqlx::query_scalar("SELECT 1 FROM game_character_audit_legal_holds WHERE event_id = encode($1,'hex')::uuid AND released_at IS NULL")
-                .bind(event_id.as_slice()).fetch_optional(&mut *tx).await?;
-            if active.is_some() {
-                return Ok(Err(CharacterAuthorityError::Conflict));
+            // An exact replay (same event, reason and actor) after a lost
+            // response returns the committed hold, so it stays releasable.
+            if let Some(active) = sqlx::query("SELECT hold_id::text, reason, authorizing_actor FROM game_character_audit_legal_holds WHERE event_id = encode($1,'hex')::uuid AND released_at IS NULL")
+                .bind(event_id.as_slice()).fetch_optional(&mut *tx).await? {
+                if active.try_get::<String, _>("reason")? != reason || active.try_get::<String, _>("authorizing_actor")? != actor {
+                    return Ok(Err(CharacterAuthorityError::Conflict));
+                }
+                let hold = uuid_text(&active.try_get::<String, _>("hold_id")?)?;
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok(Ok(hold));
             }
             let hold: String = sqlx::query_scalar("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (game_character_uuid_v7(), encode($1,'hex')::uuid, $2, $3, floor(extract(epoch FROM statement_timestamp())*1000)::bigint) RETURNING hold_id::text")
                 .bind(event_id.as_slice()).bind(reason).bind(actor).fetch_one(&mut *tx).await?;
@@ -590,6 +641,36 @@ fn read_record_row(
         transaction_id: uuid_text(row.try_get("transaction_id")?)?,
         payload: encode_bootstrap(&account, &character, &world),
     })
+}
+
+/// Current (highest-revision) Game-owned Character interpretation, if any.
+async fn current_interpretation(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> std::result::Result<Option<(i64, CharacterInterpretationV1)>, DurabilityError> {
+    let Some(row) = sqlx::query(
+        "SELECT interpretation_revision, profile_revision, ruleset_revision, content_revision, starter_template_revision \
+           FROM game_character_interpretations ORDER BY interpretation_revision DESC LIMIT 1",
+    )
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(None);
+    };
+    let text = |column: &str| -> std::result::Result<String, DurabilityError> {
+        row.try_get(column)
+            .map_err(|_| DurabilityError::InvalidStoredState)
+    };
+    let interpretation = CharacterInterpretationV1::new(
+        &text("profile_revision")?,
+        &text("ruleset_revision")?,
+        &text("content_revision")?,
+        &text("starter_template_revision")?,
+    )
+    .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let revision: i64 = row
+        .try_get("interpretation_revision")
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    Ok(Some((revision, interpretation)))
 }
 
 fn uuid_string(value: &[u8; 16]) -> String {
