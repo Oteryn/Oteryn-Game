@@ -1,0 +1,102 @@
+name: Item Wiki-First Census
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/reference-world-corridor-census/item_current_source_tibiawiki.py
+      - tools/reference-world-corridor-census/item_wiki_first_census.py
+      - tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
+      - docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json
+      - docs/agents/tasks/active/OTV2-20260923-item-wiki-first-census.md
+      - .github/workflows/item-wiki-first-census.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: item-wiki-first-census-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Item content / wiki-first census
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run focused census tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
+            tools/reference-world-corridor-census/item_wiki_first_census.py \
+            tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
+          python tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
+
+      - name: Run live wiki-first Item census
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-census"
+          mkdir -p "$ROOT"
+          python tools/reference-world-corridor-census/item_wiki_first_census.py \
+            --cache-dir "$ROOT/wiki-cache" \
+            --output "$ROOT/census.json" \
+            --manifest-output "$ROOT/manifest.json"
+
+      - name: Verify census manifest invariants
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-census"
+          python - "$ROOT/manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert manifest["schema"] == "OTERYN_ITEM_WIKI_FIRST_CENSUS_MANIFEST/v1"
+          counts = manifest["counts"]
+          assert 0 < counts["discovered_pages"] <= 20_000
+          assert counts["fetched_pages"] == counts["discovered_pages"]
+          assert counts["pages_with_infobox"] == counts["discovered_pages"]
+          assert counts["distinct_infobox_fields"] > 0
+          invariants = manifest["invariants"]
+          assert invariants["wiki_first_discovery"] is True
+          assert invariants["starts_from_crystal_38157"] is False
+          assert invariants["all_discovered_pages_have_infobox"] is True
+          assert invariants["identity_resolution_performed"] is False
+          assert invariants["semantic_promotion_performed"] is False
+          assert invariants["raw_long_form_prose_collected"] is False
+          assert invariants["raw_wikitext_committed"] is False
+          assert manifest["full_output"]["committed_bulk_corpus"] is False
+          assert manifest["next_gate"] == "WIKI_FIRST_ITEM_IDENTITY_CROSSWALK"
+          print("wiki-first census manifest: PASS")
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Upload compact census evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: item-wiki-first-census-\${{ github.event.pull_request.head.sha || github.sha }}
+          path: \${{ runner.temp }}/item-wiki-first-census/manifest.json
+          if-no-files-found: error
+          retention-days: 14
