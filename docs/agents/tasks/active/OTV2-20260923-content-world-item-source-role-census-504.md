@@ -3,11 +3,12 @@
 ```yaml
 task_id: OTV2-20260923-content-world-item-source-role-census-504
 title: Item source-role denominator census
-mode: EVIDENCE_ONLY_CENSUS
+mode: AUDIT
 status: validating
 repository: Oteryn/Oteryn-Game
 branch: agent/content-world-item-source-role-census-504
 issue: 162
+pr: 777
 admission_main_sha: 19c15ebf8377608db5b72cf7082dc856c4fd76be
 owner: Oteryn: content world import
 ```
