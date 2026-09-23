@@ -1,3 +1,12 @@
+-- Canonical UUIDv7: version 7 and RFC 4122/9562 variant (10xx). Every
+-- Character identity column is checked with it, so a restored row cannot carry
+-- a malformed typed identity.
+CREATE FUNCTION game_character_is_uuid_v7(value UUID) RETURNS BOOLEAN
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT (get_byte(uuid_send(value), 6) >> 4) = 7
+       AND (get_byte(uuid_send(value), 8) & 192) = 128
+$$;
+
 -- Producer-owned UUIDv7 allocation (48-bit Unix ms + 74 random bits).
 CREATE FUNCTION game_character_uuid_v7() RETURNS UUID
 LANGUAGE plpgsql VOLATILE AS $$
@@ -22,11 +31,11 @@ CREATE TABLE game_character_recovery_admissions (
     reconciled_at BIGINT NOT NULL CHECK (reconciled_at >= 0),
     CHECK (recovery_generation = predecessor_generation + 1),
     CHECK ((predecessor_generation = 0) = (predecessor_digest IS NULL)),
-    CHECK (get_byte(uuid_send(recovery_event_id), 6) >> 4 = 7)
+    CHECK (game_character_is_uuid_v7(recovery_event_id))
 );
 
 CREATE TABLE game_character_account_guards (
-    account_id UUID PRIMARY KEY CHECK (account_id <> '00000000-0000-0000-0000-000000000000'::uuid)
+    account_id UUID PRIMARY KEY CHECK (game_character_is_uuid_v7(account_id))
 );
 
 CREATE TABLE game_character_roots (
@@ -39,9 +48,9 @@ CREATE TABLE game_character_roots (
     ruleset_revision TEXT NOT NULL CHECK (octet_length(ruleset_revision) BETWEEN 1 AND 128),
     content_revision TEXT NOT NULL CHECK (octet_length(content_revision) BETWEEN 1 AND 128),
     starter_template_revision TEXT NOT NULL CHECK (octet_length(starter_template_revision) BETWEEN 1 AND 128),
-    CHECK (get_byte(uuid_send(character_id), 6) >> 4 = 7),
-    CHECK (get_byte(uuid_send(account_id), 6) >> 4 = 7),
-    CHECK (get_byte(uuid_send(world_id), 6) >> 4 = 7)
+    CHECK (game_character_is_uuid_v7(character_id)),
+    CHECK (game_character_is_uuid_v7(account_id)),
+    CHECK (game_character_is_uuid_v7(world_id))
 );
 
 CREATE TABLE game_character_audit_outbox (
@@ -52,7 +61,7 @@ CREATE TABLE game_character_audit_outbox (
     event_type_id BIGINT NOT NULL CHECK (event_type_id = 1),
     schema_revision BIGINT NOT NULL CHECK (schema_revision = 1),
     retention_profile_id TEXT NOT NULL CHECK (retention_profile_id = 'CHARACTER_AUTHORITY_DURABLE_AUDIT_RETENTION_V1'),
-    character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+    character_id UUID NOT NULL REFERENCES game_character_roots(character_id) CHECK (game_character_is_uuid_v7(character_id)),
     occurred_at BIGINT NOT NULL CHECK (occurred_at >= 0),
     payload BYTEA NOT NULL CHECK (octet_length(payload) BETWEEN 1 AND 8192),
     payload_sha256 BYTEA NOT NULL CHECK (octet_length(payload_sha256) = 32),
@@ -61,8 +70,8 @@ CREATE TABLE game_character_audit_outbox (
     publication_state SMALLINT NOT NULL CHECK (publication_state IN (1,2)),
     published_at BIGINT NULL CHECK (published_at IS NULL OR published_at >= occurred_at),
     CHECK ((publication_state = 2) = (published_at IS NOT NULL)),
-    CHECK (get_byte(uuid_send(event_id), 6) >> 4 = 7),
-    CHECK (get_byte(uuid_send(transaction_id), 6) >> 4 = 7),
+    CHECK (game_character_is_uuid_v7(event_id)),
+    CHECK (game_character_is_uuid_v7(transaction_id)),
     UNIQUE (transaction_id, transaction_ordinal),
     UNIQUE (character_id, event_type_id)
 );
@@ -70,14 +79,14 @@ CREATE TABLE game_character_audit_outbox (
 CREATE TABLE game_character_operation_receipts (
     operation_id UUID PRIMARY KEY,
     command_binding BYTEA NOT NULL CHECK (octet_length(command_binding) BETWEEN 1 AND 1024),
-    account_id UUID NOT NULL,
-    character_id UUID NOT NULL UNIQUE REFERENCES game_character_roots(character_id),
-    world_id UUID NOT NULL,
+    account_id UUID NOT NULL CHECK (game_character_is_uuid_v7(account_id)),
+    character_id UUID NOT NULL UNIQUE REFERENCES game_character_roots(character_id) CHECK (game_character_is_uuid_v7(character_id)),
+    world_id UUID NOT NULL CHECK (game_character_is_uuid_v7(world_id)),
     character_revision NUMERIC(20,0) NOT NULL CHECK (character_revision = 1),
     -- Stable audit identity; the event itself expires under its retention profile.
-    event_id UUID NOT NULL UNIQUE,
-    transaction_id UUID NOT NULL,
-    CHECK (get_byte(uuid_send(operation_id), 6) >> 4 = 7)
+    event_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(event_id)),
+    transaction_id UUID NOT NULL CHECK (game_character_is_uuid_v7(transaction_id)),
+    CHECK (game_character_is_uuid_v7(operation_id))
 );
 
 CREATE FUNCTION game_character_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
@@ -90,8 +99,8 @@ CREATE TRIGGER game_character_recovery_admission_immutable BEFORE UPDATE OR DELE
 -- Explicit legal holds: reason, authorizing actor, start and affected record.
 -- Release returns the record to ordinary expiry; a hold never deletes or copies it.
 CREATE TABLE game_character_audit_legal_holds (
-    hold_id UUID PRIMARY KEY CHECK (get_byte(uuid_send(hold_id), 6) >> 4 = 7),
-    event_id UUID NOT NULL,
+    hold_id UUID PRIMARY KEY CHECK (game_character_is_uuid_v7(hold_id)),
+    event_id UUID NOT NULL CHECK (game_character_is_uuid_v7(event_id)),
     reason TEXT NOT NULL CHECK (octet_length(reason) BETWEEN 1 AND 512),
     authorizing_actor TEXT NOT NULL CHECK (octet_length(authorizing_actor) BETWEEN 1 AND 128),
     started_at BIGINT NOT NULL CHECK (started_at >= 0),
@@ -164,6 +173,7 @@ REVOKE ALL ON TABLE
     game_character_audit_legal_holds
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
+    game_character_is_uuid_v7(uuid),
     game_character_uuid_v7(),
     game_character_immutable(),
     game_character_audit_guard(),

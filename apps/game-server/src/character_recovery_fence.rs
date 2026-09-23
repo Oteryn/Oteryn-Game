@@ -296,7 +296,8 @@ fn encode(record: &CharacterRecoveryFenceV1) -> Result<Vec<u8>, CharacterRecover
                 .predecessor_generation
                 .checked_add(1)
                 .ok_or(CharacterRecoveryError::Rejected)?
-        || record.recovery_event_id == [0; 16]
+        || record.recovery_event_id[6] >> 4 != 7
+        || record.recovery_event_id[8] & 0xc0 != 0x80
         || record.issued_at == 0
         || (record.predecessor_generation == 0) != (record.predecessor_digest == [0; 32])
     {
@@ -463,6 +464,33 @@ mod tests {
         assert!(matches!(
             store.begin_recovery(u64::MAX, event(3), 300),
             Err(CharacterRecoveryError::Rejected)
+        ));
+        fs::remove_dir_all(directory).expect("cleanup");
+    }
+
+    #[test]
+    fn retained_record_with_non_rfc_event_id_is_malformed() {
+        let directory = directory("variant");
+        let store = CharacterRecoveryStore::open(&directory, "character-primary", "game-ops")
+            .expect("store");
+        drop(
+            store
+                .authorize_fresh_store(event(1), 100)
+                .expect("fresh authorization"),
+        );
+        let path = directory.join(RECORD_NAME);
+        let valid = fs::read_to_string(&path).expect("retained record");
+        // Byte 8 of the event id is `80`; `40` keeps version 7 but breaks the RFC variant.
+        let malformed = valid.replacen(
+            "event=0102030405067008800a",
+            "event=0102030405067008400a",
+            1,
+        );
+        assert_ne!(malformed, valid);
+        fs::write(&path, malformed).expect("rewrite record");
+        assert!(matches!(
+            store.seal_current(),
+            Err(CharacterRecoveryError::Unavailable)
         ));
         fs::remove_dir_all(directory).expect("cleanup");
     }

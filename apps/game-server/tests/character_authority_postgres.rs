@@ -575,6 +575,29 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     .execute(&mut *repair)
     .await?;
     repair.commit().await?;
+    // Typed identities are canonical UUIDv7 in every column, even when row
+    // triggers are bypassed: a version-7 id with a non-RFC variant is refused.
+    let mut malformed = second.character_id.as_bytes().to_owned();
+    malformed[8] = 0x40;
+    for statement in [
+        "UPDATE game_character_roots SET world_id = encode($1,'hex')::uuid",
+        "UPDATE game_character_operation_receipts SET transaction_id = encode($1,'hex')::uuid",
+        "UPDATE game_character_audit_outbox SET transaction_id = encode($1,'hex')::uuid",
+    ] {
+        let mut tamper = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tamper)
+            .await?;
+        assert!(
+            sqlx::query(statement)
+                .bind(malformed.as_slice())
+                .execute(&mut *tamper)
+                .await
+                .is_err(),
+            "{statement}"
+        );
+        tamper.rollback().await?;
+    }
     // An active legal hold whose audit event is missing is lost retention.
     sqlx::query("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'case-2', 'security:alice', 1)")
         .bind(id(26).as_slice())
