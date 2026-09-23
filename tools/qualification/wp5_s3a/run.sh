@@ -530,7 +530,12 @@ evidence "trust_rollback=unavailable_after_restart witness_ahead=retained trust_
 
 # The path-scoped interposer runs in the exact PHP ABI and distinguishes file and directory fsync.
 for mode in file directory; do
-  fsync_pre_fault_revision="$account_reconciled_revision"
+  # Intervening harness reads advance the producer revision, so bind the floor
+  # to an authoritative observation taken immediately before this fault.
+  expect_observed_account "$account_payload" "$WP5_SCRATCH/fsync-$mode-pre-fault-response" \
+    ReadAccountSecurityV1 1 "$ACCOUNT_ID" platform_security fresh_admission \
+    "$account_reconciled_revision" greater
+  fsync_pre_fault_revision="$(observed_revision "$WP5_SCRATCH/fsync-$mode-pre-fault-response")"
   WP5_FSYNC_FAULT="$mode"; export WP5_FSYNC_FAULT
   compose up --detach --wait --force-recreate --no-deps platform >/dev/null
   expect_unavailable "$account_payload" "$WP5_SCRATCH/fsync-$mode-response" ReadAccountSecurityV1 1
