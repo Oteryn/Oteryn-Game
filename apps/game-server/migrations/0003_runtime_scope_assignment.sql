@@ -306,6 +306,50 @@ CREATE TRIGGER game_runtime_scope_assignment_guard BEFORE UPDATE OR DELETE
 CREATE TRIGGER game_runtime_scope_assignment_receipt_immutable BEFORE UPDATE OR DELETE
     ON game_runtime_scope_assignment_receipts FOR EACH ROW EXECUTE FUNCTION game_durability_reject_history_mutation();
 
+-- The receipts are the authoritative retained assignment history. Locking the
+-- singleton writer row makes this check stable against a concurrent successor.
+-- There must be exactly one receipt for every allocated revision, and every
+-- materialized current row must exactly reproduce its scope's latest receipt.
+CREATE FUNCTION game_runtime_scope_assignment_history_valid() RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    v_high_water NUMERIC(20, 0);
+BEGIN
+    SELECT source_revision_high_water INTO v_high_water
+        FROM game_runtime_scope_assignment_writer WHERE writer_id = 1 FOR SHARE;
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+    IF (SELECT count(*)::numeric FROM game_runtime_scope_assignment_receipts) <> v_high_water
+       OR (SELECT coalesce(min(source_revision), 1) FROM game_runtime_scope_assignment_receipts) <> 1
+       OR (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignment_receipts) <> v_high_water
+       OR EXISTS (
+            SELECT 1 FROM game_runtime_scope_assignment_receipts r
+            LEFT JOIN game_runtime_scope_assignments a USING (scope_key)
+            WHERE a.scope_key IS NULL
+       ) THEN
+        RETURN FALSE;
+    END IF;
+    RETURN NOT EXISTS (
+        SELECT 1
+        FROM game_runtime_scope_assignments a
+        LEFT JOIN LATERAL (
+            SELECT r.* FROM game_runtime_scope_assignment_receipts r
+            WHERE r.scope_key = a.scope_key
+            ORDER BY r.source_revision DESC LIMIT 1
+        ) r ON TRUE
+        WHERE r.source_revision IS NULL
+           OR a.ownership_generation IS DISTINCT FROM r.ownership_generation
+           OR a.state IS DISTINCT FROM r.state
+           OR a.holder_node_id IS DISTINCT FROM r.holder_node_id
+           OR a.holder_registration_revision IS DISTINCT FROM r.holder_registration_revision
+           OR a.source_revision IS DISTINCT FROM r.source_revision
+           OR a.decision_identity IS DISTINCT FROM r.decision_identity
+           OR a.operation_key IS DISTINCT FROM r.operation_key
+           OR a.decided_at IS DISTINCT FROM r.decided_at
+    );
+END; $$;
+
 CREATE FUNCTION game_runtime_scope_assignment_slot_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$ BEGIN
     IF TG_OP = 'DELETE' OR NEW.writer_registration <> OLD.writer_registration
@@ -340,6 +384,9 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public,
 DECLARE
     v_assignment game_runtime_scope_assignments%ROWTYPE;
 BEGIN
+    IF NOT game_runtime_scope_assignment_history_valid() THEN
+        RETURN FALSE;
+    END IF;
     SELECT * INTO v_assignment FROM game_runtime_scope_assignments
         WHERE scope_key = p_scope_key FOR SHARE;
     IF NOT FOUND OR v_assignment.state <> 1
@@ -412,10 +459,18 @@ REVOKE ALL ON TABLE
     game_runtime_readiness_attestations
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
+    game_node_is_uuid_v7(UUID),
+    game_node_registration_writer_guard(),
+    game_node_bootstrap_authorization_guard(),
+    game_node_registration_guard(),
     game_node_register(BYTEA, TEXT, UUID),
     game_node_lock_current_registration(UUID, NUMERIC),
     game_node_prove_current_incarnation(UUID, NUMERIC, BYTEA),
     game_node_require_current(UUID, NUMERIC, BYTEA),
+    game_runtime_scope_assignment_writer_guard(),
+    game_runtime_scope_assignment_guard(),
+    game_runtime_scope_assignment_history_valid(),
+    game_runtime_scope_assignment_slot_guard(),
     game_runtime_attest_readiness(BYTEA, UUID, NUMERIC, BYTEA),
     game_runtime_guard_requires_current_assignment()
 FROM PUBLIC;

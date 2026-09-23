@@ -1089,23 +1089,17 @@ async fn authoritative_transition(
     {
         rejection = Some(AssignmentRejection::TargetNotCurrent);
     }
-    let source_revision = high_water.checked_add(1);
+    let source_revision = successor_source_revision(high_water);
     let generation = match &current {
         None => Some(1),
         Some(current) => current.ownership_generation.checked_add(1),
     };
-    let rejection = rejection
-        .or_else(|| {
-            source_revision
-                .is_none()
-                .then_some(AssignmentRejection::SourceRevisionExhausted)
-        })
-        .or_else(|| {
-            generation
-                .is_none()
-                .then_some(AssignmentRejection::GenerationExhausted)
-        });
-    let (Some(source_revision), Some(ownership_generation), None) =
+    let rejection = rejection.or_else(|| source_revision.err()).or_else(|| {
+        generation
+            .is_none()
+            .then_some(AssignmentRejection::GenerationExhausted)
+    });
+    let (Ok(source_revision), Some(ownership_generation), None) =
         (source_revision, generation, rejection)
     else {
         clear_slot(tx, registration).await?;
@@ -1262,20 +1256,22 @@ async fn fence_runtime_guard(
     Ok(Some(changes[0].publication_revision))
 }
 
-/// Every allocated writer revision leaves an immutable receipt. Retained history
-/// must match the high-water exactly: history ahead of it (regressed high-water)
-/// or behind it (rolled-back decisions) fails closed pending recovery.
+/// Every allocated writer revision leaves an immutable receipt. The database
+/// validates contiguous coverage and exact equality between each current scope
+/// row and that scope's latest retained receipt while holding the writer lock.
 async fn require_history_matches_high_water(
     tx: &mut Transaction<'_, Postgres>,
     high_water: u64,
 ) -> Result<(), DurabilityError> {
-    let (receipts, assignments): (String, String) = sqlx::query_as(
-        "SELECT (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignment_receipts)::text, \
-                (SELECT coalesce(max(source_revision), 0) FROM game_runtime_scope_assignments)::text",
+    let valid: bool = sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
+        .fetch_one(&mut **tx)
+        .await?;
+    let observed: String = sqlx::query_scalar(
+        "SELECT source_revision_high_water::text FROM game_runtime_scope_assignment_writer WHERE writer_id = 1",
     )
     .fetch_one(&mut **tx)
     .await?;
-    if parse_u64_text(&receipts)? != high_water || parse_u64_text(&assignments)? > high_water {
+    if !valid || parse_u64_text(&observed)? != high_water {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(())
@@ -1505,4 +1501,28 @@ fn has_sql_state(error: &sqlx::Error, expected: &str) -> bool {
         .as_database_error()
         .and_then(|database| database.code())
         .is_some_and(|code| code == expected)
+}
+
+/// Writer-owned successor revision. Only a valid, fully retained history
+/// reaches this point; the exhausted namespace rejects rather than wrapping.
+fn successor_source_revision(high_water: u64) -> Result<u64, AssignmentRejection> {
+    high_water
+        .checked_add(1)
+        .ok_or(AssignmentRejection::SourceRevisionExhausted)
+}
+
+#[cfg(test)]
+mod successor_revision_tests {
+    use super::{AssignmentRejection, successor_source_revision};
+
+    #[test]
+    fn source_revision_successor_is_checked() {
+        assert_eq!(successor_source_revision(0), Ok(1));
+        assert_eq!(successor_source_revision(41), Ok(42));
+        assert_eq!(successor_source_revision(u64::MAX - 1), Ok(u64::MAX));
+        assert_eq!(
+            successor_source_revision(u64::MAX),
+            Err(AssignmentRejection::SourceRevisionExhausted)
+        );
+    }
 }

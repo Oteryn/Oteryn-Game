@@ -1606,9 +1606,11 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
             .execute(&pool)
             .await?;
 
-            // Checked successor overflow rejects permanently without mutation.
-            // Consistent retained history at the maximum revision (a synthetic
-            // receipt for another decision), so only checked overflow can reject.
+            // A sparse history (receipt 1 plus a receipt at the maximum, with
+            // the high-water at the maximum) is invalid retained history, not a
+            // valid overflow fixture: the continuity check fails closed before
+            // any successor revision is allocated. Checked successor overflow
+            // itself is covered by `source_revision_successor_is_checked`.
             sqlx::query(
                 "INSERT INTO game_runtime_scope_assignment_receipts \
                  (operation_key, command, scope_key, ownership_generation, state, holder_node_id, \
@@ -1623,16 +1625,24 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
             sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 18446744073709551615")
                 .execute(&pool)
                 .await?;
-            assert_eq!(
-                rejected(writer.submit(&replace).await)?,
-                AssignmentRejection::SourceRevisionExhausted
-            );
-            let current = root
-                .read_runtime_scope_assignment(channel)
-                .await
-                .map_err(|e| format!("{e:?}"))?
-                .ok_or("absent")?;
-            assert_eq!(current, first.assignment);
+            assert!(matches!(
+                writer.submit(&replace).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            assert_eq!(high_water(&pool).await?.0, "18446744073709551615");
+            assert!(matches!(
+                root.read_runtime_scope_assignment(channel).await,
+                Err(AssignmentError::Unavailable(
+                    DurabilityError::InvalidStoredState
+                ))
+            ));
+            let current: (String, String) = sqlx::query_as(
+                "SELECT ownership_generation::text, source_revision::text \
+                 FROM game_runtime_scope_assignments",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(current, ("1".to_owned(), "1".to_owned()));
 
             let database2 = Database::create("generation_overflow").await?;
             let overflow = async {
@@ -1643,7 +1653,7 @@ fn restart_preserves_high_water_and_fails_closed_on_regression_or_overflow() -> 
                     .await
                     .map_err(|e| format!("{e:?}"))?;
                 let first = committed(writer.submit(&request(1, AssignmentCommand::Assign { scope: channel, target: node })?).await)?;
-                sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation = 18446744073709551615, source_revision = 2")
+                sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation = 18446744073709551615, source_revision = 2, decision_identity = 'runtime-scope-assignment:2', operation_key = '\\x98'::bytea || substring(operation_key FROM 2)")
                     .execute(&pool2)
                     .await?;
                 sqlx::query(
@@ -1695,6 +1705,41 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
             root.issue_node_bootstrap_authorization(&secret(1), &launch(1)?, None)
                 .await
                 .map_err(|e| format!("{e:?}"))?;
+            let function_privileges: Vec<(String, bool, bool)> = sqlx::query_as(
+                "WITH expected(signature) AS (VALUES \
+                    ('game_node_is_uuid_v7(uuid)'), \
+                    ('game_node_registration_writer_guard()'), \
+                    ('game_node_bootstrap_authorization_guard()'), \
+                    ('game_node_registration_guard()'), \
+                    ('game_node_register(bytea,text,uuid)'), \
+                    ('game_node_lock_current_registration(uuid,numeric)'), \
+                    ('game_node_prove_current_incarnation(uuid,numeric,bytea)'), \
+                    ('game_node_require_current(uuid,numeric,bytea)'), \
+                    ('game_runtime_scope_assignment_writer_guard()'), \
+                    ('game_runtime_scope_assignment_guard()'), \
+                    ('game_runtime_scope_assignment_history_valid()'), \
+                    ('game_runtime_scope_assignment_slot_guard()'), \
+                    ('game_runtime_attest_readiness(bytea,uuid,numeric,bytea)'), \
+                    ('game_runtime_guard_requires_current_assignment()')) \
+                 SELECT signature, p.oid IS NOT NULL AS function_exists, EXISTS ( \
+                     SELECT 1 \
+                     FROM aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl \
+                     WHERE acl.grantee = 0 AND acl.privilege_type = 'EXECUTE' \
+                 ) AS public_can_execute \
+                 FROM expected \
+                 LEFT JOIN pg_proc p ON p.oid = to_regprocedure(signature) \
+                 ORDER BY signature",
+            )
+            .fetch_all(&pool)
+            .await?;
+            assert_eq!(function_privileges.len(), 14);
+            for (signature, function_exists, public_can_execute) in function_privileges {
+                assert!(function_exists, "migration function is missing: {signature}");
+                assert!(
+                    !public_can_execute,
+                    "PUBLIC retains EXECUTE on migration function: {signature}"
+                );
+            }
             sqlx::query(sqlx::AssertSqlSafe(format!("CREATE ROLE {runtime_role} NOLOGIN"))).execute(&pool).await?;
             // Least-privilege GameNode consumer: read current assignment, register
             // itself and check currentness through definer functions only.
@@ -1743,6 +1788,13 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
                 "42501",
             )
             .await?;
+            expect_sql_state(
+                sqlx::query("SELECT game_runtime_scope_assignment_history_valid()")
+                    .execute(&mut *connection)
+                    .await,
+                "42501",
+            )
+            .await?;
             sqlx::query("RESET ROLE").execute(&mut *connection).await?;
             drop(connection);
             pool.close().await;
@@ -1752,6 +1804,138 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
         database.cleanup(&[runtime_role.as_str()]).await?;
         result
     })
+}
+
+#[test]
+fn restricted_assignment_writer_can_mutate_and_read_authoritative_state() -> TestResult {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = Database::create("assignment_writer_privileges").await?;
+            let suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+            let writer_role = format!("rsa_assignment_writer_{suffix}");
+            let writer_password = format!("assignment-writer-{suffix}");
+            let result = async {
+            let pool = database.pool().await?;
+            let owner_root = ready_root(&database.url).await?;
+            let target = register(&owner_root, 1, None).await?;
+            let channel = scope(1)?;
+            let now = db_now(&pool).await?;
+            let guards = AdmissionGuardStore::from_root(owner_root.clone());
+            publish_runtime(&guards, runtime_change(channel, None, 1, true, now), now).await?;
+
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "CREATE ROLE {writer_role} LOGIN PASSWORD '{writer_password}'"
+            )))
+            .execute(&pool)
+            .await?;
+
+            // This is the minimum deployment grant contract for the existing
+            // assignment writer: schema/ledger inspection, relation locks,
+            // assignment state mutation, the Runtime readiness fence, and the
+            // two deliberately non-PUBLIC internal function boundaries. The
+            // migration creates no production role or credential.
+            for statement in [
+                format!("GRANT USAGE ON SCHEMA public TO {writer_role}"),
+                format!("GRANT SELECT ON _sqlx_migrations TO {writer_role}"),
+                format!(
+                    "GRANT MAINTAIN ON TABLE \
+                     game_durability_admission_account_guards, \
+                     game_durability_admission_character_guards, \
+                     game_durability_admission_guard_history, \
+                     game_durability_admission_lifecycle_receipts, \
+                     game_durability_admission_signing_trust_guards, \
+                     game_durability_control_loss_continuity, \
+                     game_durability_executor_custody, \
+                     game_durability_fresh_admission_receipts, \
+                     game_durability_reconnect_attempts, \
+                     game_durability_reconnect_pending_commands, \
+                     game_durability_reconnect_sessions, \
+                     game_durability_recovery_grant_consumptions, \
+                     game_durability_session_replacements, \
+                     game_durability_session_use_ledgers, \
+                     game_durability_session_use_memberships, \
+                     game_durability_transport_ref_reservations TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, INSERT, UPDATE ON \
+                     game_runtime_scope_assignment_slots, \
+                     game_runtime_scope_assignments TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, UPDATE ON game_runtime_scope_assignment_writer TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, INSERT ON \
+                     game_runtime_scope_assignment_receipts, \
+                     game_durability_admission_guard_history TO {writer_role}"
+                ),
+                format!(
+                    "GRANT SELECT, INSERT, UPDATE ON \
+                     game_durability_admission_runtime_guards TO {writer_role}"
+                ),
+                format!(
+                    "GRANT EXECUTE ON FUNCTION \
+                     game_node_is_uuid_v7(UUID), \
+                     game_node_lock_current_registration(UUID, NUMERIC), \
+                     game_runtime_scope_assignment_history_valid() TO {writer_role}"
+                ),
+            ] {
+                sqlx::query(sqlx::AssertSqlSafe(statement))
+                    .execute(&pool)
+                    .await?;
+            }
+
+            let (_, address) = database
+                .url
+                .split_once('@')
+                .ok_or("database URL has no authority separator")?;
+            let writer_url = format!(
+                "postgresql://{writer_role}:{writer_password}@{address}"
+            );
+            let writer_root = ready_root(&writer_url).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(writer_root.clone(), "writer-a")
+                .await
+                .map_err(|error| format!("restricted writer open: {error:?}"))?;
+            let receipt = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: channel,
+                            target,
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(receipt.assignment.source_revision, 1);
+
+            let current = writer_root
+                .read_runtime_scope_assignment(channel)
+                .await
+                .map_err(|error| format!("restricted authoritative read: {error:?}"))?
+                .ok_or("restricted authoritative read returned no assignment")?;
+            assert_eq!(current, receipt.assignment);
+            let ready: bool = sqlx::query_scalar(
+                "SELECT ready FROM game_durability_admission_runtime_guards",
+            )
+            .fetch_one(&pool)
+            .await?;
+            assert!(!ready, "restricted writer did not apply the readiness fence");
+            drop(writer);
+            drop(writer_root);
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }
+        .await;
+            database.cleanup(&[writer_role.as_str()]).await?;
+            result
+        })
 }
 
 #[test]
@@ -1917,6 +2101,215 @@ fn history_trailing_the_high_water_fails_closed() -> TestResult {
             ));
             assert_eq!(high_water(&pool).await?.1, "2");
             pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn per_scope_restore_fails_reads_mutations_and_readiness() -> TestResult {
+    run("per_scope_history", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let guards = AdmissionGuardStore::from_root(root.clone());
+            let a = scope(1)?;
+            let b = scope(2)?;
+            let node1 = register_proof(&root, 1, None).await?;
+            let node2 = register_proof(&root, 2, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+
+            let now = db_now(&pool).await?;
+            assert_eq!(
+                publish_runtime(&guards, runtime_change(a, None, 1, true, now), now).await?,
+                GuardPublicationDisposition::Applied
+            );
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: a,
+                            target: node1.fact(),
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        2,
+                        AssignmentCommand::Replace {
+                            scope: a,
+                            predecessor: first.assignment.predecessor(),
+                            target: node2.fact(),
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        3,
+                        AssignmentCommand::Assign {
+                            scope: b,
+                            target: node2.fact(),
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(high_water(&pool).await?.0, "3");
+
+            // Restore only A's current row to its revision-1 receipt. All three
+            // receipts and the namespace high-water deliberately survive.
+            let mut restore = pool.begin().await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignments DISABLE TRIGGER game_runtime_scope_assignment_guard")
+                .execute(&mut *restore).await?;
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignments a SET \
+                 ownership_generation=r.ownership_generation, state=r.state, holder_node_id=r.holder_node_id, \
+                 holder_registration_revision=r.holder_registration_revision, source_revision=r.source_revision, \
+                 decision_identity=r.decision_identity, operation_key=r.operation_key, decided_at=r.decided_at \
+                 FROM game_runtime_scope_assignment_receipts r \
+                 WHERE a.scope_key=r.scope_key AND r.source_revision=1",
+            ).execute(&mut *restore).await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignments ENABLE TRIGGER game_runtime_scope_assignment_guard")
+                .execute(&mut *restore).await?;
+            restore.commit().await?;
+
+            assert!(root.read_runtime_scope_assignment(a).await.is_err());
+            let mutation = request(
+                4,
+                AssignmentCommand::Replace {
+                    scope: a,
+                    predecessor: first.assignment.predecessor(),
+                    target: node2.fact(),
+                },
+            )?;
+            assert!(matches!(
+                writer.submit(&mutation).await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            assert_eq!(high_water(&pool).await?.0, "3");
+
+            let a_key: Vec<u8> = sqlx::query_scalar(
+                "SELECT scope_key FROM game_runtime_scope_assignment_receipts WHERE source_revision=1",
+            ).fetch_one(&pool).await?;
+            let attested: bool = sqlx::query_scalar(
+                "SELECT game_runtime_attest_readiness($1, encode($2, 'hex')::uuid, $3::numeric, $4)",
+            )
+            .bind(a_key)
+            .bind(node1.fact().node_id().as_bytes().as_slice())
+            .bind(node1.fact().registration_revision().to_string())
+            .bind([1_u8; 32].as_slice())
+            .fetch_one(&pool).await?;
+            assert!(!attested);
+            let fenced = current_runtime(&guards, a).await?;
+            assert!(matches!(
+                publish_ready(
+                    &root,
+                    &node1,
+                    runtime_change(a, Some(&fenced), 1, true, now),
+                    now
+                )
+                .await,
+                Err(AssignmentError::NotCurrentHolder)
+            ));
+            assert_eq!(
+                runtime_ready(&current_runtime(&guards, a).await?),
+                Some((1, false))
+            );
+
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn intermediate_receipt_hole_cannot_be_crossed() -> TestResult {
+    run("receipt_hole", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let node1 = register(&root, 1, None).await?;
+            let node2 = register(&root, 2, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: scope(1)?,
+                            target: node1,
+                        },
+                    )?)
+                    .await,
+            )?;
+            let second = committed(
+                writer
+                    .submit(&request(
+                        2,
+                        AssignmentCommand::Replace {
+                            scope: scope(1)?,
+                            predecessor: first.assignment.predecessor(),
+                            target: node2,
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        3,
+                        AssignmentCommand::Replace {
+                            scope: scope(1)?,
+                            predecessor: second.assignment.predecessor(),
+                            target: node1,
+                        },
+                    )?)
+                    .await,
+            )?;
+            committed(
+                writer
+                    .submit(&request(
+                        4,
+                        AssignmentCommand::Assign {
+                            scope: scope(2)?,
+                            target: node2,
+                        },
+                    )?)
+                    .await,
+            )?;
+
+            // Revision 2 is neither the namespace maximum nor the latest receipt
+            // for its scope, so only the explicit continuity proof catches it.
+            sqlx::query("ALTER TABLE game_runtime_scope_assignment_receipts DISABLE TRIGGER game_runtime_scope_assignment_receipt_immutable")
+                .execute(&pool).await?;
+            sqlx::query(
+                "DELETE FROM game_runtime_scope_assignment_receipts WHERE source_revision=2",
+            )
+            .execute(&pool)
+            .await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignment_receipts ENABLE TRIGGER game_runtime_scope_assignment_receipt_immutable")
+                .execute(&pool).await?;
+            assert!(root.read_runtime_scope_assignment(scope(1)?).await.is_err());
+            assert!(matches!(
+                writer
+                    .submit(&request(
+                        5,
+                        AssignmentCommand::Assign {
+                            scope: scope(3)?,
+                            target: node1,
+                        }
+                    )?)
+                    .await,
+                Err(AssignmentError::Ambiguous)
+            ));
+            assert_eq!(high_water(&pool).await?.0, "4");
             Ok(())
         })
     })
