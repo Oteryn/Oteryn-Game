@@ -79,15 +79,18 @@ jobs:
           assert counts["fetched_pages"] == counts["discovered_pages"]
           assert counts["pages_with_infobox"] + counts["pages_without_infobox"] == counts["discovered_pages"]
           assert counts["source_shapes"] == {
-              "INFOBOX_ITEM": counts["pages_with_infobox"],
+              "INFOBOX_ITEM": counts["pages_with_infobox"] - counts["infobox_parse_errors"],
+              "INFOBOX_ITEM_PARSE_ERROR": counts["infobox_parse_errors"],
               "NO_INFOBOX_ITEM": counts["pages_without_infobox"],
           }
+          assert sum(counts["source_shapes"].values()) == counts["discovered_pages"]
           assert counts["distinct_infobox_fields"] > 0
           invariants = manifest["invariants"]
           assert invariants["wiki_first_discovery"] is True
           assert invariants["starts_from_crystal_38157"] is False
           assert invariants["source_shape_partition_complete"] is True
           assert invariants["no_infobox_member_dropped"] is True
+          assert invariants["infobox_conflict_never_guessed"] is True
           assert invariants["identity_resolution_performed"] is False
           assert invariants["semantic_promotion_performed"] is False
           assert invariants["raw_long_form_prose_collected"] is False
