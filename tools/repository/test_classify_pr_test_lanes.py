@@ -308,6 +308,7 @@ def test_large_pr_fallback(module):
         git(root, "add", ".")
         git(root, "commit", "-qm", "large")
         after = git(root, "rev-parse", "HEAD")
+        git(root, "checkout", "-q", before)
         old_cwd = os.getcwd()
         os.chdir(root)
         try:
