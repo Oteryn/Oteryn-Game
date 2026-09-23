@@ -4,18 +4,18 @@
 task_id: OTV2-20260923-tibiawiki-worldproject-v2-full-coverage
 title: TibiaWiki full content-schema coverage and WorldProject/v2 closure
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/tibiawiki-worldproject-v2-full-coverage-20260923
 pr: 798
 base_sha: aabf0b9a30a6153b7e34d2afedcb1b2b19c27fd6
-head_sha: 34977f8eca76718ddaf44325b9a57ed158c2ce02
+head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous TibiaWiki coverage + Content/World schema writer"
 created_at: 2026-09-23T18:33:00+02:00
-updated_at: 2026-09-23T18:33:00+02:00
+updated_at: 2026-09-23T20:20:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/v2.rs
@@ -80,13 +80,13 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Wiki domains/categories/templates/infobox parameter families and exceptional systems are classified in one committed coverage manifest.
-- [ ] Every material concept has exactly one Oteryn owner/disposition and UNCLASSIFIED=0.
-- [ ] Static document/book identity and Item->Document binding are representable without putting player-written text in WorldProject.
-- [ ] Static achievement, charm/progression-definition, outfit/mount, creature/bestiary/bosstiary/familiar, ability, house, quest, encounter/event and recipe facts have a typed or explicitly justified existing home.
-- [ ] Mutable current state remains outside WorldProject/v2.
-- [ ] No project_v3, second Item/Creature model, arbitrary executable blob or copied copyrighted wiki corpus.
-- [ ] Existing v2 canonical bytes remain unchanged when all new optional collections/profiles are absent.
+- [x] Wiki domains/categories/templates/infobox parameter families and exceptional systems are classified in one committed coverage manifest.
+- [x] Every material concept has exactly one Oteryn owner/disposition and UNCLASSIFIED=0.
+- [x] Static document/book identity and Item->Document binding are representable without putting player-written text in WorldProject.
+- [x] Static achievement, charm/progression-definition, outfit/mount, creature/bestiary/bosstiary/familiar, ability, house, quest, encounter/event and recipe facts have a typed or explicitly justified existing home.
+- [x] Mutable current state remains outside WorldProject/v2.
+- [x] No project_v3, second Item/Creature model, arbitrary executable blob or copied copyrighted wiki corpus.
+- [x] Existing v2 canonical bytes remain unchanged when all new optional collections/profiles are absent.
 - [ ] Focused tests plus repository-required exact-head PR qualification pass.
 - [ ] Protected integration uses only the bound Merge Queue route; no direct merge or generic auto-merge substitute.
 
@@ -96,19 +96,19 @@ No bulk copying of TibiaWiki prose/assets, no full content population, no new ru
 
 ## Implementation / findings
 
-The earlier checkpoint is accepted only as a partial seed. Continuation expanded discovery through rendered Special:Categories/AllPages, core infobox/template families and modern system pages. Confirmed material gaps include static Document content identity/binding, Achievement definition, Charm definition, typed Creature/Ability authoring overlays, Outfit/Mount definitions, immutable House/Quest/Encounter profiles and typed crafting recipes. Bestiary/Bosstiary/Familiar are modeled as overlays of existing Creature rather than duplicate creature families. Mutable progress/assignments/current event state are routed to Character/Account/House/Event owners.
+The earlier checkpoint is accepted only as a partial seed. Continuation expanded discovery through rendered Special:Categories/AllPages, core infobox/template families and modern system pages. The committed coverage manifest now contains 49 classified structured concept records across 19 domain groups with UNCLASSIFIED=0. Material representation gaps are closed by static Document/Area/Achievement/Outfit/Mount/Charm definitions, Service recipes and typed source-only Creature/Ability/Quest/House/Encounter/WorldObject authoring profiles. Bestiary/Bosstiary/Familiar reuse Creature identity rather than creating duplicate systems. Mutable progress/assignments/current event state remain with Character/Account/House/Event owners. Placement parent chains now fail closed on missing parent, cross-world/map parent, self-parent and cycles.
 
 Integration capability preflight: this session exposes direct merge and generic auto-merge only; bound META 3.1 requires native exact-head merge-async with merge_action=merge_queue. Therefore implementation/PR qualification may proceed, but terminal integration must remain BLOCKED_CAPABILITY_UNAVAILABLE unless that exact route becomes available.
 
 ## Validation
 
 ### Focused
-- command/run: repository PR gate / affected Rust tests after frozen head
-- result: pending
+- command/run: PR #798 repository Merge Gate on frozen exact head
+- result: pending final candidate generation
 
 ### Component/integration
-- command/run: WorldProject/v2 canonical round-trip and strict-validation tests
-- result: pending
+- command/run: `content_world_project_v2` via repository workspace tests
+- result: pending final candidate generation
 
 ### E2E
 - scenario: NOT_APPLICABLE; candidate-only source schema has no executable runtime lowering
@@ -126,8 +126,8 @@ Integration capability preflight: this session exposes direct merge and generic 
 
 - exact head: pending
 - method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- material findings: pre-freeze self-review repaired rustfmt drift, corrected coverage record count 38 -> 49, and added fail-closed placement-parent cycle detection + regression test
+- verdict: pending final exact-head whole-diff review
 
 ## Independent review
 
@@ -149,8 +149,8 @@ Integration capability preflight: this session exposes direct merge and generic 
 ## Context checkpoint
 
 ~~~yaml
-last_progress: PR #798 opened; wiki-wide coverage manifest and additive typed WorldProject/v2 candidate published; first governance run exposed missing PR binding
-status: implementing
+last_progress: coverage manifest closed at 49 records / 19 domain groups / UNCLASSIFIED=0; schema, tests, architecture and pre-freeze self-review repairs published to PR #798
+status: validating
 branch: agent/tibiawiki-worldproject-v2-full-coverage-20260923
 head_sha: null
 pr: null
@@ -170,6 +170,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: integration merge-async unavailable in current session only
-next_action: rerun exact-head PR qualification after PR binding repair and fix only concrete CI findings
+blocker: exact-head PR qualification pending; terminal integration requires governed native merge-async route
+next_action: freeze current authored state, run exact-head PR qualification, repair only concrete material findings
 ~~~
