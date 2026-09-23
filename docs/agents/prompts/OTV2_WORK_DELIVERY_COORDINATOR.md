@@ -27,25 +27,25 @@ If unique control-plane authority cannot be proven, return `POLICY_CONFLICT` and
 
 ## Execution-capability preflight
 
-Before dispatching any mutating worker, resolve the execution surface and prove one permitted authoring/publication route plus every required-validation route.
+Ordinary Work mutation uses one default lifecycle:
 
-Permitted mutation routes:
+`AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`
 
-- `isolated_git` — isolated checkout/worktree with guarded normal Git publication of the exact candidate;
-- `api_native_authoring` — repository-native high-level file mutations on one exclusively allocated task branch before candidate freeze;
-- `atomic_api_candidate` — one server-side expected-head mutation that creates the complete bounded successor candidate atomically.
+The default authoring route is `api_native_authoring`: repository-native high-level file writes on one exclusively allocated task branch before candidate freeze. Use `isolated_git` only when its normal guarded publication path is already proven on the current execution surface and the task actually benefits from local Git. `atomic_api_candidate` is recovery/special-case META machinery, not a routine worker choice and not an ordinary worker route.
 
-For `api_native_authoring`, one writer must own the branch. Fresh-read the live branch head before each mutation. Unexpected movement is writer/state drift. Bounded sequential high-level file mutations are WIP only before freeze. Record the SHA returned by the final authoring write as `expected_final_authoring_head`; fresh-read the branch and require it to equal `expected_final_authoring_head` before freeze. Then verify the complete delta and owned paths and freeze that exact fenced remote head as the candidate. Candidate-specific validation/review starts only after freeze.
+Before dispatching a mutating worker, prove the selected authoring route and every required-validation route. Do not begin implementation with an unknown publication path or a plan to "find a publisher later".
 
-Sequential API writes must never reconstruct a selected local Git candidate, mutate a frozen candidate or work around shared/ambiguous custody. An `atomic_api_candidate` precondition mismatch must create no commit and move no branch; a successful mutation creates one bounded successor candidate and invalidates any candidate-specific evidence for a superseded head.
+For `api_native_authoring`, one writer owns the branch. Fresh-read the live branch head before every write and stop on unexpected movement. Intermediate high-level API writes are WIP. After the final authoring write, bind the SHA returned by that write, fresh-read the branch, require exact equality, verify the complete bounded delta and owned paths, and freeze that exact remote SHA. Candidate-specific validation/review starts only after freeze.
+
+A repair after freeze is not a special publication problem: return to AUTHORING on the same allocated branch, produce a new head, freeze the new exact SHA, and rerun candidate-specific evidence. Never mutate a frozen candidate while reusing evidence from the old head.
 
 For every concrete entry in `required_validation`, bind an authorized executable route before worker release. A compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` when it is required.
 
-If a lane cannot prove one permitted mutation route, or every required-validation route, do not release that mutating worker. Mark only that lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE`, record the missing capability and continue legal path-disjoint work.
+If the default API route is unavailable and no already-proven guarded Git route exists, mark only that lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE`, record the missing capability and continue legal path-disjoint work.
 
-Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing local Git capability is not a Remote Desktop exception when either `api_native_authoring` or `atomic_api_candidate` and every required-validation route are independently proven. Remote Desktop remains exception-only for a separately valid host-specific requirement with exact owner authorization.
+Missing local Git, credentials or push capability does not block ordinary work when the default API authoring route and required validation routes are proven, and is never a reason to request Remote Desktop. Remote Desktop remains exception-only for a separately valid host-specific requirement with exact owner authorization.
 
-Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, reconstruction of an existing candidate through sequential per-file Contents writes, a Remote Desktop convenience fallback or an unproven validation surface. Bounded sequential high-level Contents/API authoring is valid only before freeze on the exclusively allocated task branch.
+Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, post-freeze sequential file writes, force/reset/rebase, or a Remote Desktop convenience fallback to publish ordinary work. Recovery-specific atomic publication remains governed by root/META policy and the active control plane.
 
 ### Stable-head / Merge Queue freshness
 
@@ -69,9 +69,9 @@ issue: <governing issue>
 task_id: <unique task>
 lane_id: <lane>
 branch: <existing or allocated branch>
-execution_route: <isolated_git | api_native_authoring | atomic_api_candidate | read_only>
+execution_route: <api_native_authoring | isolated_git | read_only>
 execution_surface: <proven surface or locator>
-publication_route: <guarded_git | frozen_api_authored_head | atomic_expected_head_api | none>
+frozen_head: <sha | null>
 review_requirement: <none | required>
 review_authorization: <standing_required_review | task_specific | none>
 review_trigger_owner: <control_plane | standalone_task_owner | none>
