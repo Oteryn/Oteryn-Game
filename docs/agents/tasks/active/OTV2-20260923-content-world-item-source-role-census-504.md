@@ -29,17 +29,17 @@ Protected source: `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e815592692
 - range-expansion extra IDs over definition denominator: 20,492
 
 Role census:
-- PLAYER_CATALOG_STRONG: 4,997 definitions / 5,514 IDs
+- PLAYER_CATALOG_STRONG: 4,935 definitions / 5,452 IDs
 - WORLD_OBJECT_INTERACTION: 5,163 / 13,001
 - TECHNICAL_PLACEHOLDER: 652 / 5,440
-- STATE_VARIANT_DECAY: 3,401 / 3,409
-- STATE_VARIANT_TRANSFORM: 274 / 307
+- STATE_VARIANT_DECAY: 3,414 / 3,422
+- STATE_VARIANT_TRANSFORM: 287 / 320
 - RANGE_VARIANT_NO_FIELDS: 1,024 / 7,835
 - DIRECT_SIMPLE_NO_FIELDS: 866 / 866
 - SIMPLE_PRESENTATION_CANDIDATE: 1,139 / 1,601
-- RESIDUAL_OTHER: 149 / 184
+- RESIDUAL_OTHER: 185 / 220
 
-Strong player lower bound = 4,997 definitions. Strong player plus unresolved direct/simple band = 7,151 definitions / 8,165 IDs. This is a scaling estimate, not Reference truth.
+Strong player lower bound = 4,935 definitions. Strong player plus unresolved direct/simple band = 7,125 definitions / 8,139 IDs. This is a scaling estimate, not Reference truth.
 
 ## Validation
 
