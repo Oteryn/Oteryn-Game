@@ -144,3 +144,42 @@ pub async fn query(
     }
     Ok(decoded)
 }
+
+/// Configured issuer namespace of the Character bootstrap-intent producer.
+pub const CHARACTER_BOOTSTRAP_INTENT_ISSUER: &str = "OTERYN_PLATFORM_CHARACTER_AUTHORITY";
+const CHARACTER_BOOTSTRAP_INTENT_REQUEST_BYTES: usize = 256;
+const CHARACTER_BOOTSTRAP_INTENT_RESPONSE_BYTES: usize = 4096;
+
+/// Narrow `CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1` reconciliation read over
+/// the purpose-separated TLS 1.3 mTLS producer. Transport only: the exact
+/// bounded body is returned for the Game intent decoder. Every non-200 producer
+/// outcome (malformed, unauthorized, unknown or expired, unavailable) is bounded
+/// unavailability and never a fallback authorization.
+pub async fn read_character_bootstrap_intent(
+    descriptor: &descriptor::ProducerDescriptor,
+    request_body: &str,
+    permit: &mut QueuePermit<'_>,
+) -> Result<Vec<u8>, SourceError> {
+    permit.require_active()?;
+    if descriptor.source_authority != CHARACTER_BOOTSTRAP_INTENT_ISSUER {
+        return Err(SourceError::InvalidDescriptor);
+    }
+    if request_body.is_empty() || request_body.len() > CHARACTER_BOOTSTRAP_INTENT_REQUEST_BYTES {
+        return Err(SourceError::InvalidInput);
+    }
+    let started = tokio::time::Instant::now();
+    let raw = http1_mtls::exchange(
+        descriptor,
+        descriptor::Operation::ReadCharacterBootstrapIntentV1,
+        request_body,
+        permit,
+    )
+    .await?;
+    if raw.is_empty() || raw.len() > CHARACTER_BOOTSTRAP_INTENT_RESPONSE_BYTES {
+        return Err(SourceError::InvalidInput);
+    }
+    if started.elapsed() >= std::time::Duration::from_millis(EXCHANGE_DEADLINE_MS) {
+        return Err(SourceError::Unavailable);
+    }
+    Ok(raw)
+}

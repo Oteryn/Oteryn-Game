@@ -4,6 +4,12 @@
 // configured PostgreSQL 17.6 runs count as qualification evidence.
 extern crate self as oteryn_game_server;
 #[allow(dead_code, unused_imports)]
+#[path = "../src/admission_evidence.rs"]
+pub mod admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/character_recovery_fence.rs"]
 pub mod character_recovery_fence;
 #[allow(dead_code, unused_imports)]
@@ -17,9 +23,16 @@ mod durability;
 pub mod foundation;
 
 use durability::DurabilityRoot;
-use durability::character_authority::{BootstrapCommand, CharacterAuthorityError};
+use durability::character_authority::CharacterAuthorityError;
 use durability::character_authority_audit as audit;
+use durability::native_admission_source::{
+    DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
+    SourceObservation,
+};
 use durability::runtime_scope_assignment::{BootstrapSecret, LaunchBinding, NodeIncarnationProof};
+use oteryn_game_server::character_bootstrap_intent::{
+    CharacterBootstrapIntentV1, decode_producer_response,
+};
 use oteryn_game_server::character_recovery_fence::{
     CharacterRecoveryError, CharacterRecoveryFenceV1, CharacterRecoveryStore,
     recovery_record_digest,
@@ -261,16 +274,136 @@ async fn register(
         .map_err(|e| format!("{e:?}"))?)
 }
 
-fn command(operation: u8, account: u8) -> TestResult<BootstrapCommand> {
-    Ok(BootstrapCommand {
-        operation_id: id(operation),
-        account_id: AccountId::from_bytes(id(account)).map_err(|e| format!("{e:?}"))?,
-        world_id: WorldId::from_bytes(id(90)).map_err(|e| format!("{e:?}"))?,
-        profile_revision: "profile-1".to_owned(),
-        ruleset_revision: "ruleset-1".to_owned(),
-        content_revision: "content-1".to_owned(),
-        starter_template_revision: "starter-1".to_owned(),
-    })
+fn uuid(bytes: [u8; 16]) -> String {
+    let hex: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &hex[0..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..32]
+    )
+}
+
+fn now_secs() -> TestResult<i64> {
+    Ok(i64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs(),
+    )?)
+}
+
+/// Exact Platform producer decision (`CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1`).
+#[derive(Clone)]
+struct Wire {
+    operation: u8,
+    account: u8,
+    world: u8,
+    revision: i64,
+    decision: i64,
+    content: &'static str,
+    variant: &'static str,
+    issued: i64,
+    expires: i64,
+}
+
+impl Wire {
+    fn new(operation: u8, account: u8, revision: i64) -> TestResult<Self> {
+        let now = now_secs()?;
+        Ok(Self {
+            operation,
+            account,
+            world: 90,
+            revision,
+            decision: revision,
+            content: "content-1",
+            variant: "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
+            issued: now - 1,
+            expires: now + 120,
+        })
+    }
+
+    fn json(&self) -> String {
+        format!(
+            r#"{{"contract_version":1,"variant":"{}","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","issuer_decision_id":"3f0c5b7e-1d2a-4c3b-9a8f-{:012x}","source_revision":"{}","operation_id":"{}","operation":"INITIAL_CHARACTER_BOOTSTRAP","account_id":"{}","target_world_id":"{}","interpretation_context":{{"profile_revision":"profile-1","ruleset_revision":"ruleset-1","content_revision":"{}","starter_template_revision":"starter-1"}},"issued_at_source":"{}","expires_at_source":"{}","audience":"OTERYN_GAME_CHARACTER_AUTHORITY"}}"#,
+            self.variant,
+            self.decision,
+            self.revision,
+            uuid(id(self.operation)),
+            uuid(id(self.account)),
+            uuid(id(self.world)),
+            self.content,
+            self.issued,
+            self.expires
+        )
+    }
+
+    fn decode(&self) -> TestResult<CharacterBootstrapIntentV1> {
+        decode_producer_response(self.json().as_bytes(), id(self.operation))
+            .map_err(|e| format!("{e:?}").into())
+    }
+}
+
+fn intent(operation: u8, account: u8, revision: i64) -> TestResult<CharacterBootstrapIntentV1> {
+    Wire::new(operation, account, revision)?.decode()
+}
+
+static S2_REVISION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+async fn initialize_s2(root: &DurabilityRoot, node: &NodeIncarnationProof) -> TestResult {
+    root.initialize_native_admission_source(
+        node,
+        FreshStoreProvenance {
+            namespace: "store:one".into(),
+            authorization: "owner:approved".into(),
+            source_authority: "platform".into(),
+            initialized_at: 10,
+        },
+        DescriptorRegistration {
+            revision: 1,
+            facts: vec![1],
+            installed_at: 10,
+        },
+    )
+    .await
+    .map_err(|e| format!("initialize S2: {e:?}"))?;
+    Ok(())
+}
+
+/// Accept one exact authenticated S1 account-security observation into S2.
+async fn observe_account(
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    account: u8,
+    allowed: bool,
+    observed_at: i64,
+) -> TestResult {
+    let revision = S2_REVISION.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let account_id = uuid(id(account));
+    let body = format!(
+        r#"{{"version":1,"operation":"ReadAccountSecurityV1","result":"observed","source_authority":"platform","source_revision":"{revision}","decision_identity":"{revision}","source_observed_at":"{observed_at}","clock_uncertainty_seconds":"0","account_id":"{account_id}","purpose":"platform_security","scope":"fresh_admission","allowed":{allowed},"minimum_valid_generation":"1"}}"#
+    );
+    root.accept_native_source_observation(
+        node,
+        SourceObservation {
+            source_authority: "platform".into(),
+            operation: NativeSourceOperation::ReadAccountSecurityV1,
+            subject: NativeSourceSubject::account_security(account_id)
+                .map_err(|e| format!("{e:?}"))?,
+            source_revision: revision,
+            decision_identity: revision.to_string(),
+            observed_at,
+            semantic_facts: body.into_bytes(),
+        },
+    )
+    .await
+    .map_err(|e| format!("accept S2 observation: {e:?}"))?;
+    Ok(())
+}
+
+async fn allow(root: &DurabilityRoot, node: &NodeIncarnationProof, account: u8) -> TestResult {
+    observe_account(root, node, account, true, now_secs()?).await
 }
 
 async fn count(pool: &sqlx::PgPool, sql: &'static str) -> TestResult<i64> {
@@ -317,30 +450,33 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .await
         .map_err(|e| format!("{e:?}"))?;
     let node = register(&root, 1, None).await?;
+    initialize_s2(&root, &node).await?;
 
     // Mutation, receipt, audit event and outbox commit together; a replay of the
     // exact operation returns the same stable identities, a changed one conflicts.
+    let first_intent = intent(21, 31, 1)?;
+    allow(&root, &node, 31).await?;
     let first = root
-        .bootstrap_character(&authority, &node, command(21, 31)?)
+        .bootstrap_character(&authority, &node, &first_intent)
         .await
         .map_err(|e| format!("{e:?}"))?;
     let replay = root
-        .bootstrap_character(&authority, &node, command(21, 31)?)
+        .bootstrap_character(&authority, &node, &first_intent)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replay, first);
     assert!(matches!(
-        root.bootstrap_character(&authority, &node, command(21, 32)?)
+        root.bootstrap_character(&authority, &node, &intent(21, 32, 2)?)
             .await,
         Err(CharacterAuthorityError::Conflict)
     ));
     // Operation identities must be canonical UUIDv7 (version and RFC variant).
-    let mut invalid = command(23, 34)?;
-    invalid.operation_id[8] = 0x40;
-    assert!(matches!(
-        root.bootstrap_character(&authority, &node, invalid).await,
-        Err(CharacterAuthorityError::Rejected)
-    ));
+    let mut operation = id(23);
+    operation[8] = 0x40;
+    let raw = Wire::new(23, 34, 2)?
+        .json()
+        .replace(&uuid(id(23)), &uuid(operation));
+    assert!(decode_producer_response(raw.as_bytes(), operation).is_err());
     let decoded = audit::CharacterAuthorityBootstrappedV1::decode(first.payload.as_slice())?;
     assert_eq!(decoded.account_id, id(31).to_vec());
     assert_eq!(decoded.character_id, first.character_id.as_bytes().to_vec());
@@ -359,9 +495,10 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     );
 
     // A superseded incarnation cannot mutate; its successor can.
+    allow(&root, &node, 33).await?;
     let successor = register(&root, 2, Some(1)).await?;
     let stale = root
-        .bootstrap_character(&authority, &node, command(22, 33)?)
+        .bootstrap_character(&authority, &node, &intent(22, 33, 3)?)
         .await;
     assert!(
         matches!(stale, Err(CharacterAuthorityError::Unavailable(_))),
@@ -372,6 +509,9 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         1
     );
     let node = successor;
+    root.claim_native_admission_source_custody(&node)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
 
     // At-least-once publication: pending until the exact acknowledgement,
     // and acknowledging again is a no-op.
@@ -629,7 +769,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     // Payload bytes are re-derived from retained authority after expiry.
     assert_eq!(current.payload, first.payload);
     let replayed = root
-        .bootstrap_character(&authority, &node, command(21, 31)?)
+        .bootstrap_character(&authority, &node, &first_intent)
         .await
         .map_err(|e| format!("{e:?}"))?;
     assert_eq!(replayed.character_id, first.character_id);
@@ -652,8 +792,9 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
 
     // Retained payloads are checked semantically, not only by their stored hash;
     // a receipt without its root is rejected.
+    allow(&root, &node, 35).await?;
     let second = root
-        .bootstrap_character(&authority, &node, command(24, 35)?)
+        .bootstrap_character(&authority, &node, &intent(24, 35, 4)?)
         .await
         .map_err(|e| format!("{e:?}"))?;
     let mut tamper = pool.begin().await?;
@@ -680,7 +821,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .bind(second.character_id.as_bytes().as_slice())
         .execute(&mut *repair)
         .await?;
-    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id, occurred_at) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid, 'orphan-build', 1)")
+    sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id, occurred_at, issuer_decision_id, intent_source_revision, issued_at_source, expires_at_source) VALUES (encode($1,'hex')::uuid, '\\x01'::bytea, encode($2,'hex')::uuid, encode($3,'hex')::uuid, encode($2,'hex')::uuid, 1, encode($1,'hex')::uuid, encode($1,'hex')::uuid, 'orphan-build', 1, encode($1,'hex')::uuid, 1000, 1, 2)")
         .bind(id(25).as_slice())
         .bind(id(36).as_slice())
         .bind(id(37).as_slice())
@@ -899,14 +1040,17 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     drop(transition);
     let concurrent_fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
     let roots_before: i64 = count(&pool, "SELECT count(*) FROM game_character_roots").await?;
+    let reuse = [intent(40, 41, 5)?, intent(40, 42, 6)?];
+    allow(&root, &node, 41).await?;
+    allow(&root, &node, 42).await?;
     // Concurrent reuse of one operation identity with different accounts from two
     // independent roots yields one commit and one deterministic Conflict.
     let url = database.url.clone();
     let barrier = std::sync::Barrier::new(2);
     let outcomes: Vec<String> = std::thread::scope(|scope| {
-        let handles: Vec<_> = [41_u8, 42]
-            .into_iter()
-            .map(|account| {
+        let handles: Vec<_> = reuse
+            .iter()
+            .map(|reused| {
                 let (url, barrier, fence, node) = (&url, &barrier, &concurrent_fence, &node);
                 scope.spawn(move || -> String {
                     let run = || -> TestResult<String> {
@@ -922,10 +1066,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
                                 .map_err(|e| format!("{e:?}"))?;
                             barrier.wait();
                             Ok(
-                                match root
-                                    .bootstrap_character(&authority, node, command(40, account)?)
-                                    .await
-                                {
+                                match root.bootstrap_character(&authority, node, reused).await {
                                     Ok(_) => "committed".to_owned(),
                                     Err(CharacterAuthorityError::Conflict) => "conflict".to_owned(),
                                     Err(error) => format!("{error:?}"),
@@ -1003,6 +1144,365 @@ async fn fresh_refusal(database: &Database) -> TestResult {
         0
     );
     drop(fresh);
+    pool.close().await;
+    std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+async fn totals(pool: &sqlx::PgPool) -> TestResult<[i64; 5]> {
+    Ok([
+        count(pool, "SELECT count(*) FROM game_character_account_guards").await?,
+        count(pool, "SELECT count(*) FROM game_character_roots").await?,
+        count(
+            pool,
+            "SELECT count(*) FROM game_character_operation_receipts",
+        )
+        .await?,
+        count(pool, "SELECT count(*) FROM game_character_audit_outbox").await?,
+        count(
+            pool,
+            "SELECT count(*) FROM game_character_bootstrap_intent_floors",
+        )
+        .await?,
+    ])
+}
+
+async fn floor(pool: &sqlx::PgPool) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT source_revision FROM game_character_bootstrap_intent_floors WHERE issuer_scope = 1",
+    )
+    .fetch_one(pool)
+    .await?)
+}
+
+/// Run each intent from an independent root on its own thread at one barrier.
+fn concurrently(
+    url: &str,
+    fence: &oteryn_game_server::character_recovery_fence::SealedCharacterRecoveryFence<'_>,
+    node: &NodeIncarnationProof,
+    intents: &[CharacterBootstrapIntentV1],
+) -> Vec<Result<durability::character_authority::CharacterAuthorityRecord, String>> {
+    let barrier = std::sync::Barrier::new(intents.len());
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = intents
+            .iter()
+            .map(|intent| {
+                let barrier = &barrier;
+                scope.spawn(move || {
+                    let run = || -> TestResult<Result<_, String>> {
+                        tokio::runtime::Builder::new_current_thread()
+                            .enable_all()
+                            .build()?
+                            .block_on(async {
+                                let root = DurabilityRoot::connect_test_runtime(url)?;
+                                assert!(root.maintain_ready_once().await?);
+                                let authority = root
+                                    .open_character_authority(fence)
+                                    .await
+                                    .map_err(|e| format!("{e:?}"))?;
+                                barrier.wait();
+                                Ok(root
+                                    .bootstrap_character(&authority, node, intent)
+                                    .await
+                                    .map_err(|e| format!("{e:?}")))
+                            })
+                    };
+                    run().unwrap_or_else(|error| Err(format!("error: {error}")))
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .map(|handle| handle.join().unwrap_or_else(|_| Err("panicked".to_owned())))
+            .collect()
+    })
+}
+
+#[test]
+fn authenticated_intent_qualification_matrix() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "intent").await?;
+            let result = intent_matrix(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+async fn intent_matrix(database: &Database) -> TestResult {
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    let retained = std::env::temp_dir().join(format!("oteryn-character-intent-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    {
+        let fresh = recovery
+            .authorize_fresh_store(id(11), 100)
+            .map_err(|e| format!("{e:?}"))?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    let fence = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    let authority = root
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    let node = register(&root, 1, None).await?;
+    initialize_s2(&root, &node).await?;
+    let rejected = |result: Result<_, CharacterAuthorityError>| {
+        matches!(result, Err(CharacterAuthorityError::Rejected))
+    };
+
+    // Neither a caller-filled command nor another variant is an intent.
+    let caller_filled = format!(
+        r#"{{"account_id":"{}","target_world_id":"{}"}}"#,
+        uuid(id(70)),
+        uuid(id(90))
+    );
+    assert!(decode_producer_response(caller_filled.as_bytes(), id(60)).is_err());
+    let mut user_create = Wire::new(60, 70, 10)?;
+    user_create.variant = "PLATFORM_USER_CREATE";
+    assert!(user_create.decode().is_err());
+
+    // Current allowed S1/S2 account security is an independent prerequisite:
+    // absent, denied or stale evidence rejects with zero authoritative writes.
+    let valid = intent(60, 70, 10)?;
+    assert!(rejected(
+        root.bootstrap_character(&authority, &node, &valid).await
+    ));
+    observe_account(&root, &node, 70, false, now_secs()?).await?;
+    assert!(rejected(
+        root.bootstrap_character(&authority, &node, &valid).await
+    ));
+    observe_account(&root, &node, 70, true, now_secs()? - 10).await?;
+    assert!(rejected(
+        root.bootstrap_character(&authority, &node, &valid).await
+    ));
+    assert_eq!(totals(&pool).await?, [0; 5]);
+
+    // Valid intent + current security + process proof + recovery fence: exactly
+    // one Character, revision, receipt, audit event, outbox row and floor.
+    allow(&root, &node, 70).await?;
+    let first = root
+        .bootstrap_character(&authority, &node, &valid)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(totals(&pool).await?, [1, 1, 1, 1, 1]);
+    assert_eq!(floor(&pool).await?, 10);
+    let binding: Vec<u8> = sqlx::query_scalar(
+        "SELECT command_binding FROM game_character_operation_receipts WHERE operation_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(60).as_slice())
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(
+        binding,
+        valid.binding(),
+        "receipt binds the complete intent"
+    );
+
+    // Exact retry before or after a lost response returns the same result;
+    // reconciliation by operation identity alone never re-authorizes.
+    assert_eq!(
+        root.bootstrap_character(&authority, &node, &valid)
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        first
+    );
+    assert_eq!(
+        root.reconcile_character_bootstrap(&authority, id(60))
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        Some(first.clone())
+    );
+    assert_eq!(
+        root.reconcile_character_bootstrap(&authority, id(99))
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        None
+    );
+
+    // Same operation with changed AccountId, world or interpretation conflicts.
+    let mut changed_world = Wire::new(60, 70, 11)?;
+    changed_world.world = 91;
+    let mut changed_context = Wire::new(60, 70, 11)?;
+    changed_context.content = "content-2";
+    for changed in [
+        intent(60, 71, 11)?,
+        changed_world.decode()?,
+        changed_context.decode()?,
+    ] {
+        assert!(matches!(
+            root.bootstrap_character(&authority, &node, &changed).await,
+            Err(CharacterAuthorityError::Conflict)
+        ));
+    }
+
+    // A lower source revision is stale; an equal one naming another decision
+    // is a contradiction; expired and future intents are rejected.
+    allow(&root, &node, 72).await?;
+    let mut contradiction = Wire::new(62, 72, 10)?;
+    contradiction.decision = 99;
+    let mut expired = Wire::new(63, 72, 12)?;
+    (expired.issued, expired.expires) = (now_secs()? - 200, now_secs()? - 1);
+    let mut future = Wire::new(63, 72, 12)?;
+    (future.issued, future.expires) = (now_secs()? + 30, now_secs()? + 60);
+    for refused in [
+        intent(61, 72, 9)?,
+        contradiction.decode()?,
+        expired.decode()?,
+        future.decode()?,
+    ] {
+        assert!(rejected(
+            root.bootstrap_character(&authority, &node, &refused).await
+        ));
+    }
+    assert_eq!(totals(&pool).await?, [1, 1, 1, 1, 1]);
+    assert_eq!(floor(&pool).await?, 10);
+
+    // An audit/outbox failure rolls back the whole transaction, including the
+    // intent high-water; the same intent then commits normally.
+    sqlx::raw_sql(
+        "CREATE FUNCTION test_fail_outbox() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected'; END; $$; \
+         CREATE TRIGGER test_fail_outbox BEFORE INSERT ON game_character_audit_outbox FOR EACH ROW EXECUTE FUNCTION test_fail_outbox();",
+    )
+    .execute(&pool)
+    .await?;
+    let after_failure = intent(64, 72, 13)?;
+    assert!(matches!(
+        root.bootstrap_character(&authority, &node, &after_failure)
+            .await,
+        Err(CharacterAuthorityError::Unavailable(_))
+    ));
+    assert_eq!(totals(&pool).await?, [1, 1, 1, 1, 1]);
+    assert_eq!(floor(&pool).await?, 10);
+    sqlx::raw_sql("DROP TRIGGER test_fail_outbox ON game_character_audit_outbox; DROP FUNCTION test_fail_outbox();")
+        .execute(&pool)
+        .await?;
+    allow(&root, &node, 72).await?;
+    root.bootstrap_character(&authority, &node, &after_failure)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(floor(&pool).await?, 13);
+
+    // Concurrent exact retries yield one semantic result.
+    let retried = intent(65, 73, 14)?;
+    allow(&root, &node, 73).await?;
+    let outcomes = concurrently(&database.url, &fence, &node, &[retried.clone(), retried]);
+    let [Ok(left), Ok(right)] = &outcomes[..] else {
+        return Err(format!("{outcomes:?}").into());
+    };
+    assert_eq!(left, right);
+    assert_eq!(totals(&pool).await?, [3, 3, 3, 3, 1]);
+
+    // Concurrent distinct operations serialize: each commits or is refused as
+    // stale by the source high-water, never duplicated or half-written.
+    allow(&root, &node, 74).await?;
+    allow(&root, &node, 75).await?;
+    let outcomes = concurrently(
+        &database.url,
+        &fence,
+        &node,
+        &[intent(66, 74, 15)?, intent(67, 75, 16)?],
+    );
+    let committed = outcomes.iter().filter(|outcome| outcome.is_ok()).count();
+    assert!(
+        committed >= 1
+            && outcomes.iter().all(|outcome| outcome.as_ref().is_ok()
+                || outcome.as_ref().err().map(String::as_str) == Some("Rejected")),
+        "{outcomes:?}"
+    );
+    let roots = i64::try_from(committed)? + 3;
+    assert_eq!(totals(&pool).await?[1..4], [roots, roots, roots]);
+    assert_eq!(floor(&pool).await?, 16);
+
+    // Restart: a new root keeps the exact receipt and floor without re-authorizing.
+    let restarted = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(restarted.maintain_ready_once().await?);
+    let reopened = restarted
+        .open_character_authority(&fence)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        restarted
+            .reconcile_character_bootstrap(&reopened, id(60))
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        Some(first)
+    );
+    assert_eq!(floor(&pool).await?, 16);
+
+    // A replaced #415 process proof is refused independently of the intent.
+    allow(&root, &node, 76).await?;
+    let _successor = register(&root, 2, Some(1)).await?;
+    assert!(matches!(
+        root.bootstrap_character(&authority, &node, &intent(68, 76, 17)?)
+            .await,
+        Err(CharacterAuthorityError::Unavailable(_))
+    ));
+    assert_eq!(floor(&pool).await?, 16);
+
+    // A restore that drops or regresses the retained floor keeps bootstrap closed.
+    drop(reopened);
+    drop(authority);
+    for tamper in [
+        "DELETE FROM game_character_bootstrap_intent_floors",
+        "UPDATE game_character_bootstrap_intent_floors SET source_revision = 15",
+    ] {
+        let mut restore = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *restore)
+            .await?;
+        let kept: (i64, Vec<u8>, Vec<u8>) = sqlx::query_as(
+            "SELECT source_revision, uuid_send(issuer_decision_id), intent_binding FROM game_character_bootstrap_intent_floors",
+        )
+        .fetch_one(&mut *restore)
+        .await?;
+        sqlx::query(sqlx::AssertSqlSafe(tamper.to_owned()))
+            .execute(&mut *restore)
+            .await?;
+        restore.commit().await?;
+        assert!(
+            root.open_character_authority(&fence).await.is_err(),
+            "{tamper}"
+        );
+        let mut repair = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *repair)
+            .await?;
+        sqlx::query("DELETE FROM game_character_bootstrap_intent_floors")
+            .execute(&mut *repair)
+            .await?;
+        sqlx::query("INSERT INTO game_character_bootstrap_intent_floors VALUES (1, $1, encode($2,'hex')::uuid, $3)")
+            .bind(kept.0)
+            .bind(kept.1)
+            .bind(kept.2)
+            .execute(&mut *repair)
+            .await?;
+        repair.commit().await?;
+        root.open_character_authority(&fence)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    // The high-water only advances, even for a direct statement.
+    assert!(
+        sqlx::query("UPDATE game_character_bootstrap_intent_floors SET source_revision = 1")
+            .execute(&pool)
+            .await
+            .is_err()
+    );
+
+    drop(fence);
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
     Ok(())

@@ -93,8 +93,34 @@ CREATE TABLE game_character_operation_receipts (
     server_build_id TEXT NOT NULL CHECK (octet_length(server_build_id) BETWEEN 1 AND 128 AND server_build_id !~ '[^A-Za-z0-9._:/+-]'),
     -- Durable TransactionId identity; unique beyond audit expiry.
     transaction_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(transaction_id)),
+    -- CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1 decision bound by command_binding.
+    issuer_decision_id UUID NOT NULL UNIQUE,
+    intent_source_revision BIGINT NOT NULL UNIQUE CHECK (intent_source_revision > 0),
+    issued_at_source BIGINT NOT NULL CHECK (issued_at_source >= 0),
+    expires_at_source BIGINT NOT NULL,
+    CHECK (expires_at_source > issued_at_source AND expires_at_source - issued_at_source <= 300),
     CHECK (game_character_is_uuid_v7(operation_id))
 );
+
+-- Retained source high-water of the single enabled intent issuer/variant scope
+-- (OTERYN_PLATFORM_CHARACTER_AUTHORITY / OPERATOR_CONTROL_PLANE_BOOTSTRAP).
+-- It only advances, together with the receipt of the decision it names.
+CREATE TABLE game_character_bootstrap_intent_floors (
+    issuer_scope SMALLINT PRIMARY KEY CHECK (issuer_scope = 1),
+    source_revision BIGINT NOT NULL CHECK (source_revision > 0),
+    issuer_decision_id UUID NOT NULL,
+    intent_binding BYTEA NOT NULL CHECK (octet_length(intent_binding) BETWEEN 1 AND 1024)
+);
+
+CREATE FUNCTION game_character_intent_floor_guard() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    IF TG_OP = 'UPDATE' AND NEW.issuer_scope = OLD.issuer_scope
+       AND NEW.source_revision > OLD.source_revision THEN
+        RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'Character bootstrap-intent source high-water only advances' USING ERRCODE = '23514';
+END; $$;
+CREATE TRIGGER game_character_intent_floor_guard BEFORE UPDATE OR DELETE ON game_character_bootstrap_intent_floors
+    FOR EACH ROW EXECUTE FUNCTION game_character_intent_floor_guard();
 
 CREATE FUNCTION game_character_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
     RAISE EXCEPTION 'Character first-slice authority history is immutable' USING ERRCODE = '23514';
@@ -180,6 +206,8 @@ CREATE TRIGGER game_character_operation_receipts_no_truncate BEFORE TRUNCATE ON 
     FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
 CREATE TRIGGER game_character_audit_legal_holds_no_truncate BEFORE TRUNCATE ON game_character_audit_legal_holds
     FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
+CREATE TRIGGER game_character_bootstrap_intent_floors_no_truncate BEFORE TRUNCATE ON game_character_bootstrap_intent_floors
+    FOR EACH STATEMENT EXECUTE FUNCTION game_character_reject_truncate();
 
 REVOKE ALL ON TABLE
     game_character_recovery_admissions,
@@ -187,7 +215,8 @@ REVOKE ALL ON TABLE
     game_character_roots,
     game_character_audit_outbox,
     game_character_operation_receipts,
-    game_character_audit_legal_holds
+    game_character_audit_legal_holds,
+    game_character_bootstrap_intent_floors
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_character_is_uuid_v7(uuid),
@@ -195,5 +224,6 @@ REVOKE ALL ON FUNCTION
     game_character_immutable(),
     game_character_audit_guard(),
     game_character_audit_hold_guard(),
-    game_character_reject_truncate()
+    game_character_reject_truncate(),
+    game_character_intent_floor_guard()
 FROM PUBLIC;

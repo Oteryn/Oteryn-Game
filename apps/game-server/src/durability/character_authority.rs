@@ -11,12 +11,22 @@ use crate::character_recovery_fence::{
     CharacterRecoveryFenceV1, CharacterRecoveryTransition, SealedCharacterRecoveryFence,
     recovery_record_digest,
 };
+use oteryn_game_server::admission_evidence::{Facts, Request, Response, decode_response};
+use oteryn_game_server::character_bootstrap_intent::CharacterBootstrapIntentV1;
 use oteryn_game_server::domain::{AccountId, CharacterId, CharacterRevision, WorldId};
 use sqlx::Row;
 
 type Result<T> = std::result::Result<T, CharacterAuthorityError>;
 const MAX_CONTEXT_BYTES: usize = 128;
 const MAX_OPERATION_BINDING_BYTES: usize = 1024;
+/// Current S1/S2 Platform account-security evidence consumed as an independent
+/// bootstrap prerequisite: the fresh-admission account observation.
+const ACCOUNT_SECURITY_OPERATION: &str = "ReadAccountSecurityV1";
+const ACCOUNT_SECURITY_PURPOSE: &str = "platform_security";
+const ACCOUNT_SECURITY_SCOPE: &str = "fresh_admission";
+/// Existing FND-04 fresh security freshness window (seconds, less the source's
+/// declared clock uncertainty); see `fnd04_verifier::fresh_source_deadline`.
+const ACCOUNT_SECURITY_FRESH_SECONDS: i64 = 5;
 const MAX_HOLD_REASON_BYTES: usize = 512;
 const MAX_AUDIT_BATCH: u16 = 64;
 /// Bounded identity of this server build, recorded with every audit event so a
@@ -63,17 +73,6 @@ fn uuid_v7_shape(value: &[u8; 16]) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BootstrapCommand {
-    pub operation_id: [u8; 16],
-    pub account_id: AccountId,
-    pub world_id: WorldId,
-    pub profile_revision: String,
-    pub ruleset_revision: String,
-    pub content_revision: String,
-    pub starter_template_revision: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharacterAuthorityRecord {
     pub account_id: AccountId,
     pub character_id: CharacterId,
@@ -104,59 +103,36 @@ fn bounded(value: &str) -> bool {
     !value.is_empty() && value.len() <= MAX_CONTEXT_BYTES
 }
 
-fn binding(command: &BootstrapCommand) -> Vec<u8> {
-    let mut value = Vec::with_capacity(MAX_OPERATION_BINDING_BYTES);
-    for part in [
-        command.account_id.as_bytes().as_slice(),
-        command.world_id.as_bytes().as_slice(),
-    ] {
-        value.extend_from_slice(part);
-    }
-    for part in [
-        &command.profile_revision,
-        &command.ruleset_revision,
-        &command.content_revision,
-        &command.starter_template_revision,
-    ] {
-        value.extend_from_slice(&(part.len() as u16).to_be_bytes());
-        value.extend_from_slice(part.as_bytes());
-    }
-    value
-}
-
 impl DurabilityRoot {
-    /// Qualification/bootstrap authority: the process must prove its current
-    /// operator-authorized incarnation in the same transaction as the write.
+    /// Consume one authenticated `CHARACTER_AUTHENTICATED_BOOTSTRAP_INTENT_V1`
+    /// decision. In one transaction, or not at all: the sealed recovery fence,
+    /// the current #415 incarnation, the current allowed S1/S2 account-security
+    /// floor for the intent's AccountId and the unexpired intent are proven; the
+    /// intent source high-water advances; and the Character root, receipt with
+    /// the complete intent binding, audit event and pending outbox commit.
+    /// An exact retry returns the committed result; changed reuse conflicts.
     pub async fn bootstrap_character(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         proof: &NodeIncarnationProof,
-        command: BootstrapCommand,
+        intent: &CharacterBootstrapIntentV1,
     ) -> Result<CharacterAuthorityRecord> {
-        if !uuid_v7_shape(&command.operation_id)
-            || ![
-                &command.profile_revision,
-                &command.ruleset_revision,
-                &command.content_revision,
-                &command.starter_template_revision,
-            ]
-            .into_iter()
-            .all(|v| bounded(v))
+        let operation = intent.operation_id();
+        let intent_binding = intent.binding();
+        if !uuid_v7_shape(&operation)
+            || intent_binding.len() > MAX_OPERATION_BINDING_BYTES
+            || !intent.interpretation().into_iter().all(bounded)
         {
             return Err(CharacterAuthorityError::Rejected);
         }
         let proof = proof.clone();
-        let operation = command.operation_id;
-        let command_binding = binding(&command);
-        if command_binding.len() > MAX_OPERATION_BINDING_BYTES {
-            return Err(CharacterAuthorityError::Rejected);
-        }
-        let account = *command.account_id.as_bytes();
-        let world = *command.world_id.as_bytes();
-        let profile = command.profile_revision;
-        let ruleset = command.ruleset_revision;
-        let content = command.content_revision;
-        let starter = command.starter_template_revision;
+        let account = *intent.account_id().as_bytes();
+        let world = *intent.target_world_id().as_bytes();
+        let [profile, ruleset, content, starter] = intent.interpretation().map(str::to_owned);
+        let decision = intent.issuer_decision_id();
+        let source_revision = intent.source_revision();
+        let issued_at = intent.issued_at_source();
+        let expires_at = intent.expires_at_source();
         let recovery = authority.record_for(self)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
@@ -175,12 +151,35 @@ impl DurabilityRoot {
                 .bind(account.as_slice()).fetch_one(&mut *tx).await?;
             if let Some(row) = sqlx::query("SELECT o.command_binding, o.character_id::text, o.event_id::text, o.transaction_id::text FROM game_character_operation_receipts o WHERE o.operation_id = encode($1, 'hex')::uuid")
                 .bind(operation.as_slice()).fetch_optional(&mut *tx).await? {
+                // Reconciliation of the committed decision, never a new authorization.
                 let old: Vec<u8> = row.try_get("command_binding")?;
-                if old != command_binding { return Ok(Err(CharacterAuthorityError::Conflict)); }
+                if old != intent_binding { return Ok(Err(CharacterAuthorityError::Conflict)); }
                 let record = read_record_row(&row, account, world)?;
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(record));
             }
+            // Source-time validity against trusted Game time; arrival or retry
+            // time never refreshes the intent.
+            let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+                .fetch_one(&mut *tx).await?;
+            if issued_at > now || expires_at <= now {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            // Independent prerequisite: current allowed Platform account security.
+            if !current_account_security_allows(&mut tx, &account, now).await? {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            // Retained issuer/variant source high-water: a lower revision is stale
+            // and an equal one is another decision (no receipt matched this one).
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-bootstrap-intent-floor', 0))")
+                .execute(&mut *tx).await?;
+            let floor: Option<i64> = sqlx::query_scalar("SELECT source_revision FROM game_character_bootstrap_intent_floors WHERE issuer_scope = 1 FOR UPDATE")
+                .fetch_optional(&mut *tx).await?;
+            if floor.is_some_and(|floor| source_revision <= floor) {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            }
+            sqlx::query("INSERT INTO game_character_bootstrap_intent_floors(issuer_scope, source_revision, issuer_decision_id, intent_binding) VALUES (1, $1, encode($2,'hex')::uuid, $3) ON CONFLICT (issuer_scope) DO UPDATE SET source_revision = EXCLUDED.source_revision, issuer_decision_id = EXCLUDED.issuer_decision_id, intent_binding = EXCLUDED.intent_binding")
+                .bind(source_revision).bind(decision.as_slice()).bind(&intent_binding).execute(&mut *tx).await?;
             let ids = sqlx::query("SELECT game_character_uuid_v7()::text AS character_id, game_character_uuid_v7()::text AS event_id, game_character_uuid_v7()::text AS transaction_id, floor(extract(epoch FROM statement_timestamp())*1000)::bigint AS occurred_at")
                 .fetch_one(&mut *tx).await?;
             let character = uuid_text(ids.try_get("character_id")?)?;
@@ -192,10 +191,36 @@ impl DurabilityRoot {
                 .bind(character.as_slice()).bind(account.as_slice()).bind(world.as_slice()).bind(profile).bind(ruleset).bind(content).bind(starter).execute(&mut *tx).await?;
             sqlx::query("INSERT INTO game_character_audit_outbox(event_id, transaction_id, transaction_ordinal, transaction_count, event_type_id, schema_revision, retention_profile_id, character_id, occurred_at, expires_at, payload, payload_sha256, server_build_id, publication_state) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1, 1, $3, $4, $5, encode($6,'hex')::uuid, $9, $9 + 7776000000, $7, sha256($7), $8, 1)")
                 .bind(event.as_slice()).bind(transaction.as_slice()).bind(i64::from(EVENT_TYPE_CHARACTER_AUTHORITY_BOOTSTRAPPED)).bind(i64::from(EVENT_SCHEMA_REVISION)).bind(RETENTION_PROFILE).bind(character.as_slice()).bind(&payload).bind(SERVER_BUILD_ID).bind(occurred_at).execute(&mut *tx).await?;
-            sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id, occurred_at) VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, 1, encode($6,'hex')::uuid, encode($7,'hex')::uuid, $8, $9)")
-                .bind(operation.as_slice()).bind(command_binding).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(event.as_slice()).bind(transaction.as_slice()).bind(SERVER_BUILD_ID).bind(occurred_at).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_character_operation_receipts(operation_id, command_binding, account_id, character_id, world_id, character_revision, event_id, transaction_id, server_build_id, occurred_at, issuer_decision_id, intent_source_revision, issued_at_source, expires_at_source) VALUES (encode($1,'hex')::uuid, $2, encode($3,'hex')::uuid, encode($4,'hex')::uuid, encode($5,'hex')::uuid, 1, encode($6,'hex')::uuid, encode($7,'hex')::uuid, $8, $9, encode($10,'hex')::uuid, $11, $12, $13)")
+                .bind(operation.as_slice()).bind(&intent_binding).bind(account.as_slice()).bind(character.as_slice()).bind(world.as_slice()).bind(event.as_slice()).bind(transaction.as_slice()).bind(SERVER_BUILD_ID).bind(occurred_at).bind(decision.as_slice()).bind(source_revision).bind(issued_at).bind(expires_at).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(CharacterAuthorityRecord { account_id: AccountId::from_bytes(account).map_err(|_| DurabilityError::Unavailable)?, character_id: CharacterId::from_bytes(character).map_err(|_| DurabilityError::Unavailable)?, world_id: WorldId::from_bytes(world).map_err(|_| DurabilityError::Unavailable)?, revision: CharacterRevision::new(1).map_err(|_| DurabilityError::Unavailable)?, event_id: event, transaction_id: transaction, payload }))
+        })).await?
+    }
+
+    /// Reconcile an uncertain bootstrap outcome by its operation identity alone,
+    /// without re-authorizing: the committed result, or `None` if nothing
+    /// committed. An expired intent can therefore still be reconciled.
+    pub async fn reconcile_character_bootstrap(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        operation_id: [u8; 16],
+    ) -> Result<Option<CharacterAuthorityRecord>> {
+        if !uuid_v7_shape(&operation_id) {
+            return Err(CharacterAuthorityError::Rejected);
+        }
+        let recovery = authority.record_for(self)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let row = sqlx::query("SELECT o.account_id::text, o.world_id::text, o.character_id::text, o.event_id::text, o.transaction_id::text FROM game_character_operation_receipts o WHERE o.operation_id = encode($1, 'hex')::uuid")
+                .bind(operation_id.as_slice()).fetch_optional(&mut *tx).await?;
+            let record = match row {
+                Some(row) => Some(read_record_row(&row, uuid_text(row.try_get("account_id")?)?, uuid_text(row.try_get("world_id")?)?)?),
+                None => None,
+            };
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(record))
         })).await?
     }
 
@@ -256,7 +281,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             // Any surviving Character row is evidence of prior state: never "fresh".
-            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds)")
+            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds) + (SELECT count(*) FROM game_character_bootstrap_intent_floors)")
                 .fetch_one(&mut *tx).await?;
             if existing != 0 { return Ok(Err(CharacterAuthorityError::Conflict)); }
             insert_recovery_admission(&mut tx, &record).await?;
@@ -554,9 +579,93 @@ fn read_record_row(
     })
 }
 
+fn uuid_string(value: &[u8; 16]) -> String {
+    let hex: String = value.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &hex[0..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..32]
+    )
+}
+
+/// Current allowed S1/S2 Platform account-security evidence for this exact
+/// AccountId. The S2 floor retains the exact authenticated S1 body, which is
+/// re-decoded against the registered source authority and the exact request
+/// binding; it must allow the account inside the existing fresh window at
+/// trusted Game time. The floor is share-locked, so a concurrent S2 advance
+/// serializes with this commit. Absent, other-purpose or stale evidence is
+/// not current evidence and never a fallback authorization.
+async fn current_account_security_allows(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    account: &[u8; 16],
+    now: i64,
+) -> std::result::Result<bool, DurabilityError> {
+    let account_id = uuid_string(account);
+    let Some(registered) = sqlx::query_scalar::<_, String>(
+        "SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id = 1 FOR SHARE",
+    )
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(false);
+    };
+    let Some(row) = sqlx::query(
+        "SELECT operation, source_revision::text, decision_identity, observed_at, semantic_facts \
+           FROM game_durability_native_source_floors \
+          WHERE registration_id = 1 AND source_authority = $1 AND floor_subject = $2 FOR SHARE",
+    )
+    .bind(&registered)
+    .bind(format!("account:{account_id}"))
+    .fetch_optional(&mut **tx)
+    .await?
+    else {
+        return Ok(false);
+    };
+    let invalid = |_| DurabilityError::InvalidStoredState;
+    if row.try_get::<String, _>(0).map_err(invalid)? != ACCOUNT_SECURITY_OPERATION {
+        return Ok(false);
+    }
+    let revision: String = row.try_get(1).map_err(invalid)?;
+    let decision: String = row.try_get(2).map_err(invalid)?;
+    let observed_at: i64 = row.try_get(3).map_err(invalid)?;
+    let body: Vec<u8> = row.try_get(4).map_err(invalid)?;
+    let request = Request::Account {
+        recovery: false,
+        account_id: &account_id,
+        purpose: ACCOUNT_SECURITY_PURPOSE,
+        scope: ACCOUNT_SECURITY_SCOPE,
+    };
+    let Ok(Response::Observed(observation)) = decode_response(&request, &registered, &body) else {
+        return Ok(false);
+    };
+    if observation.source_revision.to_string() != revision
+        || observation.decision_identity.as_str() != decision
+        || observation.source_observed_at != observed_at
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let Facts::Account { allowed, .. } = observation.facts else {
+        return Ok(false);
+    };
+    let deadline = i64::try_from(observation.clock_uncertainty_seconds)
+        .ok()
+        .and_then(|uncertainty| {
+            observed_at
+                .checked_add(ACCOUNT_SECURITY_FRESH_SECONDS)?
+                .checked_sub(uncertainty)
+        });
+    Ok(allowed && observed_at <= now && deadline.is_some_and(|deadline| now <= deadline))
+}
+
 /// Complete first-slice integrity: each root has its exact receipt, including the
-/// reconstructed command binding; every retained audit event binds to that
+/// reconstructed intent binding; every retained audit event binds to that
 /// receipt and root with an intact payload hash. Expired events may be absent.
+/// The retained intent source high-water exists exactly when a receipt exists
+/// and equals the newest receipt's decision, so a restore can neither drop nor
+/// regress it (absence is never initialized to zero).
 async fn verify_character_integrity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
 ) -> std::result::Result<(), DurabilityError> {
@@ -566,7 +675,10 @@ async fn verify_character_integrity(
            LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
           WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
              OR o.character_revision <> r.character_revision \
-             OR o.command_binding <> uuid_send(r.account_id) || uuid_send(r.world_id) \
+             OR o.command_binding <> decode('01', 'hex') || uuid_send(o.issuer_decision_id) \
+                || int8send(o.intent_source_revision) || uuid_send(o.operation_id) \
+                || uuid_send(r.account_id) || uuid_send(r.world_id) \
+                || int8send(o.issued_at_source) || int8send(o.expires_at_source) \
                 || int2send(octet_length(r.profile_revision)::int2) || convert_to(r.profile_revision, 'UTF8') \
                 || int2send(octet_length(r.ruleset_revision)::int2) || convert_to(r.ruleset_revision, 'UTF8') \
                 || int2send(octet_length(r.content_revision)::int2) || convert_to(r.content_revision, 'UTF8') \
@@ -587,6 +699,16 @@ async fn verify_character_integrity(
          SELECT 1 FROM game_character_audit_legal_holds h \
            LEFT JOIN game_character_audit_outbox a USING (event_id) \
           WHERE h.released_at IS NULL AND a.event_id IS NULL \
+         UNION ALL \
+         SELECT 1 WHERE (SELECT count(*) FROM game_character_bootstrap_intent_floors) \
+                     <> (SELECT count(*) FROM (SELECT 1 FROM game_character_operation_receipts LIMIT 1) x) \
+         UNION ALL \
+         SELECT 1 FROM game_character_bootstrap_intent_floors f \
+          WHERE f.source_revision <> (SELECT max(intent_source_revision) FROM game_character_operation_receipts) \
+             OR NOT EXISTS (SELECT 1 FROM game_character_operation_receipts o \
+                             WHERE o.intent_source_revision = f.source_revision \
+                               AND o.issuer_decision_id = f.issuer_decision_id \
+                               AND o.command_binding = f.intent_binding) \
          LIMIT 1",
     )
     .fetch_optional(&mut **tx)

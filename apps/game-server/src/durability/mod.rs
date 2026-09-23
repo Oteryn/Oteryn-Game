@@ -60,13 +60,15 @@ mod native_admission_source_linkage {
 mod character_authority_linkage {
     use super::DurabilityRoot;
     use super::character_authority::{
-        BootstrapCommand, CharacterAuditDelivery, CharacterAuthorityError,
-        CharacterAuthorityRecord, ReconciledCharacterAuthority,
+        CharacterAuditDelivery, CharacterAuthorityError, CharacterAuthorityRecord,
+        ReconciledCharacterAuthority,
     };
 
     #[test]
     fn character_authority_api_is_linked() {
-        let _ = std::mem::size_of::<BootstrapCommand>();
+        let _ = std::mem::size_of::<
+            oteryn_game_server::character_bootstrap_intent::CharacterBootstrapIntentV1,
+        >();
         let _ = std::mem::size_of::<CharacterAuditDelivery>();
         let _ = std::mem::size_of::<CharacterAuthorityError>();
         let _ = std::mem::size_of::<CharacterAuthorityRecord>();
@@ -78,6 +80,8 @@ mod character_authority_linkage {
             _ => None,
         };
         let _ = DurabilityRoot::bootstrap_character;
+        let _ = DurabilityRoot::reconcile_character_bootstrap;
+        let _ = oteryn_game_server::character_bootstrap_intent::decode_producer_response;
         let _ = DurabilityRoot::open_character_authority;
         let _ = DurabilityRoot::read_current_character;
         let _ = DurabilityRoot::admit_fresh_character_recovery;

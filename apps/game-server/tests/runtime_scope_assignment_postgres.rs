@@ -4,6 +4,12 @@
 // runs count as qualification evidence.
 extern crate self as oteryn_game_server;
 #[allow(dead_code, unused_imports)]
+#[path = "../src/admission_evidence.rs"]
+pub mod admission_evidence;
+#[allow(dead_code, unused_imports)]
+#[path = "../src/character_bootstrap_intent.rs"]
+pub mod character_bootstrap_intent;
+#[allow(dead_code, unused_imports)]
 #[path = "../src/character_recovery_fence.rs"]
 pub mod character_recovery_fence;
 #[allow(dead_code, unused_imports)]
