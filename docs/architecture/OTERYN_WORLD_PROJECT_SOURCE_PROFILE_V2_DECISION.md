@@ -76,3 +76,53 @@ Fields already owned by the executable Item model — including weight, stackabi
 Mutable runtime state is explicitly excluded: current Forge tier, proficiency XP/unlocks/selected perks/ranks, active imbues, remaining charges/timers, stack quantity, container contents/custody, current enchanted form and live quest/runtime state remain with ItemInstance/Character/Progression/Durability or their accepted owner.
 
 Compatibility is additive for already protected v2 documents: `item_authoring` and Service `offers` are omitted from canonical JSON when empty and default to empty when absent, so v2 snapshots produced by #788 with no Item extension preserve their canonical bytes under the extended reader/writer.
+
+## Wiki-wide structured content closure amendment — 2026-09-23
+
+The Item-focused amendment was not sufficient to represent the wider structured TibiaWiki surface without flattening distinct static identities into editor notes or mutable state. The wiki-wide audit therefore closes representation gaps while preserving the same architectural rule: WorldProject/v2 is declarative source, not automatic runtime authority.
+
+The additive source vocabulary now includes declarative static identities for:
+
+- `Area` — reusable geographic/editorial location identity with optional parent Area;
+- `Document` — book/letter/note/diary/report/scroll/parchment/tablet/inscription/notice identity with optional title/author/language and bounded project-owned/licensed content;
+- `Achievement` — static source id/degree/points/secret/premium/presentation plus typed unlock Interaction references;
+- `Outfit` — presentation variants and typed acquisition Interaction references;
+- `Mount` — presentation, speed source fact, premium flag, optional taming Item and typed acquisition Interactions;
+- `Charm` — major/minor static definition with bounded ranks, point costs, exact canonical proc chance and optional Effect reference.
+
+The existing declarative `Service` additionally carries typed deterministic crafting/upgrade recipes as Item quantity inputs/outputs plus optional fee/currency. This does not create economy or transaction authority.
+
+The optional `authoring_profiles` overlay adds source-only typed profiles bound to existing exact definition identities:
+
+- Creature: HP/EXP/speed/armor/mitigation, resistances/immunities, pushability, Ability refs, Bestiary static thresholds/points, Bosstiary static thresholds/points and Familiar source facts;
+- Ability: incantation, vocation requirements, level/group/cooldowns/premium/mana/base power/range/damage type, acquisition Interactions and augment declarations;
+- Quest: immutable requirements/repeatability, prerequisite Quest refs, reward Item quantities, reward Achievement refs and Encounter refs;
+- House: Area, size/rent source facts, beds/floors/rooms/player-ownable/street metadata;
+- Encounter: generic/boss/raid/world-change/mini-world-change/arena/world-quest classification, explicit World/Channel/Instance runtime scope declaration, Area refs, source cooldown/repeatability and Interaction refs;
+- WorldObject: Area, Interaction, Transition and optional Document refs.
+
+Bestiary, Bosstiary and Familiar deliberately do not become duplicate top-level Creature systems. Their static facts are overlays on the canonical Creature identity. Runes remain Item + Ability + Interaction relationships rather than a new Rune family.
+
+### Readable document ownership
+
+Three distinct concepts are now explicit:
+
+1. reusable static `Document` identity/body;
+2. optional Item -> Document definition binding;
+3. optional placement occurrence -> Document binding with optional parent placement and Area.
+
+This permits one text identity to appear under different physical objects/locations and permits a placed book to carry occurrence-specific document identity without mutating the physical Item definition. Player-written text, writer identity, write timestamp and current mutable body remain ItemInstance/durability state and are rejected by the strict static source schema.
+
+The repository must not bulk-copy copyrighted TibiaWiki/Tibia long-form prose, sprites or artwork. The new schema proves representability; actual long-form Oteryn content must be project-owned/licensed or independently authorized.
+
+### Player-system boundary
+
+The wiki also documents systems whose current values are not Content/World state: Achievement unlocks, Bestiary/Bosstiary kill progress, Charm Points/assignments, outfit/mount entitlements, Quest progress, Prey rolls/slots, Wheel/Gem Atelier selections, Weapon Proficiency XP/unlocks, stamina/soul and related character progression. Their static rules belong to the accepted Ruleset/progression owner when that product slice exists; their current values remain durable Character/Account state. WorldProject/v2 must not become their persistence owner merely because a wiki page describes them.
+
+Market history, personal Cyclopedia prices, Store/Tibia Coin entitlements and other commercial/account facts likewise stay with Market/Platform/commercial owners or editor/provenance evidence.
+
+### Coverage meaning and compatibility
+
+The retained machine-readable evidence at `docs/agents/evidence/OTV2-20260923-tibiawiki-worldproject-v2-coverage.json` closes `UNCLASSIFIED=0` for the discovered structured concept families: every material type/field family/relationship found by category/template/system-page census has one explicit Oteryn owner/disposition. This is a schema-coverage claim, not a claim that every prose sentence or individual wiki page was copied.
+
+Compatibility remains additive. New `authoring_profiles`, Service `recipes` and all optional placement/Item bindings default empty/absent and are omitted from canonical JSON when empty. Previously protected v2 snapshots with none of these fields retain the pre-amendment canonical wire shape. All new declarations/profiles remain candidate-only and cannot alter executable Reference artifacts by presence alone.
