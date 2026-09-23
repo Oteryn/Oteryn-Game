@@ -39,6 +39,7 @@ mod model;
 mod production;
 mod project;
 mod project_fs;
+mod project_v2;
 mod reference_artifact;
 mod reference_playable;
 
@@ -77,6 +78,7 @@ pub use production::{
 };
 pub use project::*;
 pub use project_fs::*;
+pub use project_v2::*;
 pub use reference_artifact::{
     CompiledReferencePlayableContent, NonAuthoritativeReferenceStage,
     OTERYN_REFERENCE_PLAYABLE_ARTIFACT_PROFILE_ID, REFERENCE_PLAYABLE_MAX_CLIENT_ARTIFACT_BYTES,
