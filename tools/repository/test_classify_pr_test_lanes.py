@@ -152,6 +152,15 @@ def test_routing_matrix(module):
     assert result["rust"] is True and result["windows"] is False, result
     assert result["reason"] == "server-only-exact-consumer-closure", result
 
+    dynamic = "docs/runtime/generated/item.json"
+    result = classify(module, [dynamic], consumers={dynamic: {"oteryn-game-server"}})
+    assert result["rust"] is True and result["windows"] is False, result
+
+    helper = "tools/content/helper.py"
+    result = classify(module, [helper], consumers={helper: {module.CONTROL_CONSUMER}})
+    assert result["rust"] is True and result["windows"] is True, result
+    assert result["reason"] == "canonical-control-consumer-affected", result
+
     governance = "AGENTS.md"
     result = classify(module, [governance], consumers={governance: {"oteryn-client"}})
     assert result["rust"] is True and result["windows"] is True, result
@@ -220,7 +229,8 @@ def test_exact_candidate_reference_scan(module):
         server.parent.mkdir(parents=True, exist_ok=True)
         server.write_text(
             'const DATA: &[u8] = include_bytes!("../../../docs/agents/evidence/server.json");\n'
-            'fn policy() { let _ = std::fs::read_to_string("AGENTS.md"); }\n',
+            'fn policy() { let _ = std::fs::read_to_string("AGENTS.md"); }\n'
+            'fn generated() { let _ = std::fs::read_dir("../../../docs/runtime/generated"); }\n',
             encoding="utf-8",
         )
         client = root / "apps/client/src/lib.rs"
@@ -229,10 +239,17 @@ def test_exact_candidate_reference_scan(module):
             'fn theme() { let _ = std::fs::read_to_string("docs/client-theme.json"); }\n',
             encoding="utf-8",
         )
+        merge_gate = root / ".github/workflows/merge-gate.yml"
+        merge_gate.parent.mkdir(parents=True, exist_ok=True)
+        merge_gate.write_text("run: python tools/content/helper.py\n", encoding="utf-8")
+        for control_name in ("merge-group-gate.yml", "rust.yml"):
+            (root / ".github/workflows" / control_name).write_text("name: control\n", encoding="utf-8")
         for path in (
             "docs/agents/evidence/server.json",
             "AGENTS.md",
             "docs/client-theme.json",
+            "docs/runtime/generated/item.json",
+            "tools/content/helper.py",
             "docs/unconsumed.json",
         ):
             target = root / path
@@ -252,6 +269,8 @@ def test_exact_candidate_reference_scan(module):
                     "docs/agents/evidence/server.json",
                     "AGENTS.md",
                     "docs/client-theme.json",
+                    "docs/runtime/generated/item.json",
+                    "tools/content/helper.py",
                     "docs/unconsumed.json",
                 ],
             )
@@ -261,8 +280,10 @@ def test_exact_candidate_reference_scan(module):
         assert found["docs/agents/evidence/server.json"] == {"oteryn-game-server"}, found
         assert found["AGENTS.md"] == {"oteryn-game-server"}, found
         assert found["docs/client-theme.json"] == {"oteryn-client"}, found
+        assert found["docs/runtime/generated/item.json"] == {"oteryn-game-server"}, found
+        assert found["tools/content/helper.py"] == {module.CONTROL_CONSUMER}, found
         assert found["docs/unconsumed.json"] == set(), found
-    print("Exact candidate reference scan PASS: package consumers and unconsumed inputs")
+    print("Exact candidate reference scan PASS: file, directory, package and canonical-control consumers")
 
 
 def test_candidate_modes(module):
