@@ -225,39 +225,39 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "ChannelId",
             "session-generation",
             "repository-native GitHub APIs",
-            "isolated checkout or worktree for local-Git tracked-file mutation",
-            "Repository-native API authoring is independently valid",
-            "bounded sequential high-level file mutations may be used before candidate freeze",
-            "Remote Desktop is denied",
+            "Default ordinary Work authoring uses repository-native high-level API writes",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
+            "explicitly return to AUTHORING before any further write",
         ):
             self.assertIn(value, text)
-        self.assertNotIn("The only no-worktree tracked-file publication exception", text)
+        self.assertNotIn("A worker may use: (1)", text)
 
     def test_publication_integrity_provider_contract_distinguishes_authoring_from_reconstruction(self):
         binding = json.loads((ROOT / "docs/agents/META_AGENT_POLICY_BINDING.json").read_text(encoding="utf-8"))
         self.assertEqual(binding["authority_commit"], PUBLICATION_INTEGRITY_AUTHORITY)
         text = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
         for value in (
-            "Repository-native API authoring may use bounded sequential high-level file mutations",
-            "expected_final_authoring_head",
-            "Fresh live readback must equal that exact SHA",
-            "writer/state drift",
-            "A separately allocated API-native publication may instead select a **new candidate**",
-            "one server-side mutation atomically fences the exact expected task-branch head",
-            "Never use sequential API writes to reconstruct a selected local candidate",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "Default ordinary authoring is repository-native high-level API mutation",
+            "After the final authoring write",
+            "freeze that exact remote SHA",
+            "explicitly return to AUTHORING before any further write",
+            "only then may high-level API writes create a successor head",
+            "Missing Git credentials or push capability must not trigger Remote Desktop",
             "ancestry-only `force=false` ref movement",
-            "raw Git Data reconstruction",
+            "low-level Git Data",
+            "Recovery-specific atomic publication remains governed by bound META policy",
         ):
             self.assertIn(value, text)
 
     def test_work_coordinator_preflights_mutating_execution_before_dispatch(self):
         root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         for value in (
-            "BLOCKED_CAPABILITY_UNAVAILABLE",
-            "Missing repository workspace, Git CLI or push capability is not a Remote Desktop exception",
-            "Repository-native API authoring is independently valid",
-            "bounded sequential high-level file mutations may be used before candidate freeze",
-            "single server-side mutation atomically fences the exact expected task-branch head",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "Default ordinary Work authoring uses repository-native high-level API writes",
+            "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
+            "Recovery-specific atomic publication remains governed by bound META policy",
         ):
             self.assertIn(value, root_text)
 
@@ -266,29 +266,27 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         )
         for value in (
             "## Execution-capability preflight",
-            "Before dispatching any mutating worker",
-            "`api_native_authoring`",
-            "`atomic_api_candidate`",
-            "Fresh-read the live branch head before each mutation",
-            "expected_final_authoring_head",
-            "require it to equal `expected_final_authoring_head` before freeze",
-            "writer/state drift",
-            "freeze that exact fenced remote head as the candidate",
-            "Do not ask the owner for Remote Desktop merely to obtain",
-            "execution_route: <isolated_git | api_native_authoring | atomic_api_candidate | read_only>",
-            "publication_route: <guarded_git | frozen_api_authored_head | atomic_expected_head_api | none>",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "The default authoring route is `api_native_authoring`",
+            "`atomic_api_candidate` is recovery/special-case META machinery",
+            "Fresh-read the live branch head before every write",
+            "freeze that exact remote SHA",
+            "first return to AUTHORING on the same allocated branch",
+            "Only after that state transition may high-level API writes produce a successor head",
+            "execution_route: <api_native_authoring | isolated_git | read_only>",
+            "frozen_head: <sha | null>",
             "For every concrete entry in `required_validation`",
             "capability: <PROVEN | UNKNOWN>",
-            "or every required-validation route",
-            "reconstruction of an existing candidate through sequential per-file Contents writes",
+            "Missing local Git, credentials or push capability does not block ordinary work",
         ):
             self.assertIn(value, coordinator)
+        self.assertNotIn("publication_route:", coordinator)
 
         lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "2.2")
+        self.assertEqual(entry["version"], "2.3")
         self.assertNotIn(
             "compact execution profile over `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`",
             coordinator,
@@ -300,37 +298,32 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
 
         durability = (ROOT / "docs/agents/prompts/OTV2_IMPL_DURABILITY.md").read_text(encoding="utf-8")
         for value in (
-            "bounded `api_native_authoring`",
-            "sequential high-level file mutations are WIP",
-            "expected_final_authoring_head",
-            "require equality before freeze",
-            "writer/state drift",
-            "freeze that fenced remote head as the candidate",
-            "atomic expected-head API **new-candidate** publication",
-            "ancestry-only `force=false` ref movement",
-            "reconstruct a selected local Git candidate through sequential API writes",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "Default ordinary authoring is repository-native high-level API mutation",
+            "freeze that exact remote SHA",
+            "first return to AUTHORING on the same allocated branch",
+            "only then may high-level API writes produce a successor head",
+            "Missing Git credentials or push capability is not a reason to request Remote Desktop",
+            "Recovery-specific atomic publication belongs to the active control plane",
         ):
             self.assertIn(value, durability)
 
         closure = (ROOT / "docs/agents/CLOSURE_CONVERGENCE_PROTOCOL.md").read_text(encoding="utf-8")
         for value in (
-            "bounded `api_native_authoring`",
-            "sequential high-level file writes are WIP only",
-            "expected_final_authoring_head",
-            "require equality before freeze",
-            "writer/state drift",
-            "freeze that fenced remote head as the candidate",
-            "atomic expected-head API **new-candidate** publication",
-            "precondition mismatch must create no commit and move no branch",
-            "ancestry-only `force=false` ref movement",
-            "sequential API writes to reconstruct a selected local candidate",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "Default ordinary authoring is repository-native high-level API mutation",
+            "freeze that exact remote SHA",
+            "first return to AUTHORING on the same allocated branch",
+            "only then may high-level API writes produce a successor head",
+            "Missing Git credentials or push capability is not a reason to request Remote Desktop",
+            "Recovery-specific atomic publication remains a separately governed control-plane operation",
         ):
             self.assertIn(value, closure)
 
         durability_entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_IMPL_DURABILITY"
         )
-        self.assertEqual(durability_entry["version"], "1.4")
+        self.assertEqual(durability_entry["version"], "1.5")
 
     def test_work_is_single_control_plane_and_startups_are_targeted(self):
         lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
@@ -428,19 +421,23 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn(
-            "do not request Remote Desktop merely to obtain those capabilities",
+            "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
             root_text,
         )
         self.assertIn(
-            "Missing local Git capability is not a Remote Desktop exception",
+            "The default authoring route is `api_native_authoring`",
             coordinator,
         )
         self.assertIn(
+            "Missing local Git, credentials or push capability does not block ordinary work",
+            coordinator,
+        )
+        self.assertIn(
+            "Remote Desktop remains exception-only",
+            coordinator,
+        )
+        self.assertNotIn(
             "when either `api_native_authoring` or `atomic_api_candidate`",
-            coordinator,
-        )
-        self.assertIn(
-            "Bounded sequential high-level Contents/API authoring is valid only before freeze",
             coordinator,
         )
 
