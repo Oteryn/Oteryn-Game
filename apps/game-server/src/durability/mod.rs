@@ -8,12 +8,51 @@ pub mod admission_authority_guards;
 mod admission_journal;
 mod db;
 pub mod fresh_admission;
+pub mod native_admission_source;
 pub mod runtime_scope_assignment;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod native_admission_source_linkage {
+    use super::DurabilityRoot;
+    use super::native_admission_source::{
+        DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
+        PendingPublication, SourceObservation,
+    };
+
+    #[test]
+    fn native_admission_source_api_is_linked() {
+        let _ = std::mem::size_of::<FreshStoreProvenance>();
+        let _ = std::mem::size_of::<DescriptorRegistration>();
+        let _ = std::mem::size_of::<SourceObservation>();
+        let _ = std::mem::size_of::<PendingPublication>();
+        let _ = [
+            NativeSourceOperation::ReadAccountSecurityV1,
+            NativeSourceOperation::ReadFreshSigningTrustV1,
+            NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+            NativeSourceOperation::ReadRecoverySigningTrustV2,
+        ];
+        let _ = NativeSourceOperation::parse("ReadAccountSecurityV1");
+        let _ = NativeSourceSubject::account_security("01890f4c-3b2a-7cc2-8d11-9a321b7c0001");
+        let _ = NativeSourceSubject::signing_trust(
+            "urn:oteryn:platform:game-admission",
+            "oteryn-pre-admission-v1",
+            "fresh_admission",
+            "key",
+        );
+        let _ = DurabilityRoot::initialize_native_admission_source;
+        let _ = DurabilityRoot::claim_native_admission_source_custody;
+        let _ = DurabilityRoot::register_native_admission_descriptor;
+        let _ = DurabilityRoot::accept_native_source_observation;
+        let _ = DurabilityRoot::checkpoint_native_source_publication;
+        let _ = DurabilityRoot::clear_native_source_publication;
+        let _ = DurabilityRoot::pending_native_source_publications;
+    }
+}
 
 #[cfg(test)]
 mod runtime_scope_assignment_linkage {

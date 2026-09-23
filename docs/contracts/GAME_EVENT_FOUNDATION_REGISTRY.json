@@ -38,8 +38,30 @@
     "production_requires_registered_profile": true,
     "ordinary_unbounded_retention_forbidden": true,
     "legal_hold_is_explicit_exception": true,
-    "required_profile_fields": ["purpose","privacy_class","finite_retention_duration_or_ceiling","permitted_roles","export_redaction_policy","deletion_or_anonymization_policy","legal_hold_policy","policy_revision"]
+    "required_profile_fields": ["purpose","privacy_class","finite_retention_duration_or_ceiling","permitted_roles","export_redaction_policy","deletion_or_anonymization_policy","legal_hold_policy","policy_revision"],
+    "profile_identity_semantics": "IMMUTABLE_POLICY_IDENTITY_ON_FIRST_EVENT_ADMISSION",
+    "in_place_policy_change_after_admission": "FORBIDDEN",
+    "successor_policy_requirement": "NEW_IMMUTABLE_PROFILE_ID_WITH_POSITIVE_POLICY_REVISION",
+    "successor_rollout_scope": "FUTURE_ADMISSION_ONLY_AFTER_REVIEWED_ACTIVATION_BOUNDARY",
+    "existing_envelope_binding": "ORIGINAL_RETENTION_PROFILE_ID",
+    "rollback_scope": "FUTURE_ADMISSION_ONLY_BY_EXPLICIT_REVIEWED_REGISTRY_REVISION",
+    "rollback_existing_event_mutation": "FORBIDDEN_INCLUDING_EVENT_ID_PAYLOAD_BYTES_AND_RETENTION_PROFILE_ID",
+    "existing_event_policy_change_requirement": "SEPARATELY_OWNER_AUTHORIZED_REVIEWED_MIGRATION_OR_SUPERSESSION",
+    "existing_event_migration_registered": false
   },
+  "retention_profiles": [
+    {
+      "id": "CHARACTER_AUTHORITY_DURABLE_AUDIT_RETENTION_V1",
+      "purpose": "Prove and reconcile authoritative Character owner, world, and lifecycle mutations and support bounded security, operations, and administrative investigation.",
+      "privacy_class": "RESTRICTED_PLAYER_LINKED",
+      "finite_retention_duration_or_ceiling": "P90D rolling ordinary ceiling from authoritative event timestamp/commit",
+      "permitted_roles": ["authorized Character Authority operations", "authorized support", "authorized security"],
+      "export_redaction_policy": "Case-scoped authorized export redacts unrelated player-linked fields.",
+      "deletion_or_anonymization_policy": "Delete the retained player-linked event, envelope, and payload at ordinary expiry; do not convert it into an indefinite pseudonymous analytics record.",
+      "legal_hold_policy": "Explicit case/legal authorization must record reason, authorizing actor, start time, affected records or scope, and audited access; release returns the record to ordinary expiry and deletion.",
+      "policy_revision": 1
+    }
+  ],
   "event_type_rules": {
     "id_type": "uint32",
     "zero_invalid": true,
@@ -53,9 +75,22 @@
     "best_effort_unknown_schema_behavior": "counted_drop_or_reject; never_claim_complete"
   },
   "required_event_type_fields": ["id","name","owner_gate","payload_schema","payload_message","current_schema_revision","durability_class","privacy_class_floor","retention_profile_id","atomic_mutation_evidence"],
-  "event_types": [],
+  "event_types": [
+    {
+      "id": 1,
+      "name": "CHARACTER_AUTHORITY_BOOTSTRAPPED",
+      "owner_gate": "WP5_GAME_CHARACTER_AUTHORITY",
+      "payload_schema": "docs/contracts/game-events/v1/character_authority.proto",
+      "payload_message": "oteryn.events.v1.CharacterAuthorityBootstrappedV1",
+      "current_schema_revision": 1,
+      "durability_class": "DURABLE_AUDIT",
+      "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
+      "retention_profile_id": "CHARACTER_AUTHORITY_DURABLE_AUDIT_RETENTION_V1",
+      "atomic_mutation_evidence": true
+    }
+  ],
   "notes": [
-    "The empty initial event_types list is deliberate. Domain payloads are registered by their owning gameplay/DUR gates.",
+    "Domain payloads are registered only by their owning gameplay/DUR gates; the sole current type covers the enabled first-slice Character bootstrap/create mutation.",
     "Operational Prometheus/OpenTelemetry metrics are outside this game-event registry.",
     "No broker, database table, warehouse or dashboard product is selected."
   ]

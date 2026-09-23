@@ -1,17 +1,19 @@
+> Lifecycle closeout: **COMPLETED / ARCHIVED / OWNERSHIP RELEASED**. Delivery PR #782 exact head `91a0707491c865347613cdf4f75db1f9c6d3a451` passed Agent governance run `35838460278`, Architecture semantic audit run `35838460285`, Item Content Semantic Promotion run `35838460304`, and Merge Gate run `35838460358`. Real Merge Queue run `35841567567` completed SUCCESS with aggregate `game-gate` job `107120025236` SUCCESS and integrated as `8d2f6cefbcc36b46fda7e8556a4e6d106aea7704`. Protected `main@da55425aa2804884905cbf5969e326476d0fbb1e` contains the accepted delivery. Any nonterminal/checkpoint wording below is historical provenance only.
+
 # OTV2-20260923-content-world-item-promotion-504
 
 ~~~yaml
 task_id: OTV2-20260923-content-world-item-promotion-504
 title: Item partial canonical semantic promotion
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-world-item-semantic-promotion-504-r4
 pr: 782
 base_sha: 19c15ebf8377608db5b72cf7082dc856c4fd76be
-head_sha: 1c2aa8973b870bb471c44439248ddf5f18bb41fb
-final_head_sha: null
+head_sha: 91a0707491c865347613cdf4f75db1f9c6d3a451
+final_head_sha: 91a0707491c865347613cdf4f75db1f9c6d3a451
 final_head_frozen_at: null
 owner: "single autonomous Item product batch writer"
 created_at: 2026-09-23T07:34:00Z
@@ -99,7 +101,7 @@ finding_dispositions:
 - [x] Artifact v4 compiles byte-identically and loads server-authoritative + client-safe projections.
 - [x] All 69 promoted atomic values round-trip through both allowed projections.
 - [x] No second Crystal/B1 import, identity generator, parser, model, rule engine or schema.
-- [ ] Exact-head hosted qualification and game-gate are green.
+- [x] Exact-head hosted qualification and game-gate are green.
 
 ## Excluded scope
 
@@ -157,19 +159,19 @@ Precursor #776 exact-head promotion workflow `35834279290`, job `107093955608`, 
 - changed-file review: #782 retains the same eight owned paths; r4 delta over frozen #780 is Clippy-only in one Rust test file plus this task binding; final frozen whole-diff review pending
 - unresolved review threads: 0 at r3 admission
 - related protected predecessors: #749, #763, #767, #770, #773, #774, #775; superseded implementation PRs #776, #779 and #780 closed/unmerged after #782 establishment
-- protected Merge Queue: pending final frozen-head qualification
-- merge commit/result: pending
-- ownership release: pending in this same product batch; no ordinary lifecycle-only successor
+- protected Merge Queue: SUCCESS via merge-group run `35841567567`; aggregate `game-gate` job `107120025236` SUCCESS
+- merge commit/result: PR #782 integrated as `8d2f6cefbcc36b46fda7e8556a4e6d106aea7704`
+- ownership release: released by bounded post-merge lifecycle closeout
 
 ## Context checkpoint
 
 ~~~yaml
 last_progress: #780 semantic-promotion workflow PASS; exact Rust Linux blocker reduced to two test-only collapsible_if findings; r4 repair applied and PR #782 established
-status: validating
+status: completed
 branch: agent/content-world-item-semantic-promotion-504-r4
-head_sha: 1c2aa8973b870bb471c44439248ddf5f18bb41fb
+head_sha: 91a0707491c865347613cdf4f75db1f9c6d3a451
 pr: 782
-final_head_sha: null
+final_head_sha: 91a0707491c865347613cdf4f75db1f9c6d3a451
 final_head_frozen_at: null
 ci_trigger_source: pull_request
 ci_check_generation: pending final authoring commit
@@ -186,5 +188,20 @@ ci_recovery_actions_for_current_head: 3
 stall_warnings: 0
 owner_action_required: NONE
 blocker: null
-next_action: freeze the branch head returned by this final task-metadata mutation and require fresh #782 exact-head semantic-promotion workflow plus full Merge Gate
+next_action: none; delivery integrated, task archived, ownership released
 ~~~
+
+
+## Terminal closeout
+
+- delivery PR: #782
+- frozen exact head: `91a0707491c865347613cdf4f75db1f9c6d3a451`
+- exact-head PR qualification: Agent governance `35838460278` SUCCESS; Architecture semantic audit `35838460285` SUCCESS; Item Content Semantic Promotion `35838460304` SUCCESS; Merge Gate `35838460358` SUCCESS
+- unresolved review threads: 0
+- real Merge Queue run: `35841567567` — SUCCESS
+- merge-group aggregate `game-gate`: job `107120025236` — SUCCESS
+- integrated commit: `8d2f6cefbcc36b46fda7e8556a4e6d106aea7704`
+- protected-main containment readback: `main@da55425aa2804884905cbf5969e326476d0fbb1e` contains `8d2f6cefbcc36b46fda7e8556a4e6d106aea7704`
+- broader Issue #504: remains open; this closeout terminates only the Item semantic-promotion batch represented by #782
+- task-local downstream barrier: released for `ITEM_DOWNSTREAM_RUNTIME_CLIENT_QUALIFICATION`
+- ownership: released
