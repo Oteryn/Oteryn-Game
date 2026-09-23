@@ -580,9 +580,11 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
             added != removed for added in added_surfaces for removed in removed_surfaces
         ):
             return full("possible-cross-surface-rename")
-        non_runtime_present = any(non_runtime(path) for path in paths)
         governance_present = any(agent_governance(path) for path in paths)
-        if non_runtime_present:
+        neutral_document_present = any(
+            neutral(path) and not agent_governance(path) for path in paths
+        )
+        if neutral_document_present:
             graph(metadata)
             proof_surface = "agent-governance" if governance_present else "docs"
             if docs_consumers_verified is False:
