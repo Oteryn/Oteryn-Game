@@ -1182,8 +1182,18 @@ impl ProjectCapturePlan {
 
         let manifest: ManifestDocumentRoot = parse_strict(manifest_bytes, limits)?;
         let lock: LockDocument = parse_strict(lock_bytes, limits)?;
-        if manifest.schema != if is_v2 { WORLD_PROJECT_V2_MANIFEST_SCHEMA } else { WORLD_PROJECT_MANIFEST_SCHEMA }
-            || lock.schema != if is_v2 { WORLD_PROJECT_V2_LOCK_SCHEMA } else { WORLD_PROJECT_LOCK_SCHEMA }
+        if manifest.schema
+            != if is_v2 {
+                WORLD_PROJECT_V2_MANIFEST_SCHEMA
+            } else {
+                WORLD_PROJECT_MANIFEST_SCHEMA
+            }
+            || lock.schema
+                != if is_v2 {
+                    WORLD_PROJECT_V2_LOCK_SCHEMA
+                } else {
+                    WORLD_PROJECT_LOCK_SCHEMA
+                }
         {
             return Err(ProjectError::InvalidProject(
                 "unsupported control document schema",
@@ -1304,11 +1314,28 @@ impl ProjectCapturePlan {
         if is_v2 {
             validate_v2_roles(&by_role)?;
         } else {
-            require_role(&by_role, "reference-records", "records/", WORLD_PROJECT_REFERENCE_SCHEMA)?;
-            require_role(&by_role, "import-candidates", "imports/", WORLD_PROJECT_IMPORT_SCHEMA)?;
-            require_role(&by_role, "author-metadata", "metadata/", WORLD_PROJECT_METADATA_SCHEMA)?;
+            require_role(
+                &by_role,
+                "reference-records",
+                "records/",
+                WORLD_PROJECT_REFERENCE_SCHEMA,
+            )?;
+            require_role(
+                &by_role,
+                "import-candidates",
+                "imports/",
+                WORLD_PROJECT_IMPORT_SCHEMA,
+            )?;
+            require_role(
+                &by_role,
+                "author-metadata",
+                "metadata/",
+                WORLD_PROJECT_METADATA_SCHEMA,
+            )?;
             if by_role.len() != 3 {
-                return Err(ProjectError::InvalidProject("unsupported manifest document role"));
+                return Err(ProjectError::InvalidProject(
+                    "unsupported manifest document role",
+                ));
             }
         }
 
