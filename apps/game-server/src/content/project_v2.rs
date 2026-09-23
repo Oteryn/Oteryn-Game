@@ -655,10 +655,10 @@ impl ItemAuthoringV2 {
                 validate_nonempty_text(value, MAX_TAXONOMY_BYTES)?;
             }
         }
-        if let Some(forge) = self.forge {
-            if !(1..=4).contains(&forge.classification) || forge.max_tier == 0 {
-                return Err(WorldProjectV2Error::InvalidForgeProfile);
-            }
+        if let Some(forge) = self.forge
+            && (!(1..=4).contains(&forge.classification) || forge.max_tier == 0)
+        {
+            return Err(WorldProjectV2Error::InvalidForgeProfile);
         }
         if let Some(profile) = &self.proficiency_profile {
             profile.require(WorldProjectV2Family::Proficiency)?;
@@ -902,12 +902,12 @@ impl AssetDefinitionV2 {
     fn validate(&self) -> Result<(), WorldProjectV2Error> {
         self.identity.require(WorldProjectV2Family::Asset)?;
         validate_nonempty_text(&self.locator, 1024)?;
-        if let Some(value) = &self.content_sha256 {
-            if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-                return Err(WorldProjectV2Error::InvalidRelationship(
-                    "asset digest is not sha256 hex",
-                ));
-            }
+        if let Some(value) = &self.content_sha256
+            && (value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()))
+        {
+            return Err(WorldProjectV2Error::InvalidRelationship(
+                "asset digest is not sha256 hex",
+            ));
         }
         Ok(())
     }
