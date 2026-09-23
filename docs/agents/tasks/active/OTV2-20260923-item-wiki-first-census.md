@@ -4,18 +4,18 @@
 task_id: OTV2-20260923-item-wiki-first-census
 title: Wiki-first TibiaWiki Item census
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-census-20260923
-pr: null
+pr: 803
 base_sha: 79a1d6966b7fbe41e8366ea873d207c59d441033
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous Item wiki-first census writer"
 created_at: 2026-09-23T21:19:00+02:00
-updated_at: 2026-09-23T21:19:00+02:00
+updated_at: 2026-09-23T21:33:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_census.py
@@ -96,14 +96,14 @@ No identity crosswalk, no field-verification promotion, no WorldProject populati
 
 ## Implementation / findings
 
-The implementation reuses the protected bounded TibiaWiki request/cache/Infobox parser primitives rather than forking a second HTTP or Item parser. The new discovery direction is independent of Crystal identities and enumerates main-namespace pages that directly transclude `Predefinição:Infobox Item`. A small compatibility shim accepts the MediaWiki-equivalent space/underscore spelling of the infobox marker without changing the protected predecessor collector.
+The implementation reuses the protected bounded TibiaWiki request/cache/Infobox parser primitives rather than forking a second HTTP or Item parser. The new discovery direction is independent of Crystal identities and enumerates main-namespace pages that directly transclude `Predefinição:Infobox Item`. A small compatibility shim accepts the MediaWiki-equivalent space/underscore spelling of the infobox marker without changing the protected predecessor collector. PR #803 was opened from the four-path authored candidate. Its base is protected main `6b2c5237cebcc9cf757747478a2990cde4109750`; the only protected-main change since admission base `79a1d6966b7fbe41e8366ea873d207c59d441033` is the path-disjoint archive move for the completed #798 task.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python tools/reference-world-corridor-census/item_wiki_first_census_self_test.py`
-- result: pending authored candidate
+- result: pending exact-head PR #803 generation
 
 ### Component/integration
 
@@ -151,11 +151,11 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 ## Context checkpoint
 
 ```yaml
-last_progress: task allocated on protected main; wiki-first census implementation beginning
-status: implementing
+last_progress: collector, synthetic tests and focused hosted workflow authored; PR #803 opened; final metadata write is the candidate freeze boundary
+status: validating
 branch: agent/item-wiki-first-census-20260923
 head_sha: null
-pr: null
+pr: 803
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -173,5 +173,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: author bounded wiki-first census collector, self-test and focused hosted workflow
+next_action: freeze returned authoring head, verify bounded delta, then inspect exact-head PR #803 qualification and live census artifact
 ```
