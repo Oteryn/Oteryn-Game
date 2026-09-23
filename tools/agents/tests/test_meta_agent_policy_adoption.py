@@ -228,6 +228,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "Default ordinary Work authoring uses repository-native high-level API writes",
             "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
             "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
+            "explicitly return to AUTHORING before any further write",
         ):
             self.assertIn(value, text)
         self.assertNotIn("A worker may use: (1)", text)
@@ -241,7 +242,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "Default ordinary authoring is repository-native high-level API mutation",
             "After the final authoring write",
             "freeze that exact remote SHA",
-            "Any material write after freeze creates a new candidate",
+            "explicitly return to AUTHORING before any further write",
+            "only then may high-level API writes create a successor head",
             "Missing Git credentials or push capability must not trigger Remote Desktop",
             "ancestry-only `force=false` ref movement",
             "low-level Git Data",
@@ -269,7 +271,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "`atomic_api_candidate` is recovery/special-case META machinery",
             "Fresh-read the live branch head before every write",
             "freeze that exact remote SHA",
-            "return to AUTHORING on the same allocated branch",
+            "first return to AUTHORING on the same allocated branch",
+            "Only after that state transition may high-level API writes produce a successor head",
             "execution_route: <api_native_authoring | isolated_git | read_only>",
             "frozen_head: <sha | null>",
             "For every concrete entry in `required_validation`",
@@ -298,7 +301,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
             "Default ordinary authoring is repository-native high-level API mutation",
             "freeze that exact remote SHA",
-            "return to AUTHORING on the same allocated branch",
+            "first return to AUTHORING on the same allocated branch",
+            "only then may high-level API writes produce a successor head",
             "Missing Git credentials or push capability is not a reason to request Remote Desktop",
             "Recovery-specific atomic publication belongs to the active control plane",
         ):
@@ -309,7 +313,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
             "Default ordinary authoring is repository-native high-level API mutation",
             "freeze that exact remote SHA",
-            "return to AUTHORING on the same allocated branch",
+            "first return to AUTHORING on the same allocated branch",
+            "only then may high-level API writes produce a successor head",
             "Missing Git credentials or push capability is not a reason to request Remote Desktop",
             "Recovery-specific atomic publication remains a separately governed control-plane operation",
         ):
