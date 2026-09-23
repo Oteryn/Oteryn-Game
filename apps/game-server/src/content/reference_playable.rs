@@ -2,7 +2,7 @@ use super::{
     ContentError, ContentLockBinding, PackageManifestBinding, ProductionAtom, ProductionKey,
 };
 use crate::foundation::WorldId;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use std::collections::BTreeSet;
 
 pub const REFERENCE_PLAYABLE_CONTENT_PROFILE_ID: &str = "REFERENCE_PLAYABLE_CONTENT_PROFILE/v1";
@@ -112,12 +112,654 @@ pub enum ReferenceItemDestination {
     CharacterInventory,
 }
 
+pub const REFERENCE_ITEM_MAX_NAME_BYTES: usize = 46;
+pub const REFERENCE_ITEM_MAX_DESCRIPTION_BYTES: usize = 200;
+pub const REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS: usize = 2;
+pub const REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS: usize = 9;
+pub const REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS: usize = 2;
+pub const REFERENCE_ITEM_MAX_BASE_VOCATIONS: usize = 5;
+pub const REFERENCE_ITEM_MAX_WEAPON_ELEMENTS: usize = 5;
+pub const REFERENCE_ITEM_MAX_RESISTANCES: usize = 12;
+pub const REFERENCE_ITEM_MAX_MODIFIERS: usize = 37;
+pub const REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES: usize = 20;
+pub const REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS: u8 = 3;
+pub const REFERENCE_ITEM_REGISTRY_SIZE: u32 = 38_157;
+pub const REFERENCE_ITEM_EXPLICIT_UNSUPPORTED_V1: [&str; 7] = [
+    "presentation.appearance_binding",
+    "presentation.aliases",
+    "presentation.tags",
+    "equipment.compatibility_rule",
+    "modifier.augment_binding",
+    "trade_restrictions.account_binding_policy",
+    "trade_restrictions.character_binding_policy",
+];
+
+/// Truth-bearing immutable Item field. `Known(false)` and `Known(0)` are deliberately
+/// different from `Unknown`, `NotApplicable` and `Conflict`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(tag = "state", content = "value", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ReferenceItemField<T> {
+    #[default]
+    Unknown,
+    NotApplicable,
+    Conflict,
+    Known(T),
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum ReferenceItemFieldState {
+    Unknown,
+    NotApplicable,
+    Conflict,
+    Known,
+}
+
+#[derive(Default)]
+enum ReferenceItemFieldValue<T> {
+    #[default]
+    Missing,
+    Present(T),
+}
+
+fn deserialize_reference_item_field_value<'de, D, T>(
+    deserializer: D,
+) -> Result<ReferenceItemFieldValue<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(ReferenceItemFieldValue::Present)
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, bound(deserialize = "T: Deserialize<'de>"))]
+struct ReferenceItemFieldEnvelope<T> {
+    state: ReferenceItemFieldState,
+    #[serde(default, deserialize_with = "deserialize_reference_item_field_value")]
+    value: ReferenceItemFieldValue<T>,
+}
+
+impl<'de, T> Deserialize<'de> for ReferenceItemField<T>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let envelope = ReferenceItemFieldEnvelope::<T>::deserialize(deserializer)?;
+        match (envelope.state, envelope.value) {
+            (ReferenceItemFieldState::Unknown, ReferenceItemFieldValue::Missing) => {
+                Ok(Self::Unknown)
+            }
+            (ReferenceItemFieldState::NotApplicable, ReferenceItemFieldValue::Missing) => {
+                Ok(Self::NotApplicable)
+            }
+            (ReferenceItemFieldState::Conflict, ReferenceItemFieldValue::Missing) => {
+                Ok(Self::Conflict)
+            }
+            (ReferenceItemFieldState::Known, ReferenceItemFieldValue::Present(value)) => {
+                Ok(Self::Known(value))
+            }
+            (ReferenceItemFieldState::Known, ReferenceItemFieldValue::Missing) => {
+                Err(de::Error::missing_field("value"))
+            }
+            (_, ReferenceItemFieldValue::Present(_)) => Err(de::Error::custom(
+                "Reference Item non-KNOWN field state cannot carry a value",
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ReferenceItemGroupKey(ProductionKey);
+
+impl ReferenceItemGroupKey {
+    pub fn new(value: &str) -> Result<Self, ContentError> {
+        Ok(Self(ProductionKey::new(value)?))
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl Serialize for ReferenceItemGroupKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for ReferenceItemGroupKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        Self::new(&value).map_err(serde::de::Error::custom)
+    }
+}
+
+macro_rules! item_enum {
+    ($name:ident { $($variant:ident = $value:literal),+ $(,)? }) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+        #[repr(u8)]
+        #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+        pub enum $name { $($variant = $value),+ }
+
+        impl $name {
+            pub const fn wire(self) -> u8 { self as u8 }
+
+            pub fn from_wire(value: u8) -> Result<Self, ContentError> {
+                match value {
+                    $($value => Ok(Self::$variant),)+
+                    _ => Err(ContentError::InvalidArtifact(concat!("unknown ", stringify!($name)))),
+                }
+            }
+        }
+    };
+}
+
+item_enum!(ReferenceItemType {
+    Bed = 1, Carpet = 2, Container = 3, Depot = 4, Door = 5, Dummy = 6,
+    Key = 7, Ladder = 8, MagicField = 9, Mailbox = 10, RewardChest = 11,
+    Rune = 12, Teleport = 13, TrashHolder = 14,
+});
+item_enum!(ReferenceEquipmentSlot {
+    Head = 1, Torso = 2, Legs = 3, Feet = 4, Weapon = 5, Shield = 6,
+    Amulet = 7, Ring = 8, Container = 9, Extra = 10,
+});
+item_enum!(ReferenceBaseVocation {
+    Druid = 1, Knight = 2, Monk = 3, Paladin = 4, Sorcerer = 5,
+});
+item_enum!(ReferenceWeaponType {
+    Ammunition = 1, Axe = 2, Club = 3, Distance = 4, Fist = 5,
+    Shield = 6, Spellbook = 7, Sword = 8, Wand = 9,
+});
+item_enum!(ReferenceAmmoType { Arrow = 1, Bolt = 2 });
+item_enum!(ReferenceFluidType {
+    Beer = 1, Blood = 2, Lemonade = 3, Mud = 4, Rum = 5, Slime = 6,
+    Water = 7, Wine = 8,
+});
+item_enum!(ReferenceTemporalMode {
+    DurableAbsoluteDeadline = 1, AuthoritativeActiveTimeBudget = 2,
+});
+item_enum!(ReferenceWeaponElement {
+    Death = 1, Earth = 2, Energy = 3, Fire = 4, Ice = 5,
+});
+item_enum!(ReferenceModifierElement {
+    Death = 1, Earth = 2, Energy = 3, Fire = 4, Holy = 5, Ice = 6,
+});
+item_enum!(ReferenceResistanceKind {
+    Death = 1, Drown = 2, Earth = 3, Energy = 4, Fire = 5, Holy = 6,
+    Ice = 7, LifeDrain = 8, ManaDrain = 9, Physical = 10, Poison = 11,
+    FireField = 12,
+});
+item_enum!(ReferenceImbuementFamily {
+    CriticalHit = 1, ElementalDamage = 2, ProtectionDeath = 3,
+    ProtectionEarth = 4, ProtectionEnergy = 5, ProtectionFire = 6,
+    ProtectionHoly = 7, ProtectionIce = 8, IncreaseCapacity = 9,
+    IncreaseSpeed = 10, LifeLeech = 11, ManaLeech = 12,
+    ParalysisRemoval = 13, SkillAxe = 14, SkillClub = 15,
+    SkillDistance = 16, SkillFist = 17, SkillMagicLevel = 18,
+    SkillShielding = 19, SkillSword = 20,
+});
+item_enum!(ReferenceTransformKind {
+    Rotate = 1, Wrap = 2, Use = 3, Equip = 4, Deequip = 5,
+    Male = 6, Female = 7, Destroy = 8, Decay = 9, WriteOnce = 10,
+});
+item_enum!(ReferenceSkillModifierKind {
+    ElementalBond = 1, Invisibility = 2, ManaShield = 3, Mantra = 4,
+    CleavePercent = 5, CriticalHitChance = 6, CriticalHitDamage = 7,
+    DeathMagicLevelPoints = 8, EarthMagicLevelPoints = 9,
+    EnergyMagicLevelPoints = 10, FireMagicLevelPoints = 11,
+    HealingMagicLevelPoints = 12, HealthGain = 13, HealthTicks = 14,
+    HolyMagicLevelPoints = 15, IceMagicLevelPoints = 16,
+    LifeLeechAmount = 17, LifeLeechChance = 18, MagicLevelPoints = 19,
+    MagicShieldCapacityFlat = 20, MagicShieldCapacityPercent = 21,
+    ManaGain = 22, ManaLeechAmount = 23, ManaLeechChance = 24,
+    ManaTicks = 25, PerfectShotDamage = 26, PerfectShotRange = 27,
+    ReflectDamage = 28, SkillAxe = 29, SkillClub = 30, SkillDistance = 31,
+    SkillFist = 32, SkillShield = 33, SkillSword = 34, Speed = 35,
+    SuppressDrown = 36, SuppressDrunk = 37,
+});
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ReferenceSignedPoints(pub i32);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ReferenceCells(pub u16);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ReferenceMilliseconds(pub u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceRationalPercent {
+    pub numerator: i64,
+    pub denominator: u64,
+}
+
+impl ReferenceRationalPercent {
+    pub fn new(numerator: i64, denominator: u64) -> Result<Self, ContentError> {
+        let value = Self {
+            numerator,
+            denominator,
+        };
+        value.validate()?;
+        Ok(value)
+    }
+
+    pub(crate) fn validate(self) -> Result<(), ContentError> {
+        if self.denominator == 0 || gcd_u64(self.numerator.unsigned_abs(), self.denominator) != 1 {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item rational percent is not canonical",
+            ));
+        }
+        Ok(())
+    }
+}
+
+fn gcd_u64(mut left: u64, mut right: u64) -> u64 {
+    while right != 0 {
+        let remainder = left % right;
+        left = right;
+        right = remainder;
+    }
+    left
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemTarget {
+    pub key: String,
+    pub revision: String,
+}
+
+impl ReferenceItemTarget {
+    pub fn new(key: &str, revision: &str) -> Result<Self, ContentError> {
+        ProductionKey::new(key)?;
+        DefinitionRevisionRef::new(revision)?;
+        Ok(Self {
+            key: key.to_owned(),
+            revision: revision.to_owned(),
+        })
+    }
+
+    pub(crate) fn typed_ref(&self) -> Result<TypedDefinitionRef, ContentError> {
+        Ok(TypedDefinitionRef::new(
+            DefinitionFamily::Item,
+            ProductionKey::new(&self.key)?,
+            DefinitionRevisionRef::new(&self.revision)?,
+        ))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemPresentation {
+    pub name: ReferenceItemField<String>,
+    pub description: ReferenceItemField<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemClassification {
+    pub item_type: ReferenceItemField<ReferenceItemType>,
+    pub capabilities: ReferenceItemField<[ReferenceItemField<bool>; 24]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemPhysical {
+    pub weight: ReferenceItemField<u32>,
+    pub movable: ReferenceItemField<bool>,
+    pub pickupable: ReferenceItemField<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemStack {
+    pub stackable: ReferenceItemField<bool>,
+    pub stack_max: ReferenceItemField<u16>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceEquipmentPattern {
+    pub pattern_id: u8,
+    pub primary_slot: ReferenceItemField<ReferenceEquipmentSlot>,
+    pub additional_reserved_slots: ReferenceItemField<Vec<ReferenceEquipmentSlot>>,
+    pub mutually_exclusive_groups: ReferenceItemField<Vec<ReferenceItemGroupKey>>,
+    pub vocations: ReferenceItemField<Vec<ReferenceBaseVocation>>,
+    pub level: ReferenceItemField<u16>,
+    /// `Known` is rejected in v1 because no compatibility grammar is accepted.
+    pub compatibility_rule: ReferenceItemField<()>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemEquipment {
+    pub patterns: ReferenceItemField<Vec<ReferenceEquipmentPattern>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceElementalAttack {
+    pub element: ReferenceWeaponElement,
+    pub points: ReferenceItemField<ReferenceSignedPoints>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemWeapon {
+    pub weapon_type: ReferenceItemField<ReferenceWeaponType>,
+    pub attack: ReferenceItemField<ReferenceSignedPoints>,
+    pub defense: ReferenceItemField<ReferenceSignedPoints>,
+    pub extra_defense: ReferenceItemField<ReferenceSignedPoints>,
+    pub range: ReferenceItemField<ReferenceCells>,
+    pub hit_chance: ReferenceItemField<ReferenceRationalPercent>,
+    pub max_hit_chance: ReferenceItemField<ReferenceRationalPercent>,
+    pub ammunition: ReferenceItemField<ReferenceAmmoType>,
+    pub elemental: ReferenceItemField<Vec<ReferenceElementalAttack>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceResistance {
+    pub kind: ReferenceResistanceKind,
+    pub percent: ReferenceItemField<ReferenceRationalPercent>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemProtection {
+    pub armor: ReferenceItemField<ReferenceSignedPoints>,
+    pub resistances: ReferenceItemField<Vec<ReferenceResistance>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ReferenceModifierParameter {
+    Boolean(bool),
+    SignedPoints(ReferenceSignedPoints),
+    Cells(ReferenceCells),
+    Milliseconds(ReferenceMilliseconds),
+    RationalPercent(ReferenceRationalPercent),
+    Element(ReferenceModifierElement),
+}
+
+macro_rules! strict_modifier_parameter_kind {
+    ($name:ident, $variant:ident, $wire:literal) => {
+        #[derive(Deserialize)]
+        enum $name {
+            #[serde(rename = $wire)]
+            $variant,
+        }
+    };
+}
+
+strict_modifier_parameter_kind!(ReferenceModifierBooleanKind, Boolean, "BOOLEAN");
+strict_modifier_parameter_kind!(
+    ReferenceModifierSignedPointsKind,
+    SignedPoints,
+    "SIGNED_POINTS"
+);
+strict_modifier_parameter_kind!(ReferenceModifierCellsKind, Cells, "CELLS");
+strict_modifier_parameter_kind!(
+    ReferenceModifierMillisecondsKind,
+    Milliseconds,
+    "MILLISECONDS"
+);
+strict_modifier_parameter_kind!(
+    ReferenceModifierRationalPercentKind,
+    RationalPercent,
+    "RATIONAL_PERCENT"
+);
+strict_modifier_parameter_kind!(ReferenceModifierElementKind, Element, "ELEMENT");
+
+#[derive(Deserialize)]
+#[serde(
+    deny_unknown_fields,
+    bound(deserialize = "K: Deserialize<'de>, V: Deserialize<'de>")
+)]
+struct ReferenceModifierParameterCase<K, V> {
+    #[serde(rename = "kind")]
+    _kind: K,
+    value: V,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ReferenceModifierParameterEnvelope {
+    Boolean(ReferenceModifierParameterCase<ReferenceModifierBooleanKind, bool>),
+    SignedPoints(
+        ReferenceModifierParameterCase<ReferenceModifierSignedPointsKind, ReferenceSignedPoints>,
+    ),
+    Cells(ReferenceModifierParameterCase<ReferenceModifierCellsKind, ReferenceCells>),
+    Milliseconds(
+        ReferenceModifierParameterCase<ReferenceModifierMillisecondsKind, ReferenceMilliseconds>,
+    ),
+    RationalPercent(
+        ReferenceModifierParameterCase<
+            ReferenceModifierRationalPercentKind,
+            ReferenceRationalPercent,
+        >,
+    ),
+    Element(ReferenceModifierParameterCase<ReferenceModifierElementKind, ReferenceModifierElement>),
+}
+
+impl<'de> Deserialize<'de> for ReferenceModifierParameter {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(
+            match ReferenceModifierParameterEnvelope::deserialize(deserializer)? {
+                ReferenceModifierParameterEnvelope::Boolean(case) => Self::Boolean(case.value),
+                ReferenceModifierParameterEnvelope::SignedPoints(case) => {
+                    Self::SignedPoints(case.value)
+                }
+                ReferenceModifierParameterEnvelope::Cells(case) => Self::Cells(case.value),
+                ReferenceModifierParameterEnvelope::Milliseconds(case) => {
+                    Self::Milliseconds(case.value)
+                }
+                ReferenceModifierParameterEnvelope::RationalPercent(case) => {
+                    Self::RationalPercent(case.value)
+                }
+                ReferenceModifierParameterEnvelope::Element(case) => Self::Element(case.value),
+            },
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceModifierBinding {
+    pub kind: ReferenceSkillModifierKind,
+    /// Profile-local closed capacity ID; an accepted ruleset binding remains independently gated.
+    pub target_domain: ReferenceItemField<u8>,
+    /// Profile-local closed capacity ID; an accepted ruleset binding remains independently gated.
+    pub evaluation_phase: ReferenceItemField<u8>,
+    pub priority: ReferenceItemField<i16>,
+    pub parameter: ReferenceItemField<ReferenceModifierParameter>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemSkillModifiers {
+    pub modifiers: ReferenceItemField<Vec<ReferenceModifierBinding>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemCharges {
+    pub count: ReferenceItemField<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemTemporal {
+    pub consumption_mode: ReferenceItemField<ReferenceTemporalMode>,
+    pub duration: ReferenceItemField<ReferenceMilliseconds>,
+    pub stop_duration: ReferenceItemField<bool>,
+    pub decay_target: ReferenceItemField<ReferenceItemTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemContainer {
+    pub capacity: ReferenceItemField<u16>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum ReferenceImbuementTier {
+    Two,
+    Three,
+    Ten,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceImbuementAllowance {
+    pub family: ReferenceImbuementFamily,
+    pub tier: ReferenceImbuementTier,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemImbuement {
+    pub slot_count: ReferenceItemField<u8>,
+    pub allowed_family_tiers: ReferenceItemField<Vec<ReferenceImbuementAllowance>>,
+    pub excluded_families: ReferenceItemField<Vec<ReferenceImbuementFamily>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceTransformTarget {
+    pub kind: ReferenceTransformKind,
+    pub target: ReferenceItemField<ReferenceItemTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemUseTransform {
+    /// Exactly ten ordered entries when the outer group is known.
+    pub targets: Vec<ReferenceTransformTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemTradeRestrictions {
+    pub tradeable: ReferenceItemField<bool>,
+    pub marketable: ReferenceItemField<bool>,
+    pub vocations: ReferenceItemField<Vec<ReferenceBaseVocation>>,
+    /// `Known` is rejected in v1; immutable binding policy grammar is unaccepted.
+    pub account_binding_policy: ReferenceItemField<()>,
+    /// `Known` is rejected in v1; immutable binding policy grammar is unaccepted.
+    pub character_binding_policy: ReferenceItemField<()>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemFluid {
+    pub fluid_type: ReferenceItemField<ReferenceFluidType>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemReadableWriteable {
+    pub readable: ReferenceItemField<bool>,
+    pub writeable: ReferenceItemField<bool>,
+    pub distance_read: ReferenceItemField<bool>,
+    pub max_text_length: ReferenceItemField<u32>,
+    pub write_once_target: ReferenceItemField<ReferenceItemTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemSemantics {
+    #[serde(default)]
+    pub presentation: ReferenceItemField<ReferenceItemPresentation>,
+    #[serde(default)]
+    pub classification: ReferenceItemField<ReferenceItemClassification>,
+    #[serde(default)]
+    pub physical: ReferenceItemField<ReferenceItemPhysical>,
+    #[serde(default)]
+    pub stack: ReferenceItemField<ReferenceItemStack>,
+    #[serde(default)]
+    pub equipment: ReferenceItemField<ReferenceItemEquipment>,
+    #[serde(default)]
+    pub weapon: ReferenceItemField<ReferenceItemWeapon>,
+    #[serde(default)]
+    pub protection: ReferenceItemField<ReferenceItemProtection>,
+    #[serde(default)]
+    pub skill_modifiers: ReferenceItemField<ReferenceItemSkillModifiers>,
+    #[serde(default)]
+    pub charges: ReferenceItemField<ReferenceItemCharges>,
+    #[serde(default)]
+    pub temporal: ReferenceItemField<ReferenceItemTemporal>,
+    #[serde(default)]
+    pub container: ReferenceItemField<ReferenceItemContainer>,
+    #[serde(default)]
+    pub imbuement: ReferenceItemField<ReferenceItemImbuement>,
+    #[serde(default)]
+    pub use_transform: ReferenceItemField<ReferenceItemUseTransform>,
+    #[serde(default)]
+    pub trade_restrictions: ReferenceItemField<ReferenceItemTradeRestrictions>,
+    #[serde(default)]
+    pub fluid: ReferenceItemField<ReferenceItemFluid>,
+    #[serde(default)]
+    pub readable_writeable: ReferenceItemField<ReferenceItemReadableWriteable>,
+}
+
+impl ReferenceItemSemantics {
+    pub fn is_all_unknown(&self) -> bool {
+        matches!(self.presentation, ReferenceItemField::Unknown)
+            && matches!(self.classification, ReferenceItemField::Unknown)
+            && matches!(self.physical, ReferenceItemField::Unknown)
+            && matches!(self.stack, ReferenceItemField::Unknown)
+            && matches!(self.equipment, ReferenceItemField::Unknown)
+            && matches!(self.weapon, ReferenceItemField::Unknown)
+            && matches!(self.protection, ReferenceItemField::Unknown)
+            && matches!(self.skill_modifiers, ReferenceItemField::Unknown)
+            && matches!(self.charges, ReferenceItemField::Unknown)
+            && matches!(self.temporal, ReferenceItemField::Unknown)
+            && matches!(self.container, ReferenceItemField::Unknown)
+            && matches!(self.imbuement, ReferenceItemField::Unknown)
+            && matches!(self.use_transform, ReferenceItemField::Unknown)
+            && matches!(self.trade_restrictions, ReferenceItemField::Unknown)
+            && matches!(self.fluid, ReferenceItemField::Unknown)
+            && matches!(self.readable_writeable, ReferenceItemField::Unknown)
+    }
+
+    pub fn client_projection(&self) -> Self {
+        Self {
+            presentation: self.presentation.clone(),
+            classification: self.classification.clone(),
+            physical: self.physical.clone(),
+            stack: self.stack.clone(),
+            equipment: self.equipment.clone(),
+            weapon: self.weapon.clone(),
+            protection: self.protection.clone(),
+            skill_modifiers: self.skill_modifiers.clone(),
+            charges: self.charges.clone(),
+            container: self.container.clone(),
+            imbuement: self.imbuement.clone(),
+            ..Self::default()
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReferenceItemDefinition {
     pub physical_class: ReferenceItemPhysicalClass,
     pub materializable: bool,
     pub stack_class: ReferenceItemStackClass,
     pub legal_destinations: Vec<ReferenceItemDestination>,
+    pub semantics: ReferenceItemSemantics,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,6 +794,10 @@ pub struct ReferenceLootDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "preserve the established ReferenceDefinitionKind API while the bounded typed Item payload grows"
+)]
 pub enum ReferenceDefinitionKind {
     Generic,
     Ability(ReferenceAbilityDefinition),
@@ -726,7 +1372,8 @@ fn validate_content_lock(
     Ok(())
 }
 
-fn validate_item_definition(item: &ReferenceItemDefinition) -> Result<(), ContentError> {
+pub(crate) fn validate_item_definition(item: &ReferenceItemDefinition) -> Result<(), ContentError> {
+    validate_item_semantics(item)?;
     let mut destinations = BTreeSet::new();
     for destination in &item.legal_destinations {
         if !destinations.insert(*destination) {
@@ -760,6 +1407,331 @@ fn validate_item_definition(item: &ReferenceItemDefinition) -> Result<(), Conten
     if !item.materializable && inventory_legal {
         return Err(ContentError::InvalidArtifact(
             "reference-playable non-materializable item cannot declare CharacterInventory destination capability",
+        ));
+    }
+    Ok(())
+}
+
+fn require_limit(resource: &'static str, actual: usize, limit: usize) -> Result<(), ContentError> {
+    if actual > limit {
+        return Err(ContentError::LimitExceeded {
+            resource,
+            actual,
+            limit,
+        });
+    }
+    Ok(())
+}
+
+fn require_sorted_unique<T: Ord>(resource: &'static str, values: &[T]) -> Result<(), ContentError> {
+    if values.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return Err(ContentError::InvalidArtifact(resource));
+    }
+    Ok(())
+}
+
+fn reject_known_unsupported(
+    field: &ReferenceItemField<()>,
+    resource: &'static str,
+) -> Result<(), ContentError> {
+    if matches!(field, ReferenceItemField::Known(())) {
+        return Err(ContentError::InvalidArtifact(resource));
+    }
+    Ok(())
+}
+
+fn validate_item_target(target: &ReferenceItemTarget) -> Result<(), ContentError> {
+    target.typed_ref().map(|_| ())
+}
+
+fn validate_rational_field(
+    field: &ReferenceItemField<ReferenceRationalPercent>,
+) -> Result<(), ContentError> {
+    if let ReferenceItemField::Known(value) = field {
+        value.validate()?;
+    }
+    Ok(())
+}
+
+fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), ContentError> {
+    use ReferenceItemField::Known;
+    let semantics = &item.semantics;
+    if let Known(value) = &semantics.presentation {
+        if let Known(name) = &value.name {
+            require_limit(
+                "Reference Item presentation name bytes",
+                name.len(),
+                REFERENCE_ITEM_MAX_NAME_BYTES,
+            )?;
+        }
+        if let Known(description) = &value.description {
+            require_limit(
+                "Reference Item presentation description bytes",
+                description.len(),
+                REFERENCE_ITEM_MAX_DESCRIPTION_BYTES,
+            )?;
+        }
+    }
+    if let Known(value) = &semantics.stack {
+        if let Known(true) = value.stackable
+            && !matches!(value.stack_max, Known(maximum) if maximum >= 1)
+        {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item stackable=true requires known nonzero stack maximum",
+            ));
+        }
+        if let Known(stackable) = value.stackable {
+            match (item.stack_class, stackable) {
+                (ReferenceItemStackClass::NonStackable, true)
+                | (ReferenceItemStackClass::StackCapable, false) => {
+                    return Err(ContentError::InvalidArtifact(
+                        "Reference Item retained and typed stack semantics conflict",
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+    if let Known(value) = &semantics.equipment
+        && let Known(patterns) = &value.patterns
+    {
+        if patterns.is_empty() {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item known Equipment patterns cannot be empty",
+            ));
+        }
+        require_limit(
+            "Reference Item Equipment patterns",
+            patterns.len(),
+            REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS,
+        )?;
+        let mut previous_id = 0;
+        for (index, pattern) in patterns.iter().enumerate() {
+            if pattern.pattern_id == 0
+                || usize::from(pattern.pattern_id) > REFERENCE_ITEM_MAX_EQUIPMENT_PATTERNS
+                || pattern.pattern_id <= previous_id
+            {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item Equipment pattern ids are not canonical",
+                ));
+            }
+            previous_id = pattern.pattern_id;
+            if let Known(slots) = &pattern.additional_reserved_slots {
+                require_limit(
+                    "Reference Item Equipment additional slots",
+                    slots.len(),
+                    REFERENCE_ITEM_MAX_ADDITIONAL_SLOTS,
+                )?;
+                require_sorted_unique("Reference Item Equipment slot order", slots)?;
+                if matches!(pattern.primary_slot, Known(primary) if slots.contains(&primary)) {
+                    return Err(ContentError::InvalidArtifact(
+                        "Reference Item Equipment primary slot repeats as reservation",
+                    ));
+                }
+            }
+            if let Known(groups) = &pattern.mutually_exclusive_groups {
+                require_limit(
+                    "Reference Item Equipment mutually exclusive groups",
+                    groups.len(),
+                    REFERENCE_ITEM_MAX_EXCLUSIVE_GROUPS,
+                )?;
+                require_sorted_unique("Reference Item Equipment group order", groups)?;
+            }
+            if let Known(vocations) = &pattern.vocations {
+                require_limit(
+                    "Reference Item Equipment base vocations",
+                    vocations.len(),
+                    REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+                )?;
+                require_sorted_unique("Reference Item Equipment vocation order", vocations)?;
+            }
+            reject_known_unsupported(
+                &pattern.compatibility_rule,
+                "Reference Item Equipment compatibility grammar is unsupported in v1",
+            )?;
+            if patterns[..index].iter().any(|other| {
+                other.primary_slot == pattern.primary_slot
+                    && other.additional_reserved_slots == pattern.additional_reserved_slots
+                    && other.mutually_exclusive_groups == pattern.mutually_exclusive_groups
+                    && other.vocations == pattern.vocations
+                    && other.level == pattern.level
+                    && other.compatibility_rule == pattern.compatibility_rule
+            }) {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item duplicates an Equipment semantic pattern",
+                ));
+            }
+        }
+    }
+    if let Known(value) = &semantics.weapon {
+        validate_rational_field(&value.hit_chance)?;
+        validate_rational_field(&value.max_hit_chance)?;
+        if let Known(entries) = &value.elemental {
+            require_limit(
+                "Reference Item Weapon elements",
+                entries.len(),
+                REFERENCE_ITEM_MAX_WEAPON_ELEMENTS,
+            )?;
+            require_sorted_unique(
+                "Reference Item Weapon element order",
+                &entries
+                    .iter()
+                    .map(|entry| entry.element)
+                    .collect::<Vec<_>>(),
+            )?;
+        }
+    }
+    if let Known(value) = &semantics.protection
+        && let Known(entries) = &value.resistances
+    {
+        require_limit(
+            "Reference Item resistances",
+            entries.len(),
+            REFERENCE_ITEM_MAX_RESISTANCES,
+        )?;
+        require_sorted_unique(
+            "Reference Item resistance order",
+            &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
+        )?;
+        for entry in entries {
+            validate_rational_field(&entry.percent)?;
+        }
+    }
+    if let Known(value) = &semantics.skill_modifiers
+        && let Known(entries) = &value.modifiers
+    {
+        require_limit(
+            "Reference Item SkillModifiers",
+            entries.len(),
+            REFERENCE_ITEM_MAX_MODIFIERS,
+        )?;
+        require_sorted_unique(
+            "Reference Item SkillModifier order",
+            &entries.iter().map(|entry| entry.kind).collect::<Vec<_>>(),
+        )?;
+        for entry in entries {
+            for capacity in [&entry.target_domain, &entry.evaluation_phase] {
+                if matches!(capacity, Known(value) if !(1..=37).contains(value)) {
+                    return Err(ContentError::InvalidArtifact(
+                        "Reference Item SkillModifier capacity id is outside the closed domain",
+                    ));
+                }
+            }
+            if let Known(parameter) = &entry.parameter {
+                validate_modifier_parameter(entry.kind, parameter)?;
+            }
+        }
+    }
+    if let Known(value) = &semantics.temporal
+        && let Known(target) = &value.decay_target
+    {
+        validate_item_target(target)?;
+    }
+    if let Known(value) = &semantics.imbuement {
+        if matches!(value.slot_count, Known(slots) if slots > REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS) {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item imbuement slot count",
+            ));
+        }
+        if let Known(entries) = &value.allowed_family_tiers {
+            require_limit(
+                "Reference Item imbuement allowances",
+                entries.len(),
+                REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            )?;
+            require_sorted_unique(
+                "Reference Item imbuement allowance order",
+                &entries.iter().map(|entry| entry.family).collect::<Vec<_>>(),
+            )?;
+        }
+        if let Known(entries) = &value.excluded_families {
+            require_limit(
+                "Reference Item excluded imbuement families",
+                entries.len(),
+                REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES,
+            )?;
+            require_sorted_unique("Reference Item excluded imbuement family order", entries)?;
+        }
+    }
+    if let Known(value) = &semantics.use_transform {
+        if value.targets.len() != 10 {
+            return Err(ContentError::InvalidArtifact(
+                "Reference Item UseTransform requires ten fixed target kinds",
+            ));
+        }
+        require_sorted_unique(
+            "Reference Item UseTransform kind order",
+            &value
+                .targets
+                .iter()
+                .map(|entry| entry.kind)
+                .collect::<Vec<_>>(),
+        )?;
+        for entry in &value.targets {
+            if let Known(target) = &entry.target {
+                validate_item_target(target)?;
+            }
+        }
+    }
+    if let Known(value) = &semantics.trade_restrictions {
+        if let Known(vocations) = &value.vocations {
+            require_limit(
+                "Reference Item trade vocations",
+                vocations.len(),
+                REFERENCE_ITEM_MAX_BASE_VOCATIONS,
+            )?;
+            require_sorted_unique("Reference Item trade vocation order", vocations)?;
+        }
+        reject_known_unsupported(
+            &value.account_binding_policy,
+            "Reference Item immutable account binding is unsupported in v1",
+        )?;
+        reject_known_unsupported(
+            &value.character_binding_policy,
+            "Reference Item immutable character binding is unsupported in v1",
+        )?;
+    }
+    if let Known(value) = &semantics.readable_writeable
+        && let Known(target) = &value.write_once_target
+    {
+        validate_item_target(target)?;
+    }
+    Ok(())
+}
+
+fn validate_modifier_parameter(
+    kind: ReferenceSkillModifierKind,
+    parameter: &ReferenceModifierParameter,
+) -> Result<(), ContentError> {
+    use ReferenceModifierParameter as Parameter;
+    use ReferenceSkillModifierKind as Kind;
+    let valid = match kind {
+        Kind::Invisibility | Kind::ManaShield | Kind::SuppressDrown | Kind::SuppressDrunk => {
+            matches!(parameter, Parameter::Boolean(_))
+        }
+        Kind::CleavePercent
+        | Kind::CriticalHitChance
+        | Kind::CriticalHitDamage
+        | Kind::LifeLeechAmount
+        | Kind::LifeLeechChance
+        | Kind::MagicShieldCapacityPercent
+        | Kind::ManaLeechAmount
+        | Kind::ManaLeechChance => {
+            if let Parameter::RationalPercent(value) = parameter {
+                value.validate()?;
+                true
+            } else {
+                false
+            }
+        }
+        Kind::HealthTicks | Kind::ManaTicks => matches!(parameter, Parameter::Milliseconds(_)),
+        Kind::PerfectShotRange => matches!(parameter, Parameter::Cells(_)),
+        Kind::ElementalBond => matches!(parameter, Parameter::Element(_)),
+        _ => matches!(parameter, Parameter::SignedPoints(_)),
+    };
+    if !valid {
+        return Err(ContentError::InvalidArtifact(
+            "Reference Item SkillModifier parameter has the wrong typed shape",
         ));
     }
     Ok(())

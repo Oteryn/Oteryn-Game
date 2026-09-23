@@ -2,7 +2,7 @@
 
 use oteryn_game_server::content::*;
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 const B1_EVIDENCE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json"
@@ -31,6 +31,36 @@ fn limits() -> ProjectEvidenceLimits {
 
 fn import() -> ProtectedCw2B1VaseImport {
     protected_cw2_b1_vase_import(B1_EVIDENCE).expect("protected B1 vase import")
+}
+
+#[test]
+fn all_b1_item_candidate_fields_have_one_typed_destination_or_explicit_loss() {
+    let evidence: Value = serde_json::from_slice(B1_EVIDENCE).expect("protected B1 evidence");
+    let expected = evidence
+        .pointer("/semantic_catalog/field_disposition_records")
+        .and_then(Value::as_array)
+        .expect("field disposition records")
+        .iter()
+        .filter(|row| row["disposition"] == "GAME_ITEM_CANDIDATE")
+        .map(|row| row["native_field"].as_str().expect("native field"))
+        .collect::<BTreeSet<_>>();
+    let actual = CW2_B1_ITEM_FIELD_DISPOSITIONS
+        .iter()
+        .map(|(field, destination)| {
+            assert!(!destination.is_empty(), "{field}");
+            *field
+        })
+        .collect::<BTreeSet<_>>();
+    assert_eq!(CW2_B1_ITEM_FIELD_DISPOSITIONS.len(), 90);
+    assert_eq!(actual.len(), CW2_B1_ITEM_FIELD_DISPOSITIONS.len());
+    assert_eq!(actual, expected);
+    assert_eq!(
+        CW2_B1_ITEM_FIELD_DISPOSITIONS
+            .iter()
+            .filter(|(_, destination)| destination.starts_with("EXPLICIT_UNSUPPORTED"))
+            .count(),
+        2,
+    );
 }
 
 fn draft(import: ProtectedCw2B1VaseImport) -> ProjectDraft {
@@ -907,6 +937,7 @@ fn full_item_family_round_trip_compiles_v3_and_rejects_38158() {
                     materializable: false,
                     stack_class: ReferenceItemStackClass::Unknown,
                     legal_destinations,
+                    ..
                 }) if legal_destinations.is_empty()
             )
         })
