@@ -158,8 +158,21 @@ def normalize_page(
     encoded = wikitext.encode("utf-8")
     if len(encoded) > predecessor.MAX_WIKITEXT_BYTES:
         raise CensusError(f"WIKITEXT_MAX_PLUS_ONE:{len(encoded)}")
-    extracted = _extract_infobox(wikitext)
+    parse_error: str | None = None
+    try:
+        extracted = _extract_infobox(wikitext)
+    except CensusError as exc:
+        parse_error = predecessor.bounded_text(
+            str(exc), label="SOURCE_PARSE_ERROR", max_bytes=256
+        )
+        extracted = {"mapped": {}, "unmapped": {}, "infobox_present": True}
     infobox_present = extracted["infobox_present"] is True
+    if parse_error is not None:
+        source_shape = "INFOBOX_ITEM_PARSE_ERROR"
+    elif infobox_present:
+        source_shape = "INFOBOX_ITEM"
+    else:
+        source_shape = "NO_INFOBOX_ITEM"
     return {
         "source": SOURCE_ID,
         "source_role": SOURCE_ROLE,
@@ -169,7 +182,8 @@ def normalize_page(
         "revision_timestamp": meta["revision_timestamp"],
         "retrieval_timestamp": retrieval_timestamp,
         "source_digest": sha256_bytes(encoded),
-        "source_shape": "INFOBOX_ITEM" if infobox_present else "NO_INFOBOX_ITEM",
+        "source_shape": source_shape,
+        "source_parse_error": parse_error,
         "normalized_fields": extracted["mapped"],
         "unmapped_infobox_fields": extracted["unmapped"],
         "infobox_present": infobox_present,
@@ -219,14 +233,23 @@ def collect_discovered_pages(
             if page_id in cached_by_page:
                 record = dict(cached_by_page[page_id])
                 record["retrieval_timestamp"] = retrieval_timestamp
-                expected_shape = (
-                    "INFOBOX_ITEM"
-                    if record.get("infobox_present") is True
-                    else "NO_INFOBOX_ITEM"
-                )
+                parse_error = record.get("source_parse_error")
+                if parse_error is not None and not isinstance(parse_error, str):
+                    raise CensusError(
+                        f"DISCOVERED_CACHE_PARSE_ERROR_INVALID:{page_id}"
+                    )
+                if parse_error:
+                    expected_shape = "INFOBOX_ITEM_PARSE_ERROR"
+                elif record.get("infobox_present") is True:
+                    expected_shape = "INFOBOX_ITEM"
+                else:
+                    expected_shape = "NO_INFOBOX_ITEM"
                 if record.get("source_shape") not in (None, expected_shape):
-                    raise CensusError(f"DISCOVERED_CACHE_SOURCE_SHAPE_INVALID:{page_id}")
+                    raise CensusError(
+                        f"DISCOVERED_CACHE_SOURCE_SHAPE_INVALID:{page_id}"
+                    )
                 record["source_shape"] = expected_shape
+                record["source_parse_error"] = parse_error
             else:
                 record = normalize_page(
                     meta, content_by_page[page_id], retrieval_timestamp
@@ -277,13 +300,26 @@ def compile_census(
         infobox_present = page.get("infobox_present")
         if not isinstance(infobox_present, bool):
             raise CensusError("CENSUS_INFOBOX_STATE_INVALID")
-        expected_shape = "INFOBOX_ITEM" if infobox_present else "NO_INFOBOX_ITEM"
+        parse_error = page.get("source_parse_error")
+        if parse_error is not None:
+            predecessor.bounded_text(
+                parse_error, label="SOURCE_PARSE_ERROR", max_bytes=256
+            )
+            if not infobox_present:
+                raise CensusError("CENSUS_PARSE_ERROR_WITHOUT_INFOBOX")
+            expected_shape = "INFOBOX_ITEM_PARSE_ERROR"
+        else:
+            expected_shape = (
+                "INFOBOX_ITEM" if infobox_present else "NO_INFOBOX_ITEM"
+            )
         if page.get("source_shape") != expected_shape:
             raise CensusError("CENSUS_SOURCE_SHAPE_INVALID")
         mapped = page.get("normalized_fields")
         unmapped = page.get("unmapped_infobox_fields")
         if not isinstance(mapped, dict) or not isinstance(unmapped, dict):
             raise CensusError("CENSUS_FIELD_MAP_INVALID")
+        if parse_error is not None and (mapped or unmapped):
+            raise CensusError("CENSUS_PARSE_ERROR_WITH_PARTIAL_FIELDS")
         overlap = set(mapped) & set(unmapped)
         if overlap:
             raise CensusError(f"CENSUS_FIELD_PARTITION_OVERLAP:{sorted(overlap)[0]}")
@@ -322,10 +358,17 @@ def compile_census(
         "counts": {
             "discovered_pages": len(discovered),
             "fetched_pages": len(stable_pages),
-            "pages_with_infobox": source_shapes["INFOBOX_ITEM"],
+            "pages_with_infobox": (
+                source_shapes["INFOBOX_ITEM"]
+                + source_shapes["INFOBOX_ITEM_PARSE_ERROR"]
+            ),
             "pages_without_infobox": source_shapes["NO_INFOBOX_ITEM"],
+            "infobox_parse_errors": source_shapes["INFOBOX_ITEM_PARSE_ERROR"],
             "source_shapes": {
                 "INFOBOX_ITEM": source_shapes["INFOBOX_ITEM"],
+                "INFOBOX_ITEM_PARSE_ERROR": source_shapes[
+                    "INFOBOX_ITEM_PARSE_ERROR"
+                ],
                 "NO_INFOBOX_ITEM": source_shapes["NO_INFOBOX_ITEM"],
             },
             "distinct_infobox_fields": len(field_keys),
@@ -387,9 +430,10 @@ def build_manifest(
             "starts_from_crystal_38157": False,
             "source_shape_partition_complete": (
                 counts["discovered_pages"]
-                == counts["pages_with_infobox"] + counts["pages_without_infobox"]
+                == sum(counts["source_shapes"].values())
             ),
             "no_infobox_member_dropped": True,
+            "infobox_conflict_never_guessed": True,
             "identity_resolution_performed": False,
             "semantic_promotion_performed": False,
             "raw_long_form_prose_collected": False,
@@ -405,6 +449,11 @@ def build_manifest(
             (
                 "TibiaWiki is structured source evidence, not Reference "
                 "gameplay truth."
+            ),
+            (
+                "Conflicting or otherwise rejected Item infoboxes remain "
+                "INFOBOX_ITEM_PARSE_ERROR records carrying only a bounded "
+                "parser error code; no conflicting field value is guessed."
             ),
             (
                 "The census intentionally does not map pages to "
