@@ -51,7 +51,7 @@ Current runtime selection:
 | Client/shared/simulation, including their consumed auxiliary inputs | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
 | Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
 
-Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal references from exact-candidate package/control sources attach non-Cargo files to their real consumers. There is no historical document-consumer SHA or source-drift snapshot to refresh.
+Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
 `docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
@@ -80,7 +80,7 @@ A PR-head PASS does not prove integration. Require the real `merge_group` aggreg
 | Rust/server code | affected package/tests + strict lint while editing | trusted server/full lanes above |
 | Client/shared/simulation | affected package/platform tests | FULL Linux/PostgreSQL/Windows/SIM |
 | Canonical routing/build/dependency inputs | repository-policy tests and workflow review | FULL |
-| Standalone workflow / offline non-Cargo tool | its focused/dedicated checks | always-required PR gates; product lanes only when exact-candidate product/control consumers require them |
+| Standalone workflow / offline non-Cargo tool | its focused/dedicated checks | always-required PR gates; product lanes only when exact-candidate Cargo package consumers require them |
 
 ## Rust and platform evidence
 
