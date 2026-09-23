@@ -203,7 +203,7 @@ pub(super) fn read_scope(r: &mut Reader<'_>) -> Result<RuntimeScopeRefV1> {
         _ => invalid(),
     }
 }
-fn write_key(w: &mut Writer, key: &AdmissionAuthorityGuardKeyV1) -> Result<()> {
+pub(super) fn write_key(w: &mut Writer, key: &AdmissionAuthorityGuardKeyV1) -> Result<()> {
     match key {
         AdmissionAuthorityGuardKeyV1::Account { account_id } => {
             w.tag(1)?;
