@@ -44,18 +44,18 @@ Current runtime selection:
 
 | Proven PR surface | Runtime evidence |
 |---|---|
-| Neutral root/docs Markdown | no Rust runtime lanes when the bounded consumer proof is healthy; always-required governance/security/routing remains |
-| Agent governance: `AGENTS*.md`, `tools/agents/**`, `docs/agents/**` except `docs/agents/evidence/**` | no product lanes when the reviewed consumer-safety proof is healthy; always-required governance/security/routing remains |
+| Unconsumed auxiliary inputs: neutral docs, agent governance, standalone workflows and non-Cargo offline tooling | no Rust product lanes; always-required governance/security/routing and any dedicated workflow remain |
+| Auxiliary file referenced by exact-candidate Cargo package source/build input | route as the consuming package, then apply normal reverse Cargo closure |
 | Audited Atlas fullworld producer/self-test surface | dedicated Atlas producer/consumer gate; add Rust lanes only if another path selects them |
-| Server-only, including durability/migrations/reconnect | Linux workspace + PostgreSQL 17.6 + policy/supply chain |
-| Client/shared/simulation | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
-| `.github/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
+| Server-only, including server-consumed auxiliary inputs | Linux workspace + PostgreSQL 17.6 + policy/supply chain |
+| Client/shared/simulation, including their consumed auxiliary inputs | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
+| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
 
-A reduced lane is conditional on the current reviewed consumer/dependency snapshot and bounded drift proof. Stale or uncertain snapshot state selects FULL; agents must not update a snapshot merely to preserve savings.
+Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal references from exact-candidate package/control sources attach non-Cargo files to their real consumers. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
-`docs/agents/evidence/**` remains runtime-material/fail-closed because current Rust source/tests consume some evidence with `include_str!` / `include_bytes!`.
+`docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
-Neutral-document and agent-governance classifications are semantic surfaces, not blanket path exemptions. Cross-surface renames, symlinks/submodules, special modes and incomplete file enumeration fail closed.
+Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
 
 ## Merge Queue gate
 
@@ -79,7 +79,8 @@ A PR-head PASS does not prove integration. Require the real `merge_group` aggreg
 | Architecture/contracts | governance plus applicable link/JSON/schema/semantic checks | always-required PR gates; runtime E2E may be `NOT_APPLICABLE` with an accurate reason |
 | Rust/server code | affected package/tests + strict lint while editing | trusted server/full lanes above |
 | Client/shared/simulation | affected package/platform tests | FULL Linux/PostgreSQL/Windows/SIM |
-| Workflow/build/dependency inputs | repository-policy tests and workflow review | FULL |
+| Canonical routing/build/dependency inputs | repository-policy tests and workflow review | FULL |
+| Standalone workflow / offline non-Cargo tool | its focused/dedicated checks | always-required PR gates; product lanes only when exact-candidate product/control consumers require them |
 
 ## Rust and platform evidence
 
@@ -108,10 +109,10 @@ Windows smoke exits before renderer construction; it is shell/package evidence, 
 
 | Protected-main input | Standalone runtime lanes |
 |---|---|
-| Proven neutral documentation with bounded consumer proof | runtime lanes not applicable; policy/supply chain remain |
-| Proven server-only with healthy reviewed consumer snapshot | Linux + PostgreSQL + policy/supply chain |
-| Client/shared/simulation or mixed material surfaces | FULL |
-| Cargo/toolchain/build/workflow/control-plane/unknown/incomplete | FULL |
+| Proven unconsumed auxiliary inputs | runtime lanes not applicable; policy/supply chain remain |
+| Proven server-only or server-consumed auxiliary input | Linux + PostgreSQL + policy/supply chain |
+| Client/shared/simulation or their consumed auxiliary inputs | FULL |
+| Cargo/toolchain/build/canonical-routing/unknown/incomplete | FULL |
 | Manual dispatch or classifier/evidence failure | FULL |
 
 Post-merge routing does not replace PR or Merge Queue qualification and cannot retroactively prove a skipped pre-merge gate.
