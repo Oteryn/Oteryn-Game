@@ -453,7 +453,6 @@ fn relocating_one_managed_document_keeps_v2_semantic_identity() {
     );
 }
 
-
 fn item_candidate() -> ProjectV2Draft {
     let mut draft = candidate();
     draft.core.records.extend([
@@ -502,28 +501,28 @@ fn item_candidate() -> ProjectV2Draft {
             semantics: ReferenceItemSemantics::default(),
         },
     ]);
-    draft.state.declarations.push(ProjectV2Declaration::Interaction {
-        identity: identity("interaction.item-alpha"),
-        fields: vec![],
-    });
-    draft.state.declarations.push(ProjectV2Declaration::Service {
-        identity: identity("service.item-alpha"),
-        offers: vec![ProjectV2ServiceOffer {
-            item: reference(
-                ProjectV2Family::Item,
-                "oteryn:reference.item.weapon-alpha",
-            ),
-            direction: ProjectV2ServiceOfferDirection::SellToPlayer,
-            unit_price: 125_000,
-            currency: None,
-        }],
-        fields: vec![],
-    });
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Interaction {
+            identity: identity("interaction.item-alpha"),
+            fields: vec![],
+        });
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Service {
+            identity: identity("service.item-alpha"),
+            offers: vec![ProjectV2ServiceOffer {
+                item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+                direction: ProjectV2ServiceOfferDirection::SellToPlayer,
+                unit_price: 125_000,
+                currency: None,
+            }],
+            fields: vec![],
+        });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
-        item: reference(
-            ProjectV2Family::Item,
-            "oteryn:reference.item.weapon-alpha",
-        ),
+        item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
         presentation: Some(reference(
             ProjectV2Family::Presentation,
             "oteryn:reference.presentation.courier",
@@ -555,12 +554,10 @@ fn item_candidate() -> ProjectV2Draft {
                         )),
                         rank_values: vec![ProjectV2AugmentRankValue {
                             rank: 1,
-                            value: ProjectV2AugmentValue::RationalPercent(
-                                ProjectV2ExactRatio {
-                                    numerator: 3,
-                                    denominator: 100,
-                                },
-                            ),
+                            value: ProjectV2AugmentValue::RationalPercent(ProjectV2ExactRatio {
+                                numerator: 3,
+                                denominator: 100,
+                            }),
                         }],
                         fields: vec![],
                     }],
@@ -635,10 +632,7 @@ fn item_candidate() -> ProjectV2Draft {
         }),
     });
     draft.state.editor.push(ProjectV2EditorEntry {
-        target: reference(
-            ProjectV2Family::Item,
-            "oteryn:reference.item.weapon-alpha",
-        ),
+        target: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
         display_name: "Weapon Alpha".into(),
         description: "Editor-only Item metadata".into(),
         categories: vec!["weapon".into()],
@@ -713,8 +707,7 @@ fn item_authoring_rejects_mutable_instance_and_reverse_relationship_fields() {
     ] {
         let mut changed = documents.documents().clone();
         let path = "definitions/declarations.json";
-        let mut declarations: Value =
-            serde_json::from_slice(&changed[path]).expect("declarations");
+        let mut declarations: Value = serde_json::from_slice(&changed[path]).expect("declarations");
         declarations["item_authoring"][0][forbidden.0] = forbidden.1;
         let bytes = canonical(&declarations);
         changed.insert(path.into(), bytes.clone());
