@@ -101,6 +101,105 @@ END; $$;
 CREATE TRIGGER game_node_registration_guard BEFORE UPDATE OR DELETE
     ON game_node_registrations FOR EACH ROW EXECUTE FUNCTION game_node_registration_guard();
 
+-- Immutable registration endings (2 REVOKED, 3 SUPERSEDED). Each ending takes
+-- its own writer revision, so registration and ending revisions together must
+-- cover 1..high-water exactly; a restore that rolls a registration row back to
+-- CURRENT, or drops an ending, is detected rather than trusted.
+CREATE TABLE game_node_registration_endings (
+    node_id UUID PRIMARY KEY REFERENCES game_node_registrations (node_id),
+    ending_revision NUMERIC(20, 0) NOT NULL UNIQUE
+        CHECK (ending_revision BETWEEN 1 AND 18446744073709551615),
+    state SMALLINT NOT NULL CHECK (state IN (2, 3)),
+    superseded_by UUID NULL REFERENCES game_node_registrations (node_id),
+    ended_at BIGINT NOT NULL CHECK (ended_at >= 0),
+    CHECK ((state = 3) = (superseded_by IS NOT NULL))
+);
+CREATE FUNCTION game_node_registration_ending_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN
+    RAISE EXCEPTION 'GameNode registration endings are immutable' USING ERRCODE = '23514';
+END; $$;
+CREATE TRIGGER game_node_registration_ending_guard BEFORE UPDATE OR DELETE
+    ON game_node_registration_endings FOR EACH ROW EXECUTE FUNCTION game_node_registration_ending_guard();
+
+-- Authoritative registration history: registration and ending revisions are
+-- disjoint and contiguous through the writer high-water, and every
+-- registration row agrees with its immutable ending (CURRENT has none).
+CREATE FUNCTION game_node_registration_history_valid() RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    v_high_water NUMERIC(20, 0);
+BEGIN
+    SELECT registration_revision_high_water INTO v_high_water
+        FROM game_node_registration_writer WHERE writer_id = 1 FOR SHARE;
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+    IF (SELECT count(*)::numeric FROM game_node_registrations)
+           + (SELECT count(*)::numeric FROM game_node_registration_endings) <> v_high_water
+       OR (SELECT count(*)::numeric FROM (
+               SELECT registration_revision FROM game_node_registrations
+               UNION SELECT ending_revision FROM game_node_registration_endings) revisions) <> v_high_water
+       OR (SELECT coalesce(min(revision), 1) FROM (
+               SELECT registration_revision AS revision FROM game_node_registrations
+               UNION ALL SELECT ending_revision FROM game_node_registration_endings) revisions) <> 1
+       OR (SELECT coalesce(max(revision), 0) FROM (
+               SELECT registration_revision AS revision FROM game_node_registrations
+               UNION ALL SELECT ending_revision FROM game_node_registration_endings) revisions) <> v_high_water THEN
+        RETURN FALSE;
+    END IF;
+    RETURN NOT EXISTS (
+        SELECT 1 FROM game_node_registrations g
+        LEFT JOIN game_node_registration_endings e USING (node_id)
+        WHERE (e.node_id IS NULL) <> (g.state = 1)
+           OR (e.node_id IS NOT NULL AND (
+                  e.state <> g.state
+                  OR e.superseded_by IS DISTINCT FROM g.superseded_by
+                  OR e.ended_at IS DISTINCT FROM g.ended_at))
+    );
+END; $$;
+
+-- The only way a registration leaves CURRENT: allocate the next writer
+-- revision, end the row and record the immutable ending in one transaction.
+-- Idempotent for an identical ending; any other ended state is rejected.
+CREATE FUNCTION game_node_end_registration(
+    p_node_id UUID, p_registration_revision NUMERIC, p_state SMALLINT, p_superseded_by UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql VOLATILE SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE
+    v_high_water NUMERIC(20, 0);
+    v_row game_node_registrations%ROWTYPE;
+    v_now BIGINT := floor(extract(epoch FROM statement_timestamp()))::BIGINT;
+BEGIN
+    IF p_state NOT IN (2, 3) OR ((p_state = 3) <> (p_superseded_by IS NOT NULL)) THEN
+        RETURN FALSE;
+    END IF;
+    SELECT registration_revision_high_water INTO v_high_water
+        FROM game_node_registration_writer WHERE writer_id = 1 FOR UPDATE;
+    IF NOT FOUND OR NOT game_node_registration_history_valid() THEN
+        RAISE EXCEPTION 'GameNode registration history contradicts its high-water' USING ERRCODE = 'XX000';
+    END IF;
+    SELECT * INTO v_row FROM game_node_registrations
+        WHERE node_id = p_node_id AND registration_revision = p_registration_revision FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN FALSE;
+    END IF;
+    IF v_row.state <> 1 THEN
+        RETURN v_row.state = p_state AND v_row.superseded_by IS NOT DISTINCT FROM p_superseded_by;
+    END IF;
+    IF v_high_water >= 18446744073709551615 THEN
+        RAISE EXCEPTION 'GameNode registration revision unavailable' USING ERRCODE = 'OTN01';
+    END IF;
+    v_high_water := v_high_water + 1;
+    v_now := greatest(v_now, v_row.registered_at);
+    UPDATE game_node_registration_writer SET registration_revision_high_water = v_high_water
+        WHERE writer_id = 1;
+    UPDATE game_node_registrations SET state = p_state, ended_at = v_now, superseded_by = p_superseded_by
+        WHERE node_id = p_node_id;
+    INSERT INTO game_node_registration_endings (node_id, ending_revision, state, superseded_by, ended_at)
+        VALUES (p_node_id, v_high_water, p_state, p_superseded_by, v_now);
+    RETURN TRUE;
+END; $$;
+
 -- GameNode registration boundary. The caller proves one-launch authorization by
 -- presenting its secret; the NodeId is never a credential.
 CREATE FUNCTION game_node_register(p_authorization BYTEA, p_launch_binding TEXT, p_node_id UUID)
@@ -144,11 +243,9 @@ BEGIN
     IF NOT FOUND OR v_revision >= 18446744073709551615 THEN
         RAISE EXCEPTION 'GameNode registration revision unavailable' USING ERRCODE = 'OTN01';
     END IF;
-    -- Retained history must match the high-water exactly: neither ahead of
-    -- it (regressed high-water) nor behind it (rolled-back history).
-    IF EXISTS (SELECT 1 FROM game_node_registrations WHERE registration_revision > v_revision)
-       OR (v_revision > 0 AND NOT EXISTS (
-           SELECT 1 FROM game_node_registrations WHERE registration_revision = v_revision)) THEN
+    -- Retained registration and ending history must match the high-water
+    -- exactly: neither ahead of it nor behind it, with no row/ending mismatch.
+    IF NOT game_node_registration_history_valid() THEN
         RAISE EXCEPTION 'GameNode registration history contradicts its high-water' USING ERRCODE = 'XX000';
     END IF;
     v_revision := v_revision + 1;
@@ -164,9 +261,9 @@ BEGIN
         IF NOT FOUND THEN
             RAISE EXCEPTION 'GameNode registration state is contradictory' USING ERRCODE = 'XX000';
         END IF;
-        IF v_existing.state = 1 THEN
-            UPDATE game_node_registrations SET state = 3, ended_at = v_now, superseded_by = p_node_id
-                WHERE node_id = v_authorization.supersedes_node_id;
+        IF v_existing.state = 1 AND NOT game_node_end_registration(
+            v_existing.node_id, v_existing.registration_revision, 3::SMALLINT, p_node_id) THEN
+            RAISE EXCEPTION 'GameNode registration state is contradictory' USING ERRCODE = 'XX000';
         END IF;
     END IF;
     RETURN v_revision;
@@ -179,9 +276,13 @@ CREATE FUNCTION game_node_lock_current_registration(p_node_id UUID, p_registrati
 RETURNS BOOLEAN
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
-    PERFORM 1 FROM game_node_registrations
-        WHERE node_id = p_node_id AND registration_revision = p_registration_revision AND state = 1
-        FOR SHARE;
+    IF NOT game_node_registration_history_valid() THEN
+        RETURN FALSE;
+    END IF;
+    PERFORM 1 FROM game_node_registrations g
+        WHERE g.node_id = p_node_id AND g.registration_revision = p_registration_revision AND g.state = 1
+          AND NOT EXISTS (SELECT 1 FROM game_node_registration_endings e WHERE e.node_id = g.node_id)
+        FOR SHARE OF g;
     RETURN FOUND;
 END; $$;
 
@@ -194,13 +295,15 @@ CREATE FUNCTION game_node_prove_current_incarnation(
 RETURNS BOOLEAN
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
-    IF p_secret IS NULL OR octet_length(p_secret) <> 32 THEN
+    IF p_secret IS NULL OR octet_length(p_secret) <> 32
+       OR NOT game_node_registration_history_valid() THEN
         RETURN FALSE;
     END IF;
-    PERFORM 1 FROM game_node_registrations
-        WHERE node_id = p_node_id AND registration_revision = p_registration_revision AND state = 1
-          AND authorization_digest = sha256(p_secret)
-        FOR SHARE;
+    PERFORM 1 FROM game_node_registrations g
+        WHERE g.node_id = p_node_id AND g.registration_revision = p_registration_revision AND g.state = 1
+          AND g.authorization_digest = sha256(p_secret)
+          AND NOT EXISTS (SELECT 1 FROM game_node_registration_endings e WHERE e.node_id = g.node_id)
+        FOR SHARE OF g;
     RETURN FOUND;
 END; $$;
 
@@ -424,6 +527,11 @@ BEGIN
     IF NOT FOUND THEN
         RETURN NEW;
     END IF;
+    -- A partially restored assignment row is never trusted for any Runtime
+    -- publication: authoritative retained history must validate first.
+    IF NOT game_runtime_scope_assignment_history_valid() THEN
+        RAISE EXCEPTION 'runtime publication requires valid assignment history' USING ERRCODE = '23514';
+    END IF;
     IF v_assignment.ownership_generation <> NEW.ownership_generation THEN
         RAISE EXCEPTION 'runtime publication requires the current assignment generation' USING ERRCODE = '23514';
     END IF;
@@ -457,6 +565,7 @@ REVOKE ALL ON TABLE
     game_node_registration_writer,
     game_node_bootstrap_authorizations,
     game_node_registrations,
+    game_node_registration_endings,
     game_runtime_scope_assignment_writer,
     game_runtime_scope_assignments,
     game_runtime_scope_assignment_receipts,
@@ -468,6 +577,9 @@ REVOKE ALL ON FUNCTION
     game_node_registration_writer_guard(),
     game_node_bootstrap_authorization_guard(),
     game_node_registration_guard(),
+    game_node_registration_ending_guard(),
+    game_node_registration_history_valid(),
+    game_node_end_registration(UUID, NUMERIC, SMALLINT, UUID),
     game_node_register(BYTEA, TEXT, UUID),
     game_node_lock_current_registration(UUID, NUMERIC),
     game_node_prove_current_incarnation(UUID, NUMERIC, BYTEA),

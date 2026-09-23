@@ -1789,6 +1789,9 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
                     ('game_node_registration_writer_guard()'), \
                     ('game_node_bootstrap_authorization_guard()'), \
                     ('game_node_registration_guard()'), \
+                    ('game_node_registration_ending_guard()'), \
+                    ('game_node_registration_history_valid()'), \
+                    ('game_node_end_registration(uuid,numeric,smallint,uuid)'), \
                     ('game_node_register(bytea,text,uuid)'), \
                     ('game_node_lock_current_registration(uuid,numeric)'), \
                     ('game_node_prove_current_incarnation(uuid,numeric,bytea)'), \
@@ -1810,7 +1813,7 @@ fn ordinary_gamenode_role_cannot_mutate_assignment_or_registration_authority() -
             )
             .fetch_all(&pool)
             .await?;
-            assert_eq!(function_privileges.len(), 14);
+            assert_eq!(function_privileges.len(), 17);
             for (signature, function_exists, public_can_execute) in function_privileges {
                 assert!(function_exists, "migration function is missing: {signature}");
                 assert!(
@@ -2469,6 +2472,287 @@ fn duplicate_writer_handles_share_one_nasg_queue() -> TestResult {
                 ReconcileOutcome::Absent
             );
             assert_eq!(first_handle.unreconciled(), None);
+            pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn registration_state_rollback_cannot_restore_currentness() -> TestResult {
+    run("registration_rollback", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let channel = scope(1)?;
+            let a = register_proof(&root, 1, None).await?;
+            // B supersedes A: registration revision 2, A's ending revision 3.
+            let b = register_proof(&root, 2, Some(a.fact().node_id())).await?;
+            // C is registered then revoked: registration 4, ending 5.
+            let c = register_proof(&root, 3, None).await?;
+            root.revoke_node_registration(c.fact())
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(high_water(&pool).await?.1, "5");
+            let endings: Vec<(String, i16)> = sqlx::query_as(
+                "SELECT ending_revision::text, state FROM game_node_registration_endings \
+                 ORDER BY ending_revision",
+            )
+            .fetch_all(&pool)
+            .await?;
+            assert_eq!(endings, vec![("3".into(), 3), ("5".into(), 2)]);
+            root.require_current_node_registration(&b)
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            // Endings are immutable.
+            expect_sql_state(
+                sqlx::query("DELETE FROM game_node_registration_endings")
+                    .execute(&pool)
+                    .await,
+                "23514",
+            )
+            .await?;
+
+            // Partial restore rolls only A's mutable row back to CURRENT while
+            // the high-water, B and A's immutable ending survive.
+            let mut restore = pool.begin().await?;
+            sqlx::query(
+                "ALTER TABLE game_node_registrations DISABLE TRIGGER game_node_registration_guard",
+            )
+            .execute(&mut *restore)
+            .await?;
+            sqlx::query(
+                "UPDATE game_node_registrations SET state = 1, ended_at = NULL, superseded_by = NULL \
+                 WHERE registration_revision = 1",
+            )
+            .execute(&mut *restore)
+            .await?;
+            sqlx::query(
+                "ALTER TABLE game_node_registrations ENABLE TRIGGER game_node_registration_guard",
+            )
+            .execute(&mut *restore)
+            .await?;
+            restore.commit().await?;
+            // A's still-held secret no longer proves currentness, and the
+            // contradictory history also fails every other currentness check.
+            for proof in [&a, &b] {
+                assert!(
+                    root.require_current_node_registration(proof).await.is_err(),
+                    "currentness accepted over contradictory registration history"
+                );
+            }
+            let target_current: bool = sqlx::query_scalar(
+                "SELECT game_node_lock_current_registration(encode($1, 'hex')::uuid, 1)",
+            )
+            .bind(a.fact().node_id().as_bytes().as_slice())
+            .fetch_one(&pool)
+            .await?;
+            assert!(!target_current);
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                rejected(
+                    writer
+                        .submit(&request(
+                            1,
+                            AssignmentCommand::Assign {
+                                scope: channel,
+                                target: a.fact(),
+                            },
+                        )?)
+                        .await
+                )?,
+                AssignmentRejection::TargetNotCurrent
+            );
+            // New registration also refuses to allocate over the contradiction.
+            assert!(register_proof(&root, 4, None).await.is_err());
+            assert_eq!(high_water(&pool).await?.1, "5");
+
+            // A deeper restore that also drops the ending leaves a revision hole.
+            let mut restore = pool.begin().await?;
+            sqlx::query("ALTER TABLE game_node_registration_endings DISABLE TRIGGER game_node_registration_ending_guard")
+                .execute(&mut *restore)
+                .await?;
+            sqlx::query("DELETE FROM game_node_registration_endings WHERE ending_revision = 3")
+                .execute(&mut *restore)
+                .await?;
+            sqlx::query("ALTER TABLE game_node_registration_endings ENABLE TRIGGER game_node_registration_ending_guard")
+                .execute(&mut *restore)
+                .await?;
+            restore.commit().await?;
+            assert!(root.require_current_node_registration(&a).await.is_err());
+            assert!(root.require_current_node_registration(&b).await.is_err());
+            pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn restored_guard_behind_latest_fence_and_stale_row_fail_closed() -> TestResult {
+    run("guard_fence_restore", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let guards = AdmissionGuardStore::from_root(root.clone());
+            let channel = scope(1)?;
+            let a = register(&root, 1, None).await?;
+            let b = register(&root, 2, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let now = db_now(&pool).await?;
+            publish_runtime(&guards, runtime_change(channel, None, 1, true, now), now).await?;
+            let first = committed(
+                writer
+                    .submit(&request(
+                        1,
+                        AssignmentCommand::Assign {
+                            scope: channel,
+                            target: a,
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(first.fenced_publication_revision, Some(2));
+            // Snapshot the guard as fenced by the first decision.
+            sqlx::query("CREATE TABLE snap_runtime_guard AS SELECT * FROM game_durability_admission_runtime_guards")
+                .execute(&pool)
+                .await?;
+            let second = committed(
+                writer
+                    .submit(&request(
+                        2,
+                        AssignmentCommand::Replace {
+                            scope: channel,
+                            predecessor: first.predecessor(),
+                            target: b,
+                        },
+                    )?)
+                    .await,
+            )?;
+            assert_eq!(second.fenced_publication_revision, Some(3));
+
+            // Partial restore: the Runtime guard and its history roll back to
+            // the first fence while the assignment row, receipts and
+            // high-water retain the replacement decision.
+            let mut restore = pool.begin().await?;
+            for statement in [
+                "ALTER TABLE game_durability_admission_runtime_guards DISABLE TRIGGER USER",
+                "ALTER TABLE game_durability_admission_guard_history DISABLE TRIGGER USER",
+                "DELETE FROM game_durability_admission_runtime_guards",
+                "INSERT INTO game_durability_admission_runtime_guards SELECT * FROM snap_runtime_guard",
+                "DELETE FROM game_durability_admission_guard_history WHERE publication_revision = 3",
+                "ALTER TABLE game_durability_admission_runtime_guards ENABLE TRIGGER USER",
+                "ALTER TABLE game_durability_admission_guard_history ENABLE TRIGGER USER",
+            ] {
+                sqlx::query(statement).execute(&mut *restore).await?;
+            }
+            restore.commit().await?;
+            assert!(root.read_runtime_scope_predecessor(channel).await.is_err());
+            // A predecessor built on the rolled-back guard cannot cross the
+            // missing fence and reuse its publication position.
+            let stale = AssignmentPredecessor {
+                runtime_guard_publication_revision: Some(2),
+                ..second.predecessor()
+            };
+            let outcome = writer
+                .submit(&request(
+                    3,
+                    AssignmentCommand::Revoke {
+                        scope: channel,
+                        predecessor: stale,
+                    },
+                )?)
+                .await;
+            assert!(
+                !matches!(outcome, Ok(AssignmentOutcome::Committed(_))),
+                "revoke committed across a missing guard fence: {outcome:?}"
+            );
+            ensure_ready(&root).await?;
+            let _ = writer.reconcile(key(3)).await;
+            assert_eq!(high_water(&pool).await?.0, "2");
+
+            // Also roll the assignment row back to the first decision: guard and
+            // row are internally consistent again, but retained receipts prove
+            // a newer decision, so no standalone publication may advance it.
+            let mut restore = pool.begin().await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignments DISABLE TRIGGER game_runtime_scope_assignment_guard")
+                .execute(&mut *restore)
+                .await?;
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignments a SET \
+                 ownership_generation=r.ownership_generation, state=r.state, holder_node_id=r.holder_node_id, \
+                 holder_registration_revision=r.holder_registration_revision, source_revision=r.source_revision, \
+                 decision_identity=r.decision_identity, operation_key=r.operation_key, decided_at=r.decided_at \
+                 FROM game_runtime_scope_assignment_receipts r \
+                 WHERE a.scope_key=r.scope_key AND r.source_revision=1",
+            )
+            .execute(&mut *restore)
+            .await?;
+            sqlx::query("ALTER TABLE game_runtime_scope_assignments ENABLE TRIGGER game_runtime_scope_assignment_guard")
+                .execute(&mut *restore)
+                .await?;
+            restore.commit().await?;
+            let restored = current_runtime(&guards, channel).await?;
+            assert_eq!(runtime_ready(&restored), Some((1, false)));
+            let now = db_now(&pool).await?;
+            assert!(matches!(
+                publish_runtime(
+                    &guards,
+                    runtime_change(channel, Some(&restored), 1, false, now),
+                    now
+                )
+                .await,
+                Err(DurabilityError::Database(_))
+            ));
+            pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
+    run("slot_restore_reconcile", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let pool = database.pool().await?;
+            let a = register(&root, 1, None).await?;
+            let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "writer-a")
+                .await
+                .map_err(|e| format!("{e:?}"))?;
+            let assign = request(
+                1,
+                AssignmentCommand::Assign {
+                    scope: scope(1)?,
+                    target: a,
+                },
+            )?;
+            let receipt = committed(writer.submit(&assign).await)?;
+            // Partial restore: the slot returns to its pre-commit occupied
+            // checkpoint while the receipt and assignment survive.
+            sqlx::query(
+                "UPDATE game_runtime_scope_assignment_slots SET operation_key = $1, command = $2, checkpointed_at = 0 \
+                 WHERE writer_registration = 'writer-a'",
+            )
+            .bind(key(1).as_bytes().as_slice())
+            .bind(assign.encode().map_err(|e| format!("{e:?}"))?)
+            .execute(&pool)
+            .await?;
+            assert_eq!(
+                writer
+                    .reconcile(key(1))
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                ReconcileOutcome::Committed(receipt)
+            );
+            // One assignment-writer registration per process root.
+            assert!(matches!(
+                RuntimeScopeAssignmentWriter::open(root.clone(), "writer-b").await,
+                Err(AssignmentError::Unsupported)
+            ));
             pool.close().await;
             Ok(())
         })
