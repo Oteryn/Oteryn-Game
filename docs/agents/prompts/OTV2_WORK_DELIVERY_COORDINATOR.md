@@ -100,23 +100,27 @@ terminal_states:
 Use locators plus one-line relevance notes instead of copying reports. Open `lazy_refs` only when required for a decision, mutation, conflict or acceptance proof. A direct worker alias without current write allocation remains read-only.
 
 
-### Content / Item convergence guard
+### Content / Item batch policy
 
-For Item Content dispatches, Work must bind a live progress vector before selecting the next generation:
+For Item Content, the default execution unit is **one bounded Item batch**, not one worker/PR per logical stage. Bind the live progress vector:
 
 `resolved_identity | ambiguous_identity | conflict_identity | continuity_proven_or_derived | promotable_fields | canonical_promoted_fields | runtime_client_covered_items`.
 
-Prefer work that changes this vector toward the playable path. A green evidence/report/checkpoint generation with zero vector improvement is not by itself a reason to dispatch another evidence/report/checkpoint generation.
+The preferred batch flow is:
 
-If `promotable_fields == 0`, do **not** dispatch a semantic-promotion worker. Dispatch the smallest bounded source-resolution/evidence-expansion task that can reduce identity ambiguity/conflict or prove target-cut continuity. If no such authorized source/evidence path exists, classify the lane `LANE_BLOCKED` with the exact missing source/decision instead of manufacturing another phase.
+`resolve -> verify -> continuity-if-needed -> promote -> compile/test`.
 
-If `promotable_fields > 0`, prefer immediate bounded canonical promotion through the existing Content model/build lineage before inventing another rule/schema layer. A new Item parser, model, rule engine, schema phase or intermediate framework requires proof that the protected canonical lineage cannot represent or promote at least one exact eligible field.
+Keep this as one task/batch while the same writer/custody/execution surface can legally carry it. Do not manufacture separate source, verifier, continuity, promotion, manifest or lifecycle generations merely because a substep completed. Split only for a real owned-path/custody boundary, a different required execution surface, a material architecture decision or an independently mandatory gate. When split, preserve one batch ID, one scoreboard and one product objective.
 
-Allow at most one zero-vector prerequisite generation for one unchanged blocker fingerprint. A second consecutive zero-vector successor requires genuinely new external evidence, a changed accepted requirement, or an exact architecture blocker; otherwise treat it as process drift and route back to the nearest state-changing action.
+Intermediate evidence, manifests and checkpoints are outputs of the batch, not successor triggers. Do not archive/close/reallocate between ordinary substeps of the same batch. Perform lifecycle closeout once the bounded batch reaches a terminal product/evidence result.
 
-For Item successors, the worker packet must state the baseline vector, expected vector delta and the next consumer step in:
+If `promotable_fields == 0`, continue the same batch at the nearest source/identity/continuity blocker that can change the vector. Do not dispatch semantic promotion or another rule/schema layer. If `promotable_fields > 0`, prefer immediate canonical partial promotion through the existing #749/CW3 model and existing artifact v4 compile path. Do not wait for a whole Item to become complete when exact eligible fields can be represented as `Known` while other fields remain `Unknown/Conflict`.
 
-`resolve -> verify continuity -> promote -> compile/load -> runtime/client -> E2E`.
+A new Item parser, model, rule engine, schema phase or intermediate framework requires proof that the protected canonical lineage cannot represent or promote an exact eligible field. A zero-vector report/checkpoint does not justify another generation by itself.
+
+One mutating Item batch writer is preferred. Read-only subagents may assist with bulk grouping, anomaly detection or source review, but they do not create parallel product authority.
+
+For Item worker packets, state the batch ID, baseline vector, expected vector delta and the exact next product consumer. The next action should normally remain inside the same batch until an actual authority/ownership boundary is reached.
 
 ## Review authorization, ownership and de-duplication
 
