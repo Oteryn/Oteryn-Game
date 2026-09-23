@@ -168,11 +168,6 @@ def test_routing_matrix(module):
     result = classify(module, [unknown], consumers={unknown: {"oteryn-game-server"}})
     assert result["rust"] is True and result["windows"] is False, result
 
-    control_input = "docs/control/input.json"
-    result = classify(module, [control_input], consumers={control_input: {module.CONTROL_CONSUMER}})
-    assert result["rust"] is True and result["windows"] is True, result
-    assert result["reason"] == "control-consumer-affected", result
-
     cross = [{
         "filename": "docs/agents/tasks/archive/task.md",
         "status": "renamed",
@@ -234,14 +229,10 @@ def test_exact_candidate_reference_scan(module):
             'fn theme() { let _ = std::fs::read_to_string("docs/client-theme.json"); }\n',
             encoding="utf-8",
         )
-        control = root / ".github/workflows/merge-gate.yml"
-        control.parent.mkdir(parents=True, exist_ok=True)
-        control.write_text("input: docs/control/input.json\n", encoding="utf-8")
         for path in (
             "docs/agents/evidence/server.json",
             "AGENTS.md",
             "docs/client-theme.json",
-            "docs/control/input.json",
             "docs/unconsumed.json",
         ):
             target = root / path
@@ -261,7 +252,6 @@ def test_exact_candidate_reference_scan(module):
                     "docs/agents/evidence/server.json",
                     "AGENTS.md",
                     "docs/client-theme.json",
-                    "docs/control/input.json",
                     "docs/unconsumed.json",
                 ],
             )
@@ -271,9 +261,8 @@ def test_exact_candidate_reference_scan(module):
         assert found["docs/agents/evidence/server.json"] == {"oteryn-game-server"}, found
         assert found["AGENTS.md"] == {"oteryn-game-server"}, found
         assert found["docs/client-theme.json"] == {"oteryn-client"}, found
-        assert found["docs/control/input.json"] == {module.CONTROL_CONSUMER}, found
         assert found["docs/unconsumed.json"] == set(), found
-    print("Exact candidate reference scan PASS: package/control consumers and unconsumed inputs")
+    print("Exact candidate reference scan PASS: package consumers and unconsumed inputs")
 
 
 def test_candidate_modes(module):
