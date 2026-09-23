@@ -1072,11 +1072,11 @@ mod tests {
     fn v2_accepts_modern_item_authoring_without_mutable_instance_state() {
         let mut project = empty_project();
         project.items.push(ItemAuthoringV2 {
-            item: reference(WorldProjectV2Family::Item, "oteryn:item.weapon.test"),
+            item: reference(WorldProjectV2Family::Item, "oteryn:item.weapon.alpha"),
             presentation: ItemPresentationAuthoringV2 {
                 appearance: Some(reference(
                     WorldProjectV2Family::Asset,
-                    "oteryn:asset.item.test",
+                    "oteryn:asset.item.alpha",
                 )),
                 aliases: vec!["Test Weapon".to_owned()],
                 tags: vec!["weapon".to_owned()],
@@ -1092,15 +1092,15 @@ mod tests {
             }),
             proficiency_profile: Some(reference(
                 WorldProjectV2Family::Proficiency,
-                "oteryn:proficiency.weapon.test",
+                "oteryn:proficiency.weapon.alpha",
             )),
             augment_bindings: vec![reference(
                 WorldProjectV2Family::Augment,
-                "oteryn:augment.test",
+                "oteryn:augment.alpha",
             )],
             on_use_interactions: vec![reference(
                 WorldProjectV2Family::Interaction,
-                "oteryn:interaction.item.test",
+                "oteryn:interaction.item.alpha",
             )],
             use_requirements: ItemUseRequirementsV2 {
                 required_magic_level: Some(15),
@@ -1117,21 +1117,21 @@ mod tests {
             },
         });
         project.assets.push(AssetDefinitionV2 {
-            identity: reference(WorldProjectV2Family::Asset, "oteryn:asset.item.test"),
+            identity: reference(WorldProjectV2Family::Asset, "oteryn:asset.item.alpha"),
             locator: "assets/items/test".to_owned(),
             content_sha256: None,
         });
         project.proficiencies.push(ProficiencyDefinitionV2 {
             identity: reference(
                 WorldProjectV2Family::Proficiency,
-                "oteryn:proficiency.weapon.test",
+                "oteryn:proficiency.weapon.alpha",
             ),
-            weapon_item: reference(WorldProjectV2Family::Item, "oteryn:item.weapon.test"),
+            weapon_item: reference(WorldProjectV2Family::Item, "oteryn:item.weapon.alpha"),
             levels: vec![ProficiencyLevelV2 {
                 level: 1,
                 perks: vec![reference(
                     WorldProjectV2Family::Augment,
-                    "oteryn:augment.test",
+                    "oteryn:augment.alpha",
                 )],
             }],
             shaping: Some(PerkShapingV2 {
@@ -1145,9 +1145,9 @@ mod tests {
             }),
         });
         project.augments.push(AugmentDefinitionV2 {
-            identity: reference(WorldProjectV2Family::Augment, "oteryn:augment.test"),
+            identity: reference(WorldProjectV2Family::Augment, "oteryn:augment.alpha"),
             target: AugmentTargetV2::AutoAttack,
-            effect: reference(WorldProjectV2Family::Effect, "oteryn:effect.test"),
+            effect: reference(WorldProjectV2Family::Effect, "oteryn:effect.alpha"),
             rank_values: vec![AugmentRankValueV2 {
                 rank: 0,
                 numerator: 2,
@@ -1157,11 +1157,11 @@ mod tests {
         project.interactions.push(InteractionDefinitionV2 {
             identity: reference(
                 WorldProjectV2Family::Interaction,
-                "oteryn:interaction.item.test",
+                "oteryn:interaction.item.alpha",
             ),
             trigger: InteractionTriggerV2::Use,
             execution: InteractionExecutionV2::Ability {
-                ability: reference(WorldProjectV2Family::Ability, "oteryn:ability.test"),
+                ability: reference(WorldProjectV2Family::Ability, "oteryn:ability.alpha"),
             },
         });
         assert!(project.validate().is_ok());
@@ -1170,14 +1170,14 @@ mod tests {
     #[test]
     fn v2_rejects_instance_forge_tier_and_proficiency_progress_fields() {
         let item_json = r#"{
-          "item":{"family":"ITEM","key":"oteryn:item.test","revision":"r1"},
+          "item":{"family":"ITEM","key":"oteryn:item.alpha","revision":"r1"},
           "current_forge_tier":3
         }"#;
         assert!(serde_json::from_str::<ItemAuthoringV2>(item_json).is_err());
 
         let proficiency_json = r#"{
-          "identity":{"family":"PROFICIENCY","key":"oteryn:proficiency.test","revision":"r1"},
-          "weapon_item":{"family":"ITEM","key":"oteryn:item.test","revision":"r1"},
+          "identity":{"family":"PROFICIENCY","key":"oteryn:proficiency.alpha","revision":"r1"},
+          "weapon_item":{"family":"ITEM","key":"oteryn:item.alpha","revision":"r1"},
           "levels":[{"level":1,"perks":[]}],
           "current_xp":25000
         }"#;
@@ -1187,16 +1187,16 @@ mod tests {
     #[test]
     fn v2_routes_shop_and_drop_relationships_outside_item_overlay() {
         let item_json = r#"{
-          "item":{"family":"ITEM","key":"oteryn:item.test","revision":"r1"},
+          "item":{"family":"ITEM","key":"oteryn:item.alpha","revision":"r1"},
           "npcprice":100,
           "droppedby":["Demon"]
         }"#;
         assert!(serde_json::from_str::<ItemAuthoringV2>(item_json).is_err());
 
         let service = ServiceDefinitionV2 {
-            identity: reference(WorldProjectV2Family::Service, "oteryn:service.shop.test"),
+            identity: reference(WorldProjectV2Family::Service, "oteryn:service.shop.alpha"),
             offers: vec![ServiceOfferV2 {
-                item: reference(WorldProjectV2Family::Item, "oteryn:item.test"),
+                item: reference(WorldProjectV2Family::Item, "oteryn:item.alpha"),
                 direction: ServiceOfferDirectionV2::SellToPlayer,
                 unit_price: 100,
                 currency: None,
@@ -1224,7 +1224,7 @@ mod tests {
     fn v2_duplicate_declaration_identity_rejects() {
         let mut project = empty_project();
         let dialogue = DialogueDefinitionV2 {
-            identity: reference(WorldProjectV2Family::Dialogue, "oteryn:dialogue.test"),
+            identity: reference(WorldProjectV2Family::Dialogue, "oteryn:dialogue.alpha"),
             nodes: Vec::new(),
             edges: Vec::new(),
         };
