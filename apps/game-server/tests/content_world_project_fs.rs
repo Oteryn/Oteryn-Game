@@ -240,15 +240,26 @@ fn canonical_documents() -> BTreeMap<String, Vec<u8>> {
 fn v1_to_v2_migration_publishes_and_recaptures_all_project_roles() {
     let fixture = Fixture::new();
     let existing = fixture.capture().expect("admit v1 before migration");
-    let documents = CanonicalProjectDocuments::from_v2_draft(
-        existing.migrate_to_v2(), project_limits(),
-    ).expect("canonical v2 migration");
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(existing.migrate_to_v2(), project_limits())
+            .expect("canonical v2 migration");
     assert_eq!(documents.documents().len(), 11);
-    publish_world_project(&fixture.base, OsStr::new("project-root"), &documents, filesystem_limits())
-        .expect("coherent v2 publication");
+    publish_world_project(
+        &fixture.base,
+        OsStr::new("project-root"),
+        &documents,
+        filesystem_limits(),
+    )
+    .expect("coherent v2 publication");
     let captured = fixture.capture().expect("admit published v2");
     assert_eq!(captured.v2(), Some(&ProjectV2State::default()));
-    assert_eq!(captured.canonical_documents(project_limits()).expect("rewrite v2").documents(), documents.documents());
+    assert_eq!(
+        captured
+            .canonical_documents(project_limits())
+            .expect("rewrite v2")
+            .documents(),
+        documents.documents()
+    );
 }
 
 struct Fixture {
