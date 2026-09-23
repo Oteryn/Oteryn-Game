@@ -234,12 +234,12 @@ jobs:
           {
             echo '### Trusted-base PR routing'
             echo
-            echo "- Rust: `$RUST`"
-            echo "- Windows: `$WINDOWS`"
-            echo "- Atlas fullworld: `$ATLAS_FULLWORLD`"
-            echo "- Surface: `$SURFACE`"
-            echo "- Reason: `$REASON`"
-            echo "- Routing health: `$ROUTING_HEALTH`"
+            printf -- '- Rust: `%s`\n' "$RUST"
+            printf -- '- Windows: `%s`\n' "$WINDOWS"
+            printf -- '- Atlas fullworld: `%s`\n' "$ATLAS_FULLWORLD"
+            printf -- '- Surface: `%s`\n' "$SURFACE"
+            printf -- '- Reason: `%s`\n' "$REASON"
+            printf -- '- Routing health: `%s`\n' "$ROUTING_HEALTH"
           } >> "$GITHUB_STEP_SUMMARY"
 
   governance:
@@ -401,7 +401,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "5966c4c183fd87a13dfc6a6fe11ffa4e16e59bdd"
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "265aa0a94a7a16497847ad1ac2e4730cb2ec6fda"
 
       - name: Verify candidate diff whitespace
         env:

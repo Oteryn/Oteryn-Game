@@ -133,6 +133,11 @@ def agent_governance(path: str) -> bool:
     return path.startswith("docs/agents/") and not path.startswith("docs/agents/evidence/")
 
 
+def agent_task_record(path: str) -> bool:
+    """Return task-lifecycle records owned exclusively by agent governance."""
+    return path.startswith("docs/agents/tasks/")
+
+
 def non_runtime(path: str) -> bool:
     return neutral(path) or agent_governance(path)
 
@@ -580,6 +585,13 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
             added != removed for added in added_surfaces for removed in removed_surfaces
         ):
             return full("possible-cross-surface-rename")
+        if all(agent_task_record(path) for path in paths):
+            return dict(
+                rust=False,
+                windows=False,
+                surface="agent-governance",
+                reason="agent-task-record-only",
+            )
         non_runtime_present = any(non_runtime(path) for path in paths)
         governance_present = any(agent_governance(path) for path in paths)
         if non_runtime_present:

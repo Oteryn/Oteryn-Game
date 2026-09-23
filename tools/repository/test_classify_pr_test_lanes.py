@@ -826,7 +826,6 @@ def main() -> int:
         "docs/agents/PROJECT_LANES.json",
         "docs/agents/PROMPT_LIFECYCLE.json",
         "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-        "docs/agents/tasks/active/task.md",
         "tools/agents/tests/test_meta_agent_policy_adoption.py",
     )
     for path in governance_paths:
@@ -847,6 +846,37 @@ def main() -> int:
             docs_consumers_verified=True,
         )
         assert result["rust"] is False and result["windows"] is False, (path, result)
+    task_record_expected = {
+        "rust": False,
+        "windows": False,
+        "surface": "agent-governance",
+        "reason": "agent-task-record-only",
+    }
+    for path in (
+        "docs/agents/tasks/active/task.md",
+        "docs/agents/tasks/archive/task.md",
+    ):
+        result = classify(
+            [path],
+            digest="stale-runtime-snapshot",
+            docs_digest="stale-doc-snapshot",
+            docs_consumers_verified=False,
+        )
+        assert result == task_record_expected, (path, result)
+
+    closeout_rename = [{
+        "filename": "docs/agents/tasks/archive/task.md",
+        "status": "renamed",
+        "previous_filename": "docs/agents/tasks/active/task.md",
+    }]
+    result = classify(
+        closeout_rename,
+        digest="stale-runtime-snapshot",
+        docs_digest="stale-doc-snapshot",
+        docs_consumers_verified=False,
+    )
+    assert result == task_record_expected, result
+
     for paths in ([server, "apps/client/src/lib.rs"], [server, "unknown/input.dat"],
                   [{"filename": server, "status": "renamed", "previous_filename": "apps/client/src/old.rs"}],
                   [{"filename": "docs/new.md", "status": "renamed", "previous_filename": server}],

@@ -156,6 +156,27 @@ def verify_classifier_matrix(module, metadata: dict) -> None:
     ):
         raise ValueError(f"agent-governance consumer-proof contract changed: {result}")
 
+    result = module.classify(
+        [{
+            "filename": "docs/agents/tasks/archive/task.md",
+            "status": "renamed",
+            "previous_filename": "docs/agents/tasks/active/task.md",
+        }],
+        1,
+        metadata,
+        "stale-runtime-snapshot",
+        docs_digest="stale-doc-snapshot",
+        candidate_modes_verified=True,
+        docs_consumers_verified=False,
+    )
+    if result != {
+        "rust": False,
+        "windows": False,
+        "surface": "agent-governance",
+        "reason": "agent-task-record-only",
+    }:
+        raise ValueError(f"agent task-record closeout routing changed: {result}")
+
     result = classify([server, "AGENTS.md"], docs_consumers_verified=True)
     if not (result["rust"] is True and result["windows"] is False and result["surface"] == "server"):
         raise ValueError(f"server + governance routing contract changed: {result}")
