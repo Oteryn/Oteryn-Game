@@ -8,9 +8,9 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/tibiawiki-worldproject-v2-full-coverage-20260923
-pr: null
+pr: 798
 base_sha: aabf0b9a30a6153b7e34d2afedcb1b2b19c27fd6
-head_sha: null
+head_sha: 34977f8eca76718ddaf44325b9a57ed158c2ce02
 final_head_sha: null
 final_head_frozen_at: null
 owner: "single autonomous TibiaWiki coverage + Content/World schema writer"
@@ -149,7 +149,7 @@ Integration capability preflight: this session exposes direct merge and generic 
 ## Context checkpoint
 
 ~~~yaml
-last_progress: dedicated branch allocated from protected main; partial checkpoint accepted as seed; expanded wiki/domain discovery completed
+last_progress: PR #798 opened; wiki-wide coverage manifest and additive typed WorldProject/v2 candidate published; first governance run exposed missing PR binding
 status: implementing
 branch: agent/tibiawiki-worldproject-v2-full-coverage-20260923
 head_sha: null
@@ -171,5 +171,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: integration merge-async unavailable in current session only
-next_action: author bounded typed WorldProject/v2 coverage closure and tests
+next_action: rerun exact-head PR qualification after PR binding repair and fix only concrete CI findings
 ~~~
