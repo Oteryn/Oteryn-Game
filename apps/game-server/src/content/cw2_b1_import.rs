@@ -1326,7 +1326,6 @@ pub fn protected_cw2_b1_full_item_family_import(
     })
 }
 
-
 pub const ITEM_SEMANTIC_PROMOTION_FIELD_COUNT: usize = 69;
 pub const ITEM_SEMANTIC_PROMOTION_ITEM_COUNT: usize = 23;
 pub const ITEM_SEMANTIC_PROMOTION_PACKET: &[u8] = include_bytes!(
@@ -1457,36 +1456,27 @@ fn json_i64(
     object: &serde_json::Map<String, serde_json::Value>,
     key: &str,
 ) -> Result<i64, ProtectedCw2B1ImportError> {
-    object
-        .get(key)
-        .and_then(serde_json::Value::as_i64)
-        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion signed integer",
-        ))
+    object.get(key).and_then(serde_json::Value::as_i64).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion signed integer"),
+    )
 }
 
 fn json_u64(
     object: &serde_json::Map<String, serde_json::Value>,
     key: &str,
 ) -> Result<u64, ProtectedCw2B1ImportError> {
-    object
-        .get(key)
-        .and_then(serde_json::Value::as_u64)
-        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion unsigned integer",
-        ))
+    object.get(key).and_then(serde_json::Value::as_u64).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion unsigned integer"),
+    )
 }
 
 fn json_str<'a>(
     object: &'a serde_json::Map<String, serde_json::Value>,
     key: &str,
 ) -> Result<&'a str, ProtectedCw2B1ImportError> {
-    object
-        .get(key)
-        .and_then(serde_json::Value::as_str)
-        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
-            "semantic promotion string",
-        ))
+    object.get(key).and_then(serde_json::Value::as_str).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion string"),
+    )
 }
 
 fn decode_item_semantic_promotion_value(
@@ -1501,11 +1491,12 @@ fn decode_item_semantic_promotion_value(
                 ));
             }
             let typed = json_str(object, "value")?;
-            let source = row.source_value.as_str().ok_or(
-                ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion text source value",
-                ),
-            )?;
+            let source =
+                row.source_value
+                    .as_str()
+                    .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "semantic promotion text source value",
+                    ))?;
             if typed != source || typed.is_empty() || typed.len() > 2048 {
                 return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
                     "semantic promotion text value",
@@ -1549,9 +1540,7 @@ fn decode_item_semantic_promotion_value(
                 ));
             }
             let value = u16::try_from(typed).map_err(|_| {
-                ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion cells bounds",
-                )
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion cells bounds")
             })?;
             Ok(ItemSemanticPromotionValue::Cells(ReferenceCells(value)))
         }
@@ -1567,16 +1556,16 @@ fn decode_item_semantic_promotion_value(
                     "semantic promotion rational percent kind",
                 ));
             }
-            let source = row.source_value.as_i64().ok_or(
-                ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion percent source value",
-                ),
-            )?;
+            let source =
+                row.source_value
+                    .as_i64()
+                    .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "semantic promotion percent source value",
+                    ))?;
             let numerator = json_i64(object, "numerator")?;
             let denominator = json_u64(object, "denominator")?;
             if denominator == 0
-                || i128::from(numerator) * 100_i128
-                    != i128::from(source) * i128::from(denominator)
+                || i128::from(numerator) * 100_i128 != i128::from(source) * i128::from(denominator)
             {
                 return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
                     "semantic promotion percent source mismatch",
@@ -1603,9 +1592,7 @@ fn decode_item_semantic_promotion_value(
                 ));
             }
             let value = u32::try_from(typed).map_err(|_| {
-                ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion count bounds",
-                )
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion count bounds")
             })?;
             Ok(ItemSemanticPromotionValue::Count(value))
         }
@@ -1623,9 +1610,7 @@ fn decode_item_semantic_promotion_value(
                 ));
             }
             let value = u16::try_from(typed).map_err(|_| {
-                ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion capacity bounds",
-                )
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion capacity bounds")
             })?;
             Ok(ItemSemanticPromotionValue::Capacity(value))
         }
@@ -1798,8 +1783,7 @@ fn validate_item_semantic_promotion_packet(
             "semantic promotion compiler binding",
         ));
     }
-    if packet.protected_lineage.continuity_compiler_sha256
-        != ITEM_TARGET_CONTINUITY_COMPILER_SHA256
+    if packet.protected_lineage.continuity_compiler_sha256 != ITEM_TARGET_CONTINUITY_COMPILER_SHA256
         || packet.protected_lineage.continuity_manifest_schema
             != "OTERYN_ITEM_TARGET_CONTINUITY_MANIFEST/v1"
         || packet.protected_lineage.continuity_manifest_sha256
@@ -1842,9 +1826,7 @@ pub fn protected_cw2_b1_promoted_item_family_import(
 ) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
     let packet: ItemSemanticPromotionPacket =
         serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_PACKET).map_err(|_| {
-            ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion packet JSON decoding",
-            )
+            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion packet JSON decoding")
         })?;
     validate_item_semantic_promotion_packet(&packet)?;
 
@@ -1852,11 +1834,12 @@ pub fn protected_cw2_b1_promoted_item_family_import(
 
     let mut source_to_native = BTreeMap::<u64, String>::new();
     for candidate in &family.batch.candidates {
-        let source_item_id = candidate.source_numeric_id.ok_or(
-            ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion source identity binding",
-            ),
-        )?;
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion source identity binding",
+                ))?;
         let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
             if field.field_path == "binding.native-item" {
                 if let CandidateValue::NativeItemBinding(binding) = &field.value {
@@ -1865,11 +1848,11 @@ pub fn protected_cw2_b1_promoted_item_family_import(
             }
             None
         });
-        let binding = bindings.next().ok_or(
-            ProtectedCw2B1ImportError::EvidenceMismatch(
+        let binding = bindings
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
                 "semantic promotion native identity binding",
-            ),
-        )?;
+            ))?;
         if bindings.next().is_some()
             || binding.identity.family != "Item"
             || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
@@ -1917,7 +1900,11 @@ pub fn protected_cw2_b1_promoted_item_family_import(
     for row in &packet.promotions {
         if let Some((native_key, field_path, source_item_id)) = previous {
             if (native_key, field_path, source_item_id)
-                >= (row.native_key.as_str(), row.field_path.as_str(), row.source_item_id)
+                >= (
+                    row.native_key.as_str(),
+                    row.field_path.as_str(),
+                    row.source_item_id,
+                )
             {
                 return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
                     "semantic promotion row ordering",
@@ -1926,7 +1913,9 @@ pub fn protected_cw2_b1_promoted_item_family_import(
         }
         previous = Some((&row.native_key, &row.field_path, row.source_item_id));
 
-        if source_to_native.get(&row.source_item_id).map(String::as_str)
+        if source_to_native
+            .get(&row.source_item_id)
+            .map(String::as_str)
             != Some(row.native_key.as_str())
         {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
@@ -1943,9 +1932,7 @@ pub fn protected_cw2_b1_promoted_item_family_import(
 
         let value = decode_item_semantic_promotion_value(row)?;
         let index = *record_index.get(&row.native_key).ok_or(
-            ProtectedCw2B1ImportError::EvidenceMismatch(
-                "semantic promotion record missing",
-            ),
+            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion record missing"),
         )?;
         let ProjectReferenceRecord::Item { semantics, .. } = &mut family.records[index] else {
             return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
