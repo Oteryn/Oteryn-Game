@@ -12,6 +12,7 @@ import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import importlib.util
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -33,6 +34,10 @@ ITEM_TEMPLATE_TITLE = "Predefinição:Infobox Item"
 MAX_DISCOVERY_REQUESTS = 128
 MAX_DISCOVERED_PAGES = 20_000
 MAX_CONTINUE_FIELDS = 16
+INFOBOX_MARKER_RE = re.compile(
+    r"\{\{\s*(?:(?:predefinição|template)\s*:\s*)?infobox[\s_]+item\b(?=\s*(?:\||\}\}))",
+    re.IGNORECASE,
+)
 
 CensusError = predecessor.CurrentSourceError
 
@@ -135,14 +140,15 @@ def discover_item_pages(client: predecessor.ApiClient) -> list[dict[str, Any]]:
 
 
 def _extract_infobox(wikitext: str) -> dict[str, Any]:
-    """Accept MediaWiki-equivalent space/underscore spelling without changing predecessor."""
-    candidates = ("{{Infobox_Item", "{{Infobox Item")
-    present = [marker for marker in candidates if marker in wikitext]
-    if not present:
+    """Normalize MediaWiki-equivalent Item infobox invocation spelling."""
+    match = INFOBOX_MARKER_RE.search(wikitext)
+    if match is None:
         return {"mapped": {}, "unmapped": {}, "infobox_present": False}
-    normalized = wikitext
-    if "{{Infobox_Item" not in normalized:
-        normalized = normalized.replace("{{Infobox Item", "{{Infobox_Item", 1)
+    normalized = (
+        wikitext[: match.start()]
+        + "{{Infobox_Item"
+        + wikitext[match.end() :]
+    )
     return predecessor.extract_infobox_item(normalized)
 
 
@@ -154,7 +160,9 @@ def normalize_page(
         raise CensusError(f"WIKITEXT_MAX_PLUS_ONE:{len(encoded)}")
     extracted = _extract_infobox(wikitext)
     if not extracted["infobox_present"]:
-        raise CensusError(f"DISCOVERED_PAGE_WITHOUT_INFOBOX:{meta['page_id']}")
+        raise CensusError(
+            f"DISCOVERED_PAGE_WITHOUT_INFOBOX:{meta['page_id']}:{meta['title']}"
+        )
     return {
         "source": SOURCE_ID,
         "source_role": SOURCE_ROLE,
