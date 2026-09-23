@@ -20,7 +20,6 @@ ROOT = Path(__file__).resolve().parents[2]
 
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
-CONTROL_CONSUMER = "__routing_control__"
 REQUIRED = {
     SERVER: "apps/game-server",
     "oteryn-client": "apps/client",
@@ -247,10 +246,8 @@ def reference_patterns(path: str) -> tuple[str, ...]:
 
 
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
-    pathspecs = sorted(set(roots.values()))
-    pathspecs.extend(["tools/repository", ".github/actions"])
-    pathspecs.extend(sorted(CANONICAL_CONTROL_PATHS))
-    return pathspecs
+    """Only Cargo packages can make an auxiliary file a product-build input."""
+    return sorted(set(roots.values()))
 
 
 def candidate_reference_consumers(
@@ -298,14 +295,13 @@ def candidate_reference_consumers(
             raise ValueError("invalid consumer path")
         content = subprocess.check_output(["git", "show", f"{sha}:{consumer_path}"])
         owner = package_owner(roots, consumer_path)
-        control = canonical_control(consumer_path)
-        if owner is None and not control:
+        if owner is None:
             continue
         for pattern, targets in reverse_patterns.items():
             if pattern.encode("utf-8") not in content:
                 continue
             for target in targets:
-                consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
+                consumers[target].add(owner)
     return consumers
 
 
@@ -506,8 +502,6 @@ def classify(
             if not isinstance(consumers, (set, list, tuple)):
                 return full("unverified-reference-consumers")
             for consumer in consumers:
-                if consumer == CONTROL_CONSUMER:
-                    return full("control-consumer-affected", "control-plane")
                 if consumer not in roots:
                     return full("unverified-reference-consumers")
                 affected.add(consumer)
