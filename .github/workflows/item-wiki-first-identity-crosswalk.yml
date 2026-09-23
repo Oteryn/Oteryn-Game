@@ -1,0 +1,196 @@
+name: Item Wiki-First Identity Crosswalk
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk.py
+      - tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk_self_test.py
+      - docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json
+      - docs/agents/tasks/active/OTV2-20260923-item-wiki-first-identity-crosswalk.md
+      - .github/workflows/item-wiki-first-identity-crosswalk.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: item-wiki-first-identity-crosswalk-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Item content / wiki-first identity crosswalk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run focused crosswalk tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk.py \
+            tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk_self_test.py
+          python tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk_self_test.py
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Reproduce protected Oteryn Item identity closure
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-identity-crosswalk"
+          mkdir -p "$ROOT"
+          cargo +1.94.0 run --locked -p oteryn-game-server \
+            --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py \
+            --native-map "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk.py \
+            --game-root . \
+            --native-map "$ROOT/native-map.json" \
+            --output "$ROOT/classification-crosswalk.json" \
+            --manifest-output "$ROOT/classification-crosswalk-manifest.json"
+          test "$(sha256sum "$ROOT/classification-crosswalk.json" | awk '{print $1}')" = \
+            "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+
+      - name: Reproduce protected wiki-first census population
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-identity-crosswalk"
+          python tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
+          python tools/reference-world-corridor-census/item_wiki_first_census.py \
+            --cache-dir "$ROOT/wiki-cache" \
+            --output "$ROOT/wiki-census.json" \
+            --manifest-output "$ROOT/wiki-census-manifest.json"
+          python - "$ROOT/wiki-census-manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert manifest["counts"]["discovered_pages"] == 6918
+          assert manifest["full_output"]["stable_without_retrieval_timestamp_sha256"] == (
+              "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
+          )
+          print("wiki-first protected census: PASS")
+          PY
+
+      - name: Fetch exact pinned Crystal Item catalogue
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-identity-crosswalk"
+          python - "$ROOT/crystal-items.xml" <<'PY'
+          import hashlib
+          import pathlib
+          import sys
+          import urllib.request
+
+          revision = "ff7ede593c69d4c658b382c97443e8155926924a"
+          url = (
+              "https://raw.githubusercontent.com/zimbadev/crystalserver/"
+              + revision
+              + "/data/items/items.xml"
+          )
+          request = urllib.request.Request(
+              url,
+              headers={"User-Agent": "OterynEvidenceCollector/0.1"},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              data = response.read(4_000_001)
+          assert len(data) <= 4_000_000
+          assert len(data) == 3_819_874
+          assert hashlib.sha256(data).hexdigest() == (
+              "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+          )
+          pathlib.Path(sys.argv[1]).write_bytes(data)
+          print("exact Crystal items.xml: PASS")
+          PY
+
+      - name: Compile full wiki-first identity crosswalk twice
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-identity-crosswalk"
+          for suffix in first repeat; do
+            python tools/reference-world-corridor-census/item_wiki_first_identity_crosswalk.py \
+              --census "$ROOT/wiki-census.json" \
+              --classification-crosswalk "$ROOT/classification-crosswalk.json" \
+              --crystal-items "$ROOT/crystal-items.xml" \
+              --output "$ROOT/crosswalk-$suffix.json" \
+              --manifest-output "$ROOT/manifest-$suffix.json"
+          done
+          cmp "$ROOT/crosswalk-first.json" "$ROOT/crosswalk-repeat.json"
+          cmp "$ROOT/manifest-first.json" "$ROOT/manifest-repeat.json"
+
+      - name: Verify crosswalk invariants and retained evidence
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-wiki-first-identity-crosswalk"
+          MANIFEST="$ROOT/manifest-first.json"
+          python - "$MANIFEST" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert manifest["schema"] == "OTERYN_ITEM_WIKI_FIRST_IDENTITY_CROSSWALK_MANIFEST/v1"
+          counts = manifest["counts"]
+          dispositions = counts["dispositions"]
+          assert counts["source_pages"] == 6918
+          assert sum(dispositions.values()) == 6918
+          assert set(dispositions) == {
+              "EXACT_MATCH",
+              "PROBABLE_MATCH",
+              "AMBIGUOUS",
+              "CONFLICT",
+              "NO_MATCH",
+              "ALIAS_OR_DUPLICATE",
+          }
+          invariants = manifest["invariants"]
+          assert invariants["source_population_exact_6918"] is True
+          assert invariants["disposition_partition_complete"] is True
+          assert invariants["name_only_exact_match"] is False
+          assert invariants["negative_evidence_fail_closed"] is True
+          assert invariants["duplicate_target_protection"] is True
+          assert invariants["no_infobox_item_retained"] is True
+          assert invariants["parse_error_item_retained"] is True
+          assert invariants["conflicting_parse_field_used_as_identity_proof"] is False
+          assert invariants["identity_minting_performed"] is False
+          assert invariants["semantic_promotion_performed"] is False
+          assert manifest["next_gate"] == "WIKI_FIRST_ITEM_FIELD_VERIFICATION"
+          print("ITEM_WIKI_FIRST_IDENTITY_CROSSWALK_MANIFEST_BEGIN")
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+          print("ITEM_WIKI_FIRST_IDENTITY_CROSSWALK_MANIFEST_END")
+          PY
+
+          if test -f docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json; then
+            cmp "$MANIFEST" docs/agents/evidence/OTV2-20260923-item-wiki-first-identity-crosswalk.json
+          fi
+
+          sha256sum "$ROOT/crosswalk-first.json" "$MANIFEST"
+
+      - name: Upload full and compact crosswalk evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: item-wiki-first-identity-crosswalk-\${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            \${{ runner.temp }}/item-wiki-first-identity-crosswalk/crosswalk-first.json
+            \${{ runner.temp }}/item-wiki-first-identity-crosswalk/manifest-first.json
+          if-no-files-found: error
+          retention-days: 14
