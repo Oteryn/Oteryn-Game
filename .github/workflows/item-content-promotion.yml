@@ -164,6 +164,17 @@ jobs:
             --protected-manifest docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json \
             --output "$ROOT/semantic-promotion-repeat.json"
           cmp "$ROOT/semantic-promotion.json" "$ROOT/semantic-promotion-repeat.json"
+          cmp "$ROOT/semantic-promotion.json" docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json
+
+      - name: Run focused canonical promotion and artifact v4 tests
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 test --locked -p oteryn-game-server \
+            --test content_world_cw2_b1_import \
+            protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_materialization_drift -- --exact
+          cargo +1.94.0 test --locked -p oteryn-game-server \
+            --test content_reference_artifact \
+            protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client -- --exact
 
       - name: Verify and emit semantic promotion packet
         run: |
