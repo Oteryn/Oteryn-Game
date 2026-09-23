@@ -1841,10 +1841,10 @@ pub fn protected_cw2_b1_promoted_item_family_import(
                     "semantic promotion source identity binding",
                 ))?;
         let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
-            if field.field_path == "binding.native-item" {
-                if let CandidateValue::NativeItemBinding(binding) = &field.value {
-                    return Some(binding);
-                }
+            if field.field_path == "binding.native-item"
+                && let CandidateValue::NativeItemBinding(binding) = &field.value
+            {
+                return Some(binding);
             }
             None
         });
@@ -1898,18 +1898,17 @@ pub fn protected_cw2_b1_promoted_item_family_import(
     let mut previous: Option<(&str, &str, u64)> = None;
 
     for row in &packet.promotions {
-        if let Some((native_key, field_path, source_item_id)) = previous {
-            if (native_key, field_path, source_item_id)
+        if let Some((native_key, field_path, source_item_id)) = previous
+            && (native_key, field_path, source_item_id)
                 >= (
                     row.native_key.as_str(),
                     row.field_path.as_str(),
                     row.source_item_id,
                 )
-            {
-                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
-                    "semantic promotion row ordering",
-                ));
-            }
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion row ordering",
+            ));
         }
         previous = Some((&row.native_key, &row.field_path, row.source_item_id));
 
