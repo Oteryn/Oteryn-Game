@@ -2035,6 +2035,30 @@ fn validate_v2_state(
         }
         validate_v2_declaration(declaration, &require_ref, limits)?;
     }
+    for declaration in &state.declarations {
+        let ProjectV2Declaration::Area { identity, .. } = declaration else {
+            continue;
+        };
+        let mut seen = BTreeSet::new();
+        let mut current = Some(identity.key.as_str());
+        while let Some(area_key) = current {
+            if !seen.insert(area_key) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Area parent chain contains a cycle",
+                ));
+            }
+            current = state.declarations.iter().find_map(|candidate| match candidate {
+                ProjectV2Declaration::Area {
+                    identity: candidate_identity,
+                    parent,
+                    ..
+                } if candidate_identity.key == area_key => {
+                    parent.as_ref().map(|reference| reference.key.as_str())
+                }
+                _ => None,
+            });
+        }
+    }
 
     limits.check(
         "v2 authoring profiles",
