@@ -98,6 +98,7 @@ fn candidate() -> ProjectV2Draft {
                 },
                 ProjectV2Declaration::Service {
                     identity: identity("service.courier"),
+                    offers: vec![],
                     fields: vec![],
                 },
                 ProjectV2Declaration::Interaction {
@@ -124,6 +125,7 @@ fn candidate() -> ProjectV2Draft {
                     fields: vec![],
                 },
             ],
+            item_authoring: vec![],
             worlds: vec![ProjectV2World {
                 key: "oteryn:world.reference".into(),
                 world_id: core().world_id,
@@ -448,5 +450,306 @@ fn relocating_one_managed_document_keeps_v2_semantic_identity() {
             .expect("canonical rewrite")
             .documents(),
         original.documents()
+    );
+}
+
+fn item_candidate() -> ProjectV2Draft {
+    let mut draft = candidate();
+    draft.core.records.extend([
+        ProjectReferenceRecord::Formula {
+            identity: DefinitionIdentityDocument {
+                family: "Formula".into(),
+                key: "oteryn:reference.formula.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+        },
+        ProjectReferenceRecord::Effect {
+            identity: DefinitionIdentityDocument {
+                family: "Effect".into(),
+                key: "oteryn:reference.effect.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ServerOnly,
+            effect_family: EffectFamilyDocument::Damage,
+            formula: DefinitionReferenceDocument {
+                family: "Formula".into(),
+                key: "oteryn:reference.formula.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+        },
+        ProjectReferenceRecord::Ability {
+            identity: DefinitionIdentityDocument {
+                family: "Ability".into(),
+                key: "oteryn:reference.ability.item-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            effects: vec![DefinitionReferenceDocument {
+                family: "Effect".into(),
+                key: "oteryn:reference.effect.item-alpha".into(),
+                revision: "definition-r1".into(),
+            }],
+        },
+        ProjectReferenceRecord::Item {
+            identity: DefinitionIdentityDocument {
+                family: "Item".into(),
+                key: "oteryn:reference.item.weapon-alpha".into(),
+                revision: "definition-r1".into(),
+            },
+            client_projection: ProjectionDocument::ClientSafe,
+            materializable: false,
+            stack_class: ItemStackDocument::Unknown,
+            semantics: ReferenceItemSemantics::default(),
+        },
+    ]);
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Interaction {
+            identity: identity("interaction.item-alpha"),
+            fields: vec![],
+        });
+    draft
+        .state
+        .declarations
+        .push(ProjectV2Declaration::Service {
+            identity: identity("service.item-alpha"),
+            offers: vec![ProjectV2ServiceOffer {
+                item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+                direction: ProjectV2ServiceOfferDirection::SellToPlayer,
+                unit_price: 125_000,
+                currency: None,
+            }],
+            fields: vec![],
+        });
+    draft.state.item_authoring.push(ProjectV2ItemAuthoring {
+        item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        presentation: Some(reference(
+            ProjectV2Family::Presentation,
+            "oteryn:reference.presentation.courier",
+        )),
+        taxonomy: Some(ProjectV2ItemTaxonomy {
+            primary: "Weapons".into(),
+            secondary: Some("Fist".into()),
+            tertiary: Some("Monk".into()),
+        }),
+        forge: Some(ProjectV2ItemForgeProfile {
+            classification: 4,
+            max_tier: 10,
+        }),
+        proficiency: Some(ProjectV2WeaponProficiencyProfile {
+            levels: vec![
+                ProjectV2ProficiencyLevel {
+                    level: 2,
+                    perks: vec![ProjectV2AugmentBinding {
+                        key: "oteryn:augment.proficiency.second".into(),
+                        target: ProjectV2AugmentTarget::Ability {
+                            ability: reference(
+                                ProjectV2Family::Ability,
+                                "oteryn:reference.ability.item-alpha",
+                            ),
+                        },
+                        effect: Some(reference(
+                            ProjectV2Family::Effect,
+                            "oteryn:reference.effect.item-alpha",
+                        )),
+                        rank_values: vec![ProjectV2AugmentRankValue {
+                            rank: 1,
+                            value: ProjectV2AugmentValue::RationalPercent(ProjectV2ExactRatio {
+                                numerator: 3,
+                                denominator: 100,
+                            }),
+                        }],
+                        fields: vec![],
+                    }],
+                },
+                ProjectV2ProficiencyLevel {
+                    level: 1,
+                    perks: vec![ProjectV2AugmentBinding {
+                        key: "oteryn:augment.proficiency.first".into(),
+                        target: ProjectV2AugmentTarget::AutoAttack,
+                        effect: None,
+                        rank_values: vec![ProjectV2AugmentRankValue {
+                            rank: 1,
+                            value: ProjectV2AugmentValue::SignedPoints(2),
+                        }],
+                        fields: vec![],
+                    }],
+                },
+            ],
+            shaping: Some(ProjectV2PerkShaping {
+                max_rank: 10,
+                replace_slots: 2,
+                refine_enabled: true,
+                reshape_enabled: true,
+                clear_enabled: true,
+                lunar_ascension_enabled: true,
+                cost_service: Some(reference(
+                    ProjectV2Family::Service,
+                    "oteryn:content.service.item-alpha",
+                )),
+            }),
+        }),
+        augments: vec![ProjectV2AugmentBinding {
+            key: "oteryn:augment.base.item-alpha".into(),
+            target: ProjectV2AugmentTarget::OffensiveRune,
+            effect: None,
+            rank_values: vec![],
+            fields: vec![ProjectV2CandidateField {
+                field_path: "oteryn:source.augment-note".into(),
+                value: ProjectV2CandidateValue::Text("source-only".into()),
+            }],
+        }],
+        on_use_interactions: vec![reference(
+            ProjectV2Family::Interaction,
+            "oteryn:content.interaction.item-alpha",
+        )],
+        use_ability: Some(reference(
+            ProjectV2Family::Ability,
+            "oteryn:reference.ability.item-alpha",
+        )),
+        required_magic_level: Some(15),
+        consumable: Some(ProjectV2ItemConsumableProfile {
+            edible: true,
+            regeneration_seconds: Some(60),
+        }),
+        use_observation: Some(ProjectV2ItemUseObservation {
+            damage: Some(ProjectV2ItemDamageObservation::Range { min: 60, max: 80 }),
+            damage_type: Some("Energy".into()),
+            mana_cost: Some(13),
+        }),
+        lifecycle: Some(ProjectV2ItemLifecycle {
+            enchantable: Some(true),
+            destructible: Some(false),
+            enchant_interactions: vec![reference(
+                ProjectV2Family::Interaction,
+                "oteryn:content.interaction.item-alpha",
+            )],
+            destroy_interactions: vec![],
+        }),
+        source_lifecycle: Some(ProjectV2ItemSourceLifecycle {
+            implemented: Some("Summer Update 2026".into()),
+            removed: None,
+        }),
+    });
+    draft.state.editor.push(ProjectV2EditorEntry {
+        target: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        display_name: "Weapon Alpha".into(),
+        description: "Editor-only Item metadata".into(),
+        categories: vec!["weapon".into()],
+        notes: vec!["TibiaWiki crosswalk candidate".into()],
+        aliases: vec!["Alpha Weapon".into()],
+        tags: vec!["oteryn:editor.item".into()],
+    });
+    draft
+}
+
+#[test]
+fn modern_item_authoring_and_shop_relations_round_trip_without_runtime_lowering() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(item_candidate(), limits()).expect("v2 documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit v2")
+        .parse(limits())
+        .expect("parse v2");
+    let state = parsed.v2().expect("v2 state");
+    assert_eq!(state.item_authoring.len(), 1);
+    let item = &state.item_authoring[0];
+    assert_eq!(item.forge.expect("forge").classification, 4);
+    assert_eq!(item.forge.expect("forge").max_tier, 10);
+    assert_eq!(
+        item.use_observation
+            .as_ref()
+            .and_then(|value| value.mana_cost),
+        Some(13)
+    );
+    assert_eq!(
+        item.proficiency
+            .as_ref()
+            .expect("proficiency")
+            .levels
+            .iter()
+            .map(|level| level.level)
+            .collect::<Vec<_>>(),
+        vec![1, 2]
+    );
+    let service = state
+        .declarations
+        .iter()
+        .find_map(|declaration| match declaration {
+            ProjectV2Declaration::Service { offers, .. } if !offers.is_empty() => Some(offers),
+            _ => None,
+        })
+        .expect("typed service offer");
+    assert_eq!(service[0].unit_price, 125_000);
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+
+    let reference = parsed
+        .lower_reference_source()
+        .expect("reference projection");
+    assert_eq!(reference.definitions.len(), 5);
+}
+
+#[test]
+fn item_authoring_rejects_mutable_instance_and_reverse_relationship_fields() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(item_candidate(), limits()).expect("v2 documents");
+    for forbidden in [
+        ("current_forge_tier", json!(3)),
+        ("proficiency_xp", json!(25_000)),
+        ("npcprice", json!(125_000)),
+        ("droppedby", json!(["Demon"])),
+    ] {
+        let mut changed = documents.documents().clone();
+        let path = "definitions/declarations.json";
+        let mut declarations: Value = serde_json::from_slice(&changed[path]).expect("declarations");
+        declarations["item_authoring"][0][forbidden.0] = forbidden.1;
+        let bytes = canonical(&declarations);
+        changed.insert(path.into(), bytes.clone());
+        let mut manifest: Value =
+            serde_json::from_slice(&changed["manifest.json"]).expect("manifest");
+        let entry = manifest["documents"]
+            .as_array_mut()
+            .expect("inventory")
+            .iter_mut()
+            .find(|entry| entry["locator"] == path)
+            .expect("entry");
+        entry["byte_length"] = json!(bytes.len());
+        entry["sha256"] = json!(world_project_sha256(&bytes));
+        rebind_manifest_and_lock(&mut changed, &manifest);
+        assert!(
+            ProjectSnapshot::new(changed, limits())
+                .expect("admit")
+                .parse(limits())
+                .is_err(),
+            "forbidden Item authoring field admitted: {}",
+            forbidden.0
+        );
+    }
+}
+
+#[test]
+fn protected_empty_v2_declarations_wire_remains_unchanged_without_item_authoring() {
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let declarations: Value =
+        serde_json::from_slice(&documents.documents()["definitions/declarations.json"])
+            .expect("declarations");
+    assert!(declarations.get("item_authoring").is_none());
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
     );
 }
