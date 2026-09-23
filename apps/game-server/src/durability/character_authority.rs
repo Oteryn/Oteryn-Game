@@ -9,6 +9,7 @@ use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarn
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::{
     CharacterRecoveryFenceV1, CharacterRecoveryTransition, SealedCharacterRecoveryFence,
+    recovery_record_digest,
 };
 use oteryn_game_server::domain::{AccountId, CharacterId, CharacterRevision, WorldId};
 use sqlx::Row;
@@ -416,16 +417,15 @@ async fn insert_recovery_admission(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    let (predecessor_event, predecessor_issued_at) = predecessor_evidence(record);
-    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, predecessor_event_id, predecessor_issued_at, issued_at, issuer_identity, reconciled_at) VALUES ($1, $2::numeric, encode($3,'hex')::uuid, $4::numeric, encode($7,'hex')::uuid, $8::numeric, $5::numeric, $6, floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
+    let predecessor_digest = predecessor_evidence(record);
+    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, predecessor_digest, issued_at, issuer_identity, reconciled_at) VALUES ($1, $2::numeric, encode($3,'hex')::uuid, $4::numeric, $7, $5::numeric, $6, floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
         .bind(&record.authority_scope_id)
         .bind(record.recovery_generation.to_string())
         .bind(record.recovery_event_id.as_slice())
         .bind(record.predecessor_generation.to_string())
         .bind(record.issued_at.to_string())
         .bind(&record.issuer_identity)
-        .bind(predecessor_event)
-        .bind(predecessor_issued_at)
+        .bind(predecessor_digest)
         .execute(&mut **tx).await?;
     Ok(())
 }
@@ -434,7 +434,7 @@ async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    let row = sqlx::query("SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_event_id::text, predecessor_issued_at::text, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE")
+    let row = sqlx::query("SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE")
         .fetch_optional(&mut **tx).await?
         .ok_or(DurabilityError::Unavailable)?;
     let generation = row
@@ -463,25 +463,14 @@ async fn assert_recovery_fence(
 }
 
 /// Predecessor evidence as stored: absent for generation one.
-fn predecessor_evidence(record: &CharacterRecoveryFenceV1) -> (Option<Vec<u8>>, Option<String>) {
-    if record.predecessor_generation == 0 {
-        (None, None)
-    } else {
-        (
-            Some(record.predecessor_event_id.to_vec()),
-            Some(record.predecessor_issued_at.to_string()),
-        )
-    }
+fn predecessor_evidence(record: &CharacterRecoveryFenceV1) -> Option<Vec<u8>> {
+    (record.predecessor_generation != 0).then(|| record.predecessor_digest.to_vec())
 }
 
 fn stored_predecessor_evidence(
     row: &sqlx::postgres::PgRow,
-) -> std::result::Result<(Option<Vec<u8>>, Option<String>), DurabilityError> {
-    let event: Option<String> = row.try_get("predecessor_event_id")?;
-    let event = event
-        .map(|value| uuid_text(&value).map(|bytes| bytes.to_vec()))
-        .transpose()?;
-    Ok((event, row.try_get("predecessor_issued_at")?))
+) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
+    Ok(row.try_get("predecessor_digest")?)
 }
 
 fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
@@ -562,6 +551,10 @@ async fn verify_character_integrity(
          SELECT 1 FROM game_character_operation_receipts o \
            LEFT JOIN game_character_roots r USING (character_id) \
           WHERE r.character_id IS NULL \
+         UNION ALL \
+         SELECT 1 FROM game_character_audit_legal_holds h \
+           LEFT JOIN game_character_audit_outbox a USING (event_id) \
+          WHERE h.released_at IS NULL AND a.event_id IS NULL \
          LIMIT 1",
     )
     .fetch_optional(&mut **tx)
@@ -584,11 +577,15 @@ async fn verify_character_integrity(
         };
         after = last.try_get("event_id")?;
         for row in &rows {
-            let expected = encode_bootstrap(
-                &uuid_text(row.try_get("account_id")?)?,
-                &uuid_text(row.try_get("character_id")?)?,
-                &uuid_text(row.try_get("world_id")?)?,
-            );
+            // Typed identities: UUIDv7 version and RFC variant, not raw bytes.
+            let account = AccountId::from_bytes(uuid_text(row.try_get("account_id")?)?)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let character = CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let world = WorldId::from_bytes(uuid_text(row.try_get("world_id")?)?)
+                .map_err(|_| DurabilityError::Unavailable)?;
+            let expected =
+                encode_bootstrap(account.as_bytes(), character.as_bytes(), world.as_bytes());
             if row.try_get::<Vec<u8>, _>("payload")? != expected {
                 return Err(DurabilityError::Unavailable);
             }
@@ -597,21 +594,39 @@ async fn verify_character_integrity(
 }
 
 /// The database's current admission must be exactly the predecessor the external
-/// successor record retains: generation, event, issued-at, scope and issuer.
+/// successor retains: the digest covers every field, including the admission's
+/// own predecessor digest, so the whole chain is bound.
 async fn assert_predecessor_admission(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    let row = sqlx::query("SELECT authority_scope_id, issuer_identity, recovery_generation::text, recovery_event_id::text, issued_at::text FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1")
+    let row = sqlx::query("SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1")
         .fetch_optional(&mut **tx)
         .await?
         .ok_or(DurabilityError::Unavailable)?;
-    if row.try_get::<String, _>("authority_scope_id")? != record.authority_scope_id
-        || row.try_get::<String, _>("issuer_identity")? != record.issuer_identity
-        || row.try_get::<String, _>("recovery_generation")?
-            != record.predecessor_generation.to_string()
-        || uuid_text(row.try_get("recovery_event_id")?)? != record.predecessor_event_id
-        || row.try_get::<String, _>("issued_at")? != record.predecessor_issued_at.to_string()
+    let number = |name: &str| -> std::result::Result<u64, DurabilityError> {
+        row.try_get::<String, _>(name)?
+            .parse::<u64>()
+            .map_err(|_| DurabilityError::Unavailable)
+    };
+    let digest: Option<Vec<u8>> = row.try_get("predecessor_digest")?;
+    let predecessor = CharacterRecoveryFenceV1 {
+        authority_scope_id: row.try_get("authority_scope_id")?,
+        recovery_generation: number("recovery_generation")?,
+        recovery_event_id: uuid_text(row.try_get("recovery_event_id")?)?,
+        predecessor_generation: number("predecessor_generation")?,
+        predecessor_digest: match digest {
+            None => [0; 32],
+            Some(bytes) => bytes.try_into().map_err(|_| DurabilityError::Unavailable)?,
+        },
+        issued_at: number("issued_at")?,
+        issuer_identity: row.try_get("issuer_identity")?,
+    };
+    if predecessor.recovery_generation != record.predecessor_generation
+        || predecessor.authority_scope_id != record.authority_scope_id
+        || predecessor.issuer_identity != record.issuer_identity
+        || recovery_record_digest(&predecessor).map_err(|_| DurabilityError::Unavailable)?
+            != record.predecessor_digest
     {
         return Err(DurabilityError::Unavailable);
     }

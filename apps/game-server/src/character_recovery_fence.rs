@@ -28,10 +28,10 @@ pub struct CharacterRecoveryFenceV1 {
     pub recovery_generation: u64,
     pub recovery_event_id: [u8; 16],
     pub predecessor_generation: u64,
-    /// Exact predecessor evidence retained in the successor itself (all zero
-    /// only for generation one), so a restart can validate the replaced record.
-    pub predecessor_event_id: [u8; 16],
-    pub predecessor_issued_at: u64,
+    /// SHA-256 of the exact canonical record this one replaced (all zero only
+    /// for generation one). The replaced record carries its own predecessor
+    /// digest, so the whole chain is bound.
+    pub predecessor_digest: [u8; 32],
     pub issued_at: u64,
     pub issuer_identity: String,
 }
@@ -146,8 +146,7 @@ impl CharacterRecoveryStore {
             recovery_generation: successor,
             recovery_event_id,
             predecessor_generation: expected_predecessor,
-            predecessor_event_id: [0; 16],
-            predecessor_issued_at: 0,
+            predecessor_digest: [0; 32],
             issued_at,
             issuer_identity: self.issuer_identity.clone(),
         };
@@ -157,8 +156,7 @@ impl CharacterRecoveryStore {
             Some(current)
                 if current.recovery_generation == successor
                     && CharacterRecoveryFenceV1 {
-                        predecessor_event_id: [0; 16],
-                        predecessor_issued_at: 0,
+                        predecessor_digest: [0; 32],
                         ..current.clone()
                     } == proposed =>
             {
@@ -166,8 +164,7 @@ impl CharacterRecoveryStore {
             }
             Some(current) if current.recovery_generation == expected_predecessor => {
                 self.require_configured_identity(&current)?;
-                proposed.predecessor_event_id = current.recovery_event_id;
-                proposed.predecessor_issued_at = current.issued_at;
+                proposed.predecessor_digest = recovery_record_digest(&current)?;
                 self.replace(&proposed)?;
             }
             Some(_) => return Err(CharacterRecoveryError::Conflict),
@@ -301,27 +298,23 @@ fn encode(record: &CharacterRecoveryFenceV1) -> Result<Vec<u8>, CharacterRecover
                 .ok_or(CharacterRecoveryError::Rejected)?
         || record.recovery_event_id == [0; 16]
         || record.issued_at == 0
-        || (record.predecessor_generation == 0)
-            != (record.predecessor_event_id == [0; 16] && record.predecessor_issued_at == 0)
-        || (record.predecessor_generation != 0
-            && (record.predecessor_event_id == [0; 16] || record.predecessor_issued_at == 0))
+        || (record.predecessor_generation == 0) != (record.predecessor_digest == [0; 32])
     {
         return Err(CharacterRecoveryError::Rejected);
     }
-    let hex = |bytes: &[u8; 16]| {
+    let hex = |bytes: &[u8]| {
         bytes
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>()
     };
     let value = format!(
-        "{MAGIC}\nscope={}\ngeneration={}\nevent={}\npredecessor={}\npredecessor_event={}\npredecessor_issued_at={}\nissued_at={}\nissuer={}\n",
+        "{MAGIC}\nscope={}\ngeneration={}\nevent={}\npredecessor={}\npredecessor_digest={}\nissued_at={}\nissuer={}\n",
         record.authority_scope_id,
         record.recovery_generation,
         hex(&record.recovery_event_id),
         record.predecessor_generation,
-        hex(&record.predecessor_event_id),
-        record.predecessor_issued_at,
+        hex(&record.predecessor_digest),
         record.issued_at,
         record.issuer_identity
     );
@@ -331,6 +324,14 @@ fn encode(record: &CharacterRecoveryFenceV1) -> Result<Vec<u8>, CharacterRecover
     Ok(value.into_bytes())
 }
 
+/// SHA-256 of a record's exact canonical encoding.
+pub fn recovery_record_digest(
+    record: &CharacterRecoveryFenceV1,
+) -> Result<[u8; 32], CharacterRecoveryError> {
+    use sha2::{Digest, Sha256};
+    Ok(Sha256::digest(encode(record)?).into())
+}
+
 fn decode(bytes: &[u8]) -> Result<CharacterRecoveryFenceV1, CharacterRecoveryError> {
     let text = std::str::from_utf8(bytes).map_err(|_| CharacterRecoveryError::Unavailable)?;
     let lines = text
@@ -338,7 +339,7 @@ fn decode(bytes: &[u8]) -> Result<CharacterRecoveryFenceV1, CharacterRecoveryErr
         .ok_or(CharacterRecoveryError::Unavailable)?
         .split('\n')
         .collect::<Vec<_>>();
-    if lines.len() != 9 || lines[0] != MAGIC {
+    if lines.len() != 8 || lines[0] != MAGIC {
         return Err(CharacterRecoveryError::Unavailable);
     }
     let field = |index: usize, prefix: &str| {
@@ -351,39 +352,37 @@ fn decode(bytes: &[u8]) -> Result<CharacterRecoveryFenceV1, CharacterRecoveryErr
     let recovery_generation = field(2, "generation=")?
         .parse::<u64>()
         .map_err(|_| CharacterRecoveryError::Unavailable)?;
-    let id = |value: &str| -> Result<[u8; 16], CharacterRecoveryError> {
-        if value.len() != 32
+    fn hex_bytes<const N: usize>(value: &str) -> Result<[u8; N], CharacterRecoveryError> {
+        if value.len() != N * 2
             || !value
                 .bytes()
                 .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
         {
             return Err(CharacterRecoveryError::Unavailable);
         }
-        let mut out = [0; 16];
+        let mut out = [0; N];
         for (index, byte) in out.iter_mut().enumerate() {
             *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16)
                 .map_err(|_| CharacterRecoveryError::Unavailable)?;
         }
         Ok(out)
-    };
+    }
     let number = |index: usize, prefix: &str| -> Result<u64, CharacterRecoveryError> {
         field(index, prefix)?
             .parse::<u64>()
             .map_err(|_| CharacterRecoveryError::Unavailable)
     };
-    let recovery_event_id = id(field(3, "event=")?)?;
+    let recovery_event_id = hex_bytes::<16>(field(3, "event=")?)?;
     let predecessor_generation = number(4, "predecessor=")?;
-    let predecessor_event_id = id(field(5, "predecessor_event=")?)?;
-    let predecessor_issued_at = number(6, "predecessor_issued_at=")?;
-    let issued_at = number(7, "issued_at=")?;
-    let issuer_identity = field(8, "issuer=")?.to_owned();
+    let predecessor_digest = hex_bytes::<32>(field(5, "predecessor_digest=")?)?;
+    let issued_at = number(6, "issued_at=")?;
+    let issuer_identity = field(7, "issuer=")?.to_owned();
     let record = CharacterRecoveryFenceV1 {
         authority_scope_id,
         recovery_generation,
         recovery_event_id,
         predecessor_generation,
-        predecessor_event_id,
-        predecessor_issued_at,
+        predecessor_digest,
         issued_at,
         issuer_identity,
     };

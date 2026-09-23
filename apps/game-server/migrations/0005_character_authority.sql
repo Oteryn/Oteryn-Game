@@ -16,14 +16,12 @@ CREATE TABLE game_character_recovery_admissions (
     recovery_generation NUMERIC(20,0) PRIMARY KEY CHECK (recovery_generation BETWEEN 1 AND 18446744073709551615),
     recovery_event_id UUID NOT NULL UNIQUE,
     predecessor_generation NUMERIC(20,0) NOT NULL CHECK (predecessor_generation >= 0 AND predecessor_generation < recovery_generation),
-    predecessor_event_id UUID NULL,
-    predecessor_issued_at NUMERIC(20,0) NULL CHECK (predecessor_issued_at IS NULL OR predecessor_issued_at BETWEEN 1 AND 18446744073709551615),
+    predecessor_digest BYTEA NULL CHECK (predecessor_digest IS NULL OR octet_length(predecessor_digest) = 32),
     issued_at NUMERIC(20,0) NOT NULL CHECK (issued_at BETWEEN 1 AND 18446744073709551615),
     issuer_identity TEXT NOT NULL CHECK (octet_length(issuer_identity) BETWEEN 1 AND 128),
     reconciled_at BIGINT NOT NULL CHECK (reconciled_at >= 0),
     CHECK (recovery_generation = predecessor_generation + 1),
-    CHECK ((predecessor_generation = 0) = (predecessor_event_id IS NULL)),
-    CHECK ((predecessor_event_id IS NULL) = (predecessor_issued_at IS NULL)),
+    CHECK ((predecessor_generation = 0) = (predecessor_digest IS NULL)),
     CHECK (get_byte(uuid_send(recovery_event_id), 6) >> 4 = 7)
 );
 

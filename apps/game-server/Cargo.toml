@@ -19,6 +19,7 @@ oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 prost.workspace = true
 serde.workspace = true
+sha2.workspace = true
 serde_json.workspace = true
 rustls.workspace = true
 sqlx.workspace = true

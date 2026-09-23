@@ -21,7 +21,8 @@ use durability::character_authority::{BootstrapCommand, CharacterAuthorityError}
 use durability::character_authority_audit as audit;
 use durability::runtime_scope_assignment::{BootstrapSecret, LaunchBinding, NodeIncarnationProof};
 use oteryn_game_server::character_recovery_fence::{
-    CharacterRecoveryError, CharacterRecoveryStore,
+    CharacterRecoveryError, CharacterRecoveryFenceV1, CharacterRecoveryStore,
+    recovery_record_digest,
 };
 use oteryn_game_server::domain::{AccountId, CharacterId, WorldId};
 use prost::Message;
@@ -141,9 +142,9 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         .fetch_one(&mut connection).await.expect("DB generation");
     assert_eq!(db_generation, "1");
     assert_eq!(transition.record.recovery_generation, 2, "older DB stays distinguishable while the external retained directory remains advanced");
-    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, predecessor_event_id, predecessor_issued_at, issued_at, issuer_identity, reconciled_at) VALUES ('character-primary', 2, encode($1,'hex')::uuid, 1, encode($2,'hex')::uuid, 100, 200, 'game-ops', 200)")
+    sqlx::query("INSERT INTO game_character_recovery_admissions(authority_scope_id, recovery_generation, recovery_event_id, predecessor_generation, predecessor_digest, issued_at, issuer_identity, reconciled_at) VALUES ('character-primary', 2, encode($1,'hex')::uuid, 1, $2, 200, 'game-ops', 200)")
         .bind(id(12).as_slice())
-        .bind(id(11).as_slice())
+        .bind(transition.record.predecessor_digest.as_slice())
         .execute(&mut connection)
         .await
         .expect("explicit recovery reconciliation");
@@ -574,6 +575,19 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     .execute(&mut *repair)
     .await?;
     repair.commit().await?;
+    // An active legal hold whose audit event is missing is lost retention.
+    sqlx::query("INSERT INTO game_character_audit_legal_holds(hold_id, event_id, reason, authorizing_actor, started_at) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, 'case-2', 'security:alice', 1)")
+        .bind(id(26).as_slice())
+        .bind(id(27).as_slice())
+        .execute(&pool)
+        .await?;
+    let sealed = recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+    assert!(root.open_character_authority(&sealed).await.is_err());
+    drop(sealed);
+    sqlx::query("UPDATE game_character_audit_legal_holds SET released_at = 2, released_by = 'security:bob' WHERE hold_id = encode($1,'hex')::uuid")
+        .bind(id(26).as_slice())
+        .execute(&pool)
+        .await?;
 
     drop(authority);
     drop(fence);
@@ -661,8 +675,17 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     let transition = recovery
         .begin_recovery(1, id(12), 300)
         .map_err(|e| format!("{e:?}"))?;
-    assert_eq!(transition.record.predecessor_event_id, id(11));
-    assert_eq!(transition.record.predecessor_issued_at, 100);
+    let generation_one = recovery_record_digest(&CharacterRecoveryFenceV1 {
+        authority_scope_id: "character-primary".to_owned(),
+        recovery_generation: 1,
+        recovery_event_id: id(11),
+        predecessor_generation: 0,
+        predecessor_digest: [0; 32],
+        issued_at: 100,
+        issuer_identity: "game-ops".to_owned(),
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(transition.record.predecessor_digest, generation_one);
     for issued_at in ["101", "100"] {
         let mut restore = pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role = replica")
