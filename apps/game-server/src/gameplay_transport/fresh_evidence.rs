@@ -164,6 +164,23 @@ impl FreshEvidenceSource {
         result
     }
 
+    /// Boot reconciliation (OPS-NODE-BOOT-01 D3 step 4): inside the lane,
+    /// replays every retained publication slot by its fixed identity. Returns
+    /// the number of slots still retained.
+    pub(crate) async fn reconcile_retained(
+        &self,
+        root: &DurabilityRoot,
+        custody: &NodeIncarnationProof,
+    ) -> Result<usize, EvidenceUnavailable> {
+        let lane = self.enter_publication_lane().await?;
+        let (root_task, custody) = (root.clone(), custody.clone());
+        run_on_root(root, async move {
+            let _lane = lane;
+            reconcile_pending_publications(&root_task, &custody).await
+        })
+        .await
+    }
+
     /// Reconciles retained slots inside the lane and reserves one free slot
     /// before the lane is left, so concurrent demands never overbook.
     async fn reserve_before_exchange(

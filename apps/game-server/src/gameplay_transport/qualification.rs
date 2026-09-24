@@ -631,6 +631,74 @@ async fn join<A, B>(a: impl Future<Output = A>, b: impl Future<Output = B>) -> (
     .await
 }
 
+/// OPS-NODE-BOOT-01 §4: the shipped `oteryn-game-server serve` process,
+/// booted and assigned by `oteryn-game-ops`, reproduces every #823 stage
+/// against its own bound port. Characters were bootstrapped through the node
+/// control socket; this harness only reads them and the assignment back.
+#[test]
+#[ignore = "requires a running node in the disposable WP5 node-boot topology"]
+fn node_boot_seam_against_running_node() -> TestResult {
+    let key_id = required("WP5_S3B_FRESH_KEY_ID")?;
+    let signing = SigningKey::from_bytes(&hex32(&required("WP5_S3B_FRESH_KEY_SEED")?)?);
+    let accounts = [
+        required("WP5_S3A_ACCOUNT_ID")?,
+        required("WP5_S3B_SECOND_ACCOUNT_ID")?,
+    ];
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let url = required("NODE_BOOT_DATABASE_URL")?;
+            let world = crate::node::uuid_bytes(&required("NODE_BOOT_WORLD_ID")?)
+                .ok_or("invalid NODE_BOOT_WORLD_ID")?;
+            let channel = crate::node::uuid_bytes(&required("NODE_BOOT_CHANNEL_ID")?)
+                .ok_or("invalid NODE_BOOT_CHANNEL_ID")?;
+            let certificate = CertificateDer::from(pem_der(
+                &required("NODE_BOOT_GAMEPLAY_CERT")?,
+                "CERTIFICATE",
+            )?);
+            let mut database = sqlx::PgConnection::connect(&url).await?;
+            let mut characters = Vec::new();
+            for account in &accounts {
+                let character: Vec<u8> = sqlx::query_scalar(
+                    "SELECT uuid_send(character_id) FROM game_character_roots WHERE account_id = $1::uuid",
+                )
+                .bind(account)
+                .fetch_one(&mut database)
+                .await?;
+                characters.push(<[u8; 16]>::try_from(character.as_slice())?);
+            }
+            let scope_generation: String = sqlx::query_scalar(
+                "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
+                 WHERE world_id = encode($1, 'hex')::uuid AND channel_id = encode($2, 'hex')::uuid AND state = 1",
+            )
+            .bind(world.as_slice())
+            .bind(channel.as_slice())
+            .fetch_one(&mut database)
+            .await?;
+            database.close().await?;
+            evidence("node_boot characters=2 source=control_socket assignment=operator");
+            seam_clients(SeamClients {
+                address: required("NODE_BOOT_ADDRESS")?.parse()?,
+                certificate: &certificate,
+                signing: &signing,
+                key_id: &key_id,
+                accounts: &accounts,
+                characters: &characters,
+                world,
+                channel,
+                scope_generation: scope_generation.parse()?,
+                descriptor: &producer_descriptor(
+                    SOURCE_AUTHORITY,
+                    "WP5_S3A_CLIENT_CERT",
+                    "WP5_S3A_CLIENT_KEY",
+                )?,
+                url: &url,
+            })
+            .await
+        })
+}
+
 #[test]
 #[ignore = "requires the disposable WP5 Platform + PostgreSQL 17.6 topology"]
 fn server_seam_real_owners_over_tcp_tls() -> TestResult {
@@ -816,233 +884,19 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         &shutdown,
     );
 
-    let clients = async {
-        let exact = connector(&certificate, &EXACT)?;
-        let mut nonce_tag = 0x40u8;
-        let mut next_grant = |account: &str, character: [u8; 16], generation: u64| {
-            nonce_tag += 1;
-            Grant {
-                signing,
-                key_id,
-                account_id: "",
-                character_id: character,
-                world_id: v7(1, 0x02),
-                channel_id: v7(1, 0x03),
-                security_generation: generation,
-                scope_generation,
-                nonce: [nonce_tag; 32],
-                attempt: v7(nonce_tag, 0x05),
-            }
-            .with_account(account)
-        };
-
-        evidence("stage=transport_negatives");
-        // Transport negatives: nothing reaches the frame layer.
-        let generation = platform_generation(&descriptor, &accounts[0]).await?;
-        let grant = next_grant(&accounts[0], characters[0], generation);
-        let valid_frame = framed(&bootstrap(
-            1,
-            1,
-            &characters[0],
-            &sign_grant(&grant.borrowed(), now_seconds()?),
-        ));
-        for (label, profile, raw) in [
-            (
-                "tls12_exact_alpn",
-                ClientProfile {
-                    tls12: true,
-                    alpn: Some(b"oteryn-game/1"),
-                },
-                valid_frame.clone(),
-            ),
-            (
-                "wrong_alpn",
-                ClientProfile {
-                    tls12: false,
-                    alpn: Some(b"wrong"),
-                },
-                valid_frame.clone(),
-            ),
-            (
-                "missing_alpn",
-                ClientProfile {
-                    tls12: false,
-                    alpn: None,
-                },
-                valid_frame.clone(),
-            ),
-        ] {
-            let reply = exchange(address, &connector(&certificate, &profile)?, &raw).await?;
-            if !matches!(reply, Reply::TlsRefused | Reply::Closed) {
-                return Err(format!("{label} reached the frame layer: {reply:?}").into());
-            }
-        }
-        let mut plaintext = TcpStream::connect(address).await?;
-        plaintext.write_all(&valid_frame).await?;
-        let mut output = Vec::new();
-        let _ =
-            tokio::time::timeout(Duration::from_secs(20), plaintext.read_to_end(&mut output)).await;
-        // The TLS layer may answer with an alert record (content type 0x15);
-        // nothing else, and never a Foundation frame, may come back.
-        if output
-            .first()
-            .is_some_and(|content_type| *content_type != 0x15)
-        {
-            return Err(format!("plaintext received a non-alert reply: {output:02x?}").into());
-        }
-        if committed_admissions(&url).await? != 0 {
-            return Err("a transport negative committed an admission".into());
-        }
-        evidence(
-            "transport tls12_exact_alpn=refused wrong_alpn=refused missing_alpn=refused plaintext=refused admissions=0",
-        );
-
-        evidence("stage=foundation_negatives");
-        // Foundation negatives through the real listener, before FND-04.
-        let token = sign_grant(&grant.borrowed(), now_seconds()?);
-        for (label, raw, error) in [
-            (
-                "wrong_protocol_major",
-                framed(&bootstrap(2, 1, &characters[0], &token)),
-                Some(FoundationProtocolError::ProtocolMajorMismatch),
-            ),
-            (
-                "wrong_transport_profile",
-                framed(&bootstrap(1, 2, &characters[0], &token)),
-                Some(FoundationProtocolError::TransportProfileMismatch),
-            ),
-            (
-                "client_command_before_admission",
-                framed(&envelope(7, 0, &[])),
-                None,
-            ),
-            ("oversized_frame", 1_048_577u32.to_be_bytes().to_vec(), None),
-            ("truncated_frame", vec![0, 0, 0, 9, 1, 2], None),
-        ] {
-            let reply = exchange(address, &exact, &raw).await?;
-            if let Some(error) = error {
-                if reply != Reply::Frames(vec![encode_protocol_error(error, 0)?]) {
-                    return Err(format!("{label}: {reply:?}").into());
-                }
-            } else if accepted_session(&reply).is_some() {
-                return Err(format!("{label} was admitted").into());
-            }
-        }
-        if committed_admissions(&url).await? != 0 {
-            return Err("a Foundation negative committed an admission".into());
-        }
-        evidence(
-            "foundation wrong_protocol_major=rejected wrong_transport_profile=rejected phase_invalid=rejected oversized=closed truncated=closed admissions=0",
-        );
-
-        evidence("stage=fnd04_negatives");
-        // FND-04 negatives: one invariant each, every other fact valid.
-        let mut tampered = sign_grant(&grant.borrowed(), now_seconds()?);
-        let last = tampered.pop().ok_or("empty token")?;
-        tampered.push(if last == 'A' { 'B' } else { 'A' });
-        let expired = sign_grant(&grant.borrowed(), now_seconds()? - 60);
-        let other_character = framed(&bootstrap(
-            1,
-            1,
-            &characters[1],
-            &sign_grant(&grant.borrowed(), now_seconds()?),
-        ));
-        let mut foreign_key = grant.borrowed();
-        let foreign = SigningKey::from_bytes(&[0x7e; 32]);
-        foreign_key.signing = &foreign;
-        for (label, raw) in [
-            (
-                "invalid_signature",
-                framed(&bootstrap(1, 1, &characters[0], &tampered)),
-            ),
-            (
-                "expired",
-                framed(&bootstrap(1, 1, &characters[0], &expired)),
-            ),
-            ("wrong_character_binding", other_character),
-            (
-                "untrusted_signer",
-                framed(&bootstrap(
-                    1,
-                    1,
-                    &characters[0],
-                    &sign_grant(&foreign_key, now_seconds()?),
-                )),
-            ),
-        ] {
-            let reply = exchange(address, &exact, &raw).await?;
-            if reply != Reply::Closed {
-                return Err(format!("{label}: {reply:?}").into());
-            }
-        }
-        if committed_admissions(&url).await? != 0 {
-            return Err("an FND-04 negative committed an admission".into());
-        }
-        evidence(
-            "fnd04 invalid_signature=refused expired=refused wrong_character_binding=refused untrusted_signer=refused admissions=0",
-        );
-
-        evidence("stage=admission");
-        // Positive: the real owners admit on evidence fetched by this attempt
-        // (the pre-seeded S2 observations are older than five seconds);
-        // post-admission input fails closed.
-        let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
-        let mut raw = framed(&bootstrap(1, 1, &characters[0], &admitted_token));
-        raw.extend_from_slice(&framed(&envelope(7, 1, &[])));
-        let reply = exchange(address, &exact, &raw).await?;
-        let session =
-            accepted_session(&reply).ok_or_else(|| format!("admission refused: {reply:?}"))?;
-        let Reply::Frames(frames) = &reply else {
-            return Err("missing frames".into());
-        };
-        if frames.get(1)
-            != Some(&encode_protocol_error(
-                FoundationProtocolError::UnknownMessageType,
-                1,
-            )?)
-        {
-            return Err(format!("post-admission input not closed: {reply:?}").into());
-        }
-        if session[6] >> 4 != 7 || committed_admissions(&url).await? != 1 {
-            return Err("admission did not commit exactly one GameSession".into());
-        }
-        evidence(
-            "admission=committed server_accepted=1 post_admission_command=closed_unknown_message admissions=1",
-        );
-
-        // Replay of the consumed grant on a fresh connection.
-        let reply = exchange(
-            address,
-            &exact,
-            &framed(&bootstrap(1, 1, &characters[0], &admitted_token)),
-        )
-        .await?;
-        if reply != Reply::Closed || committed_admissions(&url).await? != 1 {
-            return Err(format!("replayed grant admitted: {reply:?}").into());
-        }
-        evidence("replayed_grant=refused admissions=1");
-
-        // Concurrent use of one valid grant: at most one GameSession.
-        let generation = platform_generation(&descriptor, &accounts[1]).await?;
-        let second = next_grant(&accounts[1], characters[1], generation);
-        let token = sign_grant(&second.borrowed(), now_seconds()?);
-        let raw = framed(&bootstrap(1, 1, &characters[1], &token));
-        let (left, right) = join(
-            exchange(address, &exact, &raw),
-            exchange(address, &exact, &raw),
-        )
-        .await;
-        let accepted = [left?, right?]
-            .iter()
-            .filter(|reply| accepted_session(reply).is_some())
-            .count();
-        if accepted != 1 || committed_admissions(&url).await? != 2 {
-            return Err(format!("concurrent same-grant admission accepted {accepted}").into());
-        }
-        evidence("concurrent_same_grant accepted=1 admissions=2");
-        shutdown.cancel();
-        Ok::<_, Box<dyn std::error::Error>>(())
-    };
+    let clients = seam_clients(SeamClients {
+        address,
+        certificate: &certificate,
+        signing,
+        key_id,
+        accounts,
+        characters: &characters,
+        world: v7(1, 0x02),
+        channel: v7(1, 0x03),
+        scope_generation,
+        descriptor: &descriptor,
+        url: &url,
+    });
     // The listener must outlive every client case: an early listener exit is a
     // failure, never a hang on an unaccepted connection.
     let mut serve = pin!(serve);
@@ -1069,6 +923,275 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     }
     served?;
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
+    Ok(())
+}
+
+/// Everything the #823 client stages need from a serving node: its address
+/// and TLS trust, the grant signer, the Characters and scope generation, and
+/// the durable store to count committed admissions.
+struct SeamClients<'a> {
+    address: SocketAddr,
+    certificate: &'a CertificateDer<'static>,
+    signing: &'a SigningKey,
+    key_id: &'a str,
+    accounts: &'a [String; 2],
+    characters: &'a [[u8; 16]],
+    world: [u8; 16],
+    channel: [u8; 16],
+    scope_generation: u64,
+    descriptor: &'a ProducerDescriptor,
+    url: &'a str,
+}
+
+/// The #823 `SEAM_PASS` client stages against one serving node.
+async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
+    let SeamClients {
+        address,
+        certificate,
+        signing,
+        key_id,
+        accounts,
+        characters,
+        world,
+        channel,
+        scope_generation,
+        descriptor,
+        url,
+    } = clients;
+    let exact = connector(certificate, &EXACT)?;
+    let mut nonce_tag = 0x40u8;
+    let mut next_grant = |account: &str, character: [u8; 16], generation: u64| {
+        nonce_tag += 1;
+        Grant {
+            signing,
+            key_id,
+            account_id: "",
+            character_id: character,
+            world_id: world,
+            channel_id: channel,
+            security_generation: generation,
+            scope_generation,
+            nonce: [nonce_tag; 32],
+            attempt: v7(nonce_tag, 0x05),
+        }
+        .with_account(account)
+    };
+
+    // Positive control first: the exact profile completes TLS, so every
+    // refusal below is the node's policy and never a broken trust setup.
+    let tcp = TcpStream::connect(address).await?;
+    tokio::time::timeout(
+        Duration::from_secs(30),
+        exact.connect(ServerName::try_from("localhost")?, tcp),
+    )
+    .await
+    .map_err(|_| "exact TLS handshake did not complete")?
+    .map_err(|error| format!("exact TLS handshake refused: {error}"))?;
+    evidence("transport exact_profile_handshake=completed");
+
+    evidence("stage=transport_negatives");
+    // Transport negatives: nothing reaches the frame layer.
+    let generation = platform_generation(descriptor, &accounts[0]).await?;
+    let grant = next_grant(&accounts[0], characters[0], generation);
+    let valid_frame = framed(&bootstrap(
+        1,
+        1,
+        &characters[0],
+        &sign_grant(&grant.borrowed(), now_seconds()?),
+    ));
+    for (label, profile, raw) in [
+        (
+            "tls12_exact_alpn",
+            ClientProfile {
+                tls12: true,
+                alpn: Some(b"oteryn-game/1"),
+            },
+            valid_frame.clone(),
+        ),
+        (
+            "wrong_alpn",
+            ClientProfile {
+                tls12: false,
+                alpn: Some(b"wrong"),
+            },
+            valid_frame.clone(),
+        ),
+        (
+            "missing_alpn",
+            ClientProfile {
+                tls12: false,
+                alpn: None,
+            },
+            valid_frame.clone(),
+        ),
+    ] {
+        let reply = exchange(address, &connector(certificate, &profile)?, &raw).await?;
+        if !matches!(reply, Reply::TlsRefused | Reply::Closed) {
+            return Err(format!("{label} reached the frame layer: {reply:?}").into());
+        }
+    }
+    let mut plaintext = TcpStream::connect(address).await?;
+    plaintext.write_all(&valid_frame).await?;
+    let mut output = Vec::new();
+    let _ = tokio::time::timeout(Duration::from_secs(20), plaintext.read_to_end(&mut output)).await;
+    // The TLS layer may answer with an alert record (content type 0x15);
+    // nothing else, and never a Foundation frame, may come back.
+    if output
+        .first()
+        .is_some_and(|content_type| *content_type != 0x15)
+    {
+        return Err(format!("plaintext received a non-alert reply: {output:02x?}").into());
+    }
+    if committed_admissions(url).await? != 0 {
+        return Err("a transport negative committed an admission".into());
+    }
+    evidence(
+        "transport tls12_exact_alpn=refused wrong_alpn=refused missing_alpn=refused plaintext=refused admissions=0",
+    );
+
+    evidence("stage=foundation_negatives");
+    // Foundation negatives through the real listener, before FND-04.
+    let token = sign_grant(&grant.borrowed(), now_seconds()?);
+    for (label, raw, error) in [
+        (
+            "wrong_protocol_major",
+            framed(&bootstrap(2, 1, &characters[0], &token)),
+            Some(FoundationProtocolError::ProtocolMajorMismatch),
+        ),
+        (
+            "wrong_transport_profile",
+            framed(&bootstrap(1, 2, &characters[0], &token)),
+            Some(FoundationProtocolError::TransportProfileMismatch),
+        ),
+        (
+            "client_command_before_admission",
+            framed(&envelope(7, 0, &[])),
+            None,
+        ),
+        ("oversized_frame", 1_048_577u32.to_be_bytes().to_vec(), None),
+        ("truncated_frame", vec![0, 0, 0, 9, 1, 2], None),
+    ] {
+        let reply = exchange(address, &exact, &raw).await?;
+        if let Some(error) = error {
+            if reply != Reply::Frames(vec![encode_protocol_error(error, 0)?]) {
+                return Err(format!("{label}: {reply:?}").into());
+            }
+        } else if accepted_session(&reply).is_some() {
+            return Err(format!("{label} was admitted").into());
+        }
+    }
+    if committed_admissions(url).await? != 0 {
+        return Err("a Foundation negative committed an admission".into());
+    }
+    evidence(
+        "foundation wrong_protocol_major=rejected wrong_transport_profile=rejected phase_invalid=rejected oversized=closed truncated=closed admissions=0",
+    );
+
+    evidence("stage=fnd04_negatives");
+    // FND-04 negatives: one invariant each, every other fact valid.
+    let mut tampered = sign_grant(&grant.borrowed(), now_seconds()?);
+    let last = tampered.pop().ok_or("empty token")?;
+    tampered.push(if last == 'A' { 'B' } else { 'A' });
+    let expired = sign_grant(&grant.borrowed(), now_seconds()? - 60);
+    let other_character = framed(&bootstrap(
+        1,
+        1,
+        &characters[1],
+        &sign_grant(&grant.borrowed(), now_seconds()?),
+    ));
+    let mut foreign_key = grant.borrowed();
+    let foreign = SigningKey::from_bytes(&[0x7e; 32]);
+    foreign_key.signing = &foreign;
+    for (label, raw) in [
+        (
+            "invalid_signature",
+            framed(&bootstrap(1, 1, &characters[0], &tampered)),
+        ),
+        (
+            "expired",
+            framed(&bootstrap(1, 1, &characters[0], &expired)),
+        ),
+        ("wrong_character_binding", other_character),
+        (
+            "untrusted_signer",
+            framed(&bootstrap(
+                1,
+                1,
+                &characters[0],
+                &sign_grant(&foreign_key, now_seconds()?),
+            )),
+        ),
+    ] {
+        let reply = exchange(address, &exact, &raw).await?;
+        if reply != Reply::Closed {
+            return Err(format!("{label}: {reply:?}").into());
+        }
+    }
+    if committed_admissions(url).await? != 0 {
+        return Err("an FND-04 negative committed an admission".into());
+    }
+    evidence(
+        "fnd04 invalid_signature=refused expired=refused wrong_character_binding=refused untrusted_signer=refused admissions=0",
+    );
+
+    evidence("stage=admission");
+    // Positive: the real owners admit on evidence fetched by this attempt
+    // (the pre-seeded S2 observations are older than five seconds);
+    // post-admission input fails closed.
+    let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
+    let mut raw = framed(&bootstrap(1, 1, &characters[0], &admitted_token));
+    raw.extend_from_slice(&framed(&envelope(7, 1, &[])));
+    let reply = exchange(address, &exact, &raw).await?;
+    let session =
+        accepted_session(&reply).ok_or_else(|| format!("admission refused: {reply:?}"))?;
+    let Reply::Frames(frames) = &reply else {
+        return Err("missing frames".into());
+    };
+    if frames.get(1)
+        != Some(&encode_protocol_error(
+            FoundationProtocolError::UnknownMessageType,
+            1,
+        )?)
+    {
+        return Err(format!("post-admission input not closed: {reply:?}").into());
+    }
+    if session[6] >> 4 != 7 || committed_admissions(url).await? != 1 {
+        return Err("admission did not commit exactly one GameSession".into());
+    }
+    evidence(
+        "admission=committed server_accepted=1 post_admission_command=closed_unknown_message admissions=1",
+    );
+
+    // Replay of the consumed grant on a fresh connection.
+    let reply = exchange(
+        address,
+        &exact,
+        &framed(&bootstrap(1, 1, &characters[0], &admitted_token)),
+    )
+    .await?;
+    if reply != Reply::Closed || committed_admissions(url).await? != 1 {
+        return Err(format!("replayed grant admitted: {reply:?}").into());
+    }
+    evidence("replayed_grant=refused admissions=1");
+
+    // Concurrent use of one valid grant: at most one GameSession.
+    let generation = platform_generation(descriptor, &accounts[1]).await?;
+    let second = next_grant(&accounts[1], characters[1], generation);
+    let token = sign_grant(&second.borrowed(), now_seconds()?);
+    let raw = framed(&bootstrap(1, 1, &characters[1], &token));
+    let (left, right) = join(
+        exchange(address, &exact, &raw),
+        exchange(address, &exact, &raw),
+    )
+    .await;
+    let accepted = [left?, right?]
+        .iter()
+        .filter(|reply| accepted_session(reply).is_some())
+        .count();
+    if accepted != 1 || committed_admissions(url).await? != 2 {
+        return Err(format!("concurrent same-grant admission accepted {accepted}").into());
+    }
+    evidence("concurrent_same_grant accepted=1 admissions=2");
     Ok(())
 }
 

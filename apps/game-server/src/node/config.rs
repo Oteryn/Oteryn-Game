@@ -290,6 +290,7 @@ impl NodeConfig {
         // The Runtime readiness namespace is never a Platform source authority.
         if platform.source_authority == readiness.source_authority
             || platform.source_authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
+            || readiness.source_authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
         {
             return reject("readiness.source_authority");
         }
@@ -434,6 +435,11 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 
     #[test]
     fn over_maximum_limits_and_bad_values_name_the_key_only() {
+        // The readiness case below uses the compiled Character issuer.
+        assert_eq!(
+            crate::character_bootstrap_intent::ISSUER_AUTHORITY,
+            "OTERYN_PLATFORM_CHARACTER_AUTHORITY"
+        );
         for (from, to, key) in [
             (
                 "max_connections = 256",
@@ -458,6 +464,11 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             (
                 "source_authority = \"oteryn:runtime:world-1:channel-1\"",
                 "source_authority = \"urn:oteryn:platform:game-auth\"",
+                "readiness.source_authority",
+            ),
+            (
+                "source_authority = \"oteryn:runtime:world-1:channel-1\"",
+                "source_authority = \"OTERYN_PLATFORM_CHARACTER_AUTHORITY\"",
                 "readiness.source_authority",
             ),
             (
