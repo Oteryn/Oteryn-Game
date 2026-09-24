@@ -76,5 +76,6 @@ The same-repository-only workflow job uses the existing protected downloader to 
 
 - PROVEN: PR #831 merged from exact frozen head `a9bb2cd30268a9a04cab9ba1e506b84da4699466` at protected `main` commit `a63678d828a8f2fdb23f5ca3ae74e97ccf1978fe`.
 - PROVEN: merge-group run [35991280898](https://github.com/Oteryn/Oteryn-Game/actions/runs/35991280898) completed with aggregate `game-gate` SUCCESS.
+- PROVEN: final ledger artifact `10803883162` was uploaded with 14-day retention; ZIP SHA-256 `c7f152b5b50078b1c2f241d0ca2852e62c9da404e74fd24d9242aef9f86f74d3`, embedded ledger SHA-256 `117c3e6ae487b4d29a68042d9c3507ae965d569b31d5472c6b4e886a96789392`; output: 5,512 documented blockers, 0 undispositioned rows.
 - PROVEN: ledger covers 5,512 UNKNOWN pages, each with a documented blocker; undispositioned rows: 0. Source families remain UNKNOWN; current revisions remain UNVERIFIED. No identity, gameplay, or G4 promotion is claimed.
 - TERMINAL: this bounded ledger task is completed and its authoring ownership is released. Further G3/G4 classification requires a new live allocation.
