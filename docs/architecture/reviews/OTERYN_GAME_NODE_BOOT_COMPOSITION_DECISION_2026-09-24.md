@@ -150,9 +150,17 @@ Rejected alternatives:
 
 1. Load and validate the D1 configuration, and read the referenced files.
 2. Connect the durability root and require `maintain_ready_once` to report ready. From then until exit, a bounded maintenance task calls `maintain_ready_once` in two cases: at a fixed interval well inside the 30-minute holder lifetime, and immediately after any operation reports `RootUnavailable`. The durability holder is therefore re-established after retirement or loss, rather than only at boot.
-3. **Register.** Generate a fresh UUIDv7 `NodeId` and register it with the configured launch authorization. The process retains that `NodeId` for the whole attempt. When registration fails ambiguously (lost response or unknown commit), it replays the exact same request (secret, binding, `NodeId`) a bounded number of times: `register_node_incarnation` returns the original proof for an exact replay. Only a definite rejection, or exhausted replays, fails boot. The authorization is consumed, and a replay rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
+3. **Register.** Generate a fresh UUIDv7 `NodeId` and register it with the configured launch authorization. The `NodeId` is logged, since it is not secret, before the first attempt. The process retains it until registration has a definite outcome.
+   - **Ambiguous failure** (lost response, unknown commit, database outage): the process replays the exact same request (secret, binding, `NodeId`) with bounded backoff until the outcome is definite. `register_node_incarnation` returns the original proof for an exact replay. The process never abandons an ambiguous registration and then registers a different `NodeId` under the same authorization.
+   - **Definite rejection:** boot fails.
+   - **Process killed mid-attempt:** each restart still creates a new `NodeId`, per the registration decision §4. The operator therefore issues a new launch authorization superseding the logged `NodeId`. If that `NodeId` never registered, issuance with `supersedes` rejects and the operator issues a plain one.
+
+   The authorization is consumed, and a replay under a different `NodeId` or binding rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
 4. **Establish S2 custody** for this incarnation:
-   - **First installation:** `initialize_native_admission_source` with the provenance and descriptor from the operator-issued S2 fresh-store authorization. That authorization is required when the store is uninitialized and rejected when it is already initialized.
+   - **First installation:** `initialize_native_admission_source` with the provenance and descriptor from the operator-issued S2 fresh-store authorization. That authorization is required when the store is uninitialized.
+     - When the store is already initialized and the authorization is still supplied (for example after an initialization whose response was lost), the node compares the stored provenance and descriptor with the supplied authorization, through a new read-only durability API.
+     - An exact match means initialization already completed. The node continues with the custody claim, which is a no-op when this incarnation already holds custody.
+     - Any difference fails boot.
    - **Every later incarnation:** `claim_native_admission_source_custody`, which succeeds only when the prior holder is no longer current.
    - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and `installed_at`, and the facts derived from the configured route: source authority, endpoint, peer name, trust-root digest and client-identity digest.
      - A higher revision registers the new facts.
@@ -241,7 +249,9 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - over-maximum limits;
   - unreadable secret or trust-root files;
   - empty trust roots;
-  - an S2 fresh-store authorization supplied for an already-initialized store, or missing for an uninitialized one.
+  - an S2 fresh-store authorization that differs from an already-initialized store's stored provenance or descriptor, or that is missing for an uninitialized store.
+- **Ambiguous S2 initialization.** A retry after an initialization whose response was lost, with the identical authorization, completes boot.
+- **Registration outage.** A database outage during registration is ridden out by exact replay, without exiting or changing the `NodeId`.
 - **Launch authorization.**
   - A replayed authorization under a different `NodeId` or binding rejects registration.
   - An exact replay after a lost registration response returns the original proof, and boot continues.
