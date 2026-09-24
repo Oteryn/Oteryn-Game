@@ -13,7 +13,6 @@ pr: 831
 base_sha: ac3d69f1c20e09ce006e3efb0777d4e4f32275d1
 head_sha: a9bb2cd30268a9a04cab9ba1e506b84da4699466
 final_head_sha: a9bb2cd30268a9a04cab9ba1e506b84da4699466
-final_head_frozen_at: 2026-09-24T11:05:31Z
 owner: delegated Luna writer
 merge_commit_sha: a63678d828a8f2fdb23f5ca3ae74e97ccf1978fe
 merge_group_run_id: 35991280898
