@@ -31,6 +31,7 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 - [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md) — stable/historical gate definitions; live implementation state supersedes dated execution wording.
 - [Gameplay/product architecture horizon](GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md) — detailed later product horizon; stale implementation-start wording is not current execution authority.
 - [Architecture decision discipline](../agents/ARCHITECTURE_DECISION_DISCIPLINE.md).
+- [G4 multi-source identity binding decision](OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md) — keeps canonical Oteryn identity independent while retaining exact wiki/OTS/client source IDs for deterministic crosswalk and drift comparison.
 
 ## Core accepted ADRs
 
