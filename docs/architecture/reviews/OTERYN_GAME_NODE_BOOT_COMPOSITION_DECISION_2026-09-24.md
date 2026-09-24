@@ -205,6 +205,7 @@ A restart always yields a new `NodeId`. Before the new process launches, the ope
      - an unknown commit keeps the slot;
      - every evidence demand first reconciles any occupied slot by its fixed identity before checkpointing new work. It replays the retained binding through the idempotent acceptance, then clears the slot on a definite outcome. The D3 step 4 boot reconciliation is the same operation, so a running node recovers its slots once the database recovers, without a restart;
      - with both slots occupied, evidence demand is unavailable and the attempt refuses;
+     - all S2 publications of the node, including that reconciliation, run serially in one publication lane. The lane is entered within `NSRC-QUEUE-WAIT`, otherwise the attempt refuses. Its guard is owned by the publication task spawned on the durability root, not by the caller, so a cancelled attempt cannot release it while its SQL operation is outstanding. A slot seen by reconciliation is therefore never live: its original operation has ended in this process with an ambiguous outcome, or it belongs to an earlier incarnation whose custody is fenced. That ended pass ran under the server-side transaction, statement and lock timeouts bounded by its deadline, and the replay reaches its authoritative result through the idempotent acceptance;
   3. only then does the #823 composition and commit run.
 - **Bounds.** The exchanges run under the existing transient capacity and within the caller's entry deadline.
 - **Failures and denials.**
