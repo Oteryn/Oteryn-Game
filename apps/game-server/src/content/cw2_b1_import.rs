@@ -8,8 +8,12 @@ use super::{
     CandidateDisposition, CandidateValue, DefinitionIdentityDocument, ImportBatch, ImportCandidate,
     ImportCandidateFamily, ImportCandidateOperation, ItemStackDocument, NamedCandidateField,
     NativeItemBindingDisposition, NativeItemBindingDocument, ProjectReferenceRecord,
-    ProjectionDocument, ReimportDecision, ReimportFieldState, world_project_sha256,
+    ProjectionDocument, ReferenceCells, ReferenceItemCharges, ReferenceItemContainer,
+    ReferenceItemField, ReferenceItemPresentation, ReferenceItemProtection, ReferenceItemSemantics,
+    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReimportDecision,
+    ReimportFieldState, world_project_sha256,
 };
+use serde::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::{self, Display, Formatter},
@@ -1319,6 +1323,637 @@ pub fn protected_cw2_b1_full_item_family_import(
             candidates,
             reimport_states,
         },
+    })
+}
+
+pub const ITEM_SEMANTIC_PROMOTION_FIELD_COUNT: usize = 69;
+pub const ITEM_SEMANTIC_PROMOTION_ITEM_COUNT: usize = 23;
+pub const ITEM_SEMANTIC_PROMOTION_PACKET: &[u8] = include_bytes!(
+    "../../../../docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json"
+);
+const ITEM_SEMANTIC_PROMOTION_SCHEMA: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION/v1";
+const ITEM_SEMANTIC_PROMOTION_PROFILE: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION_COMPILER/v1";
+const ITEM_SEMANTIC_PROMOTION_STATUS: &str = "PARTIAL_CANONICAL_SEMANTIC_PROMOTION_PACKET";
+const ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256: &str =
+    "1e479d22a94240705cc4a2190904e0a5fe99347ef17b4f3926177ff3b035ab2c";
+const ITEM_TARGET_CONTINUITY_COMPILER_SHA256: &str =
+    "3a3bd72f4c04c591c86764d7e2656d90bee051145a951de2848cef0a89d1f1d2";
+const ITEM_TARGET_CONTINUITY_MANIFEST_SHA256: &str =
+    "6f3ab3bc0799ec13c24c8939e0fde9636bfa8f6fff1ed3e507c6e6a730f47aac";
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionCompiler {
+    path: String,
+    sha256: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLineage {
+    continuity_compiler_sha256: String,
+    continuity_manifest_schema: String,
+    continuity_manifest_sha256: String,
+    eligible_field_count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionCounts {
+    per_field: BTreeMap<String, usize>,
+    promoted_fields: usize,
+    promoted_items: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionInvariants {
+    identity_reminted: bool,
+    mutable_wiki_revision_metadata_retained: bool,
+    name_only_identity_resolution: bool,
+    only_derived_eligible_fields_promoted: bool,
+    sibling_fields_default_unknown_or_existing_state: bool,
+    whole_item_promotion: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionRow {
+    field_path: String,
+    native_key: String,
+    source_item_id: u64,
+    source_value: serde_json::Value,
+    typed_value: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionPacket {
+    compiler: ItemSemanticPromotionCompiler,
+    counts: ItemSemanticPromotionCounts,
+    invariants: ItemSemanticPromotionInvariants,
+    next_action: String,
+    profile: String,
+    promotions: Vec<ItemSemanticPromotionRow>,
+    protected_lineage: ItemSemanticPromotionLineage,
+    schema: String,
+    status: String,
+    target_date: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtectedCw2B1PromotedItemFamilyImport {
+    pub family: ProtectedCw2B1FullItemFamilyImport,
+    pub promoted_fields: usize,
+    pub promoted_items: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ItemSemanticPromotionValue {
+    Text(String),
+    SignedPoints(ReferenceSignedPoints),
+    Cells(ReferenceCells),
+    RationalPercent(ReferenceRationalPercent),
+    Count(u32),
+    Capacity(u16),
+}
+
+fn expected_item_semantic_promotion_counts() -> BTreeMap<String, usize> {
+    [
+        ("charges.count", 1_usize),
+        ("container.capacity", 1),
+        ("presentation.name", 22),
+        ("protection.armor", 3),
+        ("weapon.attack", 16),
+        ("weapon.defense", 13),
+        ("weapon.extra_defense", 7),
+        ("weapon.hit_chance", 2),
+        ("weapon.range_cells", 4),
+    ]
+    .into_iter()
+    .map(|(field, count)| (field.to_owned(), count))
+    .collect()
+}
+
+fn exact_json_object<'a>(
+    value: &'a serde_json::Value,
+    fields: &[&str],
+) -> Result<&'a serde_json::Map<String, serde_json::Value>, ProtectedCw2B1ImportError> {
+    let object = value
+        .as_object()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion typed value object",
+        ))?;
+    if object.len() != fields.len() || fields.iter().any(|field| !object.contains_key(*field)) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion typed value shape",
+        ));
+    }
+    Ok(object)
+}
+
+fn json_i64(
+    object: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<i64, ProtectedCw2B1ImportError> {
+    object.get(key).and_then(serde_json::Value::as_i64).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion signed integer"),
+    )
+}
+
+fn json_u64(
+    object: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<u64, ProtectedCw2B1ImportError> {
+    object.get(key).and_then(serde_json::Value::as_u64).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion unsigned integer"),
+    )
+}
+
+fn json_str<'a>(
+    object: &'a serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> Result<&'a str, ProtectedCw2B1ImportError> {
+    object.get(key).and_then(serde_json::Value::as_str).ok_or(
+        ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion string"),
+    )
+}
+
+fn decode_item_semantic_promotion_value(
+    row: &ItemSemanticPromotionRow,
+) -> Result<ItemSemanticPromotionValue, ProtectedCw2B1ImportError> {
+    match row.field_path.as_str() {
+        "presentation.name" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "TEXT" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion text kind",
+                ));
+            }
+            let typed = json_str(object, "value")?;
+            let source =
+                row.source_value
+                    .as_str()
+                    .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "semantic promotion text source value",
+                    ))?;
+            if typed != source || typed.is_empty() || typed.len() > 2048 {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion text value",
+                ));
+            }
+            Ok(ItemSemanticPromotionValue::Text(typed.to_owned()))
+        }
+        "weapon.attack" | "weapon.defense" | "weapon.extra_defense" | "protection.armor" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "SIGNED_POINTS" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion signed points kind",
+                ));
+            }
+            let typed = json_i64(object, "value")?;
+            if row.source_value.as_i64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion signed points source mismatch",
+                ));
+            }
+            let value = i32::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion signed points bounds",
+                )
+            })?;
+            Ok(ItemSemanticPromotionValue::SignedPoints(
+                ReferenceSignedPoints(value),
+            ))
+        }
+        "weapon.range_cells" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "CELLS" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion cells kind",
+                ));
+            }
+            let typed = json_u64(object, "value")?;
+            if row.source_value.as_u64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion cells source mismatch",
+                ));
+            }
+            let value = u16::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion cells bounds")
+            })?;
+            Ok(ItemSemanticPromotionValue::Cells(ReferenceCells(value)))
+        }
+        "weapon.hit_chance" => {
+            let object = exact_json_object(
+                &row.typed_value,
+                &["denominator", "kind", "numerator", "source_unit"],
+            )?;
+            if json_str(object, "kind")? != "RATIONAL_PERCENT"
+                || json_str(object, "source_unit")? != "PERCENT_POINTS"
+            {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion rational percent kind",
+                ));
+            }
+            let source =
+                row.source_value
+                    .as_i64()
+                    .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                        "semantic promotion percent source value",
+                    ))?;
+            let numerator = json_i64(object, "numerator")?;
+            let denominator = json_u64(object, "denominator")?;
+            if denominator == 0
+                || i128::from(numerator) * 100_i128 != i128::from(source) * i128::from(denominator)
+            {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion percent source mismatch",
+                ));
+            }
+            let value = ReferenceRationalPercent::new(numerator, denominator).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion rational percent value",
+                )
+            })?;
+            Ok(ItemSemanticPromotionValue::RationalPercent(value))
+        }
+        "charges.count" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "COUNT_U32" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion count kind",
+                ));
+            }
+            let typed = json_u64(object, "value")?;
+            if row.source_value.as_u64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion count source mismatch",
+                ));
+            }
+            let value = u32::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion count bounds")
+            })?;
+            Ok(ItemSemanticPromotionValue::Count(value))
+        }
+        "container.capacity" => {
+            let object = exact_json_object(&row.typed_value, &["kind", "value"])?;
+            if json_str(object, "kind")? != "CAPACITY_U16" {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion capacity kind",
+                ));
+            }
+            let typed = json_u64(object, "value")?;
+            if row.source_value.as_u64() != Some(typed) {
+                return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion capacity source mismatch",
+                ));
+            }
+            let value = u16::try_from(typed).map_err(|_| {
+                ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion capacity bounds")
+            })?;
+            Ok(ItemSemanticPromotionValue::Capacity(value))
+        }
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion field path",
+        )),
+    }
+}
+
+fn promote_unknown<T>(
+    field: &mut ReferenceItemField<T>,
+    value: T,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if !matches!(field, ReferenceItemField::Unknown) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion overwrites existing atom",
+        ));
+    }
+    *field = ReferenceItemField::Known(value);
+    Ok(())
+}
+
+fn promoted_presentation(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemPresentation, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.presentation, ReferenceItemField::Unknown) {
+        semantics.presentation = ReferenceItemField::Known(ReferenceItemPresentation {
+            name: ReferenceItemField::Unknown,
+            description: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.presentation {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion presentation group conflict",
+        )),
+    }
+}
+
+fn promoted_weapon(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemWeapon, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.weapon, ReferenceItemField::Unknown) {
+        semantics.weapon = ReferenceItemField::Known(ReferenceItemWeapon {
+            weapon_type: ReferenceItemField::Unknown,
+            attack: ReferenceItemField::Unknown,
+            defense: ReferenceItemField::Unknown,
+            extra_defense: ReferenceItemField::Unknown,
+            range: ReferenceItemField::Unknown,
+            hit_chance: ReferenceItemField::Unknown,
+            max_hit_chance: ReferenceItemField::Unknown,
+            ammunition: ReferenceItemField::Unknown,
+            elemental: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.weapon {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion weapon group conflict",
+        )),
+    }
+}
+
+fn promoted_protection(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemProtection, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.protection, ReferenceItemField::Unknown) {
+        semantics.protection = ReferenceItemField::Known(ReferenceItemProtection {
+            armor: ReferenceItemField::Unknown,
+            resistances: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.protection {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion protection group conflict",
+        )),
+    }
+}
+
+fn promoted_charges(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemCharges, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.charges, ReferenceItemField::Unknown) {
+        semantics.charges = ReferenceItemField::Known(ReferenceItemCharges {
+            count: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.charges {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion charges group conflict",
+        )),
+    }
+}
+
+fn promoted_container(
+    semantics: &mut ReferenceItemSemantics,
+) -> Result<&mut ReferenceItemContainer, ProtectedCw2B1ImportError> {
+    if matches!(&semantics.container, ReferenceItemField::Unknown) {
+        semantics.container = ReferenceItemField::Known(ReferenceItemContainer {
+            capacity: ReferenceItemField::Unknown,
+        });
+    }
+    match &mut semantics.container {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion container group conflict",
+        )),
+    }
+}
+
+fn apply_item_semantic_promotion(
+    semantics: &mut ReferenceItemSemantics,
+    field_path: &str,
+    value: ItemSemanticPromotionValue,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    match (field_path, value) {
+        ("presentation.name", ItemSemanticPromotionValue::Text(value)) => {
+            promote_unknown(&mut promoted_presentation(semantics)?.name, value)
+        }
+        ("weapon.attack", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.attack, value)
+        }
+        ("weapon.defense", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.defense, value)
+        }
+        ("weapon.extra_defense", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.extra_defense, value)
+        }
+        ("weapon.range_cells", ItemSemanticPromotionValue::Cells(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.range, value)
+        }
+        ("weapon.hit_chance", ItemSemanticPromotionValue::RationalPercent(value)) => {
+            promote_unknown(&mut promoted_weapon(semantics)?.hit_chance, value)
+        }
+        ("protection.armor", ItemSemanticPromotionValue::SignedPoints(value)) => {
+            promote_unknown(&mut promoted_protection(semantics)?.armor, value)
+        }
+        ("charges.count", ItemSemanticPromotionValue::Count(value)) => {
+            promote_unknown(&mut promoted_charges(semantics)?.count, value)
+        }
+        ("container.capacity", ItemSemanticPromotionValue::Capacity(value)) => {
+            promote_unknown(&mut promoted_container(semantics)?.capacity, value)
+        }
+        _ => Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion typed destination",
+        )),
+    }
+}
+
+fn validate_item_semantic_promotion_packet(
+    packet: &ItemSemanticPromotionPacket,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if packet.schema != ITEM_SEMANTIC_PROMOTION_SCHEMA
+        || packet.profile != ITEM_SEMANTIC_PROMOTION_PROFILE
+        || packet.status != ITEM_SEMANTIC_PROMOTION_STATUS
+        || packet.target_date != "2026-07-28"
+        || packet.next_action
+            != "APPLY_TO_EXISTING_REFERENCE_ITEM_SEMANTICS_AND_COMPILE_ARTIFACT_V4"
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion packet identity",
+        ));
+    }
+    if packet.compiler.path != "tools/reference-world-corridor-census/item_semantic_promotion.py"
+        || packet.compiler.sha256 != ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion compiler binding",
+        ));
+    }
+    if packet.protected_lineage.continuity_compiler_sha256 != ITEM_TARGET_CONTINUITY_COMPILER_SHA256
+        || packet.protected_lineage.continuity_manifest_schema
+            != "OTERYN_ITEM_TARGET_CONTINUITY_MANIFEST/v1"
+        || packet.protected_lineage.continuity_manifest_sha256
+            != ITEM_TARGET_CONTINUITY_MANIFEST_SHA256
+        || packet.protected_lineage.eligible_field_count != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion lineage binding",
+        ));
+    }
+    if packet.counts.promoted_fields != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+        || packet.counts.promoted_items != ITEM_SEMANTIC_PROMOTION_ITEM_COUNT
+        || packet.counts.per_field != expected_item_semantic_promotion_counts()
+        || packet.promotions.len() != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion count partition",
+        ));
+    }
+    let invariants = &packet.invariants;
+    if invariants.identity_reminted
+        || invariants.mutable_wiki_revision_metadata_retained
+        || invariants.name_only_identity_resolution
+        || !invariants.only_derived_eligible_fields_promoted
+        || !invariants.sibling_fields_default_unknown_or_existing_state
+        || invariants.whole_item_promotion
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion invariant binding",
+        ));
+    }
+    Ok(())
+}
+
+/// Apply the exact protected #774-derived semantic promotion packet to the existing full Item
+/// family. Identity allocation, stack class and materialization are inherited byte-for-byte from
+/// the protected full-family importer; only the 69 admitted atomic semantic fields are mutated.
+pub fn protected_cw2_b1_promoted_item_family_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    let packet: ItemSemanticPromotionPacket =
+        serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_PACKET).map_err(|_| {
+            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion packet JSON decoding")
+        })?;
+    validate_item_semantic_promotion_packet(&packet)?;
+
+    let mut family = protected_cw2_b1_full_item_family_import(evidence_bytes)?;
+
+    let mut source_to_native = BTreeMap::<u64, String>::new();
+    for candidate in &family.batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "semantic promotion source identity binding",
+                ))?;
+        let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
+            if field.field_path == "binding.native-item"
+                && let CandidateValue::NativeItemBinding(binding) = &field.value
+            {
+                return Some(binding);
+            }
+            None
+        });
+        let binding = bindings
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion native identity binding",
+            ))?;
+        if bindings.next().is_some()
+            || binding.identity.family != "Item"
+            || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
+            || candidate.candidate_target
+                != format!("{}@{}", binding.identity.key, binding.identity.revision)
+            || source_to_native
+                .insert(source_item_id, binding.identity.key.clone())
+                .is_some()
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion native identity closure",
+            ));
+        }
+    }
+    if source_to_native.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion source identity count",
+        ));
+    }
+
+    let mut record_index = BTreeMap::<String, usize>::new();
+    for (index, record) in family.records.iter().enumerate() {
+        let ProjectReferenceRecord::Item { identity, .. } = record else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion non-Item record",
+            ));
+        };
+        if record_index.insert(identity.key.clone(), index).is_some() {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion record identity duplicate",
+            ));
+        }
+    }
+    if record_index.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion record identity count",
+        ));
+    }
+
+    let mut seen_atoms = BTreeSet::<(String, String)>::new();
+    let mut seen_items = BTreeSet::<String>::new();
+    let mut per_field = BTreeMap::<String, usize>::new();
+    let mut previous: Option<(&str, &str, u64)> = None;
+
+    for row in &packet.promotions {
+        if let Some((native_key, field_path, source_item_id)) = previous
+            && (native_key, field_path, source_item_id)
+                >= (
+                    row.native_key.as_str(),
+                    row.field_path.as_str(),
+                    row.source_item_id,
+                )
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion row ordering",
+            ));
+        }
+        previous = Some((&row.native_key, &row.field_path, row.source_item_id));
+
+        if source_to_native
+            .get(&row.source_item_id)
+            .map(String::as_str)
+            != Some(row.native_key.as_str())
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion exact identity mismatch",
+            ));
+        }
+        if !seen_atoms.insert((row.native_key.clone(), row.field_path.clone())) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion duplicate atom",
+            ));
+        }
+        seen_items.insert(row.native_key.clone());
+        *per_field.entry(row.field_path.clone()).or_default() += 1;
+
+        let value = decode_item_semantic_promotion_value(row)?;
+        let index = *record_index.get(&row.native_key).ok_or(
+            ProtectedCw2B1ImportError::EvidenceMismatch("semantic promotion record missing"),
+        )?;
+        let ProjectReferenceRecord::Item { semantics, .. } = &mut family.records[index] else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "semantic promotion record type drift",
+            ));
+        };
+        apply_item_semantic_promotion(semantics, &row.field_path, value)?;
+    }
+
+    if seen_atoms.len() != ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+        || seen_items.len() != ITEM_SEMANTIC_PROMOTION_ITEM_COUNT
+        || per_field != expected_item_semantic_promotion_counts()
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "semantic promotion applied partition",
+        ));
+    }
+
+    Ok(ProtectedCw2B1PromotedItemFamilyImport {
+        family,
+        promoted_fields: seen_atoms.len(),
+        promoted_items: seen_items.len(),
     })
 }
 

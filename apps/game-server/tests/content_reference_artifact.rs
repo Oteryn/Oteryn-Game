@@ -129,6 +129,131 @@ fn typed_family_linked(
     Ok((linked, selected))
 }
 
+fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>>
+{
+    let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
+    assert_eq!(
+        promoted.promoted_fields,
+        ITEM_SEMANTIC_PROMOTION_FIELD_COUNT
+    );
+    assert_eq!(promoted.promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+    let canonical = CanonicalProjectDocuments::from_draft(
+        ProjectDraft {
+            project_revision: "project-r1".to_owned(),
+            package_key: "oteryn:content.world-project".to_owned(),
+            semantic_schema_version: "reference-schema-v1".to_owned(),
+            licensing_metadata: "PENDING".to_owned(),
+            world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
+            coordinate_frame: "global-target-2026-07-28".to_owned(),
+            records: promoted.family.records,
+            imports: vec![promoted.family.batch],
+            metadata: Vec::new(),
+        },
+        full_family_limits(),
+    )?;
+    Ok(canonical
+        .into_snapshot(full_family_limits())?
+        .parse(full_family_limits())?
+        .link()?)
+}
+
+fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
+    use ReferenceItemField::Known;
+    let mut count = 0_usize;
+    if let Known(value) = &semantics.presentation {
+        count += usize::from(matches!(&value.name, Known(_)));
+    }
+    if let Known(value) = &semantics.weapon {
+        count += usize::from(matches!(&value.attack, Known(_)));
+        count += usize::from(matches!(&value.defense, Known(_)));
+        count += usize::from(matches!(&value.extra_defense, Known(_)));
+        count += usize::from(matches!(&value.range, Known(_)));
+        count += usize::from(matches!(&value.hit_chance, Known(_)));
+    }
+    if let Known(value) = &semantics.protection {
+        count += usize::from(matches!(&value.armor, Known(_)));
+    }
+    if let Known(value) = &semantics.charges {
+        count += usize::from(matches!(&value.count, Known(_)));
+    }
+    if let Known(value) = &semantics.container {
+        count += usize::from(matches!(&value.capacity, Known(_)));
+    }
+    count
+}
+
+#[test]
+fn protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client()
+-> Result<(), Box<dyn std::error::Error>> {
+    let linked = promoted_family_linked()?;
+    assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+
+    let promoted_items = linked
+        .definitions
+        .iter()
+        .filter(|definition| {
+            matches!(
+                &definition.kind,
+                ReferenceDefinitionKind::Item(item) if promoted_atom_count(&item.semantics) > 0
+            )
+        })
+        .count();
+    let promoted_fields = linked
+        .definitions
+        .iter()
+        .map(|definition| match &definition.kind {
+            ReferenceDefinitionKind::Item(item) => promoted_atom_count(&item.semantics),
+            _ => 0,
+        })
+        .sum::<usize>();
+    assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+    assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+
+    let compiled = compile_reference_playable(&linked)?;
+    let repeated = compile_reference_playable(&linked)?;
+    assert_eq!(compiled.server_artifact, repeated.server_artifact);
+    assert_eq!(compiled.client_artifact, repeated.client_artifact);
+
+    let server = load_reference_playable_artifact(
+        &compiled.server_artifact,
+        ReferenceArtifactProjection::ServerAuthoritative,
+    )?;
+    let client = load_reference_playable_artifact(
+        &compiled.client_artifact,
+        ReferenceArtifactProjection::ClientSafe,
+    )?;
+    assert_eq!(
+        server.artifact_profile_id(),
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4"
+    );
+    assert_eq!(
+        client.artifact_profile_id(),
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v4"
+    );
+
+    let mut server_promoted = 0_usize;
+    let mut client_promoted = 0_usize;
+    for definition in &linked.definitions {
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            continue;
+        };
+        let expected = &item.semantics;
+        let server_item = server
+            .lookup_server_item(&definition.definition)?
+            .expect("server Item from complete promoted family");
+        let client_item = client
+            .lookup_client_item(&definition.definition)?
+            .expect("client Item from complete promoted family");
+        assert_eq!(server_item.semantics, *expected);
+        assert_eq!(client_item.semantics, expected.client_projection());
+        server_promoted += promoted_atom_count(&server_item.semantics);
+        client_promoted += promoted_atom_count(&client_item.semantics);
+    }
+    assert_eq!(server_promoted, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(client_promoted, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    Ok(())
+}
+
 fn item_target() -> ReferenceItemTarget {
     ReferenceItemTarget::new(CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION).expect("typed target")
 }

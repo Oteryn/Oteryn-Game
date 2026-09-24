@@ -1,0 +1,167 @@
+name: Item Content Field Verification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/reference-world-corridor-census/item_field_verification.py
+      - tools/reference-world-corridor-census/item_field_verification_self_test.py
+      - docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json
+      - docs/agents/tasks/active/OTV2-20260922-content-world-item-field-verification-504.md
+      - .github/workflows/item-content-verification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: item-content-field-verification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Item content / field verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Compile and run focused field-rule tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/reference-world-corridor-census/item_field_verification.py \
+            tools/reference-world-corridor-census/item_field_verification_self_test.py
+          python tools/reference-world-corridor-census/item_field_verification_self_test.py
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Reproduce protected Item identity and #763 crosswalk
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-field-verification"
+          mkdir -p "$ROOT"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk.py \
+            --game-root . \
+            --native-map "$ROOT/native-map.json" \
+            --output "$ROOT/crosswalk.json" \
+            --manifest-output "$ROOT/crosswalk-manifest.json"
+          test "$(sha256sum "$ROOT/crosswalk.json" | awk '{print $1}')" = "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+
+      - name: Collect fresh current-source observation under protected #767 algorithm
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-field-verification"
+          PROTECTED_MANIFEST="docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json"
+          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
+            --game-root . \
+            --classification-crosswalk "$ROOT/crosswalk.json" \
+            --cache-dir "$ROOT/wiki-cache" \
+            --output "$ROOT/current-source.json" \
+            --manifest-output "$ROOT/current-source-manifest.json"
+          python - "$PROTECTED_MANIFEST" "$ROOT/current-source-manifest.json" "$ROOT/current-source.json" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          protected_path, observed_path, full_path = map(pathlib.Path, sys.argv[1:])
+          protected = json.loads(protected_path.read_text(encoding="utf-8"))
+          observed = json.loads(observed_path.read_text(encoding="utf-8"))
+          full_sha = hashlib.sha256(full_path.read_bytes()).hexdigest()
+          assert protected["schema"] == observed["schema"]
+          assert protected["target_cut"] == observed["target_cut"] == "2026-07-28"
+          assert protected["source"] == observed["source"]
+          assert protected["collector"] == observed["collector"]
+          assert protected["counts"] == observed["counts"], (
+              "fresh current-source identity/disposition partition drifted"
+          )
+          assert observed["full_output"]["sha256"] == full_sha
+          protected_sha = protected["full_output"]["sha256"]
+          protected_stable = protected["full_output"]["stable_without_retrieval_timestamp_sha256"]
+          observed_stable = observed["full_output"]["stable_without_retrieval_timestamp_sha256"]
+          status = (
+              "EXACT_STABLE_REPRODUCTION"
+              if observed_stable == protected_stable
+              else "FRESH_PAGE_REVISION_DRIFT_SAME_IDENTITY_PARTITION"
+          )
+          print(f"PROTECTED_CURRENT_SOURCE_SHA256={protected_sha}")
+          print(f"OBSERVED_CURRENT_SOURCE_SHA256={full_sha}")
+          print(f"CURRENT_SOURCE_OBSERVATION_STATUS={status}")
+          PY
+
+      - name: Compile complete 38,157 Item field verification twice
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-field-verification"
+          python tools/reference-world-corridor-census/item_field_verification.py \
+            --classification-crosswalk "$ROOT/crosswalk.json" \
+            --current-source "$ROOT/current-source.json" \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
+            --output "$ROOT/field-verification.json" \
+            --manifest-output "$ROOT/field-verification-manifest.json"
+          python tools/reference-world-corridor-census/item_field_verification.py \
+            --classification-crosswalk "$ROOT/crosswalk.json" \
+            --current-source "$ROOT/current-source.json" \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
+            --output "$ROOT/field-verification-repeat.json" \
+            --manifest-output "$ROOT/field-verification-manifest-repeat.json"
+          cmp "$ROOT/field-verification.json" "$ROOT/field-verification-repeat.json"
+          cmp "$ROOT/field-verification-manifest.json" "$ROOT/field-verification-manifest-repeat.json"
+
+      - name: Verify and emit compact evidence
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-field-verification"
+          python - "$ROOT/field-verification-manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          manifest = json.loads(path.read_text(encoding='utf-8'))
+          counts = manifest['counts']
+          assert counts['records'] == 38157
+          assert sum(counts['field_states'].values()) == counts['expanded_field_slots']
+          assert sum(counts['continuity'].values()) == counts['expanded_field_slots']
+          assert counts['promotion'].get('ELIGIBLE', 0) == 0
+          assert manifest['invariants']['current_value_auto_equals_target_value'] is False
+          assert manifest['invariants']['semantic_promotion_performed'] is False
+          print('ITEM_FIELD_VERIFICATION_MANIFEST_BEGIN')
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')))
+          print('ITEM_FIELD_VERIFICATION_MANIFEST_END')
+          PY
+          sha256sum "$ROOT/field-verification.json" "$ROOT/field-verification-manifest.json"
+
+      - name: Upload compact field evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: item-field-verification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/item-field-verification/current-source-manifest.json
+            ${{ runner.temp }}/item-field-verification/field-verification-manifest.json
+          if-no-files-found: error
+          retention-days: 14

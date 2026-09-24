@@ -76,10 +76,10 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "2.1",
+      "version": "2.4",
       "status": "reusable",
       "owner": "implementation-programme",
-      "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation and no authority expansion.",
+      "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation, no authority expansion, and registered scoped dispatch aliases that resolve to this same profile identity.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This is the sole reusable mutating Game control-plane profile. It does not inherit authority from another reusable coordinator prompt; only an explicit protected lifecycle replacement may supersede it."
@@ -142,7 +142,7 @@
     {
       "prompt_id": "OTV2_IMPL_DURABILITY",
       "path": "docs/agents/prompts/OTV2_IMPL_DURABILITY.md",
-      "version": "1.4",
+      "version": "1.5",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded durability implementation worker; writes require a current merged allocation.",
@@ -789,9 +789,20 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
+      "prompt_id": "OTV2_FULL_CONTENT_CENSUS_PROGRAMME",
+      "path": "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md",
+      "version": "1.1",
+      "status": "reusable",
+      "owner": "implementation-programme-scoped-dispatch-alias",
+      "scope": "Scoped Full Tibia content census/crosswalk dispatch alias that resolves to the same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity and narrows it to G2 through final coverage closure; it is not a second coordinator and adds no authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This entry is a scoped dispatch alias of OTV2_WORK_DELIVERY_COORDINATOR, not an independent control-plane profile. When the canonical Work coordinator is current and authorized, invocation uses that same profile identity and authority with census-only scope; otherwise it remains read-only. Only an explicit protected lifecycle replacement may change this routing."
+    },
+    {
       "prompt_id": "OTV2_CONTENT_WORLD_LEAD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-technical-lead",
       "scope": "Subordinate Content/World technical coordination and exact next-increment proposal; read-only without documentary authority, no allocation, runtime or merge authority.",
@@ -813,7 +824,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_IMPORT",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_IMPORT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-import",
       "scope": "Allocated Game-owned source extraction, semantic mapping and candidate catalogue import; no implicit source redistribution, runtime or parity-promotion authority.",
@@ -824,7 +835,7 @@
     {
       "prompt_id": "OTV2_CONTENT_WORLD_BUILD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_BUILD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "content-world-build",
       "scope": "Allocated shared Content model, compiler, indexed artifacts and loader/activation implementation through existing boundaries; read-only without exact custody and required decisions.",

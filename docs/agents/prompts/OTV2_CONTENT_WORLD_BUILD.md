@@ -17,6 +17,17 @@ Jesteś pojedynczym writerem przydzielonego wspólnego modelu. CW2 używa tego m
 
 Bootstrap pojedynczego rekordu jest zakończony jako zwykła ścieżka rozwoju katalogu. Po protected D3 i istniejącym CW2 B1–B5 normalna native/executable promotion w CW3 ma obejmować **ograniczoną reprezentatywną partię albo całą technicznie i semantycznie gotową partycję rodziny**, nie kolejny pojedynczy item/creature/NPC. Pojedynczy rekord wolno użyć tylko jako fixture, regression, diagnostykę albo gdy świeży konkretny blocker uniemożliwia bezpieczny batch. Taki wyjątek nie liczy się jako postęp katalogowy i musi jawnie podać blocker oraz warunek przejścia do batcha. Historyczne single-item PR-y są bootstrap/evidence, nie precedensem do seryjnej promocji rekord-po-rekordzie.
 
+
+## Item batch promotion
+
+CW3 nie tworzy osobnej „promotion phase” jako celu. Dla tego samego Item batcha przyjmij dokładny eligible set z field-level evidence i continuity, zaktualizuj istniejące canonical `ProjectReferenceRecord::Item` / `ReferenceItemSemantics`, a następnie od razu wykonaj istniejący compile/test path.
+
+Partial promotion jest poprawnym normalnym wynikiem: pojedyncze zweryfikowane pola mogą stać się `Known`, podczas gdy pozostałe pola tego samego Itemu pozostają `Unknown/Conflict`. Nie czekaj na kompletny Item, jeżeli typed model #749 już reprezentuje promowane pole.
+
+Jeżeli `promotable_fields == 0`, nie twórz no-op promotion PR ani dodatkowego schema/rule wrappera; zwróć batch do najbliższego source/identity/continuity blockera. Jeżeli `promotable_fields > 0`, promotion musi zwiększyć liczbę canonical-promoted fields i ten sam batch powinien od razu przejść przez istniejący artifact v4 / compile-load qualification.
+
+Nowy parser, model, codec, rule engine lub schema widening jest dopuszczalny tylko po wykazaniu, że co najmniej jedno dokładne eligible pole nie ma reprezentacji w chronionym modelu. Sam raport, manifest lub ponowne opakowanie tego samego semantic payload nie jest postępem katalogowym.
+
 ## Zadanie
 
 Wprowadź tylko przyjętą semantic delta #504: typowane definicje, ordered placements i domain bindings wymagane przez wybrany journey, bez ograniczania pełnej architektury do fixture. Source keys są stabilne; runtime numeric IDs są revision-scoped. Podział plików i stref nie zmienia identity/authority. Missing footprint data nie jest void.

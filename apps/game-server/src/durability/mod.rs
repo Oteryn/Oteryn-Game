@@ -6,13 +6,207 @@
 
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod character_authority;
+pub mod character_authority_audit;
 mod db;
 pub mod fresh_admission;
+pub mod fresh_admission_composition;
+pub mod native_admission_source;
+pub mod runtime_scope_assignment;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod fresh_admission_composition_linkage {
+    use super::DurabilityRoot;
+    use super::fresh_admission_composition::{
+        COMPOSITION_SOURCE_AUTHORITY, FreshAdmissionComposition, FreshAdmissionSubject,
+    };
+
+    #[test]
+    fn fresh_admission_composition_api_is_linked() {
+        assert!(!COMPOSITION_SOURCE_AUTHORITY.is_empty());
+        let _ = std::mem::size_of::<FreshAdmissionComposition>();
+        let _ = std::mem::size_of::<FreshAdmissionSubject>();
+        let _ = DurabilityRoot::publish_fresh_admission_sources;
+        let _ = DurabilityRoot::compose_fresh_admission;
+        let _ = DurabilityRoot::commit_composed_fresh_admission;
+    }
+}
+
+#[cfg(test)]
+mod native_admission_source_linkage {
+    use super::DurabilityRoot;
+    use super::native_admission_source::{
+        DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
+        PendingPublication, SourceObservation,
+    };
+
+    #[test]
+    fn native_admission_source_api_is_linked() {
+        let _ = std::mem::size_of::<FreshStoreProvenance>();
+        let _ = std::mem::size_of::<DescriptorRegistration>();
+        let _ = std::mem::size_of::<SourceObservation>();
+        let _ = std::mem::size_of::<PendingPublication>();
+        let _ = [
+            NativeSourceOperation::ReadAccountSecurityV1,
+            NativeSourceOperation::ReadFreshSigningTrustV1,
+            NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+            NativeSourceOperation::ReadRecoverySigningTrustV2,
+        ];
+        let _ = NativeSourceOperation::parse("ReadAccountSecurityV1");
+        let _ = NativeSourceSubject::account_security("01890f4c-3b2a-7cc2-8d11-9a321b7c0001");
+        let _ = NativeSourceSubject::signing_trust(
+            "urn:oteryn:platform:game-admission",
+            "oteryn-pre-admission-v1",
+            "fresh_admission",
+            "key",
+        );
+        let _ = DurabilityRoot::initialize_native_admission_source;
+        let _ = DurabilityRoot::claim_native_admission_source_custody;
+        let _ = DurabilityRoot::register_native_admission_descriptor;
+        let _ = DurabilityRoot::accept_native_source_observation;
+        let _ = DurabilityRoot::checkpoint_native_source_publication;
+        let _ = DurabilityRoot::clear_native_source_publication;
+        let _ = DurabilityRoot::pending_native_source_publications;
+    }
+}
+
+#[cfg(test)]
+mod character_authority_linkage {
+    use super::DurabilityRoot;
+    use super::character_authority::{
+        CharacterAuditDelivery, CharacterAuthorityError, CharacterAuthorityRecord,
+        ReconciledCharacterAuthority,
+    };
+
+    #[test]
+    fn character_authority_api_is_linked() {
+        let _ = std::mem::size_of::<
+            oteryn_game_server::character_bootstrap_intent::CharacterBootstrapIntentV1,
+        >();
+        let _ = std::mem::size_of::<CharacterAuditDelivery>();
+        let _ = std::mem::size_of::<CharacterAuthorityError>();
+        let _ = std::mem::size_of::<CharacterAuthorityRecord>();
+        let _ = std::mem::size_of::<ReconciledCharacterAuthority<'_, '_>>();
+        let _ = CharacterAuthorityError::Rejected;
+        let _ = CharacterAuthorityError::Conflict;
+        let _ = |error: CharacterAuthorityError| match error {
+            CharacterAuthorityError::Unavailable(inner) => Some(inner),
+            _ => None,
+        };
+        let _ = DurabilityRoot::bootstrap_character;
+        let _ = DurabilityRoot::reconcile_character_bootstrap;
+        let _ = oteryn_game_server::character_bootstrap_intent::read_authenticated_intent;
+        let _ = oteryn_game_server::character_bootstrap_intent::CharacterInterpretationV1::new;
+        let _ = DurabilityRoot::open_character_authority;
+        let _ = DurabilityRoot::read_current_character;
+        let _ = DurabilityRoot::admit_fresh_character_recovery;
+        let _ = DurabilityRoot::reconcile_character_recovery;
+        let _ = DurabilityRoot::pending_character_audit;
+        let _ = DurabilityRoot::acknowledge_character_audit;
+        let _ = DurabilityRoot::expire_character_audit;
+        let _ = super::character_authority_audit::encode_bootstrap;
+    }
+}
+
+#[cfg(test)]
+mod runtime_scope_assignment_linkage {
+    use super::DurabilityRoot;
+    use super::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentError, AssignmentOutcome, AssignmentPredecessor,
+        AssignmentReceipt, AssignmentRejection, AssignmentRequest, AssignmentState,
+        BootstrapSecret, ControlActor, LaunchBinding, NodeRegistrationFact, OperationKey,
+        ReconcileOutcome, RegistrationError, RuntimeScopeAssignment, RuntimeScopeAssignmentWriter,
+    };
+
+    #[test]
+    fn runtime_scope_assignment_api_is_linked() {
+        let _ = std::mem::size_of::<AssignmentCommand>();
+        let _ = std::mem::size_of::<AssignmentError>();
+        let _ = std::mem::size_of::<AssignmentOutcome>();
+        let _ = std::mem::size_of::<AssignmentPredecessor>();
+        let _ = std::mem::size_of::<AssignmentReceipt>();
+        let _ = std::mem::size_of::<AssignmentRejection>();
+        let _ = std::mem::size_of::<AssignmentRequest>();
+        let _ = std::mem::size_of::<AssignmentState>();
+        let _ = std::mem::size_of::<ReconcileOutcome>();
+        let _ = std::mem::size_of::<RegistrationError>();
+        let _ = std::mem::size_of::<RuntimeScopeAssignment>();
+        let _ = BootstrapSecret::from_bytes([7; 32]);
+        let _ = LaunchBinding::new("launch-1").map(|launch| launch.as_str().len());
+        let _ = ControlActor::new("operator");
+        let key = OperationKey::from_bytes([1; 32]);
+        assert_eq!(OperationKey::from_text(&key.to_text()).ok(), Some(key));
+        let _ = key.as_bytes();
+        let _ = NodeRegistrationFact::new;
+        let _ = NodeRegistrationFact::node_id;
+        let _ = NodeRegistrationFact::registration_revision;
+        let _ = super::runtime_scope_assignment::AssignmentReceipt::predecessor;
+        let _ = DurabilityRoot::read_runtime_scope_predecessor;
+        let _ = AssignmentRequest::encode;
+        let _ = DurabilityRoot::issue_node_bootstrap_authorization;
+        let _ = DurabilityRoot::register_node_incarnation;
+        let _ = DurabilityRoot::require_current_node_registration;
+        let _ = DurabilityRoot::revoke_node_registration;
+        let _ = DurabilityRoot::read_runtime_scope_assignment;
+        let _ = DurabilityRoot::publish_runtime_readiness;
+        let _ = super::runtime_scope_assignment::NodeIncarnationProof::new;
+        let _ = super::runtime_scope_assignment::NodeIncarnationProof::fact;
+        let _ = AssignmentError::NotCurrentHolder;
+        let _ = RuntimeScopeAssignmentWriter::open;
+        let _ = RuntimeScopeAssignmentWriter::unreconciled;
+        let _ = RuntimeScopeAssignmentWriter::submit;
+        let _ = RuntimeScopeAssignmentWriter::reconcile;
+        if let RegistrationError::Unavailable(inner) =
+            RegistrationError::from(super::DurabilityError::Unavailable)
+        {
+            assert!(matches!(inner, super::DurabilityError::Unavailable));
+        }
+        if let AssignmentError::Unavailable(inner) =
+            AssignmentError::from(super::DurabilityError::Unavailable)
+        {
+            assert!(matches!(inner, super::DurabilityError::Unavailable));
+        }
+        let uuid = [1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16];
+        let (Ok(world), Ok(channel), Ok(node)) = (
+            oteryn_game_server::foundation::WorldId::decode(&uuid),
+            oteryn_game_server::foundation::ChannelId::decode(&uuid),
+            oteryn_game_server::foundation::NodeId::decode(&uuid),
+        ) else {
+            return;
+        };
+        let scope = oteryn_game_server::foundation::RuntimeScopeRefV1::channel(world, channel);
+        let target = NodeRegistrationFact::new(node, 1);
+        let predecessor = AssignmentPredecessor {
+            ownership_generation: 1,
+            source_revision: 1,
+            runtime_guard_publication_revision: Some(1),
+        };
+        let Ok(actor) = ControlActor::new("operator") else {
+            return;
+        };
+        for command in [
+            AssignmentCommand::Assign { scope, target },
+            AssignmentCommand::Replace {
+                scope,
+                predecessor,
+                target,
+            },
+            AssignmentCommand::Revoke { scope, predecessor },
+        ] {
+            let request = AssignmentRequest {
+                operation_key: key,
+                actor: actor.clone(),
+                command,
+            };
+            assert!(request.encode().is_ok_and(|encoded| encoded.len() <= 1024));
+        }
+    }
+}
 
 use oteryn_game_server::foundation::{
     PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectDurabilityFlowV1,

@@ -46,12 +46,12 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7"
 )
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e614fdd7ecc6bb9175578f361174354a1916163861957a899aa2ed5f632b56bf"
-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "18db247edcc40f43900fc99140d911fe3a113c56e0f9584fc8a415d2877fcc50"
-EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "8f95b9f8b67255aa9f26619fe394af9679af100a"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
+EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
-EXPECTED_POST_MERGE_RUST_SHA256 = "6246f732b4b320036f6bb5266547c4108a163b56f447d42189b25f31f4673174"
+EXPECTED_POST_MERGE_RUST_SHA256 = "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -383,7 +383,7 @@ def main() -> int:
             if routing_contract_block else None
         )
         if routing_contract_digest != EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256:
-            errors.append("merge gate routing contract job must exactly match the reviewed exact-head snapshot-health contract")
+            errors.append("merge gate routing contract job must exactly match the reviewed exact-head consumer-routing contract")
         atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
         atlas_fullworld_digest = (
             hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
@@ -423,6 +423,8 @@ def main() -> int:
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
             "Merge gate / routing contract",
+            "Verify protected-base routing contract health",
+            "git diff --check \"$EXPECTED_BASE\" \"$EXPECTED_HEAD\"",
             "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
             "Merge gate / Rust Linux workspace",

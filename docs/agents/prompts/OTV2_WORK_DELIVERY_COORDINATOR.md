@@ -14,6 +14,17 @@ Authority comes directly from protected root/nearest `AGENTS.md`, the bound META
 
 For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` is the sole reusable mutating Game control plane. Another reusable alias is not concurrent mutation authority. Material architecture interpretation remains with the owner-designated Supervising Architect.
 
+### Scoped dispatch aliases
+
+A lifecycle entry may explicitly define a **scoped dispatch alias** that resolves back to this same control-plane profile rather than defining another profile. Such an alias:
+
+- uses `OTV2_WORK_DELIVERY_COORDINATOR` as its authority/profile identity for uniqueness checks;
+- may narrow objective, lane family, evidence doctrine and default decomposition;
+- may not add write, allocation, review, production, cross-repository or integration authority;
+- does not require a second coordinator handoff merely because the owner invoked the scoped alias.
+
+The registered `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` alias (`Oteryn: full content census`) is one such scoped dispatch alias. When its lifecycle entry is reusable and this Work control plane is the current valid coordinator, execute its census scope directly under this profile. Do not classify the census alias itself as a competing active control plane and do not bounce routine census scheduling back to #162.
+
 ## Startup
 
 Before material action:
@@ -27,25 +38,25 @@ If unique control-plane authority cannot be proven, return `POLICY_CONFLICT` and
 
 ## Execution-capability preflight
 
-Before dispatching any mutating worker, resolve the execution surface and prove one permitted authoring/publication route plus every required-validation route.
+Ordinary Work mutation uses one default lifecycle:
 
-Permitted mutation routes:
+`AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`
 
-- `isolated_git` — isolated checkout/worktree with guarded normal Git publication of the exact candidate;
-- `api_native_authoring` — repository-native high-level file mutations on one exclusively allocated task branch before candidate freeze;
-- `atomic_api_candidate` — one server-side expected-head mutation that creates the complete bounded successor candidate atomically.
+The default authoring route is `api_native_authoring`: repository-native high-level file writes on one exclusively allocated task branch before candidate freeze. Use `isolated_git` only when its normal guarded publication path is already proven on the current execution surface and the task actually benefits from local Git. `atomic_api_candidate` is recovery/special-case META machinery, not a routine worker choice and not an ordinary worker route.
 
-For `api_native_authoring`, one writer must own the branch. Fresh-read the live branch head before each mutation. Unexpected movement is writer/state drift. Bounded sequential high-level file mutations are WIP only before freeze. Record the SHA returned by the final authoring write as `expected_final_authoring_head`; fresh-read the branch and require it to equal `expected_final_authoring_head` before freeze. Then verify the complete delta and owned paths and freeze that exact fenced remote head as the candidate. Candidate-specific validation/review starts only after freeze.
+Before dispatching a mutating worker, prove the selected authoring route and every required-validation route. Do not begin implementation with an unknown publication path or a plan to "find a publisher later".
 
-Sequential API writes must never reconstruct a selected local Git candidate, mutate a frozen candidate or work around shared/ambiguous custody. An `atomic_api_candidate` precondition mismatch must create no commit and move no branch; a successful mutation creates one bounded successor candidate and invalidates any candidate-specific evidence for a superseded head.
+For `api_native_authoring`, one writer owns the branch. Fresh-read the live branch head before every write and stop on unexpected movement. Intermediate high-level API writes are WIP. After the final authoring write, bind the SHA returned by that write, fresh-read the branch, require exact equality, verify the complete bounded delta and owned paths, and freeze that exact remote SHA. Candidate-specific validation/review starts only after freeze.
+
+A repair after freeze is not a special publication problem: first return to AUTHORING on the same allocated branch. Only after that state transition may high-level API writes produce a successor head; freeze the new exact SHA and rerun candidate-specific evidence. Never mutate a frozen head or reuse evidence from the old candidate.
 
 For every concrete entry in `required_validation`, bind an authorized executable route before worker release. A compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` when it is required.
 
-If a lane cannot prove one permitted mutation route, or every required-validation route, do not release that mutating worker. Mark only that lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE`, record the missing capability and continue legal path-disjoint work.
+If the default API route is unavailable and no already-proven guarded Git route exists, mark only that lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE`, record the missing capability and continue legal path-disjoint work.
 
-Do not ask the owner for Remote Desktop merely to obtain a repository checkout, Git CLI, compiler, test runner, validator, commit capability or push path. Missing local Git capability is not a Remote Desktop exception when either `api_native_authoring` or `atomic_api_candidate` and every required-validation route are independently proven. Remote Desktop remains exception-only for a separately valid host-specific requirement with exact owner authorization.
+Missing local Git, credentials or push capability does not block ordinary work when the default API authoring route and required validation routes are proven, and is never a reason to request Remote Desktop. Remote Desktop remains exception-only for a separately valid host-specific requirement with exact owner authorization.
 
-Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, reconstruction of an existing candidate through sequential per-file Contents writes, a Remote Desktop convenience fallback or an unproven validation surface. Bounded sequential high-level Contents/API authoring is valid only before freeze on the exclusively allocated task branch.
+Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, high-level file writes while a head remains frozen, force/reset/rebase, or a Remote Desktop convenience fallback to publish ordinary work. Recovery-specific atomic publication remains governed by root/META policy and the active control plane.
 
 ### Stable-head / Merge Queue freshness
 
@@ -69,9 +80,9 @@ issue: <governing issue>
 task_id: <unique task>
 lane_id: <lane>
 branch: <existing or allocated branch>
-execution_route: <isolated_git | api_native_authoring | atomic_api_candidate | read_only>
+execution_route: <api_native_authoring | isolated_git | read_only>
 execution_surface: <proven surface or locator>
-publication_route: <guarded_git | frozen_api_authored_head | atomic_expected_head_api | none>
+frozen_head: <sha | null>
 review_requirement: <none | required>
 review_authorization: <standing_required_review | task_specific | none>
 review_trigger_owner: <control_plane | standalone_task_owner | none>
@@ -98,6 +109,29 @@ terminal_states:
 ```
 
 Use locators plus one-line relevance notes instead of copying reports. Open `lazy_refs` only when required for a decision, mutation, conflict or acceptance proof. A direct worker alias without current write allocation remains read-only.
+
+
+### Content / Item batch policy
+
+For Item Content, the default execution unit is **one bounded Item batch**, not one worker/PR per logical stage. Bind the live progress vector:
+
+`resolved_identity | ambiguous_identity | conflict_identity | continuity_proven_or_derived | promotable_fields | canonical_promoted_fields | runtime_client_covered_items`.
+
+The preferred batch flow is:
+
+`resolve -> verify -> continuity-if-needed -> promote -> compile/test`.
+
+Keep this as one task/batch while the same writer/custody/execution surface can legally carry it. Do not manufacture separate source, verifier, continuity, promotion, manifest or lifecycle generations merely because a substep completed. Split only for a real owned-path/custody boundary, a different required execution surface, a material architecture decision or an independently mandatory gate. When split, preserve one batch ID, one scoreboard and one product objective.
+
+Intermediate evidence, manifests and checkpoints are outputs of the batch, not successor triggers. Do not archive/close/reallocate between ordinary substeps of the same batch. Perform lifecycle closeout once the bounded batch reaches a terminal product/evidence result.
+
+If `promotable_fields == 0`, continue the same batch at the nearest source/identity/continuity blocker that can change the vector. Do not dispatch semantic promotion or another rule/schema layer. If `promotable_fields > 0`, prefer immediate canonical partial promotion through the existing #749/CW3 model and existing artifact v4 compile path. Do not wait for a whole Item to become complete when exact eligible fields can be represented as `Known` while other fields remain `Unknown/Conflict`.
+
+A new Item parser, model, rule engine, schema phase or intermediate framework requires proof that the protected canonical lineage cannot represent or promote an exact eligible field. A zero-vector report/checkpoint does not justify another generation by itself.
+
+One mutating Item batch writer is preferred. Read-only subagents may assist with bulk grouping, anomaly detection or source review, but they do not create parallel product authority.
+
+For Item worker packets, state the batch ID, baseline vector, expected vector delta and the exact next product consumer. The next action should normally remain inside the same batch until an actual authority/ownership boundary is reached.
 
 ## Review authorization, ownership and de-duplication
 

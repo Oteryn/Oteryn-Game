@@ -174,9 +174,9 @@ jobs:
       rust: ${{ steps.classify.outputs.rust }}
       windows: ${{ steps.classify.outputs.windows }}
       atlas_fullworld: ${{ steps.classify.outputs.atlas_fullworld }}
-      surface: ${{ steps.classify.outputs.surface || 'unknown' }}
-      reason: ${{ steps.classify.outputs.reason || 'legacy-protected-base' }}
-      routing_health: ${{ steps.classify.outputs.routing_health || 'legacy' }}
+      surface: ${{ steps.classify.outputs.surface }}
+      reason: ${{ steps.classify.outputs.reason }}
+      routing_health: ${{ steps.classify.outputs.routing_health }}
     steps:
       - name: Check out protected-base classifier and inputs
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -189,7 +189,7 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.base_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Classify with trusted Cargo graph and audited inputs
+      - name: Classify with trusted exact-consumer routing
         id: classify
         shell: bash
         env:
@@ -199,42 +199,34 @@ jobs:
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
         run: |
           set -euo pipefail
-          if [[ ! -f tools/repository/classify_pr_test_lanes.py ]]; then
-            echo 'FULL: protected base does not yet contain the classifier.'
-            printf 'rust=true\nwindows=true\natlas_fullworld=true\nsurface=unknown\nreason=protected-base-classifier-missing\nrouting_health=degraded\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           if ! git fetch --no-tags --depth=1 origin "$EXPECTED_HEAD" || ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/risk-metadata.json"; then
             printf '{}' > "$RUNNER_TEMP/risk-metadata.json"
           fi
-          if grep -Fq 'output.write(f"atlas_fullworld=' tools/repository/classify_pr_test_lanes.py; then
-            python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
-          else
-            # Activation compatibility: an older protected base cannot prove the
-            # new bounded lane, so require it conservatively while retaining the
-            # old protected classifier's Rust/Windows decision.
-            printf 'atlas_fullworld=true\n' >> "$GITHUB_OUTPUT"
-            python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
-          fi
+          python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
+
+      - name: Verify protected-base routing contract health
+        env:
+          EXPECTED_HEAD: ${{ needs.scope.outputs.base_sha }}
+        run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/risk-metadata.json"
 
       - name: Summarize trusted-base routing
         env:
           RUST: ${{ steps.classify.outputs.rust }}
           WINDOWS: ${{ steps.classify.outputs.windows }}
           ATLAS_FULLWORLD: ${{ steps.classify.outputs.atlas_fullworld }}
-          SURFACE: ${{ steps.classify.outputs.surface || 'unknown' }}
-          REASON: ${{ steps.classify.outputs.reason || 'legacy-protected-base' }}
-          ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health || 'legacy' }}
+          SURFACE: ${{ steps.classify.outputs.surface }}
+          REASON: ${{ steps.classify.outputs.reason }}
+          ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health }}
         run: |
           {
             echo '### Trusted-base PR routing'
             echo
-            echo "- Rust: `$RUST`"
-            echo "- Windows: `$WINDOWS`"
-            echo "- Atlas fullworld: `$ATLAS_FULLWORLD`"
-            echo "- Surface: `$SURFACE`"
-            echo "- Reason: `$REASON`"
-            echo "- Routing health: `$ROUTING_HEALTH`"
+            printf -- '- Rust: `%s`\n' "$RUST"
+            printf -- '- Windows: `%s`\n' "$WINDOWS"
+            printf -- '- Atlas fullworld: `%s`\n' "$ATLAS_FULLWORLD"
+            printf -- '- Surface: `%s`\n' "$SURFACE"
+            printf -- '- Reason: `%s`\n' "$REASON"
+            printf -- '- Routing health: `%s`\n' "$ROUTING_HEALTH"
           } >> "$GITHUB_STEP_SUMMARY"
 
   governance:
@@ -378,10 +370,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-    outputs:
-      routing_health: ${{ steps.contract.outputs.routing_health }}
-      snapshot_declared: ${{ steps.contract.outputs.snapshot_declared }}
-      snapshot_actual: ${{ steps.contract.outputs.snapshot_actual }}
     steps:
       - name: Check out exact head with history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -396,7 +384,15 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "8f95b9f8b67255aa9f26619fe394af9679af100a"
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
+
+      - name: Verify candidate diff whitespace
+        env:
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+        run: |
+          git cat-file -e "${EXPECTED_BASE}^{commit}"
+          git diff --check "$EXPECTED_BASE" "$EXPECTED_HEAD"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
@@ -404,8 +400,7 @@ jobs:
       - name: Build exact candidate Cargo metadata
         run: cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/routing-contract-metadata.json"
 
-      - name: Verify routing snapshot and classifier matrix
-        id: contract
+      - name: Verify exact candidate routing contract
         env:
           EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}

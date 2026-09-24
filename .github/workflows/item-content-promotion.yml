@@ -1,0 +1,216 @@
+name: Item Content Semantic Promotion
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/reference-world-corridor-census/item_semantic_promotion.py
+      - tools/reference-world-corridor-census/item_semantic_promotion_self_test.py
+      - docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json
+      - apps/game-server/src/content/cw2_b1_import.rs
+      - apps/game-server/tests/content_world_cw2_b1_import.rs
+      - apps/game-server/tests/content_reference_artifact.rs
+      - docs/agents/tasks/active/OTV2-20260923-content-world-item-promotion-504.md
+      - .github/workflows/item-content-promotion.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: item-content-semantic-promotion-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Item content / semantic promotion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Compile and run focused continuity and promotion tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/reference-world-corridor-census/item_target_continuity.py \
+            tools/reference-world-corridor-census/item_target_continuity_self_test.py \
+            tools/reference-world-corridor-census/item_semantic_promotion.py \
+            tools/reference-world-corridor-census/item_semantic_promotion_self_test.py
+          python tools/reference-world-corridor-census/item_target_continuity_self_test.py
+          python tools/reference-world-corridor-census/item_semantic_promotion_self_test.py
+
+      - name: Verify protected predecessor algorithms
+        run: |
+          set -euo pipefail
+          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
+          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "b6532886dc224d18024ded38260049ed8dae9bc7429e1a2e387a51d7ae391a86"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Reproduce protected identity and #763 crosswalk
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-target-continuity"
+          mkdir -p "$ROOT"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk.py \
+            --game-root . \
+            --native-map "$ROOT/native-map.json" \
+            --output "$ROOT/crosswalk.json" \
+            --manifest-output "$ROOT/crosswalk-manifest.json"
+          test "$(sha256sum "$ROOT/crosswalk.json" | awk '{print $1}')" = "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+
+      - name: Collect fresh current-source observation under protected #767 algorithm
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-target-continuity"
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
+            --game-root . \
+            --classification-crosswalk "$ROOT/crosswalk.json" \
+            --cache-dir "$ROOT/wiki-cache" \
+            --output "$ROOT/current-source.json" \
+            --manifest-output "$ROOT/current-source-manifest.json"
+          python - "$ROOT/current-source-manifest.json" docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json <<'PY'
+          import json
+          import pathlib
+          import sys
+          observed = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          protected = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
+          assert observed['schema'] == protected['schema']
+          assert observed['target_cut'] == protected['target_cut'] == '2026-07-28'
+          assert observed['source'] == protected['source']
+          assert observed['collector'] == protected['collector']
+          assert observed['counts'] == protected['counts'], 'current-source identity/disposition partition drifted'
+          print('current-source protected partition: PASS')
+          PY
+
+      - name: Reproduce #770 full field verification and bind aggregate partition
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-target-continuity"
+          python tools/reference-world-corridor-census/item_field_verification_self_test.py
+          python tools/reference-world-corridor-census/item_field_verification.py \
+            --classification-crosswalk "$ROOT/crosswalk.json" \
+            --current-source "$ROOT/current-source.json" \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
+            --output "$ROOT/field-verification.json" \
+            --manifest-output "$ROOT/field-verification-manifest.json"
+          python - "$ROOT/field-verification-manifest.json" docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json <<'PY'
+          import json
+          import pathlib
+          import sys
+          observed = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          protected = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
+          assert observed['schema'] == protected['schema']
+          for key in ('records','source_profiles','field_vocabulary','expanded_field_slots','field_states','continuity','promotion'):
+              assert observed['counts'][key] == protected['counts'][key], f'#770 aggregate drift: {key}'
+          assert observed['counts']['field_states']['CORROBORATED_CURRENT'] == protected['counts']['field_states']['CORROBORATED_CURRENT'] == 69
+          assert observed['counts']['promotion'] == protected['counts']['promotion'] == {'BLOCKED': 4082799}
+          print('#770 aggregate field partition: PASS')
+          PY
+
+      - name: Compile target continuity twice with bounded cached history
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-target-continuity"
+          python tools/reference-world-corridor-census/item_target_continuity.py \
+            --game-root . \
+            --field-verification "$ROOT/field-verification.json" \
+            --current-source "$ROOT/current-source.json" \
+            --cache-dir "$ROOT/history-cache" \
+            --output "$ROOT/target-continuity.json" \
+            --manifest-output "$ROOT/target-continuity-manifest.json"
+          python tools/reference-world-corridor-census/item_target_continuity.py \
+            --game-root . \
+            --field-verification "$ROOT/field-verification.json" \
+            --current-source "$ROOT/current-source.json" \
+            --cache-dir "$ROOT/history-cache" \
+            --output "$ROOT/target-continuity-repeat.json" \
+            --manifest-output "$ROOT/target-continuity-manifest-repeat.json"
+          cmp "$ROOT/target-continuity.json" "$ROOT/target-continuity-repeat.json"
+          cmp "$ROOT/target-continuity-manifest.json" "$ROOT/target-continuity-manifest-repeat.json"
+
+      - name: Compile exact semantic promotion packet twice
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-target-continuity"
+          python tools/reference-world-corridor-census/item_semantic_promotion.py \
+            --continuity "$ROOT/target-continuity.json" \
+            --protected-manifest docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json \
+            --output "$ROOT/semantic-promotion.json"
+          python tools/reference-world-corridor-census/item_semantic_promotion.py \
+            --continuity "$ROOT/target-continuity.json" \
+            --protected-manifest docs/agents/evidence/OTV2-20260922-content-world-item-target-continuity.json \
+            --output "$ROOT/semantic-promotion-repeat.json"
+          cmp "$ROOT/semantic-promotion.json" "$ROOT/semantic-promotion-repeat.json"
+          cmp "$ROOT/semantic-promotion.json" docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json
+
+      - name: Run focused canonical promotion and artifact v4 tests
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 test --locked -p oteryn-game-server \
+            --test content_world_cw2_b1_import \
+            protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_materialization_drift -- --exact
+          cargo +1.94.0 test --locked -p oteryn-game-server \
+            --test content_reference_artifact \
+            protected_semantic_promotion_round_trips_exact_69_atoms_through_artifact_v4_server_and_client -- --exact
+
+      - name: Verify and emit semantic promotion packet
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/item-target-continuity"
+          python - "$ROOT/semantic-promotion.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          packet = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert packet['schema'] == 'OTERYN_ITEM_SEMANTIC_PROMOTION/v1'
+          assert packet['counts']['promoted_fields'] == 69
+          assert packet['counts']['per_field'] == {
+              'charges.count': 1,
+              'container.capacity': 1,
+              'presentation.name': 22,
+              'protection.armor': 3,
+              'weapon.attack': 16,
+              'weapon.defense': 13,
+              'weapon.extra_defense': 7,
+              'weapon.hit_chance': 2,
+              'weapon.range_cells': 4,
+          }
+          assert packet['invariants']['identity_reminted'] is False
+          assert packet['invariants']['whole_item_promotion'] is False
+          assert packet['invariants']['mutable_wiki_revision_metadata_retained'] is False
+          print('ITEM_SEMANTIC_PROMOTION_PACKET_BEGIN')
+          print(json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(',', ':')))
+          print('ITEM_SEMANTIC_PROMOTION_PACKET_END')
+          PY
+          sha256sum "$ROOT/semantic-promotion.json"
+
+      - name: Upload semantic promotion packet
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: item-semantic-promotion-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/item-target-continuity/semantic-promotion.json
+          if-no-files-found: error
+          retention-days: 14

@@ -54,7 +54,7 @@ jobs:
           echo 'FULL: failed classifier or incomplete/incoherent output.'
           printf 'rust=true\nwindows=true\n' >> "$GITHUB_OUTPUT"
 
-      - name: Verify protected-main routing snapshot health
+      - name: Verify protected-main routing contract health
         env:
           EXPECTED_HEAD: ${{ github.sha }}
         run: python -I tools/repository/validate_pr_routing_contract.py --protected-main "$RUNNER_TEMP/post-merge-metadata.json"

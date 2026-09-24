@@ -57,19 +57,15 @@ A diagnostic-only allocation remains diagnostic-only. If the allocation authoriz
 
 ## Publication safety
 
-Publish canonical material work only through the route explicitly allocated by the active control plane and permitted by current root/META policy:
+Use the ordinary Game lifecycle:
 
-- guarded local-Git exact-candidate publication;
-- bounded `api_native_authoring` on the exact exclusively allocated task branch when the intended mutation is the repository-native API write and no selected local Git candidate is being reconstructed; or
-- atomic expected-head API **new-candidate** publication, where one server-side mutation fences the exact expected task-branch predecessor and creates the complete bounded delta as one successor commit.
+`AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`
 
-For `api_native_authoring`, sequential high-level file mutations are WIP and are allowed only before candidate freeze. Fresh-read the live branch head before each write and stop on unexpected movement. Record the commit SHA returned by the final write as `expected_final_authoring_head`; fresh-read the exact branch head and require equality before freeze, otherwise fail closed as writer/state drift. Only after that exact-head fence succeeds, verify the complete bounded delta and owned paths against the admission base and freeze that fenced remote head as the candidate. Candidate-specific validation/review starts only from that frozen head; intermediate WIP heads carry no reusable candidate evidence.
+Default ordinary authoring is repository-native high-level API mutation on the exact exclusively allocated task branch before freeze. Local Git is optional and may be used only when its guarded publication route was proven before mutation.
 
-The atomic API route must not reconstruct a selected local Git candidate. It creates a new exact candidate and therefore requires fresh candidate-specific validation/review evidence. A precondition mismatch must create no commit and move no branch.
+During AUTHORING, one writer owns the branch. Fresh-read the live head before each write and stop on unexpected movement. After the final authoring write, require the returned SHA to equal the live branch head, verify the complete bounded delta and owned paths, and freeze that exact remote SHA. Candidate-specific validation/review starts only after freeze.
 
-If none of the governed routes is available, stop with `BLOCKED_CAPABILITY_UNAVAILABLE` or the repository-defined equivalent and return custody to the control plane.
-
-Do not synthesize replacement commits, trees, blobs or refs through low-level Git object APIs, use ancestry-only `force=false` ref movement, reconstruct a selected local Git candidate through sequential API writes, mutate a frozen candidate with sequential file commits, force, reset, rebase or manufacture replacement history. Coordinator-owned recovery, when separately authorized, is outside this worker's authority.
+If a repair is needed after freeze, first return to AUTHORING on the same allocated branch; only then may high-level API writes produce a successor head. Freeze the new SHA and rerun candidate-specific evidence. Missing Git credentials or push capability is not a reason to request Remote Desktop. Do not use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, writes while a head remains frozen, force/reset/rebase, or Remote Desktop as publication fallbacks. Recovery-specific atomic publication belongs to the active control plane under current root/META policy.
 
 ## Acceptance / validation
 

@@ -31,6 +31,7 @@ The old `OTV2_WP3_WRITER`, `OTV2_WP3_TLS_AUDITOR` and `OTV2_WP3_QUALIFICATION_AU
 - Defect Discovery: reusable `OTV2_DEFECT_DISCOVERY_*` supervisor/lead/qualifier/module roles under their live allocation and runbook.
 - Direct implementation recovery: `OTV2_IMPL_*`; read-only unless the unique active control plane grants the exact current lane and owned paths.
 - Independent audits: `OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md` and `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` with the authority limits in their prompt bodies.
+- Full Tibia content census/crosswalk programme: `OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md` — **`Oteryn: full content census`**. This is a **scoped dispatch alias of the same `OTV2_WORK_DELIVERY_COORDINATOR` control-plane profile**, not a subordinate second profile. It narrows the canonical coordinator to G2 → final content closure and adds no authority.
 - Future-wave preparation: `OTV2_SOL_*_PREP` profiles remain read-only until a later merged allocation activates implementation.
 
 For the complete reusable set, exact short alias, owner, version and supersession rule, perform a targeted lookup in `../PROMPT_LIFECYCLE.json`. Do not maintain another full hand-written catalogue here.
