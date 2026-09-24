@@ -403,6 +403,9 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             fence_custody(&mut tx, &custody).await?;
+            // Serialized with issuance recording, so a revision cannot stop
+            // being the latest issuance between this check and commit.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:native-source-issuance', 0))").execute(&mut *tx).await?;
             let row = sqlx::query("SELECT r.descriptor_revision::text,r.descriptor_facts,h.installed_at FROM game_durability_native_source_registration r JOIN game_durability_native_source_descriptor_history h USING (registration_id,descriptor_revision) WHERE r.registration_id=1 FOR UPDATE OF r").fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             let current: u64 = row.try_get::<String,_>(0).map_err(|_| DurabilityError::InvalidStoredState)?.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let facts: Vec<u8> = row.try_get(1).map_err(|_| DurabilityError::InvalidStoredState)?;
