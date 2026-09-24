@@ -287,6 +287,11 @@ mod tests {
     }
 
     fn write(path: &Path, mode: u32) {
+        // A prior read-only mode must not block the rewrite for a non-root user.
+        if path.exists() {
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+                .expect("writable mode");
+        }
         std::fs::write(path, b"value").expect("write");
         std::fs::set_permissions(path, std::fs::Permissions::from_mode(mode)).expect("mode");
     }
@@ -311,8 +316,10 @@ mod tests {
             );
         }
         write(&secret, 0o600);
+        // The file owner check, relative to a directory valid for `me`.
+        let parent = open_checked_directory(&directory, me).expect("parent");
         assert_eq!(
-            read_checked(&secret, FileClass::Secret, me.wrapping_add(1), 64),
+            read_in(&parent, "secret", FileClass::Secret, me.wrapping_add(1), 64),
             Err(FileError::Owner)
         );
         assert_eq!(
