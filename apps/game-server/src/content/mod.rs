@@ -41,6 +41,8 @@ mod project;
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;
+#[cfg(test)]
+pub(crate) mod reference_static_cell;
 
 pub use activation::*;
 #[cfg(test)]
