@@ -67,9 +67,9 @@
     - username.
 
     A generic PostgreSQL URL is not accepted, matching the accepted WP3 configuration profile;
-  - the Character recovery-fence directory;
+  - the Character recovery-fence directory, together with the recovery store's `authority_scope_id` and `issuer_identity`. `CharacterRecoveryStore::open` requires both, and a retained record created under other values rejects. `oteryn-game-ops` takes the same three values;
   - the bounded assignment wait (D3);
-  - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument;
+  - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument. Its parent directory must be owned by the node's service user, with mode 0700 and not writable by anyone else;
   - the readiness revisions (D5);
   - the S2 descriptor registration revision (D3);
   - two separate Platform routes, each with its own endpoint, expected peer name and service trust roots:
@@ -117,8 +117,9 @@ The exact grant lists are part of the implementation. Negative tests must prove 
   - Any later mutating invocation first reads `unreconciled()` and refuses new work while a slot is occupied. It names the operation key so the operator can reconcile it.
 - **The Character interpretation revision.** On a new database it is configured only after the fresh Character store is authorized and admitted, because `admit_fresh_character_recovery` requires the Character tables to be empty, including `game_character_interpretations`. The tool refuses to configure the interpretation until generation 1 is admitted.
 - **Fresh Character recovery store:** authorize generation 1 in the configured fence directory (`authorize_fresh_store`), then admit it into the database (`admit_fresh_character_recovery`) while the tool still holds that transition. The serving node's `open_character_authority` requires the admitted row.
-  - A lost acknowledgement of the admission is reconciled by re-running the same action.
-  - It must return the already-admitted generation-1 record and never authorize a second fresh store.
+  - **Request file first.** Before advancing the external fence, the tool writes a request file with the freshly generated `recovery_event_id` and `issued_at`. It never regenerates or edits an existing request file.
+  - **Recovery after a failure.** After an ambiguous admission or a lost acknowledgement, the operator re-runs the action with that request file. The same inputs reproduce the same generation-1 transition for the retry or reconciliation; new inputs would conflict.
+  - **Idempotence.** The re-run returns the already-admitted generation-1 record and never authorizes a second fresh store.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the provenance namespace, authorization reference, source authority, and the descriptor registration revision and facts. Issuing it never initializes the store itself.
 
 Mutations that require a current process proof (`NodeIncarnationProof`) run only inside the serving node, under its own registration:
@@ -159,6 +160,8 @@ Rejected alternatives:
 5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization and its database admission are operator actions (D2); the node never performs them. A store that is not admitted fails boot.
 6. **Await assignment.** Log the complete non-secret registration fact: `NodeId` together with its database-allocated `registration_revision`. The operator passes exactly this `NodeRegistrationFact` to the assignment `Assign` or `Replace` command. Wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
 7. **Bind.** Bind the gameplay listener and the control socket. A failed bind exits before any readiness is published.
+   - **Pre-existing path.** Before binding, the node checks the configured socket directory's ownership and mode (D1). A pre-existing path in it is removed only if it is a Unix socket owned by the service user. Any other file type or owner fails boot and is never unlinked.
+   - **Graceful shutdown** unlinks the socket path. A crash leaves the socket to this check at the next launch.
 8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions:
    1. Read the current Runtime guard publication chain for the scope under the guard serialization. This is a new read-only durability API. A replacement assignment has already written a `ready = false` successor.
    2. Publish with `CompareAndSet` from that exact publication revision, with a source revision strictly greater than the current one.
@@ -172,7 +175,7 @@ Rejected alternatives:
 10. **Shut down.** On SIGTERM or SIGINT:
     1. publish `ready: false` for the scope first;
     2. then cancel the shutdown token, which stops gameplay and control-socket acceptance and cancels entry work, while in-flight admissions and an in-flight bootstrap complete;
-    3. then exit.
+    3. then unlink the control-socket path and exit.
 
     If the non-ready publication cannot be written, shutdown still proceeds, and every later admission for the scope refuses because this incarnation stops serving.
 
@@ -249,6 +252,8 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Restart.**
   - A replacement launch under a superseding authorization yields a new `NodeId`, claims S2 custody, and becomes ready after the operator replaces the assignment. The old incarnation can no longer admit.
   - A replacement launch without supersession or revocation fails at S2 custody and never becomes ready.
+- **Control-socket restarts.** A restart after a graceful exit or a crash binds the control socket again. A foreign file at the socket path, or a wrongly owned or permissive directory, fails boot without being removed.
+- **Fresh-store retry.** After an ambiguous fresh Character admission, a re-run with the retained request file completes it without conflict.
 - **Readiness after replacement.** After a replacement assignment, the new node publishes readiness by CAS from the writer's `ready = false` successor.
 - **Readiness ordering.**
   - When the listener bind fails, no readiness is published.
