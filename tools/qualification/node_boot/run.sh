@@ -100,8 +100,11 @@ make_leaf db db.node-boot.test db-ca serverAuth DNS:db.node-boot.test
 # single evidence identity for both routes.
 cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
+# An end-entity certificate: TLS rejects a CA certificate used as a server leaf.
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 \
   -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost" \
+  -addext "basicConstraints=critical,CA:FALSE" -addext "keyUsage=critical,digitalSignature" \
+  -addext "extendedKeyUsage=serverAuth" \
   -keyout "$WP5_PKI/gameplay.key" -out "$WP5_PKI/gameplay.crt" >/dev/null 2>&1
 openssl genpkey -algorithm ed25519 -out "$WP5_PKI/fresh-signing.pem" >/dev/null 2>&1
 raw_hex() { tail -c 32 | od -An -v -tx1 | tr -d ' \n'; }
@@ -187,6 +190,9 @@ authority_scope_id = "character-primary"
 issuer_identity = "game-ops"
 TOML
 sudo install -o root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
+# One descriptor installation time: changed facts under an unchanged
+# revision are refused at boot, as D3 requires.
+DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() { # launch-file
   cat > "$WORK/node.toml" <<TOML
 [listener]
@@ -231,7 +237,7 @@ trust_roots_file = "$BASE/node/secrets/platform-roots.pem"
 client_certificate_file = "$BASE/node/secrets/platform-client.crt"
 client_key_file = "$BASE/node/secrets/platform-client.key"
 descriptor_revision = 1
-installed_at = $(date +%s)
+installed_at = $DESCRIPTOR_INSTALLED_AT
 [launch]
 authorization_file = "$BASE/state/$1"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"

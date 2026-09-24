@@ -970,6 +970,18 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         .with_account(account)
     };
 
+    // Positive control first: the exact profile completes TLS, so every
+    // refusal below is the node's policy and never a broken trust setup.
+    let tcp = TcpStream::connect(address).await?;
+    tokio::time::timeout(
+        Duration::from_secs(30),
+        exact.connect(ServerName::try_from("localhost")?, tcp),
+    )
+    .await
+    .map_err(|_| "exact TLS handshake did not complete")?
+    .map_err(|error| format!("exact TLS handshake refused: {error}"))?;
+    evidence("transport exact_profile_handshake=completed");
+
     evidence("stage=transport_negatives");
     // Transport negatives: nothing reaches the frame layer.
     let generation = platform_generation(descriptor, &accounts[0]).await?;
