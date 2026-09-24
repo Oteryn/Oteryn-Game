@@ -160,10 +160,17 @@ def decode(data, expected_binding, expected_coords, projection, expected_evidenc
     return result
 
 
+def enforce_pair_length(server_length, client_length):
+    require(server_length <= MAX_SERVER_ARTIFACT_BYTES and client_length <= MAX_CLIENT_ARTIFACT_BYTES, "artifact pair component")
+    total = checked_add(server_length, client_length)
+    require(total <= MAX_PAIR_BYTES, "pair limit")
+    return total
+
+
 def encode_pair(binding, cells):
     server = encode(binding, cells, 1)
     client = encode(binding, cells, 2)
-    require(checked_add(len(server), len(client)) <= MAX_PAIR_BYTES, "pair limit")
+    enforce_pair_length(len(server), len(client))
     return server, client
 
 
