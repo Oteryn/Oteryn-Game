@@ -2,7 +2,7 @@
 //! semantics and the composed owners decide admission.
 
 mod connection;
-mod fresh_evidence;
+pub(crate) mod fresh_evidence;
 #[cfg(test)]
 mod qualification;
 mod tcp_tls;

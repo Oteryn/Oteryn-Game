@@ -534,7 +534,48 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 ))),
             }
         }
-        _ => Err(Failure::Usage("character fresh-store|interpretation")),
+        Some("bootstrap") => {
+            // The operator supplies only the intent's operation id; the node
+            // reads the intent and current account security itself (D2).
+            let socket = arguments.take("socket")?;
+            let operation = arguments.take("operation-id")?;
+            arguments.finish()?;
+            decode_uuid("operation-id", &operation)?;
+            let answer = control_request(&socket, &operation).await?;
+            event(&format!("character_bootstrap={answer}"));
+            match answer.as_str() {
+                "committed" => Ok(()),
+                "rejected" => Err(Failure::Rejected("bootstrap rejected".into())),
+                _ => Err(Failure::Ambiguous(
+                    "bootstrap unavailable; retry with the same operation id".into(),
+                )),
+            }
+        }
+        _ => Err(Failure::Usage(
+            "character fresh-store|interpretation|bootstrap",
+        )),
+    }
+}
+
+/// One bounded request over the node's local control socket.
+async fn control_request(socket: &str, operation: &str) -> Result<String, Failure> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let exchange = async {
+        let mut stream = tokio::net::UnixStream::connect(socket).await.ok()?;
+        stream
+            .write_all(format!("{operation}\n").as_bytes())
+            .await
+            .ok()?;
+        stream.shutdown().await.ok()?;
+        let mut answer = Vec::new();
+        (&mut stream).take(64).read_to_end(&mut answer).await.ok()?;
+        String::from_utf8(answer).ok()
+    };
+    match tokio::time::timeout(std::time::Duration::from_secs(60), exchange).await {
+        Ok(Some(answer)) => Ok(answer.trim_end().to_owned()),
+        _ => Err(Failure::Ambiguous(
+            "control socket exchange failed; retry with the same operation id".into(),
+        )),
     }
 }
 

@@ -6,6 +6,7 @@ pub mod config;
 pub mod descriptor_facts;
 pub mod operator_files;
 pub mod secure_file;
+pub mod serve;
 
 use crate::durability::{DurabilityError, DurabilityRoot, DurabilityRootConfig};
 use config::DatabaseConfig;
