@@ -272,6 +272,34 @@ def standalone_directory_reference(content: bytes, pattern: str) -> bool:
         start = index + 1
 
 
+def workflow_directory_reference_is_routing_only(content: bytes, pattern: str) -> bool:
+    """Return true only when every bounded occurrence is a path-membership predicate."""
+    needle = pattern.encode("utf-8")
+    start = 0
+    matched = False
+    while True:
+        index = content.find(needle, start)
+        if index < 0:
+            return matched
+        end = index + len(needle)
+        suffix = content[end:end + 2]
+        bounded = (
+            end == len(content)
+            or content[end:end + 1] in {b'"', b"'"}
+            or suffix in {b'/"', b"/'"}
+        )
+        if bounded:
+            matched = True
+            prefix = content[max(0, index - 128):index]
+            python_startswith = re.search(rb"\.startswith\(\s*['\"]$", prefix) is not None
+            github_startswith = (
+                re.search(rb"\bstartsWith\([^,\n]+,\s*['\"]$", prefix) is not None
+            )
+            if not (python_startswith or github_startswith):
+                return False
+        start = index + 1
+
+
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
     """Scan Cargo packages plus canonical workflows that select product CI."""
     return sorted(set(roots.values())) + sorted(CANONICAL_CONTROL_PATHS)
@@ -329,19 +357,19 @@ def candidate_reference_consumers(
         for pattern, targets in reverse_files.items():
             if pattern.encode("utf-8") in content:
                 selected.update(targets)
-        # Package sources may deliberately consume whole auxiliary directories
-        # (for example through an include-dir style build/runtime input), so
-        # keep conservative directory attachment for Cargo-owned consumers.
-        #
-        # Canonical CI workflows are different: directory literals are also
-        # routing predicates/globs (for example docs/architecture/) and do not
-        # prove that every file below that directory is consumed by the build.
-        # Require a literal file reference before a workflow can promote an
-        # auxiliary file to CONTROL_CONSUMER.
-        if owner is not None:
-            for pattern, targets in reverse_directories.items():
-                if standalone_directory_reference(content, pattern):
-                    selected.update(targets)
+        # Directory references stay conservative for both package and workflow
+        # consumers. The only exception is a syntactically bounded path-membership
+        # predicate (for example path.startswith('docs/architecture/')), which
+        # selects CI routing but does not consume every file in that directory.
+        for pattern, targets in reverse_directories.items():
+            if not standalone_directory_reference(content, pattern):
+                continue
+            if (
+                control
+                and workflow_directory_reference_is_routing_only(content, pattern)
+            ):
+                continue
+            selected.update(targets)
         for target in selected:
             consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
     return consumers
