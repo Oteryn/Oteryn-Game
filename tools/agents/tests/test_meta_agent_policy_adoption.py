@@ -528,6 +528,10 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         forbidden = (
             "If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`",
             "If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`",
+            "integrate only through the authenticated bound META 3.1 native exact-head Merge Queue contract",
+            "if the native operation is unavailable, preserve the qualified candidate and mark only that lane `LANE_BLOCKED`",
+            'merge_action="merge_queue"',
+            "REST `merge-async`",
         )
         for entry in lifecycle["prompts"]:
             if entry.get("status") != "reusable" or entry.get("reusable") is not True:
