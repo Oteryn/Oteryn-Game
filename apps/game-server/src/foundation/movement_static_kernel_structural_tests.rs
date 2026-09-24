@@ -1,12 +1,54 @@
 //! Non-shipping structural Movement fixture. These local markers and synthetic cells do not
 //! activate Reference, establish its parity, or qualify production MOVE-RL-03.
 use super::*;
-extern crate oteryn_game_server as game_library;
-use game_library::content::{CollisionClass, CoordinateFrameRef, MapRevisionRef, ProductionAtom};
+use std::io::{Error as FixtureInputError, ErrorKind};
 
 // Some integration targets include Foundation's source as their own crate root. Compile the
-// existing test-only Content index source here so all such test crates exercise one implementation,
-// not a second cell-index design. This child remains reachable only through `#[cfg(test)]`.
+// existing test-only Content index source here so all such test crates exercise that exact
+// algorithm, not a second cell-index design. The input value types below are deliberately
+// synthetic stand-ins, not real Content types or evidence of Content activation/wiring.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CollisionClass {
+    Walkable,
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct ProductionAtom(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct CoordinateFrameRef(String);
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct MapRevisionRef(String);
+
+fn fixture_atom(value: &str) -> Result<String, FixtureInputError> {
+    if value.is_empty() {
+        return Err(FixtureInputError::new(ErrorKind::InvalidInput, "empty fixture atom"));
+    }
+    Ok(value.to_owned())
+}
+
+impl ProductionAtom {
+    fn new(_label: &str, value: &str) -> Result<Self, FixtureInputError> {
+        fixture_atom(value).map(Self)
+    }
+}
+
+impl CoordinateFrameRef {
+    fn new(value: &str) -> Result<Self, FixtureInputError> {
+        fixture_atom(value).map(Self)
+    }
+}
+
+impl MapRevisionRef {
+    fn new(value: &str) -> Result<Self, FixtureInputError> {
+        fixture_atom(value).map(Self)
+    }
+}
+
+// The included source has `super` type imports and uses this exact checked-key lookup. This
+// child remains reachable only through the carrier's `#[cfg(test)]` declaration.
 #[path = "../content/reference_static_cell.rs"]
 mod reference_static_cell;
 use reference_static_cell::{
