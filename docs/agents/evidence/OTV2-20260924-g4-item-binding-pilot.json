@@ -1,0 +1,90 @@
+{
+  "schema": "OTERYN_G4_ITEM_BINDING_PILOT_EVIDENCE/v1",
+  "status": "AUTHORING_COMPLETE_HOSTED_CAPTURE_PENDING",
+  "task_packet": {
+    "task_id": "OTV2-20260924-g4-item-binding-pilot",
+    "issue": 162,
+    "issue_comment": 5821767939,
+    "pr": null,
+    "repository": "Oteryn/Oteryn-Game",
+    "branch": "agent/otv2-g4-item-binding-pilot",
+    "base_commit": "c6ffbfc348d11eab66344612aab5eb2513ce8aba"
+  },
+  "allocated_paths": [
+    "tools/content-census/g4_item_binding_pilot.py",
+    "tools/content-census/g4_item_binding_pilot_self_test.py",
+    ".github/workflows/g4-item-binding-pilot.yml",
+    "docs/agents/tasks/active/OTV2-20260924-g4-item-binding-pilot.md",
+    "docs/agents/evidence/OTV2-20260924-g4-item-binding-pilot.json"
+  ],
+  "protected_inputs": {
+    "item_source_capture": {
+      "pull_request": 856,
+      "workflow_run_id": 36050042631,
+      "artifact_id": 10829932700,
+      "archive_sha256": "b28f0e5939a669ffe38ee14dc9e57e1b958f0c6ddc89ad75cf99908582469b16",
+      "capture_sha256": "0fa435ba888071e7320e70b793203c87f79eda11c0ff8dd824dc2eeaed24421f",
+      "rows_sha256": "62efa8385666f725f707b4f02d2372ce91ec228fc770d9049738c2337f974e30",
+      "batch_id": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+      "rows": 6918,
+      "source_shape_counts": {
+        "INFOBOX_ITEM": 5475,
+        "INFOBOX_ITEM_PARSE_ERROR": 7,
+        "NO_INFOBOX_ITEM": 1436
+      }
+    },
+    "canonical_item_population": {
+      "count": 38157,
+      "revision": "definition-r1",
+      "preserved_semantic_bindings": 64,
+      "opaque_identity_only_bindings": 38093,
+      "source_values_mint_keys": false
+    },
+    "source_binding_carrier": {
+      "type": "ProjectV2SourceIdentityBinding",
+      "present_on_main": true,
+      "g4_bindings_populated_before_pilot": 0,
+      "pilot_population": false
+    },
+    "current_source_partition": {
+      "protected_evidence": "docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json",
+      "collector_sha256": "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748",
+      "matched_candidates": 22,
+      "all_item_records": 38157
+    },
+    "classification_crosswalk_sha256": "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+  },
+  "binding_policy": {
+    "minimum_non_title_agreements": 2,
+    "zero_contradictions_required": true,
+    "unique_target_required": true,
+    "candidate_only_maximum": 1,
+    "title_is_discovery_only": true,
+    "numeric_id_equality_is_never_binding": true,
+    "accepted_aliases_emitted": false,
+    "dispositions": [
+      "EXACT",
+      "ACCEPTED_ALIAS",
+      "PROBABLE_MATCH",
+      "AMBIGUOUS",
+      "CONFLICT",
+      "NO_MATCH",
+      "UNRESOLVED_SOURCE_SHAPE"
+    ]
+  },
+  "validation": {
+    "local_py_compile": "PASS_PYTHON_3.12",
+    "local_synthetic_self_test": "PASS",
+    "exact_artifact_verification": "PASS_LOCAL_ARCHIVE_HASH_MANIFEST_AND_CAPTURE_DIGESTS",
+    "live_current_source_reproduction": "HOSTED_WORKFLOW_REQUIRED",
+    "exact_head_ci": "PENDING",
+    "independent_review": "PENDING"
+  },
+  "non_claims": [
+    "NO_ITEM_DEFINITION_MUTATION",
+    "NO_PROJECT_V2_SOURCE_BINDING_POPULATION",
+    "NO_GAMEPLAY_FIELD_PROMOTION",
+    "NO_PRESENTATION_ASSET_RUNTIME_OR_CLIENT_ID_MUTATION",
+    "NO_PRODUCTION_AUTHORITY"
+  ]
+}
