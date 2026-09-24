@@ -62,12 +62,22 @@ def test_real_registry_is_complete_and_excludes_hard_sections() -> None:
     raw = census.load_registry(census.DEFAULT_REGISTRY)
     registry = census.validate_registry(raw)
     assert len(registry["surfaces"]) == 29
-    assert len(registry["roots"]) == 21
+    assert len(registry["roots"]) == 24
     names = {row["name"] for row in registry["surfaces"]}
     assert "Kalkulatory" not in names
     assert "Narzędzie do nasycania" not in names
     assert "Dostawca" not in names
     assert registry["roots"]["items-protected"]["kind"] == "protected_manifest"
+    assert {root_id: registry["roots"][root_id]["title"] for root_id in (
+        "objects-category", "books-category", "documents-papers-category"
+    )} == {
+        "objects-category": "Categoria:Objetos",
+        "books-category": "Categoria:Livros",
+        "documents-papers-category": "Categoria:Documentos e Papéis",
+    }
+    by_name = {row["name"]: set(row["root_ids"]) for row in registry["surfaces"]}
+    assert "objects-category" in by_name["Obiekty"]
+    assert {"books-category", "documents-papers-category"} <= by_name["Rzeczy"]
 
 
 
@@ -397,6 +407,42 @@ def test_compile_is_deterministic_and_source_only() -> None:
         == manifest_b["full_output"]["stable_without_retrieval_timestamp_sha256"]
     )
     assert "wikitext" not in census.canonical_bytes(full_a).decode("utf-8")
+
+
+
+def test_category_tree_collects_nested_pages_and_deduplicates_ids() -> None:
+    client = FakeClient(
+        [
+            {"query": {"categorymembers": [
+                {"ns": 0, "pageid": 10, "title": "Book A"},
+                {"ns": 14, "title": "Categoria:Nested"},
+            ]}},
+            {"query": {"categorymembers": [
+                {"ns": 0, "pageid": 10, "title": "Book A"},
+                {"ns": 0, "pageid": 11, "title": "Book B"},
+            ]}},
+        ]
+    )
+    registry = census.validate_registry(
+        census.load_registry(census.DEFAULT_REGISTRY)
+    )
+    index = census.DiscoveryIndex(
+        max_pages=10, exclusion_aliases=registry["exclusion_aliases"]
+    )
+    result = census.discover_category_tree(
+        client,
+        census.RequestBudget(5),
+        index,
+        root_id="books-category",
+        title="Categoria:Livros",
+        limits=registry["limits"],
+    )
+    assert result["page_ids"] == [10, 11]
+    assert set(index.by_id) == {10, 11}
+    assert all(row["root_ids"] == {"books-category"} for row in index.by_id.values())
+    assert [call["cmtitle"] for call in client.calls] == [
+        "Categoria:Livros", "Categoria:Nested"
+    ]
 
 
 
