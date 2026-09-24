@@ -1,0 +1,35 @@
+{
+  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT_EVIDENCE/v1",
+  "evidence_status": "measurement_pending",
+  "implementation_base": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+  "measurement_tool": "tools/world-project-v2-scale-measurement",
+  "workflow": ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+  "target_placements": 24502036,
+  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+  "synthetic_shape": {
+    "definitions": 1,
+    "worlds": 1,
+    "map_revisions": 1,
+    "coordinate_frames": 1,
+    "disposition": "CandidateOnly"
+  },
+  "measured_dimensions": [
+    "canonical bytes by role and total",
+    "draft build time",
+    "canonical serialization and validation time",
+    "JSON syntax parse time",
+    "schema-aware load time",
+    "staged role-file write time",
+    "peak resident set size when available",
+    "one-placement edit amplification"
+  ],
+  "resource_policy": {
+    "full_virtual_memory_ceiling_bytes": 6442450944,
+    "full_wall_clock_limit_seconds": 4500,
+    "outcomes": ["completed", "resource_limit"]
+  },
+  "donor_or_source_inputs": false,
+  "schema_or_chunk_decision": "out_of_scope",
+  "run_identity": null,
+  "result_artifact": null
+}
