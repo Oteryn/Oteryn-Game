@@ -853,6 +853,7 @@ def test_audited_routing_predicate_rejects_additional_glob_consumer() -> None:
     occurrences = classifier.directory_reference_occurrences(
         predicate_and_glob,
         pattern,
+        include_descendants=True,
     )
     assert len(occurrences) == 2, occurrences
     assert not classifier.workflow_directory_reference_is_routing_only(
