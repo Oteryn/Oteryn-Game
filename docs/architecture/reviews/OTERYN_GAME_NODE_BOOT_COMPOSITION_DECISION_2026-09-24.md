@@ -108,6 +108,11 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
   - record the S2 fresh-store issuance.
 - **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, and admission.
 - **Recorded actor.** The recorded `ControlActor` is derived from the authenticated database session role, never from a caller-supplied label.
+- **Exact-scope authorization.** Group membership alone never authorizes an assignment.
+  - A new control-scope grant table holds one row per (control login role, `WorldId`, `ChannelId`) with the permitted operations. The operations are initial assign, replace and revoke.
+  - Only the database owner can write that table, through deployment administration outside both Game roles. The control-plane role can read it but never write it.
+  - Every assignment command checks, in its own transaction, a grant row for the exact session role, scope and operation, and rejects otherwise. A grant that permits initial assign is the independently authorized fresh-scope bootstrap that the scope-assignment decision requires.
+  - §4 requires the negative tests.
 - **Node isolation.** The serving node holds only runtime credentials.
 
 The exact grant lists are part of the implementation. Negative tests must prove that a runtime credential cannot assign, revoke, issue authorizations, configure the interpretation or admit a fresh Character generation.
@@ -129,7 +134,7 @@ The exact grant lists are part of the implementation. Negative tests must prove 
   - **Recovery after a failure.** After an ambiguous admission or a lost acknowledgement, the operator re-runs the action with that request file. The same inputs reproduce the same generation-1 transition for the retry or reconciliation; new inputs would conflict.
   - **Idempotence.** The re-run returns the already-admitted generation-1 record and never authorizes a second fresh store.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the complete `FreshStoreProvenance`: namespace, authorization reference, source authority and the exact `initialized_at` timestamp fixed at issuance. The file also holds the descriptor registration revision, `installed_at` and facts. Because every field is fixed at issuance, an ambiguous initialization can be compared exactly on restart. Issuing it never initializes the store itself.
-  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new single-row issuance table. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
+  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new issuance table keyed by descriptor revision. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
   - **Initialization binds to it.** `initialize_native_admission_source` is changed to require, in the same transaction, a recorded issuance whose content equals the supplied provenance and descriptor exactly; otherwise it rejects. The runtime role can read that row but never write it, so a process holding only runtime credentials cannot fabricate or select the initial source and trust descriptor.
   - §4 requires the negative tests.
 
@@ -174,7 +179,7 @@ Rejected alternatives:
      - Any difference fails boot.
    - **Every later incarnation:** `claim_native_admission_source_custody`, which succeeds only when the prior holder is no longer current.
    - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and `installed_at`, and the facts derived from the configured route: source authority, endpoint, peer name, trust-root digest and client-identity digest.
-     - A higher revision registers the new facts.
+     - A higher revision registers the new facts only if a control-plane issuance for exactly that revision, `installed_at` and those facts is recorded; `register_native_admission_descriptor` checks this in the same transaction and rejects otherwise. The operator records a later revision with `oteryn-game-ops` in the same way as the first (D2), with no fresh-store provenance. A runtime configuration alone can never replace the Platform trust descriptor.
      - An equal revision must match the stored facts exactly, so changed facts retained under an old revision fail boot.
    - **Pending publications:** before any evidence fetch or readiness, read `pending_native_source_publications` and reconcile each retained slot by its exact operation binding (checkpoint or clear, under the S2 resource contract). Boot fails if a slot stays unresolved after a bounded number of attempts.
 
@@ -193,7 +198,7 @@ Rejected alternatives:
       - authority: the configured Runtime readiness source authority (D1);
       - source revision: the current guard's source revision plus one, or 1 under `Bootstrap`;
       - decision identity: derived deterministically from the `NodeId`, ownership generation, source revision and `ready` value, so it is unique per revision;
-      - observed at: the node's clock at publication, with clock uncertainty 0 because the node observes its own state;
+      - observed at: the later of the node's clock and the current guard's `source_observed_at`, so the value never decreases after clock correction or host skew, with clock uncertainty 0 because the node observes its own state. If the current guard's value is ahead of the node's clock by more than the accepted five-second uncertainty bound, boot fails with a clock-skew error instead of publishing a future observation;
       - restored high-water under `Bootstrap`: the highest publication revision the new read API finds in the guard history for the key, or 0 when there is none.
 
       The `ready = false` shutdown publication (step 10) uses the same rules.
@@ -286,6 +291,9 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - An issuance whose response was lost is reconciled from its retained file: the exact replay succeeds, and a changed binding or `supersedes` rejects.
   - A replayed authorization under a different `NodeId` or binding rejects registration.
   - An exact replay after a lost registration response returns the original proof, and boot continues.
+- **Scope grants.** A control-plane login is refused an assignment for a scope or operation it has no grant for, and is refused writing a grant.
+- **Descriptor revisions.** A higher configured descriptor revision without a matching recorded issuance fails boot.
+- **Readiness clock.** A replacement node whose clock is behind the prior publication's `source_observed_at` by less than the uncertainty bound still publishes readiness.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
   - assignment;
   - revoke;
