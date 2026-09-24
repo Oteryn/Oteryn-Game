@@ -734,6 +734,7 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
         "tools/agents/tests/test_meta_agent_policy_adoption.py",
     )
     exact_helper = "tools/content/helper.py"
+    directory_helper = "tools/content/fixtures/input.json"
 
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -748,7 +749,7 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
             manifest.parent.mkdir(parents=True, exist_ok=True)
             manifest.write_text("[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n", encoding="utf-8")
 
-        for path in (*incident_paths, exact_helper):
+        for path in (*incident_paths, exact_helper, directory_helper):
             target = root / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("fixture\n", encoding="utf-8")
@@ -759,7 +760,8 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
         (workflows / "rust.yml").write_text("name: rust\n", encoding="utf-8")
         (workflows / "merge-group-gate.yml").write_text(
             "routing = all(path.startswith('docs/architecture/') and path.endswith('.md') for path in paths)\n"
-            f"run = 'python {exact_helper}'\n",
+            f"run = 'python {exact_helper}'\n"
+            "discover = 'python -m unittest discover -s tools/content/fixtures/'\n",
             encoding="utf-8",
         )
 
@@ -794,7 +796,7 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
             consumers = classifier.candidate_reference_consumers(
                 metadata,
                 sha,
-                [*incident_paths, exact_helper],
+                [*incident_paths, exact_helper, directory_helper],
             )
         finally:
             os.chdir(previous)
@@ -802,6 +804,7 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
     for path in incident_paths:
         assert consumers[path] == set(), (path, consumers[path])
     assert consumers[exact_helper] == {classifier.CONTROL_CONSUMER}, consumers[exact_helper]
+    assert consumers[directory_helper] == {classifier.CONTROL_CONSUMER}, consumers[directory_helper]
 
 
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
