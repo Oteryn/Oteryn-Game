@@ -52,7 +52,7 @@ resource profile is a proposal; no production or registry change is made.
 ## Acceptance criteria
 
 - [x] Binary server/client candidate has versioned exact key, view separation, fail-closed mismatches and unsupported D1 fields.
-- [x] One-cell dimensional and encoded byte envelope with reproducible evidence and max/max+1/overflow tests.
+- [x] One-cell dimensional and encoded byte envelope with reproducible evidence, exercised boundary rejections and checked arithmetic overflow. The conservative manifest/artifact/pair ceilings are not claimed reachable exact maxima.
 - [ ] Independent exact-head architecture review and owner #504 disposition; neither is self-granted.
 
 ## Excluded scope
