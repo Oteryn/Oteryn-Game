@@ -257,8 +257,13 @@ def directory_reference_patterns(path: str) -> tuple[str, ...]:
     return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
 
 
-def directory_reference_occurrences(content: bytes, pattern: str) -> list[int]:
-    """Return bounded directory-literal occurrences, excluding sibling-name prefixes."""
+def directory_reference_occurrences(
+    content: bytes,
+    pattern: str,
+    *,
+    include_descendants: bool = False,
+) -> list[int]:
+    """Return bounded directory literals; workflows may conservatively include descendants."""
     needle = pattern.encode("utf-8")
     start = 0
     matches: list[int] = []
@@ -271,16 +276,34 @@ def directory_reference_occurrences(content: bytes, pattern: str) -> list[int]:
         bounded = (
             not tail
             or tail[:1] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
-            or tail[:1] == b"/"
+            or (
+                tail[:1] == b"/"
+                and (
+                    include_descendants
+                    or len(tail) == 1
+                    or tail[1:2] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
+                )
+            )
         )
         if bounded:
             matches.append(index)
         start = index + 1
 
 
-def standalone_directory_reference(content: bytes, pattern: str) -> bool:
-    """Require a bounded directory literal, not a prefix of a sibling path/name."""
-    return bool(directory_reference_occurrences(content, pattern))
+def standalone_directory_reference(
+    content: bytes,
+    pattern: str,
+    *,
+    include_descendants: bool = False,
+) -> bool:
+    """Require a bounded directory literal, with conservative workflow descendants."""
+    return bool(
+        directory_reference_occurrences(
+            content,
+            pattern,
+            include_descendants=include_descendants,
+        )
+    )
 
 
 def workflow_directory_reference_is_routing_only(
@@ -292,7 +315,11 @@ def workflow_directory_reference_is_routing_only(
     literal = ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES.get((consumer_path, pattern))
     if literal is None:
         return False
-    occurrences = directory_reference_occurrences(content, pattern)
+    occurrences = directory_reference_occurrences(
+        content,
+        pattern,
+        include_descendants=True,
+    )
     if not occurrences:
         return False
 
@@ -373,7 +400,11 @@ def candidate_reference_consumers(
         # consumers. Only explicitly audited canonical routing-only predicates
         # may be omitted; every other directory predicate/reference remains FULL.
         for pattern, targets in reverse_directories.items():
-            if not standalone_directory_reference(content, pattern):
+            if not standalone_directory_reference(
+                content,
+                pattern,
+                include_descendants=control,
+            ):
                 continue
             if (
                 control
