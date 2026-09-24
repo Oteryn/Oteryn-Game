@@ -146,6 +146,42 @@ async fn register_node_superseding(
         .map_err(|error| format!("{error:?}"))?)
 }
 
+/// Control-plane issuance recorded before initialization (OPS-NODE-BOOT-01
+/// D2). A refused issuance is left to the initialization to reject.
+async fn issued_initialize(
+    root: &DurabilityRoot,
+    custody: &NodeIncarnationProof,
+    provenance: FreshStoreProvenance,
+    descriptor: DescriptorRegistration,
+) -> Result<(), DurabilityError> {
+    let _ = root
+        .record_native_source_descriptor_issuance(
+            &provenance.source_authority.clone(),
+            descriptor.clone(),
+            Some(provenance.clone()),
+        )
+        .await;
+    root.initialize_native_admission_source(custody, provenance, descriptor)
+        .await
+}
+
+/// Control-plane issuance of a later revision under the stored authority.
+async fn issued_register(
+    root: &DurabilityRoot,
+    custody: &NodeIncarnationProof,
+    descriptor: DescriptorRegistration,
+) -> Result<(), DurabilityError> {
+    let authority = match root.read_native_admission_source_registration().await {
+        Ok(Some((stored, _))) => stored.source_authority,
+        _ => provenance().source_authority,
+    };
+    let _ = root
+        .record_native_source_descriptor_issuance(&authority, descriptor.clone(), None)
+        .await;
+    root.register_native_admission_descriptor(custody, descriptor)
+        .await
+}
+
 fn provenance_for(source_authority: impl Into<String>) -> FreshStoreProvenance {
     FreshStoreProvenance {
         namespace: "store:one".into(),
@@ -340,15 +376,11 @@ fn fresh_and_recovery_account_security_share_one_floor_across_restart()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
-                    .await?;
-                root.register_native_admission_descriptor(&node, descriptor(2, 2, 20))
-                    .await?;
-                root.register_native_admission_descriptor(&node, descriptor(2, 2, 20))
-                    .await?;
+                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
+                issued_register(&root, &node, descriptor(2, 2, 20)).await?;
+                issued_register(&root, &node, descriptor(2, 2, 20)).await?;
                 assert!(matches!(
-                    root.register_native_admission_descriptor(&node, descriptor(2, 3, 20))
-                        .await,
+                    issued_register(&root, &node, descriptor(2, 3, 20)).await,
                     Err(DurabilityError::Unavailable)
                 ));
 
@@ -446,8 +478,7 @@ fn wrong_pairings_fail_and_signing_key_switch_cannot_reset_floor()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
-                    .await?;
+                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
 
                 let wrong = signing_observation(
                     NativeSourceOperation::ReadAccountSecurityV1,
@@ -561,7 +592,8 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
                 let authority = "a".repeat(128);
-                root.initialize_native_admission_source(
+                issued_initialize(
+                    &root,
                     &node,
                     provenance_for(&authority),
                     descriptor_with_facts(1, vec![1; 4096], 10),
@@ -605,11 +637,8 @@ fn resource_bounds_accept_max_and_reject_max_plus_one_before_retention()
                     Err(DurabilityError::Unavailable)
                 ));
                 assert!(matches!(
-                    root.register_native_admission_descriptor(
-                        &node,
-                        descriptor_with_facts(2, vec![2; 4097], 20)
-                    )
-                    .await,
+                    issued_register(&root, &node, descriptor_with_facts(2, vec![2; 4097], 20))
+                        .await,
                     Err(DurabilityError::Unavailable)
                 ));
 
@@ -660,9 +689,9 @@ fn descriptor_and_floor_rollback_are_rejected_without_losing_current_truth()
             migrate_postgres_17_6(&database_url).await?;
             let root = ready_root(&database_url).await?;
             let node = register_node(&root, 1).await?;
-            root.initialize_native_admission_source(&node, provenance(), descriptor(2, 2, 20)).await?;
+            issued_initialize(&root, &node, provenance(), descriptor(2, 2, 20)).await?;
             assert!(matches!(
-                root.register_native_admission_descriptor(&node, descriptor(1, 1, 10)).await,
+                issued_register(&root, &node, descriptor(1, 1, 10)).await,
                 Err(DurabilityError::Unavailable)
             ));
             let base = account_observation(
@@ -721,8 +750,7 @@ fn lost_response_two_max_slots_exact_clear_and_reuse_survive_restart()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
-                    .await?;
+                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
                 let first = vec![1; 16_384];
                 let second = vec![2; 16_384];
                 let third = vec![3];
@@ -882,14 +910,12 @@ fn replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custo
                     BootstrapSecret::from_bytes([9; 32]),
                 );
                 assert!(matches!(
-                    first_root
-                        .initialize_native_admission_source(&unregistered, provenance(), descriptor(1, 1, 10))
+                    issued_initialize(&first_root, &unregistered, provenance(), descriptor(1, 1, 10))
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
                 let first = register_node(&first_root, 1).await?;
-                first_root
-                    .initialize_native_admission_source(&first, provenance(), descriptor(1, 1, 10))
+                issued_initialize(&first_root, &first, provenance(), descriptor(1, 1, 10))
                     .await?;
                 first_root
                     .accept_native_source_observation(
@@ -957,8 +983,7 @@ fn replaced_stale_and_unregistered_incarnations_cannot_mutate_or_establish_custo
                         account_observation(NativeSourceOperation::ReadAccountSecurityV1, 2, "fresh:2", 101, vec![2]),
                     )
                     .await?;
-                second_root
-                    .register_native_admission_descriptor(&second, descriptor(2, 2, 20))
+                issued_register(&second_root, &second, descriptor(2, 2, 20))
                     .await?;
                 assert_eq!(source_state(&database_url).await?, ("2".into(), 0, 2));
 
@@ -1003,7 +1028,7 @@ fn revoke_serializes_with_current_custody_and_later_mutations_fail_atomically()
                 migrate_postgres_17_6(&database_url).await?;
                 let root = ready_root(&database_url).await?;
                 let node = register_node(&root, 1).await?;
-                root.initialize_native_admission_source(&node, provenance(), descriptor(1, 1, 10))
+                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10))
                     .await?;
                 // An in-flight fenced transaction holds the current-incarnation
                 // share lock; revocation waits for it instead of interleaving.

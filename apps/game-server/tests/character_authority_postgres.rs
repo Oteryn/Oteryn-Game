@@ -400,6 +400,7 @@ async fn release_hold(pool: &sqlx::PgPool, hold: [u8; 16], actor: &str) -> TestR
 
 /// Game-owned current world evidence: assign one Channel of `world` (#415).
 async fn assign_world(
+    pool: &sqlx::PgPool,
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     world: u8,
@@ -412,10 +413,20 @@ async fn assign_world(
         foundation::WorldId::decode(&id(world)).map_err(|e| format!("{e:?}"))?,
         foundation::ChannelId::decode(&id(tag)).map_err(|e| format!("{e:?}"))?,
     );
+    // Owner-written exact-scope grant for the session role, which is also
+    // the recorded actor (OPS-NODE-BOOT-01 D2).
+    sqlx::query(
+        "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+         VALUES (session_user, encode($1, 'hex')::uuid, encode($2, 'hex')::uuid, 1) ON CONFLICT DO NOTHING",
+    )
+    .bind(id(world).as_slice())
+    .bind(id(tag).as_slice())
+    .execute(pool)
+    .await?;
     let outcome = writer
         .submit(&AssignmentRequest {
             operation_key: OperationKey::from_bytes([tag; 32]),
-            actor: ControlActor::new("operator.control-plane").map_err(|e| format!("{e:?}"))?,
+            actor: ControlActor::new("oteryn_test_admin").map_err(|e| format!("{e:?}"))?,
             command: AssignmentCommand::Assign {
                 scope,
                 target: node.fact(),
@@ -436,22 +447,32 @@ fn intent(operation: u8, account: u8, revision: i64) -> TestResult<CharacterBoot
 static S2_REVISION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 async fn initialize_s2(root: &DurabilityRoot, node: &NodeIncarnationProof) -> TestResult {
-    root.initialize_native_admission_source(
-        node,
-        FreshStoreProvenance {
-            namespace: "store:one".into(),
-            authorization: "owner:approved".into(),
-            source_authority: "platform".into(),
-            initialized_at: 10,
-        },
-        DescriptorRegistration {
-            revision: 1,
-            facts: vec![1],
-            installed_at: 10,
-        },
-    )
-    .await
-    .map_err(|e| format!("initialize S2: {e:?}"))?;
+    let provenance = FreshStoreProvenance {
+        namespace: "store:one".into(),
+        authorization: "owner:approved".into(),
+        source_authority: "platform".into(),
+        initialized_at: 10,
+    };
+    let descriptor = DescriptorRegistration {
+        revision: 1,
+        facts: vec![1],
+        installed_at: 10,
+    };
+    // The control-plane issuance precedes initialization (OPS-NODE-BOOT-01 D2).
+    if !root
+        .record_native_source_descriptor_issuance(
+            "platform",
+            descriptor.clone(),
+            Some(provenance.clone()),
+        )
+        .await
+        .map_err(|e| format!("S2 issuance: {e:?}"))?
+    {
+        return Err("S2 issuance refused".into());
+    }
+    root.initialize_native_admission_source(node, provenance, descriptor)
+        .await
+        .map_err(|e| format!("initialize S2: {e:?}"))?;
     Ok(())
 }
 
@@ -535,7 +556,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
         .map_err(|e| format!("{e:?}"))?;
     let node = register(&root, 1, None).await?;
     initialize_s2(&root, &node).await?;
-    assign_world(&root, &node, 90, 95).await?;
+    assign_world(&pool, &root, &node, 90, 95).await?;
     assert_eq!(
         configure(&pool, ["profile-1", "ruleset-1", "content-1", "starter-1"]).await?,
         1
@@ -1427,7 +1448,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
     assert!(rejected(
         root.bootstrap_character(&authority, &node, &valid).await
     ));
-    assign_world(&root, &node, 90, 95).await?;
+    assign_world(&pool, &root, &node, 90, 95).await?;
     assert!(rejected(
         root.bootstrap_character(&authority, &node, &valid).await
     ));
