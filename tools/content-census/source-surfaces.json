@@ -1,0 +1,525 @@
+{
+  "schema": "OTERYN_FULL_CONTENT_SOURCE_SURFACES/v1",
+  "source": {
+    "id": "TIBIAWIKI_STRUCTURED",
+    "role": "STRUCTURED_REFERENCE_DATA",
+    "api": "https://www.tibiawiki.com.br/api.php"
+  },
+  "hard_exclusions": [
+    {
+      "surface": "Kalkulatory",
+      "aliases": [
+        "Kalkulatory",
+        "Calculators"
+      ]
+    },
+    {
+      "surface": "Narzędzie do nasycania",
+      "aliases": [
+        "Narzędzie do nasycania",
+        "Imbuement Tool"
+      ]
+    },
+    {
+      "surface": "Dostawca",
+      "aliases": [
+        "Dostawca",
+        "Revendedores Oficiais",
+        "Official Resellers"
+      ]
+    }
+  ],
+  "limits": {
+    "max_requests": 5000,
+    "max_non_item_pages": 25000,
+    "max_category_nodes": 1000,
+    "max_category_depth": 4,
+    "max_links_per_root": 5000,
+    "metadata_batch_size": 20,
+    "max_categories_per_page": 256,
+    "max_templates_per_page": 256
+  },
+  "roots": [
+    {
+      "id": "items-protected",
+      "kind": "protected_manifest",
+      "manifest_path": "docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json",
+      "expected_schema": "OTERYN_ITEM_WIKI_FIRST_CENSUS_MANIFEST/v1",
+      "expected_stable_digest": "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
+    },
+    {
+      "id": "cyclopedia",
+      "kind": "page_links",
+      "title": "Cyclopedia",
+      "include_root": true
+    },
+    {
+      "id": "geography",
+      "kind": "page_links",
+      "title": "Geografia",
+      "include_root": true
+    },
+    {
+      "id": "houses",
+      "kind": "page_links",
+      "title": "Casas e Guildhalls",
+      "include_root": true
+    },
+    {
+      "id": "hunting-places",
+      "kind": "page_links",
+      "title": "Locais de Caça",
+      "include_root": true
+    },
+    {
+      "id": "libraries",
+      "kind": "page_links",
+      "title": "Bibliotecas",
+      "include_root": true
+    },
+    {
+      "id": "creatures",
+      "kind": "category_tree",
+      "title": "Categoria:Criaturas"
+    },
+    {
+      "id": "npcs",
+      "kind": "category_tree",
+      "title": "Categoria:NPCs no Tibia"
+    },
+    {
+      "id": "quests",
+      "kind": "category_tree",
+      "title": "Categoria:Spoilers de Quests"
+    },
+    {
+      "id": "magical-archive",
+      "kind": "page_links",
+      "title": "Magical Archive",
+      "include_root": true
+    },
+    {
+      "id": "runes",
+      "kind": "page_links",
+      "title": "Runas",
+      "include_root": true
+    },
+    {
+      "id": "achievements",
+      "kind": "page_links",
+      "title": "Achievements",
+      "include_root": true
+    },
+    {
+      "id": "outfits",
+      "kind": "category_tree",
+      "title": "Categoria:Outfits"
+    },
+    {
+      "id": "mounts",
+      "kind": "page_links",
+      "title": "Montarias",
+      "include_root": true
+    },
+    {
+      "id": "world-changes",
+      "kind": "page_links",
+      "title": "World Changes",
+      "include_root": true
+    },
+    {
+      "id": "mini-world-changes",
+      "kind": "page_links",
+      "title": "Mini World Changes",
+      "include_root": true
+    },
+    {
+      "id": "daily-tasks",
+      "kind": "page_links",
+      "title": "Tarefas Diárias",
+      "include_root": true
+    },
+    {
+      "id": "tibiadrome",
+      "kind": "page_links",
+      "title": "Tibiadrome",
+      "include_root": true
+    },
+    {
+      "id": "world-quests",
+      "kind": "page_links",
+      "title": "World Quests",
+      "include_root": true
+    },
+    {
+      "id": "store",
+      "kind": "page_links",
+      "title": "Store",
+      "include_root": true
+    },
+    {
+      "id": "updates",
+      "kind": "page_only",
+      "title": "Updates"
+    },
+    {
+      "id": "servers",
+      "kind": "registry_only",
+      "title": "Servidores"
+    }
+  ],
+  "surfaces": [
+    {
+      "name": "Rzeczy",
+      "disposition": "DUPLICATE_OVERLAP",
+      "families": [
+        "Item",
+        "Document",
+        "WorldObject",
+        "LocalObject",
+        "Presentation"
+      ],
+      "root_ids": [
+        "items-protected"
+      ]
+    },
+    {
+      "name": "Bestiariusz",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Creature"
+      ],
+      "root_ids": [
+        "cyclopedia",
+        "creatures"
+      ]
+    },
+    {
+      "name": "Uroki",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Charm"
+      ],
+      "root_ids": [
+        "cyclopedia"
+      ]
+    },
+    {
+      "name": "Mapa",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Terrain",
+        "WorldObject",
+        "Area",
+        "Transition",
+        "WorldPlacement",
+        "Presentation"
+      ],
+      "root_ids": [
+        "geography"
+      ]
+    },
+    {
+      "name": "Domy",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "House",
+        "Area",
+        "WorldPlacement"
+      ],
+      "root_ids": [
+        "houses",
+        "geography"
+      ]
+    },
+    {
+      "name": "Ratusze",
+      "disposition": "DUPLICATE_OVERLAP",
+      "families": [
+        "Area",
+        "WorldObject",
+        "NPC",
+        "Service"
+      ],
+      "root_ids": [
+        "geography"
+      ]
+    },
+    {
+      "name": "Bossiary",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Creature",
+        "Encounter"
+      ],
+      "root_ids": [
+        "cyclopedia",
+        "creatures"
+      ]
+    },
+    {
+      "name": "Sklep",
+      "disposition": "DUPLICATE_OVERLAP",
+      "families": [
+        "Item",
+        "Outfit",
+        "Mount",
+        "Presentation"
+      ],
+      "root_ids": [
+        "store"
+      ]
+    },
+    {
+      "name": "Magiczne Archiwum",
+      "disposition": "DUPLICATE_OVERLAP",
+      "families": [
+        "Ability",
+        "Effect",
+        "Formula",
+        "Item"
+      ],
+      "root_ids": [
+        "magical-archive",
+        "runes"
+      ]
+    },
+    {
+      "name": "Osiągnięcia",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Achievement"
+      ],
+      "root_ids": [
+        "achievements"
+      ]
+    },
+    {
+      "name": "Biblioteki",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Document",
+        "Area",
+        "WorldPlacement",
+        "WorldObject",
+        "Item"
+      ],
+      "root_ids": [
+        "libraries"
+      ]
+    },
+    {
+      "name": "Miasta",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Area"
+      ],
+      "root_ids": [
+        "geography"
+      ]
+    },
+    {
+      "name": "Zabudowania",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Area",
+        "WorldObject",
+        "House",
+        "WorldPlacement"
+      ],
+      "root_ids": [
+        "geography",
+        "houses"
+      ]
+    },
+    {
+      "name": "Stworzenia",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Creature"
+      ],
+      "root_ids": [
+        "creatures"
+      ]
+    },
+    {
+      "name": "Tereny łowieckie",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Area",
+        "Creature",
+        "Encounter",
+        "WorldPlacement"
+      ],
+      "root_ids": [
+        "hunting-places",
+        "creatures"
+      ]
+    },
+    {
+      "name": "Zaklęcia",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Ability",
+        "Effect",
+        "Formula"
+      ],
+      "root_ids": [
+        "magical-archive",
+        "runes"
+      ]
+    },
+    {
+      "name": "Zmiany w Mini Świecie",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Encounter"
+      ],
+      "root_ids": [
+        "mini-world-changes"
+      ]
+    },
+    {
+      "name": "Mocowania",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Mount"
+      ],
+      "root_ids": [
+        "mounts"
+      ]
+    },
+    {
+      "name": "NPC-e",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "NPC",
+        "Dialogue",
+        "Service",
+        "Interaction",
+        "WorldPlacement"
+      ],
+      "root_ids": [
+        "npcs"
+      ]
+    },
+    {
+      "name": "Obiekty",
+      "disposition": "DUPLICATE_OVERLAP",
+      "families": [
+        "Terrain",
+        "WorldObject",
+        "LocalObject",
+        "Item",
+        "Transition",
+        "Presentation",
+        "Asset"
+      ],
+      "root_ids": [
+        "items-protected",
+        "geography",
+        "libraries"
+      ]
+    },
+    {
+      "name": "Stroje",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Outfit"
+      ],
+      "root_ids": [
+        "outfits"
+      ]
+    },
+    {
+      "name": "Zadania",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Quest",
+        "Interaction",
+        "NPC",
+        "Area",
+        "Encounter"
+      ],
+      "root_ids": [
+        "quests"
+      ]
+    },
+    {
+      "name": "Runy",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Item",
+        "Ability",
+        "Interaction"
+      ],
+      "root_ids": [
+        "runes"
+      ]
+    },
+    {
+      "name": "Serwery",
+      "disposition": "SOURCE_NAVIGATION_ONLY",
+      "families": [],
+      "root_ids": [
+        "servers"
+      ]
+    },
+    {
+      "name": "Codzienne zadania",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Quest",
+        "Interaction",
+        "Encounter"
+      ],
+      "root_ids": [
+        "daily-tasks"
+      ]
+    },
+    {
+      "name": "Tibiadrom",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Encounter",
+        "Creature",
+        "Area",
+        "Item",
+        "Achievement"
+      ],
+      "root_ids": [
+        "tibiadrome"
+      ]
+    },
+    {
+      "name": "Aktualizacje",
+      "disposition": "PROVENANCE_ONLY",
+      "families": [],
+      "root_ids": [
+        "updates"
+      ]
+    },
+    {
+      "name": "Zmiany świata",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "families": [
+        "Encounter"
+      ],
+      "root_ids": [
+        "world-changes"
+      ]
+    },
+    {
+      "name": "Zadania światowe",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "families": [
+        "Quest",
+        "Encounter",
+        "Interaction"
+      ],
+      "root_ids": [
+        "world-quests"
+      ]
+    }
+  ]
+}
