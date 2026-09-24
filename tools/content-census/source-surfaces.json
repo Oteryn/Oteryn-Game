@@ -153,7 +153,7 @@
     },
     {
       "id": "updates",
-      "kind": "page_only",
+      "kind": "registry_only",
       "title": "Updates"
     },
     {
