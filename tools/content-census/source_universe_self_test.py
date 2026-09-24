@@ -175,6 +175,60 @@ def test_discovery_page_limit_fails_closed() -> None:
     )
 
 
+
+def test_metadata_continuation_may_omit_revision_after_exact_first_record() -> None:
+    aggregate = {}
+    limits = census.validate_registry(
+        census.load_registry(census.DEFAULT_REGISTRY)
+    )["limits"]
+    census._merge_page_metadata(
+        aggregate,
+        page_raw(
+            page_id=35,
+            title="Continuation Page",
+            revision_id=135,
+            categories=[{"title": "Categoria:Alpha"}],
+        ),
+        requested={35},
+        limits=limits,
+        exclusion_aliases=set(),
+    )
+    census._merge_page_metadata(
+        aggregate,
+        {
+            "pageid": 35,
+            "title": "Continuation Page",
+            "categories": [{"title": "Categoria:Beta"}],
+            "templates": [{"title": "Predefinição:Extra"}],
+        },
+        requested={35},
+        limits=limits,
+        exclusion_aliases=set(),
+    )
+    assert aggregate[35]["revision_id"] == 135
+    assert aggregate[35]["categories"] == {
+        "Categoria:Alpha",
+        "Categoria:Beta",
+    }
+    assert aggregate[35]["templates"] == {"Predefinição:Extra"}
+
+
+def test_metadata_initial_record_without_revision_is_rejected() -> None:
+    limits = census.validate_registry(
+        census.load_registry(census.DEFAULT_REGISTRY)
+    )["limits"]
+    reject(
+        lambda: census._merge_page_metadata(
+            {},
+            {"pageid": 35, "title": "Continuation Page"},
+            requested={35},
+            limits=limits,
+            exclusion_aliases=set(),
+        ),
+        "METADATA_INITIAL_REVISION_MISSING",
+    )
+
+
 def test_metadata_revision_drift_is_rejected() -> None:
     aggregate = {}
     limits = census.validate_registry(
