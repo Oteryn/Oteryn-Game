@@ -1,3 +1,5 @@
+> Lifecycle closeout: **ARCHIVED AFTER CANONICAL PR MERGE**. Canonical PR #790 merged as `5d4686f736acae407c114f42cc03e55680b14119`. This packet is no longer active; any nonterminal wording below is retained only as historical provenance.
+
 # OTV2-20260923-wp5-character-authority-414
 
 ```yaml
