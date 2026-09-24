@@ -13,7 +13,7 @@ pr: 821
 base_sha: 0c3445068a696883a35a248c98436f2af87a39b5
 head_sha: f1d7fe0e740bd57e14c762ac1cecadbe297ebbd7
 final_head_sha: f1d7fe0e740bd57e14c762ac1cecadbe297ebbd7
-final_head_frozen_at: 2026-09-24
+final_head_frozen_at: null
 owner: "exclusive G1 source-root correction writer"
 created_at: 2026-09-24T00:30:00+02:00
 updated_at: 2026-09-24T10:42:00+02:00
