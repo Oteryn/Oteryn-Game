@@ -108,16 +108,10 @@ Hosted run `35962506624` / artifact `10792259950`:
 
 The 12 `SOURCE_CLASSIFICATION_UNRESOLVED` records are an explicit source-shape state, not silently dropped entities. Family routing itself is complete for the live set; G3 owns later semantic family-classification closure.
 
-### Source-driven repairs
+### Original live-source repairs (PR #812)
 
-Live evidence repaired six assumptions without weakening fail-closed behavior:
+PR #812 documented six fail-closed repairs: redlink exclusion, case-distinct title handling, canonical roots, provenance-only Updates, revision-stable continuation, and template bounds (4,096/page).
 
-1. missing/red navigation links are counted and excluded from admitted page identities;
-2. case-distinct canonical MediaWiki titles remain distinct identities;
-3. non-existent `Casas e Guildhalls` navigation label is not invented as a root; house/building coverage uses canonical Geography discovery;
-4. `Updates` remains registry/provenance-only instead of inventing a page root;
-5. MediaWiki prop continuation may omit revision metadata after the first exact record, but may never change it;
-6. large template sets are bounded at 4,096 entries/page, consistent with the existing 4 MiB API-response fence; 4,097 fails closed.
 
 
 ### Corrected live source-root evidence
