@@ -545,6 +545,16 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md",
             "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md",
             "docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md",
+            "docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_PREPRODUCTION_ALLOCATION_20260911.md",
+            "docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_RESOURCE_EVIDENCE_ALLOCATION_20260910.md",
+            "docs/agents/programs/OTV2_WP3_A_UPSTREAM_FIRST_ACCEPTANCE_ALLOCATION_20260916.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_CLIENT_HANDSHAKE_ALLOCATION_SEAMS_AMENDMENT_20260909.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_OUTBOUND_DEQUEUE_CUSTODY_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_OUTBOUND_TLS_CUSTODY_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_PSK_BINDER_OWNER_AMENDMENT_20260909.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_TLS12_KX_CALLER_PROPAGATION_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_TRANSCRIPT_CALLER_PROPAGATION_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_TRANSCRIPT_HASH_OWNER_AMENDMENT_20260909.md",
         )
         for relative in current_programme_consumers:
             text = (ROOT / relative).read_text(encoding="utf-8")
