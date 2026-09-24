@@ -71,7 +71,7 @@
   - the bounded assignment wait (D3);
   - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument. Its parent directory must be owned by the node's service user, with mode 0700 and not writable by anyone else;
   - the readiness revisions (D5);
-  - the S2 descriptor registration revision (D3);
+  - the S2 descriptor registration revision and its `installed_at` timestamp (D3). Both are copied from the operator-issued S2 fresh-store authorization and changed only together with a descriptor change;
   - two separate Platform routes, each with its own source authority namespace, endpoint, expected peer name and service trust roots. The source authority is the value S1 responses are bound to, and it is distinct from the TLS peer name:
     - the admission evidence source (S1/S2);
     - the Character bootstrap intent issuer (#414).
@@ -150,11 +150,11 @@ Rejected alternatives:
 
 1. Load and validate the D1 configuration, and read the referenced files.
 2. Connect the durability root and require `maintain_ready_once` to report ready. From then until exit, a bounded maintenance task calls `maintain_ready_once` in two cases: at a fixed interval well inside the 30-minute holder lifetime, and immediately after any operation reports `RootUnavailable`. The durability holder is therefore re-established after retirement or loss, rather than only at boot.
-3. **Register.** Generate a fresh UUIDv7 `NodeId` and register it with the configured launch authorization. The authorization is consumed, and a replay rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
+3. **Register.** Generate a fresh UUIDv7 `NodeId` and register it with the configured launch authorization. The process retains that `NodeId` for the whole attempt. When registration fails ambiguously (lost response or unknown commit), it replays the exact same request (secret, binding, `NodeId`) a bounded number of times: `register_node_incarnation` returns the original proof for an exact replay. Only a definite rejection, or exhausted replays, fails boot. The authorization is consumed, and a replay rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
 4. **Establish S2 custody** for this incarnation:
    - **First installation:** `initialize_native_admission_source` with the provenance and descriptor from the operator-issued S2 fresh-store authorization. That authorization is required when the store is uninitialized and rejected when it is already initialized.
    - **Every later incarnation:** `claim_native_admission_source_custody`, which succeeds only when the prior holder is no longer current.
-   - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and the facts derived from the configured route: source authority, endpoint, peer name, trust-root digest and client-identity digest.
+   - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and `installed_at`, and the facts derived from the configured route: source authority, endpoint, peer name, trust-root digest and client-identity digest.
      - A higher revision registers the new facts.
      - An equal revision must match the stored facts exactly, so changed facts retained under an old revision fail boot.
    - **Pending publications:** before any evidence fetch or readiness, read `pending_native_source_publications` and reconcile each retained slot by its exact operation binding (checkpoint or clear, under the S2 resource contract). Boot fails if a slot stays unresolved after a bounded number of attempts.
@@ -242,7 +242,9 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - unreadable secret or trust-root files;
   - empty trust roots;
   - an S2 fresh-store authorization supplied for an already-initialized store, or missing for an uninitialized one.
-- **Launch authorization.** A replayed authorization rejects registration.
+- **Launch authorization.**
+  - A replayed authorization under a different `NodeId` or binding rejects registration.
+  - An exact replay after a lost registration response returns the original proof, and boot continues.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
   - assignment;
   - revoke;
