@@ -1,0 +1,51 @@
+{
+  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT_EVIDENCE/v1",
+  "allocation_revision": "R3",
+  "allocation_comment": 5821985312,
+  "branch": "agent/otv2-worldproject-v2-full-cardinality-scale-r3",
+  "evidence_status": "measurement_pending",
+  "implementation_base": "6185045c20631b8614b1d4ad1dacc5d918f73b0a",
+  "supersedes": "362319d8c8cf6ee81420f3424b2cd93fa170107b",
+  "task_path": "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md",
+  "measurement_tool": "tools/world-project-v2-scale-measurement",
+  "workflow": ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+  "target_placements": 24502036,
+  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+  "synthetic_shape": {
+    "definitions": 1,
+    "worlds": 1,
+    "map_revisions": 1,
+    "coordinate_frames": 1,
+    "disposition": "CandidateOnly"
+  },
+  "measured_dimensions": [
+    "canonical bytes by role and total",
+    "draft build time",
+    "canonical serialization and validation time",
+    "JSON syntax parse time",
+    "schema-aware load time",
+    "staged role-file write time",
+    "peak resident set size from /usr/bin/time -v for full success/resource-limit runs",
+    "one-placement edit amplification"
+  ],
+  "resource_policy": {
+    "full_virtual_memory_ceiling_bytes": 6442450944,
+    "full_wall_clock_limit_seconds": 4500,
+    "full_runs_on_pull_request_head": true,
+    "full_runs_on_manual_dispatch": true,
+    "peak_rss_source": "/usr/bin/time -v maximum resident set size, converted from KiB",
+    "outcomes": ["completed", "resource_limit"]
+  },
+  "one_placement_amplification": {
+    "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
+    "changed_paths": null,
+    "changed_file_count": null,
+    "changed_project_bytes": null,
+    "reason": "isolated placement-record byte difference divided into estimated whole-project rewrite bytes; full canonical snapshots are not diffed",
+    "resource_limited_run_status": "unavailable_after_early_failure"
+  },
+  "donor_or_source_inputs": false,
+  "schema_or_chunk_decision": "out_of_scope",
+  "run_identity": null,
+  "result_artifact": null
+}
