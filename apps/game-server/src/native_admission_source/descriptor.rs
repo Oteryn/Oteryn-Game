@@ -20,12 +20,22 @@ pub enum Operation {
     ReadFreshSigningTrustV1,
     ReadRecoveryAccountSecurityV2,
     ReadRecoverySigningTrustV2,
+    /// Separate private Character bootstrap-intent reconciliation read.
+    ReadCharacterBootstrapIntentV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
-        // The four closed operation tags share the accepted Platform endpoint.
-        // Operation identity remains bound by the existing request/response codec.
-        "/internal/v1/game-auth/native-evidence"
+        match self {
+            // The four closed evidence tags share the accepted Platform endpoint.
+            // Operation identity remains bound by the existing request/response codec.
+            Self::ReadAccountSecurityV1
+            | Self::ReadFreshSigningTrustV1
+            | Self::ReadRecoveryAccountSecurityV2
+            | Self::ReadRecoverySigningTrustV2 => "/internal/v1/game-auth/native-evidence",
+            Self::ReadCharacterBootstrapIntentV1 => {
+                "/internal/v1/game-auth/character-bootstrap-intents/read"
+            }
+        }
     }
 }
 pub struct ProducerDescriptor {

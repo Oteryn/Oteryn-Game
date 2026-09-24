@@ -6,6 +6,8 @@
 
 pub mod admission_authority_guards;
 mod admission_journal;
+pub mod character_authority;
+pub mod character_authority_audit;
 mod db;
 pub mod fresh_admission;
 pub mod native_admission_source;
@@ -51,6 +53,44 @@ mod native_admission_source_linkage {
         let _ = DurabilityRoot::checkpoint_native_source_publication;
         let _ = DurabilityRoot::clear_native_source_publication;
         let _ = DurabilityRoot::pending_native_source_publications;
+    }
+}
+
+#[cfg(test)]
+mod character_authority_linkage {
+    use super::DurabilityRoot;
+    use super::character_authority::{
+        CharacterAuditDelivery, CharacterAuthorityError, CharacterAuthorityRecord,
+        ReconciledCharacterAuthority,
+    };
+
+    #[test]
+    fn character_authority_api_is_linked() {
+        let _ = std::mem::size_of::<
+            oteryn_game_server::character_bootstrap_intent::CharacterBootstrapIntentV1,
+        >();
+        let _ = std::mem::size_of::<CharacterAuditDelivery>();
+        let _ = std::mem::size_of::<CharacterAuthorityError>();
+        let _ = std::mem::size_of::<CharacterAuthorityRecord>();
+        let _ = std::mem::size_of::<ReconciledCharacterAuthority<'_, '_>>();
+        let _ = CharacterAuthorityError::Rejected;
+        let _ = CharacterAuthorityError::Conflict;
+        let _ = |error: CharacterAuthorityError| match error {
+            CharacterAuthorityError::Unavailable(inner) => Some(inner),
+            _ => None,
+        };
+        let _ = DurabilityRoot::bootstrap_character;
+        let _ = DurabilityRoot::reconcile_character_bootstrap;
+        let _ = oteryn_game_server::character_bootstrap_intent::read_authenticated_intent;
+        let _ = oteryn_game_server::character_bootstrap_intent::CharacterInterpretationV1::new;
+        let _ = DurabilityRoot::open_character_authority;
+        let _ = DurabilityRoot::read_current_character;
+        let _ = DurabilityRoot::admit_fresh_character_recovery;
+        let _ = DurabilityRoot::reconcile_character_recovery;
+        let _ = DurabilityRoot::pending_character_audit;
+        let _ = DurabilityRoot::acknowledge_character_audit;
+        let _ = DurabilityRoot::expire_character_audit;
+        let _ = super::character_authority_audit::encode_bootstrap;
     }
 }
 
