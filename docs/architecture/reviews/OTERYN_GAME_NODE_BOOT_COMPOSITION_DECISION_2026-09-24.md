@@ -119,7 +119,7 @@ The exact grant lists are part of the implementation. Negative tests must prove 
 
 `oteryn-game-ops` uses the same explicit durability-root connection fields as D1, with its own control-plane credential files.
 
-**Durable request and authorization files.** Every file the tool writes (launch authorization, assignment request, Character recovery request) is created as a new file (exclusive create, no symbolic-link following, mode 0600), written completely, synchronized, and then its parent directory is synchronized. Only after all of this succeeds does the tool submit the database or fence mutation that the file guards. Any failure before that point aborts without the mutation, so a crash can never leave a committed or ambiguous mutation whose exact request was lost. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
+**Durable request and authorization files.** Before creating any of them, the tool validates the output file's parent directory: owned by the invoking user or root, not writable by group or others, and opened without following symbolic links. Otherwise it refuses. Every file the tool writes (launch authorization, assignment request, Character recovery request) is created as a new file (exclusive create, no symbolic-link following, mode 0600), written completely, synchronized, and then its parent directory is synchronized. Only after all of this succeeds does the tool submit the database or fence mutation that the file guards. Any failure before that point aborts without the mutation, so a crash can never leave a committed or ambiguous mutation whose exact request was lost. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
 - **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. Before issuing, it durably writes one authorization file for the node containing the complete issuance request: the freshly generated secret, the exact non-secret `LaunchBinding` and the `supersedes` value. `register_node_incarnation` requires the secret and the binding, and a changed binding rejects.
   - **Exact-replay issuance.** The implementation changes `issue_node_bootstrap_authorization` so an existing row with the identical secret digest, binding and `supersedes` returns success instead of `Rejected`; any difference still rejects. A consumed authorization is not reissued: the replay only reports that the exact row exists.
   - **Ambiguous issuance.** After a lost response, `authorization issue --reconcile <file>` replays the retained request, and its definite result says whether the authorization exists. The tool never generates a second authorization for the same launch while a retained file has no definite result.
@@ -198,10 +198,10 @@ Rejected alternatives:
       - authority: the configured Runtime readiness source authority (D1);
       - source revision: the current guard's source revision plus one, or 1 under `Bootstrap`;
       - decision identity: derived deterministically from the `NodeId`, ownership generation, source revision and `ready` value, so it is unique per revision;
-      - observed at: the later of the node's clock and the current guard's `source_observed_at`, so the value never decreases after clock correction or host skew, with clock uncertainty 0 because the node observes its own state. If the current guard's value is ahead of the node's clock by more than the accepted five-second uncertainty bound, boot fails with a clock-skew error instead of publishing a future observation;
+      - observed at: the node's clock at publication, with clock uncertainty 0 because the node observes its own state. The publication validator rejects both a decreasing value and a value later than the node's `now`. If the current guard's `source_observed_at` is ahead of the node's clock by at most the accepted five-second uncertainty bound, the node waits until its clock passes that value and then publishes, so the value never decreases and is never future-dated. A larger gap fails boot with a clock-skew error;
       - restored high-water under `Bootstrap`: the highest publication revision the new read API finds in the guard history for the key, or 0 when there is none.
 
-      The `ready = false` shutdown publication (step 10) uses the same rules.
+      The `ready = false` shutdown publication (step 10) uses the same rules; if its bounded wait would exceed the shutdown budget, shutdown proceeds without it, as step 10 already allows for a failed non-ready publication.
 9. **Serve.** Run two loops under the same shutdown token:
    - `serve_gameplay` on the already-bound gameplay listener;
    - the bounded control-socket accept/handler loop (D2).
@@ -233,7 +233,8 @@ A restart always yields a new `NodeId`. Before the new process launches, the ope
   3. only then does the #823 composition and commit run.
 - **Bounds.** The exchanges run under the existing transient capacity and within the caller's entry deadline.
 - **Failures and denials.**
-  - A transport failure, timeout or unauthenticated or undecodable response refuses the attempt without any mutation.
+  - A transport failure, timeout or unauthenticated or undecodable response refuses the attempt, and that failed exchange causes no mutation.
+  - The two exchanges are independent. Each authenticated response is checkpointed and accepted into S2 on its own, even when the paired exchange fails. The account exchange completes its acceptance before the trust exchange starts, so a newer denial is never discarded because of the other fetch.
   - An authenticated observation is accepted into S2 custody whatever its facts, including a newer `allowed = false` or `trusted = false` denial. S2 therefore advances its revision floor and a delayed lower-revision allow cannot enter later. The composition then refuses the attempt, and no GameSession, nonce or lease is created.
 - **No cache.** The node keeps no cache beyond the S2-accepted, revision-guarded projection.
 
@@ -293,7 +294,8 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - An exact replay after a lost registration response returns the original proof, and boot continues.
 - **Scope grants.** A control-plane login is refused an assignment for a scope or operation it has no grant for, and is refused writing a grant.
 - **Descriptor revisions.** A higher configured descriptor revision without a matching recorded issuance fails boot.
-- **Readiness clock.** A replacement node whose clock is behind the prior publication's `source_observed_at` by less than the uncertainty bound still publishes readiness.
+- **Readiness clock.** A replacement node whose clock is behind the prior publication's `source_observed_at` by less than the uncertainty bound waits and then publishes readiness; a larger gap fails boot.
+- **Mixed S1 results.** When the account exchange returns an authenticated denial and the trust exchange fails, the denial is accepted into S2 and a later delayed lower-revision allow is refused.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
   - assignment;
   - revoke;
