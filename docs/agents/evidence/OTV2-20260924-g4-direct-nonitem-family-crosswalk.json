@@ -3,10 +3,10 @@
   "task_id": "OTV2-20260924-g4-direct-nonitem-family-crosswalk",
   "issue": 162,
   "issue_comment": 5821824145,
-  "status": "IMPLEMENTING",
+  "status": "MERGED_ARCHIVED",
   "branch": "agent/otv2-g4-direct-nonitem-family-crosswalk",
   "base_commit": "6185045c20631b8614b1d4ad1dacc5d918f73b0a",
-  "pr": null,
+  "pr": 861,
   "allocation": {
     "writer_count": 1,
     "changed_path_count": 5,
@@ -49,14 +49,22 @@
     "identity_namespace": "mediawiki/page_id",
     "external_id": "verbatim decimal page_id",
     "page_key": "mediawiki/tibiawiki.com.br/page_id/<external_id>",
-    "current_revision_fields": ["revision_id", "revision_timestamp", "raw_utf8_sha256"],
+    "current_revision_fields": [
+      "revision_id",
+      "revision_timestamp",
+      "raw_utf8_sha256"
+    ],
     "title_matching_performed": false,
     "total_join_rows": 4800,
     "exact_revision_and_timestamp_joins": 4798,
     "source_revision_revalidation_required": 2,
     "revision_revalidation_pages": {
-      "Creature": [63947],
-      "Quest": [46925]
+      "Creature": [
+        63947
+      ],
+      "Quest": [
+        46925
+      ]
     }
   },
   "canonical_target_inventory": {
@@ -74,13 +82,59 @@
     "status": "NO_TRACKED_PRODUCTION_CANONICAL_TARGET_CORPUS"
   },
   "families": {
-    "Creature": {"g3_direct_count": 2149, "exact_page_id_join_rows": 2149, "missing_canonical_identity": 2148, "source_revision_revalidation_required": 1, "revision_revalidation_page_ids": [63947]},
-    "NPC": {"g3_direct_count": 1253, "exact_page_id_join_rows": 1253, "missing_canonical_identity": 1253, "source_revision_revalidation_required": 0, "revision_revalidation_page_ids": []},
-    "Achievement": {"g3_direct_count": 569, "exact_page_id_join_rows": 569, "missing_canonical_identity": 569, "source_revision_revalidation_required": 0, "revision_revalidation_page_ids": []},
-    "Quest": {"g3_direct_count": 272, "exact_page_id_join_rows": 272, "missing_canonical_identity": 271, "source_revision_revalidation_required": 1, "revision_revalidation_page_ids": [46925]},
-    "Ability": {"g3_direct_count": 171, "exact_page_id_join_rows": 171, "missing_canonical_identity": 171, "source_revision_revalidation_required": 0, "revision_revalidation_page_ids": []},
-    "Outfit": {"g3_direct_count": 134, "exact_page_id_join_rows": 134, "missing_canonical_identity": 134, "source_revision_revalidation_required": 0, "revision_revalidation_page_ids": []},
-    "Mount": {"g3_direct_count": 252, "exact_page_id_join_rows": 252, "missing_canonical_identity": 252, "source_revision_revalidation_required": 0, "revision_revalidation_page_ids": []}
+    "Creature": {
+      "g3_direct_count": 2149,
+      "exact_page_id_join_rows": 2149,
+      "missing_canonical_identity": 2148,
+      "source_revision_revalidation_required": 1,
+      "revision_revalidation_page_ids": [
+        63947
+      ]
+    },
+    "NPC": {
+      "g3_direct_count": 1253,
+      "exact_page_id_join_rows": 1253,
+      "missing_canonical_identity": 1253,
+      "source_revision_revalidation_required": 0,
+      "revision_revalidation_page_ids": []
+    },
+    "Achievement": {
+      "g3_direct_count": 569,
+      "exact_page_id_join_rows": 569,
+      "missing_canonical_identity": 569,
+      "source_revision_revalidation_required": 0,
+      "revision_revalidation_page_ids": []
+    },
+    "Quest": {
+      "g3_direct_count": 272,
+      "exact_page_id_join_rows": 272,
+      "missing_canonical_identity": 271,
+      "source_revision_revalidation_required": 1,
+      "revision_revalidation_page_ids": [
+        46925
+      ]
+    },
+    "Ability": {
+      "g3_direct_count": 171,
+      "exact_page_id_join_rows": 171,
+      "missing_canonical_identity": 171,
+      "source_revision_revalidation_required": 0,
+      "revision_revalidation_page_ids": []
+    },
+    "Outfit": {
+      "g3_direct_count": 134,
+      "exact_page_id_join_rows": 134,
+      "missing_canonical_identity": 134,
+      "source_revision_revalidation_required": 0,
+      "revision_revalidation_page_ids": []
+    },
+    "Mount": {
+      "g3_direct_count": 252,
+      "exact_page_id_join_rows": 252,
+      "missing_canonical_identity": 252,
+      "source_revision_revalidation_required": 0,
+      "revision_revalidation_page_ids": []
+    }
   },
   "outcome": {
     "missing_canonical_identity": 4798,
@@ -91,13 +145,63 @@
     "definitions_or_population_emitted": false,
     "gameplay_semantics_emitted": false,
     "presentation_asset_or_runtime_ids_emitted": false,
-    "crosswalk_artifact_sha256": "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396"
+    "crosswalk_artifact_sha256": "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396",
+    "population_emitted": false,
+    "promotion_performed": false
   },
   "validation": {
     "py_compile": "PASS",
     "synthetic_self_test": "PASS",
     "pinned_artifact_validation": "PASS",
     "exact_page_id_revision_join": "PASS",
-    "workflow_hosted_validation": "PENDING"
+    "workflow_hosted_validation": "PASS"
+  },
+  "archive_branch": "agent/otv2-g4-direct-nonitem-family-crosswalk-archive",
+  "protected_main_commit": "339b6ba6b6081868d5361040b5ea40c7c118ef2f",
+  "closeout": {
+    "status": "MERGED_ARCHIVED",
+    "allocation_comment": 5822708237,
+    "terminal_issue_comment": 5822707953,
+    "task_record_path": "docs/agents/tasks/archive/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md",
+    "active_task_path_removed": "docs/agents/tasks/active/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md",
+    "protected_main_readback": "339b6ba6b6081868d5361040b5ea40c7c118ef2f",
+    "integrated_pr": {
+      "number": 861,
+      "exact_head": "62a234d5785d93f62c5dd84c66ff1493f1cf0796",
+      "merged": true,
+      "merge_commit": "339b6ba6b6081868d5361040b5ea40c7c118ef2f"
+    },
+    "hosted_validation": {
+      "run_id": 36058305835,
+      "conclusion": "SUCCESS",
+      "artifact_id": 10832769419,
+      "archive_sha256": "c4a290d19b0a2db2842003d532f79894e7fa05137efbcf7362be661d01665aa1",
+      "output_sha256": "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396"
+    },
+    "independent_review": {
+      "result": "PASS",
+      "comment": 5822590223
+    },
+    "merge_queue": {
+      "executor_run_id": 36062132750,
+      "merge_group_run_id": 36062184948,
+      "conclusion": "SUCCESS"
+    },
+    "counts": {
+      "total": 4800,
+      "missing_canonical_identity": 4798,
+      "source_revision_revalidation_required": 2
+    },
+    "no_binding_population_or_promotion": true,
+    "ownership": {
+      "status": "RELEASED",
+      "paths": [
+        "tools/content-census/g4_direct_nonitem_family_crosswalk.py",
+        "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+        ".github/workflows/g4-direct-nonitem-family-crosswalk.yml",
+        "docs/agents/tasks/active/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md",
+        "docs/agents/evidence/OTV2-20260924-g4-direct-nonitem-family-crosswalk.json"
+      ]
+    }
   }
 }

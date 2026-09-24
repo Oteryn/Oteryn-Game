@@ -1,13 +1,16 @@
 ---
 task_id: OTV2-20260924-g4-direct-nonitem-family-crosswalk
 mode: IMPLEMENT
-status: implementing
+status: archived
 issue: 162
 issue_comment: 5821824145
-pr: null
+closeout_allocation_comment: 5822708237
+pr: 861
 repository: Oteryn/Oteryn-Game
 base_commit: 6185045c20631b8614b1d4ad1dacc5d918f73b0a
 branch: agent/otv2-g4-direct-nonitem-family-crosswalk
+archive_branch: agent/otv2-g4-direct-nonitem-family-crosswalk-archive
+terminal_main_commit: 339b6ba6b6081868d5361040b5ea40c7c118ef2f
 ---
 
 # G4 direct non-Item family crosswalk inventory
@@ -30,3 +33,13 @@ Join the protected G3 direct-family classifications to the merged #857 source-pr
 - Require one exact source page-ID row in G4 for each G3 direct-definition row; fail closed on missing/duplicate IDs, malformed source identity or stale revision/timestamp.
 - Run focused synthetic tests for exact-ID-only join behavior, shared titles, revision drift, malformed IDs, source-family signature mismatch, missing G4 IDs, and target-inventory blockers.
 - Produce one bounded source-only workflow artifact; commit only the five allocation paths in one Git Data commit. No PR or integration action is authorized by this task.
+
+
+## Closeout
+
+- Status: merged and archived. PR #861 integrated exact head `62a234d5785d93f62c5dd84c66ff1493f1cf0796` to protected `main@339b6ba6b6081868d5361040b5ea40c7c118ef2f`.
+- Exact-head hosted validation: run 36058305835 succeeded; artifact 10832769419; archive SHA-256 `c4a290d19b0a2db2842003d532f79894e7fa05137efbcf7362be661d01665aa1`; output SHA-256 `1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396`.
+- Independent review passed (comment 5822590223); governed executor run 36062132750 and real `merge_group` run 36062184948 succeeded. Terminal integration record: Issue #162 comment 5822707953.
+- Result: 4,800 source-only rows, comprising 4,798 `MISSING_CANONICAL_IDENTITY` and 2 `SOURCE_REVISION_REVALIDATION_REQUIRED` (Creature 63947; Quest 46925).
+- No source binding, definition, population, gameplay semantic or promotion was emitted. Implementation allocation paths are released.
+- This archival record does not modify implementation, workflow, source, binding, definition or semantic content.
