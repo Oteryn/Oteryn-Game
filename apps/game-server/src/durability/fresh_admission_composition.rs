@@ -331,8 +331,11 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    fence_custody(&mut tx, &custody).await?;
+                    // One lock order everywhere: admission relations, then the
+                    // S2 registration row (composition and commit read it
+                    // `FOR SHARE` after the relation locks).
                     lock_admission_relations(&mut tx).await?;
+                    fence_custody(&mut tx, &custody).await?;
                     let store = AdmissionGuardStore::from_root(root);
                     let [account_key, character_key, _, trust_key] = subject.keys();
                     let account = account_floor(&mut tx, &subject.account_id)
