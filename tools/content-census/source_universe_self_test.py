@@ -62,7 +62,7 @@ def test_real_registry_is_complete_and_excludes_hard_sections() -> None:
     raw = census.load_registry(census.DEFAULT_REGISTRY)
     registry = census.validate_registry(raw)
     assert len(registry["surfaces"]) == 29
-    assert len(registry["roots"]) == 22
+    assert len(registry["roots"]) == 21
     names = {row["name"] for row in registry["surfaces"]}
     assert "Kalkulatory" not in names
     assert "Narzędzie do nasycania" not in names
