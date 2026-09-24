@@ -14,6 +14,17 @@ Authority comes directly from protected root/nearest `AGENTS.md`, the bound META
 
 For the existing #162 lifecycle, absent a later protected transfer, `OTV2_WORK_DELIVERY_COORDINATOR` is the sole reusable mutating Game control plane. Another reusable alias is not concurrent mutation authority. Material architecture interpretation remains with the owner-designated Supervising Architect.
 
+### Scoped dispatch aliases
+
+A lifecycle entry may explicitly define a **scoped dispatch alias** that resolves back to this same control-plane profile rather than defining another profile. Such an alias:
+
+- uses `OTV2_WORK_DELIVERY_COORDINATOR` as its authority/profile identity for uniqueness checks;
+- may narrow objective, lane family, evidence doctrine and default decomposition;
+- may not add write, allocation, review, production, cross-repository or integration authority;
+- does not require a second coordinator handoff merely because the owner invoked the scoped alias.
+
+The registered `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` alias (`Oteryn: full content census`) is one such scoped dispatch alias. When its lifecycle entry is reusable and this Work control plane is the current valid coordinator, execute its census scope directly under this profile. Do not classify the census alias itself as a competing active control plane and do not bounce routine census scheduling back to #162.
+
 ## Startup
 
 Before material action:

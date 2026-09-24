@@ -76,10 +76,10 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "2.3",
+      "version": "2.4",
       "status": "reusable",
       "owner": "implementation-programme",
-      "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation and no authority expansion.",
+      "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation, no authority expansion, and registered scoped dispatch aliases that resolve to this same profile identity.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This is the sole reusable mutating Game control-plane profile. It does not inherit authority from another reusable coordinator prompt; only an explicit protected lifecycle replacement may supersede it."
@@ -791,13 +791,13 @@
     {
       "prompt_id": "OTV2_FULL_CONTENT_CENSUS_PROGRAMME",
       "path": "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
-      "owner": "content-world-programme-continuation",
-      "scope": "Full Tibia content census/crosswalk programme continuation from the first unfinished protected gate (G2 through final coverage closure), subordinate to the canonical Work control plane; read-only without exact live mutation authority.",
+      "owner": "implementation-programme-scoped-dispatch-alias",
+      "scope": "Scoped Full Tibia content census/crosswalk dispatch alias that resolves to the same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity and narrows it to G2 through final coverage closure; it is not a second coordinator and adds no authority.",
       "reusable": true,
       "superseded_by": null,
-      "supersession_rule": "Additive Content/World programme-continuation profile. It supersedes no canonical coordinator, lane prompt or accepted contract; alias reuse never grants allocation, lease, production or merge authority."
+      "supersession_rule": "This entry is a scoped dispatch alias of OTV2_WORK_DELIVERY_COORDINATOR, not an independent control-plane profile. When the canonical Work coordinator is current and authorized, invocation uses that same profile identity and authority with census-only scope; otherwise it remains read-only. Only an explicit protected lifecycle replacement may change this routing."
     },
     {
       "prompt_id": "OTV2_CONTENT_WORLD_LEAD",
