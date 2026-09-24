@@ -8,7 +8,8 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/ability-exact-actor-resolution-508-20260924
-pr: null
+issue: 508
+pr: 837
 base_sha: a9c72f5db14f48f428df9b12d200f9566ad36955
 head_sha: null
 final_head_sha: null
