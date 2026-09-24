@@ -13,7 +13,7 @@
     "writer_count": 1,
     "candidate_authoring_allocated": true,
     "exclusive_successor_branch": "agent/otv2-g4-source-identity-binding-v2-r3",
-    "successor_pull_request": null
+    "successor_pull_request": 851
   },
   "predecessor": {
     "pull_request": 847,
@@ -68,8 +68,8 @@
     ]
   },
   "validation": {
-    "successor_exact_head_ci": "PENDING_R3",
-    "successor_independent_review": "PENDING_R3",
+    "successor_exact_head_ci": "SUCCESS: pull_request run 36026479104, game-gate job 107728484627",
+    "successor_independent_review": "PASS: exact head 34428a32bc1524f7ba4cc84390f31c16813bea72, PR comment 5817992491; no material findings",
     "local_toolchain": "cargo, rustc and rustfmt unavailable"
   },
   "policy": {
@@ -81,10 +81,23 @@
   },
   "candidate": {
     "branch": "agent/otv2-g4-source-identity-binding-v2-r3",
-    "pull_request": null,
-    "head_sha": null,
-    "publication": "PENDING_CONTROL_PLANE",
-    "review": "PENDING",
-    "ci": "PENDING"
+    "pull_request": 851,
+    "head_sha": "34428a32bc1524f7ba4cc84390f31c16813bea72",
+    "publication": "MERGED_PROTECTED_MAIN",
+    "review": "PASS",
+    "ci": "SUCCESS"
+  },
+  "closeout": {
+    "status": "MERGED_AND_ARCHIVED",
+    "merge_commit": "663052f3139e2e5fff98f904fc1e8a02fd205115",
+    "protected_main_readback": "663052f3139e2e5fff98f904fc1e8a02fd205115",
+    "merged_carrier_blob": "9e5a75de3f1e31b2a847179be29d1f5befd668ea",
+    "issue_comment_id": 5818234879,
+    "delegated_submit_comment_id": 5818086127,
+    "executor_uuid": null,
+    "merge_group_run_id": null,
+    "implementation_paths_released": true,
+    "g4_bindings_populated": 0,
+    "archive_allocation_comment_id": 5818348858
   }
 }
