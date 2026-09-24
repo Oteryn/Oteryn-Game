@@ -1,3 +1,5 @@
+> Lifecycle closeout: **ARCHIVED AFTER CANONICAL PR MERGE**. Canonical PR #815 merged as `0a21973013ed3856d545049563f9b409018f5bb6`. This packet is no longer active; any nonterminal wording below is retained only as historical provenance.
+
 # OTV2-20260924-wp5-s3b-sealed-composition
 
 ```yaml

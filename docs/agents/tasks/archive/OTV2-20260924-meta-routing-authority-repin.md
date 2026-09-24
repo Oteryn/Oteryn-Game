@@ -1,3 +1,5 @@
+> Lifecycle closeout: **ARCHIVED AFTER CANONICAL PR MERGE**. Canonical PR #841 merged as `b003913926b7de941d0ed6b32b438eeb0fe96c04`. This packet is no longer active; any nonterminal wording below is retained only as historical provenance.
+
 # OTV2-20260924-meta-routing-authority-repin
 
 ```yaml

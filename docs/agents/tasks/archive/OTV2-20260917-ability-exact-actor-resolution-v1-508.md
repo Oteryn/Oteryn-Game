@@ -1,3 +1,5 @@
+> Lifecycle closeout: **ARCHIVED AFTER CANONICAL PR MERGE**. Canonical PR #837 merged as `f812f6dc5586f0120a6e832fe58b7edd5c6ea474`. This packet is no longer active; any nonterminal wording below is retained only as historical provenance.
+
 # OTV2-20260917-ability-exact-actor-resolution-v1-508
 
 ```yaml
