@@ -1,0 +1,359 @@
+name: World Project v2 Full-Cardinality Scale Measurement
+
+on:
+  pull_request:
+    paths:
+      - "tools/world-project-v2-scale-measurement/**"
+      - ".github/workflows/worldproject-v2-full-cardinality-scale.yml"
+      - "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md"
+      - "docs/agents/evidence/OTV2-20260924-worldproject-v2-full-cardinality-scale.json"
+      - "apps/game-server/src/content/project.rs"
+      - "apps/game-server/src/content/project/v2.rs"
+      - "apps/game-server/Cargo.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worldproject-v2-full-cardinality-scale-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Initialize smoke artifacts
+        run: |
+          python3 - <<'PY'
+          import json
+          with open("world-project-v2-scale-smoke.json", "w") as stream:
+              json.dump({
+                  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+                  "status": "failed",
+                  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+                  "mode": "smoke",
+                  "placements_requested": 2000,
+                  "exit_code": None,
+                  "reason": "measurement_not_started",
+                  "one_placement_edit_amplification_status": "ESTIMATE_NOT_GATE_COMPLETE",
+                  "schema_and_chunk_decision": "out_of_scope"
+              }, stream, indent=2)
+              stream.write("\n")
+          open("world-project-v2-scale-smoke.time.txt", "w").close()
+          open("world-project-v2-scale-smoke.stderr", "w").close()
+          open("world-project-v2-scale-smoke.stdout.txt", "w").close()
+          PY
+      - name: Test and run bounded synthetic smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          result=world-project-v2-scale-smoke.json
+          time_report=world-project-v2-scale-smoke.time.txt
+          stderr=world-project-v2-scale-smoke.stderr
+          raw=world-project-v2-scale-smoke.stdout.txt
+          set +e
+          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
+          toolchain_rc=$?
+          test_rc=0
+          run_rc=$toolchain_rc
+          if [ "$toolchain_rc" -eq 0 ]; then
+            cargo +1.94.0 test --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+            test_rc=$?
+            run_rc=$test_rc
+          fi
+          if [ "$toolchain_rc" -eq 0 ] && [ "$test_rc" -eq 0 ]; then
+            /usr/bin/time -v -o "$time_report" cargo +1.94.0 run --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml -- --mode smoke >"$raw" 2>>"$stderr"
+            run_rc=$?
+          fi
+          set -e
+          python3 - "$result" "$time_report" "$raw" "$toolchain_rc" "$test_rc" "$run_rc" <<'PY'
+          import json, re, sys
+          result_path, time_path, raw_path, toolchain_rc_text, test_rc_text, run_rc_text = sys.argv[1:]
+          toolchain_rc, test_rc, run_rc = int(toolchain_rc_text), int(test_rc_text), int(run_rc_text)
+          try:
+              with open(raw_path) as stream:
+                  data = json.load(stream)
+              parse_error = None
+          except (OSError, json.JSONDecodeError) as exc:
+              data, parse_error = {}, str(exc)
+          try:
+              with open(time_path) as stream:
+                  timing = stream.read()
+          except OSError:
+              timing = ""
+          match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", timing)
+          peak_kib = int(match.group(1)) if match else None
+          peak = peak_kib * 1024 if peak_kib is not None else None
+          valid = (
+              toolchain_rc == 0 and test_rc == 0 and run_rc == 0
+              and data.get("status") == "completed"
+              and data.get("placements_requested") == 2000
+              and data.get("placements_loaded") == 2000
+          )
+          reason = None
+          if toolchain_rc != 0:
+              reason = "toolchain_install_failed"
+          elif test_rc != 0:
+              reason = "cargo_test_failed"
+          elif parse_error is not None:
+              reason = "invalid_smoke_json"
+          elif run_rc != 0:
+              reason = "smoke_process_exit"
+          elif data.get("status") != "completed":
+              reason = "probe_status_not_completed"
+          elif data.get("placements_requested") != 2000 or data.get("placements_loaded") != 2000:
+              reason = "smoke_placement_count_mismatch"
+          elif peak is None:
+              reason = "supervised_peak_rss_missing"
+          status = "completed" if valid and peak is not None else "failed"
+          data.update({
+              "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+              "status": status,
+              "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+              "mode": "smoke",
+              "placements_requested": 2000,
+              "exit_code": run_rc,
+              "toolchain_exit_code": toolchain_rc,
+              "test_exit_code": test_rc,
+              "peak_rss_bytes": peak,
+              "peak_rss_source": "/usr/bin/time -v maximum resident set size (bytes converted from KiB)" if match else "unavailable",
+              "donor_or_source_inputs_accepted": False,
+              "one_placement_edit_amplification_status": "ESTIMATE_NOT_GATE_COMPLETE",
+              "schema_and_chunk_decision": "out_of_scope"
+          })
+          if status == "completed":
+              data["placements_loaded"] = 2000
+          else:
+              data["reason"] = reason or "smoke_validation_failed"
+              if parse_error is not None:
+                  data["detail"] = parse_error
+              if "error" in data:
+                  data["detail"] = data["error"]
+          with open(result_path, "w") as stream:
+              json.dump(data, stream, indent=2)
+              stream.write("\n")
+          PY
+          cat "$result"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: world-project-v2-scale-smoke-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            world-project-v2-scale-smoke.json
+            world-project-v2-scale-smoke.time.txt
+            world-project-v2-scale-smoke.stderr
+            world-project-v2-scale-smoke.stdout.txt
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Final smoke gate
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          with open("world-project-v2-scale-smoke.json") as stream:
+              result = json.load(stream)
+          if result.get("status") != "completed":
+              print("Smoke validation failed:", json.dumps(result, sort_keys=True))
+              sys.exit(1)
+          PY
+
+  supervised-full:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Initialize full-measurement artifacts
+        run: |
+          python3 - <<'PY'
+          import json
+          with open("world-project-v2-scale-full.json", "w") as stream:
+              json.dump({
+                  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+                  "status": "failed",
+                  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+                  "mode": "full",
+                  "placements_requested": 24502036,
+                  "exit_code": None,
+                  "reason": "measurement_not_started",
+                  "one_placement_edit_amplification_status": "ESTIMATE_NOT_GATE_COMPLETE",
+                  "schema_and_chunk_decision": "out_of_scope"
+              }, stream, indent=2)
+              stream.write("\n")
+          open("world-project-v2-scale-full.time.txt", "w").close()
+          open("world-project-v2-scale-full.stderr", "w").close()
+          open("world-project-v2-scale-full.stdout.txt", "w").close()
+          PY
+      - name: Build and run full corpus under a 6 GiB virtual-memory ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          result=world-project-v2-scale-full.json
+          time_report=world-project-v2-scale-full.time.txt
+          stderr=world-project-v2-scale-full.stderr
+          raw=world-project-v2-scale-full.stdout.txt
+          set +e
+          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
+          toolchain_rc=$?
+          build_rc=$toolchain_rc
+          if [ "$toolchain_rc" -eq 0 ]; then
+            cargo +1.94.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+            build_rc=$?
+          fi
+          set -e
+          if [ "$toolchain_rc" -ne 0 ] || [ "$build_rc" -ne 0 ]; then
+            python3 - "$result" "$toolchain_rc" "$build_rc" <<'PY'
+          import json, sys
+          result_path, toolchain_rc_text, build_rc_text = sys.argv[1:]
+          toolchain_rc, build_rc = int(toolchain_rc_text), int(build_rc_text)
+          toolchain_failed = toolchain_rc != 0
+          with open(result_path, "w") as stream:
+              json.dump({
+                  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+                  "status": "failed",
+                  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+                  "mode": "full",
+                  "placements_requested": 24502036,
+                  "exit_code": toolchain_rc if toolchain_failed else build_rc,
+                  "toolchain_exit_code": toolchain_rc,
+                  "failed_stage": "toolchain_install" if toolchain_failed else "release_build",
+                  "reason": "toolchain_install_failed" if toolchain_failed else "release_build_failed",
+                  "one_placement_edit_amplification_status": "ESTIMATE_NOT_GATE_COMPLETE",
+                  "schema_and_chunk_decision": "out_of_scope"
+              }, stream, indent=2)
+              stream.write("\n")
+          PY
+          else
+            set +e
+            /usr/bin/time -v -o "$time_report" bash -c 'ulimit -v 6291456 || exit 76; exec timeout --signal=TERM --kill-after=90s 75m tools/world-project-v2-scale-measurement/target/release/world-project-v2-scale-measurement --mode full' >"$raw" 2>>"$stderr"
+            rc=$?
+            set -e
+            python3 - "$result" "$time_report" "$raw" "$stderr" "$rc" <<'PY'
+          import json, re, sys
+          result_path, time_path, raw_path, stderr_path, rc_text = sys.argv[1:]
+          rc = int(rc_text)
+          try:
+              with open(raw_path) as stream:
+                  data = json.load(stream)
+              parse_error = None
+          except (OSError, json.JSONDecodeError) as exc:
+              data, parse_error = {}, str(exc)
+          try:
+              with open(time_path) as stream:
+                  timing = stream.read()
+          except OSError:
+              timing = ""
+          try:
+              with open(stderr_path) as stream:
+                  stderr = stream.read()
+          except OSError:
+              stderr = ""
+          match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", timing)
+          peak_kib = int(match.group(1)) if match else None
+          peak = peak_kib * 1024 if peak_kib is not None else None
+          error_text = str(data.get("error", ""))
+          memory_error = re.search(
+              r"(?i)(allocation failed|memory allocation .* failed|out of memory|failed to allocate)",
+              error_text + "\n" + stderr
+          ) is not None
+          timed_out = rc == 124 and re.search(r"status 124|Exit status:\s*124", timing) is not None
+          killed = rc == 137 and re.search(r"terminated by signal 9|signal 9", timing, re.I) is not None
+          caught_allocation = rc == 75 and data.get("status") == "resource_limit" and memory_error
+          allocator_abort = rc in {1, 134} and memory_error
+          valid_completed = (
+              rc == 0 and data.get("status") == "completed"
+              and data.get("placements_requested") == 24502036
+              and data.get("placements_loaded") == 24502036
+          )
+          if valid_completed and peak is not None:
+              status, reason = "completed", None
+          elif timed_out and peak is not None:
+              status, reason = "resource_limit", "supervised_wall_clock_timeout_exit_124"
+          elif killed and peak is not None:
+              status, reason = "resource_limit", "supervised_sigkill_under_vm_ceiling"
+          elif caught_allocation and peak is not None:
+              status, reason = "resource_limit", "probe_reported_confirmed_allocation_failure"
+          elif allocator_abort and peak is not None:
+              status, reason = "resource_limit", "supervised_allocator_failure"
+          else:
+              status = "failed"
+              if (valid_completed or timed_out or killed or caught_allocation or allocator_abort) and peak is None:
+                  reason = "supervised_peak_rss_missing"
+              elif rc == 76:
+                  reason = "virtual_memory_ceiling_setup_failed"
+              elif parse_error is not None:
+                  reason = "invalid_measurement_json"
+              elif data.get("status") == "resource_limit":
+                  reason = "unconfirmed_probe_resource_limit"
+              elif rc != 0:
+                  reason = "unexpected_supervised_exit"
+              elif data.get("status") != "completed":
+                  reason = "unexpected_probe_status"
+              else:
+                  reason = "completed_placement_count_mismatch"
+          data.update({
+              "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+              "status": status,
+              "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+              "mode": "full",
+              "placements_requested": 24502036,
+              "exit_code": rc,
+              "toolchain_exit_code": 0,
+              "release_build_exit_code": 0,
+              "peak_rss_bytes": peak,
+              "time_maximum_rss_kib": peak_kib,
+              "resource_ceiling_bytes": 6442450944,
+              "wall_clock_limit_seconds": 4500,
+              "peak_rss_source": "/usr/bin/time -v maximum resident set size (bytes converted from KiB)" if match else "unavailable",
+              "donor_or_source_inputs_accepted": False,
+              "one_placement_edit_amplification_status": "ESTIMATE_NOT_GATE_COMPLETE",
+              "schema_and_chunk_decision": "out_of_scope"
+          })
+          if status == "completed":
+              data["placements_loaded"] = 24502036
+          elif status == "resource_limit":
+              data["reason"] = reason
+          else:
+              data["reason"] = reason
+              data["detail"] = parse_error or data.get("error") or stderr[-4000:]
+          with open(result_path, "w") as stream:
+              json.dump(data, stream, indent=2)
+              stream.write("\n")
+          PY
+          fi
+          cat "$result"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: world-project-v2-scale-full-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            world-project-v2-scale-full.json
+            world-project-v2-scale-full.time.txt
+            world-project-v2-scale-full.stderr
+            world-project-v2-scale-full.stdout.txt
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Final full-measurement gate
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          with open("world-project-v2-scale-full.json") as stream:
+              result = json.load(stream)
+          if result.get("status") == "failed":
+              print("Full measurement failed:", json.dumps(result, sort_keys=True))
+              sys.exit(1)
+          if result.get("status") not in {"completed", "resource_limit"}:
+              print("Unexpected result status:", json.dumps(result, sort_keys=True))
+              sys.exit(1)
+          PY
