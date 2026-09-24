@@ -374,7 +374,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired", readme)
 
         census = entries["OTV2_FULL_CONTENT_CENSUS_PROGRAMME"]
-        self.assertEqual(census["version"], "1.1")
+        self.assertEqual(census["version"], "1.2")
         self.assertEqual(census["status"], "reusable")
         self.assertIs(census["reusable"], True)
         self.assertIn("same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity", census["scope"])
@@ -395,6 +395,22 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("Do not stop with “#162 must assign”", census_prompt)
         self.assertIn("### Subagent orchestration", census_prompt)
         self.assertIn("Luna subagents", census_prompt)
+        self.assertIn("### G4+ bulk source policy — wiki-first, live Global deferred", census_prompt)
+        self.assertIn("TibiaWiki BR is the primary bulk working source", census_prompt)
+        self.assertIn("authenticated in-game Global Tibia/Cyclopedia exploration is not part of the G4+ critical path", census_prompt)
+        self.assertIn("Do not use Global Tibia/Cyclopedia as the denominator for content completeness", census_prompt)
+        self.assertIn("future terminal verification layer", census_prompt)
+        self.assertIn("LIVE_GLOBAL_REFERENCE_VERIFICATION", census_prompt)
+
+        source_registry = (ROOT / "docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("## 6a. Full Content G4+ phase profile", source_registry)
+        self.assertIn("TibiaWiki BR as the primary bulk working source", source_registry)
+        self.assertIn("do not require authenticated Global Tibia/Cyclopedia observation", source_registry)
+        self.assertIn("do not use Cyclopedia as the completeness denominator", source_registry)
+        self.assertIn("Authenticated Global/Cyclopedia inspection is intentionally deferred", source_registry)
+
         self.assertIn("scoped dispatch alias of the same `OTV2_WORK_DELIVERY_COORDINATOR` control-plane profile", readme)
 
         implementation_prompt = (ROOT / "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md").read_text(
