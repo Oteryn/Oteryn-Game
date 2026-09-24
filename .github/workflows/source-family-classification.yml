@@ -1,0 +1,123 @@
+name: Source Family Classification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/source_family_classification.py
+      - tools/content-census/source_family_classification_self_test.py
+      - .github/workflows/source-family-classification.yml
+      - docs/agents/evidence/OTV2-20260924-source-family-classification.json
+      - docs/agents/tasks/active/OTV2-20260924-source-family-classification.md
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: source-family-classification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic:
+    name: G3 / source-signature counterexamples
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Run focused synthetic tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/source_family_classification.py \
+            tools/content-census/source_family_classification_self_test.py \
+            tools/content-census/global_source_overlap_fetch_artifacts.py
+          python tools/content-census/source_family_classification_self_test.py
+
+  pinned_classification:
+    name: G3 / pinned G2 source universe
+    needs: synthetic
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Fetch, verify and classify pinned G2 artifact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python tools/content-census/source_family_classification.py \
+            --out "$RUNNER_TEMP/g3-source-family-output" \
+            --work-dir "$RUNNER_TEMP/g3-source-family-input"
+      - name: Verify compact classification manifest
+        run: |
+          set -euo pipefail
+          python - "$RUNNER_TEMP/g3-source-family-output/manifest.json" \
+            "$RUNNER_TEMP/g3-source-family-output/source-family-classified-universe.json" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          universe_path = pathlib.Path(sys.argv[2])
+          universe = json.loads(universe_path.read_text(encoding="utf-8"))
+          canonical = (json.dumps(universe, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+          assert hashlib.sha256(canonical).hexdigest() == manifest["classified_universe_sha256"]
+          assert manifest["schema"] == "OTERYN_SOURCE_FAMILY_CLASSIFICATION_MANIFEST/v1"
+          assert manifest["input"]["g2_artifact_id"] == 10800249169
+          assert manifest["input"]["g2_run_id"] == 35982151518
+          assert manifest["input"]["g2_head_sha"] == "9c333fbba17f60cbf8eb107ecb623c5cda679d6c"
+          assert manifest["input"]["g2_archive_sha256"] == "8b5a78e6daa72b5120a2218d395e498c8c2aa236bf7152f730f67ea99693af50"
+          assert manifest["input"]["g2_universe_sha256"] == "59b6c85e18a6e55b65491f53fa701b9596009228e6e06ea7a3b0b6d493d47d6c"
+          assert manifest["classified_page_count"] == 15787
+          assert manifest["counts"] == {
+              "Ability": 171, "Achievement": 569, "Creature": 2149, "Item": 5475,
+              "Mount": 252, "NPC": 1253, "Outfit": 134, "Quest": 272, "UNKNOWN": 5512,
+          }
+          assert manifest["invariants"]["candidate_relations_resolved"] is False
+          assert manifest["invariants"]["target_identity_selection_performed"] is False
+          assert manifest["invariants"]["semantic_promotion_performed"] is False
+          print("G3_SOURCE_FAMILY_MANIFEST_BEGIN")
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+          print("G3_SOURCE_FAMILY_MANIFEST_END")
+          PY
+      - name: Upload classified corpus and compact manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: source-family-classification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g3-source-family-output/source-family-classified-universe.json
+            ${{ runner.temp }}/g3-source-family-output/manifest.json
+          if-no-files-found: error
+          retention-days: 14

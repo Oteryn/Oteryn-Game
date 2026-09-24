@@ -384,6 +384,9 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                         (2, "ReadRecoveryAccountSecurityV2")
                     }
                     Operation::ReadRecoverySigningTrustV2 => (2, "ReadRecoverySigningTrustV2"),
+                    Operation::ReadCharacterBootstrapIntentV1 => {
+                        return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
+                    }
                 };
                 let body = format!(
                     "{{\"version\":{version},\"operation\":\"{name}\",\"result\":\"unavailable\"}}"
@@ -426,6 +429,7 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     key_id: "key-1",
                     key_purpose: "existing_actor_recovery",
                 },
+                Operation::ReadCharacterBootstrapIntentV1 => return Err("operation".into()),
             };
 
             let capacity = TransientCapacity::new();
@@ -838,6 +842,80 @@ fn strict_http_framing_rejects_ambiguous_names_controls_and_signed_lengths()
                 "{wire:?}"
             );
         }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    })
+}
+
+#[test]
+fn character_bootstrap_intent_read_uses_its_separate_endpoint()
+-> Result<(), Box<dyn std::error::Error>> {
+    const BODY: &str =
+        r#"{"contract_version":1,"operation_id":"01890f4e-7c00-7000-8000-000000000001"}"#;
+    const INTENT: &str = r#"{"contract_version":1,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP"}"#;
+    assert_eq!(
+        Operation::ReadCharacterBootstrapIntentV1.path(),
+        "/internal/v1/game-auth/character-bootstrap-intents/read"
+    );
+    runtime()?.block_on(async {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
+        let port = listener.local_addr()?.port();
+        let acceptor = tokio_rustls::TlsAcceptor::from(server_config(1)?);
+        let server = tokio::spawn(async move {
+            for status in ["200 OK", "404 Not Found"] {
+                let (tcp, _) = listener.accept().await?;
+                let mut tls = acceptor.accept(tcp).await?;
+                let mut request = vec![0u8; 4096];
+                let n = tls.read(&mut request).await?;
+                let text = std::str::from_utf8(&request[..n])
+                    .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "utf8"))?;
+                if !text.starts_with(
+                    "POST /internal/v1/game-auth/character-bootstrap-intents/read HTTP/1.1\r\n",
+                ) || !text.ends_with(&format!("\r\n\r\n{BODY}"))
+                {
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "request"));
+                }
+                let body = if status == "200 OK" { INTENT } else { "" };
+                let response = format!(
+                    "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                tls.write_all(response.as_bytes()).await?;
+            }
+            Ok::<(), io::Error>(())
+        });
+        let issuer = ProducerDescriptor::new(
+            native_admission_source::CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
+            ("127.0.0.1".into(), port),
+            "source.test".into(),
+            "source.test".into(),
+            vec![CertificateDer::from(CA.to_vec())],
+            vec![CertificateDer::from(CLIENT.to_vec())],
+            PrivateKeyDer::try_from(CLIENT_KEY.to_vec())?,
+        )?;
+        let capacity = TransientCapacity::new();
+        let mut permit = capacity.try_queue()?;
+        permit.try_activate()?;
+        let raw =
+            native_admission_source::read_character_bootstrap_intent(&issuer, BODY, &mut permit)
+                .await?;
+        assert_eq!(raw, INTENT.as_bytes());
+        // Unknown or expired intent is bounded unavailability, not a fallback.
+        assert!(matches!(
+            native_admission_source::read_character_bootstrap_intent(&issuer, BODY, &mut permit)
+                .await,
+            Err(native_admission_source::SourceError::Unavailable)
+        ));
+        server.await??;
+        // A descriptor configured for another source cannot read intents.
+        assert!(matches!(
+            native_admission_source::read_character_bootstrap_intent(
+                &descriptor(port)?,
+                BODY,
+                &mut permit
+            )
+            .await,
+            Err(native_admission_source::SourceError::InvalidDescriptor)
+        ));
         Ok::<(), Box<dyn std::error::Error>>(())
     })
 }
