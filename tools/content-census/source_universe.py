@@ -747,19 +747,25 @@ def _merge_page_metadata(
         raise CensusError(f"METADATA_UNREQUESTED_PAGE:{page_id}")
     title = _page_title(raw.get("title"))
     revisions = raw.get("revisions")
-    if not isinstance(revisions, list) or len(revisions) != 1:
-        raise CensusError(f"METADATA_REVISION_CARDINALITY_INVALID:{page_id}")
-    revision = revisions[0]
-    if not isinstance(revision, dict):
-        raise CensusError(f"METADATA_REVISION_INVALID:{page_id}")
-    revision_id = _validate_page_id(revision.get("revid"))
-    timestamp = revision.get("timestamp")
-    if not isinstance(timestamp, str) or not timestamp.endswith("Z"):
-        raise CensusError(f"METADATA_REVISION_TIMESTAMP_INVALID:{page_id}")
+    current = aggregate.get(page_id)
+    if revisions is None:
+        if current is None:
+            raise CensusError(f"METADATA_INITIAL_REVISION_MISSING:{page_id}")
+        revision_id = current["revision_id"]
+        timestamp = current["revision_timestamp"]
+    else:
+        if not isinstance(revisions, list) or len(revisions) != 1:
+            raise CensusError(f"METADATA_REVISION_CARDINALITY_INVALID:{page_id}")
+        revision = revisions[0]
+        if not isinstance(revision, dict):
+            raise CensusError(f"METADATA_REVISION_INVALID:{page_id}")
+        revision_id = _validate_page_id(revision.get("revid"))
+        timestamp = revision.get("timestamp")
+        if not isinstance(timestamp, str) or not timestamp.endswith("Z"):
+            raise CensusError(f"METADATA_REVISION_TIMESTAMP_INVALID:{page_id}")
 
-    current = aggregate.setdefault(
-        page_id,
-        {
+    if current is None:
+        current = {
             "page_id": page_id,
             "title": title,
             "revision_id": revision_id,
@@ -767,8 +773,8 @@ def _merge_page_metadata(
             "redirect": bool(raw.get("redirect") is True),
             "categories": set(),
             "templates": set(),
-        },
-    )
+        }
+        aggregate[page_id] = current
     if (
         current["title"] != title
         or current["revision_id"] != revision_id
