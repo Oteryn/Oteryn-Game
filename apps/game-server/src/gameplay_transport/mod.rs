@@ -12,6 +12,7 @@ use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority,
 };
+use crate::durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::admission_authority_publication::FreshAdmissionClaimTransitionV1;
@@ -44,6 +45,9 @@ use tokio_rustls::rustls;
 pub(crate) const MAX_CONNECTIONS: usize = 256;
 /// Registered Server Seam hard maximum of concurrent handshake/auth units.
 pub(crate) const MAX_HANDSHAKE_UNITS: usize = 64;
+
+/// Pause after a listener accept error before accepting again.
+const ACCEPT_ERROR_PAUSE: Duration = Duration::from_millis(100);
 
 /// Caller-supplied listener budgets. Values may reduce, never exceed, the
 /// registered maxima; the entry deadline has no default.
@@ -101,11 +105,18 @@ pub(crate) async fn serve_listener<A, I, O>(
     let mut connections: Vec<Pin<Box<dyn Future<Output = ()> + '_>>> = Vec::new();
     let mut stopping = pin!(shutdown.cancelled());
     let mut stopped = false;
+    // After an accept error (e.g. EMFILE) accepting pauses instead of spinning.
+    let mut accept_pause: Option<Pin<Box<tokio::time::Sleep>>> = None;
     poll_fn(|context| {
         if !stopped && stopping.as_mut().poll(context).is_ready() {
             stopped = true;
         }
-        while !stopped && connections.len() < limits.connections {
+        if let Some(pause) = accept_pause.as_mut()
+            && pause.as_mut().poll(context).is_ready()
+        {
+            accept_pause = None;
+        }
+        while !stopped && accept_pause.is_none() && connections.len() < limits.connections {
             match listener.poll_accept(context) {
                 Poll::Ready(Ok((stream, _))) => connections.push(Box::pin(serve_accepted(
                     stream,
@@ -117,8 +128,12 @@ pub(crate) async fn serve_listener<A, I, O>(
                     observer,
                     shutdown,
                 ))),
-                // A failed accept affects only that peer.
-                Poll::Ready(Err(_)) => {}
+                Poll::Ready(Err(_)) => {
+                    let mut pause = Box::pin(tokio::time::sleep(ACCEPT_ERROR_PAUSE));
+                    // Registers the wake-up that resumes accepting.
+                    let _ = pause.as_mut().poll(context);
+                    accept_pause = Some(pause);
+                }
                 Poll::Pending => break,
             }
         }
@@ -389,14 +404,46 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .commit_composed_fresh_admission(self.character, self.holder, &composition, &request)
             .await
         {
-            Ok(FreshAdmissionDurableOutcomeV1::Committed(_)) => Ok(AdmittedSession {
-                game_session_id: attempt.game_session_id,
-                world_id: self.world_id,
-                channel_id: self.channel_id,
-            }),
-            Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => Err(Unavailable),
-            Ok(_) => Err(Rejected),
+            Ok(FreshAdmissionDurableOutcomeV1::Committed(_)) => {}
+            // The commit may have landed with its acknowledgement lost: keep
+            // the exact operation and reconcile it until the outcome is proven.
+            Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
+                self.reconcile(&request).await?;
+            }
+            Ok(_) => return Err(Rejected),
         }
+        Ok(AdmittedSession {
+            game_session_id: attempt.game_session_id,
+            world_id: self.world_id,
+            channel_id: self.channel_id,
+        })
+    }
+}
+
+/// Bounded reconciliation of one possibly committed admission.
+const RECONCILE_ATTEMPTS: u32 = 5;
+const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// `Ok` only when the exact operation is durably committed. The receipt is
+    /// read under the admission relation locks, so `Absent` proves noncommit.
+    async fn reconcile(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+    ) -> Result<(), AdmissionRefusal> {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        for attempt in 0..RECONCILE_ATTEMPTS {
+            if attempt > 0 {
+                tokio::time::sleep(RECONCILE_BACKOFF).await;
+            }
+            match store.reconcile(request.operation()).await {
+                Ok(FreshReconciliation::Committed(_)) => return Ok(()),
+                Ok(FreshReconciliation::Absent) => return Err(AdmissionRefusal::Unavailable),
+                Ok(FreshReconciliation::Conflict) => return Err(AdmissionRefusal::Rejected),
+                Err(_) => {}
+            }
+        }
+        Err(AdmissionRefusal::Unavailable)
     }
 }
 
