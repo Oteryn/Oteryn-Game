@@ -17,7 +17,9 @@ use crate::native_admission_source::descriptor::{Operation, ProducerDescriptor};
 use crate::native_admission_source::{QueuePermit, TransientCapacity, http1_mtls};
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::{Mutex, OwnedMutexGuard};
 
 const FRESH_ISSUER: &str = "urn:oteryn:platform:game-admission";
 const FRESH_PROFILE: &str = "oteryn-pre-admission-v1";
@@ -28,6 +30,8 @@ const ACCOUNT_SCOPE: &str = "fresh_admission";
 /// Bounded wait for one of the registered active exchange slots.
 const ACTIVATION_ATTEMPTS: u32 = 100;
 const ACTIVATION_BACKOFF: Duration = Duration::from_millis(10);
+/// NSRC-QUEUE-WAIT bound for the node's single publication lane.
+const PUBLICATION_QUEUE_WAIT: Duration = Duration::from_millis(1_000);
 
 /// Why a refresh did not complete; never a statement about the account.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,6 +45,11 @@ pub(crate) enum EvidenceUnavailable {
 pub struct FreshEvidenceSource {
     descriptor: ProducerDescriptor,
     capacity: TransientCapacity,
+    /// Serializes every S2 publication of this node. The guard is owned by the
+    /// spawned publication task, so a cancelled caller cannot release it while
+    /// its SQL work is still outstanding, and reconciliation never sees a live
+    /// slot of this process.
+    publication: Arc<Mutex<()>>,
 }
 
 impl FreshEvidenceSource {
@@ -49,6 +58,7 @@ impl FreshEvidenceSource {
         Self {
             descriptor,
             capacity: TransientCapacity::new(),
+            publication: Arc::new(Mutex::new(())),
         }
     }
 
@@ -118,29 +128,20 @@ impl FreshEvidenceSource {
             semantic_facts: raw,
         };
         let checkpoint = binding.encode().ok_or(EvidenceUnavailable::Source)?;
-        // Occupied slots are reconciled by their fixed identity before any
-        // further work, so a running node recovers them without a restart.
-        reconcile_pending_publications(root, custody).await?;
-        let now = super::unix_seconds().ok_or(EvidenceUnavailable::Custody)?;
-        // NSRC-PENDING-PUBLICATION: the exact binding is checkpointed before
-        // SQL submission and the slot stays owned through an ambiguous outcome.
-        let slot = root
-            .checkpoint_native_source_publication(custody, checkpoint.clone(), now)
-            .await
-            .map_err(|_| EvidenceUnavailable::Custody)?;
-        let submitted = binding.observation().ok_or(EvidenceUnavailable::Source)?;
-        let outcome = root
-            .accept_native_source_observation(custody, submitted)
-            .await;
-        if outcome_is_ambiguous(&outcome) {
-            // Retained for restart reconciliation; never detached or reused.
-            return Err(EvidenceUnavailable::Custody);
-        }
-        let _ = root
-            .clear_native_source_publication(custody, slot, checkpoint)
-            .await;
+        let lane = self.enter_publication_lane().await?;
+        let result = run_on_root(
+            root,
+            publish(root.clone(), custody.clone(), binding, checkpoint, lane),
+        )
+        .await;
         drop(permit);
-        outcome.map_err(|_| EvidenceUnavailable::Custody)
+        result
+    }
+
+    async fn enter_publication_lane(&self) -> Result<OwnedMutexGuard<()>, EvidenceUnavailable> {
+        tokio::time::timeout(PUBLICATION_QUEUE_WAIT, self.publication.clone().lock_owned())
+            .await
+            .map_err(|_| EvidenceUnavailable::Capacity)
     }
 
     async fn activate(&self) -> Result<QueuePermit<'_>, EvidenceUnavailable> {
@@ -160,10 +161,57 @@ impl FreshEvidenceSource {
     }
 }
 
+/// Runs publication work detached from the caller, so cancelling the caller
+/// cannot end it early or release its lane.
+async fn run_on_root<F>(root: &DurabilityRoot, work: F) -> Result<(), EvidenceUnavailable>
+where
+    F: Future<Output = Result<(), EvidenceUnavailable>> + Send + 'static,
+{
+    match root.spawn_task(work).await {
+        Ok(result) => result,
+        Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
+        Err(_) => Err(EvidenceUnavailable::Custody),
+    }
+}
+
+/// One publication inside the lane: reconcile, checkpoint, accept, clear.
+async fn publish(
+    root: DurabilityRoot,
+    custody: NodeIncarnationProof,
+    binding: PublicationBinding,
+    checkpoint: Vec<u8>,
+    lane: OwnedMutexGuard<()>,
+) -> Result<(), EvidenceUnavailable> {
+    let _lane = lane;
+    // Occupied slots are reconciled by their fixed identity before any
+    // further work, so a running node recovers them without a restart. The
+    // lane guarantees their original operation has ended in this process.
+    reconcile_pending_publications(&root, &custody).await?;
+    let now = super::unix_seconds().ok_or(EvidenceUnavailable::Custody)?;
+    // NSRC-PENDING-PUBLICATION: the exact binding is checkpointed before
+    // SQL submission and the slot stays owned through an ambiguous outcome.
+    let slot = root
+        .checkpoint_native_source_publication(&custody, checkpoint.clone(), now)
+        .await
+        .map_err(|_| EvidenceUnavailable::Custody)?;
+    let submitted = binding.observation().ok_or(EvidenceUnavailable::Source)?;
+    let outcome = root
+        .accept_native_source_observation(&custody, submitted)
+        .await;
+    if outcome_is_ambiguous(&outcome) {
+        // Retained for reconciliation; never detached or reused.
+        return Err(EvidenceUnavailable::Custody);
+    }
+    let _ = root
+        .clear_native_source_publication(&custody, slot, checkpoint)
+        .await;
+    outcome.map_err(|_| EvidenceUnavailable::Custody)
+}
+
 /// Replays every retained publication through the idempotent acceptance and
 /// releases its slot on a definite outcome. A slot whose binding cannot be read
 /// back, or whose outcome is still unknown, stays occupied.
-pub(crate) async fn reconcile_pending_publications(
+async fn reconcile_pending_publications(
     root: &DurabilityRoot,
     custody: &NodeIncarnationProof,
 ) -> Result<(), EvidenceUnavailable> {
