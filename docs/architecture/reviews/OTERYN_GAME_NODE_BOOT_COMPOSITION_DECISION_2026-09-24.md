@@ -86,7 +86,10 @@ Rejected alternatives:
 A second binary target in the same crate, `oteryn-game-ops`, performs control-plane actions. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
 - **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes the secret to a file for the node.
 - **Registration revocation** through `revoke_node_registration`.
-- **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor.
+- **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor and a stable writer name:
+  - Before submitting, the tool writes the exact request to a request file: a freshly generated operation key and the canonical command. It never regenerates or edits an existing request file.
+  - A lost acknowledgement leaves the durable writer slot occupied, and the writer rejects new work until that exact operation is reconciled. The tool therefore offers `assignment reconcile --request <file>`, which replays the retained key and command through `reconcile`.
+  - Any later mutating invocation first reads `unreconciled()` and refuses new work while a slot is occupied. It names the operation key so the operator can reconcile it.
 - **The Character interpretation revision.**
 - **Fresh Character recovery store authorization** (generation 1) in the configured fence directory.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the provenance namespace, authorization reference, source authority, and the descriptor registration revision and facts. Issuing it never initializes the store itself.
@@ -99,7 +102,12 @@ Mutations that require a current process proof (`NodeIncarnationProof`) run only
 
 Character bootstrap works as follows:
 - The operator supplies only the intent's operation id, over a node-local Unix-domain control socket. The socket is created mode 0600, owned by the node's service user and never network-reachable.
-- The node reads the intent itself over the Platform intent route (D1) and commits it with its own proof.
+- For each request, the node:
+  1. reads the intent itself over the Platform intent route (D1);
+  2. fetches `ReadAccountSecurityV1` for the intent's `AccountId` from the evidence route and accepts it into S2 custody, because `bootstrap_character` requires current account-security evidence no older than the five-second bound, and on a new installation no admission has fetched it yet;
+  3. only then commits the Character with its own proof.
+- A missing, denied or stale account-security observation rejects without a Character mutation. The operator retries with the same operation id, which stays idempotent under #414.
+- The socket loop is bounded: one request at a time, a bounded request size and a per-request deadline. It answers with a closed result (committed, rejected or unavailable) and never with the intent contents.
 - The operator's input is a pointer, not authority. The Platform-authenticated intent, current account security and the recovery fence decide the result, as in #414.
 - The socket accepts no other command.
 
@@ -124,10 +132,14 @@ Rejected alternatives:
 6. **Await assignment.** Log the complete non-secret registration fact: `NodeId` together with its database-allocated `registration_revision`. The operator passes exactly this `NodeRegistrationFact` to the assignment `Assign` or `Replace` command. Wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
 7. **Bind.** Bind the gameplay listener and the control socket. A failed bind exits before any readiness is published.
 8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions.
-9. **Serve.** Call `serve_gameplay` on the already-bound listener.
+9. **Serve.** Run two loops under the same shutdown token:
+   - `serve_gameplay` on the already-bound gameplay listener;
+   - the bounded control-socket accept/handler loop (D2).
+
+   If either loop fails, the node follows the step 10 shutdown order.
 10. **Shut down.** On SIGTERM or SIGINT:
     1. publish `ready: false` for the scope first;
-    2. then cancel the shutdown token, which stops acceptance and cancels entry work, while in-flight admissions complete;
+    2. then cancel the shutdown token, which stops gameplay and control-socket acceptance and cancels entry work, while in-flight admissions and an in-flight bootstrap complete;
     3. then exit.
 
     If the non-ready publication cannot be written, shutdown still proceeds, and every later admission for the scope refuses because this incarnation stops serving.
@@ -198,7 +210,11 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Durability maintenance.** After the holder is forcibly retired or the database restarts, the node refuses admissions during the outage and admits again after recovery, without a process restart.
 - **Assignment handoff.** The operator assigns using only the logged registration fact (`NodeId` and revision), and a wrong revision rejects.
 - **Shutdown.** Graceful shutdown publishes `ready: false`, and later grants for the scope are refused.
-- **Control socket.** It rejects any command other than a bootstrap operation id, and it is not reachable over the network.
+- **Control socket.**
+  - It rejects any command other than a bootstrap operation id, and it is not reachable over the network.
+  - On a fresh installation, the first Character bootstraps through it with no prior admission, which proves the account-security fetch.
+  - A denied account rejects without a Character.
+- **Assignment reconciliation.** When an assignment's acknowledgement is lost, later invocations refuse new work until `assignment reconcile` with the retained request file reports the exact outcome.
 
 ## 5. Explicit non-decisions
 
