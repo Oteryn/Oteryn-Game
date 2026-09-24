@@ -535,6 +535,61 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             self.assertNotIn("## Canonical Codex review routing", text)
             self.assertEqual(adoption._legacy_review_controller_errors(text, CentralStatementView), [], relative)
 
+    def test_game_integration_routing_does_not_false_block_without_direct_native_primitive(self):
+        docs_rules = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "DELEGATED_CAPABLE",
+            "meta.governed_merge_queue_executor.v1",
+            "neither direct nor delegated capability",
+        ):
+            self.assertIn(value, docs_rules)
+
+        prompting = (ROOT / "docs/agents/PROMPTING_STANDARD.md").read_text(encoding="utf-8")
+        self.assertIn("absence of a direct native primitive", prompting)
+        self.assertIn("delegated executor route", prompting)
+
+        lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
+        forbidden = (
+            "If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`",
+            "If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`",
+            "integrate only through the authenticated bound META 3.1 native exact-head Merge Queue contract",
+            "if the native operation is unavailable, preserve the qualified candidate and mark only that lane `LANE_BLOCKED`",
+            'merge_action="merge_queue"',
+            "REST `merge-async`",
+        )
+        for entry in lifecycle["prompts"]:
+            if entry.get("status") != "reusable" or entry.get("reusable") is not True:
+                continue
+            relative = entry["path"]
+            prompt = (ROOT / relative).read_text(encoding="utf-8")
+            for phrase in forbidden:
+                self.assertNotIn(phrase, prompt, relative)
+
+        current_programme_consumers = (
+            "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md",
+            "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md",
+            "docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md",
+            "docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_PREPRODUCTION_ALLOCATION_20260911.md",
+            "docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_RESOURCE_EVIDENCE_ALLOCATION_20260910.md",
+            "docs/agents/programs/OTV2_WP3_A_UPSTREAM_FIRST_ACCEPTANCE_ALLOCATION_20260916.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_CLIENT_HANDSHAKE_ALLOCATION_SEAMS_AMENDMENT_20260909.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_OUTBOUND_DEQUEUE_CUSTODY_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_OUTBOUND_TLS_CUSTODY_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_PSK_BINDER_OWNER_AMENDMENT_20260909.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_TLS12_KX_CALLER_PROPAGATION_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_TRANSCRIPT_CALLER_PROPAGATION_AMENDMENT_20260910.md",
+            "docs/agents/programs/OTV2_WP3_RUSTLS_TRANSCRIPT_HASH_OWNER_AMENDMENT_20260909.md",
+            "experiments/world-vfx-real-content/README.md",
+            "experiments/world-vfx-real-content/CONTINUATION_PROMPT.md",
+        )
+        for relative in current_programme_consumers:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            for phrase in forbidden:
+                self.assertNotIn(phrase, text, relative)
+            self.assertNotIn("merge-async", text, relative)
+            self.assertNotIn('merge_action="merge_queue"', text, relative)
+            self.assertIn("DELEGATED_CAPABLE", text, relative)
+
     def test_workflow_authenticates_the_bound_meta_consumer(self):
         workflow = (ROOT / ".github/workflows/agent-governance.yml").read_text(encoding="utf-8")
         step = workflow.split("- name: Validate bound META policy and task prompts", 1)[1]

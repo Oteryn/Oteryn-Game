@@ -192,7 +192,7 @@ Do not call #509 complete until:
 - local Molehill smoke has no unexplained crash/device loss;
 - only public-safe evidence is committed;
 - exact-head CI/review succeeds;
-- integration uses the current bound META 3.1 native exact-head Merge Queue contract and protected-main readback.
+- protected integration resolves the current immutable bound META integration-capability router, using freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE` and `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven, then requires real Merge Queue validation and protected-main readback.
 
 ## Continuation directive
 

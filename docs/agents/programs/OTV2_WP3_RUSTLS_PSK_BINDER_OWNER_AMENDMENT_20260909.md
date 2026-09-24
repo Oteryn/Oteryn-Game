@@ -146,9 +146,9 @@ This is a material HIGH-risk control-plane allocation. A candidate-controlled me
 2. exact-head deterministic/canonical repository checks are terminal GREEN;
 3. a human owner explicitly authorizes repository integration of the then-current exact #493 candidate; a general instruction to continue useful work MUST NOT be reinterpreted as specific candidate approval;
 4. immediately before submission, fresh target-bound live preflight verifies the exact repository, PR #493, `base=main`, exact qualified/frozen head, authorization and queue eligibility;
-5. submission uses only REST `PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge-async` with the exact qualified head in `sha` and explicit `merge_action="merge_queue"`; default merge action, direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, protection changes, no-op/retrigger commits and ambiguous dequeue are forbidden substitutes;
+5. protected integration resolves the current immutable bound META capability router and uses freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract; direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, protection changes, no-op/retrigger commits and ambiguous dequeue remain forbidden substitutes;
 6. HTTP `202` is acceptance only: capture the exact returned async UUID and a positive executor-owned monotonic receipt sequence, then immediately obtain same-target live readback that carries the same UUID at an executor sequence strictly greater than the receipt sequence and still binds the same repository, PR number, `base=main` and exact head. Reconcile HTTP `200` or `409` and the async request/status from live state; none is terminal integration proof by itself;
-7. if the selected native exact-head operation is unavailable, integration is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`, with the qualified candidate preserved and no forbidden substitute;
+7. if neither direct nor delegated integration capability is freshly proven, integration is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`, with the qualified candidate preserved and no forbidden substitute;
 8. actual Merge Queue admission is non-terminal: a real `merge_group` aggregate `game-gate` must succeed and protected-main readback must prove this exact allocation is present;
 9. Work freshly re-reads the canonical #356 branch, then-current protected main and all overlapping rustls custody;
 10. no replacement/competing rustls material worker exists;
@@ -165,8 +165,8 @@ conditional allocation-only amendment
 -> one independent exact-head HIGH-risk/deep review
 -> explicit human-owner authorization for the exact candidate
 -> fresh target-bound repo/PR/base=main/exact-head/auth/eligibility preflight
--> REST merge-async with exact sha + explicit merge_action="merge_queue"
-   OR BLOCKED_CAPABILITY_UNAVAILABLE with the qualified candidate preserved
+-> bound META capability router: DIRECT_CAPABLE | DELEGATED_CAPABLE
+   OR BLOCKED_CAPABILITY_UNAVAILABLE only when neither route is proven
 -> accepted UUID + positive executor receipt sequence
 -> immediate same-target same-UUID readback at a strictly greater executor sequence
 -> reconcile HTTP 200/409 and async status without treating admission as terminal

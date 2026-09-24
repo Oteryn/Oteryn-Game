@@ -321,9 +321,11 @@ chat history.
 
 ## Integration / closeout
 
-The implementation candidate must remain frozen after material qualification. Integration is only via
-the bound META 3.1 native exact-head Merge Queue contract, followed by real `merge_group` aggregate
-`game-gate` success and protected-main readback.
+The implementation candidate must remain frozen after material qualification. Protected integration
+resolves the current immutable bound META integration-capability router: use freshly proven
+`DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, and report `BLOCKED_CAPABILITY_UNAVAILABLE` only when
+neither route is proven. Follow the selected bound route-specific fencing/reconciliation contract,
+then require real `merge_group` aggregate `game-gate` success and protected-main readback.
 
 Direct merge, generic auto-merge, bypass, force/rebase, no-op/retrigger commits and protection
 weakening are forbidden.

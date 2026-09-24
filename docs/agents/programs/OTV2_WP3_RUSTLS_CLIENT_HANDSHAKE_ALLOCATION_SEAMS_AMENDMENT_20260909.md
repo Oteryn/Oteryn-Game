@@ -156,7 +156,7 @@ This is a HIGH-risk control-plane allocation candidate and cannot authorize or i
 3. obtain genuinely independent exact-head HIGH-risk/deep review with no unresolved P0/P1/P2, and require zero unresolved review threads and zero outstanding requested-changes reviews before owner authorization or integration preflight;
 4. obtain explicit human-owner authorization for that exact candidate, not a generic continuation instruction;
 5. immediately before integration, fresh target-bound live preflight verifies repository, PR, `base=main`, exact qualified head, authorization, eligibility and intended protected base/queue state;
-6. submit only through the META 3.1 native exact-head REST `merge-async` route with exact `sha` and explicit `merge_action="merge_queue"`;
+6. resolve protected integration through the current immutable bound META capability router and use freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract;
 7. capture HTTP `202` UUID and a positive executor receipt sequence, then immediately read back the same target and UUID at a strictly later executor sequence; reconcile `200`/`409` without treating acceptance as merge proof;
 8. forbid direct/immediate merge, generic auto-merge, GraphQL enqueue, bypass, force/rebase/reset, protection changes, default merge action and no-op/retrigger commits;
 9. require the real Merge Queue `merge_group` aggregate `game-gate` to succeed;
@@ -164,7 +164,7 @@ This is a HIGH-risk control-plane allocation candidate and cannot authorize or i
 11. Work returns exact protected evidence to the canonical worker, freshly verifies #351/#356 head and custody, and confirms #493/#501 remain separate;
 12. Work explicitly activates this exact amendment for the SAME canonical #351/#356 worker.
 
-If the native exact-head Merge Queue operation is unavailable, preserve the qualified candidate and report `BLOCKED_CAPABILITY_UNAVAILABLE`; do not substitute another merge primitive.
+If neither direct nor delegated integration capability is freshly proven, preserve the qualified candidate and report `BLOCKED_CAPABILITY_UNAVAILABLE`; do not substitute another merge primitive.
 
 Protection of this document alone does not activate it. Even after protection, material #356 MUST NOT resume until #501 is also protected and Work explicitly activates the required protected amendments for that SAME canonical worker.
 
@@ -178,7 +178,7 @@ allocation-only NOT_ACTIVE_CONDITIONAL candidate
 -> zero unresolved review threads + zero outstanding requested-changes reviews
 -> explicit owner authorization for exact candidate
 -> fresh target-bound exact-head/base/auth/eligibility preflight
--> native REST merge-async exact sha + merge_action=merge_queue
+-> bound META capability router: DIRECT_CAPABLE | DELEGATED_CAPABLE
 -> same-UUID later-sequence readback
 -> real merge_group game-gate SUCCESS
 -> protected-main readback

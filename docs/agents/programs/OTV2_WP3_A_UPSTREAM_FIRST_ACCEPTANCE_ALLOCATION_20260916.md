@@ -453,8 +453,9 @@ After explicit #162 activation:
 7. genuinely independent HIGH-risk exact-head whole-diff review: explicit PASS,
    P0=0, P1=0, P2=0 and BLOCKING_EVIDENCE_GAP=0 for the affected current gate;
 8. exact-head repository CI and zero unresolved material review threads;
-9. integration only through the authenticated bound META 3.1 exact-head Merge
-   Queue route;
+9. protected integration through the current immutable bound META capability
+   router, using freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE` and
+   `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven;
 10. real `merge_group` `game-gate` SUCCESS plus protected-main readback.
 
 Only after protected integration/readback and coordinator closeout may WP3-A be
