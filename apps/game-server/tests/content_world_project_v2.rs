@@ -165,6 +165,7 @@ fn candidate() -> ProjectV2Draft {
                 sha256: "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491".into(),
             }],
             sources: vec![],
+            source_identity_bindings: vec![],
             editor: vec![ProjectV2EditorEntry {
                 target: npc,
                 display_name: "Courier".into(),
@@ -175,6 +176,50 @@ fn candidate() -> ProjectV2Draft {
                 tags: vec!["oteryn:editor.npc".into()],
             }],
         },
+    }
+}
+
+fn with_source_identity_bindings(bindings: Vec<ProjectV2SourceIdentityBinding>) -> ProjectV2Draft {
+    let mut draft = item_candidate();
+    let digest = "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491";
+    draft.core.imports.push(ImportBatch {
+        batch_id: "wiki-import-r1".into(),
+        source_repository: "https://example.invalid/wiki".into(),
+        source_revision: "source-r1".into(),
+        source_artifact_sha256: digest.into(),
+        access_disposition: "PENDING".into(),
+        source_generation_profile: "wiki-snapshot-v1".into(),
+        importer: "test-importer".into(),
+        mapper: "test-mapper".into(),
+        mapper_revision: "mapper-r1".into(),
+        mapper_sha256: digest.into(),
+        candidates: vec![],
+        reimport_states: vec![],
+    });
+    draft.state.sources.push(ProjectV2Source {
+        key: "oteryn:source.tibiawiki".into(),
+        import_batch_id: "wiki-import-r1".into(),
+        revision: "source-r1".into(),
+        sha256: digest.into(),
+        evidence: ProjectV2EvidenceClass::Proven,
+    });
+    draft.state.source_identity_bindings = bindings;
+    draft
+}
+
+fn source_identity_binding(
+    namespace: &str,
+    external_id: &str,
+    target: ProjectV2DefinitionRef,
+    disposition: ProjectV2SourceIdentityDisposition,
+) -> ProjectV2SourceIdentityBinding {
+    ProjectV2SourceIdentityBinding {
+        source_key: "oteryn:source.tibiawiki".into(),
+        source_revision: "source-r1".into(),
+        identity_namespace: namespace.into(),
+        external_id: external_id.into(),
+        target,
+        disposition,
     }
 }
 
@@ -270,6 +315,17 @@ fn v1_migrates_explicitly_and_retains_its_original_six_document_wire_format() {
 fn all_v2_declarative_families_round_trip_without_lowering_candidates() {
     let documents =
         CanonicalProjectDocuments::from_v2_draft(candidate(), limits()).expect("v2 documents");
+    let empty_provenance: Value =
+        serde_json::from_slice(&documents.documents()["provenance/sources.json"])
+            .expect("empty provenance JSON");
+    assert_eq!(
+        empty_provenance
+            .as_object()
+            .expect("provenance object")
+            .len(),
+        2,
+        "empty source identity bindings preserve the prior v2 wire shape"
+    );
     let project = ProjectSnapshot::new(documents.documents().clone(), limits())
         .expect("admit v2")
         .parse(limits())
@@ -336,6 +392,183 @@ fn typed_references_and_author_aliases_fail_closed() {
         evidence: ProjectV2EvidenceClass::Unknown,
     });
     assert!(CanonicalProjectDocuments::from_v2_draft(orphan_source, limits()).is_err());
+}
+
+#[test]
+fn source_identity_bindings_preserve_lexical_ids_and_round_trip_in_tuple_order() {
+    let mut draft = with_source_identity_bindings(vec![
+        source_identity_binding(
+            "client/appearance_id",
+            "7",
+            reference(
+                ProjectV2Family::Presentation,
+                "oteryn:reference.presentation.courier",
+            ),
+            ProjectV2SourceIdentityDisposition::AcceptedAlias,
+        ),
+        source_identity_binding(
+            "mediawiki/page_id",
+            "7",
+            reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+            ProjectV2SourceIdentityDisposition::Exact,
+        ),
+        source_identity_binding(
+            "ots/item_server_id",
+            "0007",
+            reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+            ProjectV2SourceIdentityDisposition::Exact,
+        ),
+    ]);
+    let mut second_revision = draft.core.imports[0].clone();
+    second_revision.batch_id = "wiki-import-r2".into();
+    second_revision.source_revision = "source-r2".into();
+    draft.core.imports.push(second_revision);
+    let mut second_source = draft.state.sources[0].clone();
+    second_source.import_batch_id = "wiki-import-r2".into();
+    second_source.revision = "source-r2".into();
+    draft.state.sources.push(second_source);
+    let mut revision_binding = source_identity_binding(
+        "mediawiki/page_id",
+        "7",
+        reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        ProjectV2SourceIdentityDisposition::Exact,
+    );
+    revision_binding.source_revision = "source-r2".into();
+    draft.state.source_identity_bindings.push(revision_binding);
+    // Canonical writing orders by (source key, source revision, namespace, external ID).
+    draft.state.source_identity_bindings.reverse();
+    draft
+        .core
+        .imports
+        .sort_by(|a, b| a.batch_id.cmp(&b.batch_id));
+    draft
+        .state
+        .sources
+        .sort_by(|a, b| (&a.key, &a.revision).cmp(&(&b.key, &b.revision)));
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("write crosswalk");
+    let provenance: Value =
+        serde_json::from_slice(&documents.documents()["provenance/sources.json"])
+            .expect("provenance JSON");
+    assert_eq!(
+        provenance["source_identity_bindings"][0]["external_id"],
+        "7"
+    );
+    assert_eq!(
+        provenance["source_identity_bindings"][0]["disposition"],
+        "ACCEPTED_ALIAS"
+    );
+    assert_eq!(
+        provenance["source_identity_bindings"][2]["target"]["family"],
+        "Item"
+    );
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    let bindings = &parsed.v2().expect("v2").source_identity_bindings;
+    assert_eq!(bindings[0].external_id, "7");
+    assert_eq!(bindings[0].identity_namespace, "client/appearance_id");
+    assert_eq!(bindings[0].target.family, ProjectV2Family::Presentation);
+    assert_eq!(bindings[2].external_id, "0007");
+    assert_eq!(bindings[1].external_id, bindings[3].external_id);
+    assert_eq!(bindings[1].source_revision, "source-r1");
+    assert_eq!(bindings[3].source_revision, "source-r2");
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
+        documents.documents()
+    );
+}
+
+#[test]
+fn source_identity_bindings_reject_missing_source_targets_and_identity_conflicts() {
+    let exact_target = reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha");
+    let valid = source_identity_binding(
+        "ots/item_server_id",
+        "17",
+        exact_target.clone(),
+        ProjectV2SourceIdentityDisposition::Exact,
+    );
+
+    let mut missing_source = with_source_identity_bindings(vec![valid.clone()]);
+    missing_source.state.source_identity_bindings[0].source_revision = "source-r2".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(missing_source, limits()).is_err());
+
+    let mut missing_target = with_source_identity_bindings(vec![valid.clone()]);
+    missing_target.state.source_identity_bindings[0]
+        .target
+        .revision = "definition-r2".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(missing_target, limits()).is_err());
+
+    let mut duplicate = with_source_identity_bindings(vec![valid.clone(), valid.clone()]);
+    duplicate.state.source_identity_bindings.sort_by(|a, b| {
+        (
+            &a.source_key,
+            &a.source_revision,
+            &a.identity_namespace,
+            &a.external_id,
+        )
+            .cmp(&(
+                &b.source_key,
+                &b.source_revision,
+                &b.identity_namespace,
+                &b.external_id,
+            ))
+    });
+    assert!(CanonicalProjectDocuments::from_v2_draft(duplicate, limits()).is_err());
+
+    let conflict = source_identity_binding(
+        "ots/item_server_id",
+        "17",
+        reference(ProjectV2Family::WorldObject, "oteryn:content.object.sign"),
+        ProjectV2SourceIdentityDisposition::Exact,
+    );
+    let mut conflicting = with_source_identity_bindings(vec![valid, conflict]);
+    conflicting.state.source_identity_bindings.sort_by(|a, b| {
+        (
+            &a.source_key,
+            &a.source_revision,
+            &a.identity_namespace,
+            &a.external_id,
+        )
+            .cmp(&(
+                &b.source_key,
+                &b.source_revision,
+                &b.identity_namespace,
+                &b.external_id,
+            ))
+    });
+    assert!(CanonicalProjectDocuments::from_v2_draft(conflicting, limits()).is_err());
+
+    let mut empty_id = with_source_identity_bindings(vec![source_identity_binding(
+        "ots/item_server_id",
+        " ",
+        exact_target.clone(),
+        ProjectV2SourceIdentityDisposition::Exact,
+    )]);
+    empty_id.state.source_identity_bindings[0].external_id = "".into();
+    assert!(CanonicalProjectDocuments::from_v2_draft(empty_id, limits()).is_err());
+
+    for invalid_namespace in ["page_id", "/page_id", "mediawiki/", "mediawiki/page/id"] {
+        let invalid = with_source_identity_bindings(vec![source_identity_binding(
+            invalid_namespace,
+            "17",
+            exact_target.clone(),
+            ProjectV2SourceIdentityDisposition::Exact,
+        )]);
+        assert!(CanonicalProjectDocuments::from_v2_draft(invalid, limits()).is_err());
+    }
+
+    let appearance_to_item = with_source_identity_bindings(vec![source_identity_binding(
+        "client/appearance_id",
+        "17",
+        exact_target,
+        ProjectV2SourceIdentityDisposition::Exact,
+    )]);
+    assert!(CanonicalProjectDocuments::from_v2_draft(appearance_to_item, limits()).is_err());
 }
 
 #[test]
