@@ -24,7 +24,10 @@ struct MapRevisionRef(String);
 
 fn fixture_atom(value: &str) -> Result<String, FixtureInputError> {
     if value.is_empty() {
-        return Err(FixtureInputError::new(ErrorKind::InvalidInput, "empty fixture atom"));
+        return Err(FixtureInputError::new(
+            ErrorKind::InvalidInput,
+            "empty fixture atom",
+        ));
     }
     Ok(value.to_owned())
 }
@@ -49,6 +52,9 @@ impl MapRevisionRef {
 
 // The included source has `super` type imports and uses this exact checked-key lookup. This
 // child remains reachable only through the carrier's `#[cfg(test)]` declaration.
+// Lib tests already load the same source through Content; path-importing integration test crates
+// do not, so this one duplicate module load is intentional and confined to test compilation.
+#[allow(clippy::duplicate_mod)]
 #[path = "../content/reference_static_cell.rs"]
 mod reference_static_cell;
 use reference_static_cell::{
