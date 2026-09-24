@@ -3151,6 +3151,8 @@ fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
                     "INSERT INTO game_runtime_scope_assignment_receipts (operation_key) VALUES ('\\x00'::bytea)",
                     "UPDATE game_runtime_scope_assignments SET state = 2",
                     "DELETE FROM game_character_audit_outbox",
+                    "SELECT reason, authorizing_actor FROM game_character_audit_legal_holds",
+                    "UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water = 99",
                     "SELECT game_native_source_record_issuance(1, '\\x01', 1, 'platform', NULL, NULL, NULL)",
                     "SELECT game_node_revoke_bootstrap_authorization('\\x01'::bytea)",
                 ] {

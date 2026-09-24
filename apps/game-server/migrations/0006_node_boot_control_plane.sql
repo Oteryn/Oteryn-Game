@@ -323,6 +323,7 @@ GRANT SELECT ON
     game_character_interpretations
 TO oteryn_game_runtime;
 GRANT SELECT, UPDATE (decided_at) ON game_runtime_scope_assignments TO oteryn_game_runtime;
+GRANT UPDATE (writer_id) ON game_runtime_scope_assignment_writer TO oteryn_game_runtime;
 GRANT UPDATE (reconciled_at) ON game_character_recovery_admissions TO oteryn_game_runtime;
 GRANT SELECT, DELETE ON game_runtime_readiness_attestations TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE ON
@@ -332,6 +333,9 @@ GRANT SELECT, INSERT, UPDATE ON
     game_character_bootstrap_intent_floors
 TO oteryn_game_runtime;
 GRANT SELECT, INSERT ON game_character_audit_outbox TO oteryn_game_runtime;
+-- Character authority integrity checks see only whether an unreleased hold
+-- names an event; the hold reason and actor stay unreadable.
+GRANT SELECT (event_id, released_at) ON game_character_audit_legal_holds TO oteryn_game_runtime;
 GRANT EXECUTE ON FUNCTION
     game_node_register(BYTEA, TEXT, UUID),
     game_node_prove_current_incarnation(UUID, NUMERIC, BYTEA),
