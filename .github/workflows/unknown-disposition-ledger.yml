@@ -13,7 +13,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
 
 concurrency:
@@ -22,7 +21,11 @@ concurrency:
 
 jobs:
   validate:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     name: Content census / unknown disposition ledger
+    permissions:
+      actions: read
+      contents: read
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -43,38 +46,33 @@ jobs:
           python-version: '3.12'
           check-latest: false
 
-      - name: Verify pinned G3 artifact metadata
+      - name: Fetch and verify pinned G3 artifact with protected downloader
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            https://api.github.com/repos/Oteryn/Oteryn-Game/actions/runs/35986883931/artifacts \
-            -o "$RUNNER_TEMP/g3-artifacts.json"
-          jq -e \
-            --argjson id 10801778929 \
-            --argjson run 35986883931 \
-            --arg head '20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a' \
-            --arg name 'source-family-classification-20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a' \
-            --arg digest 'sha256:a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7' \
-            '(.total_count == 1) and (.artifacts | length == 1) and (.artifacts[0].id == $id) and (.artifacts[0].name == $name) and (.artifacts[0].digest == $digest) and (.artifacts[0].expired == false) and (.artifacts[0].workflow_run.id == $run) and (.artifacts[0].workflow_run.head_sha == $head)' \
-            "$RUNNER_TEMP/g3-artifacts.json"
+          python - <<'PY'
+          import pathlib
+          import sys
+          sys.path.insert(0, "tools/content-census")
+          from global_source_overlap_fetch_artifacts import download_archive, extract_exact_members
 
-      - name: Download exact G3 archive
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          curl --fail --location --silent --show-error \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            https://api.github.com/repos/Oteryn/Oteryn-Game/actions/artifacts/10801778929/zip \
-            -o "$RUNNER_TEMP/g3-source-family.zip"
-          echo 'a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7  '"$RUNNER_TEMP/g3-source-family.zip" | sha256sum --check
+          spec = {
+              "id": 10801778929,
+              "name": "source-family-classification-20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+              "size_in_bytes": 1427897,
+              "digest": "sha256:a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+              "run_id": 35986883931,
+              "head_sha": "20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+              "members": ("source-family-classified-universe.json", "manifest.json"),
+          }
+          root = pathlib.Path("${{ runner.temp }}/g3-source-family")
+          root.mkdir(parents=True, exist_ok=True)
+          archive = root / "g3.zip"
+          digest = download_archive(spec, __import__("os").environ["GITHUB_TOKEN"], archive)
+          extract_exact_members(archive, spec, root, "g3")
+          assert digest == "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7"
+          PY
 
       - name: Run focused self-test and build blocker ledger
         run: |
@@ -82,10 +80,10 @@ jobs:
           python -m py_compile \
             tools/content-census/unknown_disposition_ledger.py \
             tools/content-census/unknown_disposition_ledger_self_test.py
-          python tools/content-census/unknown_disposition_ledger_self_test.py "$RUNNER_TEMP/g3-source-family.zip"
+          python tools/content-census/unknown_disposition_ledger_self_test.py "$RUNNER_TEMP/g3-source-family/g3.zip"
           mkdir -p "$RUNNER_TEMP/unknown-disposition-ledger"
           python tools/content-census/unknown_disposition_ledger.py \
-            --input-zip "$RUNNER_TEMP/g3-source-family.zip" \
+            --input-zip "$RUNNER_TEMP/g3-source-family/g3.zip" \
             --ledger-output "$RUNNER_TEMP/unknown-disposition-ledger/ledger.json" \
             --manifest-output "$RUNNER_TEMP/unknown-disposition-ledger/manifest.json"
           cmp docs/agents/evidence/OTV2-20260924-unknown-disposition-ledger.json \
