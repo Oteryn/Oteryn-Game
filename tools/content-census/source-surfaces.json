@@ -60,12 +60,6 @@
       "include_root": true
     },
     {
-      "id": "houses",
-      "kind": "page_links",
-      "title": "Casas e Guildhalls",
-      "include_root": true
-    },
-    {
       "id": "hunting-places",
       "kind": "page_links",
       "title": "Locais de Caça",
@@ -228,7 +222,6 @@
         "WorldPlacement"
       ],
       "root_ids": [
-        "houses",
         "geography"
       ]
     },
@@ -328,8 +321,7 @@
         "WorldPlacement"
       ],
       "root_ids": [
-        "geography",
-        "houses"
+        "geography"
       ]
     },
     {
