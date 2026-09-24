@@ -299,7 +299,7 @@ Work does not create future technical lanes itself. It consumes accepted expansi
 | product priority/scope/authority decision | `OWNER_DECISION_REQUIRED` |
 | canonical rules conflict | `POLICY_CONFLICT` |
 | external condition unchanged | `WAITING_EXTERNAL` |
-| every integration predicate proven | use only the authenticated bound META 3.1 native exact-head Merge Queue contract; if its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate |
+| every integration predicate proven | resolve the current immutable bound META integration-capability router; use freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, and record `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven while preserving the qualified candidate |
 
 ## Owner launch sheet
 
