@@ -9,6 +9,7 @@ on:
       - tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py
       - .github/workflows/g4-direct-nonitem-family-crosswalk.yml
       - docs/agents/tasks/active/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md
+      - docs/agents/tasks/archive/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md
       - docs/agents/evidence/OTV2-20260924-g4-direct-nonitem-family-crosswalk.json
   workflow_dispatch:
 
@@ -34,7 +35,28 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Select lifecycle mode
+        id: lifecycle
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            CHANGED_PATHS="$RUNNER_TEMP/g4-crosswalk-changed-paths"
+            git diff --name-only --no-renames "$PR_BASE_SHA...$EXPECTED_SHA" > "$CHANGED_PATHS"
+            if grep -Fxq "docs/agents/tasks/archive/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md" "$CHANGED_PATHS"; then
+              echo "mode=archive" >> "$GITHUB_OUTPUT"
+            else
+              echo "mode=implementation" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "mode=implementation" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Verify exact candidate and allocated base
+        if: steps.lifecycle.outputs.mode == 'implementation'
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: 6185045c20631b8614b1d4ad1dacc5d918f73b0a
@@ -46,6 +68,72 @@ jobs:
             test "$(git rev-parse "$EXPECTED_SHA^1")" = "$BASE_SHA"
           fi
 
+      - name: Verify archive closeout candidate
+        if: steps.lifecycle.outputs.mode == 'archive'
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ALLOCATED_BASE_SHA: ead12491b10bec15cc2d9f53f07dbd320edd9d57
+        run: |
+          set -euo pipefail
+          test "$PR_BASE_SHA" = "$ALLOCATED_BASE_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git rev-parse "$EXPECTED_SHA^1")" = "$ALLOCATED_BASE_SHA"
+          python - "$ALLOCATED_BASE_SHA" "$EXPECTED_SHA" <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import sys
+
+          base, head = sys.argv[1:]
+          active = "docs/agents/tasks/active/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md"
+          archived = "docs/agents/tasks/archive/OTV2-20260924-g4-direct-nonitem-family-crosswalk.md"
+          evidence_path = "docs/agents/evidence/OTV2-20260924-g4-direct-nonitem-family-crosswalk.json"
+          workflow_path = ".github/workflows/g4-direct-nonitem-family-crosswalk.yml"
+          expected_changed = {active, archived, evidence_path, workflow_path}
+          changed = set(subprocess.check_output(
+              ["git", "diff", "--name-only", "--no-renames", f"{base}...{head}"],
+              text=True,
+          ).splitlines())
+          assert changed == expected_changed, f"unexpected archive diff paths: {sorted(changed)}"
+          assert not any(path.startswith("tools/content-census/") for path in changed), "implementation tool changed"
+          assert not pathlib.Path(active).exists(), "active task path still exists"
+          task = pathlib.Path(archived).read_text(encoding="utf-8")
+          frontmatter = task.split("---", 2)[1].splitlines()
+          assert "status: archived" in frontmatter, "archived task status missing"
+          evidence = json.loads(pathlib.Path(evidence_path).read_text(encoding="utf-8"))
+          assert evidence["status"] == "MERGED_ARCHIVED"
+          closeout = evidence["closeout"]
+          assert closeout["status"] == "MERGED_ARCHIVED"
+          assert closeout["integrated_pr"]["number"] == 861
+          assert closeout["integrated_pr"]["exact_head"] == "62a234d5785d93f62c5dd84c66ff1493f1cf0796"
+          assert closeout["integrated_pr"]["merge_commit"] == "339b6ba6b6081868d5361040b5ea40c7c118ef2f"
+          hosted = closeout["hosted_validation"]
+          assert hosted["run_id"] == 36058305835 and hosted["artifact_id"] == 10832769419
+          assert hosted["archive_sha256"] == "c4a290d19b0a2db2842003d532f79894e7fa05137efbcf7362be661d01665aa1"
+          assert hosted["output_sha256"] == "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396"
+          assert closeout["independent_review"] == {"result": "PASS", "comment": 5822590223}
+          assert closeout["merge_queue"]["executor_run_id"] == 36062132750
+          assert closeout["merge_queue"]["merge_group_run_id"] == 36062184948
+          assert closeout["counts"] == {
+              "total": 4800,
+              "missing_canonical_identity": 4798,
+              "source_revision_revalidation_required": 2,
+          }
+          assert closeout["no_binding_population_or_promotion"] is True
+          ownership = closeout["ownership"]
+          assert ownership["status"] == "RELEASED"
+          required_released = {
+              "tools/content-census/g4_direct_nonitem_family_crosswalk.py",
+              "tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py",
+              ".github/workflows/g4-direct-nonitem-family-crosswalk.yml",
+              active,
+              evidence_path,
+          }
+          assert set(ownership["paths"]) == required_released
+          print("G4 direct non-Item archive closeout: PASS")
+          PY
+
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -53,6 +141,7 @@ jobs:
           check-latest: false
 
       - name: Run focused synthetic tests
+        if: steps.lifecycle.outputs.mode == 'implementation'
         run: |
           set -euo pipefail
           python -m py_compile \
@@ -61,6 +150,7 @@ jobs:
           python tools/content-census/g4_direct_nonitem_family_crosswalk_self_test.py
 
       - name: Verify pinned artifacts and build source-only crosswalk
+        if: steps.lifecycle.outputs.mode == 'implementation'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -75,6 +165,7 @@ jobs:
             --manifest-output "$ROOT/manifest.json"
 
       - name: Assert bounded evidence-only result
+        if: steps.lifecycle.outputs.mode == 'implementation'
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/g4-direct-nonitem-family-crosswalk"
@@ -97,6 +188,7 @@ jobs:
           PY
 
       - name: Upload artifact-only crosswalk
+        if: steps.lifecycle.outputs.mode == 'implementation'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: g4-direct-nonitem-family-crosswalk-${{ github.event.pull_request.head.sha || github.sha }}
