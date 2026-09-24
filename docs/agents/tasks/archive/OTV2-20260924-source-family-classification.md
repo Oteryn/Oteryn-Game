@@ -70,7 +70,7 @@ Coordinator owns independent review, admission through governed Merge Queue, and
 ## Final hosted classification and terminal closeout
 
 - PROVEN: final exact-head G3 workflow run [35986883931](https://github.com/Oteryn/Oteryn-Game/actions/runs/35986883931) completed successfully at PR head `20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a`.
-- PROVEN: final workflow artifact `10801778929`, `source-family-classification-20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a`, ZIP SHA-256 `a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7`. The compact manifest SHA-256 is `e3c2de4d1b5a5db80d59ee36465a0ea76a8f9d300bf015d1646d8321ea71a4d1`.
+- PROVEN: final workflow artifact `10801778929`, `source-family-classification-20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a`, ZIP SHA-256 `a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7`. The pinned G2 input manifest SHA-256 is `e3c2de4d1b5a5db80d59ee36465a0ea76a8f9d300bf015d1646d8321ea71a4d1`.
 - PROVEN: the final manifest covers **15,787** exact page IDs: **10,275** direct assignments (Item 5,475; Creature 2,149; NPC 1,253; Achievement 569; Mount 252; Outfit 134; Quest 272; Ability 171) and **5,512 UNKNOWN**.
 - PROVEN: final manifest status is `PARTIAL_SOURCE_DEFINITION_CLASSIFICATION_NO_IDENTITY_OR_SEMANTIC_PROMOTION`; G3 is **not substantively complete**. The direct-signature cohort does not resolve remaining candidate relations or promote identities or semantics.
 - Historical first hosted run 35986595291 / artifact 10801758693 and its recorded ZIP digest above remain preserved as a separate initial run.
