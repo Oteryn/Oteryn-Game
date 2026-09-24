@@ -392,7 +392,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         )
         self.assertIn("scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`", census_prompt)
         self.assertIn("do not count `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` as a second active mutating control plane", census_prompt)
-        self.assertIn("do not stop with “#162 must assign”", census_prompt)
+        self.assertIn("Do not stop with “#162 must assign”", census_prompt)
         self.assertIn("### Subagent orchestration", census_prompt)
         self.assertIn("Luna subagents", census_prompt)
         self.assertIn("scoped dispatch alias of the same `OTV2_WORK_DELIVERY_COORDINATOR` control-plane profile", readme)
