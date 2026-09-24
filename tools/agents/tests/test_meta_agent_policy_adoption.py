@@ -418,7 +418,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "No bare generic `id` in new G4 crosswalk contracts",
             "One exact source identity at one exact source revision may bind canonically to at most one Oteryn target",
             "definition -> Presentation -> Asset",
-            "runtime/wire identity",
+            "Runtime/wire identity",
             "Must decide now: YES",
         ):
             self.assertIn(value, identity_decision)
