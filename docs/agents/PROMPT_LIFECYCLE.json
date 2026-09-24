@@ -789,6 +789,17 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
+      "prompt_id": "OTV2_FULL_CONTENT_CENSUS_PROGRAMME",
+      "path": "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "content-world-programme-continuation",
+      "scope": "Full Tibia content census/crosswalk programme continuation from the first unfinished protected gate (G2 through final coverage closure), subordinate to the canonical Work control plane; read-only without exact live mutation authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Content/World programme-continuation profile. It supersedes no canonical coordinator, lane prompt or accepted contract; alias reuse never grants allocation, lease, production or merge authority."
+    },
+    {
       "prompt_id": "OTV2_CONTENT_WORLD_LEAD",
       "path": "docs/agents/prompts/OTV2_CONTENT_WORLD_LEAD.md",
       "version": "1.1",
