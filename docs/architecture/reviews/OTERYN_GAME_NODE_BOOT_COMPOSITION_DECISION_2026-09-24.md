@@ -113,7 +113,9 @@ The exact grant lists are part of the implementation. Negative tests must prove 
 `oteryn-game-ops` uses the same explicit durability-root connection fields as D1, with its own control-plane credential files.
 
 **Durable request and authorization files.** Every file the tool writes (launch authorization, assignment request, Character recovery request) is created as a new file (exclusive create, no symbolic-link following, mode 0600), written completely, synchronized, and then its parent directory is synchronized. Only after all of this succeeds does the tool submit the database or fence mutation that the file guards. Any failure before that point aborts without the mutation, so a crash can never leave a committed or ambiguous mutation whose exact request was lost. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
-- **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes one authorization file for the node containing the secret and the exact non-secret `LaunchBinding` used at issuance. `register_node_incarnation` requires both, and a changed binding rejects.
+- **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. Before issuing, it durably writes one authorization file for the node containing the complete issuance request: the freshly generated secret, the exact non-secret `LaunchBinding` and the `supersedes` value. `register_node_incarnation` requires the secret and the binding, and a changed binding rejects.
+  - **Exact-replay issuance.** The implementation changes `issue_node_bootstrap_authorization` so an existing row with the identical secret digest, binding and `supersedes` returns success instead of `Rejected`; any difference still rejects. A consumed authorization is not reissued: the replay only reports that the exact row exists.
+  - **Ambiguous issuance.** After a lost response, `authorization issue --reconcile <file>` replays the retained request, and its definite result says whether the authorization exists. The tool never generates a second authorization for the same launch while a retained file has no definite result.
 - **Registration revocation** through `revoke_node_registration`.
 - **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor and a stable writer name:
   - Before submitting, the tool writes the exact request to a request file: a freshly generated operation key and the canonical command. It never regenerates or edits an existing request file.
@@ -247,11 +249,12 @@ Consequence: Platform source availability and latency are on the admission path,
 
 This is physical qualification with the shipped binaries in the existing WP5 topology (real Platform, PostgreSQL 17.6):
 
-- **Operator setup and the SEAM stages.**
-  - `oteryn-game-ops` issues the launch authorization (secret and binding) and the S2 fresh-store authorization, authorizes and admits the fresh Character store, then configures the interpretation, and assigns the scope.
-  - Configuring the interpretation before the admission is refused.
-  - Characters are bootstrapped from real Platform intents through the node control socket.
-  - `oteryn-game-server serve` then reproduces every #823 `SEAM_PASS` stage against its own bound port.
+- **Operator setup and the SEAM stages**, in this order:
+  1. Before the node starts, `oteryn-game-ops` issues the launch authorization (secret, binding and `supersedes`) and the S2 fresh-store authorization, authorizes and admits the fresh Character store, then configures the interpretation. Configuring the interpretation before the admission is refused.
+  2. `oteryn-game-server serve` starts, registers and logs its `NodeRegistrationFact`, then waits for its assignment (D3 step 6).
+  3. While it waits, `oteryn-game-ops` assigns the scope to that logged fact. The node then binds its listener and control socket and publishes readiness.
+  4. Characters are bootstrapped from real Platform intents through the node control socket.
+  5. The running node reproduces every #823 `SEAM_PASS` stage against its own bound port.
   - No operator invocation creates a `game_node_registrations` row.
 - **D4 publication slots.**
   - A crash between checkpoint and clear leaves a slot that the next boot reconciles.
@@ -266,6 +269,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Ambiguous S2 initialization.** A retry after an initialization whose response was lost, with the identical authorization, completes boot.
 - **Registration outage.** A database outage during registration is ridden out by exact replay, without exiting or changing the `NodeId`.
 - **Launch authorization.**
+  - An issuance whose response was lost is reconciled from its retained file: the exact replay succeeds, and a changed binding or `supersedes` rejects.
   - A replayed authorization under a different `NodeId` or binding rejects registration.
   - An exact replay after a lost registration response returns the original proof, and boot continues.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
