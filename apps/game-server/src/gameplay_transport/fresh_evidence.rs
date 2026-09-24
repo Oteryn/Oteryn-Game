@@ -18,6 +18,7 @@ use crate::native_admission_source::{QueuePermit, TransientCapacity, http1_mtls}
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tokio::sync::{Mutex, OwnedMutexGuard};
 
@@ -52,6 +53,18 @@ pub struct FreshEvidenceSource {
     /// its SQL work is still outstanding, and reconciliation never sees a live
     /// slot of this process.
     publication: Arc<Mutex<()>>,
+    /// Slots reserved in this process for demands between their pre-exchange
+    /// reconciliation and the end of their publication task.
+    reserved: Arc<AtomicUsize>,
+}
+
+/// One reserved end-to-end publication slot, released when dropped by the
+/// publication task (or by a demand that ends before submitting SQL).
+struct SlotReservation(Arc<AtomicUsize>);
+impl Drop for SlotReservation {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
 }
 
 impl FreshEvidenceSource {
@@ -61,6 +74,7 @@ impl FreshEvidenceSource {
             descriptor,
             capacity: TransientCapacity::new(),
             publication: Arc::new(Mutex::new(())),
+            reserved: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -108,7 +122,7 @@ impl FreshEvidenceSource {
     ) -> Result<(), EvidenceUnavailable> {
         // Retained slots are reconciled before any new source work, so no
         // exchange starts while no end-to-end publication slot is available.
-        self.reconcile_before_exchange(root, custody).await?;
+        let reservation = self.reserve_before_exchange(root, custody).await?;
         let mut permit = self.activate().await?;
         let encoded = encode_request(request).map_err(|_| EvidenceUnavailable::Source)?;
         let raw = http1_mtls::exchange(&self.descriptor, operation, &encoded, &mut permit)
@@ -136,27 +150,31 @@ impl FreshEvidenceSource {
         let lane = self.enter_publication_lane().await?;
         let result = run_on_root(
             root,
-            publish(root.clone(), custody.clone(), binding, checkpoint, lane),
+            publish(root.clone(), custody.clone(), binding, checkpoint, lane, reservation),
         )
         .await;
         drop(permit);
         result
     }
 
-    async fn reconcile_before_exchange(
+    /// Reconciles retained slots inside the lane and reserves one free slot
+    /// before the lane is left, so concurrent demands never overbook.
+    async fn reserve_before_exchange(
         &self,
         root: &DurabilityRoot,
         custody: &NodeIncarnationProof,
-    ) -> Result<(), EvidenceUnavailable> {
+    ) -> Result<SlotReservation, EvidenceUnavailable> {
         let lane = self.enter_publication_lane().await?;
         let (root_task, custody) = (root.clone(), custody.clone());
+        let reserved = self.reserved.clone();
         run_on_root(root, async move {
             let _lane = lane;
             let retained = reconcile_pending_publications(&root_task, &custody).await?;
-            if retained >= PUBLICATION_SLOTS {
+            if retained + reserved.load(Ordering::Acquire) >= PUBLICATION_SLOTS {
                 return Err(EvidenceUnavailable::Capacity);
             }
-            Ok(())
+            reserved.fetch_add(1, Ordering::AcqRel);
+            Ok(SlotReservation(reserved))
         })
         .await
     }
@@ -186,9 +204,10 @@ impl FreshEvidenceSource {
 
 /// Runs publication work detached from the caller, so cancelling the caller
 /// cannot end it early or release its lane.
-async fn run_on_root<F>(root: &DurabilityRoot, work: F) -> Result<(), EvidenceUnavailable>
+async fn run_on_root<T, F>(root: &DurabilityRoot, work: F) -> Result<T, EvidenceUnavailable>
 where
-    F: Future<Output = Result<(), EvidenceUnavailable>> + Send + 'static,
+    T: Send + 'static,
+    F: Future<Output = Result<T, EvidenceUnavailable>> + Send + 'static,
 {
     match root.spawn_task(work).await {
         Ok(result) => result,
@@ -204,8 +223,13 @@ async fn publish(
     binding: PublicationBinding,
     checkpoint: Vec<u8>,
     lane: OwnedMutexGuard<()>,
+    reservation: SlotReservation,
 ) -> Result<(), EvidenceUnavailable> {
     let _lane = lane;
+    // The reserved slot is released only when this task ends; an ambiguous
+    // outcome leaves the durable slot occupied, which the next reconciliation
+    // counts as retained.
+    let _reservation = reservation;
     // Occupied slots are reconciled by their fixed identity before any
     // further work, so a running node recovers them without a restart. The
     // lane guarantees their original operation has ended in this process.
