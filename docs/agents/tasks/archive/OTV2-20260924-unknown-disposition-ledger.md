@@ -4,17 +4,28 @@
 task_id: OTV2-20260924-unknown-disposition-ledger
 title: G3 documented blockers for UNKNOWN source pages
 mode: AUDIT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-content-g3-unknown-disposition-ledger-20260924
 issue: 162
 pr: 831
 base_sha: ac3d69f1c20e09ce006e3efb0777d4e4f32275d1
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: a9bb2cd30268a9a04cab9ba1e506b84da4699466
+final_head_sha: a9bb2cd30268a9a04cab9ba1e506b84da4699466
 owner: delegated Luna writer
+merge_commit_sha: a63678d828a8f2fdb23f5ca3ae74e97ccf1978fe
+merge_group_run_id: 35991280898
+merge_group_game_gate: SUCCESS
+g3_substantive_completion: false
+g4_promotion: false
+ownership_released: true
+owned_paths:
+  - .github/workflows/unknown-disposition-ledger.yml
+  - tools/content-census/unknown_disposition_ledger.py
+  - tools/content-census/unknown_disposition_ledger_self_test.py
+  - docs/agents/evidence/OTV2-20260924-unknown-disposition-ledger.json
+  - docs/agents/tasks/active/OTV2-20260924-unknown-disposition-ledger.md
 created_at: 2026-09-24
 updated_at: 2026-09-24
 ```
@@ -61,6 +72,10 @@ The residual 131 are subdivided by deterministic discovery-root precedence into 
 
 The same-repository-only workflow job uses the existing protected downloader to verify the exact G3 run success, artifact ID, head, name, expiry, size, member list, and archive digest without forwarding the bearer token across the storage redirect; checks embedded schema, authority, and universe digest; builds the 5,512-row ledger; checks the compact manifest against Git; runs focused counterexamples for dual-lane pages, six classified Creature/Object rows, page 19087 overlap, UNKNOWN Mount-list `Winterlight Solstice`, redirects, alternates, parse errors, duplicate IDs, corrupt archives, and unverified current revisions; and uploads only the complete ledger and manifest with 14-day retention.
 
-## Handoff
+## Terminal closeout
 
-The source-family classification closeout writer owns separate paths. Its protected integration must precede this PR's merge-group run. Return the exact draft PR and frozen head for coordinator review; no queue submission or merge is delegated to this task.
+- PROVEN: PR #831 merged from exact frozen head `a9bb2cd30268a9a04cab9ba1e506b84da4699466` at protected `main` commit `a63678d828a8f2fdb23f5ca3ae74e97ccf1978fe`.
+- PROVEN: merge-group run [35991280898](https://github.com/Oteryn/Oteryn-Game/actions/runs/35991280898) completed with aggregate `game-gate` SUCCESS.
+- PROVEN: final ledger artifact `10803883162` was uploaded with 14-day retention; ZIP SHA-256 `c7f152b5b50078b1c2f241d0ca2852e62c9da404e74fd24d9242aef9f86f74d3`, embedded ledger SHA-256 `117c3e6ae487b4d29a68042d9c3507ae965d569b31d5472c6b4e886a96789392`; output: 5,512 documented blockers, 0 undispositioned rows.
+- PROVEN: ledger covers 5,512 UNKNOWN pages, each with a documented blocker; undispositioned rows: 0. Source families remain UNKNOWN; current revisions remain UNVERIFIED. No identity, gameplay, or G4 promotion is claimed.
+- TERMINAL: this bounded ledger task is completed and its authoring ownership is released. Further G3/G4 classification requires a new live allocation.
