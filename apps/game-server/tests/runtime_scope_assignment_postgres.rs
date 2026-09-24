@@ -3098,6 +3098,11 @@ fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
                     .issue_node_bootstrap_authorization(&secret(1), &launch(1)?, None)
                     .await
                     .map_err(|e| format!("control issue: {e:?}"))?;
+                // Exact replay of a lost issuance response under the control login.
+                control
+                    .issue_node_bootstrap_authorization(&secret(1), &launch(1)?, None)
+                    .await
+                    .map_err(|e| format!("control replay: {e:?}"))?;
                 let proof = runtime
                     .register_node_incarnation(&secret(1), &launch(1)?, node(1)?)
                     .await

@@ -10,8 +10,15 @@ DECLARE
 BEGIN
     FOREACH v_role IN ARRAY ARRAY['oteryn_game_runtime', 'oteryn_game_control'] LOOP
         IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = v_role) THEN
-            EXECUTE format('CREATE ROLE %I NOLOGIN', v_role);
-        ELSIF EXISTS (
+            -- Roles are cluster-global: a concurrent migration of another
+            -- database may create the same group first.
+            BEGIN
+                EXECUTE format('CREATE ROLE %I NOLOGIN', v_role);
+            EXCEPTION WHEN duplicate_object OR unique_violation THEN
+                NULL;
+            END;
+        END IF;
+        IF EXISTS (
             SELECT 1 FROM pg_roles WHERE rolname = v_role
               AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolreplication)
         ) THEN
@@ -317,7 +324,7 @@ GRANT SELECT ON
 TO oteryn_game_runtime;
 GRANT SELECT, UPDATE (decided_at) ON game_runtime_scope_assignments TO oteryn_game_runtime;
 GRANT UPDATE (reconciled_at) ON game_character_recovery_admissions TO oteryn_game_runtime;
-GRANT DELETE ON game_runtime_readiness_attestations TO oteryn_game_runtime;
+GRANT SELECT, DELETE ON game_runtime_readiness_attestations TO oteryn_game_runtime;
 GRANT SELECT, INSERT, UPDATE ON
     game_character_account_guards,
     game_character_roots,
@@ -341,6 +348,7 @@ TO oteryn_game_runtime;
 -- assignment decisions, the Character interpretation, the fresh Character
 -- recovery admission and descriptor issuances.
 GRANT SELECT, INSERT ON game_node_bootstrap_authorizations TO oteryn_game_control;
+GRANT SELECT ON game_node_bootstrap_authorization_revocations TO oteryn_game_control;
 GRANT SELECT, UPDATE ON game_node_registration_writer, game_node_registrations TO oteryn_game_control;
 GRANT SELECT, INSERT ON game_node_registration_endings TO oteryn_game_control;
 GRANT SELECT ON game_control_scope_grants, game_native_source_descriptor_issuances TO oteryn_game_control;
@@ -389,5 +397,7 @@ GRANT EXECUTE ON FUNCTION
     game_runtime_scope_assignment_history_valid(),
     game_node_revoke_bootstrap_authorization(BYTEA),
     game_native_source_record_issuance(NUMERIC, BYTEA, BIGINT, TEXT, TEXT, TEXT, BIGINT),
-    game_character_configure_interpretation(TEXT, TEXT, TEXT, TEXT)
+    game_character_configure_interpretation(TEXT, TEXT, TEXT, TEXT),
+    game_character_is_uuid_v7(UUID),
+    game_character_is_rfc_uuid(UUID)
 TO oteryn_game_control;
