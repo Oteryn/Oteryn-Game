@@ -2,6 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260924-nonshipping-movement-structural-fixture
+issue: 162
 title: Non-shipping structural Movement fixture
 mode: IMPLEMENT
 status: implementing
