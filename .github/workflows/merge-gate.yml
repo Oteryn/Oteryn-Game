@@ -189,7 +189,7 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.base_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Classify with trusted Cargo graph and audited inputs
+      - name: Classify with trusted exact-consumer routing
         id: classify
         shell: bash
         env:
@@ -199,23 +199,10 @@ jobs:
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
         run: |
           set -euo pipefail
-          if [[ ! -f tools/repository/classify_pr_test_lanes.py ]]; then
-            echo 'FULL: protected base does not yet contain the classifier.'
-            printf 'rust=true\nwindows=true\natlas_fullworld=true\nsurface=unknown\nreason=protected-base-classifier-missing\nrouting_health=degraded\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           if ! git fetch --no-tags --depth=1 origin "$EXPECTED_HEAD" || ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/risk-metadata.json"; then
             printf '{}' > "$RUNNER_TEMP/risk-metadata.json"
           fi
-          if grep -Fq 'output.write(f"atlas_fullworld=' tools/repository/classify_pr_test_lanes.py; then
-            python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
-          else
-            # Activation compatibility: an older protected base cannot prove the
-            # new bounded lane, so require it conservatively while retaining the
-            # old protected classifier's Rust/Windows decision.
-            printf 'atlas_fullworld=true\n' >> "$GITHUB_OUTPUT"
-            python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
-          fi
+          python -I tools/repository/classify_pr_test_lanes.py "$RUNNER_TEMP/risk-metadata.json"
 
       - name: Verify protected-base routing contract health
         env:
@@ -383,9 +370,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-    outputs:
-      routing_health: ${{ steps.contract.outputs.routing_health }}
-      consumer_edges: ${{ steps.contract.outputs.consumer_edges }}
     steps:
       - name: Check out exact head with history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -417,7 +401,6 @@ jobs:
         run: cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/routing-contract-metadata.json"
 
       - name: Verify exact candidate routing contract
-        id: contract
         env:
           EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
