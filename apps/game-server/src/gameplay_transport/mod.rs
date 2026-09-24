@@ -2,6 +2,8 @@
 //! semantics and the composed owners decide admission.
 
 mod connection;
+#[cfg(test)]
+mod qualification;
 mod tcp_tls;
 
 use crate::domain;
@@ -272,35 +274,34 @@ pub async fn serve_gameplay(
 pub(crate) struct SecureIdentifiers;
 
 impl SecureIdentifiers {
-    fn random<const N: usize>() -> [u8; N] {
+    fn random<const N: usize>() -> Option<[u8; N]> {
         let mut bytes = [0u8; N];
         rustls::crypto::aws_lc_rs::default_provider()
             .secure_random
             .fill(&mut bytes)
-            .expect("secure random source");
-        bytes
+            .ok()?;
+        Some(bytes)
     }
 }
 
 impl ConnectionIdentifiers for SecureIdentifiers {
-    fn game_session_id(&self) -> crate::foundation::GameSessionId {
-        let mut bytes: [u8; 16] = Self::random();
-        let millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |elapsed| elapsed.as_millis() as u64);
+    fn game_session_id(&self) -> Option<crate::foundation::GameSessionId> {
+        let mut bytes: [u8; 16] = Self::random()?;
+        let millis = u64::try_from(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .ok()?
+                .as_millis(),
+        )
+        .ok()?;
         bytes[..6].copy_from_slice(&millis.to_be_bytes()[2..]);
         bytes[6] = 0x70 | (bytes[6] & 0x0f);
         bytes[8] = 0x80 | (bytes[8] & 0x3f);
-        crate::foundation::GameSessionId::decode(&bytes).expect("UUIDv7 shape")
+        crate::foundation::GameSessionId::decode(&bytes).ok()
     }
 
-    fn transport_ref(&self) -> crate::foundation::AuthenticatedTransportRefV1 {
-        loop {
-            let bytes: [u8; 16] = Self::random();
-            if let Ok(transport) = crate::foundation::AuthenticatedTransportRefV1::decode(&bytes) {
-                return transport;
-            }
-        }
+    fn transport_ref(&self) -> Option<crate::foundation::AuthenticatedTransportRefV1> {
+        crate::foundation::AuthenticatedTransportRefV1::decode(&Self::random::<16>()?).ok()
     }
 }
 
@@ -435,6 +436,7 @@ fn canonical_uuid(value: &[u8; 16]) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::connection::{ConnectionEnd, ConnectionIdentifiers};
     use super::*;
@@ -592,15 +594,15 @@ mod tests {
         let mut b = pin!(b);
         let (mut left, mut right) = (None, None);
         poll_fn(|context| {
-            if left.is_none() {
-                if let Poll::Ready(value) = a.as_mut().poll(context) {
-                    left = Some(value);
-                }
+            if left.is_none()
+                && let Poll::Ready(value) = a.as_mut().poll(context)
+            {
+                left = Some(value);
             }
-            if right.is_none() {
-                if let Poll::Ready(value) = b.as_mut().poll(context) {
-                    right = Some(value);
-                }
+            if right.is_none()
+                && let Poll::Ready(value) = b.as_mut().poll(context)
+            {
+                right = Some(value);
             }
             if left.is_some() && right.is_some() {
                 Poll::Ready((left.take().expect("left"), right.take().expect("right")))
@@ -769,11 +771,12 @@ mod tests {
     #[test]
     fn identifiers_are_fresh_uuid_v7_and_nonzero_transport() {
         let identifiers = SecureIdentifiers;
-        let first = identifiers.game_session_id();
-        let second = identifiers.game_session_id();
+        let first = identifiers.game_session_id().expect("session");
+        let second = identifiers.game_session_id().expect("session");
         assert_ne!(first, second);
         assert_eq!(first.as_bytes()[6] >> 4, 7);
         assert_ne!(identifiers.transport_ref(), identifiers.transport_ref());
+        assert!(identifiers.transport_ref().is_some());
         let _ = (
             CharacterId::decode(&CHARACTER),
             AuthenticatedTransportRefV1::decode(&[1; 16]),

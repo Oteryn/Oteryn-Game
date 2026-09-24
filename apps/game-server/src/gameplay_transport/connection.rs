@@ -51,8 +51,9 @@ pub(crate) trait FreshAdmissionAuthority {
 
 /// Fresh identifiers for one connection attempt.
 pub(crate) trait ConnectionIdentifiers {
-    fn game_session_id(&self) -> GameSessionId;
-    fn transport_ref(&self) -> AuthenticatedTransportRefV1;
+    /// `None` when no unpredictable identifier can be produced.
+    fn game_session_id(&self) -> Option<GameSessionId>;
+    fn transport_ref(&self) -> Option<AuthenticatedTransportRefV1>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -127,11 +128,18 @@ where
         Ok(bootstrap) => bootstrap,
         Err(error) => return Err(reject(stream, error, 0).await),
     };
+    let (Some(game_session_id), Some(transport)) =
+        (identifiers.game_session_id(), identifiers.transport_ref())
+    else {
+        return Err(ConnectionEnd::AdmissionRefused(
+            AdmissionRefusal::Unavailable,
+        ));
+    };
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
-        game_session_id: identifiers.game_session_id(),
-        transport: identifiers.transport_ref(),
+        game_session_id,
+        transport,
     };
     let admitted = authority
         .admit(attempt)
@@ -194,6 +202,7 @@ async fn send_error<S: AsyncWrite + Unpin>(
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use std::cell::{Cell, RefCell};
@@ -247,11 +256,11 @@ mod tests {
 
     struct Identifiers;
     impl ConnectionIdentifiers for Identifiers {
-        fn game_session_id(&self) -> GameSessionId {
-            GameSessionId::decode(&SESSION).expect("session")
+        fn game_session_id(&self) -> Option<GameSessionId> {
+            GameSessionId::decode(&SESSION).ok()
         }
-        fn transport_ref(&self) -> AuthenticatedTransportRefV1 {
-            AuthenticatedTransportRefV1::decode(&[0x5a; 16]).expect("transport")
+        fn transport_ref(&self) -> Option<AuthenticatedTransportRefV1> {
+            AuthenticatedTransportRefV1::decode(&[0x5a; 16]).ok()
         }
     }
 

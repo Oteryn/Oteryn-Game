@@ -25,9 +25,12 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/tcp_tls.rs
   - apps/game-server/src/gameplay_transport/connection.rs
-  - apps/game-server/tests/gameplay_server_seam.rs
+  - apps/game-server/src/gameplay_transport/qualification.rs
+  - .github/workflows/gameplay-server-seam.yml
 serialized_shared_paths:
   - apps/game-server/src/foundation/protocol.rs
+  - apps/game-server/src/foundation/fnd04_verifier.rs
+  - tools/qualification/wp5_s3b/run.sh
   - apps/game-server/src/lib.rs
   - apps/game-server/src/main.rs
   - apps/game-server/Cargo.toml
@@ -93,6 +96,14 @@ whole-diff review and required independent exact-head review before returning
 - **PROVEN:** `WP5_G0_READY` on protected `main@0a21973013ed3856d545049563f9b409018f5bb6`: S1 #735, #416 #739, S2 #757, S3-A #760, #415 #769, #414 #790 and S3-B #815 are protected; the S3-B `workflow_dispatch` run `35969349848` on `main` produced `S3B_RESULT=COMPOSED_PASS`. The G0 record is #319 comment `5809797683`.
 - **PROVEN:** the same worker branch is reconciled with that `main` by a normal merge commit (no rebase or force). The Seam TLS dependency now uses `main`'s `aws_lc_rs` provider. `rcgen` and rustls `tls12` are dev-only, for test certificates and the TLS 1.2 rejection client.
 
+## Implementation state
+
+- **Fresh admission (implemented):** the connection state machine (`connection.rs`) decodes the entry frame through the Foundation bridge and hands `ClientBootstrap` to `ComposedFreshAdmission` (`mod.rs`). That authority reads the #414 Character (account/world), uses this holder's #415 Channel, publishes and composes the S2/#414/#415 sources, verifies the grant with FND-04 and commits only through `commit_composed_fresh_admission`. `ServerAccepted` is written only after `Committed`. Refusal closes the transport without mutation: FND-04C refusal codes have no registered wire mapping.
+- **Listener:** 256 connections (admitted connections stay inside this registered budget) and 64 handshake/auth units. The entry deadline is supplied by the caller. Shutdown cancels entry work, completes an admission already handed to the authority, then closes. The per-session outbound queue and pending-write maxima are not applicable yet: a connection writes at most one frame at a time and has no queue.
+- **Composition:** the public `serve_gameplay` entry in `lib.rs` takes already-composed owners and explicit TLS/limits. `main.rs` remains fail-closed: starting a real node needs a configuration contract for owner services (S2 refresh loop, runtime readiness producer, Character fence store), and that contract does not exist.
+- **Physical qualification:** an in-crate `qualification.rs` runs through `serve_gameplay` over real TCP/TLS in the WP5 topology (`WP5_QUALIFICATION=seam`). It is in-crate rather than `tests/gameplay_server_seam.rs` because runtime readiness is published through a sealed trait. An external test would need a new public test-only API or a `#[path]` copy, and the plan forbids both.
+- **Resume (not yet served):** `ClientResume` is decoded and closed without mutation. No production recovery-source composition exists: `RecoveryCurrentEvidence` and `RecoveryDurabilityEvidenceSourceV2` have only test fixtures. This is the next prerequisite.
+
 ## Validation state
 
 Historical worker evidence is retained in the evidence snapshot. It includes the partial
@@ -124,5 +135,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Task 2 completion, then Task 3 connection state machine on the protected composed admission (commit_composed_fresh_admission)
+next_action: qualify the fresh-admission seam in the WP5 topology, then compose recovery sources for ClientResume
 ```

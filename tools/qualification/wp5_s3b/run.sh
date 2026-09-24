@@ -25,6 +25,25 @@ readonly WORLD_ID=01934f10-7c02-7001-805b-3b1122334401
 readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7002-805b-3b1122334402)
 readonly INTERPRETATION=(s3b-profile-1 s3b-ruleset-1 s3b-content-1 s3b-starter-1)
 
+# WP5_QUALIFICATION selects the harness run inside the same topology:
+# `s3b` (default) is the sealed composition, `seam` the Server Seam physical path.
+case "${WP5_QUALIFICATION:-s3b}" in
+  s3b)
+    TEST_TARGET=(--test wp5_s3b_composition)
+    TEST_NAME=real_owners_compose_fresh_admission_and_fence_replacement
+    PASS_RESULT=COMPOSED_PASS
+    ;;
+  seam)
+    TEST_TARGET=(--lib)
+    TEST_NAME=gameplay_transport::qualification::server_seam_real_owners_over_tcp_tls
+    PASS_RESULT=SEAM_PASS
+    ;;
+  *)
+    echo 'S3B_RESULT=BLOCKED reason=unknown_qualification'
+    exit 2
+    ;;
+esac
+
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 if [[ ! -d "$PLATFORM_SOURCE/.git" ]]; then
@@ -129,7 +148,7 @@ export WP5_S3B_CHARACTER_FENCE_DIR="$WORK/character-fence"
 mkdir -p "$WP5_S3B_CHARACTER_FENCE_DIR"
 
 # Build the harness first so the 300 s intent validity is not spent compiling.
-cargo +1.94.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
+cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
 
 # Real Platform operator command: one bootstrap intent per synthetic account.
 index=0
@@ -140,7 +159,7 @@ for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
 done
 evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"
 WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
-  cargo +1.94.0 test --locked -p oteryn-game-server --test wp5_s3b_composition \
-  real_owners_compose_fresh_admission_and_fence_replacement -- --ignored --exact --nocapture
+  cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
+  "$TEST_NAME" -- --ignored --exact --nocapture
 unset FRESH_SEED_HEX
-result=COMPOSED_PASS
+result="$PASS_RESULT"
