@@ -43,6 +43,7 @@ cap-fs-ext = "=4.0.3"
 cap-std = "=4.0.3"
 ed25519-dalek = { version = "=2.2.0", default-features = false }
 pollster = { version = "=1.0.1", default-features = false }
+prost = "=0.14.4"
 reqwest = { version = "=0.13.4", default-features = false, features = ["form", "json", "rustls", "stream"] }
 rustix = { version = "=1.1.5", default-features = false, features = ["fs"] }
 rustls = { version = "=0.23.45", default-features = false, features = ["aws_lc_rs", "std"] }
@@ -63,6 +64,7 @@ sqlx = {
 sha2 = { version = "=0.11.0", default-features = false }
 tokio = { version = "=1.53.1", default-features = false, features = ["io-util", "net", "rt-multi-thread", "sync", "time"] }
 tokio-rustls = { version = "=0.26.4", default-features = false, features = ["aws_lc_rs"] }
+rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "aws_lc_rs"] }
 wgpu = { version = "=30.0.0", default-features = false, features = ["std", "dx12"] }
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
 

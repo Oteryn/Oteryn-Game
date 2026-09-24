@@ -5,10 +5,17 @@
 
 extern crate self as oteryn_game_server;
 
+pub mod character_bootstrap_intent;
+pub mod character_recovery_fence;
 pub mod content;
 pub mod domain;
 pub mod durability;
 pub mod foundation;
+mod gameplay_transport;
+
+pub use gameplay_transport::{
+    GameplayListenerConfig, GameplaySeamOwners, GameplayServeError, serve_gameplay,
+};
 
 #[allow(dead_code)]
 pub(crate) mod world_runtime;
@@ -578,3 +585,4 @@ mod v2_reconciled_prepared_budget_regression_tests {
 }
 
 pub mod admission_evidence;
+pub mod native_admission_source;

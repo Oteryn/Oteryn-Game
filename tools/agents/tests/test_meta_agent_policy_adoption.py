@@ -286,7 +286,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "2.3")
+        self.assertEqual(entry["version"], "2.4")
         self.assertNotIn(
             "compact execution profile over `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`",
             coordinator,
@@ -372,6 +372,30 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         )
 
         self.assertIn("former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired", readme)
+
+        census = entries["OTV2_FULL_CONTENT_CENSUS_PROGRAMME"]
+        self.assertEqual(census["version"], "1.1")
+        self.assertEqual(census["status"], "reusable")
+        self.assertIs(census["reusable"], True)
+        self.assertIn("same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity", census["scope"])
+        self.assertIn("not a second coordinator", census["scope"])
+
+        coordinator_prompt = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("### Scoped dispatch aliases", coordinator_prompt)
+        self.assertIn("OTV2_FULL_CONTENT_CENSUS_PROGRAMME", coordinator_prompt)
+        self.assertIn("do not bounce routine census scheduling back to #162", coordinator_prompt)
+
+        census_prompt = (ROOT / "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`", census_prompt)
+        self.assertIn("do not count `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` as a second active mutating control plane", census_prompt)
+        self.assertIn("Do not stop with “#162 must assign”", census_prompt)
+        self.assertIn("### Subagent orchestration", census_prompt)
+        self.assertIn("Luna subagents", census_prompt)
+        self.assertIn("scoped dispatch alias of the same `OTV2_WORK_DELIVERY_COORDINATOR` control-plane profile", readme)
 
         implementation_prompt = (ROOT / "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md").read_text(
             encoding="utf-8"
