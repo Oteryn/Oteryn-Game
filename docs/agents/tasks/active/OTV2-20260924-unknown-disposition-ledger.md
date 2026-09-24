@@ -58,7 +58,7 @@ The residual 131 are subdivided by deterministic discovery-root precedence into 
 
 ## Validation
 
-The dedicated workflow verifies the exact G3 artifact run, ID, head, name, expiry state, and archive digest; checks embedded schema, authority, and universe digest; builds the 5,512-row ledger; checks the compact manifest against Git; runs focused counterexamples for dual-lane pages, six classified Creature/Object rows, page 19087 overlap, UNKNOWN Mount-list `Winterlight Solstice`, redirects, alternates, parse errors, duplicate IDs, corrupt archives, and unverified current revisions; and uploads only the complete ledger and manifest with 14-day retention.
+The same-repository-only workflow job uses the existing protected downloader to verify the exact G3 run success, artifact ID, head, name, expiry, size, member list, and archive digest without forwarding the bearer token across the storage redirect; checks embedded schema, authority, and universe digest; builds the 5,512-row ledger; checks the compact manifest against Git; runs focused counterexamples for dual-lane pages, six classified Creature/Object rows, page 19087 overlap, UNKNOWN Mount-list `Winterlight Solstice`, redirects, alternates, parse errors, duplicate IDs, corrupt archives, and unverified current revisions; and uploads only the complete ledger and manifest with 14-day retention.
 
 ## Handoff
 
