@@ -82,7 +82,9 @@
   - the PostgreSQL password, and the database root-CA PEM (bounded), each as its own file;
   - only while the S2 store is uninitialized: the one-time S2 fresh-store authorization (D3).
 
-  Any missing, unreadable, malformed or over-bound input fails before a socket is bound. It exits with a distinct code, and the error names the key but never its value.
+  Every secret file is opened without following symbolic links and must be a regular file owned by the reading process's user, with no group or other permission bits (mode 0600 or 0400). Its parent directory must be owned by that user or root and not writable by group or others. The checks run on the opened descriptor, not on the path, and any failure rejects before the content is read. `oteryn-game-ops` applies the same checks to its own credential files.
+
+  Any missing, unreadable, insecure, malformed or over-bound input fails before a socket is bound. It exits with a distinct code, and the error names the key but never its value.
 
 Rejected alternatives:
 - **Environment variables for everything.** Secret-bearing environment dumps are a common leak path, and file permissions give clearer ownership and rotation.
@@ -108,7 +110,9 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
 
 The exact grant lists are part of the implementation. Negative tests must prove that a runtime credential cannot assign, revoke, issue authorizations, configure the interpretation or admit a fresh Character generation.
 
-`oteryn-game-ops` uses the same explicit durability-root connection fields as D1, with its own control-plane credential files. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
+`oteryn-game-ops` uses the same explicit durability-root connection fields as D1, with its own control-plane credential files.
+
+**Durable request and authorization files.** Every file the tool writes (launch authorization, assignment request, Character recovery request) is created as a new file (exclusive create, no symbolic-link following, mode 0600), written completely, synchronized, and then its parent directory is synchronized. Only after all of this succeeds does the tool submit the database or fence mutation that the file guards. Any failure before that point aborts without the mutation, so a crash can never leave a committed or ambiguous mutation whose exact request was lost. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
 - **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes one authorization file for the node containing the secret and the exact non-secret `LaunchBinding` used at issuance. `register_node_incarnation` requires both, and a changed binding rejects.
 - **Registration revocation** through `revoke_node_registration`.
 - **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor and a stable writer name:
