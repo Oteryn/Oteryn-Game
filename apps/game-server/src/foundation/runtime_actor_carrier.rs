@@ -525,6 +525,11 @@ mod channel_actor_position_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
+#[path = "movement_static_kernel_structural_tests.rs"]
+mod movement_static_kernel_structural_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
 
