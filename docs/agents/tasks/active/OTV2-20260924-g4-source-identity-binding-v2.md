@@ -4,14 +4,14 @@
 task_id: OTV2-20260924-g4-source-identity-binding-v2
 title: G4 v2 source identity binding carrier
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-g4-source-identity-binding-v2
-pr: null
+pr: 846
 base_sha: 3cbcc87a00ebe377f8275161df1e91cd73401831
-head_sha: null
-final_head_sha: null
+head_sha: 6182a9e15cb91e08e9a9166275431d823d0e841c
+final_head_sha: pending_self_referential
 final_head_frozen_at: null
 owner: single allocated G4 source identity binding writer
 created_at: 2026-09-24
@@ -103,8 +103,8 @@ The supplied Item pilot example (TibiaWiki page ID 8513 at revision 433952, no I
 
 ### Focused
 
-- command/run: `cargo fmt --check`; focused Cargo test not yet runnable
-- result: BLOCKED locally because `cargo`/`rustc` are absent from this execution environment. Exact Rust validation must run on a repository runner before candidate qualification.
+- command/run: `cargo fmt --check`, run `36016460926`, job `107690327709`; local `cargo`/`rustc`/`rustfmt` are unavailable
+- result: FAIL on exact head `6182a9e15cb91e08e9a9166275431d823d0e841c`; all formatter suggestions from the job log are applied in this local repair. Post-repair focused Rust validation remains pending on an equipped runner.
 
 ### Component/integration
 
@@ -118,53 +118,56 @@ The supplied Item pilot example (TibiaWiki page ID 8513 at revision 433952, no I
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: pending; prior observed exact head `6182a9e15cb91e08e9a9166275431d823d0e841c`
+- trigger source: pull_request
+- workflow/run/job: Merge gate run `36016460926`; formatter job `107690327709`; Rust Linux workspace job `107690327468`
+- runner assignment: GitHub-hosted Ubuntu 24.04
+- classification: content v2 parser/writer and focused test changes
+- result: formatter failed on style-only rustfmt deltas; Rust Linux workspace was cancelled during `cargo build` after compiling `oteryn-game-server`, before Clippy or tests. Governance metadata also reported a missing `## Summary`; the coordinator updated the PR body. Hosted qualification for the repaired exact head remains pending.
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing agent
-- material findings: pending Rust compilation/format validation
-- verdict: pending
+- exact head: prior observed PR head `6182a9e15cb91e08e9a9166275431d823d0e841c`; formatter repair is style-only
+- method/reviewer: implementing agent whole-diff review
+- material findings: applied all rustfmt suggestions from job `107690327709`; no semantic changes
+- verdict: local repair ready for exact-head CI
 
 ## Independent review
 
-- required: pending under the bound policy and exact candidate risk classification
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: YES under bound policy for source identity/provenance semantics
+- exact head: `6182a9e15cb91e08e9a9166275431d823d0e841c`
+- method/auditor: independent static review
+- material findings: no material code issue identified; this is not exact-head CI qualification
+- verdict: static review complete; not merge-ready until repaired head passes required CI and #841 policy repin gate
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: four owned paths only; formatter-only code diff plus evidence/task CI and lifecycle updates
 - unresolved review threads: pending
 - related/superseded PRs: #839 #840
-- protected auto-merge: pending active control-plane route
+- protected auto-merge: pending active control-plane route; protected integration gated on #841 META policy repin
 - merge commit/result: pending
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: typed carrier and focused tests authored in isolated local worktree
-status: implementing
+last_progress: PR #846 published at 6182a9e; exact-head formatter feedback applied locally and CI/evidence metadata reconciled
+status: validating
 branch: agent/otv2-g4-source-identity-binding-v2
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: 6182a9e15cb91e08e9a9166275431d823d0e841c
+pr: 846
+final_head_sha: pending_self_referential
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_trigger_source: pull_request
+ci_check_generation: 6182a9e15cb91e08e9a9166275431d823d0e841c
+ci_checks_for_current_head: 1
+ci_run_ids:
+  - 36016460926
+ci_job_ids:
+  - 107690327709
+  - 107690327468
+runner_assignment_state: completed
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -173,6 +176,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: Rust toolchain unavailable in local execution environment
-next_action: run formatting and focused tests on a toolchain-equipped candidate runner
+blocker: repaired local candidate awaits remote publication and new exact-head CI; protected integration also awaits #841 policy repin
+next_action: send amended local candidate SHA and bounded diff evidence to active control plane
 ```

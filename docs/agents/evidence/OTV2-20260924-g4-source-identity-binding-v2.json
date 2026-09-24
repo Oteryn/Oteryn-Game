@@ -11,7 +11,9 @@
     "comment_id": 5816360124,
     "writer_count": 1,
     "candidate_authoring_allocated": true,
-    "remote_publication_requested": false,
+    "candidate_published": true,
+    "pull_request": 846,
+    "prior_observed_head": "6182a9e15cb91e08e9a9166275431d823d0e841c",
     "protected_integration_gate": "#841 policy repin"
   },
   "decision": "docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md",
@@ -38,10 +40,22 @@
     ]
   },
   "validation": {
-    "attempted": ["cargo fmt --check"],
-    "result": "BLOCKED",
-    "reason": "cargo and rustc are unavailable in the local execution environment",
-    "focused_rust_tests": "NOT_RUN"
+    "prior_head_run": 36016460926,
+    "formatter_job": 107690327709,
+    "formatter_result": "FAIL",
+    "formatter_disposition": "all rustfmt suggestions applied in local style-only repair",
+    "pr_metadata_job": 107690181327,
+    "pr_metadata_result": "FAIL on missing ## Summary; coordinator updated PR body",
+    "rust_linux_workspace_job": 107690327468,
+    "rust_linux_workspace_result": "CANCELLED during cargo build after compiling oteryn-game-server; Clippy/tests did not run",
+    "local_toolchain": "cargo, rustc and rustfmt unavailable",
+    "repair_exact_head_validation": "PENDING"
+  },
+  "independent_review": {
+    "observed_head": "6182a9e15cb91e08e9a9166275431d823d0e841c",
+    "method": "bounded static review",
+    "material_code_issue": false,
+    "qualification": "not merge-ready; repaired exact-head CI and #841 remain pending"
   },
   "policy": {
     "binding_version": "3.1.0",
@@ -51,7 +65,10 @@
   },
   "candidate": {
     "branch": "agent/otv2-g4-source-identity-binding-v2",
-    "commit": null,
-    "remote_publication": "NOT_AUTHORIZED"
+    "pull_request": 846,
+    "observed_remote_head": "6182a9e15cb91e08e9a9166275431d823d0e841c",
+    "repair_commit": "pending_self_referential",
+    "remote_publication": "PUBLISHED_ON_PR",
+    "protected_integration": "PENDING_#841"
   }
 }

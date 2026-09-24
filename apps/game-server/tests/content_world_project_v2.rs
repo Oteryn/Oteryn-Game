@@ -179,9 +179,7 @@ fn candidate() -> ProjectV2Draft {
     }
 }
 
-fn with_source_identity_bindings(
-    bindings: Vec<ProjectV2SourceIdentityBinding>,
-) -> ProjectV2Draft {
+fn with_source_identity_bindings(bindings: Vec<ProjectV2SourceIdentityBinding>) -> ProjectV2Draft {
     let mut draft = item_candidate();
     let digest = "97fbfe027f93834bfaef365e4271dbb56b479ba29528e3f00a1b046aae0a7491";
     draft.core.imports.push(ImportBatch {
@@ -321,7 +319,10 @@ fn all_v2_declarative_families_round_trip_without_lowering_candidates() {
         serde_json::from_slice(&documents.documents()["provenance/sources.json"])
             .expect("empty provenance JSON");
     assert_eq!(
-        empty_provenance.as_object().expect("provenance object").len(),
+        empty_provenance
+            .as_object()
+            .expect("provenance object")
+            .len(),
         2,
         "empty source identity bindings preserve the prior v2 wire shape"
     );
@@ -436,12 +437,16 @@ fn source_identity_bindings_preserve_lexical_ids_and_round_trip_in_tuple_order()
     draft.state.source_identity_bindings.push(revision_binding);
     // Canonical writing orders by (source key, source revision, namespace, external ID).
     draft.state.source_identity_bindings.reverse();
-    draft.core.imports.sort_by(|a, b| a.batch_id.cmp(&b.batch_id));
-    draft.state.sources.sort_by(|a, b| {
-        (&a.key, &a.revision).cmp(&(&b.key, &b.revision))
-    });
-    let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())
-        .expect("write crosswalk");
+    draft
+        .core
+        .imports
+        .sort_by(|a, b| a.batch_id.cmp(&b.batch_id));
+    draft
+        .state
+        .sources
+        .sort_by(|a, b| (&a.key, &a.revision).cmp(&(&b.key, &b.revision)));
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("write crosswalk");
     let provenance: Value =
         serde_json::from_slice(&documents.documents()["provenance/sources.json"])
             .expect("provenance JSON");
@@ -470,7 +475,10 @@ fn source_identity_bindings_preserve_lexical_ids_and_round_trip_in_tuple_order()
     assert_eq!(bindings[1].source_revision, "source-r1");
     assert_eq!(bindings[3].source_revision, "source-r2");
     assert_eq!(
-        parsed.canonical_documents(limits()).expect("rewrite").documents(),
+        parsed
+            .canonical_documents(limits())
+            .expect("rewrite")
+            .documents(),
         documents.documents()
     );
 }
@@ -490,13 +498,25 @@ fn source_identity_bindings_reject_missing_source_targets_and_identity_conflicts
     assert!(CanonicalProjectDocuments::from_v2_draft(missing_source, limits()).is_err());
 
     let mut missing_target = with_source_identity_bindings(vec![valid.clone()]);
-    missing_target.state.source_identity_bindings[0].target.revision = "definition-r2".into();
+    missing_target.state.source_identity_bindings[0]
+        .target
+        .revision = "definition-r2".into();
     assert!(CanonicalProjectDocuments::from_v2_draft(missing_target, limits()).is_err());
 
     let mut duplicate = with_source_identity_bindings(vec![valid.clone(), valid.clone()]);
     duplicate.state.source_identity_bindings.sort_by(|a, b| {
-        (&a.source_key, &a.source_revision, &a.identity_namespace, &a.external_id)
-            .cmp(&(&b.source_key, &b.source_revision, &b.identity_namespace, &b.external_id))
+        (
+            &a.source_key,
+            &a.source_revision,
+            &a.identity_namespace,
+            &a.external_id,
+        )
+            .cmp(&(
+                &b.source_key,
+                &b.source_revision,
+                &b.identity_namespace,
+                &b.external_id,
+            ))
     });
     assert!(CanonicalProjectDocuments::from_v2_draft(duplicate, limits()).is_err());
 
@@ -508,8 +528,18 @@ fn source_identity_bindings_reject_missing_source_targets_and_identity_conflicts
     );
     let mut conflicting = with_source_identity_bindings(vec![valid, conflict]);
     conflicting.state.source_identity_bindings.sort_by(|a, b| {
-        (&a.source_key, &a.source_revision, &a.identity_namespace, &a.external_id)
-            .cmp(&(&b.source_key, &b.source_revision, &b.identity_namespace, &b.external_id))
+        (
+            &a.source_key,
+            &a.source_revision,
+            &a.identity_namespace,
+            &a.external_id,
+        )
+            .cmp(&(
+                &b.source_key,
+                &b.source_revision,
+                &b.identity_namespace,
+                &b.external_id,
+            ))
     });
     assert!(CanonicalProjectDocuments::from_v2_draft(conflicting, limits()).is_err());
 

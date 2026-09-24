@@ -1430,11 +1430,9 @@ fn validate_v2_source_identity_namespace(
     };
     let valid_segment = |segment: &str| {
         !segment.is_empty()
-            && segment
-                .bytes()
-                .all(|byte| {
-                    byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_-".contains(&byte)
-                })
+            && segment.bytes().all(|byte| {
+                byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_-".contains(&byte)
+            })
     };
     if !valid_segment(source) || !valid_segment(identifier) || identifier.contains('/') {
         return Err(ProjectError::InvalidProject(
@@ -2600,11 +2598,7 @@ fn validate_v2_state(
         ProductionKey::new(&binding.source_key)?;
         ProductionAtom::new("v2 source revision", &binding.source_revision)?;
         validate_v2_source_identity_namespace(&binding.identity_namespace, limits)?;
-        validate_v2_source_text(
-            "v2 external source identity",
-            &binding.external_id,
-            limits,
-        )?;
+        validate_v2_source_text("v2 external source identity", &binding.external_id, limits)?;
         if !state.sources.iter().any(|source| {
             source.key == binding.source_key && source.revision == binding.source_revision
         }) {
