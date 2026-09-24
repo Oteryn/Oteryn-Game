@@ -26,6 +26,9 @@ owned_paths:
   - apps/game-server/src/bin/oteryn-game-ops.rs
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/fresh_evidence.rs
+  - apps/game-server/src/gameplay_transport/qualification.rs
+  - tools/qualification/node_boot/
+  - .github/workflows/node-boot-qualification.yml
   - docs/agents/tasks/active/OTV2-20260924-ops-node-boot-b3.md
 public_contracts:
   - OPS-NODE-BOOT-01
@@ -49,5 +52,6 @@ external_repositories: []
   - serves gameplay, the Character bootstrap control socket and audit expiry;
   - on a signal, withdraws readiness first, then stops.
   - `oteryn-game-ops character bootstrap` is the socket client.
+  - §4 physical qualification: `tools/qualification/node_boot/run.sh` and the `Node boot` workflow run the shipped binaries against the real Platform and a TLS PostgreSQL 17.6, and reproduce every #823 SEAM stage against the node's own port.
 - **Depends on:** #843 (D4 evidence), #845 (B1), #849 (B2).
 - **Excluded:** `OPS-CHANNEL-01`, resume/reconnect (#822), Platform changes, production endpoints and credentials.

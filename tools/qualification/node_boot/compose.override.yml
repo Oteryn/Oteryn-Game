@@ -1,0 +1,8 @@
+# OPS-NODE-BOOT-01 §4 overlay on the S3-A/S3-B topology: the serving node
+# uses one Platform producer channel with one mTLS client identity for both
+# the native evidence route and the Character bootstrap-intent route (D1).
+services:
+  platform:
+    environment:
+      GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS: "600"
+      GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_MTLS_CLIENT_IDENTITY: CN=oteryn-game-native-evidence

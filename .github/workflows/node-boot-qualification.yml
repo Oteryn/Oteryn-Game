@@ -1,0 +1,69 @@
+name: Node boot physical qualification
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/node-boot-qualification.yml
+      - tools/qualification/node_boot/**
+      - apps/game-server/src/node/**
+      - apps/game-server/src/bin/oteryn-game-ops.rs
+      - apps/game-server/src/main.rs
+      - apps/game-server/src/gameplay_transport/**
+      - apps/game-server/src/character_recovery_fence.rs
+      - apps/game-server/migrations/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-boot-qualification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-boot:
+    name: Node boot / shipped binaries against the real Platform
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Validate harness
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/node_boot/run.sh
+          echo 'NODE_BOOT_EVIDENCE static_validation=PASS shell=parsed'
+
+      - name: Run node boot qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/node-boot-evidence.txt"
+          bash tools/qualification/node_boot/run.sh | tee "$evidence"
+          grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' "$evidence"
+          grep -E '^(NODE_BOOT_EVIDENCE |SEAM_EVIDENCE |NODE_BOOT_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
