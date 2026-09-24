@@ -276,6 +276,7 @@ def directory_reference_occurrences(
         bounded = (
             not tail
             or tail[:1] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
+            or (include_descendants and tail[:1] in {b"*", b"?", b"["})
             or (
                 tail[:1] == b"/"
                 and (
