@@ -60,7 +60,13 @@
   - the listener address;
   - the entry deadline and limits;
   - `world_id` and `channel_id`;
-  - the PostgreSQL connection reference;
+  - the explicit durability-root connection fields that `DurabilityRootConfig` requires:
+    - literal transport IP and port;
+    - DNS TLS server name;
+    - database;
+    - username.
+
+    A generic PostgreSQL URL is not accepted, matching the accepted WP3 configuration profile;
   - the Character recovery-fence directory;
   - the bounded assignment wait (D3);
   - the readiness revisions (D5);
@@ -72,7 +78,7 @@
   - gameplay TLS certificate chain and key;
   - per Platform route: the operator-provisioned service trust roots, plus that route's mTLS client certificate and key. The two routes use distinct client identities. The trust roots are separate from the gameplay certificate chain, and an empty root set rejects, as `ProducerDescriptor::new` already requires;
   - the launch-scoped bootstrap authorization (D3);
-  - the PostgreSQL URL;
+  - the PostgreSQL password, and the database root-CA PEM (bounded), each as its own file;
   - only while the S2 store is uninitialized: the one-time S2 fresh-store authorization (D3).
 
   Any missing, unreadable, malformed or over-bound input fails before a socket is bound. It exits with a distinct code, and the error names the key but never its value.
@@ -83,7 +89,25 @@ Rejected alternatives:
 
 ### D2 — Operator actions are control-plane actions; only the serving node holds a process proof
 
-A second binary target in the same crate, `oteryn-game-ops`, performs control-plane actions. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
+A second binary target in the same crate, `oteryn-game-ops`, performs control-plane actions.
+
+**Control-actor authentication.** The scope-assignment decision requires an independently authenticated and authorized control actor. A name, configuration file or network access is insufficient. The authentication is the database credential:
+- **Group roles.** A forward migration defines two least-privilege PostgreSQL group roles:
+  - a GameNode runtime role;
+  - a control-plane role.
+- **Login roles.** Deployment creates distinct login roles as members of these groups.
+- **Control-plane privileges.** Only the control-plane role may:
+  - issue or revoke registrations;
+  - submit or reconcile assignments;
+  - configure the Character interpretation;
+  - admit the fresh Character recovery generation.
+- **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, and admission.
+- **Recorded actor.** The recorded `ControlActor` is derived from the authenticated database session role, never from a caller-supplied label.
+- **Node isolation.** The serving node holds only runtime credentials.
+
+The exact grant lists are part of the implementation. Negative tests must prove that a runtime credential cannot assign, revoke, issue authorizations, configure the interpretation or admit a fresh Character generation.
+
+`oteryn-game-ops` uses the same explicit durability-root connection fields as D1, with its own control-plane credential files. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
 - **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes the secret to a file for the node.
 - **Registration revocation** through `revoke_node_registration`.
 - **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor and a stable writer name:
@@ -91,7 +115,9 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
   - A lost acknowledgement leaves the durable writer slot occupied, and the writer rejects new work until that exact operation is reconciled. The tool therefore offers `assignment reconcile --request <file>`, which replays the retained key and command through `reconcile`.
   - Any later mutating invocation first reads `unreconciled()` and refuses new work while a slot is occupied. It names the operation key so the operator can reconcile it.
 - **The Character interpretation revision.**
-- **Fresh Character recovery store authorization** (generation 1) in the configured fence directory.
+- **Fresh Character recovery store:** authorize generation 1 in the configured fence directory (`authorize_fresh_store`), then admit it into the database (`admit_fresh_character_recovery`) while the tool still holds that transition. The serving node's `open_character_authority` requires the admitted row.
+  - A lost acknowledgement of the admission is reconciled by re-running the same action.
+  - It must return the already-admitted generation-1 record and never authorize a second fresh store.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the provenance namespace, authorization reference, source authority, and the descriptor registration revision and facts. Issuing it never initializes the store itself.
 
 Mutations that require a current process proof (`NodeIncarnationProof`) run only inside the serving node, under its own registration:
@@ -128,7 +154,7 @@ Rejected alternatives:
    - **Descriptor changes:** `register_native_admission_descriptor` runs when the configured descriptor revision advances.
 
    The S2 registration is a single custody row, so exactly one serving node at a time can ingest Platform evidence. That matches this one-node slice. Several serving nodes need a later S2 decision.
-5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization is an operator action (D2); the node never performs it.
+5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization and its database admission are operator actions (D2); the node never performs them. A store that is not admitted fails boot.
 6. **Await assignment.** Log the complete non-secret registration fact: `NodeId` together with its database-allocated `registration_revision`. The operator passes exactly this `NodeRegistrationFact` to the assignment `Assign` or `Replace` command. Wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
 7. **Bind.** Bind the gameplay listener and the control socket. A failed bind exits before any readiness is published.
 8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions.
@@ -201,6 +227,15 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - empty trust roots;
   - an S2 fresh-store authorization supplied for an already-initialized store, or missing for an uninitialized one.
 - **Launch authorization.** A replayed authorization rejects registration.
+- **Credential separation.** With the runtime credential, each of the following is refused by the database:
+  - assignment;
+  - revoke;
+  - authorization issuance;
+  - interpretation configuration;
+  - fresh Character admission.
+
+  The recorded control actor equals the authenticated control-plane session role.
+- **Fresh Character store.** Boot fails until the operator has authorized and admitted generation 1. Re-running the operator action after a lost acknowledgement does not create a second fresh store.
 - **Restart.**
   - A replacement launch under a superseding authorization yields a new `NodeId`, claims S2 custody, and becomes ready after the operator replaces the assignment. The old incarnation can no longer admit.
   - A replacement launch without supersession or revocation fails at S2 custody and never becomes ready.
