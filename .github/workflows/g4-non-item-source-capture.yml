@@ -1,0 +1,161 @@
+name: G4 Non-Item Source Capture
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/g4_non_item_source_capture.py
+      - tools/content-census/g4_non_item_source_capture_self_test.py
+      - tools/content-census/source_universe.py
+      - tools/content-census/source-surfaces.json
+      - tools/content-census/global_source_overlap.py
+      - tools/content-census/global_source_overlap_fetch_artifacts.py
+      - docs/agents/evidence/OTV2-20260924-global-source-overlap.json
+      - tools/reference-world-corridor-census/item_current_source_tibiawiki.py
+      - docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json
+      - .github/workflows/g4-non-item-source-capture.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: g4-non-item-source-capture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: G4 / non-Item source provenance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run focused synthetic tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/g4_non_item_source_capture.py \
+            tools/content-census/g4_non_item_source_capture_self_test.py
+          python tools/content-census/g4_non_item_source_capture_self_test.py
+
+      - name: Rerun G1 into hosted scratch
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-non-item-source-capture"
+          mkdir -p "$ROOT"
+          python tools/content-census/source_universe.py \
+            --registry tools/content-census/source-surfaces.json \
+            --output "$ROOT/source-universe.json" \
+            --manifest-output "$ROOT/g1-manifest.json"
+
+      - name: Reproduce protected G2 Item page-ID set
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          INPUT="$RUNNER_TEMP/g4-g2-inputs"
+          OUTPUT="$RUNNER_TEMP/g4-g2-output"
+          mkdir -p "$OUTPUT"
+          python tools/content-census/global_source_overlap_fetch_artifacts.py "$INPUT"
+          G1_ZIP_SHA="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["g1_archive_sha256"])' "$INPUT/verified-archive-digests.json")"
+          ITEM_ZIP_SHA="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["item_archive_sha256"])' "$INPUT/verified-archive-digests.json")"
+          G1_RUN="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["g1_run_id"])' "$INPUT/verified-archive-digests.json")"
+          G1_HEAD="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["g1_head_sha"])' "$INPUT/verified-archive-digests.json")"
+          ITEM_RUN="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["item_run_id"])' "$INPUT/verified-archive-digests.json")"
+          ITEM_HEAD="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["item_head_sha"])' "$INPUT/verified-archive-digests.json")"
+          python tools/content-census/global_source_overlap.py \
+            --g1 "$INPUT/g1-source-universe.json" \
+            --g1-manifest "$INPUT/g1-manifest.json" \
+            --item-crosswalk "$INPUT/item-crosswalk-first.json" \
+            --item-manifest "$INPUT/item-manifest-first.json" \
+            --g1-artifact-id 10798668295 \
+            --item-artifact-id 10778892407 \
+            --g1-archive-sha256 "$G1_ZIP_SHA" \
+            --item-archive-sha256 "$ITEM_ZIP_SHA" \
+            --g1-run-id "$G1_RUN" \
+            --g1-head-sha "$G1_HEAD" \
+            --item-run-id "$ITEM_RUN" \
+            --item-head-sha "$ITEM_HEAD" \
+            --out "$OUTPUT"
+          python - "$OUTPUT/global-source-universe.json" "$OUTPUT/manifest.json" docs/agents/evidence/OTV2-20260924-global-source-overlap.json <<'PY'
+          import json
+          import pathlib
+          import sys
+          corpus, manifest, pinned = [json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in sys.argv[1:]]
+          assert manifest["schema"] == "OTERYN_GLOBAL_SOURCE_OVERLAP_MANIFEST/v1"
+          assert manifest["global_universe_sha256"] == pinned["first_hosted_validation"]["global_source_universe_sha256"]
+          assert manifest["counts"]["protected_item_pages"] == 6918
+          assert len([p for p in corpus["pages"] if any(x["lane"] == "PROTECTED_ITEM" for x in p["provenance"])]) == 6918
+          print("protected G2 Item page-ID set: PASS")
+          PY
+
+      - name: Capture pinned non-Item revision digests
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-non-item-source-capture"
+          python tools/content-census/g4_non_item_source_capture.py \
+            --g1-output "$ROOT/source-universe.json" \
+            --g1-manifest "$ROOT/g1-manifest.json" \
+            --g2-output "$RUNNER_TEMP/g4-g2-output/global-source-universe.json" \
+            --g2-manifest "$RUNNER_TEMP/g4-g2-output/manifest.json" \
+            --output "$ROOT/non-item-source-capture.json" \
+            --manifest-output "$ROOT/manifest.json"
+
+      - name: Verify compact output invariants
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-non-item-source-capture"
+          python - "$ROOT/non-item-source-capture.json" "$ROOT/manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          artifact = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          manifest = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding="utf-8"))
+          assert artifact["schema"] == "OTERYN_G4_NON_ITEM_SOURCE_CAPTURE/v1"
+          assert len(artifact["pages"]) == manifest["counts"]["unique_non_item_pages"] > 0
+          assert manifest["counts"]["protected_item_pages"] == 6918
+          assert manifest["counts"]["g1_live_unique_pages"] - manifest["counts"]["g1_item_id_overlap_pages"] == manifest["counts"]["unique_non_item_pages"]
+          assert len(manifest["g1_item_id_overlap_page_ids"]) == manifest["counts"]["g1_item_id_overlap_pages"]
+          assert artifact["authority"]["gameplay_truth"] == "NONE"
+          assert artifact["authority"]["second_wiki"] == "UNKNOWN"
+          assert artifact["authority"]["ots_hypothesis"] == "UNVERIFIED_HYPOTHESIS_ONLY"
+          assert manifest["invariants"]["raw_content_retained"] is False
+          assert manifest["invariants"]["protected_item_page_ids_subtracted"] is True
+          assert manifest["invariants"]["item_overlap_page_ids_retained_as_manifest_observations"] is True
+          assert manifest["invariants"]["normalized_fields_emitted"] is False
+          assert manifest["invariants"]["candidate_families_are_not_assignments"] is True
+          assert manifest["invariants"]["placements_are_observations_only"] is True
+          for page in artifact["pages"]:
+              assert set(page) == {"page_id", "title", "revision_id", "revision_timestamp", "candidate_families", "discovery_roots", "source_surfaces", "raw_utf8_sha256"}
+              assert len(page["raw_utf8_sha256"]) == 64
+          print("G4 non-Item compact evidence: PASS")
+          PY
+
+      - name: Upload compact artifact and manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-non-item-source-capture-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g4-non-item-source-capture/non-item-source-capture.json
+            ${{ runner.temp }}/g4-non-item-source-capture/manifest.json
+          if-no-files-found: error
+          retention-days: 14

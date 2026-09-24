@@ -1,0 +1,38 @@
+{
+  "schema": "OTERYN_G4_NON_ITEM_SOURCE_PROVENANCE_EVIDENCE/v1",
+  "task_id": "OTV2-20260924-g4-non-item-source-provenance",
+  "issue": 162,
+  "issue_comment": 5821139398,
+  "status": "IMPLEMENTING",
+  "branch": "agent/otv2-g4-non-item-source-provenance",
+  "base_commit": "6a7b11a697bb1d921c98e88e069e4ec2e359ef60",
+  "pr": null,
+  "collector": "tools/content-census/g4_non_item_source_capture.py",
+  "workflow": ".github/workflows/g4-non-item-source-capture.yml",
+  "protected_overlap_source": "tools/content-census/global_source_overlap_fetch_artifacts.py",
+  "output": {
+    "artifact": "OTERYN_G4_NON_ITEM_SOURCE_CAPTURE/v1",
+    "manifest": "OTERYN_G4_NON_ITEM_SOURCE_CAPTURE_MANIFEST/v1",
+    "committed_bulk_corpus": false
+  },
+  "invariants": {
+    "exact_g1_revision_only": true,
+    "deduplicated_by_page_id": true,
+    "raw_utf8_hashed_then_discarded": true,
+    "raw_content_retained": false,
+    "normalized_fields_emitted": false,
+    "item_lane_refetched": false,
+    "protected_item_page_ids_subtracted": true,
+    "overlap_ids_preserved_as_manifest_observations": true,
+    "canonical_family_assignment": false,
+    "binding_or_promotion": false,
+    "placements_are_observations": true,
+    "second_wiki": "UNKNOWN",
+    "ots": "HYPOTHESIS_ONLY"
+  },
+  "verification": {
+    "local_tests": "PASS",
+    "git_data_commit": "PENDING",
+    "changed_path_count": 5
+  }
+}
