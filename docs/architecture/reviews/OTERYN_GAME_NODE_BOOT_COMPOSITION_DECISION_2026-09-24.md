@@ -72,7 +72,7 @@
   - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument. Its parent directory must be owned by the node's service user, with mode 0700 and not writable by anyone else;
   - the readiness revisions (D5);
   - the S2 descriptor registration revision (D3);
-  - two separate Platform routes, each with its own endpoint, expected peer name and service trust roots:
+  - two separate Platform routes, each with its own source authority namespace, endpoint, expected peer name and service trust roots. The source authority is the value S1 responses are bound to, and it is distinct from the TLS peer name:
     - the admission evidence source (S1/S2);
     - the Character bootstrap intent issuer (#414).
 - **Secrets and trust material are never inline values.** The document gives only file paths, each read once at start:
@@ -154,7 +154,10 @@ Rejected alternatives:
 4. **Establish S2 custody** for this incarnation:
    - **First installation:** `initialize_native_admission_source` with the provenance and descriptor from the operator-issued S2 fresh-store authorization. That authorization is required when the store is uninitialized and rejected when it is already initialized.
    - **Every later incarnation:** `claim_native_admission_source_custody`, which succeeds only when the prior holder is no longer current.
-   - **Descriptor changes:** `register_native_admission_descriptor` runs when the configured descriptor revision advances.
+   - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and the facts derived from the configured route: source authority, endpoint, peer name, trust-root digest and client-identity digest.
+     - A higher revision registers the new facts.
+     - An equal revision must match the stored facts exactly, so changed facts retained under an old revision fail boot.
+   - **Pending publications:** before any evidence fetch or readiness, read `pending_native_source_publications` and reconcile each retained slot by its exact operation binding (checkpoint or clear, under the S2 resource contract). Boot fails if a slot stays unresolved after a bounded number of attempts.
 
    The S2 registration is a single custody row, so exactly one serving node at a time can ingest Platform evidence. That matches this one-node slice. Several serving nodes need a later S2 decision.
 5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization and its database admission are operator actions (D2); the node never performs them. A store that is not admitted fails boot.
@@ -254,6 +257,9 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - A replacement launch without supersession or revocation fails at S2 custody and never becomes ready.
 - **Control-socket restarts.** A restart after a graceful exit or a crash binds the control socket again. A foreign file at the socket path, or a wrongly owned or permissive directory, fails boot without being removed.
 - **Fresh-store retry.** After an ambiguous fresh Character admission, a re-run with the retained request file completes it without conflict.
+- **S2 restart safety.**
+  - Changed descriptor facts under an unchanged revision fail boot.
+  - After a crash that leaves S2 publication slots occupied, the next boot reconciles them before admitting.
 - **Readiness after replacement.** After a replacement assignment, the new node publishes readiness by CAS from the writer's `ready = false` successor.
 - **Readiness ordering.**
   - When the listener bind fails, no readiness is published.
