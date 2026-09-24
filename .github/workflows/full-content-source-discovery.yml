@@ -1,0 +1,139 @@
+name: Full Content Source Discovery
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/source_universe.py
+      - tools/content-census/source_universe_self_test.py
+      - tools/content-census/source-surfaces.json
+      - tools/reference-world-corridor-census/item_current_source_tibiawiki.py
+      - docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json
+      - docs/agents/evidence/OTV2-20260924-full-content-source-discovery-census.json
+      - docs/agents/tasks/active/OTV2-20260924-full-content-source-discovery-census.md
+      - .github/workflows/full-content-source-discovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-content-source-discovery-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Full content / source discovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run focused synthetic tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/source_universe.py \
+            tools/content-census/source_universe_self_test.py
+          python tools/content-census/source_universe_self_test.py
+
+      - name: Run live bounded source-universe census
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/full-content-source-discovery"
+          mkdir -p "$ROOT"
+          python tools/content-census/source_universe.py \
+            --registry tools/content-census/source-surfaces.json \
+            --output "$ROOT/source-universe.json" \
+            --manifest-output "$ROOT/manifest.json"
+
+      - name: Verify live census invariants
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/full-content-source-discovery"
+          python - "$ROOT/manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert manifest["schema"] == "OTERYN_FULL_CONTENT_SOURCE_CENSUS_MANIFEST/v1"
+          counts = manifest["counts"]
+          assert counts["registry_surfaces"] == 29
+          assert counts["registry_roots"] == 22
+          assert counts["live_unique_pages"] > 0
+          assert counts["protected_item_pages"] == 6918
+          assert counts["nominal_pages_before_g2_overlap"] > counts["protected_item_pages"]
+          assert 0 < counts["requests"] <= 5000
+          invariants = manifest["invariants"]
+          assert invariants["source_universe_first"] is True
+          assert invariants["protected_item_census_reused"] is True
+          assert invariants["protected_item_full_census_refetched"] is False
+          assert invariants["live_page_ids_deduplicated_before_counts"] is True
+          assert invariants["exact_revisions_reverified"] is True
+          assert invariants["hard_exclusions_absent"] is True
+          assert invariants["identity_resolution_performed"] is False
+          assert invariants["identity_minting_performed"] is False
+          assert invariants["semantic_promotion_performed"] is False
+          assert invariants["worldproject_population_performed"] is False
+          assert invariants["raw_long_form_prose_collected"] is False
+          assert invariants["assets_collected"] is False
+          assert set(manifest["hard_exclusions"]) == {
+              "Kalkulatory",
+              "Narzędzie do nasycania",
+              "Dostawca",
+          }
+          assert manifest["full_output"]["committed_bulk_corpus"] is False
+          assert manifest["next_gate"] == "GLOBAL_SOURCE_OVERLAP_AND_DEDUPLICATION"
+          print("full content source discovery manifest: PASS")
+          print(json.dumps(manifest["counts"], ensure_ascii=False, sort_keys=True))
+          print("snapshot=" + manifest["source_snapshot_sha256"])
+          PY
+
+      - name: Validate retained compact evidence when present
+        run: |
+          set -euo pipefail
+          EVIDENCE="docs/agents/evidence/OTV2-20260924-full-content-source-discovery-census.json"
+          if [[ -f "$EVIDENCE" ]]; then
+            python - "$EVIDENCE" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          evidence = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert evidence["schema"] == "OTERYN_FULL_CONTENT_SOURCE_CENSUS_MANIFEST/v1"
+          assert evidence["counts"]["registry_surfaces"] == 29
+          assert evidence["counts"]["protected_item_pages"] == 6918
+          assert evidence["invariants"]["hard_exclusions_absent"] is True
+          assert evidence["invariants"]["protected_item_full_census_refetched"] is False
+          assert evidence["full_output"]["committed_bulk_corpus"] is False
+          assert evidence["next_gate"] == "GLOBAL_SOURCE_OVERLAP_AND_DEDUPLICATION"
+          print("retained compact G1 evidence: PASS")
+          PY
+          fi
+
+      - name: Upload reproducible source-universe evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-content-source-discovery-\${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            \${{ runner.temp }}/full-content-source-discovery/source-universe.json
+            \${{ runner.temp }}/full-content-source-discovery/manifest.json
+          if-no-files-found: error
+          retention-days: 14
