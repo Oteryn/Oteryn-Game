@@ -326,6 +326,52 @@ def test_compile_is_deterministic_and_source_only() -> None:
     assert "wikitext" not in census.canonical_bytes(full_a).decode("utf-8")
 
 
+
+def test_page_link_discovery_counts_missing_redlinks_without_retaining_them() -> None:
+    client = FakeClient(
+        [
+            {
+                "query": {
+                    "pages": [
+                        {
+                            "pageid": 10,
+                            "title": "Root",
+                            "revisions": [
+                                {
+                                    "revid": 110,
+                                    "timestamp": "2026-09-24T00:00:00Z",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+            {
+                "query": {
+                    "pages": [
+                        {"ns": 0, "title": "Ghost", "missing": True},
+                        {"pageid": 1, "ns": 0, "title": "Alpha"},
+                    ]
+                }
+            },
+        ]
+    )
+    index = census.DiscoveryIndex(max_pages=10, exclusion_aliases=set())
+    result = census.discover_page_links(
+        client,
+        census.RequestBudget(4),
+        index,
+        root_id="root",
+        title="Root",
+        include_root=False,
+        max_links=10,
+    )
+    assert result["page_ids"] == [1]
+    assert result["discovered_links"] == 1
+    assert result["missing_links"] == 1
+    assert set(index.by_id) == {1}
+
+
 def main() -> int:
     tests = [
         value
