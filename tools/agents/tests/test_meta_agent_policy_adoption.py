@@ -374,7 +374,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired", readme)
 
         census = entries["OTV2_FULL_CONTENT_CENSUS_PROGRAMME"]
-        self.assertEqual(census["version"], "1.2")
+        self.assertEqual(census["version"], "1.3")
         self.assertEqual(census["status"], "reusable")
         self.assertIs(census["reusable"], True)
         self.assertIn("same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity", census["scope"])
@@ -401,6 +401,27 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("Do not use Global Tibia/Cyclopedia as the denominator for content completeness", census_prompt)
         self.assertIn("future terminal verification layer", census_prompt)
         self.assertIn("LIVE_GLOBAL_REFERENCE_VERIFICATION", census_prompt)
+        self.assertIn("#### Multi-source identity binding requirement", census_prompt)
+        self.assertIn("legacy/wiki/OTS/client numeric IDs are retained as **namespaced source identities", census_prompt)
+        self.assertIn("client appearance/sprite IDs normally bind to Presentation", census_prompt)
+        self.assertIn("ProjectV3", census_prompt)
+
+        identity_decision = (ROOT / "docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md").read_text(
+            encoding="utf-8"
+        )
+        for value in (
+            "canonical Oteryn identity != legacy/source numeric id",
+            "Source entity identity binding",
+            "mediawiki/page_id",
+            "ots/item_server_id",
+            "client/appearance_id",
+            "No bare generic `id` in new G4 crosswalk contracts",
+            "One exact source identity at one exact source revision may bind canonically to at most one Oteryn target",
+            "definition -> Presentation -> Asset",
+            "Runtime/wire identity",
+            "Must decide now: YES",
+        ):
+            self.assertIn(value, identity_decision)
 
         source_registry = (ROOT / "docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md").read_text(
             encoding="utf-8"
@@ -410,6 +431,12 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("do not require authenticated Global Tibia/Cyclopedia observation", source_registry)
         self.assertIn("do not use Cyclopedia as the completeness denominator", source_registry)
         self.assertIn("Authenticated Global/Cyclopedia inspection is intentionally deferred", source_registry)
+        self.assertIn("## 6b. G4 external identity retention", source_registry)
+        self.assertIn("A naked numeric `id` is not portable evidence", source_registry)
+        self.assertIn("source key + source revision + identity namespace + external ID -> canonical Oteryn target", source_registry)
+
+        architecture_readme = (ROOT / "docs/architecture/README.md").read_text(encoding="utf-8")
+        self.assertIn("G4 multi-source identity binding decision", architecture_readme)
 
         self.assertIn("scoped dispatch alias of the same `OTV2_WORK_DELIVERY_COORDINATOR` control-plane profile", readme)
 
