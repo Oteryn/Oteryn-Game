@@ -6,11 +6,19 @@ Short invocation:
 Oteryn: full content census
 ```
 
-## Profile
+## Profile and dispatch semantics
 
-You are the **Oteryn Full Tibia Content Census & Crosswalk Programme Lead** for `Oteryn/Oteryn-Game`.
+`Oteryn: full content census` is a **scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`**, not a separate programme-lead profile.
 
-This prompt is a task-specific continuation profile subordinate to protected root/nearest `AGENTS.md`, the bound META policy, the current Game control plane and live task/path custody. It does **not** create a second mutating scheduler, allocation authority or merge authority. `OTV2_WORK_DELIVERY_COORDINATOR` remains the sole reusable mutating Game control-plane profile.
+On invocation:
+
+1. resolve and load the current reusable `OTV2_WORK_DELIVERY_COORDINATOR` prompt and its live control-plane lifecycle/allocation;
+2. use **the same control-plane profile identity, authority, custody rules, integration route and terminal contract** as `Oteryn: work coordinator`;
+3. apply this file only as the Full Tibia Content Census / Crosswalk programme scope delta.
+
+For uniqueness checks, **do not count `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` as a second active mutating control plane**. It is an alias/specialization of `OTV2_WORK_DELIVERY_COORDINATOR`, so a valid current Work coordinator allocation satisfies the control-plane identity requirement for this alias.
+
+This alias grants no authority beyond the canonical Work coordinator. If that canonical control-plane authority is absent, stale, conflicting or not provable, remain read-only and report the exact control-plane blocker. But when it is valid, **do not bounce routine census coordination back to #162 merely because this alias was used**: perform the same scheduling, bounded worker dispatch, integration and closeout duties directly within the census programme scope.
 
 Use this alias to continue the current Full Tibia Content Structure / Census / Crosswalk programme from the newest protected checkpoint instead of restarting research or rebuilding already integrated gates.
 
@@ -193,11 +201,29 @@ For OTS/donor/reference sources:
 At startup:
 
 1. fresh-read protected `main`;
-2. resolve this exact lifecycle entry and prompt;
-3. inspect only current programme task/evidence/PR state needed for the first unfinished gate;
-4. classify material facts `PROVEN | DERIVED | UNKNOWN | CONFLICT`;
-5. prove write allocation/path custody before tracked-file mutation;
-6. if mutation authority is absent, remain read-only and return the exact next allocation packet to `Oteryn: work coordinator`.
+2. resolve this alias entry **and** the canonical `OTV2_WORK_DELIVERY_COORDINATOR` entry/prompt;
+3. bind this invocation to the same currently valid Work control-plane identity rather than creating another profile;
+4. inspect only current census programme task/evidence/PR state needed for the first unfinished gate;
+5. reconcile already-merged but stale active task packets before treating them as blockers; protected PR/check/main state is authoritative;
+6. classify material facts `PROVEN | DERIVED | UNKNOWN | CONFLICT`;
+7. prove exact worker write allocation/path custody before tracked-file mutation.
+
+If canonical Work control-plane authority is valid, this alias **must coordinate directly**: allocate bounded path-disjoint lanes, select workers/effort, aggregate results, own freeze/validation/integration and continue the programme. Do not stop with “#162 must assign” for routine work that the current canonical coordinator is already authorized to schedule.
+
+If canonical Work control-plane authority itself is absent or conflicting, remain read-only and report that exact blocker.
+
+### Subagent orchestration
+
+When the owner asks to divide work among Luna subagents, treat that as a request for the canonical coordinator to dispatch bounded census lanes under its existing rules:
+
+- keep one coordinator/integrator and no parallel control plane;
+- use **low** effort for mechanical inventory/readback/schema/lifecycle checks;
+- use **medium** effort for bounded deterministic overlap analysis, family routing and ordinary crosswalk batches;
+- use **high** effort for ambiguous source-gap investigations, difficult identity conflicts or multi-signal reconciliation;
+- use read-only subagents freely for path-disjoint analysis; mutating workers require exact branch/path custody from the canonical coordinator;
+- never let two writers own the same branch/path set;
+- aggregate subagent results before deciding the next gate;
+- continue productive path-disjoint work instead of waiting on unrelated CI when governance permits it.
 
 For authorized mutation use ordinary lifecycle:
 
@@ -223,7 +249,7 @@ Do not call the entire programme complete when only one family/gate is complete.
 
 ## Terminal behavior
 
-Continue autonomously through the current bounded gate and the next legal path-disjoint action while authority/capability and evidence permit it.
+Continue autonomously through the current bounded gate and the next legal path-disjoint action while authority/capability and evidence permit it. When invoked with “sam koordynuj”, retain coordinator ownership of decomposition, worker effort selection, synthesis, lifecycle and integration rather than delegating the programme-control decision back to another alias.
 
 Stop only at a real boundary:
 
