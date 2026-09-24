@@ -103,7 +103,19 @@ whole-diff review and required independent exact-head review before returning
 - **Composition:** the public `serve_gameplay` entry in `lib.rs` takes already-composed owners and explicit TLS/limits. `main.rs` remains fail-closed: starting a real node needs a configuration contract for owner services (S2 refresh loop, runtime readiness producer, Character fence store), and that contract does not exist.
 - **Physical qualification:** an in-crate `qualification.rs` runs through `serve_gameplay` over real TCP/TLS in the WP5 topology (`WP5_QUALIFICATION=seam`). It is in-crate rather than `tests/gameplay_server_seam.rs` because runtime readiness is published through a sealed trait. An external test would need a new public test-only API or a `#[path]` copy, and the plan forbids both.
 - **Owner decision (2026-09-24, option A):** integrate the fresh-admission seam now. Resume is split into a separate blocked follow-up. It needs three things: a playable-control authority to prove control loss (FND-04B §5, needs a gameplay runtime); the deferred same-session grace duration; and an accepted `PROD-ENTITLEMENTS-01` contract (currently `CANDIDATE`). This supersedes the earlier "no partial Server Seam PR" holding rule for this scope.
-- **Resume (not yet served):** `ClientResume` is decoded and closed without mutation. No production recovery-source composition exists: `RecoveryCurrentEvidence` and `RecoveryDurabilityEvidenceSourceV2` have only test fixtures. This is the next prerequisite.
+- **Resume (not yet served, follow-up #822):** `ClientResume` is decoded and closed without mutation. No production recovery-source composition exists: `RecoveryCurrentEvidence` and `RecoveryDurabilityEvidenceSourceV2` have only test fixtures. This is the next prerequisite.
+
+## Qualification evidence
+
+`Server Seam physical qualification` run `35976323319`, job `107557572725`, on `8941233a984dc85b395f9abfa105a01732483494`: PostgreSQL 17.6 and Platform `9147bfd`, running through `serve_gameplay` over loopback TCP + TLS 1.3. Result `S3B_RESULT=SEAM_PASS`:
+
+- `transport tls12_exact_alpn=refused wrong_alpn=refused missing_alpn=refused plaintext=refused admissions=0`
+- `foundation wrong_protocol_major=rejected wrong_transport_profile=rejected phase_invalid=rejected oversized=closed truncated=closed admissions=0`
+- `fnd04 invalid_signature=refused expired=refused wrong_character_binding=refused untrusted_signer=refused admissions=0`
+- `admission=committed server_accepted=1 post_admission_command=closed_unknown_message admissions=1`
+- `replayed_grant=refused admissions=1`
+- `concurrent_same_grant accepted=1 admissions=2`
+- `shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED`
 
 ## Validation state
 
