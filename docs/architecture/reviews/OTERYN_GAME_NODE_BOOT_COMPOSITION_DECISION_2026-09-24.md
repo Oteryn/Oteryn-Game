@@ -184,6 +184,7 @@ Rejected alternatives:
    - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and `installed_at`, and the facts derived from the configured Platform producer: source authority, endpoint, peer name, trust-root digest and client-identity digest.
      - A higher revision registers the new facts only if a control-plane issuance for exactly that revision, `installed_at` and those facts is recorded; `register_native_admission_descriptor` checks this in the same transaction and rejects otherwise. The operator records a later revision with `oteryn-game-ops` in the same way as the first (D2), with no fresh-store provenance. A runtime configuration alone can never replace the Platform trust descriptor.
      - An equal revision must match the stored facts exactly, so changed facts retained under an old revision fail boot.
+     - The S1 source authority is fixed for the lifetime of the S2 store: the store's registration keeps its bootstrap value immutably and every observation is compared with it. A descriptor revision may change the endpoint, peer name, trust roots and client identity, but a configured or issued source authority different from the stored one fails boot, and `oteryn-game-ops` refuses to issue it. Changing the authority needs a new store under a later decision.
    - **Pending publications:** before any evidence fetch or readiness, read `pending_native_source_publications` and reconcile each retained slot by its exact operation binding (checkpoint or clear, under the S2 resource contract). Boot fails if a slot stays unresolved after a bounded number of attempts.
 
    The S2 registration is a single custody row, so exactly one serving node at a time can ingest Platform evidence. That matches this one-node slice. Several serving nodes need a later S2 decision.
@@ -205,9 +206,12 @@ Rejected alternatives:
       - `Bootstrap` only on a clean key: no current guard and no guard history, with restored high-water 0 and publication revision 1, as the existing validator requires. History without a current guard is invalid stored state and fails boot. Reconstructing a Runtime guard after a restore is not part of this slice (§5).
 
       The `ready = false` shutdown publication (step 10) uses the same rules; if its bounded wait would exceed the shutdown budget, shutdown proceeds without it, as step 10 already allows for a failed non-ready publication.
-9. **Serve.** Run two loops under the same shutdown token:
+9. **Serve.** Run three loops under the same shutdown token:
    - `serve_gameplay` on the already-bound gameplay listener;
-   - the bounded control-socket accept/handler loop (D2).
+   - the bounded control-socket accept/handler loop (D2);
+   - the Character audit expiry loop: at a fixed interval, and once at start, it calls `expire_character_audit` in bounded batches until a batch deletes fewer rows than its size or a per-run cap is reached. That operation deletes only records past `expires_at` (occurred plus 90 days) and never one under an unreleased legal hold, so the registered retention is enforced by the running node.
+
+   **Audit publication.** No verified audit transport contract exists yet; #414 names it a future contract. Bootstrap events therefore stay durably pending in the outbox, which is the at-least-once state, and are never acknowledged without a real delivery. The expiry loop bounds their retention. Composing the publisher and `acknowledge_character_audit` belongs to the audit transport contract (§5).
 
    If either loop fails, the node follows the step 10 shutdown order.
 10. **Shut down.** On SIGTERM or SIGINT:
@@ -288,6 +292,8 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - unreadable secret or trust-root files;
   - empty trust roots;
   - an S2 fresh-store authorization that differs from an already-initialized store's stored provenance or descriptor, or that is missing for an uninitialized store.
+- **Audit retention.** The running node deletes an expired, unheld audit event and keeps an expired event under an unreleased legal hold.
+- **S1 authority.** A descriptor issuance or configuration with a different S1 source authority from the stored registration is refused.
 - **S2 issuance binding.** Initialization without a recorded issuance, or with content that differs from it, rejects.
 - **Ambiguous S2 initialization.** A retry after an initialization whose response was lost, with the identical authorization, completes boot.
 - **Registration outage.** A database outage during registration is ridden out by exact replay, without exiting or changing the `NodeId`.
@@ -333,6 +339,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 ## 5. Explicit non-decisions
 
 This decision does not choose or decide any of the following:
+- the Character audit transport and its publisher, including when `acknowledge_character_audit` is called; until then events stay pending and expire under D3 step 9;
 - Runtime guard reconstruction after a database restore that left guard history without a current guard; such a state fails boot closed;
 - the orchestrator, container image, systemd unit or Kubernetes shape;
 - the secret-delivery product;
