@@ -69,6 +69,7 @@
     A generic PostgreSQL URL is not accepted, matching the accepted WP3 configuration profile;
   - the Character recovery-fence directory;
   - the bounded assignment wait (D3);
+  - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument;
   - the readiness revisions (D5);
   - the S2 descriptor registration revision (D3);
   - two separate Platform routes, each with its own endpoint, expected peer name and service trust roots:
@@ -108,13 +109,13 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
 The exact grant lists are part of the implementation. Negative tests must prove that a runtime credential cannot assign, revoke, issue authorizations, configure the interpretation or admit a fresh Character generation.
 
 `oteryn-game-ops` uses the same explicit durability-root connection fields as D1, with its own control-plane credential files. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
-- **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes the secret to a file for the node.
+- **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes one authorization file for the node containing the secret and the exact non-secret `LaunchBinding` used at issuance. `register_node_incarnation` requires both, and a changed binding rejects.
 - **Registration revocation** through `revoke_node_registration`.
 - **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor and a stable writer name:
   - Before submitting, the tool writes the exact request to a request file: a freshly generated operation key and the canonical command. It never regenerates or edits an existing request file.
   - A lost acknowledgement leaves the durable writer slot occupied, and the writer rejects new work until that exact operation is reconciled. The tool therefore offers `assignment reconcile --request <file>`, which replays the retained key and command through `reconcile`.
   - Any later mutating invocation first reads `unreconciled()` and refuses new work while a slot is occupied. It names the operation key so the operator can reconcile it.
-- **The Character interpretation revision.**
+- **The Character interpretation revision.** On a new database it is configured only after the fresh Character store is authorized and admitted, because `admit_fresh_character_recovery` requires the Character tables to be empty, including `game_character_interpretations`. The tool refuses to configure the interpretation until generation 1 is admitted.
 - **Fresh Character recovery store:** authorize generation 1 in the configured fence directory (`authorize_fresh_store`), then admit it into the database (`admit_fresh_character_recovery`) while the tool still holds that transition. The serving node's `open_character_authority` requires the admitted row.
   - A lost acknowledgement of the admission is reconciled by re-running the same action.
   - It must return the already-admitted generation-1 record and never authorize a second fresh store.
@@ -158,7 +159,11 @@ Rejected alternatives:
 5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization and its database admission are operator actions (D2); the node never performs them. A store that is not admitted fails boot.
 6. **Await assignment.** Log the complete non-secret registration fact: `NodeId` together with its database-allocated `registration_revision`. The operator passes exactly this `NodeRegistrationFact` to the assignment `Assign` or `Replace` command. Wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
 7. **Bind.** Bind the gameplay listener and the control socket. A failed bind exits before any readiness is published.
-8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions.
+8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions:
+   1. Read the current Runtime guard publication chain for the scope under the guard serialization. This is a new read-only durability API. A replacement assignment has already written a `ready = false` successor.
+   2. Publish with `CompareAndSet` from that exact publication revision, with a source revision strictly greater than the current one.
+   3. Use `Bootstrap` with the restored high-water only when no Runtime guard exists.
+   4. A stale or conflicting CAS rereads once; if it still fails, boot fails.
 9. **Serve.** Run two loops under the same shutdown token:
    - `serve_gameplay` on the already-bound gameplay listener;
    - the bounded control-socket accept/handler loop (D2).
@@ -219,7 +224,8 @@ Consequence: Platform source availability and latency are on the admission path,
 This is physical qualification with the shipped binaries in the existing WP5 topology (real Platform, PostgreSQL 17.6):
 
 - **Operator setup and the SEAM stages.**
-  - `oteryn-game-ops` issues the launch authorization and the S2 fresh-store authorization, configures the interpretation, authorizes the fresh Character store, and assigns the scope.
+  - `oteryn-game-ops` issues the launch authorization (secret and binding) and the S2 fresh-store authorization, authorizes and admits the fresh Character store, then configures the interpretation, and assigns the scope.
+  - Configuring the interpretation before the admission is refused.
   - Characters are bootstrapped from real Platform intents through the node control socket.
   - `oteryn-game-server serve` then reproduces every #823 `SEAM_PASS` stage against its own bound port.
   - No operator invocation creates a `game_node_registrations` row.
@@ -243,6 +249,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Restart.**
   - A replacement launch under a superseding authorization yields a new `NodeId`, claims S2 custody, and becomes ready after the operator replaces the assignment. The old incarnation can no longer admit.
   - A replacement launch without supersession or revocation fails at S2 custody and never becomes ready.
+- **Readiness after replacement.** After a replacement assignment, the new node publishes readiness by CAS from the writer's `ready = false` successor.
 - **Readiness ordering.**
   - When the listener bind fails, no readiness is published.
   - On shutdown, `ready: false` is published before acceptance stops.
