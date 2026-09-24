@@ -109,7 +109,7 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
   - configure the Character interpretation;
   - admit the fresh Character recovery generation;
   - record Platform descriptor issuances (the S2 fresh-store authorization and later revisions).
-- **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, and admission.
+- **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, admission, and Character audit expiry. The expiry grant is narrow: it may delete only audit records that `expire_character_audit` selects, those past `expires_at` without an unreleased legal hold. It is exposed as one security-definer database operation, not as a table-wide DELETE, and it cannot create, release or read legal holds beyond that check.
 - **Recorded actor.** The recorded `ControlActor` is derived from the authenticated database session role, never from a caller-supplied label.
 - **Exact-scope authorization.** Group membership alone never authorizes an assignment.
   - A new control-scope grant table holds one row per (control login role, `WorldId`, `ChannelId`) with the permitted operations. The operations are initial assign, replace and revoke.
@@ -293,7 +293,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - unreadable secret or trust-root files;
   - empty trust roots;
   - an S2 fresh-store authorization that differs from an already-initialized store's stored provenance or descriptor, or that is missing for an uninitialized store.
-- **Audit retention.** The running node deletes an expired, unheld audit event and keeps an expired event under an unreleased legal hold.
+- **Audit retention.** Using only the runtime credential, the running node deletes an expired, unheld audit event and keeps an expired event under an unreleased legal hold.
 - **S1 authority.** A descriptor issuance or configuration with a different S1 source authority from the stored registration is refused.
 - **S2 issuance binding.** Initialization without a recorded issuance, or with content that differs from it, rejects.
 - **Ambiguous S2 initialization.** A retry after an initialization whose response was lost, with the identical authorization, completes boot.
