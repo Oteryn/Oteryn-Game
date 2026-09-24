@@ -1,0 +1,87 @@
+name: WP5 S3-B sealed composition qualification
+
+on:
+  push:
+    branches:
+      - agent/wp5-s3b-sealed-composition-319
+  pull_request:
+    paths:
+      - .github/workflows/wp5-s3b-composition.yml
+      - tools/qualification/wp5_s3b/run.sh
+      - tools/qualification/wp5_s3b/compose.override.yml
+      - tools/qualification/wp5_s3b/nginx.conf
+      - apps/game-server/tests/wp5_s3b_composition.rs
+      - apps/game-server/src/durability/fresh_admission_composition.rs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wp5-s3b-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  composed-qualification:
+    name: S3-B / real owners composition
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform producer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = 9147bfd3a771762a6646fd87b9172cdb3a6c9a01
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
+
+      - name: Validate harness
+        run: |
+          set -euo pipefail
+          bash -n tools/qualification/wp5_s3b/run.sh
+          cargo +1.94.0 fmt --all --check
+          cargo +1.94.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
+          echo 'S3B_EVIDENCE static_validation=PASS rust=compiled shell=parsed'
+
+      - name: Run real composed qualification
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/wp5-s3b-evidence.txt"
+          bash tools/qualification/wp5_s3b/run.sh | tee "$evidence"
+          grep -Fxq 'S3B_RESULT=COMPOSED_PASS' "$evidence"
+          grep -E '^S3B_(EVIDENCE |RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true

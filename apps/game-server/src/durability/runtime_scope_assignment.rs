@@ -1406,7 +1406,7 @@ async fn fence_runtime_guard(
 /// Every allocated writer revision leaves an immutable receipt. The database
 /// validates contiguous coverage and exact equality between each current scope
 /// row and that scope's latest retained receipt while holding the writer lock.
-async fn require_history_matches_high_water(
+pub(super) async fn require_history_matches_high_water(
     tx: &mut Transaction<'_, Postgres>,
     high_water: u64,
 ) -> Result<(), DurabilityError> {
@@ -1424,7 +1424,7 @@ async fn require_history_matches_high_water(
     Ok(())
 }
 
-async fn writer_high_water(
+pub(super) async fn writer_high_water(
     tx: &mut Transaction<'_, Postgres>,
     lock: bool,
 ) -> Result<u64, DurabilityError> {
@@ -1439,7 +1439,7 @@ async fn writer_high_water(
     parse_u64_text(&high_water.ok_or(DurabilityError::InvalidStoredState)?)
 }
 
-async fn load_assignment(
+pub(super) async fn load_assignment(
     tx: &mut Transaction<'_, Postgres>,
     scope_key: &[u8],
     lock: bool,
@@ -1600,7 +1600,9 @@ fn lock_queue(queue: &Mutex<QueueState>) -> MutexGuard<'_, QueueState> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
-fn channel_scope(scope: RuntimeScopeRefV1) -> Result<(WorldId, ChannelId), AssignmentError> {
+pub(super) fn channel_scope(
+    scope: RuntimeScopeRefV1,
+) -> Result<(WorldId, ChannelId), AssignmentError> {
     match scope {
         RuntimeScopeRefV1::Channel {
             world_id,
@@ -1610,7 +1612,7 @@ fn channel_scope(scope: RuntimeScopeRefV1) -> Result<(WorldId, ChannelId), Assig
     }
 }
 
-fn scope_key(world_id: WorldId, channel_id: ChannelId) -> [u8; 33] {
+pub(super) fn scope_key(world_id: WorldId, channel_id: ChannelId) -> [u8; 33] {
     let mut key = [0_u8; 33];
     key[0] = CHANNEL_SCOPE_TAG;
     key[1..17].copy_from_slice(world_id.as_bytes());

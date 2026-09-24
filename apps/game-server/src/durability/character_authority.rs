@@ -61,7 +61,7 @@ pub struct ReconciledCharacterAuthority<'f, 's> {
 
 impl ReconciledCharacterAuthority<'_, '_> {
     /// The capability is valid only on the exact root whose database was checked.
-    fn record_for(&self, root: &DurabilityRoot) -> Result<CharacterRecoveryFenceV1> {
+    pub(super) fn record_for(&self, root: &DurabilityRoot) -> Result<CharacterRecoveryFenceV1> {
         if self.root_identity != root.root_identity() || self.root_liveness.strong_count() == 0 {
             return Err(CharacterAuthorityError::Rejected);
         }
@@ -493,6 +493,22 @@ fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
     }
     Ok(out)
 }
+/// In-transaction current read for a composition that already holds the
+/// reconciled capability: asserts the sealed recovery fence in the caller's
+/// transaction, then returns the active Character (lifecycle 1), if any.
+pub(super) async fn load_current_character(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    character_id: [u8; 16],
+) -> std::result::Result<Option<CharacterAuthorityRecord>, DurabilityError> {
+    assert_recovery_fence(tx, recovery).await?;
+    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text FROM game_character_roots r JOIN game_character_operation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 FOR SHARE OF r")
+        .bind(character_id.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+    row.as_ref().map(decode_current_row).transpose()
+}
+
 fn decode_current_row(
     row: &sqlx::postgres::PgRow,
 ) -> std::result::Result<CharacterAuthorityRecord, DurabilityError> {
