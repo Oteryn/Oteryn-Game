@@ -80,7 +80,7 @@ HARD_LIMITS = {
     "max_links_per_root": 20_000,
     "metadata_batch_size": 20,
     "max_categories_per_page": 512,
-    "max_templates_per_page": 512,
+    "max_templates_per_page": 4_096,
 }
 MAX_ROOTS = 128
 MAX_SURFACES = 128
