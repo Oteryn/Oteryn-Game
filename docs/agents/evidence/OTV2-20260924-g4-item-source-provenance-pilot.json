@@ -1,24 +1,25 @@
 {
   "schema": "OTERYN_G4_ITEM_SOURCE_PROVENANCE_PILOT_EVIDENCE/v1",
-  "status": "R3_PUBLICATION_PENDING",
+  "status": "MERGED_AND_ARCHIVED",
   "allocation": {
     "issue": 162,
-    "comment_id": 5820965458,
-    "branch": "agent/otv2-g4-item-source-provenance-pilot-r3",
-    "base_commit": "42a9a440d17293aa7746c3581596fab1a588f77f",
-    "meta_policy_commit": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb"
+    "comment_id": 5821484529,
+    "branch": "agent/otv2-g4-item-source-provenance-archive-r2",
+    "base_commit": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+    "scope": "archive-only lifecycle packet; two logical documentation paths"
   },
   "task_packet": {
     "task_id": "OTV2-20260924-g4-item-source-provenance-pilot",
     "title": "G4 Item source-provenance pilot",
     "mode": "IMPLEMENT",
-    "status": "implementing",
+    "status": "archived",
     "repository": "Oteryn/Oteryn-Game",
     "base": "main",
-    "branch": "agent/otv2-g4-item-source-provenance-pilot-r3",
+    "branch": "agent/otv2-g4-item-source-provenance-archive-r2",
     "issue": 162,
-    "pr": null,
-    "base_sha": "42a9a440d17293aa7746c3581596fab1a588f77f"
+    "pr": 856,
+    "base_sha": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+    "final_head_sha": "42fd36e86c76327059b8b0cf19efea9f7ddfab45"
   },
   "superseded_candidates": [
     {
@@ -44,7 +45,11 @@
     "compact_artifact_sha256": "0fa435ba888071e7320e70b793203c87f79eda11c0ff8dd824dc2eeaed24421f",
     "rows_sha256": "62efa8385666f725f707b4f02d2372ce91ec228fc770d9049738c2337f974e30",
     "stable_census_sha256": "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
-    "source_shape_counts": {"INFOBOX_ITEM": 5475, "INFOBOX_ITEM_PARSE_ERROR": 7, "NO_INFOBOX_ITEM": 1436},
+    "source_shape_counts": {
+      "INFOBOX_ITEM": 5475,
+      "INFOBOX_ITEM_PARSE_ERROR": 7,
+      "NO_INFOBOX_ITEM": 1436
+    },
     "qualification_status": "HISTORICAL_PREDECESSOR_ONLY_NOT_REUSED_FOR_R2"
   },
   "protected_predecessor": {
@@ -57,7 +62,7 @@
     "tools/content-census/g4_item_source_capture.py",
     "tools/content-census/g4_item_source_capture_self_test.py",
     ".github/workflows/g4-item-source-capture.yml",
-    "docs/agents/tasks/active/OTV2-20260924-g4-item-source-provenance-pilot.md",
+    "docs/agents/tasks/archive/OTV2-20260924-g4-item-source-provenance-pilot.md",
     "docs/agents/evidence/OTV2-20260924-g4-item-source-provenance-pilot.json"
   ],
   "capture_contract": {
@@ -90,15 +95,59 @@
   "validation": {
     "synthetic_self_test": "PASS_LOCAL_PYTHON_3_R3",
     "source_shape_partition_mismatch_case": "PASS_R3_LOCAL_SYNTHETIC",
-    "hosted_census_and_transform": "PENDING_R3_NO_HISTORICAL_CI_REUSE",
-    "exact_candidate_ci": "PENDING_R3_NO_HISTORICAL_CI_REUSE",
-    "captured_live_page_count": null,
-    "captured_artifact_sha256": null
+    "hosted_census_and_transform": "SUCCESS: run 36050042631; artifact 10829932700; 6,918 rows",
+    "exact_candidate_ci": "SUCCESS: exact-head governance, merge gate, architecture audit, and hosted G4 capture",
+    "captured_live_page_count": 6918,
+    "captured_artifact_sha256": "0fa435ba888071e7320e70b793203c87f79eda11c0ff8dd824dc2eeaed24421f",
+    "exact_head_governance": "SUCCESS: run 36050042683",
+    "exact_head_merge_gate": "SUCCESS: run 36050042703",
+    "exact_head_architecture_audit": "SUCCESS: run 36050042869"
   },
   "publication": {
-    "candidate_sha": null,
-    "candidate_sha_status": "PENDING_R3_PUBLICATION",
-    "published_commit_count": 0,
-    "integration_authority": "COORDINATOR_ONLY"
+    "candidate_sha": "42fd36e86c76327059b8b0cf19efea9f7ddfab45",
+    "candidate_sha_status": "MERGED_PROTECTED_MAIN",
+    "published_commit_count": 1,
+    "integration_authority": "COORDINATOR_ONLY",
+    "pull_request": 856,
+    "merge_commit": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+    "protected_main_readback": "4c7e1c8402c721f58c108e4b6912a80aef7458ea"
+  },
+  "implementation_allocation": {
+    "issue": 162,
+    "comment_id": 5820965458,
+    "branch": "agent/otv2-g4-item-source-provenance-pilot-r3",
+    "base_commit": "42a9a440d17293aa7746c3581596fab1a588f77f",
+    "meta_policy_commit": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb"
+  },
+  "closeout": {
+    "status": "MERGED_AND_ARCHIVED",
+    "pull_request": 856,
+    "candidate_head": "42fd36e86c76327059b8b0cf19efea9f7ddfab45",
+    "merge_commit": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+    "protected_main_readback": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+    "exact_head_governance_run_id": 36050042683,
+    "exact_head_merge_gate_run_id": 36050042703,
+    "exact_head_architecture_audit_run_id": 36050042869,
+    "hosted_capture_run_id": 36050042631,
+    "hosted_artifact_id": 10829932700,
+    "artifact_archive_sha256": "b28f0e5939a669ffe38ee14dc9e57e1b958f0c6ddc89ad75cf99908582469b16",
+    "captured_rows": 6918,
+    "compact_artifact_sha256": "0fa435ba888071e7320e70b793203c87f79eda11c0ff8dd824dc2eeaed24421f",
+    "rows_sha256": "62efa8385666f725f707b4f02d2372ce91ec228fc770d9049738c2337f974e30",
+    "source_shape_counts": {
+      "INFOBOX_ITEM": 5475,
+      "INFOBOX_ITEM_PARSE_ERROR": 7,
+      "NO_INFOBOX_ITEM": 1436
+    },
+    "independent_review_comment_id": 5821030207,
+    "meta_submit_comment_id": 5821070342,
+    "executor_run_id": 36050482102,
+    "executor_uuid": "22d889b1-a299-43b8-9558-77ddee0d2fe0",
+    "merge_group_run_id": 36050536418,
+    "terminal_issue_comment_id": 5821250161,
+    "archive_allocation_comment_id": 5821484529,
+    "implementation_paths_released": true,
+    "canonical_bindings_populated": 0,
+    "semantic_promotion_performed": false
   }
 }
