@@ -73,7 +73,7 @@
   - the readiness revisions (D5);
   - the Runtime readiness source authority: one non-empty namespace per deployment and scope, kept identical across node replacements so the guard's source-revision chain stays monotonic, and never equal to a Platform source authority;
   - the S2 descriptor registration revision and its `installed_at` timestamp (D3). Both are copied from the operator-issued S2 fresh-store authorization and changed only together with a descriptor change;
-  - exactly one Platform producer descriptor, as the registered `NSRC-DESCRIPTOR` maximum requires (one active producer per process, at most four operation mappings). It has one endpoint, one expected peer name, one set of service trust roots and one mTLS client identity, and it carries three operation mappings: `ReadAccountSecurityV1`, `ReadFreshSigningTrustV1` and `ReadCharacterBootstrapIntentV1`. Both paths are served by the same Platform `game-auth` origin;
+  - exactly one Platform producer descriptor, as the registered `NSRC-DESCRIPTOR` maximum requires (one active producer per process, at most four operation mappings). It has one endpoint, one expected peer name, one set of service trust roots and one mTLS client identity, and it carries three operation mappings: `ReadAccountSecurityV1`, `ReadFreshSigningTrustV1` and `ReadCharacterBootstrapIntentV1`. Both paths are served by the same Platform `game-auth` origin. The operation-to-path mappings are compiled into the binary (`Operation::path` is a `const` match) and are not configurable, so no configuration can redirect an operation; a later slice that makes them configurable must add them to the issued and registered descriptor facts;
   - two distinct authenticated namespaces over that one channel, each distinct from the TLS peer name:
     - the S1 source authority that evidence responses are bound to (S1/S2);
     - the Character intent `issuer_authority` that intents must name (#414).
@@ -175,6 +175,7 @@ Rejected alternatives:
    - **Ambiguous failure** (lost response, unknown commit, database outage): the process replays the exact same request (secret, binding, `NodeId`) with bounded backoff until the outcome is definite. `register_node_incarnation` returns the original proof for an exact replay. The process never abandons an ambiguous registration and then registers a different `NodeId` under the same authorization.
    - **Definite rejection:** boot fails.
    - **Process killed mid-attempt:** each restart still creates a new `NodeId`, per the registration decision §4. The operator therefore issues a new launch authorization superseding the logged `NodeId`. If that `NodeId` never registered, issuance with `supersedes` rejects. That proves only that the killed process never registered, so the prior holder it was meant to replace may still be current. The operator therefore issues the new authorization with the `supersedes` value retained in the killed launch's authorization file: the original replacement target, or none only when that launch itself had none. Explicitly revoking that original target is the alternative. Supersession is never silently dropped.
+     - **Abandoned authorization.** Before issuing that new authorization, the operator revokes the killed launch's unconsumed authorization through a new control-plane operation, keyed by the retained file's secret digest. The operation is idempotent, and registration with a revoked authorization rejects. The tool then deletes the retained file. An unconsumed authorization is therefore never left live for a later process to reuse.
 
    The authorization is consumed, and a replay under a different `NodeId` or binding rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
 4. **Establish S2 custody** for this incarnation:
@@ -200,7 +201,8 @@ Rejected alternatives:
    2. Publish with `CompareAndSet` from that exact publication revision, with a source revision strictly greater than the current one.
    3. Use `Bootstrap` with the restored high-water only when no Runtime guard exists.
    4. A stale or conflicting CAS rereads once; if it still fails, boot fails.
-   5. **Source metadata.** The node is the source of its own readiness, so nothing is invented:
+   5. **Ambiguous commit.** An unknown commit outcome, a lost response or a database outage keeps the exact prepared publication and replays it with bounded backoff until the outcome is definite. The replay returns `Existing` if the original committed. The node neither proceeds to serve nor exits while a `ready = true` publication is ambiguous, and never builds a different successor in its place. The shutdown `ready = false` publication is replayed the same way within the shutdown budget.
+   6. **Source metadata.** The node is the source of its own readiness, so nothing is invented:
       - authority: the configured Runtime readiness source authority (D1);
       - source revision: the current guard's source revision plus one, or 1 under `Bootstrap`;
       - decision identity: derived deterministically from the `NodeId`, ownership generation, source revision and `ready` value, so it is unique per revision;
@@ -312,6 +314,8 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Descriptor revisions.** A configured Platform descriptor revision without a matching recorded issuance, or rolled back below the latest recorded one, fails boot.
 - **Readiness clock.** A replacement node whose clock is behind the prior publication's `source_observed_at` by less than the uncertainty bound waits and then publishes readiness; a larger gap fails boot.
 - **Mixed S1 results.** When the account exchange returns an authenticated denial and the trust exchange fails, the denial is accepted into S2 and a later delayed lower-revision allow is refused.
+- **Readiness replay.** A lost response to the `ready = true` commit is reconciled by exact replay returning `Existing` before serving.
+- **Abandoned authorization.** A revoked, unconsumed launch authorization cannot register.
 - **Operator identity.** `oteryn-game-ops` refuses to run as the service user. A control-socket connection from any peer other than uid 0 is closed without a request being read. Its control-plane credential file is unreadable by the service UID. The launch authorization, the S2 fresh-store authorization and the fence files it creates are accepted by the node's owner checks.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
   - assignment;
