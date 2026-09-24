@@ -76,7 +76,7 @@ jobs:
           assert manifest["schema"] == "OTERYN_FULL_CONTENT_SOURCE_CENSUS_MANIFEST/v1"
           counts = manifest["counts"]
           assert counts["registry_surfaces"] == 29
-          assert counts["registry_roots"] == 21
+          assert counts["registry_roots"] == 24
           assert counts["live_unique_pages"] > 0
           assert counts["protected_item_pages"] == 6918
           assert counts["nominal_pages_before_g2_overlap"] > counts["protected_item_pages"]
