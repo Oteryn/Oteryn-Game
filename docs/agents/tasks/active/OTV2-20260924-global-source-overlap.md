@@ -1,31 +1,33 @@
-# OTV2-20260924-global-source-overlap
+task_id: OTV2-20260924-global-source-overlap
+mode: IMPLEMENT
+status: validating
+repository: Oteryn/Oteryn-Game
+branch: agent/full-content-global-source-overlap-20260924
+pr: 825
+base_sha: dbc7fe950fa2eb5188e51860bac02e8889463261
+owned_paths:
+  - tools/content-census/global_source_overlap.py
+  - tools/content-census/global_source_overlap_self_test.py
+  - tools/content-census/global_source_overlap_fetch_artifacts.py
+  - .github/workflows/global-source-overlap.yml
+  - docs/agents/evidence/OTV2-20260924-global-source-overlap.json
+  - docs/agents/tasks/active/OTV2-20260924-global-source-overlap.md
 
-**Status:** Implementing
-**Allocation:** Game #162, comment 5811429656
-**Base:** `dbc7fe950fa2eb5188e51860bac02e8889463261`
-**Branch:** `agent/full-content-global-source-overlap-20260924`
+# OTV2-20260924-global-source-overlap
 
 ## Objective
 
-Produce a deterministic union of the G1 live non-Item source universe and protected Item page IDs from the pinned #807 crosswalk artifact. Deduplicate only by exact MediaWiki `page_id`. Retain each lane's title observation and provenance, including title divergence for one ID across snapshots. Same-title pages with different IDs remain separate.
+Build a deterministic union of G1 live non-Item and protected Item page IDs. Deduplicate only by exact MediaWiki `page_id`; retain each lane's title observation and provenance, including legitimate title divergence across snapshots. Same-title rows with different IDs stay separate.
 
-## Scope and limits
+## Pinned inputs and limits
 
-- Consume G1 artifact 10798668295 / run 35977349690 / head `f1d7dbd6577b033c53545d8650ffba05aafc9480` and #807 artifact 10778892407 / run 35925860576 / head `61d051a13329c51ae04d8a011655e279664c334c` only after exact metadata, ZIP, schema, and embedded digest checks.
-- Preserve lane-specific titles, source observations, run/head/artifact provenance and archive digests. Item page revision remains `UNKNOWN` because the crosswalk has no revision field.
-- Do not consume crosswalk dispositions, selected native keys, or mapping conclusions. Do not select canonical identities, infer gameplay semantics, or promote classifications to gameplay truth.
-- G1 hard exclusions must be absent as attested by the pinned manifest. Do not add exclusion-lane inputs.
-- Keep the full merged corpus in a 14-day workflow artifact; do not commit it.
-- Use a focused synthetic test for duplicate IDs within a lane (fail closed), cross-lane same-ID title divergence (preserve), and same-title distinct IDs (remain distinct).
+- G1 artifact 10798668295 / run 35977349690 / head `f1d7dbd6577b033c53545d8650ffba05aafc9480`.
+- #807 Item crosswalk artifact 10778892407 / run 35925860576 / head `61d051a13329c51ae04d8a011655e279664c334c`.
+- Require exact run/artifact metadata, ZIP digests, schemas, embedded digests, and row counts. G1 hard exclusions must be absent as attested by its pinned manifest.
+- Preserve lane-specific titles and provenance. Item revision remains `UNKNOWN`; do not consume crosswalk dispositions, selected keys, or mapping conclusions.
+- Do not select canonical identities or promote classifications/semantics to gameplay truth.
+- Keep the full corpus in a 14-day workflow artifact; do not commit it.
 
-## Validation
+## Validation and acceptance
 
-Run Python syntax checks and focused synthetic tests, then run the hosted workflow on the exact final PR head. The pinned-artifact job must prove the `GITHUB_TOKEN` Actions-read route, verify the resulting merge counts and arithmetic, and upload only the generated corpus plus compact manifest. Preserve the final workflow run and artifact metadata/digests in the handoff record. Keep this task record below 12,000 characters.
-
-## Acceptance
-
-- Exactly six allocated paths; no files outside the allocation.
-- Exact page-ID union, provenance retained, title divergence explicitly marked, and no semantic or identity promotion.
-- Both pinned upstream artifacts verified; output counts derived from those inputs.
-- Focused tests and exact-head hosted artifact job succeed.
-- Draft PR only; coordinator owns review, integration ordering, and Merge Queue.
+Focused synthetic tests cover same-ID title divergence, duplicate IDs within one lane (fail closed), and same-title distinct IDs. The pinned hosted job checks artifact metadata, ZIP and embedded digests, derives counts and union arithmetic from inputs, and uploads only the corpus plus compact manifest. Preserve exact hosted run/artifact digests in evidence. Keep this record below 12,000 characters. Draft PR only; coordinator owns review, integration order, and Merge Queue.
