@@ -1,3 +1,7 @@
+> Lifecycle closeout: **ARCHIVED AFTER CANONICAL PR MERGE**. PR #851 merged as `663052f3139e2e5fff98f904fc1e8a02fd205115` from exact candidate head `34428a32bc1524f7ba4cc84390f31c16813bea72`. This packet is no longer active; pending fields below are preserved as historical pre-integration provenance.
+>
+> Exact-head CI run `36026479104` succeeded, including `game-gate` job `107728484627`, Rust workspace build, Clippy, tests, PostgreSQL E2E, formatting, and governance. Independent exact-head static review passed with no material findings (PR comment `5817992491`). Protected `main` readback matched the merge commit and the v2 carrier blob `9e5a75de3f1e31b2a847179be29d1f5befd668ea`. The delegated submit command is recorded at META #196 comment `5818086127`; executor UUID and `merge_group` run ID were unavailable through the connector and are not asserted. No G4 source identities were populated. Ownership of the four implementation paths was released at #162 comment `5818234879`.
+
 # OTV2-20260924-g4-source-identity-binding-v2
 
 ```yaml
