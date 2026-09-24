@@ -253,51 +253,52 @@ def directory_reference_patterns(path: str) -> tuple[str, ...]:
     return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
 
 
-def standalone_directory_reference(content: bytes, pattern: str) -> bool:
-    """Require a directory path literal boundary, not a prefix of a sibling file."""
+def directory_reference_occurrences(content: bytes, pattern: str) -> list[int]:
+    """Return bounded directory-literal occurrences, excluding sibling-name prefixes."""
     needle = pattern.encode("utf-8")
     start = 0
+    matches: list[int] = []
     while True:
         index = content.find(needle, start)
         if index < 0:
-            return False
+            return matches
         end = index + len(needle)
-        suffix = content[end:end + 2]
-        if (
-            end == len(content)
-            or content[end:end + 1] in {b'"', b"'"}
-            or suffix in {b'/"', b"/'"}
-        ):
-            return True
+        tail = content[end:]
+        bounded = (
+            not tail
+            or tail[:1] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
+            or (
+                tail[:1] == b"/"
+                and (
+                    len(tail) == 1
+                    or tail[1:2] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
+                )
+            )
+        )
+        if bounded:
+            matches.append(index)
         start = index + 1
+
+
+def standalone_directory_reference(content: bytes, pattern: str) -> bool:
+    """Require a bounded directory literal, not a prefix of a sibling path/name."""
+    return bool(directory_reference_occurrences(content, pattern))
 
 
 def workflow_directory_reference_is_routing_only(content: bytes, pattern: str) -> bool:
-    """Return true only when every bounded occurrence is a path-membership predicate."""
-    needle = pattern.encode("utf-8")
-    start = 0
-    matched = False
-    while True:
-        index = content.find(needle, start)
-        if index < 0:
-            return matched
-        end = index + len(needle)
-        suffix = content[end:end + 2]
-        bounded = (
-            end == len(content)
-            or content[end:end + 1] in {b'"', b"'"}
-            or suffix in {b'/"', b"/'"}
+    """Return true only when every bounded directory occurrence is a routing predicate."""
+    occurrences = directory_reference_occurrences(content, pattern)
+    if not occurrences:
+        return False
+    for index in occurrences:
+        prefix = content[max(0, index - 128):index]
+        python_startswith = re.search(rb"\.startswith\(\s*['\"]$", prefix) is not None
+        github_startswith = (
+            re.search(rb"\bstartsWith\([^,\n]+,\s*['\"]$", prefix) is not None
         )
-        if bounded:
-            matched = True
-            prefix = content[max(0, index - 128):index]
-            python_startswith = re.search(rb"\.startswith\(\s*['\"]$", prefix) is not None
-            github_startswith = (
-                re.search(rb"\bstartsWith\([^,\n]+,\s*['\"]$", prefix) is not None
-            )
-            if not (python_startswith or github_startswith):
-                return False
-        start = index + 1
+        if not (python_startswith or github_startswith):
+            return False
+    return True
 
 
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
