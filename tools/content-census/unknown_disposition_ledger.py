@@ -247,16 +247,20 @@ def build_ledger(manifest: dict, universe: dict) -> tuple[dict, dict]:
         "invariants": {"exact_page_ids_only": True, "duplicate_page_ids": False, "candidate_relationships_resolved": False, "target_identity_selected": False, "gameplay_semantics_promoted": False, "current_revisions_verified": False, "current_revision_state_explicit": True, "all_unknown_rows_have_blocker_evidence_next_action": True},
         "pages": ledger_rows,
     }
+    by_id = {row["page_id"]: row for row in ledger_rows}
     compact = {
         "schema": "OTERYN_UNKNOWN_DISPOSITION_LEDGER_MANIFEST/v1",
         "input": ledger["source_artifact"],
-        "ledger_sha256": sha256_bytes(canonical_bytes(ledger)),
+        "ledger_sha256": sha256_bytes(canonical_bytes(ledger) + b"\n"),
         "counts": ledger["counts"],
         "invariants": ledger["invariants"],
         "illustrative_blockers": [
-            {"page_id": 19087, "title": "Christmas", "blocker_class": "OBJECT_WORLD_QUEST_OVERLAP"},
-            {"page_id": 444, "title": "World Quests", "blocker_class": "PRIMARY_SIGNATURE_UNRESOLVED"},
-            {"page_id": 3297, "title": "Updates/8.7", "blocker_class": "PRIMARY_SIGNATURE_UNRESOLVED"},
+            {
+                "page_id": page_id,
+                "title": next((t.get("title") for t in by_id[page_id]["title_observations"] if t.get("title")), None),
+                "blocker_class": by_id[page_id]["blocker_class"],
+            }
+            for page_id in (19087, 444, 3297)
         ],
         "limitations": ["The ledger documents blockers; all 5,512 source families remain UNKNOWN.", "Title observations never assign family or target identity.", "Current source revisions remain unverified; revision IDs/timestamps are pinned observations only.", "The complete row ledger is retained only in the bounded workflow artifact, not committed."],
     }
