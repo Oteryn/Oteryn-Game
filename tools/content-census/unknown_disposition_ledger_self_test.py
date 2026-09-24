@@ -23,6 +23,7 @@ def must_fail(fn, fragment: str) -> None:
 def main() -> None:
     manifest, universe = ledger.load_g3(ARTIFACT)
     built, compact = ledger.build_ledger(manifest, universe)
+    assert ledger.sha256_bytes(ledger.canonical_bytes(built) + b"\n") == compact["ledger_sha256"]
     rows = {row["page_id"]: row for row in built["pages"]}
     assert len(rows) == 5512 and built["counts"]["undispositioned"] == 0
     assert all(row["source_family"] == "UNKNOWN" for row in rows.values())
