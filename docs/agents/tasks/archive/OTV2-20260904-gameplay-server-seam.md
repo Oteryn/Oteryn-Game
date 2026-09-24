@@ -9,12 +9,12 @@
 task_id: OTV2-20260904-gameplay-server-seam
 title: Production gameplay server seam
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-gameplay-server-seam-01
 issue: 247
-pr: null
+pr: 823
 admission_main_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
 preserved_worker_head: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 owner: "Oteryn: sol server seam lead"
@@ -127,11 +127,11 @@ candidate. Required candidate-specific validation starts again on the eventual r
 
 ```yaml
 last_progress: WP5_G0_READY on protected main 0a21973 (#319 comment 5809797683); branch reconciled with main by a normal merge; TLS provider aligned to main aws_lc_rs
-status: implementing
+status: completed
 branch: agent/otv2-gameplay-server-seam-01
-head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
-pr: null
-final_head_sha: null
+head_sha: 796802628d9e9accfda3c7ec6eb9228f6181183c
+pr: 823
+final_head_sha: 796802628d9e9accfda3c7ec6eb9228f6181183c
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -148,5 +148,14 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: qualify the fresh-admission seam in the WP5 topology, then compose recovery sources for ClientResume
+next_action: none; resume/reconnect continues only under follow-up #822
 ```
+
+## Terminal closeout
+
+- **PROVEN:** PR #823 was merged after qualification of the exact PR head `796802628d9e9accfda3c7ec6eb9228f6181183c`.
+- **PROVEN:** the `Server Seam physical qualification` run [35978264116](https://github.com/Oteryn/Oteryn-Game/actions/runs/35978264116) on that head gave `S3B_RESULT=SEAM_PASS`. Its stage evidence matches the earlier run listed above.
+- **PROVEN:** protected `main` holds merge commit `a747ac5264ba0164cc0afe0e75991ce18b687bf0`.
+- **PROVEN:** merge-group run [35981086101](https://github.com/Oteryn/Oteryn-Game/actions/runs/35981086101) completed with aggregate `game-gate` SUCCESS.
+- **TERMINAL:** fresh admission of the Server Seam is complete. Its exclusive authoring ownership, including the serialized shared paths, is released. `ClientResume` / reconnect and the control-loss lifecycle are the blocked follow-up #822; they need a new live task allocation.
+- This terminal closeout supersedes the earlier implementing, holding and pre-merge statements above. They are kept as the historical checkpoint.
