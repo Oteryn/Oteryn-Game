@@ -73,14 +73,15 @@
   - the readiness revisions (D5);
   - the Runtime readiness source authority: one non-empty namespace per deployment and scope, kept identical across node replacements so the guard's source-revision chain stays monotonic, and never equal to a Platform source authority;
   - the S2 descriptor registration revision and its `installed_at` timestamp (D3). Both are copied from the operator-issued S2 fresh-store authorization and changed only together with a descriptor change;
-  - two separate Platform routes, each with its own source authority namespace, endpoint, expected peer name and service trust roots. The source authority is the value S1 responses are bound to, and it is distinct from the TLS peer name:
-    - the admission evidence source (S1/S2);
-    - the Character bootstrap intent issuer (#414).
+  - exactly one Platform producer descriptor, as the registered `NSRC-DESCRIPTOR` maximum requires (one active producer per process, at most four operation mappings). It has one endpoint, one expected peer name, one set of service trust roots and one mTLS client identity, and it carries three operation mappings: `ReadAccountSecurityV1`, `ReadFreshSigningTrustV1` and `ReadCharacterBootstrapIntentV1`. Both paths are served by the same Platform `game-auth` origin;
+  - two distinct authenticated namespaces over that one channel, each distinct from the TLS peer name:
+    - the S1 source authority that evidence responses are bound to (S1/S2);
+    - the Character intent `issuer_authority` that intents must name (#414).
 
-    Neither route is trusted from configuration alone. Each carries a descriptor revision, and its endpoint, peer name, trust-root digest and client-identity digest must exactly equal the latest control-plane issuance recorded for that route (D2). A configured revision lower than the latest recorded one, or equal to it with different facts, fails boot. The same rule applies to the S2 admission descriptor (D3 step 4).
+    The descriptor is never trusted from configuration alone. Its revision, and its endpoint, peer name, trust-root digest, client-identity digest and both namespaces, must exactly equal the latest control-plane issuance recorded for it (D2). A configured revision lower than the latest recorded one, or equal to it with different facts, fails boot. This is the same check as the S2 descriptor registration (D3 step 4).
 - **Secrets and trust material are never inline values.** The document gives only file paths, each read once at start:
   - gameplay TLS certificate chain and key;
-  - per Platform route: the operator-provisioned service trust roots, plus that route's mTLS client certificate and key. The two routes use distinct client identities. The trust roots are separate from the gameplay certificate chain, and an empty root set rejects, as `ProducerDescriptor::new` already requires;
+  - for the Platform producer: the operator-provisioned service trust roots, plus the mTLS client certificate and key. The trust roots are separate from the gameplay certificate chain, and an empty root set rejects, as `ProducerDescriptor::new` already requires;
   - the launch-scoped bootstrap authorization (D3);
   - the PostgreSQL password, and the database root-CA PEM (bounded), each as its own file;
   - only while the S2 store is uninitialized: the one-time S2 fresh-store authorization (D3).
@@ -107,7 +108,7 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
   - submit or reconcile assignments;
   - configure the Character interpretation;
   - admit the fresh Character recovery generation;
-  - record route descriptor issuances (S2 fresh-store and later revisions, Character intent).
+  - record Platform descriptor issuances (the S2 fresh-store authorization and later revisions).
 - **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, and admission.
 - **Recorded actor.** The recorded `ControlActor` is derived from the authenticated database session role, never from a caller-supplied label.
 - **Exact-scope authorization.** Group membership alone never authorizes an assignment.
@@ -136,7 +137,7 @@ The exact grant lists are part of the implementation. Negative tests must prove 
   - **Recovery after a failure.** After an ambiguous admission or a lost acknowledgement, the operator re-runs the action with that request file. The same inputs reproduce the same generation-1 transition for the retry or reconciliation; new inputs would conflict.
   - **Idempotence.** The re-run returns the already-admitted generation-1 record and never authorizes a second fresh store.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the complete `FreshStoreProvenance`: namespace, authorization reference, source authority and the exact `initialized_at` timestamp fixed at issuance. The file also holds the descriptor registration revision, `installed_at` and facts. Because every field is fixed at issuance, an ambiguous initialization can be compared exactly on restart. Issuing it never initializes the store itself.
-  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new issuance table keyed by route (S2 admission evidence or Character intent) and descriptor revision. The Character-intent route is issued the same way, without fresh-store provenance, before the node enables Character bootstrap. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
+  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new issuance table keyed by descriptor revision. The one issuance covers the whole Platform producer, including the Character intent `issuer_authority`, so it is recorded once, before the node starts. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
   - **Initialization binds to it.** `initialize_native_admission_source` is changed to require, in the same transaction, a recorded issuance whose content equals the supplied provenance and descriptor exactly; otherwise it rejects. The runtime role can read that row but never write it, so a process holding only runtime credentials cannot fabricate or select the initial source and trust descriptor.
   - §4 requires the negative tests.
 
@@ -150,8 +151,8 @@ Character bootstrap works as follows:
 - The operator supplies only the intent's operation id, over a node-local Unix-domain control socket. The socket is created mode 0600, owned by the node's service user and never network-reachable.
 - For each request, the node:
   1. first checks `reconcile_character_bootstrap(operation_id)`; an already-committed result is returned without any external read, which covers a lost socket response after the Platform intent has expired;
-  2. otherwise reads the intent itself over the Platform intent route (D1);
-  3. fetches `ReadAccountSecurityV1` for the intent's `AccountId` from the evidence route and accepts it into S2 custody, because `bootstrap_character` requires current account-security evidence no older than the five-second bound, and on a new installation no admission has fetched it yet;
+  2. otherwise reads the intent itself over the Platform producer (D1);
+  3. fetches `ReadAccountSecurityV1` for the intent's `AccountId` and accepts it into S2 custody through the D4 publication lane and its checkpoint, accept and clear lifecycle, like any admission demand, because `bootstrap_character` requires current account-security evidence no older than the five-second bound, and on a new installation no admission has fetched it yet;
   4. only then commits the Character with its own proof.
 - A missing or stale account-security observation, or an authenticated denial, rejects without a Character mutation. An authenticated denial is still accepted into S2 custody. The operator retries with the same operation id, which stays idempotent under #414.
 - The socket loop is bounded: one request at a time, a bounded request size and a per-request deadline. It answers with a closed result (committed, rejected or unavailable) and never with the intent contents.
@@ -180,7 +181,7 @@ Rejected alternatives:
      - An exact match means initialization already completed. The node continues with the custody claim, which is a no-op when this incarnation already holds custody.
      - Any difference fails boot.
    - **Every later incarnation:** `claim_native_admission_source_custody`, which succeeds only when the prior holder is no longer current.
-   - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and `installed_at`, and the facts derived from the configured route: source authority, endpoint, peer name, trust-root digest and client-identity digest.
+   - **Descriptor check:** `register_native_admission_descriptor` runs on every boot with the configured revision and `installed_at`, and the facts derived from the configured Platform producer: source authority, endpoint, peer name, trust-root digest and client-identity digest.
      - A higher revision registers the new facts only if a control-plane issuance for exactly that revision, `installed_at` and those facts is recorded; `register_native_admission_descriptor` checks this in the same transaction and rejects otherwise. The operator records a later revision with `oteryn-game-ops` in the same way as the first (D2), with no fresh-store provenance. A runtime configuration alone can never replace the Platform trust descriptor.
      - An equal revision must match the stored facts exactly, so changed facts retained under an old revision fail boot.
    - **Pending publications:** before any evidence fetch or readiness, read `pending_native_source_publications` and reconcile each retained slot by its exact operation binding (checkpoint or clear, under the S2 resource contract). Boot fails if a slot stays unresolved after a bounded number of attempts.
@@ -229,7 +230,7 @@ A restart always yields a new `NodeId`. Before the new process launches, the ope
      - the exact observation binding is checkpointed into one of the two durable publication slots (`checkpoint_native_source_publication`) before the SQL acceptance;
      - the slot is cleared only after a definite outcome;
      - an unknown commit keeps the slot;
-     - every evidence demand first reconciles any occupied slot by its fixed identity before checkpointing new work. It replays the retained binding through the idempotent acceptance, then clears the slot on a definite outcome. The D3 step 4 boot reconciliation is the same operation, so a running node recovers its slots once the database recovers, without a restart;
+     - every evidence demand first enters the publication lane and reconciles any occupied slot by its fixed identity **before starting either S1 exchange**; if no slot is free after that, the demand refuses without any exchange. The publication step reconciles again before checkpointing new work. It replays the retained binding through the idempotent acceptance, then clears the slot on a definite outcome. The D3 step 4 boot reconciliation is the same operation, so a running node recovers its slots once the database recovers, without a restart;
      - with both slots occupied, evidence demand is unavailable and the attempt refuses;
      - all S2 publications of the node, including that reconciliation, run serially in one publication lane. The lane is entered within `NSRC-QUEUE-WAIT`, otherwise the attempt refuses. Its guard is owned by the publication task spawned on the durability root, not by the caller, so a cancelled attempt cannot release it while its SQL operation is outstanding. A slot seen by reconciliation is therefore never live: its original operation has ended in this process with an ambiguous outcome, or it belongs to an earlier incarnation whose custody is fenced. That ended pass ran under the server-side transaction, statement and lock timeouts bounded by its deadline, and the replay reaches its authoritative result through the idempotent acceptance;
   3. only then does the #823 composition and commit run.
@@ -295,7 +296,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - A replayed authorization under a different `NodeId` or binding rejects registration.
   - An exact replay after a lost registration response returns the original proof, and boot continues.
 - **Scope grants.** A control-plane login is refused an assignment for a scope or operation it has no grant for, and is refused writing a grant.
-- **Descriptor revisions.** For both Platform routes, a configured descriptor revision without a matching recorded issuance, or rolled back below the latest recorded one, fails boot.
+- **Descriptor revisions.** A configured Platform descriptor revision without a matching recorded issuance, or rolled back below the latest recorded one, fails boot.
 - **Readiness clock.** A replacement node whose clock is behind the prior publication's `source_observed_at` by less than the uncertainty bound waits and then publishes readiness; a larger gap fails boot.
 - **Mixed S1 results.** When the account exchange returns an authenticated denial and the trust exchange fails, the denial is accepted into S2 and a later delayed lower-revision allow is refused.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
