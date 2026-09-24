@@ -827,6 +827,41 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
     assert consumers[dynamic_predicate_helper] == {classifier.CONTROL_CONSUMER}, consumers[dynamic_predicate_helper]
 
 
+def test_audited_routing_predicate_rejects_additional_glob_consumer() -> None:
+    classifier_path = Path(__file__).with_name("classify_pr_test_lanes.py")
+    spec = importlib.util.spec_from_file_location("routing_glob_consumer_regression", classifier_path)
+    assert spec is not None and spec.loader is not None
+    classifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(classifier)
+
+    consumer_path = ".github/workflows/merge-group-gate.yml"
+    pattern = "docs/architecture"
+    predicate_only = (
+        b"routing = all(path.startswith('docs/architecture/') "
+        b"and path.endswith('.md') for path in paths)\n"
+    )
+    assert classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_only,
+        pattern,
+    )
+
+    predicate_and_glob = (
+        predicate_only
+        + b"hash = hashFiles('docs/architecture/**/*.md')\n"
+    )
+    occurrences = classifier.directory_reference_occurrences(
+        predicate_and_glob,
+        pattern,
+    )
+    assert len(occurrences) == 2, occurrences
+    assert not classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_and_glob,
+        pattern,
+    )
+
+
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
@@ -866,6 +901,7 @@ def main() -> int:
         test_cargo_target_source_remap_cannot_preserve_contract_strings,
         test_fixed_postgres_target_mapping_cannot_be_suppressed,
         test_canonical_workflow_directory_predicate_is_not_content_consumption,
+        test_audited_routing_predicate_rejects_additional_glob_consumer,
         test_postgres_digest_and_invocation_are_mandatory,
     )
     for test in tests:
