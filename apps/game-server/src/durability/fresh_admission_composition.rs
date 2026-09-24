@@ -125,6 +125,9 @@ fn length_bound_tuple(prefix: &str, values: &[&str]) -> String {
 
 /// Read the S2 floor and re-decode its exact stored response body. Any
 /// mismatch between the stored metadata and the decoded body fails closed.
+/// The registration row is held `FOR SHARE` until commit: the S2 writer
+/// advances floors only under `FOR UPDATE` on it, so no floor can move
+/// between this read and the caller's commit.
 async fn load_floor(
     tx: &mut Transaction<'_, Postgres>,
     request: &Request<'_>,
@@ -132,7 +135,7 @@ async fn load_floor(
     expected_key_id: Option<&str>,
 ) -> Result<Option<SourceFloor>> {
     let registered: String = sqlx::query_scalar(
-        "SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id = 1",
+        "SELECT source_authority FROM game_durability_native_source_registration WHERE registration_id = 1 FOR SHARE",
     )
     .fetch_optional(&mut **tx)
     .await?
