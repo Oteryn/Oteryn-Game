@@ -225,6 +225,8 @@ Rejected alternatives:
 
 **Database outage while serving.** Writing `ready: false` needs the same database, so readiness cannot be withdrawn during an outage. Every admission then refuses without authority mutation (#823). When maintenance reports the root ready again, admissions resume under the unchanged readiness publication. Signalling this node's health to routing stays `OPS-CHANNEL-01` scope.
 
+**Replacement is stop-then-start in this slice.** Every node of a deployment runs under the same service UID, so a launch authorization handed to that UID is readable by any process running as it. The operator therefore issues and hands off a replacement's launch authorization only after the prior node process has exited: the service manager reports it stopped and no process of the service UID remains. A still-running prior process could otherwise consume the replacement's authorization. Overlapping replacement with per-incarnation OS identities is not part of this slice (§5).
+
 A restart always yields a new `NodeId`. Before the new process launches, the operator issues its launch authorization superseding the prior `NodeId`, or revokes the prior registration. The operator then replaces the assignment. There is no automatic takeover.
 
 ### D4 — S2 evidence is fetched on demand inside each admission attempt
@@ -345,6 +347,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 ## 5. Explicit non-decisions
 
 This decision does not choose or decide any of the following:
+- overlapping (zero-downtime) node replacement, which needs a per-incarnation OS identity or a kernel-mediated one-shot secret handoff; this slice replaces a node only after the prior process has exited (D3);
 - the Character audit transport and its publisher, including when `acknowledge_character_audit` is called; until then events stay pending and expire under D3 step 9;
 - Runtime guard reconstruction after a database restore that left guard history without a current guard; such a state fails boot closed;
 - the orchestrator, container image, systemd unit or Kubernetes shape;
