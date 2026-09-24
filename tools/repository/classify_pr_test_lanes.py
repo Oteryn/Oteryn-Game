@@ -36,6 +36,10 @@ CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-group-gate.yml",
     ".github/workflows/rust.yml",
 }
+ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES = {
+    (".github/workflows/merge-group-gate.yml", "docs/architecture"):
+        b"path.startswith('docs/architecture/')",
+}
 ATLAS_FULLWORLD_PATHS = {
     "tools/game-atlas-fullworld-source/producer.py",
     "tools/game-atlas-fullworld-source/self_test.py",
@@ -285,20 +289,33 @@ def standalone_directory_reference(content: bytes, pattern: str) -> bool:
     return bool(directory_reference_occurrences(content, pattern))
 
 
-def workflow_directory_reference_is_routing_only(content: bytes, pattern: str) -> bool:
-    """Return true only when every bounded directory occurrence is a routing predicate."""
+def workflow_directory_reference_is_routing_only(
+    consumer_path: str,
+    content: bytes,
+    pattern: str,
+) -> bool:
+    """Accept only an explicitly audited canonical routing-only predicate."""
+    literal = ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES.get((consumer_path, pattern))
+    if literal is None:
+        return False
     occurrences = directory_reference_occurrences(content, pattern)
     if not occurrences:
         return False
-    for index in occurrences:
-        prefix = content[max(0, index - 128):index]
-        python_startswith = re.search(rb"\.startswith\(\s*['\"]$", prefix) is not None
-        github_startswith = (
-            re.search(rb"\bstartsWith\([^,\n]+,\s*['\"]$", prefix) is not None
-        )
-        if not (python_startswith or github_startswith):
+
+    allowed_indices: set[int] = set()
+    start = 0
+    needle = pattern.encode("utf-8")
+    while True:
+        predicate_index = content.find(literal, start)
+        if predicate_index < 0:
+            break
+        path_index = content.find(needle, predicate_index, predicate_index + len(literal))
+        if path_index < 0:
             return False
-    return True
+        allowed_indices.add(path_index)
+        start = predicate_index + 1
+
+    return bool(allowed_indices) and set(occurrences) == allowed_indices
 
 
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
@@ -359,15 +376,18 @@ def candidate_reference_consumers(
             if pattern.encode("utf-8") in content:
                 selected.update(targets)
         # Directory references stay conservative for both package and workflow
-        # consumers. The only exception is a syntactically bounded path-membership
-        # predicate (for example path.startswith('docs/architecture/')), which
-        # selects CI routing but does not consume every file in that directory.
+        # consumers. Only explicitly audited canonical routing-only predicates
+        # may be omitted; every other directory predicate/reference remains FULL.
         for pattern, targets in reverse_directories.items():
             if not standalone_directory_reference(content, pattern):
                 continue
             if (
                 control
-                and workflow_directory_reference_is_routing_only(content, pattern)
+                and workflow_directory_reference_is_routing_only(
+                    consumer_path,
+                    content,
+                    pattern,
+                )
             ):
                 continue
             selected.update(targets)
