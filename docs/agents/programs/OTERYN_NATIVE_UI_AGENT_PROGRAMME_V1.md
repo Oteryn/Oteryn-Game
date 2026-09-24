@@ -374,7 +374,7 @@ This packet has author analysis only until a real independent reviewer records a
 
 This section is an integration handoff design for the existing authorized control plane, not permission for a prompt author or UI worker to integrate. The owner request for this packet expressly ends at PR publication, without self-merge.
 
-At integration time re-read the actual bound META policy, live ruleset, unique control-plane profile and candidate eligibility. At the observed META pin, the selected native route is REST `PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge-async` with the qualified exact `sha` and `merge_action="merge_queue"`. Do not substitute direct merge, generic auto-merge, GraphQL fallback or a guessed endpoint. A tool must explicitly support the route; unavailable capability is a blocker, not a reason to bypass it.
+At integration time re-read the actual bound META policy, live ruleset, unique control-plane profile and candidate eligibility. Resolve the current bound integration-capability router rather than pinning a provider-local primitive: use freshly proven `DIRECT_CAPABLE` when available, otherwise a freshly proven `DELEGATED_CAPABLE` executor route, and report `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven. Follow the selected bound route-specific fencing and receipt/reconciliation contract. Do not substitute direct merge, generic auto-merge, GraphQL fallback or a guessed endpoint.
 
 The authorized integrator must:
 
