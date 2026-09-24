@@ -406,6 +406,13 @@ async fn group_login(url: &str, group: &str) -> TestResult<(String, String)> {
             "CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE {group}"
         ))))
         .await?;
+    // Deployment grants CONNECT to this database's logins only (migration 0006).
+    let database = url.rsplit_once('/').ok_or("database URL has no name")?.1;
+    owner
+        .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+            "GRANT CONNECT ON DATABASE {database} TO {role}"
+        ))))
+        .await?;
     owner.close().await?;
     let (_, address) = url.split_once('@').ok_or("database URL has no authority")?;
     let login = format!("postgresql://{role}:{password}@{address}");

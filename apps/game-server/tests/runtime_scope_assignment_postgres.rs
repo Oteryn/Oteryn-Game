@@ -1974,6 +1974,12 @@ fn restricted_assignment_writer_can_mutate_and_read_authoritative_state() -> Tes
                 // control-plane group (OPS-NODE-BOOT-01 D2) plus the owner-written
                 // exact-scope grants for this login.
                 sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "GRANT CONNECT ON DATABASE {} TO {writer_role}",
+                    database.name
+                )))
+                .execute(&pool)
+                .await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!(
                     "GRANT oteryn_game_control TO {writer_role}"
                 )))
                 .execute(&pool)
@@ -3054,6 +3060,13 @@ async fn group_login(
     )))
     .execute(pool)
     .await?;
+    // Deployment grants CONNECT to this database's logins only (migration 0006).
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "GRANT CONNECT ON DATABASE {} TO {role}",
+        database.name
+    )))
+    .execute(pool)
+    .await?;
     let (_, address) = database
         .url
         .split_once('@')
@@ -3216,6 +3229,44 @@ fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
                 .fetch_one(&pool)
                 .await?;
                 assert_eq!(recorded, control_role);
+
+                // A login granted only assign cannot write a revoke effect
+                // directly.
+                sqlx::query(
+                    "DELETE FROM game_control_scope_grants WHERE control_role = $1 AND operation <> 1",
+                )
+                .bind(&control_role)
+                .execute(&pool)
+                .await?;
+                let mut direct = sqlx::PgConnection::connect(&control_url).await?;
+                expect_sql_state(
+                    sqlx::query(
+                        "UPDATE game_runtime_scope_assignments SET state = 2, holder_node_id = NULL, \
+                         holder_registration_revision = NULL, ownership_generation = ownership_generation + 1, \
+                         source_revision = source_revision + 1",
+                    )
+                    .execute(&mut direct)
+                    .await,
+                    "42501",
+                )
+                .await?;
+                direct.close().await?;
+
+                // A login of this database cannot connect to another Game
+                // database on the same cluster, although its groups match.
+                let other = Database::create("node_boot_other").await?;
+                let foreign = runtime_url.replace(
+                    &format!("/{}", database.name),
+                    &format!("/{}", other.name),
+                );
+                let refused = sqlx::PgConnection::connect(&foreign).await;
+                other.cleanup(&[]).await?;
+                match refused {
+                    Err(error) if sql_state(&error).as_deref() == Some("42501") => {}
+                    other => {
+                        return Err(format!("cross-database login was not refused: {other:?}").into());
+                    }
+                }
                 pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
@@ -3391,6 +3442,59 @@ fn s2_initialization_and_descriptors_require_recorded_issuances() -> TestResult 
             .fetch_one(&database.pool().await?)
             .await?;
             assert_eq!(issued_by, "oteryn_test_admin");
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn s2_initialization_refuses_a_stale_fresh_store_issuance() -> TestResult {
+    run("stale_initialization", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let node = register_proof(&root, 1, None).await?;
+            let provenance = FreshStoreProvenance {
+                namespace: "store".into(),
+                authorization: "owner".into(),
+                source_authority: "platform".into(),
+                initialized_at: 10,
+            };
+            let first = DescriptorRegistration {
+                revision: 1,
+                facts: vec![1],
+                installed_at: 10,
+            };
+            assert!(
+                root.record_native_source_descriptor_issuance(
+                    "platform",
+                    first.clone(),
+                    Some(provenance.clone())
+                )
+                .await?
+            );
+            assert!(
+                root.record_native_source_descriptor_issuance(
+                    "platform",
+                    DescriptorRegistration {
+                        revision: 2,
+                        facts: vec![2],
+                        installed_at: 20,
+                    },
+                    None,
+                )
+                .await?
+            );
+            // Only the latest issuance may initialize.
+            assert!(
+                root.initialize_native_admission_source(&node, provenance, first)
+                    .await
+                    .is_err()
+            );
+            assert!(
+                root.read_native_admission_source_registration()
+                    .await?
+                    .is_none()
+            );
             Ok(())
         })
     })
