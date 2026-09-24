@@ -37,7 +37,7 @@
     "max_links_per_root": 5000,
     "metadata_batch_size": 20,
     "max_categories_per_page": 256,
-    "max_templates_per_page": 512
+    "max_templates_per_page": 4096
   },
   "roots": [
     {
