@@ -8,7 +8,8 @@ status: investigating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-reference-spatial-resource-measurement-504
-pr: null
+issue: 504
+pr: 853
 base_sha: 663052f3139e2e5fff98f904fc1e8a02fd205115
 head_sha: null
 final_head_sha: null
@@ -111,7 +112,7 @@ last_progress: candidate tool and documentation prepared
 status: investigating
 branch: agent/otv2-reference-spatial-resource-measurement-504
 head_sha: null
-pr: null
+pr: 853
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
