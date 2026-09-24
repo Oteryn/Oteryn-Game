@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/wp5-s3b-sealed-composition-319
 issue: 319
-pr: null
+pr: 815
 base_sha: 5d4686f736acae407c114f42cc03e55680b14119
 head_sha: null
 final_head_sha: null
@@ -74,3 +74,19 @@ external_repositories: []
   - two fresh admissions, stale-composition rejection after #415 replacement, and fencing of the superseded holder.
 - Local: fmt, clippy `-D warnings`, and the full `oteryn-game-server` suite on PostgreSQL 17.6 are green.
 - The local composed run is not evidence: Docker Hub returned 429 for anonymous pulls in this environment.
+
+## Qualification evidence
+
+The workflow run on `fe7d2163d6bfb1e52baf86438a10994fd2e62d9b` (Actions job `107514617318`) produced `S3B_RESULT=COMPOSED_PASS`:
+
+- `postgres_server_version_num=170006 platform=9147bfd3a771762a6646fd87b9172cdb3a6c9a01`
+- `platform_intents=issued count=2 path=operator_command ttl_seconds=300`
+- `runtime_assignment=assigned holder=A generation=1 readiness=attested`
+- `character_interpretation=configured revision=1 path=operator_procedure`
+- `intent_reads wrong_client_identity=refused native_evidence_descriptor=refused unknown_operation=unavailable`
+- `character_authority=bootstrapped characters=2 intents=platform_operator_issued replay=exact audit=durable_outbox`
+- `fresh_admission=committed account=1 holder=A sources=platform_s2,character_414,runtime_415`
+- `stale_composition_after_replacement=rejected_stale_authority`
+- `superseded_holder=fenced compose=refused s2_custody=refused`
+- `fresh_admission=committed account=2 holder=B generation=2 custody=claimed`
+- `cleanup=complete containers=removed volumes=removed ephemeral_keys=removed`
