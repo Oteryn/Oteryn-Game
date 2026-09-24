@@ -2,6 +2,7 @@
 //! semantics and the composed owners decide admission.
 
 mod connection;
+mod fresh_evidence;
 #[cfg(test)]
 mod qualification;
 mod tcp_tls;
@@ -33,6 +34,7 @@ use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FreshAdmissionAttempt,
     FreshAdmissionAuthority, admit_frame, hold_admitted,
 };
+pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
 use std::future::{Future, poll_fn};
 use std::pin::{Pin, pin};
@@ -215,6 +217,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub root: &'a DurabilityRoot,
     pub character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub holder: &'a NodeIncarnationProof,
+    /// The Platform admission-evidence route, fetched on demand per attempt.
+    pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
 }
@@ -271,6 +275,7 @@ pub async fn serve_gameplay(
         root: owners.root,
         character: owners.character,
         holder: owners.holder,
+        evidence: owners.evidence,
         world_id: owners.world_id,
         channel_id: owners.channel_id,
     };
@@ -331,6 +336,7 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) root: &'a DurabilityRoot,
     pub(crate) character: &'a ReconciledCharacterAuthority<'f, 's>,
     pub(crate) holder: &'a NodeIncarnationProof,
+    pub(crate) evidence: &'a FreshEvidenceSource,
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
 }
@@ -364,6 +370,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             channel_id: self.channel_id,
             signing_key_id,
         };
+        // D4: the five-second source-age bound requires evidence fetched for
+        // this attempt; S2 custody retains it and the composition decides.
+        self.evidence
+            .refresh_fresh_admission(
+                self.root,
+                self.holder,
+                &subject.account_id,
+                &subject.signing_key_id,
+            )
+            .await
+            .map_err(|_| Unavailable)?;
         let now = unix_seconds().ok_or(Unavailable)?;
         match self
             .root

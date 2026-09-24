@@ -697,6 +697,16 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     }
     evidence("owners=composed holder=assigned characters=2 source=platform_operator_intents");
 
+    // D4: let every pre-seeded observation age past the five-second bound, so
+    // an admission can only succeed on evidence fetched for that attempt.
+    let fresh_evidence = crate::FreshEvidenceSource::new(producer_descriptor(
+        SOURCE_AUTHORITY,
+        "WP5_S3A_CLIENT_CERT",
+        "WP5_S3A_CLIENT_KEY",
+    )?);
+    tokio::time::sleep(Duration::from_secs(6)).await;
+    evidence("evidence=on_demand pre_seeded_age_seconds>5");
+
     // The shipped entry, with explicit non-shipping TLS material.
     let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
     let certificate: CertificateDer<'static> = generated.cert.der().clone();
@@ -717,6 +727,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             root: &root,
             character: &authority,
             holder: &holder,
+            evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
         },
