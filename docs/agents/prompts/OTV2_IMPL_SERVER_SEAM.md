@@ -101,7 +101,7 @@ Before implementation, the live allocation/task must name exact tests and comman
 6. full workspace build/test/strict Clippy and supply-chain checks required by current merge policy;
 7. mandatory whole-diff self-review;
 8. genuinely independent exact-head review because protocol/session/admission/fencing is high risk;
-9. exact-head GitHub CI including `game-gate` and zero unresolved review threads, followed by protected integration through the current immutable bound META integration-capability router; a missing direct native operation is not by itself a blocker, so use a freshly proven delegated executor route when the router classifies `DELEGATED_CAPABLE`, and record `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither direct nor delegated capability is proven; do not substitute direct/immediate merge or generic `enablePullRequestAutoMerge`.
+9. exact-head GitHub CI including `game-gate` and zero unresolved review threads, followed by protected integration through the current immutable bound META integration-capability router; consume its sealed decision without selecting a provider-local route here, and record `BLOCKED_CAPABILITY_UNAVAILABLE` only when the bound router returns that state; do not substitute direct/immediate merge or generic `enablePullRequestAutoMerge`.
 
 The Server Seam delivery may establish a Tier-1-capable physical boundary, but ADR-0007 Tier 1 remains `NOT_EVALUATED` until the separately allocated QA lane records accepted physical journey evidence.
 
@@ -121,6 +121,6 @@ Elapsed implementation time is not a stop condition. Routine test failures, revi
 
 ## Completion
 
-Do not claim completion from a listener that merely binds a socket or from synthetic tests. Completion requires the allocated production seam implementation, required tests/review/exact-head CI, protected integration under the current immutable bound META integration-capability router, real `merge_group` `game-gate` success, protected-main readback, task archive and ownership/shared-lease release. Absence of the direct route must first fall through to a freshly proven `DELEGATED_CAPABLE` executor route; record `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven. Do not claim completion or substitute direct/immediate merge or generic `enablePullRequestAutoMerge`.
+Do not claim completion from a listener that merely binds a socket or from synthetic tests. Completion requires the allocated production seam implementation, required tests/review/exact-head CI, protected integration under the current immutable bound META integration-capability router, real `merge_group` `game-gate` success, protected-main readback, task archive and ownership/shared-lease release. The provider prompt must not select or reclassify the integration route; preserve the candidate if the bound router returns `BLOCKED_CAPABILITY_UNAVAILABLE`. Do not claim completion or substitute direct/immediate merge or generic `enablePullRequestAutoMerge`.
 
 Only after the compatible seam is verified on `main` may the coordinator release Client and a new QA Tier-1 allocation.
