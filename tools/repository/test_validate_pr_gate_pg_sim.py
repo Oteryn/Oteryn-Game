@@ -862,6 +862,22 @@ def test_audited_routing_predicate_rejects_additional_glob_consumer() -> None:
         pattern,
     )
 
+    predicate_and_adjacent_glob = (
+        predicate_only
+        + b"hash = hashFiles('docs/architecture*/**/*.md')\n"
+    )
+    adjacent_occurrences = classifier.directory_reference_occurrences(
+        predicate_and_adjacent_glob,
+        pattern,
+        include_descendants=True,
+    )
+    assert len(adjacent_occurrences) == 2, adjacent_occurrences
+    assert not classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_and_adjacent_glob,
+        pattern,
+    )
+
 
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
