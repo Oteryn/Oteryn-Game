@@ -511,6 +511,32 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             self.assertNotIn("## Canonical Codex review routing", text)
             self.assertEqual(adoption._legacy_review_controller_errors(text, CentralStatementView), [], relative)
 
+    def test_game_integration_routing_does_not_false_block_without_direct_native_primitive(self):
+        docs_rules = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
+        for value in (
+            "DELEGATED_CAPABLE",
+            "meta.governed_merge_queue_executor.v1",
+            "neither direct nor delegated capability",
+        ):
+            self.assertIn(value, docs_rules)
+
+        prompting = (ROOT / "docs/agents/PROMPTING_STANDARD.md").read_text(encoding="utf-8")
+        self.assertIn("absence of a direct native primitive", prompting)
+        self.assertIn("delegated executor route", prompting)
+
+        lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
+        forbidden = (
+            "If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`",
+            "If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`",
+        )
+        for entry in lifecycle["prompts"]:
+            if entry.get("status") != "reusable" or entry.get("reusable") is not True:
+                continue
+            relative = entry["path"]
+            prompt = (ROOT / relative).read_text(encoding="utf-8")
+            for phrase in forbidden:
+                self.assertNotIn(phrase, prompt, relative)
+
     def test_workflow_authenticates_the_bound_meta_consumer(self):
         workflow = (ROOT / ".github/workflows/agent-governance.yml").read_text(encoding="utf-8")
         step = workflow.split("- name: Validate bound META policy and task prompts", 1)[1]
