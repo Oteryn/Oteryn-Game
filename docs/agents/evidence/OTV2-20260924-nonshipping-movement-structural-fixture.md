@@ -16,7 +16,7 @@ Base: protected `main@c516182255d3ea1724e91671c8d2187eb622e3df`
 | Intervening owner commit after candidate read | exactly 1 for prepared proposal | Rejected proposal leaves intervening position/revision unchanged |
 | Stale request and replayed proposal | 0 additional lookups | Position/revision unchanged |
 
-The only cell access in the kernel is one call to the existing `ReferenceStaticCellIndex::lookup` with complete scope and checked target. `CellProbe` counts it and fails if a second candidate is attempted. There is no scan/fallback or second cell index. Actor state remains in the existing private Channel carrier, and the sole position write is its compare-commit.
+The only cell access in the kernel is one call to the existing `ReferenceStaticCellIndex::lookup` with complete scope and checked target. `CellProbe` counts it and fails if a second candidate is attempted. There is no scan/fallback or second cell-index implementation. Two integration targets include the Foundation source as their own test crate, so this child includes the existing test-only Content index source by relative path for those crates; it does not copy or reimplement the index. Actor state remains in the existing private Channel carrier, and the sole position write is its compare-commit.
 
 ## Evidence status and limits
 
