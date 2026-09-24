@@ -51,7 +51,7 @@ Current runtime selection:
 | Client/shared/simulation, including their consumed auxiliary inputs | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
 | Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
 
-Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources and canonical product-CI workflows attach non-Cargo files to their real consumers. There is no historical document-consumer SHA or source-drift snapshot to refresh.
+Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. Canonical product-CI workflows attach auxiliary inputs through literal file references; a bare directory literal is only routing/glob evidence and does not by itself prove that every file below that directory is a build consumer. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
 `docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
