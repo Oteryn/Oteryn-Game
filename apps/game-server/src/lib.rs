@@ -15,7 +15,8 @@ mod gameplay_transport;
 pub mod node;
 
 pub use gameplay_transport::{
-    GameplayListenerConfig, GameplaySeamOwners, GameplayServeError, serve_gameplay,
+    FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
+    serve_gameplay,
 };
 
 #[allow(dead_code)]
