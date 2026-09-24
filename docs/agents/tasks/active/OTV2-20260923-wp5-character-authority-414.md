@@ -108,3 +108,11 @@ Focused Rust/protobuf checks run locally. The registered `character_authority_po
 - Qualification on local PostgreSQL 17.6:
   - `authenticated_intent_qualification_matrix` covers the #795 matrix: missing, denied and stale S2; an unassigned world; a missing or different configured interpretation; exact and concurrent retries; changed reuse; stale and contradictory revisions; expired and future intents; injected outbox failure rolling back the high-water; concurrent distinct operations; restart; a replaced #415 proof; and a dropped or regressed restored high-water;
   - mutation checks confirm that disabling the S2 gate, the high-water comparison or the high-water presence check each fails the matrix.
+
+## Trust boundary (owner decision 2026-09-23)
+
+- The Game server composition root is the trusted in-process boundary. Capabilities protect separate authority domains; they do not protect against the composition code itself.
+- The composition root configures the Platform producer trust, meaning the `ProducerDescriptor` endpoint, roots and client credentials, just as it does for the existing S1 descriptors.
+- The composition root is also the at-least-once audit publisher, and `acknowledge_character_audit` records its delivery statement.
+- Operator actions (interpretation configuration and legal holds) stay out of the process; see above.
+- Review findings of the same in-process trusted-composition class are closed by this decision, per the Codex threads on #790. Deployment-provisioned trust anchors and a verified audit-transport acknowledgement are future contracts, not part of #414.
