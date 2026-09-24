@@ -112,7 +112,7 @@ Rejected alternatives:
 ### D3 — Boot sequence of the serving node
 
 1. Load and validate the D1 configuration, and read the referenced files.
-2. Connect the durability root and require `maintain_ready_once` to report ready.
+2. Connect the durability root and require `maintain_ready_once` to report ready. From then until exit, a bounded maintenance task calls `maintain_ready_once` in two cases: at a fixed interval well inside the 30-minute holder lifetime, and immediately after any operation reports `RootUnavailable`. The durability holder is therefore re-established after retirement or loss, rather than only at boot.
 3. **Register.** Generate a fresh UUIDv7 `NodeId` and register it with the configured launch authorization. The authorization is consumed, and a replay rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
 4. **Establish S2 custody** for this incarnation:
    - **First installation:** `initialize_native_admission_source` with the provenance and descriptor from the operator-issued S2 fresh-store authorization. That authorization is required when the store is uninitialized and rejected when it is already initialized.
@@ -121,11 +121,18 @@ Rejected alternatives:
 
    The S2 registration is a single custody row, so exactly one serving node at a time can ingest Platform evidence. That matches this one-node slice. Several serving nodes need a later S2 decision.
 5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization is an operator action (D2); the node never performs it.
-6. **Await assignment.** Log the `NodeId`, then wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
+6. **Await assignment.** Log the complete non-secret registration fact: `NodeId` together with its database-allocated `registration_revision`. The operator passes exactly this `NodeRegistrationFact` to the assignment `Assign` or `Replace` command. Wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
 7. **Bind.** Bind the gameplay listener and the control socket. A failed bind exits before any readiness is published.
 8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions.
 9. **Serve.** Call `serve_gameplay` on the already-bound listener.
-10. **Shut down.** On SIGTERM or SIGINT, cancel the shutdown token: entry work is cancelled and in-flight admissions complete. Then publish `ready: false` for the scope before the process exits.
+10. **Shut down.** On SIGTERM or SIGINT:
+    1. publish `ready: false` for the scope first;
+    2. then cancel the shutdown token, which stops acceptance and cancels entry work, while in-flight admissions complete;
+    3. then exit.
+
+    If the non-ready publication cannot be written, shutdown still proceeds, and every later admission for the scope refuses because this incarnation stops serving.
+
+**Database outage while serving.** Writing `ready: false` needs the same database, so readiness cannot be withdrawn during an outage. Every admission then refuses without authority mutation (#823). When maintenance reports the root ready again, admissions resume under the unchanged readiness publication. Signalling this node's health to routing stays `OPS-CHANNEL-01` scope.
 
 A restart always yields a new `NodeId`. Before the new process launches, the operator issues its launch authorization superseding the prior `NodeId`, or revokes the prior registration. The operator then replaces the assignment. There is no automatic takeover.
 
@@ -185,7 +192,11 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Restart.**
   - A replacement launch under a superseding authorization yields a new `NodeId`, claims S2 custody, and becomes ready after the operator replaces the assignment. The old incarnation can no longer admit.
   - A replacement launch without supersession or revocation fails at S2 custody and never becomes ready.
-- **Readiness ordering.** When the listener bind fails, no readiness is published.
+- **Readiness ordering.**
+  - When the listener bind fails, no readiness is published.
+  - On shutdown, `ready: false` is published before acceptance stops.
+- **Durability maintenance.** After the holder is forcibly retired or the database restarts, the node refuses admissions during the outage and admits again after recovery, without a process restart.
+- **Assignment handoff.** The operator assigns using only the logged registration fact (`NodeId` and revision), and a wrong revision rejects.
 - **Shutdown.** Graceful shutdown publishes `ready: false`, and later grants for the scope are refused.
 - **Control socket.** It rejects any command other than a bootstrap operation id, and it is not reachable over the network.
 
