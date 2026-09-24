@@ -103,7 +103,8 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
   - issue or revoke registrations;
   - submit or reconcile assignments;
   - configure the Character interpretation;
-  - admit the fresh Character recovery generation.
+  - admit the fresh Character recovery generation;
+  - record the S2 fresh-store issuance.
 - **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, and admission.
 - **Recorded actor.** The recorded `ControlActor` is derived from the authenticated database session role, never from a caller-supplied label.
 - **Node isolation.** The serving node holds only runtime credentials.
@@ -127,6 +128,9 @@ The exact grant lists are part of the implementation. Negative tests must prove 
   - **Recovery after a failure.** After an ambiguous admission or a lost acknowledgement, the operator re-runs the action with that request file. The same inputs reproduce the same generation-1 transition for the retry or reconciliation; new inputs would conflict.
   - **Idempotence.** The re-run returns the already-admitted generation-1 record and never authorizes a second fresh store.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the complete `FreshStoreProvenance`: namespace, authorization reference, source authority and the exact `initialized_at` timestamp fixed at issuance. The file also holds the descriptor registration revision, `installed_at` and facts. Because every field is fixed at issuance, an ambiguous initialization can be compared exactly on restart. Issuing it never initializes the store itself.
+  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new single-row issuance table. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
+  - **Initialization binds to it.** `initialize_native_admission_source` is changed to require, in the same transaction, a recorded issuance whose content equals the supplied provenance and descriptor exactly; otherwise it rejects. The runtime role can read that row but never write it, so a process holding only runtime credentials cannot fabricate or select the initial source and trust descriptor.
+  - §4 requires the negative tests.
 
 Mutations that require a current process proof (`NodeIncarnationProof`) run only inside the serving node, under its own registration:
 - S2 initialization and custody;
@@ -266,6 +270,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - unreadable secret or trust-root files;
   - empty trust roots;
   - an S2 fresh-store authorization that differs from an already-initialized store's stored provenance or descriptor, or that is missing for an uninitialized store.
+- **S2 issuance binding.** Initialization without a recorded issuance, or with content that differs from it, rejects.
 - **Ambiguous S2 initialization.** A retry after an initialization whose response was lost, with the identical authorization, completes boot.
 - **Registration outage.** A database outage during registration is ridden out by exact replay, without exiting or changing the `NodeId`.
 - **Launch authorization.**
@@ -277,6 +282,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - revoke;
   - authorization issuance;
   - interpretation configuration;
+  - S2 fresh-store issuance;
   - fresh Character admission.
 
   The recorded control actor equals the authenticated control-plane session role.
