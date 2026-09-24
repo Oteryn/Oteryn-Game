@@ -67,7 +67,7 @@
     - username.
 
     A generic PostgreSQL URL is not accepted, matching the accepted WP3 configuration profile;
-  - the Character recovery-fence directory, together with the recovery store's `authority_scope_id` and `issuer_identity`. `CharacterRecoveryStore::open` requires both, and a retained record created under other values rejects. `oteryn-game-ops` takes the same three values;
+  - the Character recovery-fence directory, together with the recovery store's `authority_scope_id` and `issuer_identity`. `CharacterRecoveryStore::open` requires both, and a retained record created under other values rejects. `oteryn-game-ops` takes the same three values. Before either binary uses the fence, the directory, its lock file and its record get the same descriptor-based checks as secret files: opened without following symbolic links, owned by the service user, no group or other write, and a parent not writable by group or others. Any failure keeps Character authority closed;
   - the bounded assignment wait (D3);
   - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument. Its parent directory must be owned by the node's service user, with mode 0700 and not writable by anyone else;
   - the readiness revisions (D5);
@@ -294,6 +294,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - empty trust roots;
   - an S2 fresh-store authorization that differs from an already-initialized store's stored provenance or descriptor, or that is missing for an uninitialized store.
 - **Audit retention.** Using only the runtime credential, the running node deletes an expired, unheld audit event and keeps an expired event under an unreleased legal hold.
+- **Recovery fence protection.** A fence directory, lock file or record that is a symbolic link, owned by another user or writable by group or others fails both binaries before use.
 - **S1 authority.** A descriptor issuance or configuration with a different S1 source authority from the stored registration is refused.
 - **S2 issuance binding.** Initialization without a recorded issuance, or with content that differs from it, rejects.
 - **Ambiguous S2 initialization.** A retry after an initialization whose response was lost, with the identical authorization, completes boot.
