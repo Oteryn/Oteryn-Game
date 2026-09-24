@@ -263,7 +263,7 @@ def directory_reference_occurrences(
     *,
     include_descendants: bool = False,
 ) -> list[int]:
-    """Return bounded directory literals; workflows may conservatively include descendants."""
+    """Return precise package literals or every raw canonical-workflow occurrence."""
     needle = pattern.encode("utf-8")
     start = 0
     matches: list[int] = []
@@ -271,17 +271,22 @@ def directory_reference_occurrences(
         index = content.find(needle, start)
         if index < 0:
             return matches
+        if include_descendants:
+            # Canonical workflow routing is fail-closed: any additional raw
+            # occurrence outside the explicitly audited predicate can represent
+            # a shell path, glob, dynamic selector, action input or future syntax.
+            matches.append(index)
+            start = index + 1
+            continue
         end = index + len(needle)
         tail = content[end:]
         bounded = (
             not tail
             or tail[:1] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
-            or (include_descendants and tail[:1] in {b"*", b"?", b"["})
             or (
                 tail[:1] == b"/"
                 and (
-                    include_descendants
-                    or len(tail) == 1
+                    len(tail) == 1
                     or tail[1:2] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
                 )
             )
@@ -352,10 +357,11 @@ def candidate_reference_consumers(
 ) -> dict[str, set[str]]:
     """Map changed non-Cargo files to exact-candidate product/control consumers.
 
-    Candidate content is read as data only. Matching covers exact files plus
-    bounded, standalone parent-directory literals across Cargo packages and canonical product
-    CI workflows. False positives only allocate broader lanes; malformed or
-    unavailable evidence fails closed.
+    Candidate content is read as data only. Cargo-package matching keeps
+    bounded parent-directory literals, while canonical workflow matching treats
+    any raw directory occurrence as conservative consumer evidence except an
+    explicitly audited routing-only predicate. False positives only allocate
+    broader lanes; malformed or unavailable evidence fails closed.
     """
     if re.fullmatch(r"[0-9a-f]{40}", sha or "") is None:
         raise ValueError("invalid candidate SHA")
