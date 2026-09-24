@@ -1,0 +1,40 @@
+{
+  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT_EVIDENCE/v1",
+  "allocation_revision": "R2",
+  "allocation_comment": 5821876689,
+  "branch": "agent/otv2-worldproject-v2-full-cardinality-scale-r2",
+  "evidence_status": "measurement_pending",
+  "implementation_base": "6185045c20631b8614b1d4ad1dacc5d918f73b0a",
+  "supersedes": "a510e6ab68a7b1d003b3f642350df3b653a82ebc",
+  "task_path": "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md",
+  "measurement_tool": "tools/world-project-v2-scale-measurement",
+  "workflow": ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+  "target_placements": 24502036,
+  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+  "synthetic_shape": {
+    "definitions": 1,
+    "worlds": 1,
+    "map_revisions": 1,
+    "coordinate_frames": 1,
+    "disposition": "CandidateOnly"
+  },
+  "measured_dimensions": [
+    "canonical bytes by role and total",
+    "draft build time",
+    "canonical serialization and validation time",
+    "JSON syntax parse time",
+    "schema-aware load time",
+    "staged role-file write time",
+    "peak resident set size when available",
+    "one-placement edit amplification"
+  ],
+  "resource_policy": {
+    "full_virtual_memory_ceiling_bytes": 6442450944,
+    "full_wall_clock_limit_seconds": 4500,
+    "outcomes": ["completed", "resource_limit"]
+  },
+  "donor_or_source_inputs": false,
+  "schema_or_chunk_decision": "out_of_scope",
+  "run_identity": null,
+  "result_artifact": null
+}

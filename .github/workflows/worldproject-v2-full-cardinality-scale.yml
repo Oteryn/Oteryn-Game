@@ -1,0 +1,100 @@
+name: World Project v2 Full-Cardinality Scale Measurement
+
+on:
+  pull_request:
+    paths:
+      - "tools/world-project-v2-scale-measurement/**"
+      - ".github/workflows/worldproject-v2-full-cardinality-scale.yml"
+      - "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md"
+      - "docs/agents/evidence/OTV2-20260924-worldproject-v2-full-cardinality-scale.json"
+      - "apps/game-server/src/content/project.rs"
+      - "apps/game-server/src/content/project/v2.rs"
+      - "apps/game-server/Cargo.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+    inputs:
+      run_full:
+        description: "Run the supervised 24,502,036-placement synthetic stress measurement"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worldproject-v2-full-cardinality-scale-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test and run bounded synthetic smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml
+          cargo run --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml -- --mode smoke | tee world-project-v2-scale-smoke.json
+          python3 -c 'import json; d=json.load(open("world-project-v2-scale-smoke.json")); assert d["status"] == "completed"; assert d["input_class"] == "SYNTHETIC_SCALE_STRESS_ONLY"; assert d["placements_loaded"] == d["placements_requested"] == 2000'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: world-project-v2-scale-smoke
+          path: world-project-v2-scale-smoke.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  supervised-full:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_full
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build release probe
+        run: cargo build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml
+      - name: Run full corpus under a 6 GiB virtual-memory ceiling
+        shell: bash
+        run: |
+          set -uo pipefail
+          result=world-project-v2-scale-full.json
+          set +e
+          (ulimit -v 6291456; timeout --signal=TERM --kill-after=90s 75m tools/world-project-v2-scale-measurement/target/release/world-project-v2-scale-measurement --mode full) >"$result" 2>world-project-v2-scale-full.stderr
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            python3 -c 'import json; d=json.load(open("world-project-v2-scale-full.json")); assert d["status"] == "completed"; assert d["placements_loaded"] == 24502036'
+          elif [ "$rc" -eq 75 ]; then
+            python3 -c 'import json; d=json.load(open("world-project-v2-scale-full.json")); assert d["status"] == "resource_limit"; assert d["placements_requested"] == 24502036'
+          else
+            reason="resource_ceiling_or_timeout"
+            [ "$rc" -ne 124 ] || reason="wall_clock_timeout"
+            python3 - "$result" "$rc" "$reason" <<'PY'
+          import json, sys
+          with open(sys.argv[1], "w") as f:
+              json.dump({"schema":"OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1", "status":"resource_limit", "input_class":"SYNTHETIC_SCALE_STRESS_ONLY", "mode":"full", "placements_requested":24502036, "failed_stage":"supervised_process", "exit_code":int(sys.argv[2]), "reason":sys.argv[3], "schema_and_chunk_decision":"out_of_scope"}, f, indent=2)
+              f.write("\n")
+          PY
+          fi
+          cat "$result"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: world-project-v2-scale-full
+          path: |
+            world-project-v2-scale-full.json
+            world-project-v2-scale-full.stderr
+          if-no-files-found: warn
+          retention-days: 30
+
+  full-not-requested:
+    if: github.event_name == 'workflow_dispatch' && !inputs.run_full
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "Full measurement not started. Re-dispatch with run_full=true to authorize the supervised run."
