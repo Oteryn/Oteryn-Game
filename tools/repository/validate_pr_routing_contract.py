@@ -204,15 +204,6 @@ def write_summary(paths: list[str], edges: int) -> None:
         handle.write("\n".join(lines))
 
 
-def write_outputs(edges: int) -> None:
-    path = os.environ.get("GITHUB_OUTPUT")
-    if not path:
-        return
-    with open(path, "a", encoding="utf-8") as handle:
-        handle.write("routing_health=healthy\n")
-        handle.write(f"consumer_edges={edges}\n")
-
-
 def main() -> int:
     protected_main = len(sys.argv) == 3 and sys.argv[1] == "--protected-main"
     metadata_arg = sys.argv[2] if protected_main else (sys.argv[1] if len(sys.argv) == 2 else None)
@@ -242,7 +233,6 @@ def main() -> int:
             _references, edges = validate_reference_map(module, metadata, expected_head, paths)
 
         write_summary(paths, edges)
-        write_outputs(edges)
         print(
             f"ROUTING_CONTRACT_HEALTHY exact_head={expected_head} "
             f"paths={len(paths)} consumer_edges={edges}"
