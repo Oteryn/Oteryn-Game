@@ -156,6 +156,7 @@ OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
 psql_admin oteryn_node_boot <<SQL
 CREATE ROLE nb_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
 CREATE ROLE nb_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
+GRANT CONNECT ON DATABASE oteryn_node_boot TO nb_control, nb_runtime;
 SQL
 secret_to() { # owner source destination
   sudo install -o "$1" -m 0600 "$2" "$3"
