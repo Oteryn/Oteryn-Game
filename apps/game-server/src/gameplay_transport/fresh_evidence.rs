@@ -30,6 +30,8 @@ const ACCOUNT_SCOPE: &str = "fresh_admission";
 /// Bounded wait for one of the registered active exchange slots.
 const ACTIVATION_ATTEMPTS: u32 = 100;
 const ACTIVATION_BACKOFF: Duration = Duration::from_millis(10);
+/// The two fixed durable NSRC-PENDING-PUBLICATION slots.
+const PUBLICATION_SLOTS: usize = 2;
 /// NSRC-QUEUE-WAIT bound for the node's single publication lane.
 const PUBLICATION_QUEUE_WAIT: Duration = Duration::from_millis(1_000);
 
@@ -104,6 +106,9 @@ impl FreshEvidenceSource {
         request: &Request<'_>,
         operation: Operation,
     ) -> Result<(), EvidenceUnavailable> {
+        // Retained slots are reconciled before any new source work, so no
+        // exchange starts while no end-to-end publication slot is available.
+        self.reconcile_before_exchange(root, custody).await?;
         let mut permit = self.activate().await?;
         let encoded = encode_request(request).map_err(|_| EvidenceUnavailable::Source)?;
         let raw = http1_mtls::exchange(&self.descriptor, operation, &encoded, &mut permit)
@@ -136,6 +141,24 @@ impl FreshEvidenceSource {
         .await;
         drop(permit);
         result
+    }
+
+    async fn reconcile_before_exchange(
+        &self,
+        root: &DurabilityRoot,
+        custody: &NodeIncarnationProof,
+    ) -> Result<(), EvidenceUnavailable> {
+        let lane = self.enter_publication_lane().await?;
+        let (root_task, custody) = (root.clone(), custody.clone());
+        run_on_root(root, async move {
+            let _lane = lane;
+            let retained = reconcile_pending_publications(&root_task, &custody).await?;
+            if retained >= PUBLICATION_SLOTS {
+                return Err(EvidenceUnavailable::Capacity);
+            }
+            Ok(())
+        })
+        .await
     }
 
     async fn enter_publication_lane(&self) -> Result<OwnedMutexGuard<()>, EvidenceUnavailable> {
@@ -210,36 +233,43 @@ async fn publish(
 
 /// Replays every retained publication through the idempotent acceptance and
 /// releases its slot on a definite outcome. A slot whose binding cannot be read
-/// back, or whose outcome is still unknown, stays occupied.
+/// back, or whose outcome is still unknown, stays occupied. Returns the number
+/// of slots still retained.
 async fn reconcile_pending_publications(
     root: &DurabilityRoot,
     custody: &NodeIncarnationProof,
-) -> Result<(), EvidenceUnavailable> {
+) -> Result<usize, EvidenceUnavailable> {
     let pending = root
         .pending_native_source_publications(custody)
         .await
         .map_err(|_| EvidenceUnavailable::Custody)?;
+    let mut retained = 0;
     for publication in pending {
         let Some(observation) = PublicationBinding::decode(&publication.operation_binding)
             .and_then(|binding| binding.observation())
         else {
+            retained += 1;
             continue;
         };
         let outcome = root
             .accept_native_source_observation(custody, observation)
             .await;
         if outcome_is_ambiguous(&outcome) {
+            retained += 1;
             continue;
         }
-        let _ = root
+        let cleared = root
             .clear_native_source_publication(
                 custody,
                 publication.slot_id,
                 publication.operation_binding,
             )
             .await;
+        if cleared.is_err() {
+            retained += 1;
+        }
     }
-    Ok(())
+    Ok(retained)
 }
 
 /// A committed outcome is definite only when the store says so: an unknown
