@@ -607,6 +607,7 @@ def discover_page_links(
         page_ids.add(root["page_id"])
 
     link_count = 0
+    missing_links = 0
     for value in iter_continued(
         client,
         budget,
@@ -631,8 +632,11 @@ def discover_page_links(
         for page in pages:
             if not isinstance(page, dict):
                 raise CensusError("PAGE_LINK_ROW_INVALID")
-            page_id = _validate_page_id(page.get("pageid"))
             page_title = _page_title(page.get("title"))
+            if page.get("missing") is True:
+                missing_links += 1
+                continue
+            page_id = _validate_page_id(page.get("pageid"))
             if is_excluded_title(page_title, index.exclusion_aliases):
                 continue
             link_count += 1
@@ -654,6 +658,7 @@ def discover_page_links(
         "root_page_id": root["page_id"],
         "page_ids": sorted(page_ids),
         "discovered_links": link_count,
+        "missing_links": missing_links,
     }
 
 
