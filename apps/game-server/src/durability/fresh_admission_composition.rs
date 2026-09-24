@@ -550,9 +550,15 @@ impl DurabilityRoot {
             .map_err(|_| DurabilityError::Unavailable)?;
         let holder = holder.clone();
         let expected = composition.clone();
+        // The request must have been produced from exactly this composition,
+        // so revalidating `expected.subject` revalidates the request's subject.
+        let bound = expected.binds(request);
         let store = AdmissionGuardStore::from_root(self.clone());
         let revalidate: OwnerRevalidation = Box::new(move |tx| {
             Box::pin(async move {
+                if !bound {
+                    return Ok(false);
+                }
                 match resolve_current(tx, &store, &recovery, &holder, expected.subject.clone())
                     .await
                 {
@@ -651,6 +657,18 @@ pub struct FreshAdmissionComposition {
 }
 
 impl FreshAdmissionComposition {
+    /// Whether `request`'s complete authority binding (subject, current
+    /// facts, S2 observations and expected guards) was produced from this
+    /// composition.
+    fn binds(&self, request: &FreshAdmissionCommitRequestV1) -> bool {
+        let binding = request.binding();
+        binding.account_id == self.subject.account_id
+            && binding.current_facts == self.current.facts
+            && binding.signing == self.signing
+            && binding.security == self.security
+            && binding.expected_guards == self.rows
+    }
+
     fn resolve(
         subject: FreshAdmissionSubject,
         rows: Vec<AdmissionAuthorityPublicationChangeV1>,

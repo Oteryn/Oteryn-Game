@@ -62,7 +62,7 @@ external_repositories: []
 - Minimal visibility changes (`pub(super)`) in S2 (`fence_custody`) and #415 (`channel_scope`, `scope_key`, `load_assignment`, `writer_high_water`, `require_history_matches_high_water`), so the composition can resolve owner facts in its own transaction.
 - One #414 in-transaction reader, `load_current_character`, which asserts the recovery fence in the caller's transaction. `record_for` becomes `pub(super)`.
 
-- Commit-boundary revalidation. `FreshAdmissionStore` gains `commit_revalidated`, an owner-revalidation hook that runs inside the commit transaction; `commit` is unchanged. `commit_composed_fresh_admission` uses the hook to recompute the sealed composition from the current S2 floors, the #414 Character under the recovery fence, the #415 assignment and the guards. It rejects the commit as stale authority unless the result equals the prepared composition. This addresses Codex finding 4090536307.
+- Commit-boundary revalidation. `FreshAdmissionStore` gains `commit_revalidated`, an owner-revalidation hook that runs inside the commit transaction; `commit` is unchanged. `commit_composed_fresh_admission` uses the hook to recompute the sealed composition from the current S2 floors, the #414 Character under the recovery fence, the #415 assignment and the guards. It rejects the commit as stale authority unless the result equals the prepared composition. The request's complete authority binding (account, current facts, S2 signing/security observations and expected guards) must equal the supplied composition, so the revalidated subject is the request's subject. This addresses Codex findings 4090536307 and 4090701070.
 
 ## Qualification
 
