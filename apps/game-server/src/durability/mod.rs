@@ -10,6 +10,7 @@ pub mod character_authority;
 pub mod character_authority_audit;
 mod db;
 pub mod fresh_admission;
+pub mod fresh_admission_composition;
 pub mod native_admission_source;
 pub mod runtime_scope_assignment;
 mod schema;
@@ -17,6 +18,24 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod fresh_admission_composition_linkage {
+    use super::DurabilityRoot;
+    use super::fresh_admission_composition::{
+        COMPOSITION_SOURCE_AUTHORITY, FreshAdmissionComposition, FreshAdmissionSubject,
+    };
+
+    #[test]
+    fn fresh_admission_composition_api_is_linked() {
+        assert!(!COMPOSITION_SOURCE_AUTHORITY.is_empty());
+        let _ = std::mem::size_of::<FreshAdmissionComposition>();
+        let _ = std::mem::size_of::<FreshAdmissionSubject>();
+        let _ = DurabilityRoot::publish_fresh_admission_sources;
+        let _ = DurabilityRoot::compose_fresh_admission;
+        let _ = DurabilityRoot::commit_composed_fresh_admission;
+    }
+}
 
 #[cfg(test)]
 mod native_admission_source_linkage {

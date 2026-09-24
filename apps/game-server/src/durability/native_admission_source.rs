@@ -293,7 +293,7 @@ fn valid_observation(value: &SourceObservation) -> bool {
 /// supersession serializes with this transaction) and be the durable custody
 /// holder. Process-local state, a retained fact or persisted source state alone
 /// never establishes custody.
-async fn fence_custody(
+pub(super) async fn fence_custody(
     tx: &mut Transaction<'_, Postgres>,
     custody: &NodeIncarnationProof,
 ) -> Result<()> {

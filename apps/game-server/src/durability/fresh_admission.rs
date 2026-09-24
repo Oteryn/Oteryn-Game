@@ -174,6 +174,15 @@ pub fn encoded_operation_size(
     write_operation(&mut counter, operation)?;
     envelope_size(counter.measured(), maximum_bytes)
 }
+/// Owner revalidation run inside a fresh-admission commit transaction.
+pub(super) type OwnerRevalidation = Box<
+    dyn for<'t, 'c> FnOnce(
+            &'t mut sqlx::Transaction<'c, sqlx::Postgres>,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<bool>> + Send + 't>,
+        > + Send,
+>;
+
 pub(super) fn envelope_size(length: usize, maximum_bytes: usize) -> Result<usize> {
     let groups = length
         .checked_div(3)
@@ -378,6 +387,17 @@ impl FreshAdmissionStore {
         &self,
         request: &FreshAdmissionCommitRequestV1,
     ) -> Result<FreshAdmissionDurableOutcomeV1> {
+        self.commit_revalidated(request, None).await
+    }
+
+    /// Commit with an optional owner revalidation that runs inside the commit
+    /// transaction, after relation locks and exact-replay reconciliation. A
+    /// `false` result rejects the attempt as stale authority.
+    pub(super) async fn commit_revalidated(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        revalidate: Option<OwnerRevalidation>,
+    ) -> Result<FreshAdmissionDurableOutcomeV1> {
         let store = (*self).clone();
         let request = (*request).clone();
         let issued = store.guards.backend.try_issue_root()?;
@@ -400,6 +420,11 @@ impl FreshAdmissionStore {
             let outcome = receipt.classify_retry(operation);
             super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(outcome);
+        }
+        if let Some(revalidate) = revalidate
+            && !revalidate(&mut tx).await?
+        {
+            return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
         }
         let initial = checked(b.initial_commit())?;
         let use_state = session_use_state(&mut tx, initial.character_id()).await?;
