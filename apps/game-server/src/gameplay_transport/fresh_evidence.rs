@@ -150,7 +150,14 @@ impl FreshEvidenceSource {
         let lane = self.enter_publication_lane().await?;
         let result = run_on_root(
             root,
-            publish(root.clone(), custody.clone(), binding, checkpoint, lane, reservation),
+            publish(
+                root.clone(),
+                custody.clone(),
+                binding,
+                checkpoint,
+                lane,
+                reservation,
+            ),
         )
         .await;
         drop(permit);
@@ -180,9 +187,12 @@ impl FreshEvidenceSource {
     }
 
     async fn enter_publication_lane(&self) -> Result<OwnedMutexGuard<()>, EvidenceUnavailable> {
-        tokio::time::timeout(PUBLICATION_QUEUE_WAIT, self.publication.clone().lock_owned())
-            .await
-            .map_err(|_| EvidenceUnavailable::Capacity)
+        tokio::time::timeout(
+            PUBLICATION_QUEUE_WAIT,
+            self.publication.clone().lock_owned(),
+        )
+        .await
+        .map_err(|_| EvidenceUnavailable::Capacity)
     }
 
     async fn activate(&self) -> Result<QueuePermit<'_>, EvidenceUnavailable> {
