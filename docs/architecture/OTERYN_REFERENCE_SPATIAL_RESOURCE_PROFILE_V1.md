@@ -69,8 +69,10 @@ The current runtime owner alone remains responsible for mutable actor position.
 
 These are **candidate ceilings for the one-cell sidecar only**, not a measured
 world or Reference corridor footprint. The 7,500 manifest cap is an inherited
-conservative carrier budget with explicit rejection; the largest three-atom
-fixture encodes a 1,687-byte manifest. This is not evidence that a Reference
+conservative carrier budget with explicit pre-slice rejection, **not a reachable
+maximum for this four-field grammar**. The three-atom 512-ASCII-byte fixture
+encodes a 1,687-byte manifest; escaping can vary actual length, so that
+fixture is not an exact grammar maximum. This is not evidence that a Reference
 manifest uses those atoms. u32 section limits and checked u64 arithmetic
 apply before slicing or allocation.
 
@@ -82,12 +84,14 @@ apply before slicing or allocation.
 | generation / evidence digest | 32 raw bytes each | zero, malformed or wrong expected binding rejected |
 | index entries / bytes | 1 / 56 | `4 + 52*1`; count 2 rejected |
 | server/client body bytes | 33 / 1 | record length 34/2 rejected |
-| manifest bytes | 7,500 | 7,501 rejected |
+| manifest bytes | 7,500 conservative rejection budget | forged header 7,501 rejected before slicing; actual maximum under this grammar is smaller and not proven tight |
 | server/client artifact bytes | 7,653 / 7,621 | `64 + 7,500 + 56 + 33/1`; max+1 rejected |
-| generation pair encoded bytes | 15,274 | checked sum; max+1 rejected |
+| generation pair encoded bytes | 15,274 conservative envelope | checked sum and component limits; hypothetical maximum components pass, max+1 component rejects |
 
-The artifact maxima are *provable envelope arithmetic*, not observed output
-lengths. Fixture outputs: manifest 203, server 356, client 324, pair 680 bytes.
+The artifact ceilings are *safe envelope arithmetic*, not tight reachable maxima
+or observed output lengths. There is no actual max-byte fixture at the envelope;
+the test verifies section rejection from forged headers and component/pair
+checked arithmetic separately. Fixture outputs: manifest 203, server 356, client 324, pair 680 bytes.
 Max-length ASCII atom fixture: manifest 1,687, server 1,840, client 1,808
 bytes. No resident-memory, loading-time, arbitrary generation count, full
 Reference source cardinality, or general production artifact budget is claimed.
@@ -102,10 +106,12 @@ python3 tools/reference-spatial-resource-profile/spatial_resource_profile.py --o
 ```
 
 Four self-test groups cover encode/decode determinism, the four exact manifest
-bindings, address and evidence mismatch, view separation, cardinal max/max+1,
-signed coordinate bounds, UTF-8 atom max/max+1, unsupported D1 fields,
-tampered section lengths/count/offset/record, trailing bytes, and checked
-addition/multiplication overflow. A later production codec needs its own
+bindings, address and evidence mismatch, view separation, cardinal 1/2,
+signed coordinate bounds, UTF-8 atom 512/513, unsupported D1 fields,
+forged section length max+1/count/offset/record, oversized artifacts,
+component/pair envelope arithmetic, trailing bytes, and checked
+addition/multiplication overflow. They do not claim a reachable manifest,
+artifact or pair exact-maximum byte fixture. A later production codec needs its own
 adversarial decode, source admission and runtime end-to-end qualification.
 
 ## Options and decision timing
