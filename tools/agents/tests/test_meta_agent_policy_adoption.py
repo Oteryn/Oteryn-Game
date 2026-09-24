@@ -555,6 +555,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "docs/agents/programs/OTV2_WP3_RUSTLS_TLS12_KX_CALLER_PROPAGATION_AMENDMENT_20260910.md",
             "docs/agents/programs/OTV2_WP3_RUSTLS_TRANSCRIPT_CALLER_PROPAGATION_AMENDMENT_20260910.md",
             "docs/agents/programs/OTV2_WP3_RUSTLS_TRANSCRIPT_HASH_OWNER_AMENDMENT_20260909.md",
+            "experiments/world-vfx-real-content/README.md",
+            "experiments/world-vfx-real-content/CONTINUATION_PROMPT.md",
         )
         for relative in current_programme_consumers:
             text = (ROOT / relative).read_text(encoding="utf-8")
