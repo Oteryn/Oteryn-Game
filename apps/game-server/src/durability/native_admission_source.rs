@@ -343,7 +343,10 @@ impl DurabilityRoot {
             if !prove_current_incarnation(&mut tx, &custody).await? { return Err(DurabilityError::Unavailable); }
             // The runtime cannot fabricate or select the initial source and
             // trust descriptor: an exact control-plane issuance must exist.
-            let issued: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_native_source_descriptor_issuances WHERE descriptor_revision=$1::text::numeric(20,0) AND descriptor_facts=$2 AND installed_at=$3 AND source_authority=$4 AND bootstrap_namespace=$5 AND bootstrap_provenance=$6 AND initialized_at=$7)")
+            // Serialized with issuance recording; only the latest issuance may
+            // initialize, so a stale one can never become the stored descriptor.
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:native-source-issuance', 0))").execute(&mut *tx).await?;
+            let issued: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_native_source_descriptor_issuances WHERE descriptor_revision=$1::text::numeric(20,0) AND descriptor_facts=$2 AND installed_at=$3 AND source_authority=$4 AND bootstrap_namespace=$5 AND bootstrap_provenance=$6 AND initialized_at=$7 AND descriptor_revision=(SELECT max(descriptor_revision) FROM game_native_source_descriptor_issuances))")
                 .bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).bind(&provenance.source_authority).bind(&provenance.namespace).bind(&provenance.authorization).bind(provenance.initialized_at).fetch_one(&mut *tx).await?;
             if !issued { return Err(DurabilityError::Unavailable); }
             let custody = custody.fact();

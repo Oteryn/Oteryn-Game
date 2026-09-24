@@ -28,6 +28,15 @@ BEGIN
     END LOOP;
 END $$;
 
+-- The group roles are cluster-global, so another Game database on the same
+-- cluster grants its object privileges to the same groups. Deny CONNECT to
+-- PUBLIC here: deployment grants CONNECT to each of this database's login
+-- roles only, never to the groups, so a login of another database cannot
+-- use the privileges granted below.
+DO $$ BEGIN
+    EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM PUBLIC', current_database());
+END $$;
+
 -- Exact-scope control authorization (D2). One row per control login role,
 -- Channel scope and permitted operation (1 assign, 2 replace, 3 revoke).
 -- Only the database owner writes it; the control role can only read it.
@@ -52,6 +61,8 @@ DECLARE
     v_actor_len INTEGER := get_byte(NEW.command, 34);
 BEGIN
     IF convert_from(substring(NEW.command FROM 36 FOR v_actor_len), 'UTF8') <> session_user
+       -- The command kind must match the committed state (3 revoke <=> REVOKED).
+       OR (v_kind = 3) <> (NEW.state = 2)
        OR NOT EXISTS (
             SELECT 1 FROM game_control_scope_grants g
             WHERE g.control_role = session_user
@@ -64,6 +75,35 @@ BEGIN
 END; $$;
 CREATE TRIGGER game_control_scope_grant_guard BEFORE INSERT
     ON game_runtime_scope_assignment_receipts FOR EACH ROW EXECUTE FUNCTION game_control_scope_grant_guard();
+
+-- The authoritative assignment row is authorized by its own effect, so a
+-- login granted one operation cannot write another operation's result: a new
+-- row is an assign (1), an update to REVOKED a revoke (3), any other update a
+-- replace (2). An INSERT that will conflict is decided by the UPDATE trigger.
+CREATE FUNCTION game_control_scope_effect_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_operation SMALLINT;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF EXISTS (SELECT 1 FROM game_runtime_scope_assignments WHERE scope_key = NEW.scope_key) THEN
+            RETURN NEW;
+        END IF;
+        v_operation := CASE WHEN NEW.state = 1 THEN 1 ELSE 0 END;
+    ELSE
+        v_operation := CASE WHEN NEW.state = 2 THEN 3 ELSE 2 END;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM game_control_scope_grants g
+        WHERE g.control_role = session_user AND g.world_id = NEW.world_id
+          AND g.channel_id = NEW.channel_id AND g.operation = v_operation
+    ) THEN
+        RAISE EXCEPTION 'runtime-scope assignment effect is not granted to this control role' USING ERRCODE = '42501';
+    END IF;
+    RETURN NEW;
+END; $$;
+CREATE TRIGGER game_control_scope_effect_guard BEFORE INSERT OR UPDATE
+    ON game_runtime_scope_assignments FOR EACH ROW EXECUTE FUNCTION game_control_scope_effect_guard();
 
 -- Control-plane issuances of the Platform producer descriptor, keyed by
 -- descriptor revision (D2). The fresh-store provenance is present exactly on
@@ -266,6 +306,7 @@ DECLARE
 BEGIN
     FOREACH v_function IN ARRAY ARRAY[
         'game_control_scope_grant_guard()',
+        'game_control_scope_effect_guard()',
         'game_native_source_record_issuance(numeric, bytea, bigint, text, text, text, bigint)',
         'game_node_revoke_bootstrap_authorization(bytea)',
         'game_character_expire_audit(integer)'
@@ -281,6 +322,7 @@ REVOKE ALL ON TABLE
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_control_scope_grant_guard(),
+    game_control_scope_effect_guard(),
     game_native_source_record_issuance(NUMERIC, BYTEA, BIGINT, TEXT, TEXT, TEXT, BIGINT),
     game_node_revoke_bootstrap_authorization(BYTEA),
     game_node_register(BYTEA, TEXT, UUID),
