@@ -71,6 +71,7 @@
   - the bounded assignment wait (D3);
   - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument. Its parent directory must be owned by the node's service user, with mode 0700 and not writable by anyone else;
   - the readiness revisions (D5);
+  - the Runtime readiness source authority: one non-empty namespace per deployment and scope, kept identical across node replacements so the guard's source-revision chain stays monotonic, and never equal to a Platform source authority;
   - the S2 descriptor registration revision and its `installed_at` timestamp (D3). Both are copied from the operator-issued S2 fresh-store authorization and changed only together with a descriptor change;
   - two separate Platform routes, each with its own source authority namespace, endpoint, expected peer name and service trust roots. The source authority is the value S1 responses are bound to, and it is distinct from the TLS peer name:
     - the admission evidence source (S1/S2);
@@ -188,6 +189,14 @@ Rejected alternatives:
    2. Publish with `CompareAndSet` from that exact publication revision, with a source revision strictly greater than the current one.
    3. Use `Bootstrap` with the restored high-water only when no Runtime guard exists.
    4. A stale or conflicting CAS rereads once; if it still fails, boot fails.
+   5. **Source metadata.** The node is the source of its own readiness, so nothing is invented:
+      - authority: the configured Runtime readiness source authority (D1);
+      - source revision: the current guard's source revision plus one, or 1 under `Bootstrap`;
+      - decision identity: derived deterministically from the `NodeId`, ownership generation, source revision and `ready` value, so it is unique per revision;
+      - observed at: the node's clock at publication, with clock uncertainty 0 because the node observes its own state;
+      - restored high-water under `Bootstrap`: the highest publication revision the new read API finds in the guard history for the key, or 0 when there is none.
+
+      The `ready = false` shutdown publication (step 10) uses the same rules.
 9. **Serve.** Run two loops under the same shutdown token:
    - `serve_gameplay` on the already-bound gameplay listener;
    - the bounded control-socket accept/handler loop (D2).
