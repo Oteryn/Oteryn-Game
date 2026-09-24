@@ -11,12 +11,22 @@ import subprocess
 import sys
 
 CLASSIFIER_PATH = Path(__file__).with_name("classify_pr_test_lanes.py")
+ROUTING_CASES_PATH = Path(__file__).with_name("routing_contract_cases.py")
 
 
 def load_classifier():
     spec = importlib.util.spec_from_file_location("routing_classifier", CLASSIFIER_PATH)
     if spec is None or spec.loader is None:
         raise RuntimeError("unable to load routing classifier")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_routing_cases():
+    spec = importlib.util.spec_from_file_location("routing_contract_cases", ROUTING_CASES_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("unable to load routing contract cases")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -65,111 +75,10 @@ def record_paths(module, records: list[dict]) -> list[str]:
 
 
 def verify_classifier_matrix(module, metadata: dict) -> None:
-    def classify(paths, *, consumers=None):
-        records = [dict(filename=path, status="modified") for path in paths]
-        if consumers is None:
-            consumers = {path: set() for path in paths}
-        return module.classify(
-            records,
-            len(records),
-            metadata,
-            candidate_modes_verified=True,
-            reference_consumers=consumers,
-        )
-
-    server = f"{module.REQUIRED[module.SERVER]}/src/lib.rs"
-    client = f"{module.REQUIRED['oteryn-client']}/src/lib.rs"
-    evidence = "docs/agents/evidence/runtime-input.json"
-    standalone_workflow = ".github/workflows/offline-content.yml"
-    offline_tool = "tools/reference-world-corridor-census/offline.py"
-
-    result = classify([server])
-    if result != {
-        "rust": True,
-        "windows": False,
-        "surface": "server",
-        "reason": "server-only-exact-consumer-closure",
-    }:
-        raise ValueError(f"server-only routing contract changed: {result}")
-
-    result = classify([client])
-    if not (result["rust"] is True and result["windows"] is True):
-        raise ValueError(f"client routing contract changed: {result}")
-
-    for path in ("AGENTS.md", "docs/architecture/example.md", evidence, standalone_workflow, offline_tool):
-        result = classify([path])
-        if not (
-            result["rust"] is False
-            and result["windows"] is False
-            and result["reason"] == "unconsumed-auxiliary-inputs"
-        ):
-            raise ValueError(f"unconsumed auxiliary routing changed for {path}: {result}")
-
-    result = classify([evidence], consumers={evidence: {module.SERVER}})
-    if not (
-        result["rust"] is True
-        and result["windows"] is False
-        and result["reason"] == "server-only-exact-consumer-closure"
-    ):
-        raise ValueError(f"server-consumed auxiliary routing changed: {result}")
-
-    result = classify([evidence], consumers={evidence: {"oteryn-client"}})
-    if not (result["rust"] is True and result["windows"] is True):
-        raise ValueError(f"client-consumed auxiliary routing changed: {result}")
-
-    helper = "tools/content/helper.py"
-    result = classify([helper], consumers={helper: {module.CONTROL_CONSUMER}})
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "canonical-control-consumer-affected"
-    ):
-        raise ValueError(f"canonical-workflow consumer routing changed: {result}")
-
-    for path in (
-        "Cargo.lock",
-        ".github/workflows/merge-gate.yml",
-        ".github/workflows/merge-group-gate.yml",
-        ".github/workflows/rust.yml",
-        "tools/repository/classify_pr_test_lanes.py",
-    ):
-        result = classify([path])
-        if not (result["rust"] is True and result["windows"] is True):
-            raise ValueError(f"control/build input must stay FULL for {path}: {result}")
-
-    incident = [
-        ".github/workflows/item-wiki-first-census.yml",
-        "docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json",
-        "docs/agents/tasks/active/OTV2-20260923-item-wiki-first-census.md",
-        "tools/reference-world-corridor-census/item_wiki_first_census.py",
-        "tools/reference-world-corridor-census/item_wiki_first_census_self_test.py",
-    ]
-    result = classify(incident)
-    if not (
-        result["rust"] is False
-        and result["windows"] is False
-        and result["reason"] == "unconsumed-auxiliary-inputs"
-    ):
-        raise ValueError(f"PR #803 regression shape changed: {result}")
-
-    unknown = "unowned/input.bin"
-    result = classify([unknown])
-    if not (
-        result["rust"] is True
-        and result["windows"] is True
-        and result["reason"] == "unmodelled-input"
-    ):
-        raise ValueError(f"unknown-input fail-closed contract changed: {result}")
-
-    atlas = sorted(module.ATLAS_FULLWORLD_PATHS)[0]
-    result = classify([atlas])
-    if result != {
-        "rust": False,
-        "windows": False,
-        "surface": "atlas-fullworld",
-        "reason": "audited-atlas-fullworld-source",
-    }:
-        raise ValueError(f"Atlas-only routing contract changed: {result}")
+    cases = load_routing_cases()
+    verified = cases.verify_routing_contract_cases(module, metadata)
+    if not verified:
+        raise ValueError("routing contract matrix is empty")
 
 
 def validate_reference_map(module, metadata: dict, head: str, paths: list[str]) -> tuple[dict[str, set[str]], int]:
