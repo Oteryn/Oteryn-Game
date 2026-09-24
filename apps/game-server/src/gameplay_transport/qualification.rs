@@ -225,6 +225,30 @@ async fn ingest(
     Ok(minimum_valid_generation)
 }
 
+/// The account's current security generation, read from Platform without
+/// accepting anything into S2: grants are built from it while S2 stays fed
+/// only by the admission's own on-demand fetch (OPS-NODE-BOOT-01 D4).
+async fn platform_generation(descriptor: &ProducerDescriptor, account_id: &str) -> TestResult<u64> {
+    let (account, _) = fetch_real(
+        descriptor,
+        Request::Account {
+            recovery: false,
+            account_id,
+            purpose: "platform_security",
+            scope: "fresh_admission",
+        },
+    )
+    .await?;
+    let Facts::Account {
+        allowed: true,
+        minimum_valid_generation,
+    } = account.facts
+    else {
+        return Err("Platform account is not allowed".into());
+    };
+    Ok(minimum_valid_generation)
+}
+
 struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
 impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
 impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
@@ -697,6 +721,16 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     }
     evidence("owners=composed holder=assigned characters=2 source=platform_operator_intents");
 
+    // D4: let every pre-seeded observation age past the five-second bound, so
+    // an admission can only succeed on evidence fetched for that attempt.
+    let fresh_evidence = crate::FreshEvidenceSource::new(producer_descriptor(
+        SOURCE_AUTHORITY,
+        "WP5_S3A_CLIENT_CERT",
+        "WP5_S3A_CLIENT_KEY",
+    )?);
+    tokio::time::sleep(Duration::from_secs(6)).await;
+    evidence("evidence=on_demand pre_seeded_age_seconds>5");
+
     // The shipped entry, with explicit non-shipping TLS material.
     let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
     let certificate: CertificateDer<'static> = generated.cert.der().clone();
@@ -717,6 +751,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             root: &root,
             character: &authority,
             holder: &holder,
+            evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
         },
@@ -745,7 +780,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
 
         evidence("stage=transport_negatives");
         // Transport negatives: nothing reaches the frame layer.
-        let generation = ingest(&root, &holder, &descriptor, &accounts[0], key_id).await?;
+        let generation = platform_generation(&descriptor, &accounts[0]).await?;
         let grant = next_grant(&accounts[0], characters[0], generation);
         let valid_frame = framed(&bootstrap(
             1,
@@ -890,8 +925,9 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         );
 
         evidence("stage=admission");
-        // Positive: the real owners admit; post-admission input fails closed.
-        ingest(&root, &holder, &descriptor, &accounts[0], key_id).await?;
+        // Positive: the real owners admit on evidence fetched by this attempt
+        // (the pre-seeded S2 observations are older than five seconds);
+        // post-admission input fails closed.
         let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
         let mut raw = framed(&bootstrap(1, 1, &characters[0], &admitted_token));
         raw.extend_from_slice(&framed(&envelope(7, 1, &[])));
@@ -929,7 +965,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         evidence("replayed_grant=refused admissions=1");
 
         // Concurrent use of one valid grant: at most one GameSession.
-        let generation = ingest(&root, &holder, &descriptor, &accounts[1], key_id).await?;
+        let generation = platform_generation(&descriptor, &accounts[1]).await?;
         let second = next_grant(&accounts[1], characters[1], generation);
         let token = sign_grant(&second.borrowed(), now_seconds()?);
         let raw = framed(&bootstrap(1, 1, &characters[1], &token));

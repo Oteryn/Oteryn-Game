@@ -46,6 +46,12 @@ pub struct ProducerDescriptor {
     pub(super) tls: Arc<rustls::ClientConfig>,
 }
 impl ProducerDescriptor {
+    /// The configured source authority this descriptor authenticates.
+    #[must_use]
+    pub fn source_authority(&self) -> &str {
+        &self.source_authority
+    }
+
     pub fn new(
         source_authority: String,
         connect_endpoint: (String, u16),
