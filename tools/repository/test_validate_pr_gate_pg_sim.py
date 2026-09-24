@@ -718,6 +718,183 @@ def test_fixed_postgres_target_mapping_cannot_be_suppressed() -> None:
         assert any("rust_linux" in error for error in errors), (name, errors)
 
 
+def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> None:
+    classifier_path = Path(__file__).with_name("classify_pr_test_lanes.py")
+    spec = importlib.util.spec_from_file_location("routing_directory_predicate_regression", classifier_path)
+    assert spec is not None and spec.loader is not None
+    classifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(classifier)
+
+    incident_paths = (
+        "docs/agents/PROMPT_LIFECYCLE.json",
+        "docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md",
+        "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md",
+        "docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md",
+        "docs/architecture/README.md",
+        "tools/agents/tests/test_meta_agent_policy_adoption.py",
+    )
+    exact_helper = "tools/content/helper.py"
+    directory_helper = "tools/content/fixtures/input.json"
+    mixed_directory_helper = "tools/mixed/fixtures/input.json"
+    dynamic_predicate_helper = "tools/dynamic/fixtures/input.json"
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        roots = {
+            "oteryn-game-server": "apps/game-server",
+            "oteryn-client": "apps/client",
+            "oteryn-synthetic-client-harness": "tools/synthetic-client-harness",
+            "oteryn-simulation-determinism": "crates/simulation-determinism",
+        }
+        for package_root in roots.values():
+            manifest = root / package_root / "Cargo.toml"
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text("[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n", encoding="utf-8")
+
+        for path in (
+            *incident_paths,
+            exact_helper,
+            directory_helper,
+            mixed_directory_helper,
+            dynamic_predicate_helper,
+        ):
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("fixture\n", encoding="utf-8")
+
+        workflows = root / ".github/workflows"
+        workflows.mkdir(parents=True, exist_ok=True)
+        (workflows / "merge-gate.yml").write_text("name: merge-gate\n", encoding="utf-8")
+        (workflows / "rust.yml").write_text("name: rust\n", encoding="utf-8")
+        (workflows / "merge-group-gate.yml").write_text(
+            "routing = all(path.startswith('docs/architecture/') and path.endswith('.md') for path in paths)\n"
+            f"run = 'python {exact_helper}'\n"
+            "discover = 'python -m unittest discover -s tools/content/fixtures/'\n"
+            "mixed_routing = all(path.startswith('tools/mixed/fixtures/') for path in paths)\n"
+            "mixed_discover: python -m unittest discover -s tools/mixed/fixtures/\n"
+            "dynamic_routing = path.startswith('tools/dynamic/fixtures/')\n"
+            "dynamic_consumer = open(path).read()\n",
+            encoding="utf-8",
+        )
+
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(
+            [
+                "git", "-c", "user.name=Oteryn CI", "-c", "user.email=ci@example.invalid",
+                "commit", "-q", "-m", "fixture",
+            ],
+            cwd=root,
+            check=True,
+        )
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        metadata = {
+            "workspace_root": str(root),
+            "workspace_members": list(roots),
+            "packages": [
+                {
+                    "id": name,
+                    "name": name,
+                    "manifest_path": str(root / package_root / "Cargo.toml"),
+                    "dependencies": [],
+                }
+                for name, package_root in roots.items()
+            ],
+        }
+
+        previous = Path.cwd()
+        try:
+            os.chdir(root)
+            consumers = classifier.candidate_reference_consumers(
+                metadata,
+                sha,
+                [
+                    *incident_paths,
+                    exact_helper,
+                    directory_helper,
+                    mixed_directory_helper,
+                    dynamic_predicate_helper,
+                ],
+            )
+        finally:
+            os.chdir(previous)
+
+    for path in incident_paths:
+        assert consumers[path] == set(), (path, consumers[path])
+    assert consumers[exact_helper] == {classifier.CONTROL_CONSUMER}, consumers[exact_helper]
+    assert consumers[directory_helper] == {classifier.CONTROL_CONSUMER}, consumers[directory_helper]
+    assert consumers[mixed_directory_helper] == {classifier.CONTROL_CONSUMER}, consumers[mixed_directory_helper]
+    assert consumers[dynamic_predicate_helper] == {classifier.CONTROL_CONSUMER}, consumers[dynamic_predicate_helper]
+
+
+def test_audited_routing_predicate_rejects_additional_glob_consumer() -> None:
+    classifier_path = Path(__file__).with_name("classify_pr_test_lanes.py")
+    spec = importlib.util.spec_from_file_location("routing_glob_consumer_regression", classifier_path)
+    assert spec is not None and spec.loader is not None
+    classifier = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(classifier)
+
+    consumer_path = ".github/workflows/merge-group-gate.yml"
+    pattern = "docs/architecture"
+    predicate_only = (
+        b"routing = all(path.startswith('docs/architecture/') "
+        b"and path.endswith('.md') for path in paths)\n"
+    )
+    assert classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_only,
+        pattern,
+    )
+
+    predicate_and_glob = (
+        predicate_only
+        + b"hash = hashFiles('docs/architecture/**/*.md')\n"
+    )
+    occurrences = classifier.directory_reference_occurrences(
+        predicate_and_glob,
+        pattern,
+        include_descendants=True,
+    )
+    assert len(occurrences) == 2, occurrences
+    assert not classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_and_glob,
+        pattern,
+    )
+
+    predicate_and_adjacent_glob = (
+        predicate_only
+        + b"hash = hashFiles('docs/architecture*/**/*.md')\n"
+    )
+    adjacent_occurrences = classifier.directory_reference_occurrences(
+        predicate_and_adjacent_glob,
+        pattern,
+        include_descendants=True,
+    )
+    assert len(adjacent_occurrences) == 2, adjacent_occurrences
+    assert not classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_and_adjacent_glob,
+        pattern,
+    )
+
+    predicate_and_shell_consumer = (
+        predicate_only
+        + b"run: tar -cf out docs/architecture; echo done\n"
+    )
+    shell_occurrences = classifier.directory_reference_occurrences(
+        predicate_and_shell_consumer,
+        pattern,
+        include_descendants=True,
+    )
+    assert len(shell_occurrences) == 2, shell_occurrences
+    assert not classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_and_shell_consumer,
+        pattern,
+    )
+
+
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
@@ -756,6 +933,8 @@ def main() -> int:
         test_post_classification_target_drift_cannot_preserve_contract_strings,
         test_cargo_target_source_remap_cannot_preserve_contract_strings,
         test_fixed_postgres_target_mapping_cannot_be_suppressed,
+        test_canonical_workflow_directory_predicate_is_not_content_consumption,
+        test_audited_routing_predicate_rejects_additional_glob_consumer,
         test_postgres_digest_and_invocation_are_mandatory,
     )
     for test in tests:

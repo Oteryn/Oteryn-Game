@@ -36,6 +36,10 @@ CANONICAL_CONTROL_PATHS = {
     ".github/workflows/merge-group-gate.yml",
     ".github/workflows/rust.yml",
 }
+ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES = {
+    (".github/workflows/merge-group-gate.yml", "docs/architecture"):
+        b"path.startswith('docs/architecture/')",
+}
 ATLAS_FULLWORLD_PATHS = {
     "tools/game-atlas-fullworld-source/producer.py",
     "tools/game-atlas-fullworld-source/self_test.py",
@@ -253,23 +257,92 @@ def directory_reference_patterns(path: str) -> tuple[str, ...]:
     return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
 
 
-def standalone_directory_reference(content: bytes, pattern: str) -> bool:
-    """Require a directory path literal boundary, not a prefix of a sibling file."""
+def directory_reference_occurrences(
+    content: bytes,
+    pattern: str,
+    *,
+    include_descendants: bool = False,
+) -> list[int]:
+    """Return precise package literals or every raw canonical-workflow occurrence."""
     needle = pattern.encode("utf-8")
     start = 0
+    matches: list[int] = []
     while True:
         index = content.find(needle, start)
         if index < 0:
-            return False
+            return matches
+        if include_descendants:
+            # Canonical workflow routing is fail-closed: any additional raw
+            # occurrence outside the explicitly audited predicate can represent
+            # a shell path, glob, dynamic selector, action input or future syntax.
+            matches.append(index)
+            start = index + 1
+            continue
         end = index + len(needle)
-        suffix = content[end:end + 2]
-        if (
-            end == len(content)
-            or content[end:end + 1] in {b'"', b"'"}
-            or suffix in {b'/"', b"/'"}
-        ):
-            return True
+        tail = content[end:]
+        bounded = (
+            not tail
+            or tail[:1] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
+            or (
+                tail[:1] == b"/"
+                and (
+                    len(tail) == 1
+                    or tail[1:2] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
+                )
+            )
+        )
+        if bounded:
+            matches.append(index)
         start = index + 1
+
+
+def standalone_directory_reference(
+    content: bytes,
+    pattern: str,
+    *,
+    include_descendants: bool = False,
+) -> bool:
+    """Require a bounded directory literal, with conservative workflow descendants."""
+    return bool(
+        directory_reference_occurrences(
+            content,
+            pattern,
+            include_descendants=include_descendants,
+        )
+    )
+
+
+def workflow_directory_reference_is_routing_only(
+    consumer_path: str,
+    content: bytes,
+    pattern: str,
+) -> bool:
+    """Accept only an explicitly audited canonical routing-only predicate."""
+    literal = ROUTING_ONLY_CONTROL_DIRECTORY_PREDICATES.get((consumer_path, pattern))
+    if literal is None:
+        return False
+    occurrences = directory_reference_occurrences(
+        content,
+        pattern,
+        include_descendants=True,
+    )
+    if not occurrences:
+        return False
+
+    allowed_indices: set[int] = set()
+    start = 0
+    needle = pattern.encode("utf-8")
+    while True:
+        predicate_index = content.find(literal, start)
+        if predicate_index < 0:
+            break
+        path_index = content.find(needle, predicate_index, predicate_index + len(literal))
+        if path_index < 0:
+            return False
+        allowed_indices.add(path_index)
+        start = predicate_index + 1
+
+    return bool(allowed_indices) and set(occurrences) == allowed_indices
 
 
 def consumer_pathspecs(roots: dict[str, str]) -> list[str]:
@@ -284,10 +357,11 @@ def candidate_reference_consumers(
 ) -> dict[str, set[str]]:
     """Map changed non-Cargo files to exact-candidate product/control consumers.
 
-    Candidate content is read as data only. Matching covers exact files plus
-    bounded, standalone parent-directory literals across Cargo packages and canonical product
-    CI workflows. False positives only allocate broader lanes; malformed or
-    unavailable evidence fails closed.
+    Candidate content is read as data only. Cargo-package matching keeps
+    bounded parent-directory literals, while canonical workflow matching treats
+    any raw directory occurrence as conservative consumer evidence except an
+    explicitly audited routing-only predicate. False positives only allocate
+    broader lanes; malformed or unavailable evidence fails closed.
     """
     if re.fullmatch(r"[0-9a-f]{40}", sha or "") is None:
         raise ValueError("invalid candidate SHA")
@@ -329,9 +403,26 @@ def candidate_reference_consumers(
         for pattern, targets in reverse_files.items():
             if pattern.encode("utf-8") in content:
                 selected.update(targets)
+        # Directory references stay conservative for both package and workflow
+        # consumers. Only explicitly audited canonical routing-only predicates
+        # may be omitted; every other directory predicate/reference remains FULL.
         for pattern, targets in reverse_directories.items():
-            if standalone_directory_reference(content, pattern):
-                selected.update(targets)
+            if not standalone_directory_reference(
+                content,
+                pattern,
+                include_descendants=control,
+            ):
+                continue
+            if (
+                control
+                and workflow_directory_reference_is_routing_only(
+                    consumer_path,
+                    content,
+                    pattern,
+                )
+            ):
+                continue
+            selected.update(targets)
         for target in selected:
             consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
     return consumers
