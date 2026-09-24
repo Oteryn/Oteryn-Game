@@ -87,12 +87,26 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(d["pair_bytes"], d["server_artifact_bytes"] + d["client_artifact_bytes"])
         self.assertEqual(p.HEADER.size, 64)
         self.assertEqual(p.ENTRY.size, 52)
-        for name, maximum in (("manifest", p.MAX_MANIFEST_BYTES), ("index", p.MAX_INDEX_BYTES),
-                              ("server body", p.MAX_SERVER_BODY_BYTES), ("client body", p.MAX_CLIENT_BODY_BYTES),
-                              ("server artifact", p.MAX_SERVER_ARTIFACT_BYTES),
-                              ("client artifact", p.MAX_CLIENT_ARTIFACT_BYTES), ("pair", p.MAX_PAIR_BYTES)):
-            self.assertLessEqual(maximum, p.U32 if name not in ("server artifact", "client artifact", "pair") else p.U64)
-            reject(lambda maximum=maximum: p.require(maximum + 1 <= maximum, "max+1"))
+        # Three length headers are checked before slicing, even though this
+        # manifest grammar cannot physically populate the entire 7,500 budget.
+        artifact = p.encode(B, [C], 1)
+        for field, over in ((12, p.MAX_MANIFEST_BYTES + 1),
+                            (16, p.MAX_INDEX_BYTES + 1),
+                            (20, p.MAX_SERVER_BODY_BYTES + 1)):
+            bad = bytearray(artifact)
+            bad[field:field+4] = struct.pack("<I", over)
+            reject(lambda bad=bad: p.decode(bytes(bad), B, (0, 0, 0), 1, C["evidence_binding_sha256"]))
+        client = p.encode(B, [C], 2)
+        bad_client = bytearray(client)
+        bad_client[20:24] = struct.pack("<I", p.MAX_CLIENT_BODY_BYTES + 1)
+        reject(lambda: p.decode(bytes(bad_client), B, (0, 0, 0), 2))
+        reject(lambda: p.decode(bytes(p.MAX_CLIENT_ARTIFACT_BYTES + 1), B, (0, 0, 0), 2))
+        self.assertEqual(p.enforce_pair_length(p.MAX_SERVER_ARTIFACT_BYTES,
+                                               p.MAX_CLIENT_ARTIFACT_BYTES), p.MAX_PAIR_BYTES)
+        reject(lambda: p.enforce_pair_length(p.MAX_SERVER_ARTIFACT_BYTES + 1,
+                                             p.MAX_CLIENT_ARTIFACT_BYTES))
+        reject(lambda: p.enforce_pair_length(p.MAX_SERVER_ARTIFACT_BYTES,
+                                             p.MAX_CLIENT_ARTIFACT_BYTES + 1))
         self.assertEqual(p.checked_add(p.U64, 0), p.U64)
         reject(lambda: p.checked_add(p.U64, 1))
         self.assertEqual(p.checked_mul(p.U64, 1), p.U64)
