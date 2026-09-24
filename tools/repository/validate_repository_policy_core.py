@@ -40,18 +40,44 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - synchronize
       - edited
 """
-EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
-)
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7"
-)
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b"
-EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "212c76f01372c7c25b34f7b58737defb1d8bad3bea3fe442582201d4f77bd399"
-EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "03f252f0182f0f80a8e49101bf1b217735f2cb64"
-EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
-EXPECTED_POST_MERGE_RUST_SHA256 = "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494"
+EXPECTED_MERGE_GATE_JOB_SHA256 = {
+    "scope": (
+        "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd",
+        "merge gate scope job must match the reviewed exact-head classification contract",
+    ),
+    "lanes": (
+        "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b",
+        "merge gate risk lanes must match the reviewed trusted-base fail-closed contract",
+    ),
+    "routing_contract": (
+        "212c76f01372c7c25b34f7b58737defb1d8bad3bea3fe442582201d4f77bd399",
+        "merge gate routing contract job must match the reviewed exact-head consumer contract",
+    ),
+    "atlas_fullworld": (
+        "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40",
+        "merge gate Atlas fullworld job must match the reviewed exact-head evidence contract",
+    ),
+    "validate": (
+        "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7",
+        "merge gate aggregate validate job must match the reviewed fail-closed fan-in contract",
+    ),
+}
+EXPECTED_GIT_BLOBS = {
+    "tools/repository/validate_pr_routing_contract.py": (
+        "03f252f0182f0f80a8e49101bf1b217735f2cb64",
+        "routing contract validator must equal the reviewed fail-closed implementation",
+    ),
+    ".github/workflows/merge-group-gate.yml": (
+        "ac7eb12d0482b33c9f51acd4ebf468975301f2f6",
+        "merge-group gate must equal the protected-base preapproved PG/SIM blob",
+    ),
+}
+EXPECTED_WHOLE_FILE_SHA256 = {
+    ".github/workflows/rust.yml": (
+        "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494",
+        "Rust post-merge workflow must match the reviewed fail-closed contract",
+    ),
+}
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -186,14 +212,6 @@ def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
     return indented_yaml_mapping_block(text, key, 0)
 
 
-def validate_post_merge_rust(text: str) -> list[str]:
-    # Reuse the repository's canonical workflow/job pin pattern. This binds
-    # selection, failure fallbacks and evidence commands, not just substrings.
-    if hashlib.sha256(text.encode("utf-8")).hexdigest() != EXPECTED_POST_MERGE_RUST_SHA256:
-        return ["Rust post-merge workflow must match the reviewed fail-closed contract"]
-    return []
-
-
 def main() -> int:
     errors: list[str] = []
 
@@ -201,11 +219,19 @@ def main() -> int:
         if not (ROOT / relative).is_file():
             errors.append(f"missing required repository-governance file: {relative}")
 
-    routing_validator = ROOT / "tools/repository/validate_pr_routing_contract.py"
-    if routing_validator.is_file():
-        validator_text = routing_validator.read_text(encoding="utf-8")
-        if git_blob_sha(validator_text.encode("utf-8")) != EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB:
-            errors.append("routing contract validator must equal the reviewed fail-closed implementation")
+    for relative, (expected, message) in EXPECTED_GIT_BLOBS.items():
+        path = ROOT / relative
+        if path.is_file():
+            text = path.read_text(encoding="utf-8")
+            if git_blob_sha(text.encode("utf-8")) != expected:
+                errors.append(message)
+
+    for relative, (expected, message) in EXPECTED_WHOLE_FILE_SHA256.items():
+        path = ROOT / relative
+        if path.is_file():
+            text = path.read_text(encoding="utf-8")
+            if hashlib.sha256(text.encode("utf-8")).hexdigest() != expected:
+                errors.append(message)
 
     try:
         policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
@@ -366,38 +392,11 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        scope_block = indented_yaml_mapping_block(text, "scope", 2)
-        scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
-        if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
-            errors.append(
-                "merge gate scope job must exactly match the canonical exact-head, "
-                "changed-path classification and output implementation"
-            )
-        lanes_block = indented_yaml_mapping_block(text, "lanes", 2)
-        lanes_digest = hashlib.sha256(lanes_block.encode("utf-8")).hexdigest() if lanes_block else None
-        if lanes_digest != EXPECTED_MERGE_GATE_LANES_JOB_SHA256:
-            errors.append("merge gate risk lanes must exactly match trusted-base classification and fail-closed outputs")
-        routing_contract_block = indented_yaml_mapping_block(text, "routing_contract", 2)
-        routing_contract_digest = (
-            hashlib.sha256(routing_contract_block.encode("utf-8")).hexdigest()
-            if routing_contract_block else None
-        )
-        if routing_contract_digest != EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256:
-            errors.append("merge gate routing contract job must exactly match the reviewed exact-head consumer-routing contract")
-        atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
-        atlas_fullworld_digest = (
-            hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
-            if atlas_fullworld_block else None
-        )
-        if atlas_fullworld_digest != EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256:
-            errors.append("merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract")
-        validate_block = indented_yaml_mapping_block(text, "validate", 2)
-        validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
-        if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
-            errors.append(
-                "merge gate aggregate validate job must exactly match the canonical "
-                "needs/result wiring and fail-closed implementation"
-            )
+        for job, (expected, message) in EXPECTED_MERGE_GATE_JOB_SHA256.items():
+            block = indented_yaml_mapping_block(text, job, 2)
+            digest = hashlib.sha256(block.encode("utf-8")).hexdigest() if block else None
+            if digest != expected:
+                errors.append(message)
         game_gate_block = indented_yaml_mapping_block(text, "game_gate", 2)
         if game_gate_block is None:
             errors.append("merge gate must publish the stable game-gate aggregate")
@@ -437,8 +436,6 @@ def main() -> int:
     merge_group_gate = ROOT / ".github/workflows/merge-group-gate.yml"
     if merge_group_gate.is_file():
         text = merge_group_gate.read_text(encoding="utf-8")
-        if git_blob_sha(text.encode("utf-8")) != EXPECTED_MERGE_GROUP_GATE_BLOB:
-            errors.append("merge-group gate must equal the protected-base preapproved PG/SIM blob")
         top_level_keys = canonical_top_level_yaml_keys(text)
         if top_level_keys != EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS:
             errors.append(
@@ -559,7 +556,6 @@ def main() -> int:
     rust_workflow = ROOT / ".github/workflows/rust.yml"
     if rust_workflow.is_file():
         text = rust_workflow.read_text(encoding="utf-8")
-        errors.extend(validate_post_merge_rust(text))
         if not errors:
             regression = subprocess.run([sys.executable, str(ROOT / "tools/repository/test_classify_post_merge_lanes.py")], cwd=ROOT, check=False)
             if regression.returncode != 0:
