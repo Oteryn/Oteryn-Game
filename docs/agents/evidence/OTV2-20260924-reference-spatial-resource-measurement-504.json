@@ -1,0 +1,36 @@
+{
+  "authority": "NON_SHIPPING_SYNTHETIC_ONLY",
+  "codec": {
+    "client_record_bytes": 1,
+    "header_bytes": 64,
+    "index_entry_bytes": 52,
+    "server_record_bytes": 33
+  },
+  "dimensions": {
+    "binding_atom_utf8_bytes": 512,
+    "cells_per_generation": 1,
+    "client_artifact_bytes": 7621,
+    "client_body_bytes": 1,
+    "coordinate_max": 2147483647,
+    "coordinate_min": -2147483648,
+    "index_bytes": 56,
+    "manifest_bytes": 7500,
+    "pair_bytes": 15274,
+    "server_artifact_bytes": 7653,
+    "server_body_bytes": 33
+  },
+  "observed": {
+    "client_artifact_bytes": 324,
+    "max_atoms_client_artifact_bytes": 1808,
+    "max_atoms_manifest_bytes": 1687,
+    "max_atoms_server_artifact_bytes": 1840,
+    "pair_bytes": 680,
+    "server_artifact_bytes": 356,
+    "server_manifest_bytes": 203
+  },
+  "profile": "REFERENCE_SPATIAL_SINGLE_DESTINATION_CANDIDATE/v1",
+  "synthetic_fixture_sha256": {
+    "client": "a99e5347158d75c961997b0d8e5c18b28dea1bbc5ee1a73982eac927648eee46",
+    "server": "bd9ed155f94095dc8c856704e682b07671efb919cf8a9885b5e7f5284aef8a0a"
+  }
+}
