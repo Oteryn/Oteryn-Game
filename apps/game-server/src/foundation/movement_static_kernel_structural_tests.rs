@@ -1,11 +1,18 @@
 //! Non-shipping structural Movement fixture. These local markers and synthetic cells do not
 //! activate Reference, establish its parity, or qualify production MOVE-RL-03.
 use super::*;
-use crate::content::reference_static_cell::{
+extern crate oteryn_game_server as game_library;
+use game_library::content::{CollisionClass, CoordinateFrameRef, MapRevisionRef, ProductionAtom};
+
+// Some integration targets include Foundation's source as their own crate root. Compile the
+// existing test-only Content index source here so all such test crates exercise one implementation,
+// not a second cell-index design. This child remains reachable only through `#[cfg(test)]`.
+#[path = "../content/reference_static_cell.rs"]
+mod reference_static_cell;
+use reference_static_cell::{
     ReferenceStaticCellIndex, StaticCellError, StaticCellFact, StaticCellFixtureRecord,
     StaticCellPosition, StaticCellScope,
 };
-use crate::content::{CollisionClass, CoordinateFrameRef, MapRevisionRef, ProductionAtom};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Step {
@@ -384,7 +391,7 @@ fn cell_in_another_scope_or_floor_cannot_supply_the_candidate() {
 
 #[test]
 fn stale_snapshot_wrong_scope_context_and_coordinate_overflow_reject_before_lookup() {
-    let mut fixture = Harness::new(LocalPosition {
+    let fixture = Harness::new(LocalPosition {
         x: 4,
         y: 5,
         floor: 7,
