@@ -736,6 +736,7 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
     exact_helper = "tools/content/helper.py"
     directory_helper = "tools/content/fixtures/input.json"
     mixed_directory_helper = "tools/mixed/fixtures/input.json"
+    dynamic_predicate_helper = "tools/dynamic/fixtures/input.json"
 
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -750,7 +751,13 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
             manifest.parent.mkdir(parents=True, exist_ok=True)
             manifest.write_text("[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n", encoding="utf-8")
 
-        for path in (*incident_paths, exact_helper, directory_helper, mixed_directory_helper):
+        for path in (
+            *incident_paths,
+            exact_helper,
+            directory_helper,
+            mixed_directory_helper,
+            dynamic_predicate_helper,
+        ):
             target = root / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("fixture\n", encoding="utf-8")
@@ -764,7 +771,9 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
             f"run = 'python {exact_helper}'\n"
             "discover = 'python -m unittest discover -s tools/content/fixtures/'\n"
             "mixed_routing = all(path.startswith('tools/mixed/fixtures/') for path in paths)\n"
-            "mixed_discover: python -m unittest discover -s tools/mixed/fixtures/\n",
+            "mixed_discover: python -m unittest discover -s tools/mixed/fixtures/\n"
+            "dynamic_routing = path.startswith('tools/dynamic/fixtures/')\n"
+            "dynamic_consumer = open(path).read()\n",
             encoding="utf-8",
         )
 
@@ -799,7 +808,13 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
             consumers = classifier.candidate_reference_consumers(
                 metadata,
                 sha,
-                [*incident_paths, exact_helper, directory_helper, mixed_directory_helper],
+                [
+                    *incident_paths,
+                    exact_helper,
+                    directory_helper,
+                    mixed_directory_helper,
+                    dynamic_predicate_helper,
+                ],
             )
         finally:
             os.chdir(previous)
@@ -809,6 +824,7 @@ def test_canonical_workflow_directory_predicate_is_not_content_consumption() -> 
     assert consumers[exact_helper] == {classifier.CONTROL_CONSUMER}, consumers[exact_helper]
     assert consumers[directory_helper] == {classifier.CONTROL_CONSUMER}, consumers[directory_helper]
     assert consumers[mixed_directory_helper] == {classifier.CONTROL_CONSUMER}, consumers[mixed_directory_helper]
+    assert consumers[dynamic_predicate_helper] == {classifier.CONTROL_CONSUMER}, consumers[dynamic_predicate_helper]
 
 
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
