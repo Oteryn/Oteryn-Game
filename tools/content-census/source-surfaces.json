@@ -48,6 +48,21 @@
       "expected_stable_digest": "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
     },
     {
+      "id": "objects-category",
+      "kind": "category_tree",
+      "title": "Categoria:Objetos"
+    },
+    {
+      "id": "books-category",
+      "kind": "category_tree",
+      "title": "Categoria:Livros"
+    },
+    {
+      "id": "documents-papers-category",
+      "kind": "category_tree",
+      "title": "Categoria:Documentos e Papéis"
+    },
+    {
       "id": "cyclopedia",
       "kind": "page_links",
       "title": "Cyclopedia",
@@ -174,7 +189,9 @@
         "Presentation"
       ],
       "root_ids": [
-        "items-protected"
+        "items-protected",
+        "books-category",
+        "documents-papers-category"
       ]
     },
     {
@@ -410,7 +427,8 @@
       "root_ids": [
         "items-protected",
         "geography",
-        "libraries"
+        "libraries",
+        "objects-category"
       ]
     },
     {

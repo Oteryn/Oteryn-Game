@@ -76,7 +76,7 @@ jobs:
           assert manifest["schema"] == "OTERYN_FULL_CONTENT_SOURCE_CENSUS_MANIFEST/v1"
           counts = manifest["counts"]
           assert counts["registry_surfaces"] == 29
-          assert counts["registry_roots"] == 21
+          assert counts["registry_roots"] == 24
           assert counts["live_unique_pages"] > 0
           assert counts["protected_item_pages"] == 6918
           assert counts["nominal_pages_before_g2_overlap"] > counts["protected_item_pages"]
@@ -119,6 +119,7 @@ jobs:
           evidence = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
           assert evidence["schema"] == "OTERYN_FULL_CONTENT_SOURCE_CENSUS_MANIFEST/v1"
           assert evidence["counts"]["registry_surfaces"] == 29
+          assert evidence["counts"]["registry_roots"] == 24
           assert evidence["counts"]["protected_item_pages"] == 6918
           assert evidence["invariants"]["hard_exclusions_absent"] is True
           assert evidence["invariants"]["protected_item_full_census_refetched"] is False
