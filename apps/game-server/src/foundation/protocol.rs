@@ -243,6 +243,8 @@ pub(crate) struct ServerAcceptedValue<'a> {
     pub(crate) selected_capabilities: &'a [u32],
 }
 
+// Resume acknowledgement for the seam's resume path.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ServerResumeAcceptedValue<'a> {
     pub(crate) game_session_id: GameSessionId,
@@ -321,6 +323,7 @@ pub(crate) fn encode_server_accepted(
     Ok(output)
 }
 
+#[allow(dead_code)]
 pub(crate) fn encode_server_resume_accepted(
     value: &ServerResumeAcceptedValue<'_>,
 ) -> Result<Vec<u8>, FoundationProtocolError> {

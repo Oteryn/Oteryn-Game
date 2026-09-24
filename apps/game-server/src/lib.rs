@@ -13,6 +13,10 @@ pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
 
+pub use gameplay_transport::{
+    GameplayListenerConfig, GameplaySeamOwners, GameplayServeError, serve_gameplay,
+};
+
 #[allow(dead_code)]
 pub(crate) mod world_runtime;
 
