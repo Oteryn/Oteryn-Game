@@ -3,12 +3,40 @@
   "task_id": "OTV2-20260924-g4-non-item-source-provenance",
   "issue": 162,
   "issue_comment": 5821413563,
-  "status": "IMPLEMENTING",
+  "status": "MERGED_AND_ARCHIVED",
   "revision": "R2",
-  "branch": "agent/otv2-g4-non-item-source-provenance-r2",
-  "base_commit": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
-  "supersedes_commit": "7ad58d9e7ce0d450d1ca9e8b3852dae929c36ca2",
-  "pr": null,
+  "allocation": {
+    "issue": 162,
+    "comment_id": 5821923343,
+    "branch": "agent/otv2-g4-nonitem-source-provenance-archive-r2",
+    "base_commit": "6185045c20631b8614b1d4ad1dacc5d918f73b0a",
+    "scope": "archive-only successor; same two logical documentation paths"
+  },
+  "task_packet": {
+    "task_id": "OTV2-20260924-g4-non-item-source-provenance",
+    "title": "G4 non-Item source provenance",
+    "mode": "IMPLEMENT",
+    "status": "archived",
+    "repository": "Oteryn/Oteryn-Game",
+    "base": "main",
+    "branch": "agent/otv2-g4-nonitem-source-provenance-archive-r2",
+    "issue": 162,
+    "pr": 857,
+    "base_sha": "6185045c20631b8614b1d4ad1dacc5d918f73b0a",
+    "final_head_sha": "b2e77ba01677b484fdfa6271c5745d2280c13df6"
+  },
+  "implementation_allocation": {
+    "issue": 162,
+    "comment_id": 5821413563,
+    "branch": "agent/otv2-g4-nonitem-source-provenance-r2",
+    "base_commit": "4c7e1c8402c721f58c108e4b6912a80aef7458ea",
+    "supersedes_commit": "7ad58d9e7ce0d450d1ca9e8b3852dae929c36ca2"
+  },
+  "superseded_archive_candidate": {
+    "commit": "ad0cbbf7de5b0dd471a8b4d40bad1d2319db0537",
+    "reason": "PENDING_CURRENT_COMMIT_PLACEHOLDER_RETAINED",
+    "qualification_reused": false
+  },
   "collector": "tools/content-census/g4_non_item_source_capture.py",
   "workflow": ".github/workflows/g4-non-item-source-capture.yml",
   "protected_overlap_source": "tools/content-census/global_source_overlap_fetch_artifacts.py",
@@ -36,9 +64,61 @@
     "second_wiki": "UNKNOWN",
     "ots": "HYPOTHESIS_ONLY"
   },
+  "closeout": {
+    "status": "MERGED_AND_ARCHIVED",
+    "pull_request": 857,
+    "candidate_head": "b2e77ba01677b484fdfa6271c5745d2280c13df6",
+    "merge_commit": "c6ffbfc348d11eab66344612aab5eb2513ce8aba",
+    "protected_main_readback": "c6ffbfc348d11eab66344612aab5eb2513ce8aba",
+    "archive_allocation_base": "6185045c20631b8614b1d4ad1dacc5d918f73b0a",
+    "exact_head_governance_run_id": 36053194380,
+    "exact_head_merge_gate_run_id": 36053194469,
+    "exact_head_architecture_audit_run_id": 36053194395,
+    "hosted_capture_run_id": 36053194532,
+    "hosted_artifact_id": 10831362943,
+    "artifact_archive_sha256": "5d8e886e31a0f64a035a61dc5c3f8ce031a8af3b06926117750deebc841394ca",
+    "compact_artifact_sha256": "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713",
+    "counts": {
+      "g1_live_unique_pages": 9373,
+      "protected_item_pages": 6918,
+      "g1_item_id_overlap_pages": 504,
+      "unique_non_item_pages": 8869
+    },
+    "independent_review_comment_id": 5821527346,
+    "meta_submit_comment_id": 5821635863,
+    "executor_run_id": 36054397480,
+    "executor_uuid": "9e3cc33e-7d72-48c2-bd00-5dcdc9d44654",
+    "merge_group_run_id": 36054459959,
+    "terminal_issue_comment_id": 5821757624,
+    "implementation_paths_released": true,
+    "canonical_bindings_populated": 0,
+    "semantic_promotion_performed": false
+  },
+  "owned_paths": [
+    "tools/content-census/g4_non_item_source_capture.py",
+    "tools/content-census/g4_non_item_source_capture_self_test.py",
+    ".github/workflows/g4-non-item-source-capture.yml",
+    "docs/agents/tasks/archive/OTV2-20260924-g4-non-item-source-provenance.md",
+    "docs/agents/evidence/OTV2-20260924-g4-non-item-source-provenance.json"
+  ],
   "verification": {
     "local_tests": "PASS",
-    "git_data_commit": "ONE_COMMIT_ON_ALLOCATED_BRANCH",
-    "changed_path_count": 5
+    "git_data_commit": "ONE_COMMIT_ON_IMPLEMENTATION_BRANCH",
+    "changed_path_count": 5,
+    "exact_head_ci": "SUCCESS",
+    "hosted_capture": "SUCCESS",
+    "independent_review": "PASS",
+    "merge_group": "SUCCESS",
+    "archive_packet": "ONE_COMMIT_ON_ALLOCATED_ARCHIVE_BRANCH",
+    "archive_logical_document_path_count": 2
+  },
+  "publication": {
+    "candidate_sha": "b2e77ba01677b484fdfa6271c5745d2280c13df6",
+    "candidate_sha_status": "MERGED_PROTECTED_MAIN",
+    "published_commit_count": 1,
+    "integration_authority": "COORDINATOR_ONLY",
+    "pull_request": 857,
+    "merge_commit": "c6ffbfc348d11eab66344612aab5eb2513ce8aba",
+    "protected_main_readback": "c6ffbfc348d11eab66344612aab5eb2513ce8aba"
   }
 }
