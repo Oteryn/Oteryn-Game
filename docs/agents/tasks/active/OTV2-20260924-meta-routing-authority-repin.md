@@ -4,18 +4,18 @@
 task_id: OTV2-20260924-meta-routing-authority-repin
 title: Repin Game to final META integration-routing authority
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/meta-routing-repin-835
-pr: null
+pr: 841
 base_sha: f812f6dc5586f0120a6e832fe58b7edd5c6ea474
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: coordination-agent
 created_at: 2026-09-24T13:40:00Z
-updated_at: 2026-09-24T13:40:00Z
+updated_at: 2026-09-24T14:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/META_AGENT_POLICY_BINDING.json
@@ -111,10 +111,10 @@ No gameplay/runtime/protocol/persistence/Cargo/vendor/workflow/ruleset/protectio
 
 ```yaml
 last_progress: final META authority authenticated; bounded Game repin authored
-status: implementing
+status: validating
 branch: governance/meta-routing-repin-835
 head_sha: null
-pr: null
+pr: 841
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -132,5 +132,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open the canonical PR, bind this packet to it, then freeze and qualify the successor head
+next_action: freeze the successor exact head and consume fresh exact-head CI/review evidence
 ```
