@@ -53,7 +53,7 @@ No diagonal, stairs/floor transition, pathfinding, dynamic occupancy, visibility
 
 ## Implementation and validation
 
-The test child delegates one candidate read to the existing Content index, then commits a proposal with the existing carrier compare-commit. Negative cases assert the owner's unchanged position/revision and lookup count. Evidence: `docs/agents/evidence/OTV2-20260924-nonshipping-movement-structural-fixture.md`.
+The test child compiles the exact existing test-only Content index source with synthetic input-type stand-ins for test crates that import Foundation by path; this does not prove real Content type wiring. It makes one candidate read, then commits a proposal with the existing carrier compare-commit. Negative cases assert the owner's unchanged position/revision and lookup count. Evidence: `docs/agents/evidence/OTV2-20260924-nonshipping-movement-structural-fixture.md`.
 
 - Focused: pending exact-head CI; local `cargo`/`rustfmt` unavailable in the worker workspace.
 - Strict Clippy/fmt and full `game-gate`: pending exact-head CI.
