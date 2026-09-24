@@ -61,14 +61,19 @@
   - the entry deadline and limits;
   - `world_id` and `channel_id`;
   - the PostgreSQL connection reference;
-  - the Platform source endpoint and expected peer identity;
   - the Character recovery-fence directory;
-  - the readiness revisions (D5).
-- **Secrets are never inline values.** The document gives only file paths, each read once at start:
-  - TLS certificate chain and key;
-  - Platform mTLS client certificate and key;
-  - the launch-scoped bootstrap authorization;
-  - the PostgreSQL URL.
+  - the bounded assignment wait (D3);
+  - the readiness revisions (D5);
+  - the S2 descriptor registration revision (D3);
+  - two separate Platform routes, each with its own endpoint, expected peer name and service trust roots:
+    - the admission evidence source (S1/S2);
+    - the Character bootstrap intent issuer (#414).
+- **Secrets and trust material are never inline values.** The document gives only file paths, each read once at start:
+  - gameplay TLS certificate chain and key;
+  - per Platform route: the operator-provisioned service trust roots, plus that route's mTLS client certificate and key. The two routes use distinct client identities. The trust roots are separate from the gameplay certificate chain, and an empty root set rejects, as `ProducerDescriptor::new` already requires;
+  - the launch-scoped bootstrap authorization (D3);
+  - the PostgreSQL URL;
+  - only while the S2 store is uninitialized: the one-time S2 fresh-store authorization (D3).
 
   Any missing, unreadable, malformed or over-bound input fails before a socket is bound. It exits with a distinct code, and the error names the key but never its value.
 
@@ -76,37 +81,53 @@ Rejected alternatives:
 - **Environment variables for everything.** Secret-bearing environment dumps are a common leak path, and file permissions give clearer ownership and rotation.
 - **Built-in defaults.** They would silently create a production shape nobody accepted.
 
-### D2 — Operator actions run in a separate operator binary, never in the serving node
+### D2 — Operator actions are control-plane actions; only the serving node holds a process proof
 
-- **The binary.** A second binary target in the same crate, `oteryn-game-ops`, performs these control-plane actions:
-  - configuring the Character interpretation revision;
-  - authorizing the fresh Character recovery store (generation 1);
-  - Channel assignment, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor;
-  - consuming one Platform-authenticated Character bootstrap intent by operation id (the #414 operator variant).
-- **Its own process incarnation.** Actions that need a process proof (`NodeIncarnationProof`) register a fresh incarnation for that one invocation, using their own consumed launch authorization. Registration proves process identity only and grants no Channel authority (registration decision §3), so an operator invocation never becomes a serving node.
-- **The serving node** never assigns its own scope, authorizes a fresh Character store or consumes bootstrap intents. This keeps the S3-B/#414 trust boundary: operator authority stays out of the server process.
+A second binary target in the same crate, `oteryn-game-ops`, performs control-plane actions. It never registers a GameNode incarnation, so `NodeId` keeps its ADR-0009 meaning: the identity of a running game-server process. Its actions, all through existing Game-owned control-plane operations:
+- **Launch authorization.** It issues the launch-scoped bootstrap authorization for one serving launch through `issue_node_bootstrap_authorization`. On a replacement launch, the authorization names the prior `NodeId` in `supersedes`. It writes the secret to a file for the node.
+- **Registration revocation** through `revoke_node_registration`.
+- **Channel assignment**, replace and revoke through `RuntimeScopeAssignmentWriter`, with an explicit control actor.
+- **The Character interpretation revision.**
+- **Fresh Character recovery store authorization** (generation 1) in the configured fence directory.
+- **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the provenance namespace, authorization reference, source authority, and the descriptor registration revision and facts. Issuing it never initializes the store itself.
+
+Mutations that require a current process proof (`NodeIncarnationProof`) run only inside the serving node, under its own registration:
+- S2 initialization and custody;
+- S2 observation acceptance;
+- runtime readiness;
+- Character bootstrap.
+
+Character bootstrap works as follows:
+- The operator supplies only the intent's operation id, over a node-local Unix-domain control socket. The socket is created mode 0600, owned by the node's service user and never network-reachable.
+- The node reads the intent itself over the Platform intent route (D1) and commits it with its own proof.
+- The operator's input is a pointer, not authority. The Platform-authenticated intent, current account security and the recovery fence decide the result, as in #414.
+- The socket accepts no other command.
 
 Rejected alternatives:
-- **Operator subcommands inside the serving binary.** They ship operator capability in the network-facing artifact.
+- **Registering each operator invocation as a GameNode incarnation.** This redefines `NodeId`. Because V1 has no expiry, it would also leave an exited process current and assignable.
+- **A new operator-process authority.** It needs its own owner decision, and this slice needs it only for Character bootstrap.
+- **Operator subcommands inside the serving binary.** They ship control-plane capability in the network-facing artifact.
 - **A new crate or service.** There is no boundary yet that justifies it (ADR-0015).
 
 ### D3 — Boot sequence of the serving node
 
 1. Load and validate the D1 configuration, and read the referenced files.
 2. Connect the durability root and require `maintain_ready_once` to report ready.
-3. Generate a fresh UUIDv7 `NodeId`. Register it with the configured bootstrap authorization. The authorization is consumed, and a replay rejects.
-4. Establish S2 custody for this incarnation:
-   - `initialize_native_admission_source` on the first installation;
-   - `claim_native_admission_source_custody` on every later incarnation.
+3. **Register.** Generate a fresh UUIDv7 `NodeId` and register it with the configured launch authorization. The authorization is consumed, and a replay rejects. When that authorization names a superseded `NodeId`, registration makes the prior incarnation non-current in the same step. A replacement launch without a superseding authorization, or without an operator revocation of the prior incarnation, cannot pass step 4, because a live prior holder keeps S2 custody.
+4. **Establish S2 custody** for this incarnation:
+   - **First installation:** `initialize_native_admission_source` with the provenance and descriptor from the operator-issued S2 fresh-store authorization. That authorization is required when the store is uninitialized and rejected when it is already initialized.
+   - **Every later incarnation:** `claim_native_admission_source_custody`, which succeeds only when the prior holder is no longer current.
+   - **Descriptor changes:** `register_native_admission_descriptor` runs when the configured descriptor revision advances.
 
    The S2 registration is a single custody row, so exactly one serving node at a time can ingest Platform evidence. That matches this one-node slice. Several serving nodes need a later S2 decision.
-5. Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization is an operator action (D2); the node never performs it.
-6. Log the `NodeId`, then wait a bounded, configured time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
-7. Publish runtime readiness for the scope, with the assignment's ownership generation and the D5 revisions.
-8. Bind the listener and call `serve_gameplay`.
-9. On SIGTERM or SIGINT, cancel the shutdown token: entry work is cancelled and in-flight admissions complete. Then publish `ready: false` for the scope before the process exits.
+5. **Open Character authority.** Open the Character recovery store in the configured directory, `seal_current`, and `open_character_authority`. Fresh-store authorization is an operator action (D2); the node never performs it.
+6. **Await assignment.** Log the `NodeId`, then wait the configured bounded time for an operator assignment of exactly the configured scope to this `NodeId`. If none arrives, exit non-zero. A later assignment to another holder fences this node through the existing #415 generation fencing.
+7. **Bind.** Bind the gameplay listener and the control socket. A failed bind exits before any readiness is published.
+8. **Publish readiness** for the scope, with the assignment's ownership generation and the D5 revisions.
+9. **Serve.** Call `serve_gameplay` on the already-bound listener.
+10. **Shut down.** On SIGTERM or SIGINT, cancel the shutdown token: entry work is cancelled and in-flight admissions complete. Then publish `ready: false` for the scope before the process exits.
 
-A restart always yields a new `NodeId`. The previous incarnation's assignment must be replaced by the operator before the new node becomes ready. There is no automatic takeover.
+A restart always yields a new `NodeId`. Before the new process launches, the operator issues its launch authorization superseding the prior `NodeId`, or revokes the prior registration. The operator then replaces the assignment. There is no automatic takeover.
 
 ### D4 — S2 evidence is fetched on demand inside each admission attempt
 
@@ -148,12 +169,25 @@ Consequence: Platform source availability and latency are on the admission path,
 
 This is physical qualification with the shipped binaries in the existing WP5 topology (real Platform, PostgreSQL 17.6):
 
-- **Operator setup and the SEAM stages.** `oteryn-game-ops` performs interpretation configuration, fresh-store authorization, assignment and Character bootstrap from real Platform intents. `oteryn-game-server serve` then reproduces every #823 `SEAM_PASS` stage against its own bound port.
+- **Operator setup and the SEAM stages.**
+  - `oteryn-game-ops` issues the launch authorization and the S2 fresh-store authorization, configures the interpretation, authorizes the fresh Character store, and assigns the scope.
+  - Characters are bootstrapped from real Platform intents through the node control socket.
+  - `oteryn-game-server serve` then reproduces every #823 `SEAM_PASS` stage against its own bound port.
+  - No operator invocation creates a `game_node_registrations` row.
 - **D4 freshness.** Admission succeeds with no pre-seeded S2 observations, proving the on-demand fetch. It refuses when the Platform source is unavailable.
-- **Configuration.** Missing, malformed or unknown keys, over-maximum limits and unreadable secret files each exit non-zero before binding. No secret appears in output.
-- **Bootstrap authorization.** A replayed authorization rejects registration.
-- **Restart.** A restart yields a new `NodeId`. The old incarnation cannot admit, and the new one is not ready until the operator replaces the assignment.
+- **Configuration.** Each of the following exits non-zero before binding, with no secret in output:
+  - missing, malformed or unknown keys;
+  - over-maximum limits;
+  - unreadable secret or trust-root files;
+  - empty trust roots;
+  - an S2 fresh-store authorization supplied for an already-initialized store, or missing for an uninitialized one.
+- **Launch authorization.** A replayed authorization rejects registration.
+- **Restart.**
+  - A replacement launch under a superseding authorization yields a new `NodeId`, claims S2 custody, and becomes ready after the operator replaces the assignment. The old incarnation can no longer admit.
+  - A replacement launch without supersession or revocation fails at S2 custody and never becomes ready.
+- **Readiness ordering.** When the listener bind fails, no readiness is published.
 - **Shutdown.** Graceful shutdown publishes `ready: false`, and later grants for the scope are refused.
+- **Control socket.** It rejects any command other than a bootstrap operation id, and it is not reachable over the network.
 
 ## 5. Explicit non-decisions
 
