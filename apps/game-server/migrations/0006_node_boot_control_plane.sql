@@ -157,6 +157,12 @@ BEGIN
                   WHERE source_authority <> p_source_authority) THEN
         RAISE EXCEPTION 'descriptor issuance is stale or changes the source authority' USING ERRCODE = 'OTN03';
     END IF;
+    -- Until the fresh store is initialized, its single provenance-bearing
+    -- issuance must stay the latest one, or initialization could never succeed.
+    IF p_namespace IS NULL
+       AND NOT EXISTS (SELECT 1 FROM game_durability_native_source_registration) THEN
+        RAISE EXCEPTION 'descriptor issuance precedes fresh-store initialization' USING ERRCODE = 'OTN03';
+    END IF;
     -- Exactly one fresh-store authorization exists for the lifetime of the
     -- store: a second one, or one after initialization, would let a runtime
     -- choose between competing initial source and trust descriptors.

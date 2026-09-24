@@ -1167,6 +1167,27 @@ pub struct ProjectV2Source {
     pub evidence: ProjectV2EvidenceClass,
 }
 
+/// Binds one exact source-local entity identity to one exact canonical definition revision.
+/// This remains provenance data and never supplies or replaces the canonical definition key.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2SourceIdentityBinding {
+    pub source_key: String,
+    pub source_revision: String,
+    pub identity_namespace: String,
+    /// Retained verbatim, including lexical distinctions such as leading zeroes.
+    pub external_id: String,
+    pub target: ProjectV2DefinitionRef,
+    pub disposition: ProjectV2SourceIdentityDisposition,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ProjectV2SourceIdentityDisposition {
+    Exact,
+    AcceptedAlias,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2EditorEntry {
@@ -1189,6 +1210,7 @@ pub struct ProjectV2State {
     pub appearance_bindings: Vec<ProjectV2AppearanceBinding>,
     pub assets: Vec<ProjectV2Asset>,
     pub sources: Vec<ProjectV2Source>,
+    pub source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
     pub editor: Vec<ProjectV2EditorEntry>,
 }
 
@@ -1251,6 +1273,8 @@ struct AssetsDocument {
 struct SourcesDocument {
     schema: String,
     sources: Vec<ProjectV2Source>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1363,6 +1387,7 @@ pub(super) fn parse_v2_snapshot(
         appearance_bindings: bindings.bindings,
         assets: assets.assets,
         sources: sources.sources,
+        source_identity_bindings: sources.source_identity_bindings,
         editor: editor.entries,
     };
     validate_v2_state(&state, &reference.records, &imports.batches, limits)?;
@@ -1389,6 +1414,30 @@ fn validate_v2_source_text(
     limits.check(field, value.len(), limits.max_string_bytes)?;
     if value.trim() != value || value.is_empty() || value.chars().any(char::is_control) {
         return Err(ProjectError::InvalidProject("invalid v2 source text"));
+    }
+    Ok(())
+}
+
+fn validate_v2_source_identity_namespace(
+    value: &str,
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    validate_v2_source_text("v2 source identity namespace", value, limits)?;
+    let Some((source, identifier)) = value.split_once('/') else {
+        return Err(ProjectError::InvalidProject(
+            "source identity namespace must name a source and identifier kind",
+        ));
+    };
+    let valid_segment = |segment: &str| {
+        !segment.is_empty()
+            && segment.bytes().all(|byte| {
+                byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"_-".contains(&byte)
+            })
+    };
+    if !valid_segment(source) || !valid_segment(identifier) || identifier.contains('/') {
+        return Err(ProjectError::InvalidProject(
+            "source identity namespace has invalid source or identifier kind",
+        ));
     }
     Ok(())
 }
@@ -2540,6 +2589,60 @@ fn validate_v2_state(
         ));
     }
     limits.check(
+        "v2 source identity bindings",
+        state.source_identity_bindings.len(),
+        limits.max_decoded_fields,
+    )?;
+    let mut binding_keys = BTreeSet::new();
+    for binding in &state.source_identity_bindings {
+        ProductionKey::new(&binding.source_key)?;
+        ProductionAtom::new("v2 source revision", &binding.source_revision)?;
+        validate_v2_source_identity_namespace(&binding.identity_namespace, limits)?;
+        validate_v2_source_text("v2 external source identity", &binding.external_id, limits)?;
+        if !state.sources.iter().any(|source| {
+            source.key == binding.source_key && source.revision == binding.source_revision
+        }) {
+            return Err(ProjectError::InvalidProject(
+                "v2 source identity binding has no exact source revision",
+            ));
+        }
+        require_ref(&binding.target)?;
+        if binding.identity_namespace == "client/appearance_id"
+            && binding.target.family != ProjectV2Family::Presentation
+        {
+            return Err(ProjectError::InvalidProject(
+                "client appearance identity must target Presentation",
+            ));
+        }
+        if !binding_keys.insert((
+            &binding.source_key,
+            &binding.source_revision,
+            &binding.identity_namespace,
+            &binding.external_id,
+        )) {
+            return Err(ProjectError::InvalidProject(
+                "duplicate or conflicting v2 source identity binding",
+            ));
+        }
+    }
+    if state.source_identity_bindings.windows(2).any(|pair| {
+        (
+            &pair[0].source_key,
+            &pair[0].source_revision,
+            &pair[0].identity_namespace,
+            &pair[0].external_id,
+        ) >= (
+            &pair[1].source_key,
+            &pair[1].source_revision,
+            &pair[1].identity_namespace,
+            &pair[1].external_id,
+        )
+    }) {
+        return Err(ProjectError::InvalidProject(
+            "v2 source identity bindings are not identity sorted",
+        ));
+    }
+    limits.check(
         "v2 editor entries",
         state.editor.len(),
         limits.max_reference_records,
@@ -2632,6 +2735,20 @@ impl CanonicalProjectDocuments {
             .state
             .sources
             .sort_by(|a, b| (&a.key, &a.revision).cmp(&(&b.key, &b.revision)));
+        draft.state.source_identity_bindings.sort_by(|a, b| {
+            (
+                &a.source_key,
+                &a.source_revision,
+                &a.identity_namespace,
+                &a.external_id,
+            )
+                .cmp(&(
+                    &b.source_key,
+                    &b.source_revision,
+                    &b.identity_namespace,
+                    &b.external_id,
+                ))
+        });
         draft.state.editor.sort_by(|a, b| a.target.cmp(&b.target));
         for entry in &mut draft.state.editor {
             entry.aliases.sort();
@@ -2703,6 +2820,7 @@ impl CanonicalProjectDocuments {
             budget.encode(&SourcesDocument {
                 schema: PROVENANCE_SCHEMA.to_owned(),
                 sources: draft.state.sources,
+                source_identity_bindings: draft.state.source_identity_bindings,
             })?,
         );
         managed.insert(

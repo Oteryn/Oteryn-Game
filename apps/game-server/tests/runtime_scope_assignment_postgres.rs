@@ -3448,8 +3448,8 @@ fn s2_initialization_and_descriptors_require_recorded_issuances() -> TestResult 
 }
 
 #[test]
-fn s2_initialization_refuses_a_stale_fresh_store_issuance() -> TestResult {
-    run("stale_initialization", |database| {
+fn s2_rotation_waits_for_fresh_store_initialization() -> TestResult {
+    run("rotation_before_initialization", |database| {
         Box::pin(async move {
             let root = ready_root(&database.url).await?;
             let node = register_proof(&root, 1, None).await?;
@@ -3464,6 +3464,18 @@ fn s2_initialization_refuses_a_stale_fresh_store_issuance() -> TestResult {
                 facts: vec![1],
                 installed_at: 10,
             };
+            let second = DescriptorRegistration {
+                revision: 2,
+                facts: vec![2],
+                installed_at: 20,
+            };
+            // Before the fresh-store authorization is consumed, no rotation can
+            // supersede the initial descriptor.
+            assert!(
+                !root
+                    .record_native_source_descriptor_issuance("platform", second.clone(), None)
+                    .await?
+            );
             assert!(
                 root.record_native_source_descriptor_issuance(
                     "platform",
@@ -3473,27 +3485,47 @@ fn s2_initialization_refuses_a_stale_fresh_store_issuance() -> TestResult {
                 .await?
             );
             assert!(
-                root.record_native_source_descriptor_issuance(
-                    "platform",
-                    DescriptorRegistration {
-                        revision: 2,
-                        facts: vec![2],
-                        installed_at: 20,
-                    },
-                    None,
-                )
-                .await?
+                !root
+                    .record_native_source_descriptor_issuance("platform", second.clone(), None)
+                    .await?
             );
-            // Only the latest issuance may initialize.
+            root.initialize_native_admission_source(&node, provenance, first)
+                .await?;
             assert!(
-                root.initialize_native_admission_source(&node, provenance, first)
-                    .await
-                    .is_err()
+                root.record_native_source_descriptor_issuance("platform", second.clone(), None)
+                    .await?
             );
-            assert!(
+            // Registration serializes with issuance recording: a revision
+            // superseded while the registration waits is never installed.
+            let pool = database.pool().await?;
+            let mut issuer = pool.begin().await?;
+            sqlx::query(
+                "SELECT pg_advisory_xact_lock(hashtextextended('oteryn:native-source-issuance', 0))",
+            )
+            .execute(&mut *issuer)
+            .await?;
+            let register = tokio::spawn({
+                let root = root.clone();
+                let node = node.clone();
+                async move {
+                    root.register_native_admission_descriptor(&node, second)
+                        .await
+                }
+            });
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            assert!(!register.is_finished());
+            sqlx::query(
+                "SELECT game_native_source_record_issuance(3, '\\x03', 30, 'platform', NULL, NULL, NULL)",
+            )
+            .execute(&mut *issuer)
+            .await?;
+            issuer.commit().await?;
+            assert!(register.await?.is_err());
+            assert_eq!(
                 root.read_native_admission_source_registration()
                     .await?
-                    .is_none()
+                    .map(|(_, descriptor)| descriptor.revision),
+                Some(1)
             );
             Ok(())
         })
