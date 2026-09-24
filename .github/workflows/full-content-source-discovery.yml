@@ -119,6 +119,7 @@ jobs:
           evidence = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
           assert evidence["schema"] == "OTERYN_FULL_CONTENT_SOURCE_CENSUS_MANIFEST/v1"
           assert evidence["counts"]["registry_surfaces"] == 29
+          assert evidence["counts"]["registry_roots"] == 24
           assert evidence["counts"]["protected_item_pages"] == 6918
           assert evidence["invariants"]["hard_exclusions_absent"] is True
           assert evidence["invariants"]["protected_item_full_census_refetched"] is False
