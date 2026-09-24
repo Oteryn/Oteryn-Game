@@ -42,7 +42,7 @@ Ordinary Work mutation uses one default lifecycle:
 
 `AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`
 
-The default authoring route is `api_native_authoring`: repository-native high-level file writes on one exclusively allocated task branch before candidate freeze. Use `isolated_git` only when its normal guarded publication path is already proven on the current execution surface and the task actually benefits from local Git. `atomic_api_candidate` is recovery/special-case META machinery, not a routine worker choice and not an ordinary worker route.
+The default authoring route is `api_native_authoring`: repository-native high-level file writes on one exclusively allocated task branch before candidate freeze. Use `isolated_git` only when its normal guarded publication path is already proven on the current execution surface and the task actually benefits from local Git. `meta_api_candidate` is recovery/special-case bound-META machinery for selecting a **new candidate** when ordinary publication is unavailable; it is not a routine worker choice or ordinary worker authoring route and may be selected only by the active control plane under the current bound META publication contract.
 
 Before dispatching a mutating worker, prove the selected authoring route and every required-validation route. Do not begin implementation with an unknown publication path or a plan to "find a publisher later".
 
@@ -52,11 +52,11 @@ A repair after freeze is not a special publication problem: first return to AUTH
 
 For every concrete entry in `required_validation`, bind an authorized executable route before worker release. A compiler, test runner, validator, database/runtime dependency or host-specific proof may not remain `UNKNOWN` when it is required.
 
-If the default API route is unavailable and no already-proven guarded Git route exists, mark only that lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE`, record the missing capability and continue legal path-disjoint work.
+If the default high-level API route is unavailable and no already-proven guarded Git route exists, do not automatically classify the lane blocked. Return publication control to the active control plane, which may select a freshly proven `meta_api_candidate` route permitted by the bound META policy. Mark only that lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE` when neither an ordinary route nor an authorized bound-META new-candidate route is available; continue legal path-disjoint work.
 
 Missing local Git, credentials or push capability does not block ordinary work when the default API authoring route and required validation routes are proven, and is never a reason to request Remote Desktop. Remote Desktop remains exception-only for a separately valid host-specific requirement with exact owner authorization.
 
-Never use low-level Git Data reconstruction, ancestry-only `force=false` ref movement, high-level file writes while a head remains frozen, force/reset/rebase, or a Remote Desktop convenience fallback to publish ordinary work. Recovery-specific atomic publication remains governed by root/META policy and the active control plane.
+Never use ad-hoc low-level Git Data reconstruction, ancestry-only `force=false` ref movement, high-level file writes while a head remains frozen, force/reset/rebase, or a Remote Desktop convenience fallback to publish ordinary work. A connector-compatible Git Data sequence is legal only when the current bound META policy explicitly permits it as a `meta_api_candidate` control-plane route, the exact route conditions are freshly proven, and the result is treated as a **new candidate** with fresh freeze/validation/review evidence.
 
 ### Stable-head / Merge Queue freshness
 
