@@ -25,7 +25,10 @@ use crate::foundation::fresh_admission_durability::{
     FreshAdmissionDurabilityFlowV1, FreshAdmissionDurabilityPortV1, FreshAdmissionDurableOutcomeV1,
     FreshAdmissionOperationV1, FreshAdmissionSubmissionV1,
 };
-use crate::foundation::{ChannelId, WorldId};
+use crate::foundation::{
+    AuthenticatedTransportRefV1, ChannelId, GameSessionAuthoritySnapshot, GameSessionId,
+    GameSessionState, WorldId,
+};
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FreshAdmissionAttempt,
     FreshAdmissionAuthority, admit_frame, hold_admitted,
@@ -408,7 +411,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             // The commit may have landed with its acknowledgement lost: keep
             // the exact operation and reconcile it until the outcome is proven.
             Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
-                self.reconcile(&request).await?;
+                self.reconcile(&request, attempt.game_session_id, attempt.transport)
+                    .await?;
             }
             Ok(_) => return Err(Rejected),
         }
@@ -425,11 +429,14 @@ const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// `Ok` only when the exact operation is durably committed. The receipt is
-    /// read under the admission relation locks, so `Absent` proves noncommit.
+    /// `Ok` only when the exact operation is durably committed and this socket
+    /// still owns the session it created. The receipt is read under the
+    /// admission relation locks, so `Absent` proves noncommit.
     async fn reconcile(
         &self,
         request: &FreshAdmissionCommitRequestV1,
+        game_session_id: GameSessionId,
+        transport: AuthenticatedTransportRefV1,
     ) -> Result<(), AdmissionRefusal> {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         for attempt in 0..RECONCILE_ATTEMPTS {
@@ -437,7 +444,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(RECONCILE_BACKOFF).await;
             }
             match store.reconcile(request.operation()).await {
-                Ok(FreshReconciliation::Committed(_)) => return Ok(()),
+                // The receipt is immutable; the session may since have lost
+                // control, been rebound or terminated.
+                Ok(FreshReconciliation::Committed(snapshot)) => {
+                    return if owns_fresh_session(
+                        snapshot.current_session,
+                        game_session_id,
+                        transport,
+                    ) {
+                        Ok(())
+                    } else {
+                        Err(AdmissionRefusal::Rejected)
+                    };
+                }
                 Ok(FreshReconciliation::Absent) => return Err(AdmissionRefusal::Unavailable),
                 Ok(FreshReconciliation::Conflict) => return Err(AdmissionRefusal::Rejected),
                 Err(_) => {}
@@ -445,6 +464,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Err(AdmissionRefusal::Unavailable)
     }
+}
+
+/// The reconciled current session is still the untouched fresh admission bound
+/// to this transport: active, at its admitted generation, never lost or replaced.
+fn owns_fresh_session<T: Copy + Eq>(
+    current: GameSessionAuthoritySnapshot<T>,
+    game_session_id: GameSessionId,
+    transport: T,
+) -> bool {
+    let commit = current.commit();
+    commit.game_session_id() == game_session_id
+        && commit.initial_transport() == transport
+        && current.current_game_session_id() == game_session_id
+        && current.session_state() == GameSessionState::Active
+        && current.current_connection_generation() == commit.connection_generation()
+        && current.current_transport() == Some(transport)
+        && current.current_control_loss_epoch().is_none()
 }
 
 /// Captures the flow's prepared request; the durable commit is the composed
@@ -487,9 +523,7 @@ fn canonical_uuid(value: &[u8; 16]) -> String {
 mod tests {
     use super::connection::{ConnectionEnd, ConnectionIdentifiers};
     use super::*;
-    use crate::foundation::{
-        AuthenticatedTransportRefV1, CharacterId, GameSessionId, MessageType, decode_wire_envelope,
-    };
+    use crate::foundation::{CharacterId, MessageType, decode_wire_envelope};
     use rustls::pki_types::{CertificateDer, PrivatePkcs8KeyDer, ServerName};
     use std::error::Error;
     use std::net::SocketAddr;
@@ -897,6 +931,49 @@ mod tests {
         let mut output = Vec::new();
         let _ = stream.read_to_end(&mut output).await;
         Ok(output)
+    }
+
+    fn uuid_v7(seed: u8) -> [u8; 16] {
+        let mut bytes = [seed; 16];
+        bytes[6] = 0x70 | (seed & 0x0f);
+        bytes[8] = 0x80 | (seed & 0x3f);
+        bytes
+    }
+
+    #[test]
+    fn reconciled_session_must_still_be_the_untouched_fresh_admission() {
+        use crate::foundation::{
+            CharacterLease, ConnectionGeneration, FreshAdmissionCommit, FreshAdmissionFacts,
+            ScopeOwnershipGeneration,
+        };
+        let session = GameSessionId::decode(&uuid_v7(0x21)).expect("session");
+        let other = GameSessionId::decode(&uuid_v7(0x22)).expect("session");
+        let character = CharacterId::decode(&CHARACTER).expect("character");
+        let world = WorldId::decode(&uuid_v7(0x23)).expect("world");
+        let channel = ChannelId::decode(&uuid_v7(0x24)).expect("channel");
+        let facts =
+            FreshAdmissionFacts::new([7; 32], character, world, channel, 1, 1).expect("facts");
+        let commit = FreshAdmissionCommit::from_facts(session, facts, 9_u64).expect("commit");
+        let snapshot = |state, generation, transport| {
+            GameSessionAuthoritySnapshot::new(
+                commit,
+                state,
+                ConnectionGeneration::new(generation).expect("generation"),
+                transport,
+                CharacterLease::new(character, 1).expect("lease"),
+                ScopeOwnershipGeneration::new(1).expect("scope"),
+            )
+        };
+        let admitted = snapshot(GameSessionState::Active, 1, Some(9));
+        assert!(owns_fresh_session(admitted, session, 9));
+        assert!(!owns_fresh_session(admitted, session, 8));
+        assert!(!owns_fresh_session(admitted, other, 9));
+        let rebound = snapshot(GameSessionState::Active, 2, Some(8));
+        assert!(!owns_fresh_session(rebound, session, 9));
+        let lost = snapshot(GameSessionState::Reconnectable, 1, None);
+        assert!(!owns_fresh_session(lost, session, 9));
+        let terminal = snapshot(GameSessionState::Terminal, 1, None);
+        assert!(!owns_fresh_session(terminal, session, 9));
     }
 
     #[test]
