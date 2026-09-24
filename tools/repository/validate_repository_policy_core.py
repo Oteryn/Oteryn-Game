@@ -41,42 +41,18 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_JOB_SHA256 = {
-    "scope": (
-        "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd",
-        "merge gate scope job must match the reviewed exact-head classification contract",
-    ),
-    "lanes": (
-        "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b",
-        "merge gate risk lanes must match the reviewed trusted-base fail-closed contract",
-    ),
-    "routing_contract": (
-        "212c76f01372c7c25b34f7b58737defb1d8bad3bea3fe442582201d4f77bd399",
-        "merge gate routing contract job must match the reviewed exact-head consumer contract",
-    ),
-    "atlas_fullworld": (
-        "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40",
-        "merge gate Atlas fullworld job must match the reviewed exact-head evidence contract",
-    ),
-    "validate": (
-        "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7",
-        "merge gate aggregate validate job must match the reviewed fail-closed fan-in contract",
-    ),
+    "scope": "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd",
+    "lanes": "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b",
+    "routing_contract": "212c76f01372c7c25b34f7b58737defb1d8bad3bea3fe442582201d4f77bd399",
+    "atlas_fullworld": "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40",
+    "validate": "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7",
 }
 EXPECTED_GIT_BLOBS = {
-    "tools/repository/validate_pr_routing_contract.py": (
-        "03f252f0182f0f80a8e49101bf1b217735f2cb64",
-        "routing contract validator must equal the reviewed fail-closed implementation",
-    ),
-    ".github/workflows/merge-group-gate.yml": (
-        "ac7eb12d0482b33c9f51acd4ebf468975301f2f6",
-        "merge-group gate must equal the protected-base preapproved PG/SIM blob",
-    ),
+    "tools/repository/validate_pr_routing_contract.py": "03f252f0182f0f80a8e49101bf1b217735f2cb64",
+    ".github/workflows/merge-group-gate.yml": "ac7eb12d0482b33c9f51acd4ebf468975301f2f6",
 }
 EXPECTED_WHOLE_FILE_SHA256 = {
-    ".github/workflows/rust.yml": (
-        "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494",
-        "Rust post-merge workflow must match the reviewed fail-closed contract",
-    ),
+    ".github/workflows/rust.yml": "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494",
 }
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -219,19 +195,15 @@ def main() -> int:
         if not (ROOT / relative).is_file():
             errors.append(f"missing required repository-governance file: {relative}")
 
-    for relative, (expected, message) in EXPECTED_GIT_BLOBS.items():
+    for relative, expected in EXPECTED_GIT_BLOBS.items():
         path = ROOT / relative
-        if path.is_file():
-            text = path.read_text(encoding="utf-8")
-            if git_blob_sha(text.encode("utf-8")) != expected:
-                errors.append(message)
+        if path.is_file() and git_blob_sha(path.read_text(encoding="utf-8").encode("utf-8")) != expected:
+            errors.append(f"{relative} must equal its reviewed exact blob")
 
-    for relative, (expected, message) in EXPECTED_WHOLE_FILE_SHA256.items():
+    for relative, expected in EXPECTED_WHOLE_FILE_SHA256.items():
         path = ROOT / relative
-        if path.is_file():
-            text = path.read_text(encoding="utf-8")
-            if hashlib.sha256(text.encode("utf-8")).hexdigest() != expected:
-                errors.append(message)
+        if path.is_file() and hashlib.sha256(path.read_text(encoding="utf-8").encode("utf-8")).hexdigest() != expected:
+            errors.append(f"{relative} must equal its reviewed whole-file contract")
 
     try:
         policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
@@ -392,11 +364,11 @@ def main() -> int:
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
-        for job, (expected, message) in EXPECTED_MERGE_GATE_JOB_SHA256.items():
+        for job, expected in EXPECTED_MERGE_GATE_JOB_SHA256.items():
             block = indented_yaml_mapping_block(text, job, 2)
             digest = hashlib.sha256(block.encode("utf-8")).hexdigest() if block else None
             if digest != expected:
-                errors.append(message)
+                errors.append(f"merge gate {job} job must equal its reviewed exact contract")
         game_gate_block = indented_yaml_mapping_block(text, "game_gate", 2)
         if game_gate_block is None:
             errors.append("merge gate must publish the stable game-gate aggregate")
