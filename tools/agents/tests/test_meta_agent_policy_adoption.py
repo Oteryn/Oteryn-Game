@@ -541,6 +541,19 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             for phrase in forbidden:
                 self.assertNotIn(phrase, prompt, relative)
 
+        current_programme_consumers = (
+            "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md",
+            "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md",
+            "docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md",
+        )
+        for relative in current_programme_consumers:
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            for phrase in forbidden:
+                self.assertNotIn(phrase, text, relative)
+            self.assertNotIn("merge-async", text, relative)
+            self.assertNotIn('merge_action="merge_queue"', text, relative)
+            self.assertIn("DELEGATED_CAPABLE", text, relative)
+
     def test_workflow_authenticates_the_bound_meta_consumer(self):
         workflow = (ROOT / ".github/workflows/agent-governance.yml").read_text(encoding="utf-8")
         step = workflow.split("- name: Validate bound META policy and task prompts", 1)[1]
