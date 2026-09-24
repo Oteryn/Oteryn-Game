@@ -4,25 +4,25 @@
 task_id: OTV2-20260923-item-wiki-first-census
 title: Wiki-first TibiaWiki Item census
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/item-wiki-first-census-20260923
 pr: 803
 base_sha: 79a1d6966b7fbe41e8366ea873d207c59d441033
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 28032e4a43e5eaaa73b8bbb0504cc85e3c234925
+final_head_sha: 28032e4a43e5eaaa73b8bbb0504cc85e3c234925
+final_head_frozen_at: 2026-09-23T22:24:18+02:00
 owner: "single autonomous Item wiki-first census writer"
 created_at: 2026-09-23T21:19:00+02:00
-updated_at: 2026-09-23T22:05:00+02:00
+updated_at: 2026-09-23T22:42:07+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/item_wiki_first_census.py
   - tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
   - .github/workflows/item-wiki-first-census.yml
   - docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json
-  - docs/agents/tasks/active/OTV2-20260923-item-wiki-first-census.md
+  - docs/agents/tasks/archive/OTV2-20260923-item-wiki-first-census.md
 public_contracts: []
 depends_on:
   - "PR #798 protected WorldProject/v2 full schema coverage"
@@ -89,7 +89,7 @@ finding_dispositions:
 - [x] Full scratch output is not committed; compact manifest records page/field counts, digests, invariants and limitations.
 - [x] No Oteryn identity minting, Crystal/OTS identity resolution, semantic promotion, runtime/client mutation or balance change occurs.
 - [x] Focused self-test plus one live hosted wiki-first census pass on the frozen exact head.
-- [ ] Repository-required exact-head PR qualification passes before Merge Queue admission.
+- [x] Repository-required exact-head PR qualification passes before Merge Queue admission.
 
 ## Excluded scope
 
@@ -124,19 +124,19 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pull_request
-- workflow/run/job: pending
+- final head: `28032e4a43e5eaaa73b8bbb0504cc85e3c234925`
+- trigger source: pull_request on PR #803
+- workflow/run/job: Merge Gate `35915719740` / aggregate `game-gate` `107369795402`; Architecture Semantic Audit `35915719959`; Agent Governance `35915719696`; Item Wiki-First Census `35915719841`
 - runner assignment: repository-selected
 - classification: content evidence tooling
-- result: pending
+- result: SUCCESS
 
 ## Self-review
 
-- exact head: pending
+- exact head: `28032e4a43e5eaaa73b8bbb0504cc85e3c234925`
 - method/reviewer: implementing/coordinating agent
 - material findings: repaired six bounded generations: checkout expression escaping; Counter key aggregation; unsafe template-dependency discovery; MediaWiki Item infobox spelling; heterogeneous no-infobox Item pages; explicit conflicting-infobox parse-error retention
-- verdict: implementation semantics and retained evidence internally consistent; fresh final exact-head PR qualification still required after evidence/task closeout write
+- verdict: PASS — final exact-head census, governance, architecture and repository Merge Gate all succeeded after synchronization with protected main
 
 ## Independent review
 
@@ -148,31 +148,31 @@ The implementation reuses the protected bounded TibiaWiki request/cache/Infobox 
 
 ## PR and closeout
 
-- changed-file review: bounded to collector, synthetic test, focused workflow, exact compact evidence manifest and this task packet; no runtime/schema/WorldProject/Reference semantic mutation
-- unresolved review threads: pending
+- changed-file review: PASS — implementation PR #803 changed only collector, synthetic test, focused workflow, compact evidence manifest and this task packet; no runtime/schema/WorldProject/Reference semantic mutation
+- unresolved review threads: 0
 - related/superseded PRs: #767 #770 #774 #782 #792 #798
 - protected auto-merge: forbidden substitute; native Merge Queue only
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: `c07240d50473b8697cbe10641028cd0e7eb2d1e4` via protected Merge Queue run `35916776942`; final merge-group `game-gate` job `107373242888` SUCCESS
+- ownership release: completed
 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact run 35911900308 artifact 10773896508 retained byte-for-byte as repository evidence; final task metadata write is the freeze boundary
-status: validating
+last_progress: PR #803 merged through protected Merge Queue; protected main readback equals integrated commit c07240d50473b8697cbe10641028cd0e7eb2d1e4; lifecycle archived and ownership released
+status: completed
 branch: agent/item-wiki-first-census-20260923
-head_sha: null
+head_sha: 28032e4a43e5eaaa73b8bbb0504cc85e3c234925
 pr: 803
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+final_head_sha: 28032e4a43e5eaaa73b8bbb0504cc85e3c234925
+final_head_frozen_at: 2026-09-23T22:24:18+02:00
+ci_trigger_source: pull_request
+ci_check_generation: exact-head-28032e4
+ci_checks_for_current_head: 4
+ci_run_ids: [35915719740, 35915719959, 35915719696, 35915719841, 35916776942]
+ci_job_ids: [107369795402, 107373242888]
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 4
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 6
@@ -180,5 +180,5 @@ ci_recovery_actions_for_current_head: 6
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze returned successor head, verify bounded delta, run fresh exact-head PR #803 qualification, then submit only through governed Merge Queue when native capability is available
+next_action: none; archived lifecycle complete
 ```
