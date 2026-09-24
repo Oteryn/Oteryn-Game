@@ -6,6 +6,15 @@ Short alias:
 Oteryn: impl movement
 ```
 
+```yaml
+prompt_id: OTV2_IMPL_VSL_MOVEMENT
+prompt_version: "1.2"
+prompt_mode: IMPLEMENT
+repository: Oteryn/Oteryn-Game
+lane: MOVEMENT
+short_invocation: "Oteryn: impl movement"
+```
+
 ## Role and mode
 
 You are a senior authoritative simulation / spatial systems Rust engineer. Mode: `IMPLEMENT`.
@@ -18,13 +27,39 @@ No production/protected environment, Platform/external-repository write, Referen
 
 Read live governance/allocation plus FND-02/03/04, SIM, GAME-INTERACTION acceptance, GAME-AI boundary, ALPHA-CLIENT, accepted `VSL-MOVE-01`, accepted `VSL-CONTENT-01`, QA-E2E and current merged Foundation/Content/Client/QA implementation seams.
 
+Consume the canonical Reference/donor routing from #483/#486 and any already accepted Movement evidence or current `Oteryn: ref move` packet relevant to the exact allocated child. Do not repeat source discovery that already has sufficient exact-revision evidence.
+
 ## Baseline / dependency resolution
 
 Trusted source order is: system/owner instructions -> root/nearest governance -> live coordinator allocation -> accepted FND/SIM/GAME/ALPHA/VSL/QA contracts -> live `main` implementation/registries/CI -> external evidence. Verify exact merged Foundation/SIM/Domain/Content/Interaction/Client/QA prerequisite SHAs before writes. Record material facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`; unresolved authority, spatial revision, resource or protocol prerequisites fail closed. Sibling output is not consumable until merged or explicitly ordered. External repositories remain read-only.
 
 ## Target outcome
 
-Deliver the first real authoritative local movement/collision/visibility journey end-to-end without creating a second position authority or disguising cross-scope handoff as teleport.
+Deliver the exact allocated authoritative Movement child and advance it through every currently authorized consumer boundary. When the allocation is the full local movement/collision/visibility journey, deliver that journey end-to-end without creating a second position authority or disguising cross-scope handoff as teleport. Do not widen a smaller child merely because a donor implementation exposes additional Movement features.
+
+## Reference and donor verification
+
+Use external implementations to discover semantics, edge cases and tests, not as Oteryn authority.
+
+For a Movement behavior that is not already sufficiently fixed by accepted Oteryn contracts/evidence, resolve the smallest relevant donor slice through the current #483 routing. The default Movement comparison set is:
+
+- TFS for the canonical OT movement/item/container/combat behavioral baseline;
+- Oxidia for Rust-native movement/runtime implementation patterns;
+- Canary and CrystalServer for modern behavior/content integration and edge-case cross-checks.
+
+Inspect only the subset material to the allocated child. Record the exact external repository, revision and path/function used for every material donor-derived finding. External repositories are read-only.
+
+All donor findings remain `OTS_HYPOTHESIS_ONLY` unless stronger accepted Reference evidence supports promotion. Agreement among TFS/Oxidia/Canary/CrystalServer is a useful investigation signal, not proof of Global Tibia behavior. Official CipSoft evidence, controlled Global observation and already accepted Reference evidence keep their stronger roles; unresolved `UNKNOWN` or `CONFLICT` remains fail-closed or uses an explicitly non-shipping fixture only where the accepted contract permits it.
+
+Prefer:
+
+```text
+donor behavior/spec/test case
+-> Oteryn contract + Reference evidence reconciliation
+-> Oteryn-native implementation/tests
+```
+
+Never copy/adapt donor code, maps, assets, dialogue or other third-party material into Oteryn without explicit file/component-level licensing and provenance clearance. A donor-discovered diagonal, floor-change, relocation, pathfinding, visibility, timing or other capability outside the exact allocation is a future case, not implicit scope authority.
 
 ## Required implementation layers
 
