@@ -329,9 +329,19 @@ def candidate_reference_consumers(
         for pattern, targets in reverse_files.items():
             if pattern.encode("utf-8") in content:
                 selected.update(targets)
-        for pattern, targets in reverse_directories.items():
-            if standalone_directory_reference(content, pattern):
-                selected.update(targets)
+        # Package sources may deliberately consume whole auxiliary directories
+        # (for example through an include-dir style build/runtime input), so
+        # keep conservative directory attachment for Cargo-owned consumers.
+        #
+        # Canonical CI workflows are different: directory literals are also
+        # routing predicates/globs (for example docs/architecture/) and do not
+        # prove that every file below that directory is consumed by the build.
+        # Require a literal file reference before a workflow can promote an
+        # auxiliary file to CONTROL_CONSUMER.
+        if owner is not None:
+            for pattern, targets in reverse_directories.items():
+                if standalone_directory_reference(content, pattern):
+                    selected.update(targets)
         for target in selected:
             consumers[target].add(owner if owner is not None else CONTROL_CONSUMER)
     return consumers
