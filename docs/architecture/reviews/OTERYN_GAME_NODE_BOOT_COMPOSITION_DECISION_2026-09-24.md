@@ -120,7 +120,7 @@ The exact grant lists are part of the implementation. Negative tests must prove 
   - **Request file first.** Before advancing the external fence, the tool writes a request file with the freshly generated `recovery_event_id` and `issued_at`. It never regenerates or edits an existing request file.
   - **Recovery after a failure.** After an ambiguous admission or a lost acknowledgement, the operator re-runs the action with that request file. The same inputs reproduce the same generation-1 transition for the retry or reconciliation; new inputs would conflict.
   - **Idempotence.** The re-run returns the already-admitted generation-1 record and never authorizes a second fresh store.
-- **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the provenance namespace, authorization reference, source authority, and the descriptor registration revision and facts. Issuing it never initializes the store itself.
+- **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the complete `FreshStoreProvenance`: namespace, authorization reference, source authority and the exact `initialized_at` timestamp fixed at issuance. The file also holds the descriptor registration revision, `installed_at` and facts. Because every field is fixed at issuance, an ambiguous initialization can be compared exactly on restart. Issuing it never initializes the store itself.
 
 Mutations that require a current process proof (`NodeIncarnationProof`) run only inside the serving node, under its own registration:
 - S2 initialization and custody;
@@ -199,7 +199,11 @@ A restart always yields a new `NodeId`. Before the new process launches, the ope
 - **Why no background refresh.** The accepted source age, including uncertainty, is at most five seconds at the authorization boundary. A periodic per-account refresh loop cannot keep every account current and would re-age nothing safely.
 - **The fetch.** For each attempt, after the #414 Character read yields the `AccountId` and the grant header yields the untrusted `kid` selector:
   1. the admission authority performs the two bounded S1 exchanges (`ReadAccountSecurityV1`, `ReadFreshSigningTrustV1`);
-  2. the S2 custody accepts both observations;
+  2. the S2 custody accepts both observations, each under the `NSRC-PENDING-PUBLICATION` lifecycle of the resource envelope:
+     - the exact observation binding is checkpointed into one of the two durable publication slots (`checkpoint_native_source_publication`) before the SQL acceptance;
+     - the slot is cleared only after a definite outcome;
+     - an unknown commit keeps the slot for the boot-time reconciliation in D3 step 4;
+     - with both slots occupied, evidence demand is unavailable and the attempt refuses;
   3. only then does the #823 composition and commit run.
 - **Bounds.** The exchanges run under the existing transient capacity and within the caller's entry deadline.
 - **Failures and denials.**
@@ -243,6 +247,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - Characters are bootstrapped from real Platform intents through the node control socket.
   - `oteryn-game-server serve` then reproduces every #823 `SEAM_PASS` stage against its own bound port.
   - No operator invocation creates a `game_node_registrations` row.
+- **D4 publication slots.** A crash between checkpoint and clear leaves a slot that the next boot reconciles. No evidence acceptance happens outside a checkpointed slot.
 - **D4 freshness.** Admission succeeds with no pre-seeded S2 observations, proving the on-demand fetch. It refuses when the Platform source is unavailable.
 - **Configuration.** Each of the following exits non-zero before binding, with no secret in output:
   - missing, malformed or unknown keys;
