@@ -1,6 +1,6 @@
 # Oteryn GameNode Boot Composition Decision (first Reference slice)
 
-- Status: `PROPOSED — OWNER ACCEPTANCE REQUIRED`; it becomes `OWNER_ACCEPTED ARCHITECTURE DECISION` only after explicit owner acceptance and a merge to protected `main`
+- Status: `OWNER_ACCEPTED ARCHITECTURE DECISION` after merge to protected `main`. The owner accepted D1–D6 on 2026-09-24, in the session that authored PR #830, after three independent review rounds.
 - Date: 2026-09-24
 - Repository: `Oteryn/Oteryn-Game`
 - Decision ID: `OPS-NODE-BOOT-01`. This is the first bounded slice under the `OPS-CHANNEL-01` gate (ADR-0009 §13). It does not satisfy `OPS-CHANNEL-01`.
