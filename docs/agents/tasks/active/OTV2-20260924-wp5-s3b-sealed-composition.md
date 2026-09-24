@@ -74,13 +74,14 @@ external_repositories: []
   - intent endpoint purpose separation: the native-evidence client identity is refused, and a native-evidence descriptor is refused;
   - an unknown operation reads as unavailable;
   - exact intent replay;
-  - two fresh admissions, stale-composition rejection after #415 replacement, and fencing of the superseded holder.
+  - two fresh admissions, stale-composition rejection after #415 replacement, and fencing of the superseded holder;
+  - an S2 owner change between compose and commit is rejected as stale authority at the commit boundary.
 - Local: fmt, clippy `-D warnings`, and the full `oteryn-game-server` suite on PostgreSQL 17.6 are green.
 - The local composed run is not evidence: Docker Hub returned 429 for anonymous pulls in this environment.
 
 ## Qualification evidence
 
-The workflow run on `fe7d2163d6bfb1e52baf86438a10994fd2e62d9b` (Actions job `107514617318`) produced `S3B_RESULT=COMPOSED_PASS`:
+The workflow run on `6a2dda59498242153fa96959f02224266d36abbd` (Actions job `107519972291`) produced `S3B_RESULT=COMPOSED_PASS`:
 
 - `postgres_server_version_num=170006 platform=9147bfd3a771762a6646fd87b9172cdb3a6c9a01`
 - `platform_intents=issued count=2 path=operator_command ttl_seconds=300`
@@ -91,5 +92,6 @@ The workflow run on `fe7d2163d6bfb1e52baf86438a10994fd2e62d9b` (Actions job `107
 - `fresh_admission=committed account=1 holder=A sources=platform_s2,character_414,runtime_415`
 - `stale_composition_after_replacement=rejected_stale_authority`
 - `superseded_holder=fenced compose=refused s2_custody=refused`
+- `owner_change_between_compose_and_commit=rejected_stale_authority`
 - `fresh_admission=committed account=2 holder=B generation=2 custody=claimed`
 - `cleanup=complete containers=removed volumes=removed ephemeral_keys=removed`
