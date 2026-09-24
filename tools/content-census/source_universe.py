@@ -483,8 +483,8 @@ class DiscoveryIndex:
         title = _page_title(title)
         if is_excluded_title(title, self.exclusion_aliases):
             return False
-        normalized = normalized_title(title)
-        existing_id = self.id_by_title.get(normalized)
+        identity_title = title
+        existing_id = self.id_by_title.get(identity_title)
         if existing_id is not None and existing_id != page_id:
             raise CensusError(
                 f"DISCOVERY_TITLE_PAGE_ID_CONFLICT:{title}:{existing_id}:{page_id}"
@@ -506,7 +506,7 @@ class DiscoveryIndex:
                 "discovery_kinds": set(),
             }
             self.by_id[page_id] = existing
-            self.id_by_title[normalized] = page_id
+            self.id_by_title[identity_title] = page_id
         existing["root_ids"].add(root_id)
         existing["discovery_kinds"].add(discovery_kind)
         return True
