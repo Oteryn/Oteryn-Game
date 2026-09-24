@@ -76,7 +76,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "2.4",
+      "version": "2.5",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation, no authority expansion, and registered scoped dispatch aliases that resolve to this same profile identity.",
@@ -142,7 +142,7 @@
     {
       "prompt_id": "OTV2_IMPL_DURABILITY",
       "path": "docs/agents/prompts/OTV2_IMPL_DURABILITY.md",
-      "version": "1.5",
+      "version": "1.6",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded durability implementation worker; writes require a current merged allocation.",

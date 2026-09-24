@@ -17,7 +17,7 @@ spec.loader.exec_module(adoption)
 
 SHA = "a" * 40
 MAIN = "b" * 40
-PUBLICATION_INTEGRITY_AUTHORITY = "e102056cc4b9219bc482ceb05afebeb4d62b7bc8"
+PUBLICATION_INTEGRITY_AUTHORITY = "21bc49bccef4874b037aabcbde9732b904187c32"
 
 
 class CentralStatementView:
@@ -245,9 +245,9 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "explicitly return to AUTHORING before any further write",
             "only then may high-level API writes create a successor head",
             "Missing Git credentials or push capability must not trigger Remote Desktop",
-            "ancestry-only `force=false` ref movement",
-            "low-level Git Data",
-            "Recovery-specific atomic publication remains governed by bound META policy",
+            "Never treat ancestry-only `force=false` ref movement",
+            "connector-compatible Git Data mode remains a special control-plane route",
+            "API-native **new candidate** route explicitly permitted by the bound META policy",
         ):
             self.assertIn(value, text)
 
@@ -257,7 +257,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
             "Default ordinary Work authoring uses repository-native high-level API writes",
             "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
-            "Recovery-specific atomic publication remains governed by bound META policy",
+            "only the active control plane may select an API-native **new candidate** route permitted by the bound META policy",
         ):
             self.assertIn(value, root_text)
 
@@ -268,7 +268,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "## Execution-capability preflight",
             "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
             "The default authoring route is `api_native_authoring`",
-            "`atomic_api_candidate` is recovery/special-case META machinery",
+            "`meta_api_candidate` is recovery/special-case bound-META machinery",
             "Fresh-read the live branch head before every write",
             "freeze that exact remote SHA",
             "first return to AUTHORING on the same allocated branch",
@@ -286,7 +286,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_WORK_DELIVERY_COORDINATOR"
         )
-        self.assertEqual(entry["version"], "2.4")
+        self.assertEqual(entry["version"], "2.5")
         self.assertNotIn(
             "compact execution profile over `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`",
             coordinator,
@@ -304,7 +304,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "first return to AUTHORING on the same allocated branch",
             "only then may high-level API writes produce a successor head",
             "Missing Git credentials or push capability is not a reason to request Remote Desktop",
-            "Recovery-specific atomic publication belongs to the active control plane",
+            "active control plane; it may select only a bound-META API-native **new candidate** route",
         ):
             self.assertIn(value, durability)
 
@@ -316,14 +316,14 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "first return to AUTHORING on the same allocated branch",
             "only then may high-level API writes produce a successor head",
             "Missing Git credentials or push capability is not a reason to request Remote Desktop",
-            "Recovery-specific atomic publication remains a separately governed control-plane operation",
+            "any API-native replacement remains a separately governed active-control-plane operation",
         ):
             self.assertIn(value, closure)
 
         durability_entry = next(
             prompt for prompt in lifecycle["prompts"] if prompt["prompt_id"] == "OTV2_IMPL_DURABILITY"
         )
-        self.assertEqual(durability_entry["version"], "1.5")
+        self.assertEqual(durability_entry["version"], "1.6")
 
     def test_work_is_single_control_plane_and_startups_are_targeted(self):
         lifecycle = json.loads((ROOT / "docs/agents/PROMPT_LIFECYCLE.json").read_text(encoding="utf-8"))
@@ -477,7 +477,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             coordinator,
         )
         self.assertNotIn(
-            "when either `api_native_authoring` or `atomic_api_candidate`",
+            "when either `api_native_authoring` or `meta_api_candidate`",
             coordinator,
         )
 
