@@ -406,18 +406,24 @@ impl DurabilityRoot {
             return Err(CharacterAuthorityError::Rejected);
         }
         let recovery = authority.record_for(self)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            // Holds and expiry serialize on one retention lock; each later
-            // statement then sees every committed hold (READ COMMITTED).
-            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-audit-retention', 0))")
-                .execute(&mut *tx).await?;
-            let deleted = sqlx::query("DELETE FROM game_character_audit_outbox WHERE event_id IN (SELECT a.event_id FROM game_character_audit_outbox a WHERE a.expires_at <= floor(extract(epoch FROM clock_timestamp())*1000)::bigint AND NOT EXISTS (SELECT 1 FROM game_character_audit_legal_holds h WHERE h.event_id = a.event_id AND h.released_at IS NULL) ORDER BY a.expires_at, a.event_id LIMIT $1 FOR UPDATE)")
-                .bind(i64::from(batch)).execute(&mut *tx).await?;
-            commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(deleted.rows_affected()))
-        })).await?
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    // The definer boundary serializes with holds on the retention lock
+                    // and deletes only unheld records past expiry (migration 0006).
+                    let deleted: i64 = sqlx::query_scalar("SELECT game_character_expire_audit($1)")
+                        .bind(i32::from(batch))
+                        .fetch_one(&mut *tx)
+                        .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(
+                        u64::try_from(deleted).map_err(|_| DurabilityError::InvalidStoredState)?
+                    ))
+                })
+            })
+            .await?
     }
 }
 

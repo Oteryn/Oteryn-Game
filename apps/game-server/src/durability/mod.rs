@@ -72,6 +72,8 @@ mod native_admission_source_linkage {
         let _ = DurabilityRoot::checkpoint_native_source_publication;
         let _ = DurabilityRoot::clear_native_source_publication;
         let _ = DurabilityRoot::pending_native_source_publications;
+        let _ = DurabilityRoot::record_native_source_descriptor_issuance;
+        let _ = DurabilityRoot::read_native_admission_source_registration;
     }
 }
 
@@ -152,6 +154,7 @@ mod runtime_scope_assignment_linkage {
         let _ = DurabilityRoot::register_node_incarnation;
         let _ = DurabilityRoot::require_current_node_registration;
         let _ = DurabilityRoot::revoke_node_registration;
+        let _ = DurabilityRoot::revoke_node_bootstrap_authorization;
         let _ = DurabilityRoot::read_runtime_scope_assignment;
         let _ = DurabilityRoot::publish_runtime_readiness;
         let _ = super::runtime_scope_assignment::NodeIncarnationProof::new;

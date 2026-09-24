@@ -26,6 +26,7 @@ pub mod foundation;
 pub mod native_admission_source;
 
 use durability::admission_authority_guards::{AdmissionGuardStore, GuardPublicationDisposition};
+use durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentError, AssignmentOutcome, AssignmentPredecessor,
     AssignmentReceipt, AssignmentRejection, AssignmentRequest, AssignmentState, BootstrapSecret,
@@ -92,6 +93,9 @@ impl Database {
             "canonical target requires PostgreSQL 17.6"
         );
         sqlx::migrate!("./migrations").run(&mut connection).await?;
+        // Deployment administration (OPS-NODE-BOOT-01 D2): the owner grants
+        // the test control login every operation on the fixture scopes.
+        grant_fixture_scopes(&mut connection, "oteryn_test_admin").await?;
         connection.close().await?;
         Ok(Self {
             admin_url,
@@ -188,8 +192,24 @@ fn key(tag: u8) -> OperationKey {
     OperationKey::from_bytes([tag; 32])
 }
 
+/// The recorded actor is the authenticated session role (D2).
 fn actor() -> TestResult<ControlActor> {
-    ControlActor::new("operator.control-plane").map_err(|error| format!("{error:?}").into())
+    ControlActor::new("oteryn_test_admin").map_err(|error| format!("{error:?}").into())
+}
+
+/// Exact-scope grants for every fixture Channel of world `v7(200)`.
+async fn grant_fixture_scopes(connection: &mut sqlx::PgConnection, role: &str) -> TestResult {
+    sqlx::query(
+        "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+         SELECT $1, '01890f4c-3b2a-7cc8-8d11-9a321b7c00c8'::uuid, \
+                ('01890f4c-3b2a-7c' || lpad(to_hex(tag), 2, '0') || '-8d11-9a321b7c00' || lpad(to_hex(tag), 2, '0'))::uuid, \
+                operation \
+         FROM generate_series(0, 255) AS tag, generate_series(1, 3) AS operation",
+    )
+    .bind(role)
+    .execute(connection)
+    .await?;
+    Ok(())
 }
 
 async fn register(
@@ -1936,118 +1956,88 @@ fn restricted_assignment_writer_can_mutate_and_read_authoritative_state() -> Tes
             let writer_role = format!("rsa_assignment_writer_{suffix}");
             let writer_password = format!("assignment-writer-{suffix}");
             let result = async {
-            let pool = database.pool().await?;
-            let owner_root = ready_root(&database.url).await?;
-            let target = register(&owner_root, 1, None).await?;
-            let channel = scope(1)?;
-            let now = db_now(&pool).await?;
-            let guards = AdmissionGuardStore::from_root(owner_root.clone());
-            publish_runtime(&guards, runtime_change(channel, None, 1, true, now), now).await?;
+                let pool = database.pool().await?;
+                let owner_root = ready_root(&database.url).await?;
+                let target = register(&owner_root, 1, None).await?;
+                let channel = scope(1)?;
+                let now = db_now(&pool).await?;
+                let guards = AdmissionGuardStore::from_root(owner_root.clone());
+                publish_runtime(&guards, runtime_change(channel, None, 1, true, now), now).await?;
 
-            sqlx::query(sqlx::AssertSqlSafe(format!(
-                "CREATE ROLE {writer_role} LOGIN PASSWORD '{writer_password}'"
-            )))
-            .execute(&pool)
-            .await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE ROLE {writer_role} LOGIN PASSWORD '{writer_password}'"
+                )))
+                .execute(&pool)
+                .await?;
 
-            // This is the minimum deployment grant contract for the existing
-            // assignment writer: schema/ledger inspection, relation locks,
-            // assignment state mutation, the Runtime readiness fence, and the
-            // two deliberately non-PUBLIC internal function boundaries. The
-            // migration creates no production role or credential.
-            for statement in [
-                format!("GRANT USAGE ON SCHEMA public TO {writer_role}"),
-                format!("GRANT SELECT ON _sqlx_migrations TO {writer_role}"),
-                format!(
-                    "GRANT MAINTAIN ON TABLE \
-                     game_durability_admission_account_guards, \
-                     game_durability_admission_character_guards, \
-                     game_durability_admission_guard_history, \
-                     game_durability_admission_lifecycle_receipts, \
-                     game_durability_admission_signing_trust_guards, \
-                     game_durability_control_loss_continuity, \
-                     game_durability_executor_custody, \
-                     game_durability_fresh_admission_receipts, \
-                     game_durability_reconnect_attempts, \
-                     game_durability_reconnect_pending_commands, \
-                     game_durability_reconnect_sessions, \
-                     game_durability_recovery_grant_consumptions, \
-                     game_durability_session_replacements, \
-                     game_durability_session_use_ledgers, \
-                     game_durability_session_use_memberships, \
-                     game_durability_transport_ref_reservations TO {writer_role}"
-                ),
-                format!(
-                    "GRANT SELECT, INSERT, UPDATE ON \
-                     game_runtime_scope_assignment_slots, \
-                     game_runtime_scope_assignments TO {writer_role}"
-                ),
-                format!(
-                    "GRANT SELECT, UPDATE ON game_runtime_scope_assignment_writer TO {writer_role}"
-                ),
-                format!(
-                    "GRANT SELECT, INSERT ON \
-                     game_runtime_scope_assignment_receipts, \
-                     game_durability_admission_guard_history TO {writer_role}"
-                ),
-                format!(
-                    "GRANT SELECT, INSERT, UPDATE ON \
-                     game_durability_admission_runtime_guards TO {writer_role}"
-                ),
-                format!(
-                    "GRANT EXECUTE ON FUNCTION \
-                     game_node_is_uuid_v7(UUID), \
-                     game_node_lock_current_registration(UUID, NUMERIC), \
-                     game_runtime_scope_assignment_history_valid() TO {writer_role}"
-                ),
-            ] {
-                sqlx::query(sqlx::AssertSqlSafe(statement))
-                    .execute(&pool)
-                    .await?;
+                // The deployment grant contract is membership of the migration's
+                // control-plane group (OPS-NODE-BOOT-01 D2) plus the owner-written
+                // exact-scope grants for this login.
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "GRANT oteryn_game_control TO {writer_role}"
+                )))
+                .execute(&pool)
+                .await?;
+                let mut owner = pool.acquire().await?;
+                grant_fixture_scopes(&mut owner, &writer_role).await?;
+                drop(owner);
+
+                let (_, address) = database
+                    .url
+                    .split_once('@')
+                    .ok_or("database URL has no authority separator")?;
+                let writer_url = format!("postgresql://{writer_role}:{writer_password}@{address}");
+                let writer_root = ready_root(&writer_url).await?;
+                let writer = RuntimeScopeAssignmentWriter::open(writer_root.clone(), "writer-a")
+                    .await
+                    .map_err(|error| format!("restricted writer open: {error:?}"))?;
+                // A caller-supplied actor other than the session role is refused.
+                let foreign = request(
+                    2,
+                    AssignmentCommand::Assign {
+                        scope: channel,
+                        target,
+                    },
+                )?;
+                assert_eq!(
+                    writer
+                        .submit(&foreign)
+                        .await
+                        .map_err(|e| format!("{e:?}"))?,
+                    AssignmentOutcome::Rejected(AssignmentRejection::NotGranted)
+                );
+                let mut assign = request(
+                    1,
+                    AssignmentCommand::Assign {
+                        scope: channel,
+                        target,
+                    },
+                )?;
+                assign.actor = ControlActor::new(&writer_role).map_err(|e| format!("{e:?}"))?;
+                let receipt = committed(writer.submit(&assign).await)?;
+                assert_eq!(receipt.assignment.source_revision, 1);
+
+                let current = writer_root
+                    .read_runtime_scope_assignment(channel)
+                    .await
+                    .map_err(|error| format!("restricted authoritative read: {error:?}"))?
+                    .ok_or("restricted authoritative read returned no assignment")?;
+                assert_eq!(current, receipt.assignment);
+                let ready: bool = sqlx::query_scalar(
+                    "SELECT ready FROM game_durability_admission_runtime_guards",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert!(
+                    !ready,
+                    "restricted writer did not apply the readiness fence"
+                );
+                drop(writer);
+                drop(writer_root);
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
             }
-
-            let (_, address) = database
-                .url
-                .split_once('@')
-                .ok_or("database URL has no authority separator")?;
-            let writer_url = format!(
-                "postgresql://{writer_role}:{writer_password}@{address}"
-            );
-            let writer_root = ready_root(&writer_url).await?;
-            let writer = RuntimeScopeAssignmentWriter::open(writer_root.clone(), "writer-a")
-                .await
-                .map_err(|error| format!("restricted writer open: {error:?}"))?;
-            let receipt = committed(
-                writer
-                    .submit(&request(
-                        1,
-                        AssignmentCommand::Assign {
-                            scope: channel,
-                            target,
-                        },
-                    )?)
-                    .await,
-            )?;
-            assert_eq!(receipt.assignment.source_revision, 1);
-
-            let current = writer_root
-                .read_runtime_scope_assignment(channel)
-                .await
-                .map_err(|error| format!("restricted authoritative read: {error:?}"))?
-                .ok_or("restricted authoritative read returned no assignment")?;
-            assert_eq!(current, receipt.assignment);
-            let ready: bool = sqlx::query_scalar(
-                "SELECT ready FROM game_durability_admission_runtime_guards",
-            )
-            .fetch_one(&pool)
-            .await?;
-            assert!(!ready, "restricted writer did not apply the readiness fence");
-            drop(writer);
-            drop(writer_root);
-            pool.close().await;
-            Ok::<(), Box<dyn std::error::Error>>(())
-        }
-        .await;
+            .await;
             database.cleanup(&[writer_role.as_str()]).await?;
             result
         })
@@ -3046,6 +3036,345 @@ fn restored_occupied_slot_reconciles_to_its_committed_receipt() -> TestResult {
                 .await
                 .map_err(|e| format!("{e:?}"))?;
             pool.close().await;
+            Ok(())
+        })
+    })
+}
+
+/// Login role membership of one migration group, with a password URL.
+async fn group_login(
+    database: &Database,
+    pool: &sqlx::PgPool,
+    group: &str,
+    role: &str,
+) -> TestResult<String> {
+    let password = format!("{role}-secret");
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE {group}"
+    )))
+    .execute(pool)
+    .await?;
+    let (_, address) = database
+        .url
+        .split_once('@')
+        .ok_or("database URL has no authority separator")?;
+    Ok(format!("postgresql://{role}:{password}@{address}"))
+}
+
+fn node_boot_roles() -> TestResult<(String, String)> {
+    let suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+    Ok((
+        format!("nb_runtime_{suffix}"),
+        format!("nb_control_{suffix}"),
+    ))
+}
+
+#[test]
+fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = Database::create("node_boot_roles").await?;
+            let (runtime_role, control_role) = node_boot_roles()?;
+            let result = async {
+                let pool = database.pool().await?;
+                let runtime_url =
+                    group_login(&database, &pool, "oteryn_game_runtime", &runtime_role).await?;
+                let control_url =
+                    group_login(&database, &pool, "oteryn_game_control", &control_role).await?;
+                let mut owner = pool.acquire().await?;
+                grant_fixture_scopes(&mut owner, &control_role).await?;
+                drop(owner);
+                let control = ready_root(&control_url).await?;
+                let runtime = ready_root(&runtime_url).await?;
+
+                // The control credential issues; the runtime credential registers.
+                control
+                    .issue_node_bootstrap_authorization(&secret(1), &launch(1)?, None)
+                    .await
+                    .map_err(|e| format!("control issue: {e:?}"))?;
+                let proof = runtime
+                    .register_node_incarnation(&secret(1), &launch(1)?, node(1)?)
+                    .await
+                    .map_err(|e| format!("runtime register: {e:?}"))?;
+
+                // Runtime: no issuance, revocation, assignment or descriptor issuance.
+                assert!(matches!(
+                    runtime
+                        .issue_node_bootstrap_authorization(&secret(2), &launch(2)?, None)
+                        .await,
+                    Err(RegistrationError::Unavailable(_))
+                ));
+                assert!(matches!(
+                    runtime.revoke_node_registration(proof.fact()).await,
+                    Err(RegistrationError::Unavailable(_))
+                ));
+                assert!(matches!(
+                    runtime.revoke_node_bootstrap_authorization(&secret(1)).await,
+                    Err(RegistrationError::Unavailable(_))
+                ));
+                assert!(
+                    RuntimeScopeAssignmentWriter::open(runtime.clone(), "runtime-writer")
+                        .await
+                        .is_err()
+                );
+                assert!(
+                    runtime
+                        .record_native_source_descriptor_issuance(
+                            "platform",
+                            DescriptorRegistration {
+                                revision: 1,
+                                facts: vec![1],
+                                installed_at: 1,
+                            },
+                            None,
+                        )
+                        .await
+                        .is_err()
+                );
+                let mut direct = sqlx::PgConnection::connect(&runtime_url).await?;
+                for sql in [
+                    "SELECT game_character_configure_interpretation('p', 'r', 'c', 's')",
+                    "INSERT INTO game_character_recovery_admissions (authority_scope_id) VALUES ('x')",
+                    "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+                     VALUES ('x', '01890f4c-3b2a-7c01-8d11-9a321b7c0001', '01890f4c-3b2a-7c01-8d11-9a321b7c0001', 1)",
+                    "INSERT INTO game_runtime_scope_assignment_receipts (operation_key) VALUES ('\\x00'::bytea)",
+                    "UPDATE game_runtime_scope_assignments SET state = 2",
+                    "DELETE FROM game_character_audit_outbox",
+                    "SELECT game_native_source_record_issuance(1, '\\x01', 1, 'platform', NULL, NULL, NULL)",
+                    "SELECT game_node_revoke_bootstrap_authorization('\\x01'::bytea)",
+                ] {
+                    expect_sql_state(
+                        sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut direct).await,
+                        "42501",
+                    )
+                    .await?;
+                }
+                direct.close().await?;
+
+                // Control: exact-scope grants are owner-written only.
+                let mut direct = sqlx::PgConnection::connect(&control_url).await?;
+                expect_sql_state(
+                    sqlx::query(
+                        "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+                         VALUES (session_user, '01890f4c-3b2a-7c01-8d11-9a321b7c0001', '01890f4c-3b2a-7c01-8d11-9a321b7c0001', 1)",
+                    )
+                    .execute(&mut direct)
+                    .await,
+                    "42501",
+                )
+                .await?;
+                direct.close().await?;
+
+                // The control credential assigns a granted scope; the actor is its session role.
+                let writer = RuntimeScopeAssignmentWriter::open(control.clone(), "control-writer")
+                    .await
+                    .map_err(|e| format!("control writer: {e:?}"))?;
+                let mut assign = request(
+                    1,
+                    AssignmentCommand::Assign {
+                        scope: scope(1)?,
+                        target: proof.fact(),
+                    },
+                )?;
+                assign.actor = ControlActor::new(&control_role).map_err(|e| format!("{e:?}"))?;
+                committed(writer.submit(&assign).await)?;
+                // An ungranted scope (another world) is refused.
+                let ungranted = RuntimeScopeRefV1::channel(
+                    WorldId::decode(&v7(201)).map_err(|e| format!("{e:?}"))?,
+                    ChannelId::decode(&v7(1)).map_err(|e| format!("{e:?}"))?,
+                );
+                let mut refused = request(
+                    2,
+                    AssignmentCommand::Assign {
+                        scope: ungranted,
+                        target: proof.fact(),
+                    },
+                )?;
+                refused.actor = ControlActor::new(&control_role).map_err(|e| format!("{e:?}"))?;
+                assert_eq!(
+                    rejected(writer.submit(&refused).await)?,
+                    AssignmentRejection::NotGranted
+                );
+                drop(writer);
+                let recorded: String = sqlx::query_scalar(
+                    "SELECT convert_from(substring(command FROM 36 FOR get_byte(command, 34)), 'UTF8') \
+                     FROM game_runtime_scope_assignment_receipts",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(recorded, control_role);
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database
+                .cleanup(&[runtime_role.as_str(), control_role.as_str()])
+                .await?;
+            result
+        })
+}
+
+#[test]
+fn launch_authorization_replays_exactly_and_revocation_blocks_registration() -> TestResult {
+    run("launch_authorization_replay", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let prior = register_proof(&root, 1, None).await?;
+            // An exact replay after a lost response succeeds, before and after use.
+            let supersedes = Some(prior.fact().node_id());
+            for _ in 0..2 {
+                root.issue_node_bootstrap_authorization(&secret(2), &launch(2)?, supersedes)
+                    .await
+                    .map_err(|e| format!("replay: {e:?}"))?;
+            }
+            // A changed binding or supersedes value rejects.
+            assert!(matches!(
+                root.issue_node_bootstrap_authorization(&secret(2), &launch(3)?, supersedes)
+                    .await,
+                Err(RegistrationError::Rejected)
+            ));
+            assert!(matches!(
+                root.issue_node_bootstrap_authorization(&secret(2), &launch(2)?, None)
+                    .await,
+                Err(RegistrationError::Rejected)
+            ));
+            root.register_node_incarnation(&secret(2), &launch(2)?, node(2)?)
+                .await
+                .map_err(|e| format!("register: {e:?}"))?;
+            root.issue_node_bootstrap_authorization(&secret(2), &launch(2)?, supersedes)
+                .await
+                .map_err(|e| format!("consumed replay: {e:?}"))?;
+            // A consumed authorization is not revocable; an unknown one rejects.
+            assert!(matches!(
+                root.revoke_node_bootstrap_authorization(&secret(2)).await,
+                Err(RegistrationError::Rejected)
+            ));
+            assert!(matches!(
+                root.revoke_node_bootstrap_authorization(&secret(9)).await,
+                Err(RegistrationError::Rejected)
+            ));
+            // An abandoned authorization is revoked idempotently and cannot register
+            // or be reissued.
+            root.issue_node_bootstrap_authorization(&secret(3), &launch(3)?, None)
+                .await
+                .map_err(|e| format!("issue 3: {e:?}"))?;
+            for _ in 0..2 {
+                root.revoke_node_bootstrap_authorization(&secret(3))
+                    .await
+                    .map_err(|e| format!("revoke: {e:?}"))?;
+            }
+            assert!(matches!(
+                root.register_node_incarnation(&secret(3), &launch(3)?, node(3)?)
+                    .await,
+                Err(RegistrationError::Rejected)
+            ));
+            assert!(matches!(
+                root.issue_node_bootstrap_authorization(&secret(3), &launch(3)?, None)
+                    .await,
+                Err(RegistrationError::Rejected)
+            ));
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn s2_initialization_and_descriptors_require_recorded_issuances() -> TestResult {
+    run("descriptor_issuances", |database| {
+        Box::pin(async move {
+            let root = ready_root(&database.url).await?;
+            let node = register_proof(&root, 1, None).await?;
+            let provenance = FreshStoreProvenance {
+                namespace: "store".into(),
+                authorization: "owner".into(),
+                source_authority: "platform".into(),
+                initialized_at: 10,
+            };
+            let first = DescriptorRegistration {
+                revision: 1,
+                facts: vec![1],
+                installed_at: 10,
+            };
+            // Without a recorded issuance the runtime cannot initialize.
+            assert!(
+                root.initialize_native_admission_source(&node, provenance.clone(), first.clone())
+                    .await
+                    .is_err()
+            );
+            assert!(
+                root.read_native_admission_source_registration()
+                    .await?
+                    .is_none()
+            );
+            let issue =
+                |descriptor: DescriptorRegistration, authority: &'static str, fresh: bool| {
+                    let root = root.clone();
+                    let provenance = provenance.clone();
+                    async move {
+                        root.record_native_source_descriptor_issuance(
+                            authority,
+                            descriptor,
+                            fresh.then_some(provenance),
+                        )
+                        .await
+                    }
+                };
+            assert!(issue(first.clone(), "platform", true).await?);
+            assert!(issue(first.clone(), "platform", true).await?);
+            // Different content for a recorded revision is refused.
+            assert!(!issue(first.clone(), "platform", false).await?);
+            // Initialization with content other than the issuance rejects.
+            let mut other = provenance.clone();
+            other.initialized_at = 11;
+            assert!(
+                root.initialize_native_admission_source(&node, other, first.clone())
+                    .await
+                    .is_err()
+            );
+            root.initialize_native_admission_source(&node, provenance.clone(), first.clone())
+                .await?;
+            assert_eq!(
+                root.read_native_admission_source_registration().await?,
+                Some((provenance.clone(), first.clone()))
+            );
+            let second = DescriptorRegistration {
+                revision: 2,
+                facts: vec![2],
+                installed_at: 20,
+            };
+            // A later revision registers only after its issuance.
+            assert!(
+                root.register_native_admission_descriptor(&node, second.clone())
+                    .await
+                    .is_err()
+            );
+            // The source authority is fixed for the store's lifetime.
+            assert!(!issue(second.clone(), "other-platform", false).await?);
+            assert!(issue(second.clone(), "platform", false).await?);
+            root.register_native_admission_descriptor(&node, second.clone())
+                .await?;
+            // A stale revision cannot be issued, and the older revision cannot be
+            // registered or confirmed any more.
+            assert!(!issue(first.clone(), "platform", false).await?);
+            assert!(
+                root.register_native_admission_descriptor(&node, first.clone())
+                    .await
+                    .is_err()
+            );
+            root.register_native_admission_descriptor(&node, second.clone())
+                .await?;
+            let issued_by: String = sqlx::query_scalar(
+                "SELECT issued_by FROM game_native_source_descriptor_issuances WHERE descriptor_revision = 2",
+            )
+            .fetch_one(&database.pool().await?)
+            .await?;
+            assert_eq!(issued_by, "oteryn_test_admin");
             Ok(())
         })
     })

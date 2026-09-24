@@ -520,7 +520,8 @@ async fn register(
 fn assignment(tag: u8, command: AssignmentCommand) -> TestResult<AssignmentRequest> {
     Ok(AssignmentRequest {
         operation_key: OperationKey::from_bytes([tag; 32]),
-        actor: ControlActor::new("s3b.control-plane").map_err(|e| format!("{e:?}"))?,
+        // The recorded actor is the authenticated session role (OPS-NODE-BOOT-01 D2).
+        actor: ControlActor::new("oteryn_test_admin").map_err(|e| format!("{e:?}"))?,
         command,
     })
 }
@@ -567,21 +568,38 @@ fn composition_flow(
             let node_a = register(&root, 0xa1, None).await?;
             // S2: A takes custody of the native source durable state.
             let now = now_seconds()?;
-            root.initialize_native_admission_source(
-                &node_a,
-                FreshStoreProvenance {
-                    namespace: "wp5-s3b".into(),
-                    authorization: "s3b-disposable-topology".into(),
-                    source_authority: SOURCE_AUTHORITY.into(),
-                    initialized_at: now,
-                },
-                DescriptorRegistration {
-                    revision: 1,
-                    facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
-                    installed_at: now,
-                },
+            let provenance = FreshStoreProvenance {
+                namespace: "wp5-s3b".into(),
+                authorization: "s3b-disposable-topology".into(),
+                source_authority: SOURCE_AUTHORITY.into(),
+                initialized_at: now,
+            };
+            let registration = DescriptorRegistration {
+                revision: 1,
+                facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
+                installed_at: now,
+            };
+            // Control-plane issuance first (OPS-NODE-BOOT-01 D2).
+            if !root
+                .record_native_source_descriptor_issuance(SOURCE_AUTHORITY, registration.clone(), Some(provenance.clone()))
+                .await?
+            {
+                return Err("S2 descriptor issuance refused".into());
+            }
+            root.initialize_native_admission_source(&node_a, provenance, registration)
+                .await?;
+            // Owner-written exact-scope grant for the test control session.
+            let mut owner = sqlx::PgConnection::connect(&url).await?;
+            sqlx::query(
+                "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+                 SELECT session_user, encode($1, 'hex')::uuid, encode($2, 'hex')::uuid, operation \
+                 FROM generate_series(1, 3) AS operation",
             )
+            .bind(v7(1, 0x02).as_slice())
+            .bind(v7(1, 0x03).as_slice())
+            .execute(&mut owner)
             .await?;
+            owner.close().await?;
             // #415: Channel assignment to A; A publishes attested readiness.
             let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "s3b-writer")
                 .await

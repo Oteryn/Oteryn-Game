@@ -341,6 +341,11 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             if !prove_current_incarnation(&mut tx, &custody).await? { return Err(DurabilityError::Unavailable); }
+            // The runtime cannot fabricate or select the initial source and
+            // trust descriptor: an exact control-plane issuance must exist.
+            let issued: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_native_source_descriptor_issuances WHERE descriptor_revision=$1::text::numeric(20,0) AND descriptor_facts=$2 AND installed_at=$3 AND source_authority=$4 AND bootstrap_namespace=$5 AND bootstrap_provenance=$6 AND initialized_at=$7)")
+                .bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).bind(&provenance.source_authority).bind(&provenance.namespace).bind(&provenance.authorization).bind(provenance.initialized_at).fetch_one(&mut *tx).await?;
+            if !issued { return Err(DurabilityError::Unavailable); }
             let custody = custody.fact();
             let inserted = sqlx::query("INSERT INTO game_durability_native_source_registration (registration_id,bootstrap_namespace,bootstrap_provenance,source_authority,descriptor_revision,descriptor_facts,initialized_at,custody_node_id,custody_registration_revision) VALUES (1,$1,$2,$3,$4::text::numeric(20,0),$5,$6,encode($7,'hex')::uuid,$8::text::numeric(20,0)) ON CONFLICT DO NOTHING")
                 .bind(&provenance.namespace).bind(&provenance.authorization).bind(&provenance.source_authority).bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(provenance.initialized_at).bind(custody.node_id().as_bytes().as_slice()).bind(custody.registration_revision().to_string()).execute(&mut *tx).await?.rows_affected();
@@ -400,10 +405,82 @@ impl DurabilityRoot {
             let facts: Vec<u8> = row.try_get(1).map_err(|_| DurabilityError::InvalidStoredState)?;
             let installed_at: i64 = row.try_get(2).map_err(|_| DurabilityError::InvalidStoredState)?;
             if descriptor.revision < current || (descriptor.revision == current && (descriptor.facts != facts || descriptor.installed_at != installed_at)) { return Err(DurabilityError::Unavailable); }
+            // Only the latest control-plane issuance, under the store's fixed
+            // source authority, may be registered or confirmed.
+            let latest: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM (SELECT * FROM game_native_source_descriptor_issuances ORDER BY descriptor_revision DESC LIMIT 1) i JOIN game_durability_native_source_registration r ON r.registration_id=1 AND r.source_authority=i.source_authority WHERE i.descriptor_revision=$1::text::numeric(20,0) AND i.descriptor_facts=$2 AND i.installed_at=$3)")
+                .bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).fetch_one(&mut *tx).await?;
+            if !latest { return Err(DurabilityError::Unavailable); }
             if descriptor.revision == current { return commit_semantic_transaction(tx, deadline).await; }
             sqlx::query("INSERT INTO game_durability_native_source_descriptor_history (registration_id,descriptor_revision,descriptor_facts,installed_at) VALUES (1,$1::text::numeric(20,0),$2,$3)").bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).execute(&mut *tx).await?;
             sqlx::query("UPDATE game_durability_native_source_registration SET descriptor_revision=$1::text::numeric(20,0),descriptor_facts=$2 WHERE registration_id=1").bind(descriptor.revision.to_string()).bind(&descriptor.facts).execute(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await
+        })).await
+    }
+
+    /// Control-plane: durably record one Platform producer descriptor issuance
+    /// (OPS-NODE-BOOT-01 D2). `provenance` is present only on the issuance
+    /// that authorizes a fresh S2 store. An exact replay succeeds; a
+    /// conflicting, stale or authority-changing issuance is `Ok(false)`.
+    pub async fn record_native_source_descriptor_issuance(
+        &self,
+        source_authority: &str,
+        descriptor: DescriptorRegistration,
+        provenance: Option<FreshStoreProvenance>,
+    ) -> Result<bool> {
+        if !valid_source_authority(source_authority)
+            || !valid_descriptor(&descriptor)
+            || provenance.as_ref().is_some_and(|provenance| {
+                provenance.source_authority != source_authority
+                    || !valid_bounded_text(&provenance.namespace, JSON_STRING_BYTES)
+                    || !valid_bounded_text(&provenance.authorization, JSON_STRING_BYTES)
+                    || provenance.initialized_at < 0
+            })
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        let source_authority = source_authority.to_owned();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let recorded = sqlx::query("SELECT game_native_source_record_issuance($1::text::numeric(20,0),$2,$3,$4,$5,$6,$7)")
+                .bind(descriptor.revision.to_string()).bind(&descriptor.facts).bind(descriptor.installed_at).bind(&source_authority)
+                .bind(provenance.as_ref().map(|p| p.namespace.as_str())).bind(provenance.as_ref().map(|p| p.authorization.as_str())).bind(provenance.as_ref().map(|p| p.initialized_at))
+                .execute(&mut *tx).await;
+            match recorded {
+                Ok(_) => {}
+                Err(sqlx::Error::Database(error)) if error.code().as_deref() == Some("OTN03") => return Ok(false),
+                Err(error) => return Err(error.into()),
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(true)
+        })).await
+    }
+
+    /// Read-only: the stored S2 bootstrap provenance and current descriptor,
+    /// or `None` for an uninitialized store. Used to compare a supplied
+    /// fresh-store authorization after an ambiguous initialization.
+    pub async fn read_native_admission_source_registration(
+        &self,
+    ) -> Result<Option<(FreshStoreProvenance, DescriptorRegistration)>> {
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            let row = sqlx::query("SELECT r.bootstrap_namespace,r.bootstrap_provenance,r.source_authority,r.initialized_at,r.descriptor_revision::text,r.descriptor_facts,h.installed_at FROM game_durability_native_source_registration r JOIN game_durability_native_source_descriptor_history h USING (registration_id,descriptor_revision) WHERE r.registration_id=1")
+                .fetch_optional(&mut *tx).await?;
+            commit_semantic_transaction(tx, deadline).await?;
+            let Some(row) = row else { return Ok(None) };
+            let invalid = |_| DurabilityError::InvalidStoredState;
+            Ok(Some((
+                FreshStoreProvenance {
+                    namespace: row.try_get(0).map_err(invalid)?,
+                    authorization: row.try_get(1).map_err(invalid)?,
+                    source_authority: row.try_get(2).map_err(invalid)?,
+                    initialized_at: row.try_get(3).map_err(invalid)?,
+                },
+                DescriptorRegistration {
+                    revision: row.try_get::<String, _>(4).map_err(invalid)?.parse().map_err(|_| DurabilityError::InvalidStoredState)?,
+                    facts: row.try_get(5).map_err(invalid)?,
+                    installed_at: row.try_get(6).map_err(invalid)?,
+                },
+            )))
         })).await
     }
 

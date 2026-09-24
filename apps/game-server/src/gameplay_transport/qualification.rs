@@ -391,10 +391,36 @@ async fn committed_admissions(url: &str) -> TestResult<i64> {
     Ok(count)
 }
 
-async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {
+/// One LOGIN member of a migration group role (OPS-NODE-BOOT-01 D2): the
+/// serving node holds only the runtime credential, operator actions only the
+/// control-plane credential.
+async fn group_login(url: &str, group: &str) -> TestResult<(String, String)> {
+    let role = format!(
+        "{group}_{}",
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos()
+    );
+    let password = format!("{role}-disposable");
+    let mut owner = sqlx::PgConnection::connect(url).await?;
+    owner
+        .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+            "CREATE ROLE {role} LOGIN PASSWORD '{password}' IN ROLE {group}"
+        ))))
+        .await?;
+    owner.close().await?;
+    let (_, address) = url.split_once('@').ok_or("database URL has no authority")?;
+    let login = format!("postgresql://{role}:{password}@{address}");
+    Ok((role, login))
+}
+
+async fn register(
+    control: &DurabilityRoot,
+    root: &DurabilityRoot,
+    tag: u8,
+) -> TestResult<NodeIncarnationProof> {
     let secret = BootstrapSecret::from_bytes([tag; 32]);
     let launch = LaunchBinding::new(&format!("seam-launch-{tag}")).map_err(|e| format!("{e:?}"))?;
-    root.issue_node_bootstrap_authorization(&secret, &launch, None)
+    control
+        .issue_node_bootstrap_authorization(&secret, &launch, None)
         .await
         .map_err(|e| format!("bootstrap authorization {tag}: {e:?}"))?;
     Ok(root
@@ -602,9 +628,12 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     evidence(&format!(
         "pins postgres_server_version_num={version} platform={PLATFORM_SOURCE}"
     ));
-    let root = DurabilityRoot::connect_test_runtime(&url)?;
-    if !root.maintain_ready_once().await? {
-        return Err("durability root not ready".into());
+    let (control_role, control_url) = group_login(&url, "oteryn_game_control").await?;
+    let (_, runtime_url) = group_login(&url, "oteryn_game_runtime").await?;
+    let control = DurabilityRoot::connect_test_runtime(&control_url)?;
+    let root = DurabilityRoot::connect_test_runtime(&runtime_url)?;
+    if !control.maintain_ready_once().await? || !root.maintain_ready_once().await? {
+        return Err("durability roots not ready".into());
     }
     let world = WorldId::decode(&v7(1, 0x02))?;
     let channel = ChannelId::decode(&v7(1, 0x03))?;
@@ -612,29 +641,50 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
 
     // Owners, composed exactly as S3-B: #415 holder, S2 custody, assignment,
     // readiness; #414 sealed authority and operator-issued Characters.
-    let holder = register(&root, 0xa1).await?;
+    let holder = register(&control, &root, 0xa1).await?;
     let now = now_seconds()?;
-    root.initialize_native_admission_source(
-        &holder,
-        FreshStoreProvenance {
-            namespace: "wp5-seam".into(),
-            authorization: "seam-disposable-topology".into(),
-            source_authority: SOURCE_AUTHORITY.into(),
-            initialized_at: now,
-        },
-        DescriptorRegistration {
-            revision: 1,
-            facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
-            installed_at: now,
-        },
+    let provenance = FreshStoreProvenance {
+        namespace: "wp5-seam".into(),
+        authorization: "seam-disposable-topology".into(),
+        source_authority: SOURCE_AUTHORITY.into(),
+        initialized_at: now,
+    };
+    let descriptor_registration = DescriptorRegistration {
+        revision: 1,
+        facts: format!("platform@{PLATFORM_SOURCE};source.test;tls1.3-mtls").into_bytes(),
+        installed_at: now,
+    };
+    if !control
+        .record_native_source_descriptor_issuance(
+            SOURCE_AUTHORITY,
+            descriptor_registration.clone(),
+            Some(provenance.clone()),
+        )
+        .await?
+    {
+        return Err("S2 descriptor issuance refused".into());
+    }
+    root.initialize_native_admission_source(&holder, provenance, descriptor_registration)
+        .await?;
+    // Deployment administration: the owner grants the control login this scope.
+    let mut owner = sqlx::PgConnection::connect(&url).await?;
+    sqlx::query(
+        "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+         SELECT $1, encode($2, 'hex')::uuid, encode($3, 'hex')::uuid, operation \
+         FROM generate_series(1, 3) AS operation",
     )
+    .bind(&control_role)
+    .bind(v7(1, 0x02).as_slice())
+    .bind(v7(1, 0x03).as_slice())
+    .execute(&mut owner)
     .await?;
-    let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "seam-writer")
+    owner.close().await?;
+    let writer = RuntimeScopeAssignmentWriter::open(control.clone(), "seam-writer")
         .await
         .map_err(|e| format!("{e:?}"))?;
     let request = AssignmentRequest {
         operation_key: OperationKey::from_bytes([1; 32]),
-        actor: ControlActor::new("seam.control-plane").map_err(|e| format!("{e:?}"))?,
+        actor: ControlActor::new(&control_role).map_err(|e| format!("{e:?}"))?,
         command: AssignmentCommand::Assign {
             scope,
             target: holder.fact(),
@@ -653,7 +703,8 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         let fresh = recovery
             .authorize_fresh_store(v7(1, 0x07), u64::try_from(now_seconds()?)?)
             .map_err(|e| format!("fresh recovery: {e:?}"))?;
-        root.admit_fresh_character_recovery(&fresh)
+        control
+            .admit_fresh_character_recovery(&fresh)
             .await
             .map_err(|e| format!("fresh admission: {e:?}"))?;
     }
@@ -664,7 +715,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         .open_character_authority(&fence)
         .await
         .map_err(|e| format!("open authority: {e:?}"))?;
-    let mut operator = sqlx::PgConnection::connect(&url).await?;
+    let mut operator = sqlx::PgConnection::connect(&control_url).await?;
     sqlx::query_scalar::<_, i64>("SELECT game_character_configure_interpretation($1, $2, $3, $4)")
         .bind(INTERPRETATION[0])
         .bind(INTERPRETATION[1])

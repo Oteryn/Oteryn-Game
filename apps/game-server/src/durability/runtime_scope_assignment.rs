@@ -223,7 +223,54 @@ impl DurabilityRoot {
                     .await?
                     .rows_affected();
                     if inserted != 1 {
-                        return Ok(Err(RegistrationError::Rejected));
+                        // Exact replay after a lost response: the identical,
+                        // unrevoked row already exists. Any difference rejects.
+                        let exact: bool = sqlx::query_scalar(
+                            "SELECT EXISTS (SELECT 1 FROM game_node_bootstrap_authorizations a \
+                             WHERE a.authorization_digest = sha256($1) AND a.launch_binding = $2 \
+                               AND a.supersedes_node_id IS NOT DISTINCT FROM encode($3::bytea, 'hex')::uuid \
+                               AND NOT EXISTS (SELECT 1 FROM game_node_bootstrap_authorization_revocations r \
+                                               WHERE r.authorization_digest = a.authorization_digest))",
+                        )
+                        .bind(secret.as_slice())
+                        .bind(&launch)
+                        .bind(supersedes.as_deref())
+                        .fetch_one(&mut *tx)
+                        .await?;
+                        if !exact {
+                            return Ok(Err(RegistrationError::Rejected));
+                        }
+                    }
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(()))
+                })
+            })
+            .await?
+    }
+
+    /// Control-plane: revoke one abandoned, unconsumed launch authorization,
+    /// identified by its retained secret. Idempotent; a consumed or unknown
+    /// authorization rejects (end a registration through
+    /// `revoke_node_registration` instead).
+    pub async fn revoke_node_bootstrap_authorization(
+        &self,
+        secret: &BootstrapSecret,
+    ) -> Result<(), RegistrationError> {
+        let secret = secret.0;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    match sqlx::query("SELECT game_node_revoke_bootstrap_authorization($1)")
+                        .bind(secret.as_slice())
+                        .execute(&mut *tx)
+                        .await
+                    {
+                        Ok(_) => {}
+                        Err(error) if has_sql_state(&error, REGISTRATION_REJECTED) => {
+                            return Ok(Err(RegistrationError::Rejected));
+                        }
+                        Err(error) => return Err(error.into()),
                     }
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(()))
@@ -616,6 +663,9 @@ pub enum AssignmentRejection {
     OperationConflict,
     GenerationExhausted,
     SourceRevisionExhausted,
+    /// The authenticated session role is not the recorded actor, or holds no
+    /// exact-scope control grant for this operation (OPS-NODE-BOOT-01 D2).
+    NotGranted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -948,7 +998,14 @@ impl RuntimeScopeAssignmentWriter {
         let target = request.command.target();
         let dispatched = tokio::time::timeout(
             DISPATCH_BUDGET,
-            self.dispatch(key, command, request.command, scope, target),
+            self.dispatch(
+                key,
+                command,
+                request.actor.clone(),
+                request.command,
+                scope,
+                target,
+            ),
         )
         .await;
         match dispatched {
@@ -1062,6 +1119,7 @@ impl RuntimeScopeAssignmentWriter {
         &self,
         key: OperationKey,
         command: Vec<u8>,
+        actor: ControlActor,
         typed: AssignmentCommand,
         scope: RuntimeScopeRefV1,
         target: Option<NodeRegistrationFact>,
@@ -1115,6 +1173,7 @@ impl RuntimeScopeAssignmentWriter {
                         &registration,
                         key,
                         &command,
+                        &actor,
                         typed,
                         scope,
                         target,
@@ -1139,6 +1198,7 @@ async fn authoritative_transition(
     registration: &str,
     key: OperationKey,
     command: &[u8],
+    actor: &ControlActor,
     typed: AssignmentCommand,
     scope: RuntimeScopeRefV1,
     target: Option<NodeRegistrationFact>,
@@ -1160,6 +1220,28 @@ async fn authoritative_transition(
         } else {
             AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict)
         });
+    }
+    // Exact-scope authorization of the authenticated session role, which must
+    // also be the recorded actor. Group membership alone never authorizes.
+    let operation: i16 = match typed {
+        AssignmentCommand::Assign { .. } => 1,
+        AssignmentCommand::Replace { .. } => 2,
+        AssignmentCommand::Revoke { .. } => 3,
+    };
+    let granted: bool = sqlx::query_scalar(
+        "SELECT $1 = session_user AND EXISTS (SELECT 1 FROM game_control_scope_grants \
+         WHERE control_role = session_user AND world_id = encode($2, 'hex')::uuid \
+           AND channel_id = encode($3, 'hex')::uuid AND operation = $4)",
+    )
+    .bind(actor.0.as_str())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(channel_id.as_bytes().as_slice())
+    .bind(operation)
+    .fetch_one(&mut **tx)
+    .await?;
+    if !granted {
+        clear_slot(tx, registration).await?;
+        return Ok(AssignmentOutcome::Rejected(AssignmentRejection::NotGranted));
     }
     let high_water = writer_high_water(tx, true).await?;
     require_history_matches_high_water(tx, high_water).await?;
