@@ -92,9 +92,21 @@ fn authority_identifiers_are_distinct_uuidv7_types() {
     assert!(WorldId::from_bytes(id(3)).is_ok());
 }
 
+/// A private parent for recovery-fence directories: the fence requires a
+/// parent that is not writable by group or others (OPS-NODE-BOOT-01 D1).
+fn fence_parent() -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    let parent =
+        std::env::temp_dir().join(format!("oteryn-character-fences-{}", std::process::id()));
+    std::fs::create_dir_all(&parent).expect("fence parent");
+    std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))
+        .expect("fence parent mode");
+    parent
+}
+
 #[test]
 fn external_recovery_register_is_strict_and_fail_closed() {
-    let directory = std::env::temp_dir().join(format!(
+    let directory = fence_parent().join(format!(
         "oteryn-character-recovery-integration-{}",
         std::process::id()
     ));
@@ -155,7 +167,7 @@ fn postgres_schema_enforces_atomic_immutable_first_slice() {
         .execute(&mut connection)
         .await
         .expect("migration");
-    let retained = std::env::temp_dir().join(format!("oteryn-character-pg-fence-{schema}"));
+    let retained = fence_parent().join(format!("oteryn-character-pg-fence-{schema}"));
     let _ = std::fs::remove_dir_all(&retained);
     std::fs::create_dir(&retained).expect("external retained directory");
     let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
@@ -536,7 +548,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     let root = DurabilityRoot::connect_test_runtime(&database.url)?;
     assert!(root.maintain_ready_once().await?);
     let pool = sqlx::PgPool::connect(&database.url).await?;
-    let retained = std::env::temp_dir().join(format!("oteryn-character-api-{}", database.name));
+    let retained = fence_parent().join(format!("oteryn-character-api-{}", database.name));
     let _ = std::fs::remove_dir_all(&retained);
     std::fs::create_dir(&retained)?;
     let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
@@ -1060,8 +1072,7 @@ async fn bootstrap_audit_flow(database: &Database) -> TestResult {
     drop(sealed);
 
     // Another authority scope's successor cannot claim this database's predecessor.
-    let foreign_dir =
-        std::env::temp_dir().join(format!("oteryn-character-foreign-{}", database.name));
+    let foreign_dir = fence_parent().join(format!("oteryn-character-foreign-{}", database.name));
     let _ = std::fs::remove_dir_all(&foreign_dir);
     std::fs::create_dir(&foreign_dir)?;
     let foreign = CharacterRecoveryStore::open(&foreign_dir, "character-other", "game-ops")
@@ -1274,7 +1285,7 @@ async fn fresh_refusal(database: &Database) -> TestResult {
     .bind(id(31).as_slice())
     .execute(&pool)
     .await?;
-    let retained = std::env::temp_dir().join(format!("oteryn-character-fresh-{}", database.name));
+    let retained = fence_parent().join(format!("oteryn-character-fresh-{}", database.name));
     let _ = std::fs::remove_dir_all(&retained);
     std::fs::create_dir(&retained)?;
     let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
@@ -1390,7 +1401,7 @@ async fn intent_matrix(database: &Database) -> TestResult {
     let root = DurabilityRoot::connect_test_runtime(&database.url)?;
     assert!(root.maintain_ready_once().await?);
     let pool = sqlx::PgPool::connect(&database.url).await?;
-    let retained = std::env::temp_dir().join(format!("oteryn-character-intent-{}", database.name));
+    let retained = fence_parent().join(format!("oteryn-character-intent-{}", database.name));
     let _ = std::fs::remove_dir_all(&retained);
     std::fs::create_dir(&retained)?;
     let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
@@ -1751,6 +1762,77 @@ async fn intent_matrix(database: &Database) -> TestResult {
     );
 
     drop(fence);
+    pool.close().await;
+    std::fs::remove_dir_all(retained)?;
+    Ok(())
+}
+
+#[test]
+fn fresh_store_rerun_is_idempotent_and_interpretation_waits_for_it() -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        eprintln!("PRE-ROUTING / NONCANONICAL: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured");
+        return Ok(());
+    };
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async move {
+            let database = Database::create(admin, "fresh_rerun").await?;
+            let result = fresh_rerun(&database).await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+/// OPS-NODE-BOOT-01 D2: the interpretation is refused until generation one is
+/// admitted, and a re-run with the retained request after a lost
+/// acknowledgement returns the admitted record without a second fresh store.
+async fn fresh_rerun(database: &Database) -> TestResult {
+    let root = DurabilityRoot::connect_test_runtime(&database.url)?;
+    assert!(root.maintain_ready_once().await?);
+    assert!(matches!(
+        root.configure_character_interpretation("p", "r", "c", "s")
+            .await,
+        Err(CharacterAuthorityError::Rejected)
+    ));
+    let retained = fence_parent().join(format!("oteryn-character-rerun-{}", database.name));
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
+        .map_err(|e| format!("{e:?}"))?;
+    for _ in 0..2 {
+        let fresh = recovery
+            .authorize_fresh_store(id(11), 100)
+            .map_err(|e| format!("{e:?}"))?;
+        root.admit_fresh_character_recovery(&fresh)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
+    }
+    assert_eq!(
+        root.configure_character_interpretation("p", "r", "c", "s")
+            .await
+            .map_err(|e| format!("{e:?}"))?,
+        1
+    );
+    // A re-run after other Character state exists still returns the record.
+    let fresh = recovery
+        .authorize_fresh_store(id(11), 100)
+        .map_err(|e| format!("{e:?}"))?;
+    root.admit_fresh_character_recovery(&fresh)
+        .await
+        .map_err(|e| format!("{e:?}"))?;
+    drop(fresh);
+    // Different inputs never authorize a second fresh store.
+    assert!(recovery.authorize_fresh_store(id(12), 100).is_err());
+    let pool = sqlx::PgPool::connect(&database.url).await?;
+    assert_eq!(
+        count(
+            &pool,
+            "SELECT count(*) FROM game_character_recovery_admissions"
+        )
+        .await?,
+        1
+    );
     pool.close().await;
     std::fs::remove_dir_all(retained)?;
     Ok(())

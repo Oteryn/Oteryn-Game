@@ -63,6 +63,7 @@ sqlx = {
 }
 sha2 = { version = "=0.11.0", default-features = false }
 tokio = { version = "=1.53.1", default-features = false, features = ["io-util", "net", "rt-multi-thread", "sync", "time"] }
+toml = { version = "=1.1.6", default-features = false, features = ["parse", "serde", "std"] }
 tokio-rustls = { version = "=0.26.4", default-features = false, features = ["aws_lc_rs"] }
 rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "aws_lc_rs"] }
 wgpu = { version = "=30.0.0", default-features = false, features = ["std", "dx12"] }

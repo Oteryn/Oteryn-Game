@@ -305,11 +305,60 @@ impl DurabilityRoot {
             // Any surviving Character row is evidence of prior state: never "fresh".
             let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds) + (SELECT count(*) FROM game_character_bootstrap_intent_floors) + (SELECT count(*) FROM game_character_interpretations)")
                 .fetch_one(&mut *tx).await?;
-            if existing != 0 { return Ok(Err(CharacterAuthorityError::Conflict)); }
+            if existing != 0 {
+                // A re-run after a lost acknowledgement finds exactly this
+                // generation-one admission and nothing else admitted since.
+                let only_this: bool = sqlx::query_scalar("SELECT count(*) = 1 FROM game_character_recovery_admissions").fetch_one(&mut *tx).await?;
+                if only_this && compare_recovery_fence(&mut tx, &record, false).await.is_ok() {
+                    commit_semantic_transaction(tx, deadline).await?;
+                    return Ok(Ok(()));
+                }
+                return Ok(Err(CharacterAuthorityError::Conflict));
+            }
             insert_recovery_admission(&mut tx, &record).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(()))
         })).await?
+    }
+
+    /// Control-plane: configure the current Character interpretation. It is
+    /// refused until the fresh generation-one recovery store is admitted,
+    /// because that admission requires empty Character tables (OPS-NODE-BOOT-01
+    /// D2). Returns the current interpretation revision.
+    pub async fn configure_character_interpretation(
+        &self,
+        profile: &str,
+        ruleset: &str,
+        content: &str,
+        starter: &str,
+    ) -> Result<i64> {
+        let values = [profile, ruleset, content, starter].map(str::to_owned);
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let admitted: bool = sqlx::query_scalar(
+                        "SELECT EXISTS (SELECT 1 FROM game_character_recovery_admissions)",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if !admitted {
+                        return Ok(Err(CharacterAuthorityError::Rejected));
+                    }
+                    let revision: i64 = sqlx::query_scalar(
+                        "SELECT game_character_configure_interpretation($1, $2, $3, $4)",
+                    )
+                    .bind(&values[0])
+                    .bind(&values[1])
+                    .bind(&values[2])
+                    .bind(&values[3])
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(revision))
+                })
+            })
+            .await?
     }
 
     /// Reconcile a strict external successor while the exclusive generation guard is held.
@@ -448,8 +497,25 @@ async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    let row = sqlx::query("SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE")
-        .fetch_optional(&mut **tx).await?
+    compare_recovery_fence(tx, record, true).await
+}
+
+/// Compare the latest admission with `record`; `lock` holds it FOR SHARE.
+/// Admissions are append-only, so the control-plane idempotence check of the
+/// fresh store compares without a row lock (it holds no UPDATE privilege).
+async fn compare_recovery_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &CharacterRecoveryFenceV1,
+    lock: bool,
+) -> std::result::Result<(), DurabilityError> {
+    let sql = if lock {
+        "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE"
+    } else {
+        "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1"
+    };
+    let row = sqlx::query(sql)
+        .fetch_optional(&mut **tx)
+        .await?
         .ok_or(DurabilityError::Unavailable)?;
     let generation = row
         .try_get::<String, _>("recovery_generation")?
