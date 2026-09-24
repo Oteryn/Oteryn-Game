@@ -357,6 +357,29 @@ For this Full Content phase, the working source order is:
 
 OTS/donors may assist throughout as hypotheses/implementation evidence. Live authenticated Global observation is deferred.
 
+## 6b. G4 external identity retention
+
+For Full Content G4+ crosswalks, external identifiers are evidence/provenance and must remain recoverable even when they are not canonical Oteryn identity.
+
+Apply `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`.
+
+Every persisted G4 source identity must be qualified by:
+
+- exact source key/provider;
+- exact source revision/snapshot;
+- identifier namespace/kind;
+- verbatim external ID.
+
+A naked numeric `id` is not portable evidence. The same number in TibiaWiki, Canary, Crystal or the client is not an identity match.
+
+Canonical Oteryn identity remains independent. Promote only exact/accepted source-to-target bindings; keep probable, ambiguous, conflict and no-match states in crosswalk evidence. Preserve source IDs even when a field value from that source is rejected.
+
+Rendering identity remains separate from gameplay definition identity: source server Item IDs may map to Item, while client appearance/sprite IDs normally map to Presentation/Asset evidence. Never mint an Item/Creature/WorldObject key from a client appearance ID.
+
+The minimum durable join key for later comparison is:
+
+`source key + source revision + identity namespace + external ID -> canonical Oteryn target`.
+
 ## 7. Bulk-data fast path
 
 For large static data families, use this efficient process:
