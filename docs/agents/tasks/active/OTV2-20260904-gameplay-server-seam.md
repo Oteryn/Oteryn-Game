@@ -9,7 +9,7 @@
 task_id: OTV2-20260904-gameplay-server-seam
 title: Production gameplay server seam
 mode: IMPLEMENT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-gameplay-server-seam-01
@@ -20,14 +20,17 @@ preserved_worker_head: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 owner: "Oteryn: sol server seam lead"
 coordinator: Oteryn Work Delivery Coordinator
 execution_policy: continuous_progress
-dependency_state: WAITING_DEPENDENCY
+dependency_state: WP5_G0_READY
 owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/tcp_tls.rs
   - apps/game-server/src/gameplay_transport/connection.rs
-  - apps/game-server/tests/gameplay_server_seam.rs
+  - apps/game-server/src/gameplay_transport/qualification.rs
+  - .github/workflows/gameplay-server-seam.yml
 serialized_shared_paths:
   - apps/game-server/src/foundation/protocol.rs
+  - apps/game-server/src/foundation/fnd04_verifier.rs
+  - tools/qualification/wp5_s3b/run.sh
   - apps/game-server/src/lib.rs
   - apps/game-server/src/main.rs
   - apps/game-server/Cargo.toml
@@ -88,6 +91,32 @@ whole-diff review and required independent exact-head review before returning
 - Shared Cargo/lib custody is effective only after a fresh Work overlap readback; historical
   lease language does not override a newer active allocation.
 
+## Resume record
+
+- **PROVEN:** `WP5_G0_READY` on protected `main@0a21973013ed3856d545049563f9b409018f5bb6`: S1 #735, #416 #739, S2 #757, S3-A #760, #415 #769, #414 #790 and S3-B #815 are protected; the S3-B `workflow_dispatch` run `35969349848` on `main` produced `S3B_RESULT=COMPOSED_PASS`. The G0 record is #319 comment `5809797683`.
+- **PROVEN:** the same worker branch is reconciled with that `main` by a normal merge commit (no rebase or force). The Seam TLS dependency now uses `main`'s `aws_lc_rs` provider. `rcgen` and rustls `tls12` are dev-only, for test certificates and the TLS 1.2 rejection client.
+
+## Implementation state
+
+- **Fresh admission (implemented):** the connection state machine (`connection.rs`) decodes the entry frame through the Foundation bridge and hands `ClientBootstrap` to `ComposedFreshAdmission` (`mod.rs`). That authority reads the #414 Character (account/world), uses this holder's #415 Channel, publishes and composes the S2/#414/#415 sources, verifies the grant with FND-04 and commits only through `commit_composed_fresh_admission`. `ServerAccepted` is written only after `Committed`. Refusal closes the transport without mutation: FND-04C refusal codes have no registered wire mapping.
+- **Listener:** 256 connections (admitted connections stay inside this registered budget) and 64 handshake/auth units. The entry deadline is supplied by the caller. Shutdown cancels entry work, completes an admission already handed to the authority, then closes. The per-session outbound queue and pending-write maxima are not applicable yet: a connection writes at most one frame at a time and has no queue.
+- **Composition:** the public `serve_gameplay` entry in `lib.rs` takes already-composed owners and explicit TLS/limits. `main.rs` remains fail-closed: starting a real node needs a configuration contract for owner services (S2 refresh loop, runtime readiness producer, Character fence store), and that contract does not exist.
+- **Physical qualification:** an in-crate `qualification.rs` runs through `serve_gameplay` over real TCP/TLS in the WP5 topology (`WP5_QUALIFICATION=seam`). It is in-crate rather than `tests/gameplay_server_seam.rs` because runtime readiness is published through a sealed trait. An external test would need a new public test-only API or a `#[path]` copy, and the plan forbids both.
+- **Owner decision (2026-09-24, option A):** integrate the fresh-admission seam now. Resume is split into a separate blocked follow-up. It needs three things: a playable-control authority to prove control loss (FND-04B §5, needs a gameplay runtime); the deferred same-session grace duration; and an accepted `PROD-ENTITLEMENTS-01` contract (currently `CANDIDATE`). This supersedes the earlier "no partial Server Seam PR" holding rule for this scope.
+- **Resume (not yet served, follow-up #822):** `ClientResume` is decoded and closed without mutation. No production recovery-source composition exists: `RecoveryCurrentEvidence` and `RecoveryDurabilityEvidenceSourceV2` have only test fixtures. This is the next prerequisite.
+
+## Qualification evidence
+
+`Server Seam physical qualification` run `35976323319`, job `107557572725`, on `8941233a984dc85b395f9abfa105a01732483494`: PostgreSQL 17.6 and Platform `9147bfd`, running through `serve_gameplay` over loopback TCP + TLS 1.3. Result `S3B_RESULT=SEAM_PASS`:
+
+- `transport tls12_exact_alpn=refused wrong_alpn=refused missing_alpn=refused plaintext=refused admissions=0`
+- `foundation wrong_protocol_major=rejected wrong_transport_profile=rejected phase_invalid=rejected oversized=closed truncated=closed admissions=0`
+- `fnd04 invalid_signature=refused expired=refused wrong_character_binding=refused untrusted_signer=refused admissions=0`
+- `admission=committed server_accepted=1 post_admission_command=closed_unknown_message admissions=1`
+- `replayed_grant=refused admissions=1`
+- `concurrent_same_grant accepted=1 admissions=2`
+- `shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED`
+
 ## Validation state
 
 Historical worker evidence is retained in the evidence snapshot. It includes the partial
@@ -97,8 +126,8 @@ candidate. Required candidate-specific validation starts again on the eventual r
 ## Context checkpoint
 
 ```yaml
-last_progress: WP4 #335 and WP5 S1 are protected; #319 has activated S2 and G0 remains incomplete
-status: waiting
+last_progress: WP5_G0_READY on protected main 0a21973 (#319 comment 5809797683); branch reconciled with main by a normal merge; TLS provider aligned to main aws_lc_rs
+status: implementing
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 pr: null
@@ -118,6 +147,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: WP5_G0_READINESS_NOT_PROVEN
-next_action: Work advances #319 through S2/material routing/composition and rechecks G0 before resuming this worker
+blocker: null
+next_action: qualify the fresh-admission seam in the WP5 topology, then compose recovery sources for ClientResume
 ```
