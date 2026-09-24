@@ -1,7 +1,7 @@
 # Non-shipping structural Movement fixture evidence
 
-Task: `OTV2-20260924-nonshipping-movement-structural-fixture`  
-Allocation: [#162 comment 5823029665](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5823029665)  
+Task: `OTV2-20260924-nonshipping-movement-structural-fixture`
+Allocation: [#162 comment 5823029665](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5823029665)
 Base: protected `main@c516182255d3ea1724e91671c8d2187eb622e3df`
 
 ## Structural assertions authored
