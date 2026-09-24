@@ -1,0 +1,100 @@
+name: Unknown Disposition Ledger
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/unknown_disposition_ledger.py
+      - tools/content-census/unknown_disposition_ledger_self_test.py
+      - .github/workflows/unknown-disposition-ledger.yml
+      - docs/agents/evidence/OTV2-20260924-unknown-disposition-ledger.json
+      - docs/agents/tasks/active/OTV2-20260924-unknown-disposition-ledger.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unknown-disposition-ledger-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    name: Content census / unknown disposition ledger
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Fetch and verify pinned G3 artifact with protected downloader
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib
+          import sys
+          sys.path.insert(0, "tools/content-census")
+          from global_source_overlap_fetch_artifacts import download_archive, extract_exact_members
+
+          spec = {
+              "id": 10801778929,
+              "name": "source-family-classification-20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+              "size_in_bytes": 1427897,
+              "digest": "sha256:a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+              "run_id": 35986883931,
+              "head_sha": "20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+              "members": ("source-family-classified-universe.json", "manifest.json"),
+          }
+          root = pathlib.Path("${{ runner.temp }}/g3-source-family")
+          root.mkdir(parents=True, exist_ok=True)
+          archive = root / "g3.zip"
+          digest = download_archive(spec, __import__("os").environ["GITHUB_TOKEN"], archive)
+          extract_exact_members(archive, spec, root, "g3")
+          assert digest == "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7"
+          PY
+
+      - name: Run focused self-test and build blocker ledger
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/unknown_disposition_ledger.py \
+            tools/content-census/unknown_disposition_ledger_self_test.py
+          python tools/content-census/unknown_disposition_ledger_self_test.py "$RUNNER_TEMP/g3-source-family/g3.zip"
+          mkdir -p "$RUNNER_TEMP/unknown-disposition-ledger"
+          python tools/content-census/unknown_disposition_ledger.py \
+            --input-zip "$RUNNER_TEMP/g3-source-family/g3.zip" \
+            --ledger-output "$RUNNER_TEMP/unknown-disposition-ledger/ledger.json" \
+            --manifest-output "$RUNNER_TEMP/unknown-disposition-ledger/manifest.json"
+          cmp docs/agents/evidence/OTV2-20260924-unknown-disposition-ledger.json \
+            "$RUNNER_TEMP/unknown-disposition-ledger/manifest.json"
+
+      - name: Upload full row ledger and generated manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unknown-disposition-ledger-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/unknown-disposition-ledger/ledger.json
+            ${{ runner.temp }}/unknown-disposition-ledger/manifest.json
+          if-no-files-found: error
+          retention-days: 14
