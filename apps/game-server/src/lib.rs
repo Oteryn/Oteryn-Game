@@ -5,6 +5,8 @@
 
 extern crate self as oteryn_game_server;
 
+pub mod character_bootstrap_intent;
+pub mod character_recovery_fence;
 pub mod content;
 pub mod domain;
 pub mod durability;
@@ -578,3 +580,4 @@ mod v2_reconciled_prepared_budget_regression_tests {
 }
 
 pub mod admission_evidence;
+pub mod native_admission_source;
