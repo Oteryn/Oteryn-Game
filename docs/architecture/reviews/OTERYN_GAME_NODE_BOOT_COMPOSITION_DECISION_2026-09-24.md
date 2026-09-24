@@ -1,6 +1,6 @@
 # Oteryn GameNode Boot Composition Decision (first Reference slice)
 
-- Status: `OWNER_ACCEPTED ARCHITECTURE DECISION` after merge to protected `main`. The owner accepted D1–D6 on 2026-09-24, in the session that authored PR #830, after three independent review rounds.
+- Status: `OWNER_ACCEPTED ARCHITECTURE DECISION` after merge to protected `main`. The owner accepted D1–D6 on 2026-09-24, in the session that authored PR #830, after three independent review rounds. Later review corrections only align D1–D4 with already accepted decisions: the WP3 durability configuration profile, scope-assignment control-actor authentication, the #414 recovery admission and receipt reconciliation, and S2 source ordering.
 - Date: 2026-09-24
 - Repository: `Oteryn/Oteryn-Game`
 - Decision ID: `OPS-NODE-BOOT-01`. This is the first bounded slice under the `OPS-CHANNEL-01` gate (ADR-0009 §13). It does not satisfy `OPS-CHANNEL-01`.
@@ -129,10 +129,11 @@ Mutations that require a current process proof (`NodeIncarnationProof`) run only
 Character bootstrap works as follows:
 - The operator supplies only the intent's operation id, over a node-local Unix-domain control socket. The socket is created mode 0600, owned by the node's service user and never network-reachable.
 - For each request, the node:
-  1. reads the intent itself over the Platform intent route (D1);
-  2. fetches `ReadAccountSecurityV1` for the intent's `AccountId` from the evidence route and accepts it into S2 custody, because `bootstrap_character` requires current account-security evidence no older than the five-second bound, and on a new installation no admission has fetched it yet;
-  3. only then commits the Character with its own proof.
-- A missing, denied or stale account-security observation rejects without a Character mutation. The operator retries with the same operation id, which stays idempotent under #414.
+  1. first checks `reconcile_character_bootstrap(operation_id)`; an already-committed result is returned without any external read, which covers a lost socket response after the Platform intent has expired;
+  2. otherwise reads the intent itself over the Platform intent route (D1);
+  3. fetches `ReadAccountSecurityV1` for the intent's `AccountId` from the evidence route and accepts it into S2 custody, because `bootstrap_character` requires current account-security evidence no older than the five-second bound, and on a new installation no admission has fetched it yet;
+  4. only then commits the Character with its own proof.
+- A missing or stale account-security observation, or an authenticated denial, rejects without a Character mutation. An authenticated denial is still accepted into S2 custody. The operator retries with the same operation id, which stays idempotent under #414.
 - The socket loop is bounded: one request at a time, a bounded request size and a per-request deadline. It answers with a closed result (committed, rejected or unavailable) and never with the intent contents.
 - The operator's input is a pointer, not authority. The Platform-authenticated intent, current account security and the recovery fence decide the result, as in #414.
 - The socket accepts no other command.
@@ -181,7 +182,10 @@ A restart always yields a new `NodeId`. Before the new process launches, the ope
   1. the admission authority performs the two bounded S1 exchanges (`ReadAccountSecurityV1`, `ReadFreshSigningTrustV1`);
   2. the S2 custody accepts both observations;
   3. only then does the #823 composition and commit run.
-- **Bounds.** The exchanges run under the existing transient capacity and within the caller's entry deadline. Any source failure, timeout or denial refuses the attempt without authority mutation.
+- **Bounds.** The exchanges run under the existing transient capacity and within the caller's entry deadline.
+- **Failures and denials.**
+  - A transport failure, timeout or unauthenticated or undecodable response refuses the attempt without any mutation.
+  - An authenticated observation is accepted into S2 custody whatever its facts, including a newer `allowed = false` or `trusted = false` denial. S2 therefore advances its revision floor and a delayed lower-revision allow cannot enter later. The composition then refuses the attempt, and no GameSession, nonce or lease is created.
 - **No cache.** The node keeps no cache beyond the S2-accepted, revision-guarded projection.
 
 Consequence: Platform source availability and latency are on the admission path, as the evidence decision already accepted.
