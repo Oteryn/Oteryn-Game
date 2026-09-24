@@ -953,6 +953,9 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         if client_result.is_none()
             && let Poll::Ready(result) = clients.as_mut().poll(context)
         {
+            // Success or failure, the client cases are over: drain the listener
+            // so a client error surfaces instead of waiting forever.
+            shutdown.cancel();
             client_result = Some(result);
         }
         match serve.as_mut().poll(context) {
