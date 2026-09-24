@@ -271,13 +271,7 @@ def directory_reference_occurrences(content: bytes, pattern: str) -> list[int]:
         bounded = (
             not tail
             or tail[:1] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
-            or (
-                tail[:1] == b"/"
-                and (
-                    len(tail) == 1
-                    or tail[1:2] in {b'"', b"'", b" ", b"\t", b"\r", b"\n"}
-                )
-            )
+            or tail[:1] == b"/"
         )
         if bounded:
             matches.append(index)
