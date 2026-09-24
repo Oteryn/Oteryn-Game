@@ -8,7 +8,8 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-content-g3-unknown-disposition-ledger-20260924
-pr: null
+issue: 162
+pr: 831
 base_sha: ac3d69f1c20e09ce006e3efb0777d4e4f32275d1
 head_sha: null
 final_head_sha: null
