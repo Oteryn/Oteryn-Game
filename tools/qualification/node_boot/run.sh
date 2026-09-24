@@ -60,10 +60,11 @@ compose() {
     --file "$GAME_SOURCE/$COMPOSE_S3B" --file "$GAME_SOURCE/$COMPOSE_OVERLAY" "$@"
 }
 evidence() { printf 'NODE_BOOT_EVIDENCE %s\n' "$*"; }
-fail() { echo "NODE_BOOT_FAILURE $*"; exit 1; }
+fail() { echo "NODE_BOOT_FAILURE $*"; return 1; }
 cleanup() {
   local rc=$?
   [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
+  sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
   compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
   docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
   sudo rm -rf "$BASE" || true
@@ -130,7 +131,8 @@ ADMIN_URL="postgresql://oteryn_node_boot_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$PG_
 compose config --quiet
 compose build --pull platform
 compose up --detach --wait db platform nginx
-php_exec() { compose exec --no-TTY --user www-data platform php -r "$1" >/dev/null; }
+# Platform output is kept: a failing operator command must be diagnosable.
+php_exec() { compose exec --no-TTY --user www-data platform php -r "$1"; }
 php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); foreach ([["'"$ACCOUNT_ID"'","nb-one@example.invalid"],["'"$SECOND_ACCOUNT_ID"'","nb-two@example.invalid"]] as [$accountId,$email]) { Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>$email,"password"=>password_hash(bin2hex(random_bytes(24)),PASSWORD_BCRYPT),"account_id"=>$accountId,"native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]); } app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$FRESH_KEY_ID"'",hex2bin("'"$FRESH_PUBLIC_HEX"'"));'
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
 
@@ -239,68 +241,113 @@ TOML
 ops() { sudo "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
 node_log="$WORK/node.log"
 start_node() {
-  sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$node_log" &
+  # Detached from the stage's output pipe, so the stage ends while it serves.
+  sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+    < /dev/null > /dev/null 2> "$node_log" &
   NODE_PID=$!
 }
 await_log() { # pattern seconds
   for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done
-  cat "$node_log"; fail "missing node event: $1"
+  fail "missing node event: $1"
 }
 
-# §4.1 operator setup before the node starts.
-ops authorization issue --file launch-a.json --binding node-boot-a
-write_node_config launch-a.json
-ops s2 issue --node-config "$BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot --authorization disposable-qualification
-if ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"; then
-  fail "interpretation configured before the fresh store"
-fi
-ops character fresh-store --request fresh-store.json
-ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
-evidence "operator=authorization,s2_issuance,fresh_store,interpretation interpretation_before_store=refused"
+# Every stage runs to a recorded outcome, so one run reports every failing
+# stage instead of stopping at the first one. A stage whose prerequisite did
+# not pass is recorded as SKIP. State shared between stages lives in $VARS.
+VARS="$WORK/vars"
+: > "$VARS"
+declare -A STATUS=()
+ORDER=()
+remember() { printf '%s=%q\n' "$1" "$2" >> "$VARS"; }
+stage() { # name prerequisite... -- function
+  local name=$1; shift
+  local prerequisites=()
+  while [[ $1 != -- ]]; do prerequisites+=("$1"); shift; done
+  shift
+  ORDER+=("$name")
+  local missing
+  for missing in "${prerequisites[@]}"; do
+    if [[ ${STATUS[$missing]:-} != PASS ]]; then
+      STATUS[$name]="SKIP(needs $missing)"
+      return 0
+    fi
+  done
+  echo "::group::stage $name"
+  set +e
+  ( set -Eeuo pipefail; source "$VARS"; "$@" ) 2>&1 | tee "$WORK/stage-$name.log"
+  local rc=${PIPESTATUS[0]}
+  set -e
+  echo "::endgroup::"
+  if [[ $rc == 0 ]]; then
+    STATUS[$name]=PASS
+  else
+    STATUS[$name]="FAIL(exit $rc)"
+    echo "NODE_BOOT_STAGE_FAILED $name exit=$rc"
+    echo "--- last node events"; tail -n 40 "$node_log" 2>/dev/null || true
+    echo "--- postgres"; docker logs --tail 40 "$PG_CONTAINER" 2>&1 | grep -E 'ERROR|FATAL|STATEMENT' || true
+    echo "--- platform"; compose logs --no-color --tail 40 platform nginx 2>&1 || true
+  fi
+}
+node_field() { # log field
+  sed -n "s/.*awaiting_assignment.*$2=\([^ ]*\).*/\1/p" "$1" | tail -n 1
+}
 
-# Configuration negatives exit before binding, without secrets in output.
-sudo cp "$BASE/node/node.toml" "$BASE/node/insecure.toml"; sudo chmod 0666 "$BASE/node/insecure.toml"
-set +e
-sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/insecure.toml" 2> "$WORK/negative.log"; insecure=$?
-sudo ln -sf "$BASE/node/node.toml" "$BASE/node/link.toml"
-sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/link.toml" 2>> "$WORK/negative.log"; linked=$?
-set -e
-[[ $insecure == 10 && $linked == 10 ]] || fail "configuration negatives exit=$insecure,$linked"
-! grep -q "$RUNTIME_PASSWORD" "$WORK/negative.log" || fail "secret in output"
-evidence "configuration group_writable=exit10 symlink=exit10 secrets_in_output=0"
+operator_setup() { # §4.1 operator setup before the node starts
+  ops authorization issue --file launch-a.json --binding node-boot-a
+  write_node_config launch-a.json
+  ops s2 issue --node-config "$BASE/node/node.toml" --file s2-fresh-store.json --namespace node-boot --authorization disposable-qualification
+  if ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"; then
+    fail "interpretation configured before the fresh store"
+  fi
+  ops character fresh-store --request fresh-store.json
+  ops character fresh-store --request fresh-store.json
+  ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
+  evidence "operator=authorization,s2_issuance,fresh_store,interpretation interpretation_before_store=refused fresh_store_rerun=idempotent"
+}
 
-# §4.2 the node registers and waits; §4.3 the owner grants; §4.4 the operator assigns.
-start_node
-await_log awaiting_assignment 120
-line="$(grep awaiting_assignment "$node_log")"
-node_a="$(sed -n 's/.*node_id=\([^ ]*\).*/\1/p' <<<"$line")"
-revision_a="$(sed -n 's/.*registration_revision=\([0-9]*\).*/\1/p' <<<"$line")"
-if ops assignment assign --request assign-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node_a" --revision "$revision_a"; then
-  fail "assignment without an exact-scope grant"
-fi
-psql_admin oteryn_node_boot <<SQL
+configuration_negatives() { # exit before binding, no secret in output
+  sudo cp "$BASE/node/node.toml" "$BASE/node/insecure.toml"; sudo chmod 0666 "$BASE/node/insecure.toml"
+  sudo ln -sf "$BASE/node/node.toml" "$BASE/node/link.toml"
+  sudo sed '/^map_revision/d' "$BASE/node/node.toml" | sudo tee "$BASE/node/missing.toml" >/dev/null
+  sudo sed 's/^max_connections = 256/max_connections = 257/' "$BASE/node/node.toml" | sudo tee "$BASE/node/over.toml" >/dev/null
+  sudo chmod 0644 "$BASE/node/missing.toml" "$BASE/node/over.toml"
+  local config code failed=0
+  for config in insecure link missing over; do
+    set +e
+    sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/$config.toml" 2>> "$WORK/negative.log"
+    code=$?
+    set -e
+    echo "configuration $config exit=$code"
+    [[ $code == 10 ]] || failed=1
+  done
+  ! grep -q "$RUNTIME_PASSWORD" "$WORK/negative.log" || { echo "secret in output"; failed=1; }
+  [[ $failed == 0 ]]
+  evidence "configuration group_writable=exit10 symlink=exit10 missing_key=exit10 over_maximum=exit10 secrets_in_output=0"
+}
+
+node_assigned_ready() { # §4.2–§4.4
+  start_node
+  remember NODE_PID "$NODE_PID"
+  await_log awaiting_assignment 120
+  local node revision
+  node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
+  remember node_a "$node"
+  if ops assignment assign --request assign-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"; then
+    fail "assignment without an exact-scope grant"
+  fi
+  psql_admin oteryn_node_boot <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 3) op;
 SQL
-ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node_a" --revision "$revision_a"
-await_log "readiness ready=true" 60
-[[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
-[[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
-evidence "node registered=1 assignment=operator ungranted=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
+  ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  await_log "readiness ready=true" 60
+  [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
+  [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
+  evidence "node registered=1 assignment=operator ungranted=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
+}
 
-# §4.5 Characters from real Platform intents through the control socket.
-index=0
-for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
-  operation="${INTENT_OPERATIONS[$index]}"
-  php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); exit($code);'
-  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation"
-  # An exact retry of the same operation id is idempotent.
-  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation"
-  index=$((index + 1))
-done
-set +e
-sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" "${INTENT_OPERATIONS[0]}" <<'PY'
+control_socket_peer() { # a non-root peer is closed without an answer
+  sudo -u "$SERVICE_USER" python3 - "$BASE/run/control.sock" "${INTENT_OPERATIONS[0]}" <<'PY'
 import socket, sys
-# The service user itself is closed without any answer being produced.
 s = socket.socket(socket.AF_UNIX)
 s.connect(sys.argv[1])
 try:
@@ -311,60 +358,106 @@ except OSError:
     answer = b""
 sys.exit(0 if answer == b"" else 1)
 PY
-peer=$?
-set -e
-[[ $peer == 0 ]] || fail "control socket answered a non-root peer"
-evidence "characters=2 source=platform_intents path=control_socket retry=idempotent service_user_peer=closed"
+  evidence "control_socket service_user_peer=closed"
+}
 
-# §4.6 every #823 stage against the node's own port. The bootstrap evidence
-# ages past five seconds, so each admission fetches its own.
-sleep 6
-NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
-NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
-NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
-NODE_BOOT_WORLD_ID="$WORLD_ID" NODE_BOOT_CHANNEL_ID="$CHANNEL_ID" \
-WP5_S3A_PORT="$WP5_PORT" WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt" \
-WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt" WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key" \
-WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
-WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
-  cargo +1.94.0 test --locked -p oteryn-game-server --lib \
-  gameplay_transport::qualification::node_boot_seam_against_running_node -- --ignored --exact --nocapture
+character_bootstrap() { # §4.5 Characters from real Platform intents
+  local index=0 account operation failed=0
+  for account in "$ACCOUNT_ID" "$SECOND_ACCOUNT_ID"; do
+    operation="${INTENT_OPERATIONS[$index]}"
+    index=$((index + 1))
+    if ! php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$account"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$operation"'","--target-world-id"=>"'"$WORLD_ID"'","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'; then
+      echo "platform intent issue failed for operation $operation"
+      failed=1
+      continue
+    fi
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || { failed=1; continue; }
+    # An exact retry of the same operation id is idempotent.
+    ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$operation" || failed=1
+  done
+  [[ $failed == 0 ]]
+  evidence "characters=2 source=platform_intents path=control_socket retry=idempotent"
+}
+
+seam_stages() { # §4.6 every #823 stage against the node's own port
+  # The bootstrap evidence ages past five seconds, so each admission fetches its own.
+  sleep 6
+  NODE_BOOT_ADDRESS="127.0.0.1:${NODE_BOOT_GAME_PORT:-17181}" \
+  NODE_BOOT_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
+  NODE_BOOT_DATABASE_URL="$ADMIN_URL" \
+  NODE_BOOT_WORLD_ID="$WORLD_ID" NODE_BOOT_CHANNEL_ID="$CHANNEL_ID" \
+  WP5_S3A_PORT="$WP5_PORT" WP5_S3A_CA_CERT="$WP5_PKI/server-ca.crt" \
+  WP5_S3A_CLIENT_CERT="$WP5_PKI/client.crt" WP5_S3A_CLIENT_KEY="$WP5_PKI/client.key" \
+  WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
+  WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
+    cargo +1.94.0 test --locked -p oteryn-game-server --lib \
+    gameplay_transport::qualification::node_boot_seam_against_running_node -- --ignored --exact --nocapture
+}
+
+graceful_shutdown() { # ready=false first, socket removed
+  sudo kill -TERM "$NODE_PID"
+  local code=0
+  wait "$NODE_PID" 2>/dev/null || code=$?
+  # A process started by another stage's subshell is not our child; wait for it.
+  for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  grep -q "readiness ready=false" "$node_log" || fail "no ready=false on shutdown"
+  grep -q "shutdown state=complete" "$node_log" || fail "no clean shutdown"
+  [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
+  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
+  evidence "shutdown ready=false socket=removed"
+}
+
+restart_without_supersession() { # fails at S2 custody, never ready
+  ops authorization issue --file launch-b.json --binding node-boot-b
+  write_node_config launch-b.json
+  local code=0
+  sudo -u "$SERVICE_USER" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log" || code=$?
+  cat "$WORK/restart.log"
+  [[ $code == 13 ]] || fail "restart without supersession exit=$code"
+  local line node revision
+  line="$(grep 'event=registered' "$WORK/restart.log")"
+  node="$(sed -n 's/.*node_id=\([^ ]*\).*/\1/p' <<<"$line")"
+  revision="$(sed -n 's/.*registration_revision=\([0-9]*\).*/\1/p' <<<"$line")"
+  ops registration revoke --node-id "$node" --revision "$revision"
+  evidence "restart_without_supersession=refused_at_custody exit=13"
+}
+
+superseding_replacement() { # claims custody, ready by CAS after replace
+  ops authorization issue --file launch-c.json --binding node-boot-c --supersedes "$node_a"
+  write_node_config launch-c.json
+  : > "$node_log"
+  start_node
+  await_log awaiting_assignment 120
+  local node revision
+  node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
+  ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  await_log "readiness ready=true" 60
+  sudo kill -TERM "$NODE_PID"
+  for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+  grep -q "shutdown state=complete" "$node_log" || fail "replacement did not shut down cleanly"
+  evidence "replacement=superseding custody=claimed readiness=cas"
+}
+
+stage operator_setup -- operator_setup
+stage configuration_negatives operator_setup -- configuration_negatives
+stage node_assigned_ready operator_setup -- node_assigned_ready
+stage control_socket_peer node_assigned_ready -- control_socket_peer
+stage character_bootstrap node_assigned_ready -- character_bootstrap
+stage seam_stages character_bootstrap -- seam_stages
+stage graceful_shutdown node_assigned_ready -- graceful_shutdown
+stage restart_without_supersession graceful_shutdown -- restart_without_supersession
+stage superseding_replacement graceful_shutdown -- superseding_replacement
+NODE_PID=""
+
+echo "NODE_BOOT_STAGES"
+failures=0
+for name in "${ORDER[@]}"; do
+  printf 'NODE_BOOT_STAGE %-30s %s\n' "$name" "${STATUS[$name]}"
+  [[ ${STATUS[$name]} == PASS ]] || failures=$((failures + 1))
+done
 unset FRESH_SEED_HEX
-
-# Shutdown publishes ready=false first and removes the socket.
-sudo kill -TERM "$NODE_PID"; wait "$NODE_PID" || fail "node exit status"
-NODE_PID=""
-grep -q "readiness ready=false" "$node_log" || fail "no ready=false on shutdown"
-[[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
-[[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
-evidence "shutdown ready=false socket=removed exit=0"
-
-# Restart without supersession fails at S2 custody and never becomes ready.
-ops authorization issue --file launch-b.json --binding node-boot-b
-write_node_config launch-b.json
-set +e
-sudo -u "$SERVICE_USER" timeout 120 "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" 2> "$WORK/restart.log"; restart=$?
-set -e
-[[ $restart == 13 ]] || { cat "$WORK/restart.log"; fail "restart without supersession exit=$restart"; }
-line="$(grep 'event=registered' "$WORK/restart.log")"
-node_b="$(sed -n 's/.*node_id=\([^ ]*\).*/\1/p' <<<"$line")"
-revision_b="$(sed -n 's/.*registration_revision=\([0-9]*\).*/\1/p' <<<"$line")"
-ops registration revoke --node-id "$node_b" --revision "$revision_b"
-evidence "restart_without_supersession=refused_at_custody exit=13"
-
-# A replacement superseding the first incarnation claims custody and becomes
-# ready by CAS after the operator replaces the assignment.
-ops authorization issue --file launch-c.json --binding node-boot-c --supersedes "$node_a"
-write_node_config launch-c.json
-: > "$node_log"
-start_node
-await_log awaiting_assignment 120
-line="$(grep awaiting_assignment "$node_log")"
-node_c="$(sed -n 's/.*node_id=\([^ ]*\).*/\1/p' <<<"$line")"
-revision_c="$(sed -n 's/.*registration_revision=\([0-9]*\).*/\1/p' <<<"$line")"
-ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node_c" --revision "$revision_c"
-await_log "readiness ready=true" 60
-sudo kill -TERM "$NODE_PID"; wait "$NODE_PID" || fail "replacement exit status"
-NODE_PID=""
-evidence "replacement=superseding custody=claimed readiness=cas"
-result=NODE_BOOT_PASS
+if [[ $failures == 0 ]]; then
+  result=NODE_BOOT_PASS
+else
+  exit 1
+fi
