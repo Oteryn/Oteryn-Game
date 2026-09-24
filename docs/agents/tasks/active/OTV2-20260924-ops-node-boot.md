@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: claude/zen-dirac-mxruho
+branch: claude/zen-dirac-mxruho-pr-a
 issue: 832
 pr: null
 base_sha: null
