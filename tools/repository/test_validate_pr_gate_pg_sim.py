@@ -878,6 +878,22 @@ def test_audited_routing_predicate_rejects_additional_glob_consumer() -> None:
         pattern,
     )
 
+    predicate_and_shell_consumer = (
+        predicate_only
+        + b"run: tar -cf out docs/architecture; echo done\n"
+    )
+    shell_occurrences = classifier.directory_reference_occurrences(
+        predicate_and_shell_consumer,
+        pattern,
+        include_descendants=True,
+    )
+    assert len(shell_occurrences) == 2, shell_occurrences
+    assert not classifier.workflow_directory_reference_is_routing_only(
+        consumer_path,
+        predicate_and_shell_consumer,
+        pattern,
+    )
+
 
 def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
