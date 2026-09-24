@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = Path(__file__).with_name("classify_pr_test_lanes.py")
-ROUTING_CASES = Path(__file__).with_name("routing_contract_cases.py")
+ROUTING_CONTRACT = Path(__file__).with_name("validate_pr_routing_contract.py")
 
 
 def load_module():
@@ -27,8 +27,8 @@ def load_module():
     return module
 
 
-def load_routing_cases():
-    spec = importlib.util.spec_from_file_location("routing_contract_cases", ROUTING_CASES)
+def load_routing_contract():
+    spec = importlib.util.spec_from_file_location("routing_contract", ROUTING_CONTRACT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -96,9 +96,8 @@ def classify(module, paths, *, consumers=None):
 
 
 def test_routing_matrix(module):
-    cases = load_routing_cases()
-    verified = cases.verify_routing_contract_cases(module, fixture())
-    assert len(verified) == 19, verified
+    contract = load_routing_contract()
+    contract.verify_classifier_matrix(module, fixture())
 
     for path in (
         "apps/game-server/Cargo.toml",
