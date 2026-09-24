@@ -791,10 +791,10 @@
     {
       "prompt_id": "OTV2_FULL_CONTENT_CENSUS_PROGRAMME",
       "path": "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "implementation-programme-scoped-dispatch-alias",
-      "scope": "Scoped Full Tibia content census/crosswalk dispatch alias that resolves to the same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity and narrows it to G2 through final coverage closure; it is not a second coordinator and adds no authority.",
+      "scope": "Scoped Full Tibia content census/crosswalk dispatch alias that resolves to the same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity and narrows it to G2 through final coverage closure, with wiki-first G4 bulk sourcing and authenticated Global/Cyclopedia verification explicitly deferred to a future terminal verifier; it is not a second coordinator and adds no authority.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This entry is a scoped dispatch alias of OTV2_WORK_DELIVERY_COORDINATOR, not an independent control-plane profile. When the canonical Work coordinator is current and authorized, invocation uses that same profile identity and authority with census-only scope; otherwise it remains read-only. Only an explicit protected lifecycle replacement may change this routing."

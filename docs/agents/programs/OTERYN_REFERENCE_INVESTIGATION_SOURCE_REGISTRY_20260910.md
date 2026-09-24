@@ -335,6 +335,28 @@ classification: <status>
 
 A conflict in `loot_probability` must not contaminate an independently well-supported `hitpoints` field.
 
+## 6a. Full Content G4+ phase profile
+
+For the `Oteryn: full content census` programme, G4+ family crosswalk/population uses a narrower phase policy than the generic Reference investigation flow.
+
+During G4+:
+
+- use **TibiaWiki BR as the primary bulk working source** for current static/semi-static content;
+- use a second maintained structured Tibia encyclopedia/database as cross-check where available;
+- public official CipSoft/Tibia evidence may resolve an atomic conflict when it directly addresses the same claim;
+- **do not require authenticated Global Tibia/Cyclopedia observation** for ordinary G4 admission, crosswalk or canonical population;
+- **do not use Cyclopedia as the completeness denominator**, especially for Terrain, WorldObject, LocalObject, Transition, Presentation and map/environment content;
+- when structured sources remain unresolved, keep `UNKNOWN`/`CONFLICT` and continue legal path-disjoint work instead of escalating every static record to live Global browsing;
+- OTS/donors remain implementation/mechanics/hypothesis evidence and never override a newer current structured-wiki value for the same static field without stronger direct evidence.
+
+Authenticated Global/Cyclopedia inspection is intentionally deferred to a separate future terminal verifier after canonical population is mature. That verifier may compare player-visible facts and detect drift, but it is not a G4 blocker and requires separate explicit authority/session handling.
+
+For this Full Content phase, the working source order is:
+
+`TibiaWiki BR -> second structured cross-check -> public official evidence for exact conflicts -> preserve UNKNOWN/CONFLICT`.
+
+OTS/donors may assist throughout as hypotheses/implementation evidence. Live authenticated Global observation is deferred.
+
 ## 7. Bulk-data fast path
 
 For large static data families, use this efficient process:
@@ -354,6 +376,9 @@ field-level agreement/conflict table
         |
         +--> conflict / target-sensitive / behavior-sensitive
                 -> official CipSoft search and/or controlled Global observation
+                   (except Full Content G4+, where authenticated Global observation
+                    is deferred by section 6a and unresolved static fields remain
+                    UNKNOWN/CONFLICT)
 ```
 
 This avoids spending expensive black-box/primary-source research on thousands of mundane static fields while preserving honest evidence semantics.

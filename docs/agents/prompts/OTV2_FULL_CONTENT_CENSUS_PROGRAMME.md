@@ -176,7 +176,8 @@ The programme is terminal only when:
 - compact durable evidence and reproducible tooling remain;
 - final coverage report states exact counts for matched / missing / ambiguous / conflict / source-only / promoted / deferred;
 - required tests, exact-head CI, Merge Queue and protected-main readback pass;
-- active programme task packets are archived correctly.
+- active programme task packets are archived correctly;
+- live Global/Cyclopedia verification is not a completion blocker; if useful, leave a bounded future-verifier handoff instead of pulling authenticated Global browsing into G4+.
 
 ## Source/evidence doctrine
 
@@ -189,6 +190,38 @@ For TibiaWiki/MediaWiki collection:
 - retain bounded categories/templates/source shapes instead of article prose;
 - redirects and missing/red navigation links are explicit source states, not silently guessed;
 - full corpora belong in reproducible workflow artifacts/scratch unless a compact committed representation is independently justified.
+
+### G4+ bulk source policy — wiki-first, live Global deferred
+
+For current G4+ family crosswalk, canonical population and gap-closure work, use this phase-specific source policy:
+
+1. **TibiaWiki BR is the primary bulk working source** for current static/semi-static content identities and fields.
+2. Use a second current, maintained structured Tibia encyclopedia/database as an independent cross-check where available. Do not count a mirror/copied dataset as independent corroboration.
+3. Public official CipSoft/Tibia material may resolve an exact atomic field when it directly addresses the same current claim, but **authenticated in-game Global Tibia/Cyclopedia exploration is not part of the G4+ critical path**.
+4. **Do not use Global Tibia/Cyclopedia as the denominator for content completeness.** It exposes ordinary player-facing gameplay items/creatures and selected facts, not the complete Terrain/WorldObject/LocalObject/Transition/Presentation/map-environment universe.
+5. Do not require a Global Tibia login, private client session, manual browsing or controlled live-game observation to admit ordinary G4 records. If wiki/structured sources disagree and public evidence cannot resolve the exact field, retain `CONFLICT`/`UNKNOWN` and continue path-disjoint work.
+6. OTS/donor data remains hypothesis/implementation evidence. It is valuable for mechanics, scripts, quest flow, spawns, maps, edge cases and missing implementation details, but it **must not override a newer current structured-wiki value for the same static field** without stronger direct evidence.
+7. For map/environment content, prefer structured object/terrain/world evidence and exact donor/map provenance as appropriate; never infer that “not visible in Cyclopedia” means “not a real Oteryn content identity”.
+
+The intended current flow is therefore:
+
+`current structured wiki -> second structured cross-check -> family crosswalk -> field verification -> canonical Oteryn population -> compile/test`.
+
+OTS/donor evidence may assist any step but does not become the bulk truth source by convenience.
+
+### Deferred live Global verification
+
+Live authenticated Global Tibia verification is a **future terminal verification layer**, not a prerequisite for G4+.
+
+After canonical family population is mature, the programme may prepare a separate bounded handoff/spec for a future `LIVE_GLOBAL_REFERENCE_VERIFICATION` agent. That future agent may, under separate explicit authority and login/session handling:
+
+- browse player-visible Cyclopedia/content;
+- compare visible current gameplay Item/Creature facts against canonical Oteryn records;
+- classify `MATCH | DRIFT | CONFLICT | NOT_VISIBLE`;
+- propose evidence-backed corrections;
+- detect post-update drift.
+
+It must not use Cyclopedia as the denominator for map/environment content, must not silently mutate canonical data, and must not retroactively block already valid wiki-first G4 work. Implementing or running that authenticated verifier is outside the current G4+ critical path unless the owner later explicitly allocates it.
 
 For OTS/donor/reference sources:
 
