@@ -86,7 +86,7 @@
   - the PostgreSQL password, and the database root-CA PEM (bounded), each as its own file;
   - only while the S2 store is uninitialized: the one-time S2 fresh-store authorization (D3).
 
-  Every secret file is opened without following symbolic links and must be a regular file owned by the reading process's user, with no group or other permission bits (mode 0600 or 0400). Its parent directory must be owned by that user or root and not writable by group or others. The checks run on the opened descriptor, not on the path, and any failure rejects before the content is read. `oteryn-game-ops` applies the same checks to its own credential files.
+  Every secret file is opened without following symbolic links and must be a regular file owned by the reading process's user, with no group or other permission bits (mode 0600 or 0400). Its parent directory must be owned by that user or root and not writable by group or others. The checks run on the opened descriptor, not on the path, and any failure rejects before the content is read. `oteryn-game-ops` applies the same checks to its own credential files. The configuration file itself gets the same no-follow, descriptor-based owner, type, mode (no group or other write) and parent-directory checks before it is parsed, because it carries trusted values that no issuance covers, such as the Runtime readiness source authority, the D5 revisions, the listener and the database connection.
 
   Any missing, unreadable, insecure, malformed or over-bound input fails before a socket is bound. It exits with a distinct code, and the error names the key but never its value.
 
@@ -287,7 +287,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - A crash between checkpoint and clear leaves a slot that the next boot reconciles.
   - An ambiguous acceptance while serving is reconciled by the next evidence demand after the database recovers, without a restart. No evidence acceptance happens outside a checkpointed slot.
 - **D4 freshness.** Admission succeeds with no pre-seeded S2 observations, proving the on-demand fetch. It refuses when the Platform source is unavailable.
-- **Configuration.** Each of the following exits non-zero before binding, with no secret in output:
+- **Configuration.** Each of the following exits non-zero before binding, with no secret in output (including a configuration file that is a symbolic link, writable by group or others, or in such a directory):
   - missing, malformed or unknown keys;
   - over-maximum limits;
   - unreadable secret or trust-root files;
