@@ -67,7 +67,7 @@
     - username.
 
     A generic PostgreSQL URL is not accepted, matching the accepted WP3 configuration profile;
-  - the Character recovery-fence directory, together with the recovery store's `authority_scope_id` and `issuer_identity`. `CharacterRecoveryStore::open` requires both, and a retained record created under other values rejects. `oteryn-game-ops` takes the same three values. Before either binary uses the fence, the directory, its lock file and its record get the same descriptor-based checks as secret files: opened without following symbolic links, owned by the service user, no group or other write, and a parent not writable by group or others. Any failure keeps Character authority closed;
+  - the Character recovery-fence directory, together with the recovery store's `authority_scope_id` and `issuer_identity`. `CharacterRecoveryStore::open` requires both, and a retained record created under other values rejects. `oteryn-game-ops` takes the same three values. Before either binary uses the fence, the directory, its lock file and its record get the same descriptor-based checks as secret files: opened without following symbolic links, owned by the service user, no group or other write, and a parent not writable by group or others. Any failure keeps Character authority closed. When the lock file or record is absent on a fresh installation, it is created relative to the already validated directory descriptor, with exclusive create, no symbolic-link following, mode 0600 and the service user as owner. `oteryn-game-ops` must therefore run as that service user for fence actions and refuses otherwise. The file and directory are synchronized, and the created file is then validated through its descriptor like an existing one;
   - the bounded assignment wait (D3);
   - the control-socket path (D2). The node binds it; `oteryn-game-ops` takes the same path as an explicit argument. Its parent directory must be owned by the node's service user, with mode 0700 and not writable by anyone else;
   - the readiness revisions (D5);
@@ -291,6 +291,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - missing, malformed or unknown keys;
   - over-maximum limits;
   - unreadable secret or trust-root files;
+  - for each secret and trust-material class (gameplay key and chain, Platform trust roots, mTLS certificate and key, bootstrap authorization, PostgreSQL password, database root CA, S2 fresh-store authorization): a symbolic link, a non-regular file, a file owned by another user, a group- or other-readable or writable mode, and a group- or other-writable parent directory;
   - empty trust roots;
   - an S2 fresh-store authorization that differs from an already-initialized store's stored provenance or descriptor, or that is missing for an uninitialized store.
 - **Audit retention.** Using only the runtime credential, the running node deletes an expired, unheld audit event and keeps an expired event under an unreleased legal hold.
