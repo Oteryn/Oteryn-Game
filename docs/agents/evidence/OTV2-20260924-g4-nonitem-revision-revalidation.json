@@ -1,0 +1,102 @@
+{
+  "schema": "OTERYN_G4_NONITEM_REVISION_REVALIDATION_EVIDENCE/v1",
+  "task_id": "OTV2-20260924-g4-nonitem-revision-revalidation",
+  "issue": 162,
+  "issue_comment": 5822760897,
+  "status": "IMPLEMENTING",
+  "repository": "Oteryn/Oteryn-Game",
+  "branch": "agent/otv2-g4-nonitem-revision-revalidation",
+  "base_commit": "c516182255d3ea1724e91671c8d2187eb622e3df",
+  "pr": null,
+  "allocation": {
+    "base_refresh_issue_comment": 5822889938,
+    "writer_count": 1,
+    "changed_path_count": 5,
+    "exact_paths": [
+      "tools/content-census/g4_nonitem_revision_revalidation.py",
+      "tools/content-census/g4_nonitem_revision_revalidation_self_test.py",
+      ".github/workflows/g4-nonitem-revision-revalidation.yml",
+      "docs/agents/tasks/active/OTV2-20260924-g4-nonitem-revision-revalidation.md",
+      "docs/agents/evidence/OTV2-20260924-g4-nonitem-revision-revalidation.json"
+    ],
+    "one_commit": true,
+    "pr_or_integration_authority": false
+  },
+  "inputs": {
+    "g3": {
+      "artifact_id": 10801778929,
+      "run_id": 35986883931,
+      "head_sha": "20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+      "archive_size_bytes": 1427897,
+      "archive_sha256": "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+      "classified_universe_sha256": "1562382c66ad471a46309eaa5ae2fe9e7b3b1e3c8c2d5fc047ee8faa65bd1666",
+      "classified_page_count": 15787
+    },
+    "g4_merged_857": {
+      "artifact_id": 10831362943,
+      "run_id": 36053194532,
+      "head_sha": "b2e77ba01677b484fdfa6271c5745d2280c13df6",
+      "archive_size_bytes": 690595,
+      "archive_sha256": "5d8e886e31a0f64a035a61dc5c3f8ce031a8af3b06926117750deebc841394ca",
+      "capture_sha256": "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713",
+      "unique_non_item_pages": 8869
+    }
+  },
+  "scope": {
+    "join": "exact MediaWiki page_id only",
+    "source_key": "TIBIAWIKI_STRUCTURED",
+    "source_namespace": "mediawiki/tibiawiki.com.br",
+    "identity_namespace": "mediawiki/page_id",
+    "pages": [
+      {
+        "page_id": 63947,
+        "family": "Creature",
+        "direct_signature": "G1_CREATURES_STWORZENIA_INFOBOX_CRIATURA_CRIATURAS",
+        "pinned_g3": {"revision_id": 441850, "revision_timestamp": "2026-08-04T08:50:36Z"},
+        "pinned_g4": {
+          "external_id": "63947",
+          "page_key": "mediawiki/tibiawiki.com.br/page_id/63947",
+          "revision_id": 443993,
+          "revision_timestamp": "2026-09-24T09:09:13Z",
+          "raw_utf8_sha256": "435ac55fd2663b4c756364e01282efa7ef5888ecd710e6d17a1985b8c51efc41"
+        },
+        "current_tibiawiki": "FETCHED_BY_EXACT_PAGE_ID_AT_WORKFLOW_RUNTIME"
+      },
+      {
+        "page_id": 46925,
+        "family": "Quest",
+        "direct_signature": "G1_QUESTS_ZADANIA_INFOBOX_QUEST",
+        "pinned_g3": {"revision_id": 423929, "revision_timestamp": "2025-04-08T20:56:18Z"},
+        "pinned_g4": {
+          "external_id": "46925",
+          "page_key": "mediawiki/tibiawiki.com.br/page_id/46925",
+          "revision_id": 443994,
+          "revision_timestamp": "2026-09-24T13:54:17Z",
+          "raw_utf8_sha256": "9ee5951111700ab8628639ec2521cdf01eafa96cf10b36f62d6d698cce33192a"
+        },
+        "current_tibiawiki": "FETCHED_BY_EXACT_PAGE_ID_AT_WORKFLOW_RUNTIME"
+      }
+    ]
+  },
+  "source_authority": {
+    "current_wiki_primary": "TibiaWiki current page/revision",
+    "second_wiki": "UNKNOWN",
+    "ots": "HYPOTHESIS_ONLY",
+    "title_identity_used": false,
+    "canonical_identity_selection": false,
+    "production_key_minting": false,
+    "target_binding": false,
+    "population": false,
+    "field_promotion": false,
+    "presentation_asset_runtime_or_client_id_claims": false,
+    "raw_content_retained": false
+  },
+  "validation": {
+    "py_compile": "PASS",
+    "synthetic_self_test": "PASS_14_CASES",
+    "pinned_artifact_reverification": "HOSTED_WORKFLOW_PENDING",
+    "current_source_read": "HOSTED_WORKFLOW_PENDING",
+    "one_commit_push_live_readback": "PENDING"
+  },
+  "workflow_artifact_only": true
+}

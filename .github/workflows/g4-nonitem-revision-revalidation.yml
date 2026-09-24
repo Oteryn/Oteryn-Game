@@ -1,0 +1,110 @@
+name: G4 Non-Item Revision Revalidation
+
+on:
+  push:
+    branches:
+      - agent/otv2-g4-nonitem-revision-revalidation
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/g4_nonitem_revision_revalidation.py
+      - tools/content-census/g4_nonitem_revision_revalidation_self_test.py
+      - .github/workflows/g4-nonitem-revision-revalidation.yml
+      - docs/agents/tasks/active/OTV2-20260924-g4-nonitem-revision-revalidation.md
+      - docs/agents/evidence/OTV2-20260924-g4-nonitem-revision-revalidation.json
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: g4-nonitem-revision-revalidation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: G4 / two-row source revision revalidation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out exact candidate and allocated base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact candidate and allocated base
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: c516182255d3ea1724e91671c8d2187eb622e3df
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git cat-file -e "$BASE_SHA^{commit}"
+          if [ "$EXPECTED_SHA" != "$BASE_SHA" ]; then
+            test "$(git rev-parse "$EXPECTED_SHA^1")" = "$BASE_SHA"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run focused synthetic tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/g4_nonitem_revision_revalidation.py \
+            tools/content-census/g4_nonitem_revision_revalidation_self_test.py
+          python tools/content-census/g4_nonitem_revision_revalidation_self_test.py
+
+      - name: Verify pinned G3 and G4 inputs and revalidate current source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-nonitem-revision-revalidation"
+          python tools/content-census/g4_nonitem_revision_revalidation.py \
+            --download-inputs \
+            --work-dir "$ROOT/inputs" \
+            --output "$ROOT/nonitem-revision-revalidation.json" \
+            --manifest-output "$ROOT/manifest.json"
+
+      - name: Assert bounded source-only result
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-nonitem-revision-revalidation"
+          python - "$ROOT/nonitem-revision-revalidation.json" "$ROOT/manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          artifact, manifest = [json.loads(pathlib.Path(path).read_text(encoding="utf-8")) for path in sys.argv[1:]]
+          assert artifact["schema"] == "OTERYN_G4_NONITEM_REVISION_REVALIDATION/v1"
+          assert manifest["schema"] == "OTERYN_G4_NONITEM_REVISION_REVALIDATION_MANIFEST/v1"
+          assert manifest["scope"] == {"page_ids": [63947, 46925], "families": {"63947": "Creature", "46925": "Quest"}, "records": 2}
+          assert [row["source_identity"]["external_id"] for row in artifact["records"]] == ["63947", "46925"]
+          assert all(row["current_observation"]["direct_family_source_shape"]["state"] == "DIRECT_FAMILY_SOURCE_SHAPE_SUPPORTED" for row in artifact["records"])
+          assert artifact["authority"]["title_identity_used"] is False
+          assert artifact["authority"]["canonical_identity_selection"] is False
+          assert artifact["authority"]["production_key_minting"] is False
+          assert artifact["authority"]["target_binding"] is False
+          assert artifact["authority"]["definition_population"] is False
+          assert artifact["authority"]["field_promotion"] is False
+          assert artifact["authority"]["raw_page_content_retained"] is False
+          print("G4 non-Item two-row revision revalidation: PASS")
+          PY
+
+      - name: Upload compact workflow artifact only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-nonitem-revision-revalidation-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g4-nonitem-revision-revalidation/nonitem-revision-revalidation.json
+            ${{ runner.temp }}/g4-nonitem-revision-revalidation/manifest.json
+          if-no-files-found: error
+          retention-days: 14
