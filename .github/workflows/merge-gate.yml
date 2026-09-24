@@ -174,9 +174,9 @@ jobs:
       rust: ${{ steps.classify.outputs.rust }}
       windows: ${{ steps.classify.outputs.windows }}
       atlas_fullworld: ${{ steps.classify.outputs.atlas_fullworld }}
-      surface: ${{ steps.classify.outputs.surface || 'unknown' }}
-      reason: ${{ steps.classify.outputs.reason || 'legacy-protected-base' }}
-      routing_health: ${{ steps.classify.outputs.routing_health || 'legacy' }}
+      surface: ${{ steps.classify.outputs.surface }}
+      reason: ${{ steps.classify.outputs.reason }}
+      routing_health: ${{ steps.classify.outputs.routing_health }}
     steps:
       - name: Check out protected-base classifier and inputs
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -214,9 +214,9 @@ jobs:
           RUST: ${{ steps.classify.outputs.rust }}
           WINDOWS: ${{ steps.classify.outputs.windows }}
           ATLAS_FULLWORLD: ${{ steps.classify.outputs.atlas_fullworld }}
-          SURFACE: ${{ steps.classify.outputs.surface || 'unknown' }}
-          REASON: ${{ steps.classify.outputs.reason || 'legacy-protected-base' }}
-          ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health || 'legacy' }}
+          SURFACE: ${{ steps.classify.outputs.surface }}
+          REASON: ${{ steps.classify.outputs.reason }}
+          ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health }}
         run: |
           {
             echo '### Trusted-base PR routing'
