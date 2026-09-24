@@ -188,10 +188,10 @@ For every candidate:
 2. verify exact changed paths and allocation/custody;
 3. require applicable focused/component/E2E evidence, exact-head repository CI and required independent review with no unresolved material threads;
 4. refresh `main` and preserve the stable candidate unless source reconciliation is actually required;
-5. integrate only through the authenticated bound META 3.1 native exact-head Merge Queue contract using exact qualified `sha` and explicit `merge_action="merge_queue"`;
-6. treat HTTP `202` as acceptance only; bind the returned UUID/receipt sequence and require same-target same-UUID later-sequence readback; reconcile documented `200/409` fail-closed;
+5. resolve protected integration through the current immutable bound META integration-capability router after fresh exact repository/PR/`base=main`/head/auth/eligibility preflight;
+6. use a freshly proven `DIRECT_CAPABLE` route when available; otherwise use a freshly proven `DELEGATED_CAPABLE` executor route rather than treating absence of the direct primitive as a blocker, and follow the bound route-specific receipt/reconciliation contract exactly;
 7. never substitute direct merge, generic auto-merge, bypass, force, default merge action, no-op/retrigger commits or ambiguous dequeue;
-8. if the native operation is unavailable, preserve the qualified candidate and mark only that lane `LANE_BLOCKED`;
+8. mark the lane `LANE_BLOCKED` with `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither direct nor delegated integration capability is freshly proven, preserving the qualified candidate;
 9. require real `merge_group` `game-gate` SUCCESS plus protected-main readback before archive/ownership release and before a mutating lane becomes `DONE`.
 
 ## Shared surfaces, safety and completion
