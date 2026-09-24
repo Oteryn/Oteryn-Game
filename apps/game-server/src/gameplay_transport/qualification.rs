@@ -497,9 +497,10 @@ enum Reply {
 
 async fn exchange(address: SocketAddr, connector: &TlsConnector, raw: &[u8]) -> TestResult<Reply> {
     let tcp = TcpStream::connect(address).await?;
-    let Ok(mut stream) = connector
-        .connect(ServerName::try_from("localhost")?, tcp)
+    let connect = connector.connect(ServerName::try_from("localhost")?, tcp);
+    let Ok(mut stream) = tokio::time::timeout(Duration::from_secs(30), connect)
         .await
+        .map_err(|_| "TLS connect did not complete")?
     else {
         return Ok(Reply::TlsRefused);
     };
@@ -742,6 +743,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             .with_account(account)
         };
 
+        evidence("stage=transport_negatives");
         // Transport negatives: nothing reaches the frame layer.
         let generation = ingest(&root, &holder, &descriptor, &accounts[0], key_id).await?;
         let grant = next_grant(&accounts[0], characters[0], generation);
@@ -797,6 +799,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             "transport tls12_exact_alpn=refused wrong_alpn=refused missing_alpn=refused plaintext=refused admissions=0",
         );
 
+        evidence("stage=foundation_negatives");
         // Foundation negatives through the real listener, before FND-04.
         let token = sign_grant(&grant.borrowed(), now_seconds()?);
         for (label, raw, error) in [
@@ -834,6 +837,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             "foundation wrong_protocol_major=rejected wrong_transport_profile=rejected phase_invalid=rejected oversized=closed truncated=closed admissions=0",
         );
 
+        evidence("stage=fnd04_negatives");
         // FND-04 negatives: one invariant each, every other fact valid.
         let mut tampered = sign_grant(&grant.borrowed(), now_seconds()?);
         let last = tampered.pop().ok_or("empty token")?;
@@ -880,6 +884,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             "fnd04 invalid_signature=refused expired=refused wrong_character_binding=refused untrusted_signer=refused admissions=0",
         );
 
+        evidence("stage=admission");
         // Positive: the real owners admit; post-admission input fails closed.
         ingest(&root, &holder, &descriptor, &accounts[0], key_id).await?;
         let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
@@ -939,8 +944,27 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         shutdown.cancel();
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    let (served, clients) = join(serve, clients).await;
-    clients?;
+    // The listener must outlive every client case: an early listener exit is a
+    // failure, never a hang on an unaccepted connection.
+    let mut serve = pin!(serve);
+    let mut clients = pin!(clients);
+    let mut client_result = None;
+    let served = poll_fn(|context| {
+        if client_result.is_none()
+            && let Poll::Ready(result) = clients.as_mut().poll(context)
+        {
+            client_result = Some(result);
+        }
+        match serve.as_mut().poll(context) {
+            Poll::Ready(result) => Poll::Ready(result),
+            Poll::Pending => Poll::Pending,
+        }
+    })
+    .await;
+    match client_result {
+        Some(result) => result?,
+        None => return Err(format!("listener ended before the client cases: {served:?}").into()),
+    }
     served?;
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
     Ok(())

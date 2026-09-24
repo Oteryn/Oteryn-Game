@@ -517,6 +517,7 @@ mod tests {
     struct Material {
         server: Arc<rustls::ServerConfig>,
         client: TlsConnector,
+        certificate: CertificateDer<'static>,
     }
 
     fn material() -> Result<Material, Box<dyn Error>> {
@@ -525,7 +526,7 @@ mod tests {
         let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
         let server = tcp_tls::tls_config(vec![cert.clone()], key.into())?;
         let mut roots = rustls::RootCertStore::empty();
-        roots.add(cert)?;
+        roots.add(cert.clone())?;
         let mut config = rustls::ClientConfig::builder_with_provider(Arc::new(
             rustls::crypto::aws_lc_rs::default_provider(),
         ))
@@ -536,6 +537,7 @@ mod tests {
         Ok(Material {
             server,
             client: TlsConnector::from(Arc::new(config)),
+            certificate: cert,
         })
     }
 
@@ -766,6 +768,88 @@ mod tests {
             drop(silent);
             Ok(())
         })
+    }
+
+    #[test]
+    fn transport_negatives_close_without_admission() -> Result<(), Box<dyn Error>> {
+        runtime()?.block_on(async {
+            let material = material()?;
+            let generated = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
+            let _ = generated;
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let limits = ListenerLimits::new(8, 8, Duration::from_secs(5)).ok_or("limits")?;
+            let authority = GatedAuthority::new(true);
+            let ends = Ends::default();
+            let shutdown = CancellationToken::new();
+            let serve = serve_listener(
+                &listener,
+                &material.server,
+                limits,
+                &authority,
+                &SecureIdentifiers,
+                &ends,
+                &shutdown,
+            );
+            let check = async {
+                let mut outcomes = Vec::new();
+                for (tls12, alpn) in [
+                    (true, Some(b"oteryn-game/1".as_slice())),
+                    (false, Some(b"wrong".as_slice())),
+                    (false, None),
+                ] {
+                    let started = std::time::Instant::now();
+                    let outcome = tokio::time::timeout(
+                        Duration::from_secs(10),
+                        negative_client(&material, address, tls12, alpn),
+                    )
+                    .await;
+                    outcomes.push((outcome.is_ok(), started.elapsed()));
+                }
+                shutdown.cancel();
+                outcomes
+            };
+            let ((), outcomes) = join(serve, check).await;
+            for (finished, elapsed) in &outcomes {
+                assert!(*finished, "client hung after {elapsed:?}");
+            }
+            assert_eq!(authority.calls.load(Ordering::SeqCst), 0);
+            Ok(())
+        })
+    }
+
+    async fn negative_client(
+        material: &Material,
+        address: SocketAddr,
+        tls12: bool,
+        alpn: Option<&[u8]>,
+    ) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
+        let server_cert = material.certificate.clone();
+        let mut roots = rustls::RootCertStore::empty();
+        roots.add(server_cert)?;
+        let version = if tls12 {
+            &rustls::version::TLS12
+        } else {
+            &rustls::version::TLS13
+        };
+        let mut config = rustls::ClientConfig::builder_with_provider(Arc::new(
+            rustls::crypto::aws_lc_rs::default_provider(),
+        ))
+        .with_protocol_versions(&[version])?
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+        config.alpn_protocols = alpn.map(<[u8]>::to_vec).into_iter().collect();
+        let tcp = TcpStream::connect(address).await?;
+        let Ok(mut stream) = TlsConnector::from(Arc::new(config))
+            .connect(ServerName::try_from("localhost")?, tcp)
+            .await
+        else {
+            return Ok(Vec::new());
+        };
+        let _ = stream.write_all(&bootstrap_frame()).await;
+        let mut output = Vec::new();
+        let _ = stream.read_to_end(&mut output).await;
+        Ok(output)
     }
 
     #[test]
