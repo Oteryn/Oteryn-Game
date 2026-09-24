@@ -1,0 +1,95 @@
+{
+  "schema": "OTERYN_G4_ITEM_SOURCE_PROVENANCE_PILOT_EVIDENCE/v1",
+  "status": "R2_PUBLICATION_PENDING",
+  "allocation": {
+    "issue": 162,
+    "comment_id": 5820876804,
+    "branch": "agent/otv2-g4-item-source-provenance-pilot-r2",
+    "base_commit": "1c3cd863436d72ac826cc46fb2b3650b2cc675c7",
+    "meta_policy_commit": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb"
+  },
+  "task_packet": {
+    "task_id": "OTV2-20260924-g4-item-source-provenance-pilot",
+    "title": "G4 Item source-provenance pilot",
+    "mode": "IMPLEMENT",
+    "status": "validating",
+    "repository": "Oteryn/Oteryn-Game",
+    "base": "main",
+    "branch": "agent/otv2-g4-item-source-provenance-pilot-r2",
+    "issue": 162,
+    "pr": null,
+    "base_sha": "1c3cd863436d72ac826cc46fb2b3650b2cc675c7"
+  },
+  "superseded_candidate": {
+    "pr": 854,
+    "head": "20f465f5b9b44035e7c7dfeb345a273de9d0b9c2",
+    "reason": "AGENT_GOVERNANCE_TASK_METADATA_FAILURE",
+    "governance_run_id": 36048919542,
+    "reused_for_r2_qualification": false
+  },
+  "historical_predecessor_capture": {
+    "run_id": 36048919771,
+    "artifact_id": 10829004823,
+    "artifact_archive_sha256": "7be09a3e4e173dc8476c62d76566b0fad1662bc8c9e1e15cc081ef6ac4fb50b2",
+    "captured_rows": 6918,
+    "compact_artifact_sha256": "0fa435ba888071e7320e70b793203c87f79eda11c0ff8dd824dc2eeaed24421f",
+    "rows_sha256": "62efa8385666f725f707b4f02d2372ce91ec228fc770d9049738c2337f974e30",
+    "stable_census_sha256": "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+    "source_shape_counts": {"INFOBOX_ITEM": 5475, "INFOBOX_ITEM_PARSE_ERROR": 7, "NO_INFOBOX_ITEM": 1436},
+    "qualification_status": "HISTORICAL_PREDECESSOR_ONLY_NOT_REUSED_FOR_R2"
+  },
+  "protected_predecessor": {
+    "pull_request": 803,
+    "merged_commit": "cc28bb798512d185f4e7d7a453a1b20639a8ff37",
+    "source_census_schema": "OTERYN_ITEM_WIKI_FIRST_CENSUS/v1",
+    "source_manifest_schema": "OTERYN_ITEM_WIKI_FIRST_CENSUS_MANIFEST/v1"
+  },
+  "owned_paths": [
+    "tools/content-census/g4_item_source_capture.py",
+    "tools/content-census/g4_item_source_capture_self_test.py",
+    ".github/workflows/g4-item-source-capture.yml",
+    "docs/agents/tasks/active/OTV2-20260924-g4-item-source-provenance-pilot.md",
+    "docs/agents/evidence/OTV2-20260924-g4-item-source-provenance-pilot.json"
+  ],
+  "capture_contract": {
+    "page_key_namespace": "mediawiki/tibiawiki.com.br/page_id/",
+    "external_id": "verbatim decimal string of the MediaWiki page_id",
+    "retained_fields": [
+      "source",
+      "source_role",
+      "source_namespace",
+      "page_key",
+      "external_id",
+      "title",
+      "revision_id",
+      "revision_timestamp",
+      "source_digest"
+    ],
+    "raw_wikitext_or_prose_retained": false,
+    "canonical_binding_or_identity_promotion": false,
+    "semantic_promotion": false,
+    "second_wiki_corroboration": "UNKNOWN",
+    "independent_source_candidate": {
+      "source": "English TibiaWiki/Fandom",
+      "capture_status": "UNAVAILABLE_HTTP_402",
+      "exact_revision_verified": false,
+      "digest_verified": false,
+      "corroboration_claimed": false
+    },
+    "ots_evidence": "HYPOTHESIS_ONLY"
+  },
+  "validation": {
+    "synthetic_self_test": "PASS_LOCAL_PYTHON_3_R2",
+    "source_shape_partition_mismatch_case": "PASS_R2_LOCAL_SYNTHETIC",
+    "hosted_census_and_transform": "PENDING_R2",
+    "exact_candidate_ci": "PENDING_R2",
+    "captured_live_page_count": null,
+    "captured_artifact_sha256": null
+  },
+  "publication": {
+    "candidate_sha": null,
+    "candidate_sha_status": "PENDING_R2_PUBLICATION",
+    "published_commit_count": 0,
+    "integration_authority": "COORDINATOR_ONLY"
+  }
+}
