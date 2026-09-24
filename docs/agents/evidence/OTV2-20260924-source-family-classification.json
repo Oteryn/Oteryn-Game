@@ -1,53 +1,42 @@
 {
-  "schema": "OTERYN_G3_SOURCE_FAMILY_CLASSIFICATION_EVIDENCE/v1",
-  "task_id": "OTV2-20260924-source-family-classification",
-  "status": "IMPLEMENTATION_AND_HOSTED_VALIDATION_IN_PROGRESS",
   "allocation": {
-    "issue": 162,
-    "comment_id": 5812111405,
-    "branch": "agent/full-content-g3-source-family-classification-20260924",
     "base_sha": "ea8a563026e10b5464ece55c7ee0c790e716a786",
-    "execution_route": "api_native_authoring"
-  },
-  "preflight": {
-    "meta_main_sha": "e102056cc4b9219bc482ceb05afebeb4d62b7bc8",
-    "typed_capability": "DELEGATED_CAPABLE",
-    "policy_errors": [],
-    "worker_release_errors": []
-  },
-  "input": {
-    "repository": "Oteryn/Oteryn-Game",
-    "artifact_id": 10800249169,
-    "artifact_name": "global-source-overlap-9c333fbba17f60cbf8eb107ecb623c5cda679d6c",
-    "run_id": 35982151518,
-    "head_sha": "9c333fbba17f60cbf8eb107ecb623c5cda679d6c",
-    "artifact_expires_at": "2026-10-08T09:35:46Z",
-    "archive_size_bytes": 1246747,
-    "archive_sha256": "8b5a78e6daa72b5120a2218d395e498c8c2aa236bf7152f730f67ea99693af50",
-    "universe_schema": "OTERYN_GLOBAL_SOURCE_ID_UNIVERSE/v1",
-    "universe_sha256": "59b6c85e18a6e55b65491f53fa701b9596009228e6e06ea7a3b0b6d493d47d6c",
-    "manifest_schema": "OTERYN_GLOBAL_SOURCE_OVERLAP_MANIFEST/v1",
-    "manifest_sha256": "e3c2de4d1b5a5db80d59ee36465a0ea76a8f9d300bf015d1646d8321ea71a4d1",
-    "page_count": 15787,
-    "exact_id_overlaps": 504,
-    "title_divergences": 0
+    "branch": "agent/full-content-g3-source-family-classification-20260924",
+    "comment_id": 5812111405,
+    "execution_route": "api_native_authoring",
+    "issue": 162
   },
   "classification": {
+    "assigned_pages": 10275,
+    "authority": {
+      "candidate_relations_resolved": false,
+      "canonical_identity_selection": false,
+      "gameplay_truth": "NONE",
+      "identity_resolution": false,
+      "semantic_promotion": false,
+      "target_identity_selection": false
+    },
     "basis": "SOURCE_DEFINITION_DIRECT_SIGNATURES_ONLY",
+    "disjoint_signature_claims": true,
+    "mount_list_counterexample": {
+      "page_id": 45642,
+      "reason": "World Quest root/surface and Mount list templates; no Categoria:Montarias",
+      "required_result": "UNKNOWN",
+      "title": "Winterlight Solstice"
+    },
     "primary_family_counts": {
-      "Item": 5475,
-      "Creature": 2149,
-      "NPC": 1253,
+      "Ability": 171,
       "Achievement": 569,
+      "Creature": 2149,
+      "Item": 5475,
       "Mount": 252,
+      "NPC": 1253,
       "Outfit": 134,
       "Quest": 272,
-      "Ability": 171,
       "UNKNOWN": 5512
     },
-    "assigned_pages": 10275,
+    "relationship_evidence": "G1 candidate families are retained per provenance as evidence-only and are not resolved or used to override a direct signature",
     "unknown_pages": 5512,
-    "disjoint_signature_claims": true,
     "unknown_source_shape_observations": {
       "INFOBOX_ITEM_PARSE_ERROR": 7,
       "NO_INFOBOX_ITEM": 1436,
@@ -55,36 +44,51 @@
       "SOURCE_CLASSIFICATION_UNRESOLVED": 12,
       "STRUCTURED_ALTERNATE": 187,
       "STRUCTURED_PRIMARY": 3803
-    },
-    "mount_list_counterexample": {
-      "page_id": 45642,
-      "title": "Winterlight Solstice",
-      "required_result": "UNKNOWN",
-      "reason": "World Quest root/surface and Mount list templates; no Categoria:Montarias"
-    },
-    "relationship_evidence": "G1 candidate families are retained per provenance as evidence-only and are not resolved or used to override a direct signature",
-    "authority": {
-      "identity_resolution": false,
-      "canonical_identity_selection": false,
-      "target_identity_selection": false,
-      "candidate_relations_resolved": false,
-      "semantic_promotion": false,
-      "gameplay_truth": "NONE"
     }
   },
-  "local_reproduction": {
-    "result": "PASS",
-    "classified_universe_sha256": "1562382c66ad471a46309eaa5ae2fe9e7b3b1e3c8c2d5fc047ee8faa65bd1666",
-    "focused_synthetic_tests": "9 PASS"
-  },
+  "corpus_storage": "Full per-page classified universe is workflow-artifact-only; this Git record is a compact manifest/evidence packet.",
   "hosted_validation": {
-    "workflow": "Source Family Classification",
-    "status": "PENDING",
-    "run_id": null,
-    "head_sha": null,
-    "classified_artifact_id": null,
-    "classified_artifact_sha256": null,
-    "retention_days": 14
+    "classified_artifact_expires_at": "2026-10-08T10:20:16Z",
+    "classified_artifact_id": 10801758693,
+    "classified_artifact_name": "source-family-classification-67aaa41f505c2da588315cafc833f2914ba16676",
+    "classified_artifact_sha256": "cb39d2404317328b7efee71e489ea93413d9ac3eefb0c92f6ce4b2c143d082d7",
+    "classified_artifact_size_bytes": 1427897,
+    "exact_head_final_qualification": "PENDING_AFTER_EVIDENCE_UPDATE",
+    "head_sha": "67aaa41f505c2da588315cafc833f2914ba16676",
+    "result": "PASS_FIRST_HOSTED_VALIDATION",
+    "retention_days": 14,
+    "run_id": 35986595291,
+    "workflow": "Source Family Classification"
   },
-  "corpus_storage": "Full per-page classified universe is workflow-artifact-only; this Git record is a compact manifest/evidence packet."
+  "input": {
+    "archive_sha256": "8b5a78e6daa72b5120a2218d395e498c8c2aa236bf7152f730f67ea99693af50",
+    "archive_size_bytes": 1246747,
+    "artifact_expires_at": "2026-10-08T09:35:46Z",
+    "artifact_id": 10800249169,
+    "artifact_name": "global-source-overlap-9c333fbba17f60cbf8eb107ecb623c5cda679d6c",
+    "exact_id_overlaps": 504,
+    "head_sha": "9c333fbba17f60cbf8eb107ecb623c5cda679d6c",
+    "manifest_schema": "OTERYN_GLOBAL_SOURCE_OVERLAP_MANIFEST/v1",
+    "manifest_sha256": "e3c2de4d1b5a5db80d59ee36465a0ea76a8f9d300bf015d1646d8321ea71a4d1",
+    "page_count": 15787,
+    "repository": "Oteryn/Oteryn-Game",
+    "run_id": 35982151518,
+    "title_divergences": 0,
+    "universe_schema": "OTERYN_GLOBAL_SOURCE_ID_UNIVERSE/v1",
+    "universe_sha256": "59b6c85e18a6e55b65491f53fa701b9596009228e6e06ea7a3b0b6d493d47d6c"
+  },
+  "local_reproduction": {
+    "classified_universe_sha256": "1562382c66ad471a46309eaa5ae2fe9e7b3b1e3c8c2d5fc047ee8faa65bd1666",
+    "focused_synthetic_tests": "9 PASS",
+    "result": "PASS"
+  },
+  "preflight": {
+    "meta_main_sha": "e102056cc4b9219bc482ceb05afebeb4d62b7bc8",
+    "policy_errors": [],
+    "typed_capability": "DELEGATED_CAPABLE",
+    "worker_release_errors": []
+  },
+  "schema": "OTERYN_G3_SOURCE_FAMILY_CLASSIFICATION_EVIDENCE/v1",
+  "status": "IMPLEMENTATION_AND_HOSTED_VALIDATION_IN_PROGRESS",
+  "task_id": "OTV2-20260924-source-family-classification"
 }
