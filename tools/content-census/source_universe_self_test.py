@@ -70,6 +70,17 @@ def test_real_registry_is_complete_and_excludes_hard_sections() -> None:
     assert registry["roots"]["items-protected"]["kind"] == "protected_manifest"
 
 
+
+def test_registry_rejects_template_limit_above_response_safe_ceiling() -> None:
+    raw = census.load_registry(census.DEFAULT_REGISTRY)
+    bad = copy.deepcopy(raw)
+    bad["limits"]["max_templates_per_page"] = 4097
+    reject(
+        lambda: census.validate_registry(bad),
+        "REGISTRY_LIMIT_HARD_MAX_PLUS_ONE:max_templates_per_page:4097",
+    )
+
+
 def test_registry_rejects_hard_exclusion_root() -> None:
     raw = census.load_registry(census.DEFAULT_REGISTRY)
     bad = copy.deepcopy(raw)
