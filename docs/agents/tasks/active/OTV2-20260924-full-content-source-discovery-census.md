@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-content-source-discovery-census-20260923
-pr: null
+pr: 812
 base_sha: eb90813043e4216865994c2f00f50ab240fcb28c
 head_sha: null
 final_head_sha: null
@@ -133,11 +133,11 @@ In progress.
 ## Context checkpoint
 
 ```yaml
-last_progress: G0 integrated; G1 branch allocated from protected main
+last_progress: PR #812 open; synthetic suite passes; live source crawl repaired for redlinks and case-distinct canonical titles
 status: implementing
 branch: agent/full-content-source-discovery-census-20260923
 head_sha: null
-pr: null
+pr: 812
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
