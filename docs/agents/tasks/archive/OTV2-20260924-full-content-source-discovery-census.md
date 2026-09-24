@@ -5,14 +5,14 @@ task_id: OTV2-20260924-full-content-source-discovery-census
 correction_task_id: OTV2-20260924-full-content-source-roots-correction
 title: Full Tibia content source discovery and family census — source-root correction
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-content-source-roots-correction-20260924
 pr: 821
 base_sha: 0c3445068a696883a35a248c98436f2af87a39b5
-head_sha: null
-final_head_sha: null
+head_sha: f1d7dbd6577b033c53545d8650ffba05aafc9480
+final_head_sha: f1d7dbd6577b033c53545d8650ffba05aafc9480
 final_head_frozen_at: null
 owner: "exclusive G1 source-root correction writer"
 created_at: 2026-09-24T00:30:00+02:00
@@ -222,3 +222,12 @@ owner_action_required: null
 blocker: final exact-head workflows pending after final authoring write
 next_action: read back exact new branch head, verify only five allocated paths, freeze that head, and qualify Full Content Source Discovery, Agent Governance, Architecture Semantic Audit and Merge Gate / game-gate
 ```
+
+
+## Terminal closeout
+
+- PROVEN: correction PR #821 was merged after qualification of exact PR head `f1d7dbd6577b033c53545d8650ffba05aafc9480`.
+- PROVEN: protected `main` is at merge commit `dbc7fe950fa2eb5188e51860bac02e8889463261`.
+- PROVEN: merge-group run [35978432075](https://github.com/Oteryn/Oteryn-Game/actions/runs/35978432075) completed with aggregate `game-gate` SUCCESS.
+- TERMINAL: this G1 task is complete; its exclusive authoring ownership is released. Further work requires a new live task allocation.
+- The preceding pending-validation and pre-merge statements preserve the historical checkpoint and are superseded by this terminal closeout.
