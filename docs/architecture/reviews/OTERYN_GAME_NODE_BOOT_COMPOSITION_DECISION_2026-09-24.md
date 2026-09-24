@@ -213,7 +213,7 @@ Rejected alternatives:
 
    **Audit publication.** No verified audit transport contract exists yet; #414 names it a future contract. Bootstrap events therefore stay durably pending in the outbox, which is the at-least-once state, and are never acknowledged without a real delivery. The expiry loop bounds their retention. Composing the publisher and `acknowledge_character_audit` belongs to the audit transport contract (§5).
 
-   If either loop fails, the node follows the step 10 shutdown order.
+   If any of the three loops ends, the node follows the step 10 shutdown order. An expiry operation error does not end its loop: it is logged as a failed run and retried at the next interval, so retention stays enforced and visible without a restart.
 10. **Shut down.** On SIGTERM or SIGINT:
     1. publish `ready: false` for the scope first;
     2. then cancel the shutdown token, which stops gameplay and control-socket acceptance and cancels entry work, while in-flight admissions and an in-flight bootstrap complete;
@@ -234,7 +234,7 @@ A restart always yields a new `NodeId`. Before the new process launches, the ope
      - the exact observation binding is checkpointed into one of the two durable publication slots (`checkpoint_native_source_publication`) before the SQL acceptance;
      - the slot is cleared only after a definite outcome;
      - an unknown commit keeps the slot;
-     - every evidence demand first enters the publication lane and reconciles any occupied slot by its fixed identity **before starting either S1 exchange**; if no slot is free after that, the demand refuses without any exchange. The publication step reconciles again before checkpointing new work. It replays the retained binding through the idempotent acceptance, then clears the slot on a definite outcome. The D3 step 4 boot reconciliation is the same operation, so a running node recovers its slots once the database recovers, without a restart;
+     - every evidence demand first enters the publication lane and reconciles any occupied slot by its fixed identity **before starting either S1 exchange**. Still inside the lane, it reserves one concrete slot: retained durable slots plus in-process reservations must stay below two, otherwise the demand refuses without any exchange. The reservation is owned by the demand and then by its publication task, and is released only when that task ends. An ambiguous outcome leaves the durable slot occupied, so the next reconciliation counts it as retained. Concurrent demands therefore never overbook the two-slot envelope. The publication step reconciles again before checkpointing new work. It replays the retained binding through the idempotent acceptance, then clears the slot on a definite outcome. The D3 step 4 boot reconciliation is the same operation, so a running node recovers its slots once the database recovers, without a restart;
      - with both slots occupied, evidence demand is unavailable and the attempt refuses;
      - all S2 publications of the node, including that reconciliation, run serially in one publication lane. The lane is entered within `NSRC-QUEUE-WAIT`, otherwise the attempt refuses. Its guard is owned by the publication task spawned on the durability root, not by the caller, so a cancelled attempt cannot release it while its SQL operation is outstanding. A slot seen by reconciliation is therefore never live: its original operation has ended in this process with an ambiguous outcome, or it belongs to an earlier incarnation whose custody is fenced. That ended pass ran under the server-side transaction, statement and lock timeouts bounded by its deadline, and the replay reaches its authoritative result through the idempotent acceptance;
   3. only then does the #823 composition and commit run.
@@ -278,9 +278,10 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 - **Operator setup and the SEAM stages**, in this order:
   1. Before the node starts, `oteryn-game-ops` issues the launch authorization (secret, binding and `supersedes`) and the S2 fresh-store authorization, authorizes and admits the fresh Character store, then configures the interpretation. Configuring the interpretation before the admission is refused.
   2. `oteryn-game-server serve` starts, registers and logs its `NodeRegistrationFact`, then waits for its assignment (D3 step 6).
-  3. While it waits, `oteryn-game-ops` assigns the scope to that logged fact. The node then binds its listener and control socket and publishes readiness.
-  4. Characters are bootstrapped from real Platform intents through the node control socket.
-  5. The running node reproduces every #823 `SEAM_PASS` stage against its own bound port.
+  3. The database owner provisions the control-scope grant for the control login, scope and operations (D2). This is deployment administration, outside both Game roles.
+  4. While the node waits, `oteryn-game-ops` assigns the scope to that logged fact. The node then binds its listener and control socket and publishes readiness.
+  5. Characters are bootstrapped from real Platform intents through the node control socket.
+  6. The running node reproduces every #823 `SEAM_PASS` stage against its own bound port.
   - No operator invocation creates a `game_node_registrations` row.
 - **D4 publication slots.**
   - A crash between checkpoint and clear leaves a slot that the next boot reconciles.
