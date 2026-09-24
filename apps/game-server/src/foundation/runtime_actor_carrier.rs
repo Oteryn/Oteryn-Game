@@ -97,6 +97,27 @@ struct ActorRef {
     actor_local_generation: ActorLocalGeneration,
 }
 
+/// Inseparable semantic actor handle issued by this one Channel carrier.
+/// Its fields and constructor are private to Foundation; it is never decoded
+/// from a client handle or derived from the fixture Ability `TargetId`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ExactActorRef(ActorRef);
+
+/// A borrow of independently current owner continuity and its matching carrier.
+/// No mutation, admission or continuity-grant method crosses this boundary.
+pub(crate) struct CurrentOwnerExactActorLookup<'a> {
+    carrier: &'a ChannelActorCarrier,
+    continuity: &'a NamespaceContinuityGuard,
+}
+
+impl CurrentOwnerExactActorLookup<'_> {
+    /// One direct slot/generation lookup. Invalid, vacant and misrouted refs
+    /// share one failure; no actor payload or carrier authority is returned.
+    pub(crate) fn contains(&self, actor: ExactActorRef) -> bool {
+        self.carrier.lookup(self.continuity, actor.0).is_ok()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorState(u64);
 
@@ -116,6 +137,16 @@ struct ChannelActorCarrier {
 }
 
 impl ChannelActorCarrier {
+    fn current_owner_exact_lookup<'a>(
+        &'a self,
+        continuity: &'a NamespaceContinuityGuard,
+    ) -> CurrentOwnerExactActorLookup<'a> {
+        CurrentOwnerExactActorLookup {
+            carrier: self,
+            continuity,
+        }
+    }
+
     fn bootstrap_pre_production(
         continuity: &mut NamespaceContinuityGuard,
         explicit_capacity: usize,
@@ -296,6 +327,11 @@ fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
 
 #[cfg(test)]
 const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "ability_exact_actor_resolution_tests.rs"]
+mod ability_exact_actor_resolution_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
