@@ -403,17 +403,109 @@ fn tier3_rejects_tier2_boundary_as_production_binary_proof() {
 }
 
 #[test]
-fn tier2_requires_client_presentation_evidence() {
+fn tier2_and_tier3_accept_product_failure_at_client_presentation() {
+    for (id, tier, boundary) in [
+        (
+            "tier2-presentation-failure",
+            ExecutionTier::Tier2NativeClient,
+            real_tier2(),
+        ),
+        (
+            "tier3-presentation-failure",
+            ExecutionTier::Tier3ProductionSmoke,
+            real_tier3(),
+        ),
+    ] {
+        let mut evidence = attempt(
+            id,
+            tier,
+            boundary,
+            AttemptOutcome::ProductFailure,
+            CleanupStatus::Complete,
+        );
+        evidence.phases[Phase::ClientPresentation as usize].status = PhaseStatus::Failed;
+        evidence.first_divergence = Some(Phase::ClientPresentation);
+        evidence.failure_class = Some("client-presentation-product-divergence");
+
+        assert_eq!(validate_attempt(&evidence), Ok(()), "{tier:?}");
+    }
+}
+
+#[test]
+fn tier2_and_tier3_passed_attempts_reject_failed_client_presentation() {
+    for (id, tier, boundary) in [
+        (
+            "tier2-passed-presentation-failure",
+            ExecutionTier::Tier2NativeClient,
+            real_tier2(),
+        ),
+        (
+            "tier3-passed-presentation-failure",
+            ExecutionTier::Tier3ProductionSmoke,
+            real_tier3(),
+        ),
+    ] {
+        let mut evidence = attempt(
+            id,
+            tier,
+            boundary,
+            AttemptOutcome::Passed,
+            CleanupStatus::Complete,
+        );
+        evidence.phases[Phase::ClientPresentation as usize].status = PhaseStatus::Failed;
+
+        assert_eq!(
+            validate_attempt(&evidence),
+            Err(EvidenceError::EvidenceIncomplete),
+            "{tier:?}",
+        );
+    }
+}
+
+#[test]
+fn tier2_and_tier3_reject_not_applicable_client_presentation() {
+    for (id, tier, boundary) in [
+        (
+            "tier2-no-presentation",
+            ExecutionTier::Tier2NativeClient,
+            real_tier2(),
+        ),
+        (
+            "tier3-no-presentation",
+            ExecutionTier::Tier3ProductionSmoke,
+            real_tier3(),
+        ),
+    ] {
+        let mut evidence = attempt(
+            id,
+            tier,
+            boundary,
+            AttemptOutcome::Passed,
+            CleanupStatus::Complete,
+        );
+        evidence.phases[Phase::ClientPresentation as usize].status =
+            PhaseStatus::NotApplicable("presentation omitted");
+
+        assert_eq!(
+            validate_attempt(&evidence),
+            Err(EvidenceError::EvidenceIncomplete),
+            "{tier:?}",
+        );
+    }
+}
+
+#[test]
+fn tier1_headless_client_presentation_semantics_remain_required() {
     let mut evidence = attempt(
-        "tier2-no-presentation",
-        ExecutionTier::Tier2NativeClient,
-        real_tier2(),
+        "tier1-headless-presentation",
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier1(),
         AttemptOutcome::Passed,
         CleanupStatus::Complete,
     );
-    evidence.phases[Phase::ClientPresentation as usize].status =
-        PhaseStatus::NotApplicable("presentation omitted");
+    assert_eq!(validate_attempt(&evidence), Ok(()));
 
+    evidence.phases[Phase::ClientPresentation as usize].status = PhaseStatus::Passed;
     assert_eq!(
         validate_attempt(&evidence),
         Err(EvidenceError::EvidenceIncomplete),

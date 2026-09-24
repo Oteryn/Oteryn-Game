@@ -3,13 +3,14 @@
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::path::Path;
+use std::path::{Component, Path};
 use std::process::Command;
 
 #[derive(Debug)]
 struct Policy {
     members: BTreeSet<String>,
     paths: BTreeSet<String>,
+    member_paths: BTreeMap<String, String>,
     production: BTreeSet<String>,
     production_roots: BTreeSet<String>,
     synthetic: BTreeSet<String>,
@@ -19,17 +20,17 @@ struct Policy {
     edges: BTreeMap<String, BTreeSet<String>>,
 }
 
+struct MemberPathMapping {
+    members: BTreeSet<String>,
+    paths: BTreeSet<String>,
+    mapping: BTreeMap<String, String>,
+}
+
 pub fn validate_workspace(root: &Path) -> Result<(), String> {
     let policy = parse_policy(&root.join("workspace-boundaries.toml"))?;
     validate_policy_shape(&policy)?;
     let metadata = cargo_metadata(root)?;
-    let actual = workspace_packages(&metadata)?;
-    if actual != policy.members {
-        return Err(format!(
-            "workspace members differ: expected {:?}, actual {:?}",
-            policy.members, actual
-        ));
-    }
+    let actual = validate_workspace_package_paths(&policy, &metadata)?;
     let actual_edges = internal_edges(&metadata, &actual)?;
     for member in &policy.members {
         let expected = policy
@@ -59,10 +60,31 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn validate_workspace_package_paths(
+    policy: &Policy,
+    metadata: &Value,
+) -> Result<BTreeSet<String>, String> {
+    let actual_paths = workspace_package_paths(metadata)?;
+    let actual = actual_paths.keys().cloned().collect::<BTreeSet<_>>();
+    if actual != policy.members {
+        return Err(format!(
+            "workspace members differ: expected {:?}, actual {:?}",
+            policy.members, actual
+        ));
+    }
+    if actual_paths != policy.member_paths {
+        return Err(format!(
+            "workspace package paths differ: expected {:?}, actual {:?}",
+            policy.member_paths, actual_paths
+        ));
+    }
+    Ok(actual)
+}
+
 fn parse_policy(path: &Path) -> Result<Policy, String> {
     let content = fs::read_to_string(path)
         .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
-    let mut arrays: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    let mut arrays: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut forbidden_fragments = Vec::new();
     let mut edges = BTreeMap::new();
     let mut in_edges = false;
@@ -91,7 +113,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
         } else if key == "forbidden_package_fragments" {
             forbidden_fragments = parsed;
         } else {
-            arrays.insert(key.to_owned(), parsed.into_iter().collect());
+            arrays.insert(key.to_owned(), parsed);
         }
     }
     let take = |key: &str| {
@@ -100,16 +122,47 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
             .cloned()
             .ok_or_else(|| format!("missing policy array {key}"))
     };
+    let members = take("members")?;
+    let paths = take("paths")?;
+    let member_paths = member_path_mapping(&members, &paths)?;
+    let take_set = |key: &str| take(key).map(|values| values.into_iter().collect());
     Ok(Policy {
-        members: take("members")?,
-        paths: take("paths")?,
-        production: take("production")?,
-        production_roots: take("production_roots")?,
-        synthetic: take("synthetic")?,
-        test: take("test")?,
-        tool: take("tool")?,
+        members: member_paths.members,
+        paths: member_paths.paths,
+        member_paths: member_paths.mapping,
+        production: take_set("production")?,
+        production_roots: take_set("production_roots")?,
+        synthetic: take_set("synthetic")?,
+        test: take_set("test")?,
+        tool: take_set("tool")?,
         forbidden_fragments,
         edges,
+    })
+}
+
+fn member_path_mapping(members: &[String], paths: &[String]) -> Result<MemberPathMapping, String> {
+    if members.len() != paths.len() {
+        return Err(format!(
+            "workspace policy member/path cardinality differs: {} members, {} paths",
+            members.len(),
+            paths.len()
+        ));
+    }
+
+    let member_set = members.iter().cloned().collect::<BTreeSet<_>>();
+    if member_set.len() != members.len() {
+        return Err("workspace policy contains a duplicate package name".to_owned());
+    }
+    let path_set = paths.iter().cloned().collect::<BTreeSet<_>>();
+    if path_set.len() != paths.len() {
+        return Err("workspace policy contains a duplicate package path".to_owned());
+    }
+
+    let mapping = members.iter().cloned().zip(paths.iter().cloned()).collect();
+    Ok(MemberPathMapping {
+        members: member_set,
+        paths: path_set,
+        mapping,
     })
 }
 
@@ -123,6 +176,16 @@ fn validate_policy_shape(policy: &Policy) -> Result<(), String> {
             policy.members.len(),
             policy.paths.len()
         ));
+    }
+    if policy.member_paths.keys().cloned().collect::<BTreeSet<_>>() != policy.members
+        || policy
+            .member_paths
+            .values()
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            != policy.paths
+    {
+        return Err("workspace policy package/path mapping is ambiguous".to_owned());
     }
     if policy.production_roots.is_empty() {
         return Err("workspace policy must declare at least one production root".to_owned());
@@ -179,7 +242,7 @@ fn cargo_metadata(root: &Path) -> Result<Value, String> {
         .map_err(|error| format!("cargo metadata JSON is invalid: {error}"))
 }
 
-fn workspace_packages(metadata: &Value) -> Result<BTreeSet<String>, String> {
+fn workspace_package_paths(metadata: &Value) -> Result<BTreeMap<String, String>, String> {
     let member_ids = metadata
         .get("workspace_members")
         .and_then(Value::as_array)
@@ -191,23 +254,69 @@ fn workspace_packages(metadata: &Value) -> Result<BTreeSet<String>, String> {
         .get("packages")
         .and_then(Value::as_array)
         .ok_or_else(|| "metadata lacks packages".to_owned())?;
-    let mut names = BTreeSet::new();
+    let workspace_root = metadata
+        .get("workspace_root")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "metadata lacks workspace_root".to_owned())?;
+    let workspace_root = Path::new(workspace_root);
+    let mut paths = BTreeMap::new();
+    let mut observed_ids = BTreeSet::new();
     for package in packages {
         let id = package
             .get("id")
             .and_then(Value::as_str)
             .ok_or_else(|| "package lacks id".to_owned())?;
         if member_ids.contains(id) {
-            names.insert(
-                package
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| "package lacks name".to_owned())?
-                    .to_owned(),
-            );
+            observed_ids.insert(id);
+            let name = package
+                .get("name")
+                .and_then(Value::as_str)
+                .ok_or_else(|| "package lacks name".to_owned())?;
+            let manifest_path = package
+                .get("manifest_path")
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("workspace package {name} lacks manifest_path"))?;
+            let manifest_directory = Path::new(manifest_path)
+                .parent()
+                .ok_or_else(|| format!("workspace package {name} has invalid manifest_path"))?
+                .strip_prefix(workspace_root)
+                .map_err(|_| {
+                    format!(
+                        "workspace package {name} manifest is outside workspace root: {manifest_path}"
+                    )
+                })?;
+            let manifest_directory = portable_relative_path(manifest_directory)?;
+            if paths.insert(name.to_owned(), manifest_directory).is_some() {
+                return Err(format!(
+                    "workspace metadata contains duplicate package name {name}"
+                ));
+            }
         }
     }
-    Ok(names)
+    if observed_ids.len() != member_ids.len() {
+        return Err("metadata does not describe every workspace member".to_owned());
+    }
+    Ok(paths)
+}
+
+fn portable_relative_path(path: &Path) -> Result<String, String> {
+    let mut parts = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::Normal(part) => parts.push(
+                part.to_str()
+                    .ok_or_else(|| "workspace manifest path is not UTF-8".to_owned())?,
+            ),
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => {
+                return Err("workspace manifest path is not a relative directory".to_owned());
+            }
+        }
+    }
+    if parts.is_empty() {
+        return Err("workspace package manifest cannot be at workspace root".to_owned());
+    }
+    Ok(parts.join("/"))
 }
 
 fn internal_edges(
@@ -306,6 +415,10 @@ mod tests {
         Policy {
             members: BTreeSet::from(["app".to_owned(), "foundation".to_owned()]),
             paths: BTreeSet::from(["apps/app".to_owned(), "crates/foundation".to_owned()]),
+            member_paths: BTreeMap::from([
+                ("app".to_owned(), "apps/app".to_owned()),
+                ("foundation".to_owned(), "crates/foundation".to_owned()),
+            ]),
             production: BTreeSet::from(["app".to_owned(), "foundation".to_owned()]),
             production_roots: BTreeSet::from(["app".to_owned()]),
             synthetic: BTreeSet::new(),
@@ -319,6 +432,25 @@ mod tests {
         }
     }
 
+    fn metadata_with_paths(app_path: &str, foundation_path: &str) -> Value {
+        serde_json::json!({
+            "workspace_root": "/workspace",
+            "workspace_members": ["app-id", "foundation-id"],
+            "packages": [
+                {
+                    "id": "app-id",
+                    "name": "app",
+                    "manifest_path": format!("/workspace/{app_path}/Cargo.toml")
+                },
+                {
+                    "id": "foundation-id",
+                    "name": "foundation",
+                    "manifest_path": format!("/workspace/{foundation_path}/Cargo.toml")
+                }
+            ]
+        })
+    }
+
     #[test]
     fn checked_in_policy_is_structurally_valid() -> Result<(), String> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -327,6 +459,48 @@ mod tests {
             .ok_or_else(|| "cannot resolve workspace root".to_owned())?;
         let policy = parse_policy(&root.join("workspace-boundaries.toml"))?;
         validate_policy_shape(&policy)
+    }
+
+    #[test]
+    fn checked_in_workspace_metadata_matches_declared_paths() -> Result<(), String> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .ok_or_else(|| "cannot resolve workspace root".to_owned())?;
+        let policy = parse_policy(&root.join("workspace-boundaries.toml"))?;
+        let metadata = cargo_metadata(root)?;
+        validate_workspace_package_paths(&policy, &metadata)?;
+        Ok(())
+    }
+
+    #[test]
+    fn same_cardinality_wrong_manifest_path_fails() {
+        let metadata = metadata_with_paths("apps/wrong", "crates/foundation");
+        assert!(validate_workspace_package_paths(&structural_policy(), &metadata).is_err());
+    }
+
+    #[test]
+    fn same_path_set_paired_to_wrong_packages_fails() {
+        let metadata = metadata_with_paths("crates/foundation", "apps/app");
+        assert!(validate_workspace_package_paths(&structural_policy(), &metadata).is_err());
+    }
+
+    #[test]
+    fn duplicate_policy_package_or_path_fails_closed() {
+        let members = vec!["app".to_owned(), "app".to_owned()];
+        let paths = vec!["apps/app".to_owned(), "apps/other".to_owned()];
+        assert!(member_path_mapping(&members, &paths).is_err());
+
+        let members = vec!["app".to_owned(), "foundation".to_owned()];
+        let paths = vec!["apps/app".to_owned(), "apps/app".to_owned()];
+        assert!(member_path_mapping(&members, &paths).is_err());
+    }
+
+    #[test]
+    fn duplicate_metadata_package_name_fails_closed() {
+        let mut metadata = metadata_with_paths("apps/app", "crates/foundation");
+        metadata["packages"][1]["name"] = Value::String("app".to_owned());
+        assert!(workspace_package_paths(&metadata).is_err());
     }
 
     #[test]
@@ -339,6 +513,9 @@ mod tests {
         let mut policy = structural_policy();
         policy.members.insert("fixture".to_owned());
         policy.paths.insert("crates/fixture".to_owned());
+        policy
+            .member_paths
+            .insert("fixture".to_owned(), "crates/fixture".to_owned());
         policy.synthetic.insert("fixture".to_owned());
         policy.edges.insert("fixture".to_owned(), BTreeSet::new());
         if let Some(dependencies) = policy.edges.get_mut("app") {

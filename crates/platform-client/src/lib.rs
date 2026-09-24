@@ -60,7 +60,11 @@ impl PlatformClientConfig {
     pub fn new(base_url: &str) -> Result<Self, PlatformClientError> {
         let base_url =
             Url::parse(base_url).map_err(|_error| PlatformClientError::InvalidBaseUrl)?;
-        let loopback = matches!(base_url.host_str(), Some("localhost" | "127.0.0.1" | "::1"));
+        let loopback = ["http://localhost/", "http://127.0.0.1/", "http://[::1]/"]
+            .into_iter()
+            .any(|allowed| {
+                Url::parse(allowed).is_ok_and(|allowed| base_url.host() == allowed.host())
+            });
         if base_url.scheme() != "https" && !(loopback && base_url.scheme() == "http") {
             return Err(PlatformClientError::InsecureBaseUrl);
         }
@@ -288,10 +292,29 @@ mod tests {
     }
 
     #[test]
-    fn non_loopback_http_is_rejected() {
-        assert!(matches!(
-            PlatformClientConfig::new("http://example.invalid/"),
-            Err(PlatformClientError::InsecureBaseUrl)
-        ));
+    fn transport_scheme_and_loopback_allowlist_are_enforced() {
+        for accepted in [
+            "http://localhost/",
+            "http://127.0.0.1/",
+            "http://[::1]/",
+            "http://[0:0:0:0:0:0:0:1]/",
+            "https://example.invalid/",
+        ] {
+            assert!(
+                PlatformClientConfig::new(accepted).is_ok(),
+                "expected {accepted} to be accepted"
+            );
+        }
+
+        for rejected in [
+            "http://example.invalid/",
+            "http://192.0.2.1/",
+            "http://[2001:db8::1]/",
+        ] {
+            assert!(matches!(
+                PlatformClientConfig::new(rejected),
+                Err(PlatformClientError::InsecureBaseUrl)
+            ));
+        }
     }
 }

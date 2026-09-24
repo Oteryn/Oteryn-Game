@@ -18,28 +18,24 @@
   "required_documents": [
     "AGENTS.md",
     "docs/agents/README.md",
+    "docs/agents/META_AGENT_POLICY_BINDING.json",
     "docs/agents/AGENTS.md",
     "docs/agents/REPOSITORY_MAP.md",
     "docs/agents/CONTEXT_ROUTING.md",
-    "docs/agents/CONTEXT_HANDOFF.md",
     "docs/agents/BUILD_TEST_MATRIX.md",
     "docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md",
     "docs/agents/AUTONOMOUS_PROGRAM_CONTINUATION.md",
     "docs/agents/DELIVERY_COMPLETENESS_AND_CLOSEOUT.md",
     "docs/agents/GITHUB_ONLY_EXECUTION.md",
-    "docs/agents/SESSION_RECOVERY_AND_ORPHANED_EXECUTION.md",
-    "docs/agents/TERMINAL_ONLY_COMMUNICATION.md",
-    "docs/agents/TRUST_AND_CONTEXT_BOUNDARIES.md",
-    "docs/agents/EXECUTION_PROTOCOL.md",
     "docs/agents/END_TO_END_FEATURE_COMPLETENESS.md",
-    "docs/agents/TASK_CLOSEOUT_AUDIT_E2E.md",
     "docs/agents/PROMPTING_STANDARD.md",
     "docs/agents/PROMPTING_HANDOVER.md",
     "docs/agents/PROMPT_EVAL_STANDARD.md",
     "docs/agents/CROSS_REPO_CONTRACTS.md",
     "docs/agents/KNOWN_RISKS.md",
-    "docs/agents/CODEX_REVIEW_POLICY.json",
     "docs/agents/PROJECT_LANES.json",
+    "docs/agents/PROGRAM_LIFECYCLE.json",
+    "docs/agents/programs/README.md",
     "docs/agents/tasks/TASK_TEMPLATE.md",
     "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md"
   ],
@@ -76,9 +72,9 @@
   ],
   "terminal_invocation_results": [
     "DONE",
-    "WAITING",
+    "WAITING_EXTERNAL",
     "BLOCKED",
-    "ROTATE"
+    "STALLED"
   ],
   "task_paths": {
     "template": "docs/agents/tasks/TASK_TEMPLATE.md",
@@ -89,5 +85,19 @@
     "command": "python tools/agents/validate_governance.py",
     "workflow": ".github/workflows/agent-governance.yml",
     "workflow_name": "Agent governance"
+  },
+  "task_modes": [
+    "IMPLEMENT",
+    "AUDIT",
+    "CONTRACT",
+    "REPAIR",
+    "COORDINATE",
+    "MIGRATE",
+    "GOVERNANCE",
+    "BUILD"
+  ],
+  "active_task_limits": {
+    "max_characters": 12000,
+    "max_lines": 300
   }
 }

@@ -1,13 +1,8 @@
 //! Dedicated migration-only entry point for the game durability ledger.
 
-// The migration binary deliberately invokes only the migration executor. The
-// complete public durability boundary is compiled so it embeds the same ledger,
-// while its runtime journal API remains unused in this one-purpose binary.
-#[allow(dead_code, unused_imports)]
-#[path = "../durability/mod.rs"]
-mod durability;
-
-use durability::MigrationExecutor;
+// Use the canonical library so private adapter seals and the ledger share one
+// crate identity; this entry point still performs migration-only execution.
+use oteryn_game_server::durability::MigrationExecutor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database_url = std::env::var("OTERYN_GAME_MIGRATION_DATABASE_URL").map_err(|_error| {

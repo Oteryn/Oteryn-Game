@@ -51,6 +51,7 @@ macro_rules! foundation_uuid_v7_id {
 foundation_uuid_v7_id!(CharacterId);
 foundation_uuid_v7_id!(WorldId);
 foundation_uuid_v7_id!(ChannelId);
+foundation_uuid_v7_id!(NodeId);
 foundation_uuid_v7_id!(GameSessionId);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -2552,16 +2553,17 @@ mod tests {
         assert!(CharacterId::decode(&valid).is_ok());
         assert!(WorldId::decode(&valid).is_ok());
         assert!(ChannelId::decode(&valid).is_ok());
+        assert!(NodeId::decode(&valid).is_ok());
         let mut wrong_version = valid;
         wrong_version[6] = 0x40;
         assert_eq!(
-            GameSessionId::decode(&wrong_version),
+            NodeId::decode(&wrong_version),
             Err(FoundationProtocolError::InvalidWireIdentifier)
         );
         let mut wrong_variant = valid;
         wrong_variant[8] = 0x00;
         assert_eq!(
-            GameSessionId::decode(&wrong_variant),
+            NodeId::decode(&wrong_variant),
             Err(FoundationProtocolError::InvalidWireIdentifier)
         );
         Ok(())

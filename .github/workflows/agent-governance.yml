@@ -186,19 +186,15 @@ jobs:
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
 
-      - name: Test legacy Remote Desktop prompt routing
-        run: python tools/agents/test_validate_remote_desktop_prompt_routing.py
+      - name: Test governance lifecycle and discovery
+        run: python -m unittest discover -s tools/agents/tests -p "*governance_lifecycle*.py" -v
 
-      - name: Test lean prompt deduplication
-        run: python tools/agents/test_prompt_deduplication.py
+      - name: Test META policy adoption
+        run: python -m unittest tools.agents.tests.test_meta_agent_policy_adoption -v
 
-      - name: Test Codex Remote Desktop regressions
-        run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
-
-      - name: Test Codex round-12 regressions
-        run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
-
-      - name: Validate inherited prompt policy
+      - name: Validate bound META policy and task prompts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python tools/agents/validate_inherited_prompt_policy.py
 
       - name: Validate repository policy

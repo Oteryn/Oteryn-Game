@@ -17,14 +17,24 @@ base64.workspace = true
 ed25519-dalek.workspace = true
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
+prost.workspace = true
 serde.workspace = true
+sha2.workspace = true
 serde_json.workspace = true
+rustls.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true
 
 [dev-dependencies]
 rcgen.workspace = true
+# Test-only: a TLS 1.2-constrained client proves the seam rejects TLS 1.2.
+rustls = { workspace = true, features = ["tls12"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+cap-fs-ext.workspace = true
+cap-std.workspace = true
+rustix.workspace = true
 
 [lints]
 workspace = true

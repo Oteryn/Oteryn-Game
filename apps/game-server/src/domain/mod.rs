@@ -1,5 +1,7 @@
 //! Protocol- and persistence-neutral Character and Item semantic core.
 
+pub mod progression;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -110,6 +112,7 @@ macro_rules! strong_uuid_v7 {
 }
 
 strong_uuid_v7!(CharacterId);
+strong_uuid_v7!(AccountId);
 strong_uuid_v7!(ItemInstanceId);
 strong_uuid_v7!(WorldId);
 

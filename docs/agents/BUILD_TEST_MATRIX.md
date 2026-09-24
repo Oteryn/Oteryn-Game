@@ -1,184 +1,164 @@
 # Build and test matrix
 
-Status: active repository baseline; update this matrix whenever executable workspace or merge-gate behavior changes.
+Status: active hot-path validation contract. Machine implementations own exact routing; this document records the current selection semantics and evidence boundaries.
 
 Canonical native E2E architecture: `docs/architecture/ADR-0007-native-end-to-end-test-platform.md` (`QA-E2E-01`).
+
+## Machine authority
+
+Use the exact candidate/tree and current protected machine implementations:
+
+- PR lane classifier: `tools/repository/classify_pr_test_lanes.py`;
+- PR routing contract: `tools/repository/validate_pr_routing_contract.py` plus focused tests under `tools/repository/test_classify_pr_test_lanes.py`;
+- repository-policy/fan-in checks: `tools/repository/validate_repository_policy.py` and `validate_repository_policy_core.py`;
+- PostgreSQL/SIM routing regressions: `test_validate_pr_gate_pg_sim.py` and `test_validate_merge_group_pg_sim.py`;
+- PR aggregate: `.github/workflows/merge-gate.yml`;
+- Merge Queue aggregate: `.github/workflows/merge-group-gate.yml`;
+- protected-main post-merge lanes: `.github/workflows/rust.yml`.
+
+If this summary conflicts with those protected machine contracts, fail closed and reconcile the documentation; do not weaken the machine gate.
 
 ## Selection principles
 
 - Validate proportionally to changed paths and risk.
-- Cheap focused checks run during implementation; heavy checks run at coherent package/final head.
-- Exact-head required checks cannot be replaced by historical or parent results.
-- `game-gate` is the stable protected-branch status; on pull requests it may succeed only when internal `Merge gate / validate` proves every applicable sub-gate.
-- Rust/workspace validation is dependency-aware and conservative but cannot be bypassed by changing CI/workspace policy itself.
-- Environment startup alone is not successful E2E.
-- Hidden retry-until-green is forbidden; every physical attempt and cleanup outcome remains visible.
-- A headless system scenario does not prove native-client presentation, and an instrumented client does not prove the exact production binary.
+- Focused checks may run during implementation; required qualification applies to the frozen exact head.
+- Historical/parent-head results never substitute for current exact-head evidence.
+- `game-gate` is the stable protected status and succeeds only after every selected required predicate succeeds.
+- Unknown, malformed, incomplete, special-mode or unclassified evidence fails closed to the broader lane.
+- Hidden retry-until-green is forbidden; physical attempts and cleanup outcomes stay visible.
+- Environment startup is not E2E success; compilation is not native presentation proof.
 
-## Current pull-request merge gate
+## Pull-request gate
 
-`.github/workflows/merge-gate.yml` runs on every pull request to `main` without workflow-level path filters.
+`.github/workflows/merge-gate.yml` runs on every PR to `main`.
 
-Always-required sub-gates:
+Always-required evidence includes:
 
-- exact PR identity and protected-base risk classification;
-- PR metadata, agent-governance and repository-policy validation;
-- GitHub Dependency Review with `high` severity as the failure threshold;
-- CodeQL for repository Python and GitHub Actions code;
-- internal aggregate `Merge gate / validate`;
-- final stable status `game-gate`.
+- exact PR/base/head identity and trusted-base risk classification;
+- exact-head routing-contract validation against candidate Cargo/tree state;
+- PR metadata, agent governance and repository policy;
+- Dependency Review and CodeQL;
+- aggregate `Merge gate / validate` and final `game-gate`.
 
-For full-risk changes, the same merge gate additionally requires:
+Current runtime selection:
 
-- Rust policy/metadata validation;
-- exact-head Linux workspace build, strict Clippy, tests and synthetic harness;
-- a pinned PostgreSQL 17.6 service plus deletion-safe routing for `oteryn-game-server --test durability_postgres` inside the required Linux job;
-- exact-head Windows production-client build, strict Clippy, smoke and synthetic harness;
-- deterministic Windows `oteryn-simulation-determinism` golden fixtures inside the required Windows job;
-- `cargo-deny` advisory/license/ban/source validation.
-
-The PostgreSQL test target is present on protected main after terminal-replacement PR #252. The canonical Linux job uses these fail-closed rules:
-
-- when `apps/game-server/tests/durability_postgres.rs` exists on the exact candidate, run it against PostgreSQL 17.6;
-- when the exact PR removes or renames that target, fail the required Linux job;
-- when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
-
-Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch make scope explicitly incomplete and select FULL. The downstream PG target classifier still rejects an incomplete comparison, so uncertain target evidence cannot yield a green gate. PR identity movement remains a hard failure.
-
-The required governance job executes the focused PG/SIM regressions, including both real classifiers against controlled GitHub responses and job/step failure-tolerance/skip families. The complete Linux and Windows evidence jobs are pinned by SHA256 using the existing canonical-job validation pattern. Future intentional job changes must update their reviewed pins; preserving command strings while inserting an early successful exit cannot pass policy.
-
-### Trusted-base risk lanes (#283)
-
-The lane job checks out and verifies the exact protected base, then runs its classifier and pinned Cargo1.94 metadata there. Candidate labels/body/code do not determine selection. Every local normal/dev/build/optional/target-specific dependency participates in reverse closure. The implementation PR runs FULL because its protected base lacks the classifier; candidate-classifier observation in Rust policy is diagnostic only and cannot alter lane selection.
-
-| Proven surface | Required Rust lanes |
+| Proven PR surface | Runtime evidence |
 |---|---|
-| Neutral root/documentation Markdown | none; all always-required checks still run |
-| Server-only, including durability/migrations/reconnect | Linux workspace + real PG17.6 + strict Clippy, policy and supply chain |
-| Client, shared or simulation | full Linux/PG + Windows production/SIM + policy and supply chain |
-| Control plane, dependencies/build inputs, unknown/mixed/incomplete evidence | full set |
+| Unconsumed auxiliary inputs: neutral docs, agent governance, standalone workflows and non-Cargo offline tooling | no Rust product lanes; always-required governance/security/routing and any dedicated workflow remain |
+| Auxiliary file referenced by exact-candidate Cargo package source/build input | route as the consuming package, then apply normal reverse Cargo closure |
+| Audited Atlas fullworld producer/self-test surface | dedicated Atlas producer/consumer gate; add Rust lanes only if another path selects them |
+| Server-only, including server-consumed auxiliary inputs | Linux workspace + PostgreSQL 17.6 + policy/supply chain |
+| Client/shared/simulation, including their consumed auxiliary inputs | FULL: Linux/PostgreSQL + Windows client/input/SIM + policy/supply chain |
+| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | FULL |
 
-Server-only Windows/SIM omission also requires the reviewed SHA256 snapshot of all non-server workspace package trees and root Cargo/toolchain/build inputs. Cargo alone does not model include macros, symlinks or runtime file reads. Current reviewed consumers do not read server inputs; any consumer-tree/dependency change disables the optimization until a reviewed classifier update adopts its new input contract. Symlinks/submodules select FULL. This deliberately conservative snapshot may reduce savings after unrelated consumer changes; it never silently assumes their new input dependencies are safe.
+Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources and canonical product-CI workflows attach non-Cargo files to their real consumers. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
-Neutral Markdown is limited to README/CHANGELOG/CONTRIBUTING and docs Markdown, with AGENTS and migration exclusions. Rust omission also requires a separate reviewed snapshot including the server tree: a later server change may introduce a document input, so stale document-consumer assumptions select FULL. Other dedicated contract/architecture workflows remain unchanged. Mixed material surfaces select FULL; accompanying neutral task documentation does not invalidate an otherwise proven server change. Cross-surface renames select FULL.
+`docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
 
-Missing classifier, malformed metadata or enumeration select explicit FULL outputs. The aggregate requires successful classification, strict boolean outputs and success for every selected predicate; missing/cancelled/failed/selected-skipped results fail closed. Scope, classifier job, aggregate and evidence-job execution are pinned and mutation-tested.
+Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
 
-After #285 protected-main integration proved canonical ownership, rust.yml loses only its redundant PR trigger. Existing main/manual triggers and full Merge Queue qualification remain intact. Actual hosted skip/run and runner/wall-time benchmark evidence belongs on Issue #283/PR #297; staged implementation integration alone does not complete benchmark acceptance.
+## Merge Queue gate
 
-The protected `main` ruleset requires only the stable `game-gate` context. Individual sub-gates are intentionally composed behind it so applicable path-proportional jobs may be skipped without creating missing required-status deadlocks.
+The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; it validates GitHub's exact synthetic `merge_group` head.
 
-## Current Merge Queue gate
+| Exact queue classification | Selected jobs |
+|---|---|
+| Complete valid diff containing only Markdown under `docs/architecture/**` | candidate/governance, dependency review and CodeQL; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
+| Everything else, including agent-governance/docs, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 17.6, Windows client/input/SIM and supply chain plus always-required gates |
 
-`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group head and requires candidate/governance validation, dependency review, CodeQL, Linux workspace, real PostgreSQL17.6, Windows production client plus deterministic simulation and supply-chain checks before emitting `game-gate`.
+Selected jobs must succeed. Only genuinely unselected jobs may be `skipped`; missing, failed, cancelled or selected-skipped evidence cannot qualify the candidate.
 
-Issue #285 activates exactly the workflow blob preapproved by integrated #284. PostgreSQL runs in an unconditional job with a pinned17.6 service, verifies the synthetic head, requires the durability test target and executes it. Windows verifies that same head before its production client and simulation tests. The aggregate requires success from PostgreSQL and Windows; skipped, missing, cancelled or failed results reject integration. The complete queue workflow is pinned by executable policy; intentional changes require a separately reviewed protected-base pin rotation. Current exact-head execution and protected-main integration evidence are recorded on Issue #285/PR #296; source presence alone is not execution evidence. The queue regression suite runs through the existing canonical governance regression driver.
+A PR-head PASS does not prove integration. Require the real `merge_group` aggregate `game-gate` SUCCESS and protected-main readback.
 
-## Current focused validation
+## Focused validation
 
-| Change | Focused validation | Exact-head PR validation |
+| Change | Focused implementation checks | Frozen-head PR evidence |
 |---|---|---|
-| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` → `game-gate` |
-| Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` | governance + dependency review + CodeQL + applicable Rust jobs → aggregate gate |
-| Architecture/contracts only | governance validator plus applicable link/JSON/schema checks | always-required merge-gate subchecks; runtime E2E may be `NOT_APPLICABLE` with reason |
-| Rust/workspace/client code | package-focused tests while editing | conservative trusted-base lanes above; selected predicates must all succeed |
-| GitHub workflow affecting Rust validation | repository-policy validation plus workflow review | full Rust merge-gate set because merge-gate/rust workflow paths are Rust-validation-sensitive |
+| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` plus affected agent tests | governance/policy/security/routing + aggregate `game-gate`; runtime lanes according to trusted classifier |
+| Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` plus affected routing tests | FULL when policy/build/control paths select it |
+| Architecture/contracts | governance plus applicable link/JSON/schema/semantic checks | always-required PR gates; runtime E2E may be `NOT_APPLICABLE` with an accurate reason |
+| Rust/server code | affected package/tests + strict lint while editing | trusted server/full lanes above |
+| Client/shared/simulation | affected package/platform tests | FULL Linux/PostgreSQL/Windows/SIM |
+| Canonical routing/build/dependency inputs | repository-policy tests and workflow review | FULL |
+| Standalone workflow / offline non-Cargo tool | its focused/dedicated checks | always-required PR gates; product lanes only when exact-candidate Cargo package or canonical product-CI consumers require them |
 
-## Current Rust workspace commands
+## Rust and platform evidence
 
-The canonical root Cargo workspace exists and is enforced by `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `deny.toml` and `workspace-boundaries.toml`.
+Canonical workspace/toolchain inputs are root `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `deny.toml` and `workspace-boundaries.toml`.
 
-Current exact baseline uses Rust `1.94.0` and includes:
+Current selected Linux evidence includes:
 
-- `cargo +1.94.0 metadata --locked --format-version 1`;
-- `cargo +1.94.0 fmt --all --check`;
-- `cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .`;
-- production dependency-closure negative checks for forbidden pre-native/runtime packages;
-- `cargo +1.94.0 build --locked --workspace --all-targets` on Linux;
-- `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings` on Linux;
-- `cargo +1.94.0 test --locked --workspace`;
-- deletion-safe conditional `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 when the target is allocated on the exact PR head;
-- `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
-- Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
-- Windows strict client Clippy and `--smoke` launch;
-- `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
-- `cargo-deny check --all-features` through the pinned cargo-deny action.
+- locked workspace metadata and formatting/policy checks;
+- workspace build, strict Clippy and tests;
+- `oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 when the exact target is allocated/present;
+- synthetic client harness and server bootstrap smoke where selected;
+- dependency closure and `cargo-deny` supply-chain checks.
 
-### Protected-main post-merge lanes (#304)
+Current selected Windows evidence includes:
 
-Standalone `.github/workflows/rust.yml` runs on every push to main, without path filters, and on manual dispatch. Linux workspace, PostgreSQL 17.6, policy and supply chain always run. Manual dispatch always includes Windows production and SIM. Merge Queue remains FULL and its workflow and PR `game-gate` are unchanged.
+- exact release `oteryn-client` build and strict client Clippy;
+- smoke against that exact release artifact plus synthetic harness;
+- `oteryn-input-platform` package tests on `x86_64-pc-windows-msvc`;
+- `oteryn-simulation-determinism` golden tests on the same target.
 
-Only a normal push to protected `refs/heads/main` can omit Windows/SIM. The lane job verifies the exact already-protected event SHA, obtains full Git history, checks before/after ancestry, and enumerates the complete tree diff locally (including both rename sides, without the API's 300-file cap). It runs the existing #283 classifier and Cargo metadata from that protected revision. It does not trust PR labels/body or the push event's capped commits array. This is post-integration protected code, unlike the PR classifier's untrusted candidate.
+Windows smoke exits before renderer construction; it is shell/package evidence, not renderer or gameplay E2E. Affected renderer/UI work still needs its named native fixtures/platform tests.
 
-| Post-merge input | Standalone lanes |
+## Protected-main post-merge
+
+`.github/workflows/rust.yml` runs on protected-main pushes and manual dispatch. Policy and supply chain remain independent; runtime omission is allowed only after successful protected classification.
+
+| Protected-main input | Standalone runtime lanes |
 |---|---|
-| Proven server-only with matching reviewed consumer snapshot | Linux + PostgreSQL + policy + supply chain |
-| Client/shared/simulation, mixed material surfaces | FULL, including Windows production/SIM |
-| Cargo/toolchain/build/workflow/control-plane/unknown/incomplete | FULL |
-| Manual dispatch; malformed event, missing ancestry/metadata, classifier failure | FULL |
+| Proven unconsumed auxiliary inputs | runtime lanes not applicable; policy/supply chain remain |
+| Proven server-only or server-consumed auxiliary input | Linux + PostgreSQL + policy/supply chain |
+| Client/shared/simulation or their consumed auxiliary inputs | FULL |
+| Cargo/toolchain/build/canonical-routing/unknown/incomplete | FULL |
+| Manual dispatch or classifier/evidence failure | FULL |
 
-The #283 reverse dependency closure and reviewed consumer snapshot retain their conservative semantics; stale snapshots select FULL. Missing or failed classification cannot silently skip Windows: the job's `always()` fallback requires successful classification and the exact `false` output before omission. A subsequent push does not cancel an earlier post-merge run. The unreachable PR-only `sim-windows-golden` job is removed; the real golden command remains unconditional inside Windows. Canonical repository-policy validation executes real-Git adapter fixtures and checks the reviewed workflow pin. Actual timing and run evidence live in Issue #304/PR #305; replay or projected savings do not substitute for observed hosted decisions.
+Post-merge routing does not replace PR or Merge Queue qualification and cannot retroactively prove a skipped pre-merge gate.
 
 ## Required additions as owning layers appear
 
-Do not create speculative tests for nonexistent runtime layers. Add these when their owning implementation exists:
+Do not invent tests for nonexistent product layers. Add bounded evidence when an owning implementation introduces the seam, including:
 
-- parser property/fuzz tests for untrusted protocol/content inputs;
-- canonical/golden protocol byte fixtures and malformed/adversarial corpora;
-- server target/feature builds and strict Clippy;
-- persistence migration, concurrency, rollback and crash-recovery tests;
-- shared foundation failure-scenario tests, including time/clock, dependency loss, stale generation and overload cases;
-- multichannel integration, crash-recovery and soak scenarios;
-- sanitizer/Miri or equivalent targeted undefined-behavior checks where they provide evidence beyond the workspace-wide `unsafe_code = "forbid"` baseline.
+- parser property/fuzz tests for untrusted protocol/content input;
+- canonical/golden protocol fixtures and malformed/adversarial corpora;
+- persistence migration/concurrency/rollback/restart tests;
+- shared failure-scenario tests for clock/dependency loss/stale generation/overload;
+- multichannel isolation/recovery/soak scenarios;
+- targeted sanitizer/Miri-equivalent proof where it adds evidence beyond `unsafe_code = "forbid"`.
 
-## `QA-E2E-01` execution tiers
+## QA-E2E-01 tiers
 
-| Tier | Purpose | Default placement | Does not prove |
-|---|---|---|---|
-| Tier 1 — headless system E2E | Broad deterministic Platform → Gateway → protocol → server → PostgreSQL coverage using production transport and schemas | focused PR gates, protected main, nightly fault/concurrency campaigns | renderer, UI interaction, final client packaging |
-| Tier 2 — instrumented native-client E2E | Real Rust client networking, input, reconciliation, UI and rendering through a test-only bounded observation adapter | affected client-facing PRs, protected main journeys, nightly repeated populations | exact production-default binary behavior |
-| Tier 3 — production-binary smoke E2E | Exact release-candidate client/server artifacts without the in-process test adapter | release candidate and named packaging/platform gates | broad fault, concurrency or exhaustive gameplay coverage |
+| Tier | Purpose | Does not prove |
+|---|---|---|
+| Tier 1 — headless system E2E | deterministic Platform → Gateway → protocol → server → PostgreSQL using production transport/schema | native UI/rendering/final packaging |
+| Tier 2 — instrumented native-client E2E | real Rust client networking/input/reconciliation/UI/rendering with bounded test observation | exact production-default binary behavior |
+| Tier 3 — production-binary smoke E2E | exact release client/server artifacts without in-process test adapter | broad fault/concurrency/exhaustive gameplay |
 
-A feature or programme selects the smallest sufficient set of tiers, but a supported user journey that includes native-client behavior cannot be marked `PROVEN` from Tier 1 alone. `VSL-01` completion requires the named `QA-E2E-01` evidence in ADR-0007.
+Use the smallest sufficient tier set. A supported native-client journey cannot be marked `PROVEN` from Tier 1 alone. A native window rendering synthetic fixtures is component qualification unless the full Tier-2 journey contract is actually exercised.
 
 ## Mandatory E2E evidence
 
-Every counted attempt records:
+Every counted attempt records exact artifact/revision identities, protocol/ruleset/content/world/migration revisions, scenario/tier/topology/seed/clock/fault profile, ordered phases and first divergence, required client/server/Platform/persistence/audit evidence, cleanup result and retained artifact hashes.
 
-- exact client, server and Platform revisions or artifact hashes;
-- protocol, ruleset, content, World Bundle and migration revisions;
-- scenario, tier, topology, seed, clock mode and fault profile;
-- ordered phase outcomes and the first divergence;
-- client/server/Platform/persistence/audit evidence required by the scenario;
-- cleanup status and retained artifact hashes.
-
-Canonical phases are environment, identity, world discovery, Gateway, Game Session, transport, admission, character lease, world entry, gameplay, persistence, audit/outbox, client presentation and cleanup. Non-applicable phases require a scenario-defined reason.
+Canonical phases are environment, identity, world discovery, Gateway, Game Session, transport, admission, character lease, world entry, gameplay, persistence, audit/outbox, client presentation and cleanup. A non-applicable phase needs a scenario-defined reason.
 
 ## High-risk acceptance
 
 | Area | Minimum additional evidence |
 |---|---|
-| Protocol/framing | limits, negative cases, sequencing, replay/downgrade, golden fixtures, Tier 1 client/server E2E and a native-client journey for supported client behavior |
-| Character lease/relog | double-login, stale writer/session generation, crash/recovery, cross-channel misuse, exact final offline state |
-| Inventory/loot/market | idempotency, concurrency, rollback, item/currency conservation, no-duplication failure paths, audit/outbox reconciliation |
-| Multichannel runtime | two-channel isolation, shared-world services, channel failure, revision compatibility, multiclient evidence |
-| Persistence/migrations | isolated migration tests, rollback/compatibility plan, concurrent mutation tests, dependency-loss and restart E2E |
-| Client renderer/UI | named platform/hardware/scene, Tier 2 interaction and device-loss/recovery where relevant, Tier 3 release smoke |
-| Assets/updater | provenance, signatures/hashes, traversal/decompression limits, rollback and exact production-binary smoke |
-| Platform/admission | exact Platform contract/service revision, ticket/session expiry/replay/revocation, Gateway routing and cross-world/channel misuse |
+| Protocol/framing | limits/negative sequencing/replay/downgrade/golden fixtures + Tier 1 and native-client journey when supported |
+| Character lease/relog | double-login, stale session/writer, crash/recovery, cross-channel misuse, exact final offline state |
+| Inventory/loot/market | idempotency, concurrency, rollback, conservation/no-duplication and audit/outbox reconciliation |
+| Multichannel runtime | two-channel isolation, shared-world service behavior, channel failure and revision compatibility |
+| Persistence/migrations | isolated migration, compatibility/rollback, concurrent mutation, dependency-loss and restart E2E |
+| Client renderer/UI | named platform/hardware/scene, Tier 2 interaction and relevant recovery, Tier 3 release smoke |
+| Assets/updater | provenance, signatures/hashes, traversal/decompression limits, rollback and release smoke |
+| Platform/admission | exact producer contract/service revision, expiry/replay/revocation, Gateway routing and cross-world/channel misuse |
 
-## Stability classification
+## Stability and documentation-only rule
 
-Repeated-run certification uses a fixed, exact comparison cell and minimum population:
+Repeated-run result is `PASS | UNSTABLE | FAIL | BLOCKED | NOT_EVALUATED` for one fixed comparison cell; repairing the environment creates a new population and does not rewrite historical evidence.
 
-- `PASS` — every counted attempt completes the journey and cleanup;
-- `UNSTABLE` — mixed outcomes;
-- `FAIL` — deterministic product failure or all usable attempts fail acceptance;
-- `BLOCKED` — incomplete/inconsistent evidence, tampering, or unknown cleanup;
-- `NOT_EVALUATED` — minimum population not reached.
-
-A repaired runner or environment requires a new population. It does not rewrite the historical result.
-
-## Documentation-only rule
-
-A documentation-only final commit does not automatically require Rust build/test jobs when no Rust/workspace validation path is affected. It always requires the always-on merge-gate governance, dependency-review and CodeQL layers plus an accurate `NOT_APPLICABLE` reason for runtime E2E when runtime behavior is not changed.
+A documentation-only change does not by itself prove runtime behavior. It may record runtime E2E as `NOT_APPLICABLE` only when runtime behavior is unchanged and the governing scenario accepts that classification. Always-required governance/security/routing gates still apply, and current machine routing decides whether heavy product lanes are selected.

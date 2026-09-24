@@ -7,10 +7,13 @@ mod admission {
 mod admission_facade;
 pub mod fnd04_verifier;
 mod protocol;
+#[allow(dead_code)]
+mod runtime_actor_carrier;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
-    AdmissionAuthority, ReconnectAttemptAuthoritySnapshot, ReconnectAttemptJournal,
+    AdmissionAuthority, DurableFreshAdmissionAuthorityV1, ReconnectAttemptAuthoritySnapshot,
+    ReconnectAttemptJournal,
 };
 pub use fnd04_verifier::{
     Fnd04ConsumerError, Fnd04EvidenceAuthority, Fnd04EvidenceError, Fnd04EvidenceScope,
@@ -21,12 +24,19 @@ pub use fnd04_verifier::{
 pub use protocol::*;
 pub use snapshot_facade::SnapshotBarrier;
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
 pub const MAX_WIRE_FRAME_BYTES: u32 = 1_048_576;
 pub const MAX_OUTSTANDING_COMMANDS: usize = 64;
+pub const MAX_RETAINED_TERMINAL_RECORDS: usize = 1;
+pub const MAX_RETAINED_TERMINAL_CHARGED_BYTES: u64 = 3_116;
+const MAX_RETAINED_SEMANTIC_COMPONENT_BYTES: usize = 512;
+const RETAINED_SEMANTIC_U64_FIELD_COUNT: u64 = 4;
+const RETAINED_SEMANTIC_U64_FIELD_BYTES: u64 = 8;
+const RETAINED_SEMANTIC_COMPONENT_COUNT: u64 = 6;
+const RETAINED_SEMANTIC_LENGTH_PREFIX_BYTES: u64 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -201,17 +211,349 @@ pub enum IngressDecision {
     CommandSpaceExhausted,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommandLifecycleError {
+    EmptySemanticComponent(&'static str),
+    SemanticComponentTooLarge {
+        field: &'static str,
+        bytes: usize,
+    },
+    RetainedChargeOverflow,
+    RetainedChargeExceeded {
+        charged_bytes: u64,
+        hard_maximum: u64,
+    },
+    TerminalNotPending(CommandId),
+    TerminalOutOfOrder {
+        expected: CommandId,
+        attempted: CommandId,
+    },
+    NonResumableMissingTerminalTruth,
+    InvalidRecoveryState(&'static str),
+}
+
+impl Display for CommandLifecycleError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptySemanticComponent(field) => {
+                write!(formatter, "{field} must not be empty")
+            }
+            Self::SemanticComponentTooLarge { field, bytes } => write!(
+                formatter,
+                "{field} exceeds the {MAX_RETAINED_SEMANTIC_COMPONENT_BYTES}-byte bound ({bytes} bytes)"
+            ),
+            Self::RetainedChargeOverflow => {
+                formatter.write_str("retained semantic-record charge overflow")
+            }
+            Self::RetainedChargeExceeded {
+                charged_bytes,
+                hard_maximum,
+            } => write!(
+                formatter,
+                "retained semantic-record charge {charged_bytes} exceeds hard maximum {hard_maximum}"
+            ),
+            Self::TerminalNotPending(command_id) => write!(
+                formatter,
+                "CommandId {} is not a pending original",
+                command_id.get()
+            ),
+            Self::TerminalOutOfOrder {
+                expected,
+                attempted,
+            } => write!(
+                formatter,
+                "CommandId {} cannot terminalize before pending CommandId {}",
+                attempted.get(),
+                expected.get()
+            ),
+            Self::NonResumableMissingTerminalTruth => formatter.write_str(
+                "GameSession is non-resumable because required command lifecycle truth is missing",
+            ),
+            Self::InvalidRecoveryState(reason) => {
+                write!(
+                    formatter,
+                    "invalid command lifecycle recovery state: {reason}"
+                )
+            }
+        }
+    }
+}
+
+impl Error for CommandLifecycleError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BoundedSemanticComponent(Box<str>);
+
+impl BoundedSemanticComponent {
+    fn new(field: &'static str, value: &str) -> Result<Self, CommandLifecycleError> {
+        let component = Self(value.to_owned().into_boxed_str());
+        component.byte_len(field)?;
+        Ok(component)
+    }
+
+    fn byte_len(&self, field: &'static str) -> Result<u64, CommandLifecycleError> {
+        if self.0.is_empty() {
+            return Err(CommandLifecycleError::EmptySemanticComponent(field));
+        }
+        let bytes = self.0.len();
+        if bytes > MAX_RETAINED_SEMANTIC_COMPONENT_BYTES {
+            return Err(CommandLifecycleError::SemanticComponentTooLarge { field, bytes });
+        }
+        u64::try_from(bytes).map_err(|_error| CommandLifecycleError::RetainedChargeOverflow)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NormalizedSemanticIntentIdentity {
+    placement: BoundedSemanticComponent,
+    incarnation: u64,
+    family: BoundedSemanticComponent,
+    expected_revision: u64,
+}
+
+impl NormalizedSemanticIntentIdentity {
+    pub fn new(
+        placement: &str,
+        incarnation: u64,
+        family: &str,
+        expected_revision: u64,
+    ) -> Result<Self, CommandLifecycleError> {
+        Ok(Self {
+            placement: BoundedSemanticComponent::new("normalized intent placement", placement)?,
+            incarnation,
+            family: BoundedSemanticComponent::new("normalized intent family", family)?,
+            expected_revision,
+        })
+    }
+
+    fn validate(&self) -> Result<(), CommandLifecycleError> {
+        self.placement.byte_len("normalized intent placement")?;
+        self.family.byte_len("normalized intent family")?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RetainedBindingIdentity {
+    content_generation: BoundedSemanticComponent,
+    transition_key: BoundedSemanticComponent,
+}
+
+impl RetainedBindingIdentity {
+    pub fn new(
+        content_generation: &str,
+        transition_key: &str,
+    ) -> Result<Self, CommandLifecycleError> {
+        Ok(Self {
+            content_generation: BoundedSemanticComponent::new(
+                "active Content-generation identity",
+                content_generation,
+            )?,
+            transition_key: BoundedSemanticComponent::new("TransitionKey", transition_key)?,
+        })
+    }
+
+    fn validate(&self) -> Result<(), CommandLifecycleError> {
+        self.content_generation
+            .byte_len("active Content-generation identity")?;
+        self.transition_key.byte_len("TransitionKey")?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommandSemanticIdentity {
+    intent: NormalizedSemanticIntentIdentity,
+    binding: RetainedBindingIdentity,
+}
+
+impl CommandSemanticIdentity {
+    #[must_use]
+    pub const fn new(
+        intent: NormalizedSemanticIntentIdentity,
+        binding: RetainedBindingIdentity,
+    ) -> Self {
+        Self { intent, binding }
+    }
+
+    fn validate(&self) -> Result<(), CommandLifecycleError> {
+        self.intent.validate()?;
+        self.binding.validate()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TerminalSemanticOutcome {
+    disposition: BoundedSemanticComponent,
+    state: BoundedSemanticComponent,
+    revision: u64,
+}
+
+impl TerminalSemanticOutcome {
+    pub fn new(
+        disposition: &str,
+        state: &str,
+        revision: u64,
+    ) -> Result<Self, CommandLifecycleError> {
+        Ok(Self {
+            disposition: BoundedSemanticComponent::new(
+                "terminal semantic disposition",
+                disposition,
+            )?,
+            state: BoundedSemanticComponent::new("terminal semantic state", state)?,
+            revision,
+        })
+    }
+
+    fn validate(&self) -> Result<(), CommandLifecycleError> {
+        self.disposition.byte_len("terminal semantic disposition")?;
+        self.state.byte_len("terminal semantic state")?;
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn disposition(&self) -> &str {
+        &self.disposition.0
+    }
+
+    #[must_use]
+    pub fn state(&self) -> &str {
+        &self.state.0
+    }
+
+    #[must_use]
+    pub const fn revision(&self) -> u64 {
+        self.revision
+    }
+}
+
+fn checked_retained_record_charge(
+    component_lengths: [u64; 6],
+) -> Result<u64, CommandLifecycleError> {
+    let fixed_u64_bytes = RETAINED_SEMANTIC_U64_FIELD_COUNT
+        .checked_mul(RETAINED_SEMANTIC_U64_FIELD_BYTES)
+        .ok_or(CommandLifecycleError::RetainedChargeOverflow)?;
+    let length_prefix_bytes = RETAINED_SEMANTIC_COMPONENT_COUNT
+        .checked_mul(RETAINED_SEMANTIC_LENGTH_PREFIX_BYTES)
+        .ok_or(CommandLifecycleError::RetainedChargeOverflow)?;
+    let mut total = fixed_u64_bytes
+        .checked_add(length_prefix_bytes)
+        .ok_or(CommandLifecycleError::RetainedChargeOverflow)?;
+    for length in component_lengths {
+        total = total
+            .checked_add(length)
+            .ok_or(CommandLifecycleError::RetainedChargeOverflow)?;
+    }
+    Ok(total)
+}
+
+fn retained_record_charge(
+    semantic: &CommandSemanticIdentity,
+    outcome: &TerminalSemanticOutcome,
+) -> Result<u64, CommandLifecycleError> {
+    semantic.validate()?;
+    outcome.validate()?;
+    checked_retained_record_charge([
+        semantic
+            .intent
+            .placement
+            .byte_len("normalized intent placement")?,
+        semantic
+            .intent
+            .family
+            .byte_len("normalized intent family")?,
+        semantic
+            .binding
+            .content_generation
+            .byte_len("active Content-generation identity")?,
+        semantic.binding.transition_key.byte_len("TransitionKey")?,
+        outcome
+            .disposition
+            .byte_len("terminal semantic disposition")?,
+        outcome.state.byte_len("terminal semantic state")?,
+    ])
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct RetainedTerminalRecord {
+    command_id: CommandId,
+    semantic: CommandSemanticIdentity,
+    outcome: TerminalSemanticOutcome,
+    charged_bytes: u64,
+}
+
+impl RetainedTerminalRecord {
+    fn validate(&self) -> Result<(), CommandLifecycleError> {
+        let charged_bytes = retained_record_charge(&self.semantic, &self.outcome)?;
+        if charged_bytes != self.charged_bytes {
+            return Err(CommandLifecycleError::InvalidRecoveryState(
+                "retained terminal charge does not match semantic evidence",
+            ));
+        }
+        if charged_bytes > MAX_RETAINED_TERMINAL_CHARGED_BYTES {
+            return Err(CommandLifecycleError::RetainedChargeExceeded {
+                charged_bytes,
+                hard_maximum: MAX_RETAINED_TERMINAL_CHARGED_BYTES,
+            });
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub const fn command_id(&self) -> CommandId {
+        self.command_id
+    }
+
+    #[must_use]
+    pub const fn charged_bytes(&self) -> u64 {
+        self.charged_bytes
+    }
+
+    #[must_use]
+    pub const fn outcome(&self) -> &TerminalSemanticOutcome {
+        &self.outcome
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DuplicateDisposition {
+pub struct TerminalRetentionPlan {
+    charged_bytes: u64,
+    evicted_command_id: Option<CommandId>,
+}
+
+impl TerminalRetentionPlan {
+    #[must_use]
+    pub const fn charged_bytes(&self) -> u64 {
+        self.charged_bytes
+    }
+
+    #[must_use]
+    pub const fn evicted_command_id(&self) -> Option<CommandId> {
+        self.evicted_command_id
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DuplicateDisposition<'a> {
     NotDuplicate,
     PendingOriginal,
-    ReplayRetainedOutcome,
+    ConflictChangedInput,
+    ReplayRetainedOutcome(&'a TerminalSemanticOutcome),
     OutcomeExpired,
 }
-#[derive(Debug, Clone)]
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct CommandIngressRecoveryState {
+    next_command_id: Option<CommandId>,
+    pending: BTreeMap<CommandId, CommandSemanticIdentity>,
+    retained_terminal: Option<RetainedTerminalRecord>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct CommandIngress {
     next_command_id: Option<CommandId>,
-    pending: BTreeSet<CommandId>,
+    pending: BTreeMap<CommandId, CommandSemanticIdentity>,
+    retained_terminal: Option<RetainedTerminalRecord>,
 }
 
 impl Default for CommandIngress {
@@ -225,7 +567,8 @@ impl CommandIngress {
     pub fn new() -> Self {
         Self {
             next_command_id: Some(CommandId(1)),
-            pending: BTreeSet::new(),
+            pending: BTreeMap::new(),
+            retained_terminal: None,
         }
     }
 
@@ -239,7 +582,23 @@ impl CommandIngress {
         self.pending.len()
     }
 
-    pub fn reserve(&mut self, command_id: CommandId) -> IngressDecision {
+    #[must_use]
+    pub fn retained_count(&self) -> usize {
+        usize::from(self.retained_terminal.is_some())
+    }
+
+    #[must_use]
+    pub fn retained_charged_bytes(&self) -> u64 {
+        self.retained_terminal
+            .as_ref()
+            .map_or(0, RetainedTerminalRecord::charged_bytes)
+    }
+
+    pub fn reserve(
+        &mut self,
+        command_id: CommandId,
+        semantic: CommandSemanticIdentity,
+    ) -> IngressDecision {
         let Some(expected) = self.next_command_id else {
             return IngressDecision::CommandSpaceExhausted;
         };
@@ -252,37 +611,225 @@ impl CommandIngress {
         if self.pending.len() >= MAX_OUTSTANDING_COMMANDS {
             return IngressDecision::TooManyOutstanding { expected };
         }
-        let inserted = self.pending.insert(command_id);
-        debug_assert!(inserted, "next CommandId cannot already be pending");
+        let previous = self.pending.insert(command_id, semantic);
+        debug_assert!(
+            previous.is_none(),
+            "next CommandId cannot already be pending"
+        );
         self.next_command_id = command_id.checked_successor();
         IngressDecision::Reserved(command_id)
     }
 
-    pub fn mark_terminal(&mut self, command_id: CommandId) -> bool {
-        if self.pending.first().copied() != Some(command_id) {
-            return false;
+    fn preflight_terminal(
+        &self,
+        command_id: CommandId,
+        outcome: &TerminalSemanticOutcome,
+    ) -> Result<TerminalRetentionPlan, CommandLifecycleError> {
+        let semantic = self
+            .pending
+            .get(&command_id)
+            .ok_or(CommandLifecycleError::TerminalNotPending(command_id))?;
+        let Some((&expected, _semantic)) = self.pending.first_key_value() else {
+            return Err(CommandLifecycleError::TerminalNotPending(command_id));
+        };
+        if expected != command_id {
+            return Err(CommandLifecycleError::TerminalOutOfOrder {
+                expected,
+                attempted: command_id,
+            });
         }
-        self.pending.remove(&command_id)
+
+        let charged_bytes = retained_record_charge(semantic, outcome)?;
+        if charged_bytes > MAX_RETAINED_TERMINAL_CHARGED_BYTES {
+            return Err(CommandLifecycleError::RetainedChargeExceeded {
+                charged_bytes,
+                hard_maximum: MAX_RETAINED_TERMINAL_CHARGED_BYTES,
+            });
+        }
+        let evicted_command_id = self
+            .retained_terminal
+            .as_ref()
+            .map(RetainedTerminalRecord::command_id);
+        Ok(TerminalRetentionPlan {
+            charged_bytes,
+            evicted_command_id,
+        })
+    }
+
+    pub fn terminalize<F>(
+        &mut self,
+        command_id: CommandId,
+        outcome: TerminalSemanticOutcome,
+        gameplay_mutation: F,
+    ) -> Result<TerminalRetentionPlan, CommandLifecycleError>
+    where
+        F: FnOnce(),
+    {
+        let plan = self.preflight_terminal(command_id, &outcome)?;
+        gameplay_mutation();
+
+        if let Some(evicted_command_id) = plan.evicted_command_id {
+            let evicted = self.retained_terminal.take();
+            debug_assert_eq!(
+                evicted.as_ref().map(RetainedTerminalRecord::command_id),
+                Some(evicted_command_id)
+            );
+        }
+        let semantic = match self.pending.remove(&command_id) {
+            Some(semantic) => semantic,
+            None => unreachable!("successful terminal preflight requires a pending original"),
+        };
+        debug_assert!(self.retained_terminal.is_none());
+        self.retained_terminal = Some(RetainedTerminalRecord {
+            command_id,
+            semantic,
+            outcome,
+            charged_bytes: plan.charged_bytes,
+        });
+        debug_assert!(self.retained_count() <= MAX_RETAINED_TERMINAL_RECORDS);
+        Ok(plan)
     }
 
     #[must_use]
     pub fn classify_duplicate(
         &self,
         command_id: CommandId,
-        terminal_outcome_retained: bool,
-    ) -> DuplicateDisposition {
+        semantic: &CommandSemanticIdentity,
+    ) -> DuplicateDisposition<'_> {
         if let Some(expected) = self.next_command_id
             && command_id >= expected
         {
             return DuplicateDisposition::NotDuplicate;
         }
-        if self.pending.contains(&command_id) {
-            DuplicateDisposition::PendingOriginal
-        } else if terminal_outcome_retained {
-            DuplicateDisposition::ReplayRetainedOutcome
-        } else {
-            DuplicateDisposition::OutcomeExpired
+        if let Some(pending) = self.pending.get(&command_id) {
+            return if pending == semantic {
+                DuplicateDisposition::PendingOriginal
+            } else {
+                DuplicateDisposition::ConflictChangedInput
+            };
         }
+        if let Some(retained) = self.retained_terminal.as_ref()
+            && retained.command_id == command_id
+        {
+            return if &retained.semantic == semantic {
+                DuplicateDisposition::ReplayRetainedOutcome(retained.outcome())
+            } else {
+                DuplicateDisposition::ConflictChangedInput
+            };
+        }
+        DuplicateDisposition::OutcomeExpired
+    }
+
+    #[must_use]
+    pub fn into_recovery_state(self) -> CommandIngressRecoveryState {
+        CommandIngressRecoveryState {
+            next_command_id: self.next_command_id,
+            pending: self.pending,
+            retained_terminal: self.retained_terminal,
+        }
+    }
+
+    pub fn recover(state: CommandIngressRecoveryState) -> Result<Self, CommandLifecycleError> {
+        if state.pending.len() > MAX_OUTSTANDING_COMMANDS {
+            return Err(CommandLifecycleError::InvalidRecoveryState(
+                "pending command count exceeds the FND-02 outstanding-command bound",
+            ));
+        }
+
+        let mut previous_pending: Option<CommandId> = None;
+        for (command_id, semantic) in &state.pending {
+            semantic.validate()?;
+            if let Some(previous) = previous_pending
+                && previous.checked_successor() != Some(*command_id)
+            {
+                return Err(CommandLifecycleError::InvalidRecoveryState(
+                    "pending CommandIds are not contiguous",
+                ));
+            }
+            if let Some(next_command_id) = state.next_command_id
+                && *command_id >= next_command_id
+            {
+                return Err(CommandLifecycleError::InvalidRecoveryState(
+                    "pending CommandId reaches or exceeds ingress high-water mark",
+                ));
+            }
+            previous_pending = Some(*command_id);
+        }
+
+        if let Some(last_pending) = previous_pending {
+            match state.next_command_id {
+                Some(next_command_id)
+                    if last_pending.checked_successor() != Some(next_command_id) =>
+                {
+                    return Err(CommandLifecycleError::InvalidRecoveryState(
+                        "pending suffix does not end immediately below ingress high-water mark",
+                    ));
+                }
+                None if last_pending.get() != u64::MAX => {
+                    return Err(CommandLifecycleError::InvalidRecoveryState(
+                        "exhausted command space does not end at u64::MAX",
+                    ));
+                }
+                _ => {}
+            }
+        }
+
+        let expected_retained_command_id =
+            if let Some((&first_pending, _semantic)) = state.pending.first_key_value() {
+                if first_pending.get() == 1 {
+                    None
+                } else {
+                    Some(CommandId(first_pending.get() - 1))
+                }
+            } else {
+                match state.next_command_id {
+                    Some(next_command_id) if next_command_id.get() == 1 => None,
+                    Some(next_command_id) => Some(CommandId(next_command_id.get() - 1)),
+                    None => Some(CommandId(u64::MAX)),
+                }
+            };
+
+        match (
+            expected_retained_command_id,
+            state.retained_terminal.as_ref(),
+        ) {
+            (Some(_expected), None) => {
+                return Err(CommandLifecycleError::NonResumableMissingTerminalTruth);
+            }
+            (None, Some(_retained)) => {
+                return Err(CommandLifecycleError::InvalidRecoveryState(
+                    "retained terminal truth exists before any command could have terminalized",
+                ));
+            }
+            (Some(expected), Some(retained)) if retained.command_id != expected => {
+                return Err(CommandLifecycleError::InvalidRecoveryState(
+                    "retained terminal CommandId is not the latest terminalized command",
+                ));
+            }
+            _ => {}
+        }
+
+        if let Some(retained) = state.retained_terminal.as_ref() {
+            retained.validate()?;
+            if state.pending.contains_key(&retained.command_id) {
+                return Err(CommandLifecycleError::InvalidRecoveryState(
+                    "one CommandId cannot be both pending and retained-terminal",
+                ));
+            }
+            if let Some(next_command_id) = state.next_command_id
+                && retained.command_id >= next_command_id
+            {
+                return Err(CommandLifecycleError::InvalidRecoveryState(
+                    "retained terminal CommandId reaches or exceeds ingress high-water mark",
+                ));
+            }
+        }
+
+        Ok(Self {
+            next_command_id: state.next_command_id,
+            pending: state.pending,
+            retained_terminal: state.retained_terminal,
+        })
     }
 }
 
@@ -534,15 +1081,41 @@ mod tests {
         Ok(())
     }
 
+    fn semantic(tag: &str) -> Result<CommandSemanticIdentity, CommandLifecycleError> {
+        Ok(CommandSemanticIdentity::new(
+            NormalizedSemanticIntentIdentity::new(
+                &format!("oteryn:placement.{tag}"),
+                1,
+                &format!("oteryn:intent.{tag}"),
+                0,
+            )?,
+            RetainedBindingIdentity::new(
+                &format!("generation-{tag}"),
+                &format!("oteryn:transition.{tag}"),
+            )?,
+        ))
+    }
+
+    fn outcome(tag: &str, revision: u64) -> Result<TerminalSemanticOutcome, CommandLifecycleError> {
+        TerminalSemanticOutcome::new(
+            &format!("oteryn:result.{tag}"),
+            &format!("oteryn:state.{tag}"),
+            revision,
+        )
+    }
+
     #[test]
-    fn command_ingress_reserves_only_the_exact_next_id() -> Result<(), CommandIdError> {
+    fn command_ingress_reserves_only_the_exact_next_id() -> Result<(), Box<dyn Error>> {
         let mut ingress = CommandIngress::new();
         let first = CommandId::new(1)?;
         let third = CommandId::new(3)?;
-        assert_eq!(ingress.reserve(first), IngressDecision::Reserved(first));
+        assert_eq!(
+            ingress.reserve(first, semantic("first")?),
+            IngressDecision::Reserved(first)
+        );
         assert_eq!(ingress.next_command_id(), Some(CommandId::new(2)?));
         assert_eq!(
-            ingress.reserve(third),
+            ingress.reserve(third, semantic("third")?),
             IngressDecision::SequenceGap {
                 expected: CommandId::new(2)?
             }
@@ -550,63 +1123,302 @@ mod tests {
         assert_eq!(ingress.next_command_id(), Some(CommandId::new(2)?));
         Ok(())
     }
+
     #[test]
-    fn command_window_rejects_without_consuming_then_accepts_retry() -> Result<(), CommandIdError> {
+    fn command_window_rejects_without_consuming_then_accepts_retry() -> Result<(), Box<dyn Error>> {
         let mut ingress = CommandIngress::new();
+        let pending_semantic = semantic("pending")?;
         for raw in 1..=64 {
             let command_id = CommandId::new(raw)?;
             assert_eq!(
-                ingress.reserve(command_id),
+                ingress.reserve(command_id, pending_semantic.clone()),
                 IngressDecision::Reserved(command_id)
             );
         }
         let sixty_fifth = CommandId::new(65)?;
         assert_eq!(
-            ingress.reserve(sixty_fifth),
+            ingress.reserve(sixty_fifth, pending_semantic.clone()),
             IngressDecision::TooManyOutstanding {
                 expected: sixty_fifth
             }
         );
         assert_eq!(ingress.next_command_id(), Some(sixty_fifth));
-        assert!(ingress.mark_terminal(CommandId::new(1)?));
+        ingress.terminalize(CommandId::new(1)?, outcome("first", 1)?, || {})?;
         assert_eq!(
-            ingress.reserve(sixty_fifth),
+            ingress.reserve(sixty_fifth, pending_semantic),
             IngressDecision::Reserved(sixty_fifth)
         );
         Ok(())
     }
 
     #[test]
-    fn lower_command_never_reexecutes_and_reports_duplicate_state() -> Result<(), CommandIdError> {
-        let mut ingress = CommandIngress::new();
-        let first = CommandId::new(1)?;
-        assert_eq!(ingress.reserve(first), IngressDecision::Reserved(first));
+    fn retained_a1_survives_later_b1_and_replays_original_outcome() -> Result<(), Box<dyn Error>> {
+        let command = CommandId::new(1)?;
+        let semantic_a = semantic("a-open")?;
+        let semantic_b = semantic("b-close")?;
+        let outcome_a = outcome("a-opened", 1)?;
+        let outcome_b = outcome("b-closed", 1)?;
+        let mut session_a = CommandIngress::new();
+        let mut session_b = CommandIngress::new();
+        let mut a_mutations = 0_u64;
+
         assert_eq!(
-            ingress.classify_duplicate(first, false),
-            DuplicateDisposition::PendingOriginal
+            session_a.reserve(command, semantic_a.clone()),
+            IngressDecision::Reserved(command)
         );
-        assert!(ingress.mark_terminal(first));
+        session_a.terminalize(command, outcome_a.clone(), || a_mutations += 1)?;
         assert_eq!(
-            ingress.classify_duplicate(first, true),
-            DuplicateDisposition::ReplayRetainedOutcome
+            session_b.reserve(command, semantic_b.clone()),
+            IngressDecision::Reserved(command)
         );
+        session_b.terminalize(command, outcome_b, || {})?;
+
+        let before_replay = a_mutations;
         assert_eq!(
-            ingress.classify_duplicate(first, false),
-            DuplicateDisposition::OutcomeExpired
+            session_a.classify_duplicate(command, &semantic_a),
+            DuplicateDisposition::ReplayRetainedOutcome(&outcome_a)
         );
-        assert_eq!(ingress.next_command_id(), Some(CommandId::new(2)?));
+        assert_eq!(a_mutations, before_replay);
+        assert_eq!(session_a.retained_count(), 1);
+        assert_eq!(session_b.retained_count(), 1);
         Ok(())
     }
+
     #[test]
-    fn later_reserved_command_cannot_commit_before_earlier_command() -> Result<(), CommandIdError> {
+    fn changed_intent_or_binding_conflicts_for_pending_and_retained() -> Result<(), Box<dyn Error>>
+    {
+        let mut ingress = CommandIngress::new();
+        let command = CommandId::new(1)?;
+        let original = CommandSemanticIdentity::new(
+            NormalizedSemanticIntentIdentity::new(
+                "oteryn:placement.door",
+                1,
+                "oteryn:intent.open",
+                0,
+            )?,
+            RetainedBindingIdentity::new("generation-1", "oteryn:transition.open")?,
+        );
+        let changed_intent = CommandSemanticIdentity::new(
+            NormalizedSemanticIntentIdentity::new(
+                "oteryn:placement.door",
+                1,
+                "oteryn:intent.close",
+                0,
+            )?,
+            original.binding.clone(),
+        );
+        let changed_binding = CommandSemanticIdentity::new(
+            original.intent.clone(),
+            RetainedBindingIdentity::new("generation-2", "oteryn:transition.open")?,
+        );
+
+        assert_eq!(
+            ingress.reserve(command, original.clone()),
+            IngressDecision::Reserved(command)
+        );
+        assert_eq!(
+            ingress.classify_duplicate(command, &changed_intent),
+            DuplicateDisposition::ConflictChangedInput
+        );
+        assert_eq!(
+            ingress.classify_duplicate(command, &changed_binding),
+            DuplicateDisposition::ConflictChangedInput
+        );
+
+        ingress.terminalize(command, outcome("opened", 1)?, || {})?;
+        assert_eq!(
+            ingress.classify_duplicate(command, &changed_intent),
+            DuplicateDisposition::ConflictChangedInput
+        );
+        assert_eq!(
+            ingress.classify_duplicate(command, &changed_binding),
+            DuplicateDisposition::ConflictChangedInput
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn terminal_eviction_expires_without_reusing_high_water() -> Result<(), Box<dyn Error>> {
         let mut ingress = CommandIngress::new();
         let first = CommandId::new(1)?;
         let second = CommandId::new(2)?;
-        assert_eq!(ingress.reserve(first), IngressDecision::Reserved(first));
-        assert_eq!(ingress.reserve(second), IngressDecision::Reserved(second));
-        assert!(!ingress.mark_terminal(second));
-        assert!(ingress.mark_terminal(first));
-        assert!(ingress.mark_terminal(second));
+        let semantic_first = semantic("first")?;
+        let semantic_second = semantic("second")?;
+
+        ingress.reserve(first, semantic_first.clone());
+        ingress.terminalize(first, outcome("first", 1)?, || {})?;
+        ingress.reserve(second, semantic_second.clone());
+        let plan = ingress.terminalize(second, outcome("second", 2)?, || {})?;
+
+        assert_eq!(plan.evicted_command_id(), Some(first));
+        assert_eq!(ingress.retained_count(), MAX_RETAINED_TERMINAL_RECORDS);
+        assert_eq!(
+            ingress.classify_duplicate(first, &semantic_first),
+            DuplicateDisposition::OutcomeExpired
+        );
+        assert_eq!(
+            ingress.reserve(first, semantic_first),
+            IngressDecision::AlreadyReserved(first)
+        );
+        assert_eq!(ingress.next_command_id(), Some(CommandId::new(3)?));
+        Ok(())
+    }
+
+    #[test]
+    fn pending_original_is_never_evicted_or_reexecuted() -> Result<(), Box<dyn Error>> {
+        let mut ingress = CommandIngress::new();
+        let first = CommandId::new(1)?;
+        let second = CommandId::new(2)?;
+        let semantic_first = semantic("first")?;
+        let semantic_second = semantic("second")?;
+
+        ingress.reserve(first, semantic_first.clone());
+        ingress.reserve(second, semantic_second.clone());
+        assert_eq!(
+            ingress.classify_duplicate(second, &semantic_second),
+            DuplicateDisposition::PendingOriginal
+        );
+        ingress.terminalize(first, outcome("first", 1)?, || {})?;
+        assert_eq!(ingress.outstanding(), 1);
+        assert_eq!(
+            ingress.classify_duplicate(second, &semantic_second),
+            DuplicateDisposition::PendingOriginal
+        );
+        let plan = ingress.terminalize(second, outcome("second", 2)?, || {})?;
+        assert_eq!(plan.evicted_command_id(), Some(first));
+        assert_eq!(ingress.outstanding(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn later_terminalization_cannot_pass_earlier_pending() -> Result<(), Box<dyn Error>> {
+        let mut ingress = CommandIngress::new();
+        let first = CommandId::new(1)?;
+        let second = CommandId::new(2)?;
+        ingress.reserve(first, semantic("first")?);
+        ingress.reserve(second, semantic("second")?);
+        let mut mutated = false;
+
+        let result = ingress.terminalize(second, outcome("second", 2)?, || mutated = true);
+        assert_eq!(
+            result,
+            Err(CommandLifecycleError::TerminalOutOfOrder {
+                expected: first,
+                attempted: second,
+            })
+        );
+        assert!(!mutated);
+        assert_eq!(ingress.outstanding(), 2);
+        assert_eq!(ingress.retained_count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn retained_charge_accepts_3116_and_rejects_3117_semantics() -> Result<(), Box<dyn Error>> {
+        let maximum = "x".repeat(MAX_RETAINED_SEMANTIC_COMPONENT_BYTES);
+        let semantic = CommandSemanticIdentity::new(
+            NormalizedSemanticIntentIdentity::new(&maximum, u64::MAX, &maximum, u64::MAX)?,
+            RetainedBindingIdentity::new(&maximum, &maximum)?,
+        );
+        let outcome = TerminalSemanticOutcome::new(&maximum, &maximum, u64::MAX)?;
+        let command = CommandId::new(1)?;
+        let mut ingress = CommandIngress::new();
+        ingress.reserve(command, semantic);
+        let plan = ingress.terminalize(command, outcome, || {})?;
+
+        assert_eq!(plan.charged_bytes(), MAX_RETAINED_TERMINAL_CHARGED_BYTES);
+        assert_eq!(ingress.retained_charged_bytes(), 3_116);
+        assert_eq!(
+            checked_retained_record_charge([513, 512, 512, 512, 512, 512])?,
+            3_117
+        );
+
+        let one_over = "x".repeat(MAX_RETAINED_SEMANTIC_COMPONENT_BYTES + 1);
+        assert_eq!(
+            NormalizedSemanticIntentIdentity::new(&one_over, 1, "family", 0),
+            Err(CommandLifecycleError::SemanticComponentTooLarge {
+                field: "normalized intent placement",
+                bytes: 513,
+            })
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn retained_charge_checked_arithmetic_rejects_overflow() {
+        assert_eq!(
+            checked_retained_record_charge([u64::MAX, 0, 0, 0, 0, 0]),
+            Err(CommandLifecycleError::RetainedChargeOverflow)
+        );
+    }
+
+    #[test]
+    fn retention_failure_occurs_before_modeled_gameplay_mutation() -> Result<(), Box<dyn Error>> {
+        let mut ingress = CommandIngress::new();
+        let command = CommandId::new(1)?;
+        ingress.reserve(command, semantic("oversized")?);
+        let invalid_semantic = CommandSemanticIdentity::new(
+            NormalizedSemanticIntentIdentity {
+                placement: BoundedSemanticComponent(
+                    "x".repeat(MAX_RETAINED_SEMANTIC_COMPONENT_BYTES + 1)
+                        .into_boxed_str(),
+                ),
+                incarnation: 1,
+                family: BoundedSemanticComponent::new("normalized intent family", "family")?,
+                expected_revision: 0,
+            },
+            RetainedBindingIdentity::new("generation-oversized", "oteryn:transition.oversized")?,
+        );
+        assert!(ingress.pending.insert(command, invalid_semantic).is_some());
+        let mut mutated = false;
+
+        let result = ingress.terminalize(command, outcome("never-applied", 1)?, || {
+            mutated = true;
+        });
+        assert_eq!(
+            result,
+            Err(CommandLifecycleError::SemanticComponentTooLarge {
+                field: "normalized intent placement",
+                bytes: 513,
+            })
+        );
+        assert!(!mutated);
+        assert_eq!(ingress.outstanding(), 1);
+        assert_eq!(ingress.retained_count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn recovery_preserves_retained_truth_and_missing_truth_is_non_resumable()
+    -> Result<(), Box<dyn Error>> {
+        let mut ingress = CommandIngress::new();
+        let first = CommandId::new(1)?;
+        let second = CommandId::new(2)?;
+        let semantic_first = semantic("first")?;
+        let semantic_second = semantic("second")?;
+        let outcome_first = outcome("first", 1)?;
+
+        ingress.reserve(first, semantic_first.clone());
+        ingress.terminalize(first, outcome_first.clone(), || {})?;
+        ingress.reserve(second, semantic_second.clone());
+
+        let state = ingress.into_recovery_state();
+        let recovered = CommandIngress::recover(state)?;
+        assert_eq!(
+            recovered.classify_duplicate(first, &semantic_first),
+            DuplicateDisposition::ReplayRetainedOutcome(&outcome_first)
+        );
+        assert_eq!(
+            recovered.classify_duplicate(second, &semantic_second),
+            DuplicateDisposition::PendingOriginal
+        );
+
+        let mut missing = recovered.into_recovery_state();
+        missing.retained_terminal = None;
+        assert_eq!(
+            CommandIngress::recover(missing),
+            Err(CommandLifecycleError::NonResumableMissingTerminalTruth)
+        );
         Ok(())
     }
 
@@ -666,3 +1478,7 @@ mod tests {
         Ok(())
     }
 }
+
+pub mod admission_authority_publication;
+
+pub mod fresh_admission_durability;

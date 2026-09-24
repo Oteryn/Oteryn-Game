@@ -44,11 +44,14 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
     "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "bed1966b918ef7548bcaa0ac5b1a4563d4c7cc7464a34e35128fdaf72d8b5160"
+    "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7"
 )
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "7f101b51bfeff7c63495f8d9662a9369a1abd597485d852a5b4964d1fad221c5"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
-EXPECTED_POST_MERGE_RUST_SHA256 = "303b0bbc0a71b7405f7c662e604494dfcea89c3a2db3ecd2b535eedaee9d03c9"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b"
+EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
+EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
+EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+EXPECTED_POST_MERGE_RUST_SHA256 = "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -85,6 +88,7 @@ REQUIRED_FILES = [
     ".github/workflows/codeql.yml",
     ".github/workflows/repository-configuration.yml",
     ".github/workflows/rust.yml",
+    "tools/repository/validate_pr_routing_contract.py",
     "CONTRIBUTING.md",
     "SECURITY.md",
     "LICENSE",
@@ -196,6 +200,12 @@ def main() -> int:
     for relative in REQUIRED_FILES:
         if not (ROOT / relative).is_file():
             errors.append(f"missing required repository-governance file: {relative}")
+
+    routing_validator = ROOT / "tools/repository/validate_pr_routing_contract.py"
+    if routing_validator.is_file():
+        validator_text = routing_validator.read_text(encoding="utf-8")
+        if git_blob_sha(validator_text.encode("utf-8")) != EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB:
+            errors.append("routing contract validator must equal the reviewed fail-closed implementation")
 
     try:
         policy = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
@@ -367,6 +377,20 @@ def main() -> int:
         lanes_digest = hashlib.sha256(lanes_block.encode("utf-8")).hexdigest() if lanes_block else None
         if lanes_digest != EXPECTED_MERGE_GATE_LANES_JOB_SHA256:
             errors.append("merge gate risk lanes must exactly match trusted-base classification and fail-closed outputs")
+        routing_contract_block = indented_yaml_mapping_block(text, "routing_contract", 2)
+        routing_contract_digest = (
+            hashlib.sha256(routing_contract_block.encode("utf-8")).hexdigest()
+            if routing_contract_block else None
+        )
+        if routing_contract_digest != EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256:
+            errors.append("merge gate routing contract job must exactly match the reviewed exact-head consumer-routing contract")
+        atlas_fullworld_block = indented_yaml_mapping_block(text, "atlas_fullworld", 2)
+        atlas_fullworld_digest = (
+            hashlib.sha256(atlas_fullworld_block.encode("utf-8")).hexdigest()
+            if atlas_fullworld_block else None
+        )
+        if atlas_fullworld_digest != EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256:
+            errors.append("merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
         if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
@@ -391,13 +415,17 @@ def main() -> int:
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
             "len(files) != changed_files",
-            "previous_filename = item.get('previous_filename')",
+            "{key: item[key] for key in ('filename', 'status', 'previous_filename') if key in item}",
             "Merge gate / trusted-base risk lanes",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
+            "Merge gate / routing contract",
+            "Verify protected-base routing contract health",
+            "git diff --check \"$EXPECTED_BASE\" \"$EXPECTED_HEAD\"",
+            "Merge gate / Atlas fullworld source",
             "Merge gate / Rust policy and metadata",
             "Merge gate / Rust Linux workspace",
             "Merge gate / Rust Windows client",
@@ -436,6 +464,8 @@ def main() -> int:
                 "git diff --check \"$BASE_SHA\" \"$HEAD_SHA\"",
                 "python tools/agents/validate_governance.py",
                 "python tools/repository/validate_repository_policy.py",
+                "python tools/agents/tests/test_governance_lifecycle_discovery.py",
+                "python tools/repository/test_validate_merge_group_pg_sim.py",
             ),
             "dependency_review": (
                 "    name: Merge Queue / dependency review\n",
@@ -446,8 +476,8 @@ def main() -> int:
             "codeql": (
                 "    name: Merge Queue / CodeQL (${{ matrix.language }})\n",
                 "language: [python, actions]",
-                "github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd",
-                "github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd",
+                "github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938",
+                "github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938",
             ),
             "rust_linux": (
                 "    name: Merge Queue / Rust Linux workspace\n",
@@ -460,17 +490,40 @@ def main() -> int:
             "durability_postgres": (
                 "    name: Merge Queue / Durability PostgreSQL harness\n",
                 "image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
-                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
-                "test -f apps/game-server/tests/durability_postgres.rs",
-                "cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+                "BASE_SHA: ${{ github.event.merge_group.base_sha }}",
+                "HEAD_SHA: ${{ github.event.merge_group.head_sha }}",
+                'git cat-file -e "$BASE_SHA:$path"',
+                'git cat-file -e "$HEAD_SHA:$path"',
+                'if [[ "$base_present" == true && "$head_present" == false ]]; then',
+                "verify_registered_target_binding() {",
+                'cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"',
+                "owners = [package for package in packages if package.get('name') == 'oteryn-game-server']",
+                "expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)",
+                "observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)",
+                "if observed_manifest != expected_manifest:",
+                "matches = [target for target in targets if target.get('name') == name]",
+                "if len(matches) != 1 or matches[0].get('kind') != ['test']:",
+                "expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)",
+                "observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)",
+                'verify_registered_target_binding "$name" "$path"',
+                'cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"',
+                "run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs",
+                "run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs",
+                "run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs",
+                "run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs",
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "$ErrorActionPreference = 'Stop'",
+                "$PSNativeCommandUseErrorActionPreference = $true",
+                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
-                "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+                '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
+                "Test-Path -LiteralPath $client -PathType Leaf",
+                "& $client --smoke",
+                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
             ),
             "rust_supply_chain": (
                 "    name: Merge Queue / Rust supply chain\n",

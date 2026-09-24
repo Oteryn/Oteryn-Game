@@ -1,6 +1,6 @@
 # Oteryn v2 Architecture Index
 
-This directory contains canonical architecture decisions, owner baselines, current-status overlays, planning registers and historical analysis for Oteryn-v2.
+This directory contains canonical architecture decisions, owner baselines, dated status snapshots, planning registers and historical analysis for Oteryn-v2.
 
 ## Source hierarchy
 
@@ -9,10 +9,9 @@ When documents overlap, use this order:
 1. explicit owner instruction and repository governance;
 2. an explicit later owner-acceptance baseline / ADR / contract that names the superseded scope;
 3. the accepted ADR/contract that owns the domain;
-4. `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` for current execution/status wording;
-5. live implementation allocation + exact worker task/branch/PR/CI state for implementation execution truth;
-6. `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` and other actively maintained coordination surfaces;
-7. historical proposal/candidate/backlog/checkpoint analysis, evidence and archived task records.
+4. live Issue, active task, branch, PR and exact-head check state for implementation execution truth;
+5. an explicitly refreshed protected coordination surface for the scope it names;
+6. historical status/register/backlog/checkpoint analysis, evidence and archived task records.
 
 A newer date alone never supersedes semantic authority. Supersession applies only to the scope explicitly named.
 
@@ -20,16 +19,16 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 
 ## Current entry points
 
-- [Foundation programme current status](FOUNDATION_PROGRAMME_CURRENT_STATUS.md) — canonical current three-axis status, implementation-start reconciliation and next safe execution state.
+- [Foundation programme 2026-08-24 snapshot](FOUNDATION_PROGRAMME_CURRENT_STATUS.md) — historical reconciliation provenance; not current lifecycle or dispatch authority.
 - [Implementation live allocations](../agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md) — coordinator-owned exact worker allocations/leases; combine with live worker task/branch/PR/CI state.
-- [Global architecture decision register](GLOBAL_ARCHITECTURE_DECISION_REGISTER.md) — stable gate IDs, accepted state and remaining horizon.
+- [Global architecture decision register](GLOBAL_ARCHITECTURE_DECISION_REGISTER.md) — historical 2026-08-22 coordination snapshot; accepted ADRs/contracts, not its dated implementation table, remain semantic authority.
 - [Stage-C VSL owner acceptance](OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md) — owner acceptance of `VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01`.
 - [Remaining first-wave owner acceptance baseline](OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md) — owner acceptance of GAME-INTERACTION, ALPHA-CLIENT, GAME-AI and ANL-02/03.
 - [GAME-ABILITY whole-gate owner acceptance baseline](GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md).
 - [Implementation executor DAG](../agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md) — released dependency/order contract after PR #314 merge.
 - [Implementation prompt evaluation](../agents/evidence/OTV2-20260816-final-executor-prompt-evaluation.md) — 17/17 execution prompts PASS across all required prompt gates.
-- [Reusable prompt index](../agents/prompts/README.md) — aliases and execution rules; normal implementation entry point is `Oteryn: implementation coordinator`.
-- [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md) — stable/historical gate definitions; current execution wording is superseded by current status and live implementation state where they differ.
+- [Reusable prompt index](../agents/prompts/README.md) — aliases and execution rules; current programme control-plane entry point is `Oteryn: work coordinator`.
+- [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md) — stable/historical gate definitions; live implementation state supersedes dated execution wording.
 - [Gameplay/product architecture horizon](GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md) — detailed later product horizon; stale implementation-start wording is not current execution authority.
 - [Architecture decision discipline](../agents/ARCHITECTURE_DECISION_DISCIPLINE.md).
 
@@ -51,6 +50,13 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 - ADR-0014 — TCP-default / future QUIC-opt-in one-protocol strategy.
 - ADR-0015 — GameNode internal implementation shape not frozen.
 - ADR-0016 — gameplay transport mode vocabulary does not imply runtime readiness.
+
+## Proposed / future architecture candidates
+
+These files are design inputs only until their own review/acceptance lifecycle completes. Their presence does not grant implementation or production authority.
+
+- [ADR-0018: Browser client web-ready boundaries](ADR-0018-browser-client-web-ready-boundaries.md) — proposed shared-Rust/WASM/WebGPU/client-platform boundaries that preserve one `protocol-oteryn`; non-authoritative until separately accepted or adopted by protected owning architecture. Tracking: Issue #519.
+- [Oteryn Web Client staged implementation plan](WEB_CLIENT_IMPLEMENTATION_PLAN.md) — proposed W0–W10 delivery sequence, transport/profile gates, browser E2E, asset/cache, security, resource and rollout requirements. `IMPLEMENTATION_AUTHORITY: NONE` until separately allocated.
 
 ## Accepted foundation / durability / gameplay contracts
 
@@ -92,7 +98,7 @@ The following remain immutable design/review history but are no longer current D
 - `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_DECISION_PACKAGE_20260816.md`;
 - `OTERYN_V2_STAGE_C_VSL_OWNER_DECISION_PACKAGE_20260816.md`.
 
-Do not rewrite historical artifacts merely to retrofit later labels or implementation progress. Use the current-status overlay to state what changed later.
+Do not rewrite historical artifacts merely to retrofit later labels or implementation progress. Use later accepted contracts and live lifecycle state to establish what changed.
 
 ## Reference evidence/parity
 
@@ -103,11 +109,11 @@ Do not rewrite historical artifacts merely to retrofit later labels or implement
 
 Architecture acceptance and implementation progress elsewhere do not change those facts.
 
-## Current implementation state
+## Historical implementation snapshot
 
-Implementation has started under the live coordinator programme.
+The following reconciliation records the early implementation generation at `main@79e2f3ba...`; it is not current execution authority. Resolve present progress from live Issue/active-task/PR/check state.
 
-Verified reconciliation snapshot:
+Historical reconciliation snapshot:
 
 ```text
 main: 79e2f3baf17bd3b2231ab71c5dc5019e9aa0441e
@@ -124,13 +130,13 @@ QA: implementing on worker branch
 
 PR #47 / `79e2f3baf17bd3b2231ab71c5dc5019e9aa0441e` added an independent read-only programme audit prompt and is disjoint from the implementation allocation/status semantics above.
 
-Active but unmerged worker code is not canonical merged implementation. Resolve exact progress from the live allocation and worker task/branch/PR/CI state.
+At this snapshot, active but unmerged worker code was not canonical merged implementation. Current progress must be resolved from live Issue/active-task/PR/check state.
 
-`SIM-DETERMINISM-01` current merged implementation status is `IMPLEMENTED` for the bounded executor-defined core only. Whole-contract `PROVEN` remains withheld until named downstream replay/consumer/VSL evidence exists.
+At this snapshot, `SIM-DETERMINISM-01` was `IMPLEMENTED` for the bounded executor-defined core only; the snapshot did not establish whole-contract `PROVEN`.
 
-## Stage-C architecture
+## Historical Stage-C architecture snapshot
 
-`VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01` are `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED` on merged main. Exact Reference values remain evidence-gated. Permanent World Project/World Bundle physical encoding remains undecided and still requires the DUR-04 format spike plus later owner decision. `QA-E2E-01` executable evidence remains required for terminal vertical-slice proof.
+At this historical snapshot, `VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01` were recorded as `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`. The accepted architecture and evidence boundaries remain in their owning contracts; current implementation status comes from live lifecycle evidence.
 
 ## FND-04 reconnect/disconnect timing precedence
 
@@ -158,17 +164,9 @@ Machine-readable runtime availability wins over architecture target vocabulary. 
 
 Platform remains commercial entitlement authority; Game owns gameplay enforcement/mutation/result truth. Acceptance does **not** authorize entitlement runtime implementation, Premium/VIP activation, payments, product benefits, physical storage/transport choices or production rollout.
 
-## Current execution rule
+## Live execution routing
 
-```text
-EXECUTOR_PROGRAMME: RELEASED_AND_ACTIVE
-DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
-DIRECT_WORKERS: ALLOCATION_GATED
-IMPLEMENTATION_WORKERS_STARTED: YES
-IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
-```
-
-The coordinator continues to serialize shared workspace/registry/stable-ID changes and to release only dependency-ready bounded lanes. High-risk implementation lanes retain genuinely independent exact-head review requirements.
+Resolve the active control plane from live Issue #162, its active checkpoint and exact branch/PR/check state. The current programme entry alias is `Oteryn: work coordinator`; direct worker mutation remains allocation-gated. Shared workspace/registry/stable-ID changes remain serialized, and high-risk implementation lanes retain applicable independent exact-head review requirements.
 
 Prompt/architecture acceptance does not grant production/protected-environment/live-data, Platform/external-repository, entitlement activation, Reference-parity or owner-funded-AI authority.
 

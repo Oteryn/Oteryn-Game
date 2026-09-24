@@ -1,7 +1,8 @@
 # Oteryn v2 — Implementation Executor DAG
 
 - Programme ID: `OTV2-NATIVE-IMPLEMENTATION`
-- Status: `RELEASE_CANDIDATE`; becomes canonical/released only when PR #314 lawfully merges to `main`.
+- Status: `RELEASED` by historical [blakinio/Oteryn-v2#314](https://github.com/blakinio/Oteryn-v2/pull/314).
+- Historical release merge: `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`.
 - Canonical repository: `Oteryn/Oteryn-Game`.
 - Reconciled architecture base: `main@3ed4ca602f389d5a8549e0fc19dcc688a7b7a78c`.
 - External repositories: read-only unless separately owner-authorized.
@@ -342,7 +343,7 @@ Coordinator sequence:
 3. Allocate Durability after Foundation/Domain seams are stable enough.
 4. Allocate Ability + Interaction + AI after Foundation/SIM/Domain/Content.
 5. Allocate Client after compatible production Foundation seam exists.
-6. Allocate Movement after its prerequisites are integration-ready and merge it as the first gameplay integration gate.
+6. Allocate Movement after its prerequisites are integration-ready and submit it as the first gameplay integration gate only through the authenticated bound META 3.1 native exact-head Merge Queue contract. If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head; do not substitute direct merge or generic auto-merge.
 7. Allocate Combat only after Movement plus Ability/Interaction/Durability and its other prerequisites are integration-ready.
 8. Allocate Channel later when multichannel product implementation is needed and numeric prerequisites permit.
 9. Run Content Format Spike as evidence; run Analytics only after producer events exist.
@@ -352,7 +353,7 @@ Direct worker aliases exist for recovery/manual allocation but MUST verify an ac
 
 ## 23. Release semantics
 
-A lawful merge of PR #314 changes programme availability from prepared to released. It authorizes only reuse of the coordinator prompt/programme under the repository's normal task/allocation governance.
+The lawful historical merge of [blakinio/Oteryn-v2#314](https://github.com/blakinio/Oteryn-v2/pull/314) as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815` released this programme. This is not current `Oteryn/Oteryn-Game#314`. The release authorizes only reuse of the coordinator prompt/programme under the repository's normal task/allocation governance.
 
 It does **not**:
 

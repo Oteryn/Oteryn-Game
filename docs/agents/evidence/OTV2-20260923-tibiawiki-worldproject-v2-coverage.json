@@ -1,0 +1,407 @@
+{
+  "schema": "OTERYN_TIBIAWIKI_WORLDPROJECT_V2_COVERAGE/v1",
+  "status": "SCHEMA_COVERAGE_CLOSED_IMPLEMENTATION_PENDING_QUALIFICATION",
+  "as_of": "2026-09-23",
+  "repository": "Oteryn/Oteryn-Game",
+  "base_main_sha": "aabf0b9a30a6153b7e34d2afedcb1b2b19c27fd6",
+  "source_root": "https://www.tibiawiki.com.br/wiki/",
+  "methodology": {
+    "scope": "structured schema/content concepts, template/infobox families, category families, system pages and exceptional modern mechanics",
+    "page_corpus_bulk_copy": false,
+    "raw_mediawiki_api_export": false,
+    "api_constraint": "MediaWiki API returned Cloudflare HTTP 403 in the predecessor execution environment; rendered Special:AllPages, Special:Categories, category/template pages and indexed system pages were used instead.",
+    "meaning_of_unclassified_zero": "Every material structured concept family discovered in the census has an explicit Oteryn owner and disposition. It does not claim that every prose sentence or every individual wiki page was copied or individually read.",
+    "copyright_boundary": "Long-form TibiaWiki/Tibia prose, book bodies, sprites and artwork are not copied. The schema can hold Oteryn-owned/licensed document content."
+  },
+  "summary": {
+    "domain_groups": 19,
+    "records": 49,
+    "unclassified": 0,
+    "material_missing_after_candidate": 0,
+    "runtime_or_durable_owned": 8,
+    "editor_provenance_external": 5
+  },
+  "dispositions": [
+    "COVERED",
+    "COVERED_BY_CANDIDATE",
+    "RELATIONSHIP_ONLY",
+    "RUNTIME_STATE",
+    "DURABLE_PLAYER_STATE",
+    "RULESET_OR_DOMAIN_OWNER",
+    "EDITOR_ONLY",
+    "PROVENANCE_ONLY",
+    "PRESENTATION_ONLY",
+    "EXTERNAL_NOT_CONTENT"
+  ],
+  "source_surfaces": [
+    "https://www.tibiawiki.com.br/wiki/Especial:Todas_as_p%C3%A1ginas",
+    "https://www.tibiawiki.com.br/wiki/Especial:Categorias",
+    "https://www.tibiawiki.com.br/wiki/Categoria:Itens",
+    "https://www.tibiawiki.com.br/wiki/Bibliotecas",
+    "https://www.tibiawiki.com.br/wiki/Categoria:Criaturas",
+    "https://www.tibiawiki.com.br/wiki/Predefini%C3%A7%C3%A3o:Infobox_Criatura_New",
+    "https://www.tibiawiki.com.br/wiki/Categoria:NPCs_no_Tibia",
+    "https://www.tibiawiki.com.br/wiki/Categoria:Spoilers_de_Quests",
+    "https://www.tibiawiki.com.br/wiki/Magical_Archive",
+    "https://www.tibiawiki.com.br/wiki/Runas",
+    "https://www.tibiawiki.com.br/wiki/Geografia",
+    "https://www.tibiawiki.com.br/wiki/Achievements",
+    "https://www.tibiawiki.com.br/wiki/Besti%C3%A1rio",
+    "https://www.tibiawiki.com.br/wiki/Bossti%C3%A1rio",
+    "https://www.tibiawiki.com.br/wiki/Outfits",
+    "https://www.tibiawiki.com.br/wiki/Montarias",
+    "https://www.tibiawiki.com.br/wiki/Familiares",
+    "https://www.tibiawiki.com.br/wiki/World_Changes",
+    "https://www.tibiawiki.com.br/wiki/Mini_World_Changes",
+    "https://www.tibiawiki.com.br/wiki/Invas%C3%B5es",
+    "https://www.tibiawiki.com.br/wiki/Weapon_Proficiency",
+    "https://www.tibiawiki.com.br/wiki/Wheel_of_Destiny",
+    "https://www.tibiawiki.com.br/wiki/Prey_System",
+    "https://www.tibiawiki.com.br/wiki/Stamina"
+  ],
+  "records": [
+    {
+      "domain": "items",
+      "concept": "identity, presentation, description, physical/stack/equipment/weapon/protection/skill/charge/temporal/container/imbuement/use/readable/trade/fluid semantics",
+      "owner": "ReferenceItemSemantics",
+      "status": "COVERED",
+      "resolution": "retain existing typed Reference Item; source evidence remains independently qualified"
+    },
+    {
+      "domain": "items",
+      "concept": "Forge definition classification/max tier; Weapon Proficiency/perks/Perk Shaping/augments; use Ability/Interaction; consumable/lifecycle/source lifecycle",
+      "owner": "ProjectV2ItemAuthoring",
+      "status": "COVERED",
+      "resolution": "protected Item authoring extension remains canonical"
+    },
+    {
+      "domain": "items",
+      "concept": "current Forge tier, remaining charges, active imbues, current enchantment, stack quantity, container contents/custody",
+      "owner": "ItemInstance / Character durability",
+      "status": "RUNTIME_STATE",
+      "resolution": "explicitly excluded from WorldProject"
+    },
+    {
+      "domain": "items",
+      "concept": "NPC buy/sell prices",
+      "owner": "Service",
+      "status": "RELATIONSHIP_ONLY",
+      "resolution": "ProjectV2ServiceOffer; never reverse Item fields"
+    },
+    {
+      "domain": "items",
+      "concept": "crafting/upgrade recipes with ingredient/output quantities and optional fee/currency",
+      "owner": "Service",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2ServiceRecipe + ProjectV2ItemQuantity"
+    },
+    {
+      "domain": "documents",
+      "concept": "book/letter/note/diary/report/scroll/parchment/tablet/inscription/notice identity, title/author/language and authored body",
+      "owner": "Document definition",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Declaration::Document; body may contain only project-owned/licensed content"
+    },
+    {
+      "domain": "documents",
+      "concept": "readable physical item bound to reusable document",
+      "owner": "Item authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2ItemAuthoring.document"
+    },
+    {
+      "domain": "documents",
+      "concept": "library/shelf/book occurrence and same document under different physical occurrences",
+      "owner": "World placement",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Placement document + parent_placement + area"
+    },
+    {
+      "domain": "documents",
+      "concept": "player-written text/writer/timestamp/current body",
+      "owner": "ItemInstance / durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "definition keeps writable rules only; mutable authored body excluded"
+    },
+    {
+      "domain": "geography",
+      "concept": "cities/islands/regions/hunting places/streets as reusable authored locations",
+      "owner": "Area + editor taxonomy",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Declaration::Area with typed parent; descriptive hierarchy need not become runtime authority"
+    },
+    {
+      "domain": "geography",
+      "concept": "coordinates/floors/object occurrences",
+      "owner": "WorldProject world/placement",
+      "status": "COVERED",
+      "resolution": "ProjectV2World + ProjectV2Placement"
+    },
+    {
+      "domain": "geography",
+      "concept": "doors/teleports/ladders/boats/carpets/local object transitions",
+      "owner": "WorldObject/Transition/Interaction + existing LocalObject transition owner",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "WorldObject authoring binds typed interactions/transitions; executable local transition remains existing owner"
+    },
+    {
+      "domain": "creatures",
+      "concept": "presentation/behavior/loot",
+      "owner": "Reference Creature/Loot",
+      "status": "COVERED",
+      "resolution": "retain executable ReferenceCreatureDefinition and ReferenceLootDefinition"
+    },
+    {
+      "domain": "creatures",
+      "concept": "HP/EXP/speed/armor/mitigation/resistances/immunities/pushability/abilities",
+      "owner": "Creature authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2CreatureAuthoring source-only overlay"
+    },
+    {
+      "domain": "creatures",
+      "concept": "spawn/location relationships",
+      "owner": "World placement / Encounter / Area",
+      "status": "RELATIONSHIP_ONLY",
+      "resolution": "do not duplicate reverse location lists on Creature"
+    },
+    {
+      "domain": "creatures",
+      "concept": "Bestiary static difficulty/occurrence/kill thresholds/charm points",
+      "owner": "Creature authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2BestiaryProfile"
+    },
+    {
+      "domain": "creatures",
+      "concept": "Bestiary kill counters/unlocks/current selected charm assignment",
+      "owner": "Character progression durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "not static Content"
+    },
+    {
+      "domain": "bosses",
+      "concept": "Bosstiary category/static kill thresholds/points",
+      "owner": "Creature authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2BosstiaryProfile"
+    },
+    {
+      "domain": "bosses",
+      "concept": "Bosstiary per-character kill/progress/reward eligibility",
+      "owner": "Character/Reward durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "not WorldProject"
+    },
+    {
+      "domain": "familiars",
+      "concept": "creature identity + vocation/summon ability/duration/mana/owner-speed source facts",
+      "owner": "Creature/Ability authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2FamiliarProfile reuses Creature; no duplicate Familiar creature model"
+    },
+    {
+      "domain": "npc",
+      "concept": "presentation/behavior/dialogue/services and world placement",
+      "owner": "NPC declaration + placement",
+      "status": "COVERED",
+      "resolution": "existing ProjectV2 NPC typed references"
+    },
+    {
+      "domain": "npc",
+      "concept": "trade",
+      "owner": "Service",
+      "status": "COVERED",
+      "resolution": "ProjectV2ServiceOffer"
+    },
+    {
+      "domain": "npc",
+      "concept": "travel/blessing/bank/task or other service-specific execution",
+      "owner": "Service/Interaction and owning gameplay domain",
+      "status": "RULESET_OR_DOMAIN_OWNER",
+      "resolution": "retain source observations/typed references; do not invent execution authority in Content"
+    },
+    {
+      "domain": "npc",
+      "concept": "conversation cursor/current dialogue state/schedules driven by live world state",
+      "owner": "ChannelRuntime / NPC conversation owner",
+      "status": "RUNTIME_STATE",
+      "resolution": "not WorldProject"
+    },
+    {
+      "domain": "quests",
+      "concept": "identity/requirements/repeatability/prerequisite quest/reward item/reward achievement/encounter links",
+      "owner": "Quest authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2QuestAuthoring"
+    },
+    {
+      "domain": "quests",
+      "concept": "mission objective text/exceptional source-specific conditions",
+      "owner": "Quest candidate observations + Interaction",
+      "status": "COVERED",
+      "resolution": "preserve as bounded source fields until owner accepts executable condition grammar"
+    },
+    {
+      "domain": "quests",
+      "concept": "current mission/storage/progress/completion/cooldowns",
+      "owner": "Character persistence",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "not WorldProject"
+    },
+    {
+      "domain": "abilities",
+      "concept": "Ability->Effect->Formula execution graph",
+      "owner": "Reference Ability/Effect/Formula",
+      "status": "COVERED",
+      "resolution": "existing executable graph remains sole lowering owner"
+    },
+    {
+      "domain": "abilities",
+      "concept": "incantation/vocations/level/group/cooldowns/premium/mana/base power/range/damage type/acquisition/augments",
+      "owner": "Ability authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2AbilityAuthoring source-only overlay"
+    },
+    {
+      "domain": "abilities",
+      "concept": "rune physical object + cast/create spell",
+      "owner": "Item + Ability + Interaction",
+      "status": "RELATIONSHIP_ONLY",
+      "resolution": "reuse existing families rather than Rune family"
+    },
+    {
+      "domain": "achievements",
+      "concept": "static identity/source id/degree/points/secret/premium/presentation/unlock relation",
+      "owner": "Achievement definition",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Declaration::Achievement"
+    },
+    {
+      "domain": "achievements",
+      "concept": "character/account unlock timestamp/current unlocked set",
+      "owner": "Character/Account durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "not WorldProject"
+    },
+    {
+      "domain": "charms",
+      "concept": "major/minor charm identity, rank, point cost, proc chance/effect source facts",
+      "owner": "Charm definition",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Declaration::Charm"
+    },
+    {
+      "domain": "charms",
+      "concept": "Charm Points balance, unlocked ranks, assignments to bestiary entries",
+      "owner": "Character progression durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "not WorldProject"
+    },
+    {
+      "domain": "cosmetics",
+      "concept": "outfit/addon presentation variants/premium/acquisition route",
+      "owner": "Outfit definition + Presentation/Interaction",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Declaration::Outfit"
+    },
+    {
+      "domain": "cosmetics",
+      "concept": "mount presentation/speed/premium/taming item/acquisition route",
+      "owner": "Mount definition + Presentation/Interaction",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2Declaration::Mount"
+    },
+    {
+      "domain": "cosmetics",
+      "concept": "unlocked outfits/addons/mounts/current selection",
+      "owner": "Character/Account entitlement durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "not WorldProject"
+    },
+    {
+      "domain": "events",
+      "concept": "boss/raid/world change/mini world change/arena/world quest static type/scope/areas/cooldown/repeatability/interactions",
+      "owner": "Encounter authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2EncounterAuthoring"
+    },
+    {
+      "domain": "events",
+      "concept": "current phase/wave/activity/timer/world-global state/reward claim",
+      "owner": "Event owner / ChannelRuntime / Reward service",
+      "status": "RUNTIME_STATE",
+      "resolution": "not static Content"
+    },
+    {
+      "domain": "houses",
+      "concept": "static area/size/rent source facts/beds/floors/rooms/street/player-ownable",
+      "owner": "House authoring",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "ProjectV2HouseAuthoring"
+    },
+    {
+      "domain": "houses",
+      "concept": "owner/rent payment/access lists/house inventory/runtime topology",
+      "owner": "House service/domain",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "scope matrix owner remains authoritative"
+    },
+    {
+      "domain": "player_systems",
+      "concept": "vocation/skills/magic level/stamina/soul/blessings/death penalties/party/shared EXP rules",
+      "owner": "Ruleset + Character/Party/PvP domains",
+      "status": "RULESET_OR_DOMAIN_OWNER",
+      "resolution": "not WorldProject content identity unless a separately accepted ruleset schema requires a static definition"
+    },
+    {
+      "domain": "player_systems",
+      "concept": "Prey slots/rolls/bonuses/current prey/bonus rerolls",
+      "owner": "Character progression/economy rules",
+      "status": "RULESET_OR_DOMAIN_OWNER",
+      "resolution": "static rule constants belong ruleset; current choices/counters are durable state"
+    },
+    {
+      "domain": "player_systems",
+      "concept": "Wheel of Destiny/Gem Atelier/character progression graph and selections",
+      "owner": "Character progression/ruleset",
+      "status": "RULESET_OR_DOMAIN_OWNER",
+      "resolution": "outside WorldProject authority; add owner-specific typed schema when that gameplay product slice is accepted"
+    },
+    {
+      "domain": "player_systems",
+      "concept": "Weapon Proficiency XP/unlocks/selected perks/ranks",
+      "owner": "Character progression durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "definitions remain Item authoring; progress remains character state"
+    },
+    {
+      "domain": "economy",
+      "concept": "market history, personal Cyclopedia prices, store/Tibia Coin/commercial entitlements",
+      "owner": "Market/Platform/commercial or editor evidence",
+      "status": "EXTERNAL_NOT_CONTENT",
+      "resolution": "do not grant economy/commercial authority to WorldProject"
+    },
+    {
+      "domain": "presentation",
+      "concept": "sprites/outfits/icons/assets",
+      "owner": "Presentation/Asset",
+      "status": "PRESENTATION_ONLY",
+      "resolution": "existing Presentation->Asset binding; provenance/licensing required"
+    },
+    {
+      "domain": "provenance",
+      "concept": "implemented/removed/version/update labels and wiki navigation categories",
+      "owner": "source/editor/provenance",
+      "status": "PROVENANCE_ONLY",
+      "resolution": "not gameplay identity or behavior"
+    },
+    {
+      "domain": "wiki",
+      "concept": "navigation pages, tutorials, community/editorial pages, news/update prose",
+      "owner": "none / evidence only",
+      "status": "EXTERNAL_NOT_CONTENT",
+      "resolution": "not Oteryn gameplay/world content"
+    }
+  ]
+}

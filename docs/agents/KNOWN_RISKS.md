@@ -1,6 +1,6 @@
 # Known architectural and delivery risks
 
-- Greenfield repository paths and tooling may not yet exist; plans are not implementation evidence.
+- Dated repository maps and status documents can drift from the implemented tree; verify current paths and live lifecycle state, and never treat planned paths as implementation evidence.
 - Existing Oteryn Platform, Otheryn and otclient documents may still describe Canary-compatible or dual-protocol architecture that conflicts with Oteryn v2 ADR-0001.
 - Character leases, stale-writer fencing and item transactions are prerequisite safety contracts, not later optimizations.
 - A singleton world or process-global mutable game state would make multichannel retrofitting unsafe and expensive.

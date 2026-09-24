@@ -1,0 +1,232 @@
+{
+  "accepted_semantics_preserved": {
+    "caller_selected_retained_boolean_is_authority": false,
+    "changed_normalized_intent_or_binding_replays": false,
+    "expired_terminal_becomes_fresh_work": false,
+    "foundation_gamesession_owns_duplicate_truth": true,
+    "later_terminalization_may_pass_earlier_pending": false,
+    "pending_entries_evictable_for_terminal_pressure": false,
+    "terminal_eviction_allows_reexecution": false,
+    "terminal_eviction_lowers_next_command_id": false
+  },
+  "admission_main_sha": "4b5377f4caa765321477011df859cf20de32786a",
+  "allocation_comment_id": 5733345229,
+  "architect_comment_id": 5733275908,
+  "architect_readback_comment_id": 5733347366,
+  "architecture_handoff": {
+    "can_freeze_both_required_registry_values_now": false,
+    "charged_byte_value_ready_for_architect_consideration": null,
+    "count_value_ready_for_architect_consideration": 1,
+    "next_action": "obtain FIRST_PLAYABLE_RETAINED_SEMANTIC_RECORD_CHARGED_BYTE_BOUND evidence; then route issue 663 back to Oteryn: sol supervising architect. Do not resume CW4 yet."
+  },
+  "branch": "agent/fnd02-terminal-outcome-retention-resource-evidence-663",
+  "charged_byte_proposal": {
+    "classification": "BLOCKED_ON_EVIDENCE",
+    "production_authority_selected_here": false,
+    "proposed_aggregate_charged_resident_bytes_per_gamesession": null,
+    "smallest_exact_missing_discriminator": {
+      "must_not_be_substituted_with": [
+        "FND02-COMMAND-PAYLOAD-BYTES",
+        "FND02-COMMAND-RESULT-PAYLOAD-BYTES",
+        "FND02-OUTSTANDING-COMMANDS",
+        "NET03 queue budgets",
+        "fixture count 8",
+        "arbitrary headroom"
+      ],
+      "name": "FIRST_PLAYABLE_RETAINED_SEMANTIC_RECORD_CHARGED_BYTE_BOUND",
+      "required_evidence": "one accepted representation-independent charging rule or one concrete bounded Foundation API candidate proving the maximum owned bytes for server-normalized intent plus original selected binding evidence plus terminal semantic outcome plus retention metadata for the first-playable command family, including every simultaneously retained copy"
+    },
+    "why_wire_limits_do_not_close_it": [
+      "FND02-COMMAND-PAYLOAD-BYTES=65536 bounds one encoded ClientCommand.payload; it does not bound the server-normalized semantic intent plus selected binding evidence.",
+      "FND02-COMMAND-RESULT-PAYLOAD-BYTES=65536 bounds one encoded CommandResult.payload; it does not bound the Foundation-owned resident semantic record or its copies and metadata.",
+      "The accepted issue 663 boundary deliberately does not freeze physical Rust layout or a canonical digest-only identity representation."
+    ]
+  },
+  "classification": "NON_PRODUCTION_RESOURCE_EVIDENCE",
+  "count_proposal": {
+    "classification": "EVIDENCE_BACKED_FIRST_PLAYABLE_MINIMUM",
+    "future_supersession_trigger": "an accepted same-GameSession workload requiring exact replay of more than the most recent terminal result, or representative product evidence justifying a wider replay window",
+    "production_authority_selected_here": false,
+    "proposed_hard_retained_terminal_records_per_gamesession": 1,
+    "rationale": "The exact accepted first-playable replay witness requires one retained terminal record in session A after another session changes current world state. FND-02 permits older evicted terminal outcomes to become COMMAND_OUTCOME_EXPIRED without ever becoming fresh work, so a larger replay window is not required by the current accepted first-playable contract."
+  },
+  "cw4_resume_authority": "NONE",
+  "evidence_result": "BLOCKED_ON_EVIDENCE",
+  "first_playable_functional_lower_bound": {
+    "one_record_sufficient_for_exact_witness": true,
+    "resource_scope": "per GameSession",
+    "retained_terminal_records_per_gamesession": 1,
+    "source": "accepted Content/World local-transition revision 2: two valid GameSessions, A/1 open, B/1 close, replay A/1 without reopen",
+    "why_not_two": "A/1 and B/1 belong to distinct valid GameSessions; the witness contains two retained records globally but only one in each GameSession resource scope",
+    "witness_probe": {
+      "cross_session_total_records_in_witness": 2,
+      "per_gamesession_count_lower_bound_demonstrated": 1,
+      "production_byte_claim": false,
+      "replay_kind": "REPLAY_RETAINED_OUTCOME",
+      "replay_outcome": "OPENED",
+      "session_a_retained_count": 1,
+      "session_a_synthetic_charged_bytes": 108,
+      "session_b_retained_count": 1,
+      "session_b_synthetic_charged_bytes": 110
+    },
+    "zero_records_sufficient": false
+  },
+  "foundation_runtime_mutation": false,
+  "issue": 663,
+  "modeled_accounting": {
+    "production_charge_rule_claim": false,
+    "purpose": "exercise boundary behavior and arithmetic only",
+    "python_object_size_or_rss_claim": false,
+    "record_charge_equation": "record_fixed_logical_bytes + normalized_intent_bytes + binding_bytes + outcome_bytes",
+    "record_fixed_logical_bytes": 40,
+    "rust_abi_size_claim": false,
+    "session_charge_equation": "store_fixed_logical_bytes + sum(retained_record_charged_bytes)",
+    "store_fixed_logical_bytes": 32,
+    "wire_size_claim": false
+  },
+  "parent_control_plane": 162,
+  "production_authority": "NONE",
+  "required_boundary_results": {
+    "byte_exact_boundary": "PASS",
+    "byte_one_over_evicts_oldest_terminal_only": "PASS",
+    "changed_normalized_intent_conflicts": "PASS",
+    "changed_original_binding_conflicts": "PASS",
+    "checked_u64_overflow_rejected": "PASS",
+    "count_exact_boundary": "PASS",
+    "count_one_over_evicts_oldest_terminal_only": "PASS",
+    "evicted_command_becomes_expired_and_remains_non_reservable": "PASS",
+    "fixed_plus_variable_charge_explicit": "PASS",
+    "functional_zero_count_rejected_before_modeled_gameplay_mutation": "PASS",
+    "later_terminalization_cannot_pass_earlier_pending": "PASS",
+    "pending_entries_never_evicted_for_terminal_pressure": "PASS",
+    "repeat_measurement_is_deterministic": "PASS",
+    "same_input_replays_original_terminal_outcome_without_reexecution": "PASS",
+    "sequence_gap_changes_no_state": "PASS",
+    "single_record_too_large_fails_before_modeled_gameplay_mutation": "PASS"
+  },
+  "resource_registry_mutation": false,
+  "schema_version": 1,
+  "task": "FND02_TERMINAL_OUTCOME_RETENTION_RESOURCE_EVIDENCE_663",
+  "tested_candidate_envelopes": [
+    {
+      "binding_bytes": 16,
+      "count": 1,
+      "intent_bytes": 8,
+      "modeled_record_charged_bytes": 72,
+      "modeled_session_charged_bytes": 104,
+      "outcome_bytes": 8,
+      "production_candidate": false,
+      "shape": "tiny"
+    },
+    {
+      "binding_bytes": 16,
+      "count": 2,
+      "intent_bytes": 8,
+      "modeled_record_charged_bytes": 72,
+      "modeled_session_charged_bytes": 176,
+      "outcome_bytes": 8,
+      "production_candidate": false,
+      "shape": "tiny"
+    },
+    {
+      "binding_bytes": 16,
+      "count": 4,
+      "intent_bytes": 8,
+      "modeled_record_charged_bytes": 72,
+      "modeled_session_charged_bytes": 320,
+      "outcome_bytes": 8,
+      "production_candidate": false,
+      "shape": "tiny"
+    },
+    {
+      "binding_bytes": 16,
+      "count": 8,
+      "intent_bytes": 8,
+      "modeled_record_charged_bytes": 72,
+      "modeled_session_charged_bytes": 608,
+      "outcome_bytes": 8,
+      "production_candidate": false,
+      "shape": "tiny"
+    },
+    {
+      "binding_bytes": 128,
+      "count": 1,
+      "intent_bytes": 16,
+      "modeled_record_charged_bytes": 216,
+      "modeled_session_charged_bytes": 248,
+      "outcome_bytes": 32,
+      "production_candidate": false,
+      "shape": "cw4_like"
+    },
+    {
+      "binding_bytes": 128,
+      "count": 2,
+      "intent_bytes": 16,
+      "modeled_record_charged_bytes": 216,
+      "modeled_session_charged_bytes": 464,
+      "outcome_bytes": 32,
+      "production_candidate": false,
+      "shape": "cw4_like"
+    },
+    {
+      "binding_bytes": 128,
+      "count": 4,
+      "intent_bytes": 16,
+      "modeled_record_charged_bytes": 216,
+      "modeled_session_charged_bytes": 896,
+      "outcome_bytes": 32,
+      "production_candidate": false,
+      "shape": "cw4_like"
+    },
+    {
+      "binding_bytes": 128,
+      "count": 8,
+      "intent_bytes": 16,
+      "modeled_record_charged_bytes": 216,
+      "modeled_session_charged_bytes": 1760,
+      "outcome_bytes": 32,
+      "production_candidate": false,
+      "shape": "cw4_like"
+    },
+    {
+      "binding_bytes": 2048,
+      "count": 1,
+      "intent_bytes": 1024,
+      "modeled_record_charged_bytes": 4136,
+      "modeled_session_charged_bytes": 4168,
+      "outcome_bytes": 1024,
+      "production_candidate": false,
+      "shape": "stress"
+    },
+    {
+      "binding_bytes": 2048,
+      "count": 2,
+      "intent_bytes": 1024,
+      "modeled_record_charged_bytes": 4136,
+      "modeled_session_charged_bytes": 8304,
+      "outcome_bytes": 1024,
+      "production_candidate": false,
+      "shape": "stress"
+    },
+    {
+      "binding_bytes": 2048,
+      "count": 4,
+      "intent_bytes": 1024,
+      "modeled_record_charged_bytes": 4136,
+      "modeled_session_charged_bytes": 16576,
+      "outcome_bytes": 1024,
+      "production_candidate": false,
+      "shape": "stress"
+    },
+    {
+      "binding_bytes": 2048,
+      "count": 8,
+      "intent_bytes": 1024,
+      "modeled_record_charged_bytes": 4136,
+      "modeled_session_charged_bytes": 33120,
+      "outcome_bytes": 1024,
+      "production_candidate": false,
+      "shape": "stress"
+    }
+  ]
+}

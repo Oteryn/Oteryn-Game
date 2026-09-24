@@ -1,0 +1,11 @@
+{
+  "bytes": 246811594,
+  "expected_sha256": "1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f",
+  "host_machine": "Molehill-PC",
+  "matches_expected": true,
+  "measurement_commit_sha": "280afa3355d4ab7a69ce4c8ebcc6f8f5b3fc1de8",
+  "proprietary_bytes_committed": false,
+  "schema": "oteryn-world-vfx-asset-proof-v1",
+  "sha256": "1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f",
+  "source_label": "15.32"
+}

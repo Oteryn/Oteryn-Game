@@ -1,0 +1,36 @@
+[workspace]
+members = ["shared", "wgpu-backend", "bevy-backend"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MPL-2.0"
+publish = false
+
+[workspace.dependencies]
+oteryn-graphics-bakeoff-shared = { path = "shared" }
+pollster = "=1.0.1"
+wgpu = { version = "=30.0.0", default-features = false, features = ["std", "dx12", "wgsl"] }
+winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
+bevy = { version = "=0.19.1", default-features = false, features = [
+    "std",
+    "default_app",
+    "bevy_winit",
+    "multi_threaded",
+    "2d_bevy_render",
+] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+dbg_macro = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"

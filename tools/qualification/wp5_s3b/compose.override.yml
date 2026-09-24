@@ -1,0 +1,12 @@
+# WP5 S3-B overlay on the protected S3-A topology: enables the Platform
+# Character bootstrap-intent producer (Oteryn/Oteryn-Platform#1407) with its
+# own mTLS client identity and routes its private reconciliation endpoint.
+services:
+  platform:
+    environment:
+      GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_TTL_SECONDS: "300"
+      GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_MTLS_CLIENT_IDENTITY: CN=oteryn-game-character-authority
+  nginx:
+    volumes:
+      - ${GAME_SOURCE}/tools/qualification/wp5_s3b/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${WP5_PKI}:/run/pki:ro

@@ -7,10 +7,13 @@ on:
     branches: [main]
     paths:
       - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/identity.py'
       - 'tools/game-atlas-creatures/self_test.py'
       - 'tools/game-atlas-creatures/README.md'
+      - 'tools/repository/test_validate_game_atlas_semantic_search_triggers.py'
       - 'docs/contracts/OTERYN_GAME_ATLAS_NPC_ROLES_V1.md'
       - '.github/workflows/game-atlas-static-creatures.yml'
+      - '.github/workflows/game-atlas-semantic-search.yml'
   workflow_dispatch:
 
 permissions:
@@ -68,22 +71,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py
-          python tools/game-atlas-creatures/self_test.py
+          python -S -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py
+          python -S tools/game-atlas-creatures/self_test.py
+
+      - name: Verify Atlas trigger closure
+        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py
 
       - name: Build exact pinned product twice
         shell: bash
         run: |
           set -euo pipefail
           ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"
-          python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json
-          python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json
+          python -S tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json
+          python -S tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json
           cmp /tmp/creatures-a.json /tmp/creatures-b.json
       - name: Verify exact role and creature census
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python -S - <<'PY'
           import collections, json
           from pathlib import Path
           data=json.loads(Path('/tmp/creatures-a.json').read_text())

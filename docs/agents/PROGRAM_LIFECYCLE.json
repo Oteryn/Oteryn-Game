@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "repository": "Oteryn/Oteryn-Game",
+  "authority_rule": "Files under docs/agents/programs/archive are historical provenance only. They never allocate work, grant write authority, or outrank live GitHub state, current task packets, accepted architecture/contracts, or current protected main.",
+  "programs": [
+    {
+      "program_id": "OTERYN_V2_ARCHITECTURE_SUCCESSOR_DELEGATION_20260816",
+      "path": "docs/agents/programs/archive/OTERYN_V2_ARCHITECTURE_SUCCESSOR_DELEGATION_20260816.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "docs/agents/tasks/archive/OTV2-20260816-cd-successor-delegation.md",
+        "current repository search found only archived task consumers on protected main at Issue #740 admission"
+      ],
+      "superseded_by": [
+        "accepted architecture/contracts",
+        "live GitHub architecture lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTERYN_WP3_MULTIAGENT_LAUNCH_RUNBOOK_20260910",
+      "path": "docs/agents/programs/archive/OTERYN_WP3_MULTIAGENT_LAUNCH_RUNBOOK_20260910.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "archived on protected main before Issue #740",
+        "WP3-v2 launch successor is docs/agents/programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md"
+      ],
+      "superseded_by": [
+        "docs/agents/programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md",
+        "live GitHub WP3 lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_ATLAS_SEMANTIC_ORACLE_TRIGGER_AMENDMENT_20260908",
+      "path": "docs/agents/programs/archive/OTV2_ATLAS_SEMANTIC_ORACLE_TRIGGER_AMENDMENT_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #418 closed on 2026-09-09",
+        "PR #426 merged on 2026-09-09 as d66bdd63ee157fcea4e417f45e2a7601054a6f65"
+      ],
+      "superseded_by": [
+        "current protected Atlas semantic-search workflow/oracle state",
+        "live GitHub Atlas lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_ATLAS_SEMANTIC_SEARCH_TRIGGER_REPAIR_20260907",
+      "path": "docs/agents/programs/archive/OTV2_ATLAS_SEMANTIC_SEARCH_TRIGGER_REPAIR_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #418 closed on 2026-09-09",
+        "PR #426 merged on 2026-09-09 as d66bdd63ee157fcea4e417f45e2a7601054a6f65",
+        "current exact filename search found no non-historical consumer at Issue #740 audit"
+      ],
+      "superseded_by": [
+        "current protected Atlas semantic-search workflow/oracle state",
+        "live GitHub Atlas lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_CODEQL_ACTION_PAIR_257_258_ALLOCATION_20260908",
+      "path": "docs/agents/programs/archive/OTV2_CODEQL_ACTION_PAIR_257_258_ALLOCATION_20260908.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "PR #257 merged on 2026-09-08 as da8284c476ce59cbead61340a6d876ece269e6fe",
+        "PR #258 closed without merge after paired supersession"
+      ],
+      "superseded_by": [
+        "current protected CodeQL workflow pins and repository policy",
+        "live GitHub dependency-update state"
+      ]
+    },
+    {
+      "program_id": "OTV2_GAMESESSION_LEDGER_REGISTRY_ALLOCATION_20260907",
+      "path": "docs/agents/programs/archive/OTV2_GAMESESSION_LEDGER_REGISTRY_ALLOCATION_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #384 closed on 2026-09-07",
+        "PR #386 merged on 2026-09-07 as 7d59a1169b5c99d4994a904aa566d843cf833a34"
+      ],
+      "superseded_by": [
+        "current RESOURCE_LIMITS_REGISTRY.json",
+        "live GitHub session-ledger lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_GAMESESSION_LEDGER_RESOURCE_REGISTRY_20260907",
+      "path": "docs/agents/programs/archive/OTV2_GAMESESSION_LEDGER_RESOURCE_REGISTRY_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #384 closed on 2026-09-07",
+        "PR #386 merged on 2026-09-07 as 7d59a1169b5c99d4994a904aa566d843cf833a34"
+      ],
+      "superseded_by": [
+        "current RESOURCE_LIMITS_REGISTRY.json",
+        "live GitHub session-ledger lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_REFERENCE_WORLD_CORRIDOR_CENSUS_511_ALLOCATION_20260910",
+      "path": "docs/agents/programs/archive/OTV2_REFERENCE_WORLD_CORRIDOR_CENSUS_511_ALLOCATION_20260910.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #511 closed on 2026-09-17",
+        "PR #525 merged on 2026-09-10 as bb4c0fce8fa12a38dd1675860de0620ce50ac0a6",
+        "current exact filename search found no live consumer at Issue #740 audit"
+      ],
+      "superseded_by": [
+        "current protected Reference corridor evidence",
+        "live GitHub Content/Reference lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_RUNTIME_ACTOR_CARRIER_PROTOTYPE_ALLOCATION_20260911",
+      "path": "docs/agents/programs/archive/OTV2_RUNTIME_ACTOR_CARRIER_PROTOTYPE_ALLOCATION_20260911.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "PR #568 merged on 2026-09-11 as 90a3f92434e32354ff1aaeac96d038bbc49eba9c",
+        "Issue #530 remains open on later preproduction/resource-evidence work and current exact filename search found no live consumer"
+      ],
+      "superseded_by": [
+        "docs/agents/programs/OTV2_RUNTIME_ACTOR_CARRIER_PREPRODUCTION_ALLOCATION_20260911.md",
+        "live GitHub Issue #530 lifecycle state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP2_GAMESESSION_NONREUSE_AMENDMENT_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP2_GAMESESSION_NONREUSE_AMENDMENT_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #353 closed on 2026-09-07",
+        "PR #361 merged on 2026-09-07 as 3825e9c82ff388923f73548a807718807012f53f"
+      ],
+      "superseded_by": [
+        "protected Foundation GameSession nonreuse implementation",
+        "current accepted session/recovery contracts and live GitHub state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP3_PG_TARGET_LARGE_DIFF_ALLOCATION_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP3_PG_TARGET_LARGE_DIFF_ALLOCATION_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "Issue #420 closed on 2026-09-08",
+        "PR #422 merged on 2026-09-08 as e3d8a46871a98a309c73b3febaa41a7e6d2ec408",
+        "matching task packet is already under tasks/archive"
+      ],
+      "superseded_by": [
+        "current PostgreSQL routing/test-lane policy",
+        "live GitHub CI routing state"
+      ]
+    },
+    {
+      "program_id": "OTV2_WP4_GAMESESSION_NONREUSE_PERSISTENCE_AMENDMENT_20260907",
+      "path": "docs/agents/programs/archive/OTV2_WP4_GAMESESSION_NONREUSE_PERSISTENCE_AMENDMENT_20260907.md",
+      "status": "historical",
+      "authoritative": false,
+      "terminal_evidence": [
+        "predecessor Issue #353 / PR #361 is terminal",
+        "WP4 Child B PR #335 merged on 2026-09-21 as f02beb42523af6db1bb0c71d2840961e3fa5fcd0"
+      ],
+      "superseded_by": [
+        "protected WP4 durability implementation",
+        "current accepted persistence/session contracts and live GitHub state"
+      ]
+    }
+  ]
+}

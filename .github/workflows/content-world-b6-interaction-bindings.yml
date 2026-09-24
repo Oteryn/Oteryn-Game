@@ -1,0 +1,350 @@
+name: Content World B6 interaction bindings
+
+run-name: Content World B6 interaction bindings • PR #${{ github.event.pull_request.number }}
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/reference-world-corridor-census/interaction_binding_catalog.py'
+      - 'tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py'
+      - 'tools/game-atlas-fullworld-source/producer.py'
+      - 'tools/reference-world-corridor-census/census.py'
+      - 'tools/game-atlas-thais-fixture/export.py'
+      - 'tools/reference-world-corridor-census/self_test.py'
+      - 'tools/reference-world-corridor-census/content_source_batch_self_test.py'
+      - 'tools/game-atlas-fullworld-source/self_test.py'
+      - 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+      - 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/**'
+      - 'docs/agents/tasks/active/OTV2-20260920-content-world-cw2-b6-interaction-bindings-504.md'
+      - '.github/workflows/content-world-b6-interaction-bindings.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-world-b6-interaction-bindings-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-catalogue:
+    name: Content World B6 / real pinned catalogue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Check out exact Game PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Verify exact Game head
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+
+      - name: Check out exact fresh Crystal source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zimbadev/crystalserver
+          ref: ff7ede593c69d4c658b382c97443e8155926924a
+          path: fresh-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check out exact pinned parser lineage
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact source and parser revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C fresh-source rev-parse HEAD)" = 'ff7ede593c69d4c658b382c97443e8155926924a'
+          test "$(git -C legacy rev-parse HEAD)" = 'e417c5e7c22986bf4acef0495eb47f7b72c97cce'
+          test -z "$(git -C fresh-source status --porcelain=v1 --untracked-files=all)"
+          test -z "$(git -C legacy status --porcelain=v1 --untracked-files=all)"
+          MAP='fresh-source/data-global/world/world.otbm'
+          test -f "$MAP"
+          test "$(stat -c '%s' "$MAP")" = '52267895'
+          test "$(git -C fresh-source hash-object data-global/world/world.otbm)" = 'e95e8f7c7a95d1b634b49a5dea5a5dc76021406b'
+          test "$(sha256sum "$MAP" | awk '{print $1}')" = '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb'
+
+      - name: Download exact 15.32 asset inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE_ID='1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv'
+          EXPECTED_ZIP_SHA='1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f'
+          URL="https://drive.usercontent.google.com/download?id=${FILE_ID}&export=download&confirm=t"
+          curl -fL --retry 5 --retry-delay 2 "$URL" -o /tmp/15.32.zip
+          test "$(sha256sum /tmp/15.32.zip | awk '{print $1}')" = "$EXPECTED_ZIP_SHA"
+          mkdir -p /tmp/15.32
+          unzip -q /tmp/15.32.zip 'assets/catalog-content.json' 'assets/appearances-*.dat' -d /tmp/15.32
+          CATALOG='/tmp/15.32/assets/catalog-content.json'
+          APPEARANCE='/tmp/15.32/assets/appearances-dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075.dat'
+          test "$(sha256sum "$CATALOG" | awk '{print $1}')" = '35639e000c4c108665a091cfbdf699d549d995b37670bc08de575ab6cd380d85'
+          test "$(sha256sum "$APPEARANCE" | awk '{print $1}')" = 'dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075'
+
+      - name: Compile B6 generator and focused self-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B -m py_compile \
+            tools/reference-world-corridor-census/interaction_binding_catalog.py \
+            tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py
+
+      - name: Run focused and existing regression self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B tools/reference-world-corridor-census/interaction_binding_catalog_self_test.py
+          python -B tools/reference-world-corridor-census/self_test.py
+          python -B tools/reference-world-corridor-census/content_source_batch_self_test.py
+          python -B tools/game-atlas-fullworld-source/self_test.py
+
+      - name: Build real B6 catalogue twice plus reversed enumeration
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMON=(
+            --game-root "$GITHUB_WORKSPACE"
+            --legacy-root "$GITHUB_WORKSPACE/legacy"
+            --source-root "$GITHUB_WORKSPACE/fresh-source"
+            --asset-zip /tmp/15.32.zip
+            --assets /tmp/15.32/assets
+          )
+          python -B tools/reference-world-corridor-census/interaction_binding_catalog.py \
+            "${COMMON[@]}" --output /tmp/b6-a --enumeration normal | tee /tmp/b6-a.log
+          python -B tools/reference-world-corridor-census/interaction_binding_catalog.py \
+            "${COMMON[@]}" --output /tmp/b6-b --enumeration normal | tee /tmp/b6-b.log
+          python -B tools/reference-world-corridor-census/interaction_binding_catalog.py \
+            "${COMMON[@]}" --output /tmp/b6-reverse --enumeration reverse | tee /tmp/b6-reverse.log
+          diff -rq /tmp/b6-a /tmp/b6-b
+          diff -rq /tmp/b6-a /tmp/b6-reverse
+
+      - name: Verify tracked evidence is byte-identical to regenerated product
+        shell: bash
+        run: |
+          set -euo pipefail
+          GENERATED_ROOT='/tmp/b6-a'
+          TRACKED_ROOT='docs/agents/evidence'
+          INDEX='OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          FAMILY_DIR='OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          GENERATED_FAMILY="${GENERATED_ROOT}/${FAMILY_DIR}"
+          TRACKED_FAMILY="${TRACKED_ROOT}/${FAMILY_DIR}"
+
+          GENERATED_INDEX="${GENERATED_ROOT}/${INDEX}"
+          TRACKED_INDEX="${TRACKED_ROOT}/${INDEX}"
+
+          test -f "${GENERATED_INDEX}"
+          test ! -L "${GENERATED_INDEX}"
+          test -f "${TRACKED_INDEX}"
+          test ! -L "${TRACKED_INDEX}"
+          test -d "${GENERATED_FAMILY}"
+          test -d "${TRACKED_FAMILY}"
+
+          # Index bytes must match exactly, and neither index may be a symlink.
+          cmp -s -- "${GENERATED_INDEX}" "${TRACKED_INDEX}"
+
+          # The family trees must contain exactly the same regular-file set:
+          # no missing files, no unexpected extras, no nested directories/symlinks.
+          test -z "$(find "${GENERATED_FAMILY}" -mindepth 1 -maxdepth 1 ! -type f -print -quit)"
+          test -z "$(find "${TRACKED_FAMILY}" -mindepth 1 -maxdepth 1 ! -type f -print -quit)"
+
+          GENERATED_FILES="$(mktemp)"
+          TRACKED_FILES="$(mktemp)"
+          trap 'rm -f "$GENERATED_FILES" "$TRACKED_FILES"' EXIT
+          find "${GENERATED_FAMILY}" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$GENERATED_FILES"
+          find "${TRACKED_FAMILY}" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$TRACKED_FILES"
+          cmp -s -- "$GENERATED_FILES" "$TRACKED_FILES"
+
+          while IFS= read -r NAME; do
+            cmp -s -- "${GENERATED_FAMILY}/${NAME}" "${TRACKED_FAMILY}/${NAME}"
+          done < "$GENERATED_FILES"
+
+      - name: Verify evidence closure and record workflow result
+        shell: bash
+        env:
+          PRODUCER_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def canonical_bytes(value):
+              return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8')
+
+          root = Path('/tmp/b6-a')
+          family_root = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          index_path = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          index = json.loads(index_path.read_text(encoding='utf-8'))
+          expected_stream = {'map_header': 1, 'tile': 18_997_668, 'town': 33, 'waypoint': 18}
+          expected_families = {
+              'ACTION_ID': 0,
+              'UNIQUE_ID': 0,
+              'TELEPORT_DESTINATION': 2_405,
+              'HOUSE_DOOR_ID': 4_527,
+          }
+          expected_shards = {'TELEPORT_DESTINATION': 3, 'HOUSE_DOOR_ID': 5}
+          expected_product = '793ea8072e56a1070f29cab071e5d9b2c1e029522984a268f18c76d038c0616e'
+          expected_game_inputs = {
+              'tools/game-atlas-fullworld-source/producer.py': '740a96fe1b1d97f32c56e278725ab9c2de6e724b',
+              'tools/reference-world-corridor-census/census.py': 'f056063ad1ae1476fcb73d97e918553a977a0a15',
+              'tools/game-atlas-thais-fixture/export.py': '0e36ca9e43d78a919eb673f9dc423ed1c178c727',
+          }
+
+          assert index['source_stream_counts'] == expected_stream
+          assert index['source']['repository'] == 'zimbadev/crystalserver'
+          assert index['source']['revision'] == 'ff7ede593c69d4c658b382c97443e8155926924a'
+          assert index['source']['sha256'] == '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb'
+          assert index['game_inputs'] == expected_game_inputs
+          assert index['logical_product_digest_sha256'] == expected_product
+          assert index['silent_drop'] == 0
+          assert index['unclassified'] == 0
+          assert index['native_promotions'] == 0
+          assert index['executable_promotions'] == 0
+          assert index['quest_runtime_promotions'] == 0
+          assert index['dispositions']['UNKNOWN'] == index['total_occurrences'] == 6_932
+          for name in ('UNSUPPORTED', 'AMBIGUOUS', 'CONFLICT', 'LOSS'):
+              assert index['dispositions'][name] == 0
+
+          family_counts = {}
+          family_files = {}
+          for item in index['storage']['family_files']:
+              family_name = item['family']
+              path = family_root / Path(item['tracked_path']).name
+              payload = path.read_bytes()
+              assert len(payload) == item['bytes']
+              assert hashlib.sha256(payload).hexdigest() == item['sha256']
+              family = json.loads(payload.decode('utf-8'))
+              assert family['logical_product_digest_sha256'] == expected_product
+              assert family['counts']['occurrences'] == item['records'] == expected_families[family_name]
+              assert family['records_digest_sha256'] == item['records_digest_sha256']
+
+              entry = {
+                  'storage_mode': item['storage_mode'],
+                  'shard_count': item['shard_count'],
+                  'bytes': len(payload),
+                  'sha256': item['sha256'],
+                  'records_digest_sha256': item['records_digest_sha256'],
+                  'shards': [],
+              }
+              if item['storage_mode'] == 'SHARDED':
+                  assert item['shard_count'] == expected_shards[family_name]
+                  assert family['storage']['mode'] == 'SHARDED'
+                  assert family['storage']['max_shard_bytes'] == 600_000
+                  assert family['storage']['shard_count'] == item['shard_count']
+                  reconstructed = []
+                  for expected_ordinal, shard_meta in enumerate(family['storage']['shards'], start=1):
+                      assert shard_meta['ordinal'] == expected_ordinal
+                      shard_path = family_root / Path(shard_meta['tracked_path']).name
+                      shard_payload = shard_path.read_bytes()
+                      assert len(shard_payload) == shard_meta['bytes'] <= 600_000
+                      assert hashlib.sha256(shard_payload).hexdigest() == shard_meta['sha256']
+                      shard = json.loads(shard_payload.decode('utf-8'))
+                      assert shard['family'] == family_name
+                      assert shard['ordinal'] == expected_ordinal
+                      assert shard['shard_count'] == item['shard_count']
+                      assert shard['logical_product_digest_sha256'] == expected_product
+                      assert shard['family_records_digest_sha256'] == item['records_digest_sha256']
+                      assert shard['record_count'] == shard_meta['record_count'] == len(shard['records'])
+                      assert hashlib.sha256(canonical_bytes(shard['records'])).hexdigest() == shard['records_digest_sha256'] == shard_meta['records_digest_sha256']
+                      reconstructed.extend(shard['records'])
+                      entry['shards'].append(dict(shard_meta))
+                  assert len(reconstructed) == item['records']
+                  assert hashlib.sha256(canonical_bytes(reconstructed)).hexdigest() == item['records_digest_sha256']
+              else:
+                  assert item['storage_mode'] == 'INLINE'
+                  assert item['shard_count'] == 0
+                  assert hashlib.sha256(canonical_bytes(family['records'])).hexdigest() == item['records_digest_sha256']
+
+              family_counts[family_name] = item['records']
+              family_files[family_name] = entry
+
+          assert family_counts == expected_families
+          assert sum(family_counts.values()) == index['total_occurrences']
+
+          result = {
+              'producer_repository': 'Oteryn/Oteryn-Game',
+              'producer_head_sha': os.environ['PRODUCER_HEAD'],
+              'source_repository': 'zimbadev/crystalserver',
+              'source_repository_sha': 'ff7ede593c69d4c658b382c97443e8155926924a',
+              'source_world_otbm_bytes': 52_267_895,
+              'source_world_otbm_git_blob': 'e95e8f7c7a95d1b634b49a5dea5a5dc76021406b',
+              'source_world_otbm_sha256': '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb',
+              'parser_repository': 'blakinio/Otheryn',
+              'parser_repository_sha': 'e417c5e7c22986bf4acef0495eb47f7b72c97cce',
+              'source_stream_counts': expected_stream,
+              'family_counts': family_counts,
+              'total_occurrences': index['total_occurrences'],
+              'logical_product_digest_sha256': index['logical_product_digest_sha256'],
+              'family_files': family_files,
+              'index_bytes': index_path.stat().st_size,
+              'index_sha256': hashlib.sha256(index_path.read_bytes()).hexdigest(),
+              'dispositions': index['dispositions'],
+              'silent_drop': 0,
+              'unclassified': 0,
+              'deterministic_double_build': True,
+              'deterministic_reversed_enumeration': True,
+              'raw_source_in_artifact': False,
+          }
+          Path('/tmp/b6-workflow-result.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+
+      - name: Emit bounded B6 publication payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='/tmp/b6-a'
+          INDEX='OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          FAMILY_DIR='OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          emit_file() {
+            local FILE="$1"
+            local REL="${FILE#${ROOT}/}"
+            echo "::CW2B6_FILE_BEGIN::${REL}"
+            base64 -w 76 "$FILE"
+            echo
+            echo "::CW2B6_FILE_END::${REL}"
+          }
+          emit_file "${ROOT}/${INDEX}"
+          while IFS= read -r FILE; do
+            emit_file "$FILE"
+          done < <(find "${ROOT}/${FAMILY_DIR}" -maxdepth 1 -type f -name '*.json' -print | sort)
+
+      - name: Upload bounded B6 candidate evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cw2-b6-interaction-bindings-${{ github.event.pull_request.head.sha }}
+          path: |
+            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json
+            /tmp/b6-a/OTV2-20260920-content-world-cw2-b6-interaction-bindings/**
+            /tmp/b6-workflow-result.json
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 30

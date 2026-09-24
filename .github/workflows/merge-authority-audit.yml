@@ -25,7 +25,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -140,11 +140,40 @@ jobs:
               '    name: game-gate\n',
               '    if: always()\n',
               '    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain]\n',
+              '    name: Merge Queue / candidate and governance\n',
+              '          python tools/agents/tests/test_governance_lifecycle_discovery.py\n',
+              '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
               '    name: Merge Queue / Durability PostgreSQL harness\n',
               '        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3\n',
               f'          EXPECTED_SHA: {merge_group_head_expression}\n',
-              '          cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres\n',
+              '          verify_registered_target_binding() {\n',
+              "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']\n",
+              '              if len(owners) != 1:\n',
+              "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)\n",
+              "              observed_manifest = pathlib.Path(owners[0]['manifest_path']).resolve(strict=True)\n",
+              '              if observed_manifest != expected_manifest:\n',
+              "              matches = [target for target in targets if target.get('name') == name]\n",
+              "              if len(matches) != 1 or matches[0].get('kind') != ['test']:\n",
+              '              expected = (pathlib.Path.cwd() / registered_path).resolve(strict=True)\n',
+              "              observed = pathlib.Path(matches[0]['src_path']).resolve(strict=True)\n",
+              '              if observed != expected:\n',
+              '          run_registered_target() {\n',
+              '            if [[ "$base_present" == true && "$head_present" == false ]]; then\n',
+              '              test -f "$path" && test ! -L "$path"\n',
+              '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
+              '              verify_registered_target_binding "$name" "$path"\n',
+              '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n',
+              '          run_registered_target durability_postgres apps/game-server/tests/durability_postgres.rs\n',
+              '          run_registered_target character_authority_postgres apps/game-server/tests/character_authority_postgres.rs\n',
+              '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
+              '          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs\n',
               '    name: Merge Queue / Rust Windows client\n',
+              "          $ErrorActionPreference = 'Stop'\n",
+              '          $PSNativeCommandUseErrorActionPreference = $true\n',
+              '          $client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"\n',
+              '          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {\n',
+              '          & $client --smoke\n',
+              '          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
               '        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
               f'          DURABILITY_POSTGRES: {durability_result_expression}\n',
               '            test "$result" = success\n',

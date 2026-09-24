@@ -1,146 +1,49 @@
 # Reusable agent prompts
 
-These prompts are execution contracts for recurring Oteryn v2 programmes. They do not replace trusted-base governance, live task checkpoints, accepted ADRs/contracts or live PR/CI state.
+`../PROMPT_LIFECYCLE.json` is the dispatchability source of truth. Resolve one known alias by reading only its matching lifecycle entry and prompt. Only `status: reusable` entries may run. Files under `retired/` are cold provenance and must not be dispatched.
 
-Owner-facing placement, model/effort selection, Work-vs-chat launch guidance, AI review flow and live `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reconciliation are standardized in `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is operational guidance only; live GitHub and governing authority still decide whether any profile may mutate.
+Prompts are task-specific deltas over root/nearest instructions, bound META and accepted contracts. Alias existence grants no allocation, tracked-file write, control-plane, merge, production or cross-repository authority.
 
-## Architecture / decision prompts
+## Primary entry points
 
-- `OTV2_ARCHITECTURE_CONTINUATION_AGENT.md` — iterative Oteryn-v2 architecture work in architecture/analysis-only mode by default. Short invocation: `Oteryn: architektura`.
-- `OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — staged global architecture decision coordinator.
-- `OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md` — bounded domain architecture design worker allocated by the architecture coordinator.
-- `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md` — continuation and packaging of the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model. **Short invocation: `Oteryn: sol execution architecture`.**
-- `OTV2_SOL_SUPERVISING_ARCHITECT.md` — material cross-lane Game architecture decision role for durable escalation packets. **Short invocation: `Oteryn: sol supervising architect`.**
+- `OTV2_WORK_DELIVERY_COORDINATOR.md` — current #162 programme control plane when live state names it. **`Oteryn: work coordinator`.**
+- `OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md` — read-only owner placement/status guide. **`Oteryn: owner execution guide`.**
+- `OTV2_SOL_SUPERVISING_ARCHITECT.md` — material architecture escalation inside accepted authority. **`Oteryn: sol supervising architect`.**
+- `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` — broad independent programme audit. **`Oteryn: audyt`.**
 
-The Sol execution architecture prompt is governance/architecture only. It validates the written execution-model spec against live GitHub, requires owner confirmation of that written spec before authoring the adoption plan, and then packages the future Sol lane-lead prompt family. It grants no gameplay/runtime, production or cross-repository authority.
+The former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired provenance. `OTV2_WORK_DELIVERY_COORDINATOR.md` is the sole reusable mutating Game control-plane profile; live allocation still governs whether it may mutate.
 
-The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITECTURE_ESCALATION_REQUIRED` within existing owner-approved architecture authority and returns `OWNER_DECISION_REQUIRED` when product/scope/authority decisions exceed that boundary. Architecture resolution grants neither implicit runtime write authority nor merge authority: the architect cannot merge, auto-merge, close out as canonical or otherwise integrate any PR/decision it authored or materially changed, and must hand the exact artifact to the uniquely active control plane or another separately authorized merge role.
+## Current WP3-v2 / upstream-first family
 
-## Owner execution/status guidance
+- `OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md` — **`Oteryn: astra wp3-v2 programme coordinator`.**
+- `OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD.md` — **`Oteryn: astra wp3-v2 architecture lead`.**
+- `OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md` — **`Oteryn: sol wp3-v2 evidence auditor`.**
+- `OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md` — **`Oteryn: astra wp3-v2 implementation lead`.**
+- `../programs/OTV2_WP3_V2_AGENT_LAUNCH_RUNBOOK.md` — current launch order and gates.
 
-- `OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md` — read-only owner-facing live execution guide. **Short invocation: `Oteryn: owner execution guide`.** Recommended: separate chat, GPT-5.6 Sol, Extra High / highest available.
+The old `OTV2_WP3_WRITER`, `OTV2_WP3_TLS_AUDITOR` and `OTV2_WP3_QUALIFICATION_AUDITOR` aliases targeted the broad #356 lineage and are retired. #356 remains read-only research/evidence; do not dispatch those aliases or restore their broad-fork-first authority.
 
-This advisor does not coordinate or mutate. It freshly resolves protected `main`, the active control plane, active task/Issue/PR/head/check/review state and the scheduler, then tells the owner what to run in Work versus separate chats, which model/effort to use, what is terminally done, what is active/blocked/ready next, which roles must not launch yet, and exactly one next action. It does not trigger Codex or Work Auditor; it only recommends the canonical owning role when review/audit is required.
+## Specialist families
 
-## Implementation programme
+- Current delivery leads: `OTV2_SOL_DURABILITY_LEAD`, `OTV2_SOL_SERVER_SEAM_LEAD`, `OTV2_SOL_CLIENT_QA_LEAD`, `OTV2_SOL_MOVEMENT_LEAD`, `OTV2_SOL_COMBAT_LEAD` and their explicitly read-only analyst profiles. Their common short form is `Oteryn: sol <lane> lead` where the prompt defines it.
+- Native UI: reusable `OTV2_SOL_NATIVE_UI_*` roles; every mutating role still requires exact live allocation and leases.
+- Reference investigation: `OTV2_REFERENCE_INVESTIGATOR.md`, parameterized as **`Oteryn: ref <lane>`**.
+- Defect Discovery: reusable `OTV2_DEFECT_DISCOVERY_*` supervisor/lead/qualifier/module roles under their live allocation and runbook.
+- Direct implementation recovery: `OTV2_IMPL_*`; read-only unless the unique active control plane grants the exact current lane and owned paths.
+- Independent audits: `OTV2_CONTENT_WORLD_INDEPENDENT_AUDIT.md` and `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` with the authority limits in their prompt bodies.
+- Full Tibia content census/crosswalk programme continuation: `OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md` — **`Oteryn: full content census`**. Continue from the first unfinished protected gate; this profile is subordinate to the canonical Work control plane and grants no independent mutation or merge authority.
+- Future-wave preparation: `OTV2_SOL_*_PREP` profiles remain read-only until a later merged allocation activates implementation.
 
-Canonical implementation order and dependencies are defined by:
+For the complete reusable set, exact short alias, owner, version and supersession rule, perform a targeted lookup in `../PROMPT_LIFECYCLE.json`. Do not maintain another full hand-written catalogue here.
 
-- `../programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
-- `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` for the Terra + Sol execution profile;
-- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/model/effort/status guidance.
+## Dispatch and safety
 
-### Normal entry point
+Reusable prompts are not project state. Refresh only the live Issue/task/branch/PR/check facts material to the next decision. A second reusable coordinator alias is not a second writer or scheduler.
 
-- `OTV2_IMPLEMENTATION_COORDINATOR.md` — implementation coordinator. **Normal short invocation: `Oteryn: implementation coordinator`.**
+Required external review follows root instructions, the bound META policy and `../OWNER_FUNDED_AI_POLICY.md`. The standing authorization survives chat/worker handoffs. A direct worker never emits the owner-funded review trigger; it returns the exact packet to the unique active control plane for live same-head de-duplication.
 
-The coordinator resolves live `main`, performs the serial bootstrap gate first, creates exact worker allocations and only then releases non-overlapping implementation lanes. This is the recommended way to start implementation.
+High-risk protocol/session/admission/persistence/item/loot/value/multichannel/fencing changes retain applicable genuinely independent exact-head review. Repository gates, protection and Merge Queue remain integration authority.
 
-### Work delivery profile
+## Retired provenance
 
-- `OTV2_WORK_DELIVERY_COORDINATOR.md` — ChatGPT Work execution coordinator/subagent dispatcher with fail-closed material architecture escalation. **Short invocation: `Oteryn: work coordinator`.**
-
-The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. It is a stricter execution profile: Work coordinates exact allocations, path-disjoint subagents and integration, while material architecture/API/schema/security/persistence/resource/cross-repository conflicts become durable `ARCHITECTURE_ESCALATION_REQUIRED` handoffs to the owner-designated Supervising Architect rather than worker-selected architecture.
-
-### Single active control-plane rule
-
-`Oteryn: work coordinator` and `Oteryn: terra game coordinator` may both remain `reusable`, but they are **mutually exclusive for mutating control-plane work inside one programme lifecycle**. Reusability permits resolution from live `main`; it does not activate a second scheduler/integrator.
-
-The active profile is resolved from the current coordinator Issue/task. An explicit `active_control_plane_profile` wins. For a legacy task without that field, the profile already named as canonical coordinator prompt/owner remains active and every other reusable control-plane profile is read-only recovery. Switching profiles requires a durable docs/governance transition merged to protected `main`; alias invocation, chat instruction, model selection or tool availability is not a transfer.
-
-If exactly one active profile cannot be proven, all control-plane mutation fails closed as `POLICY_CONFLICT`. The inactive profile may inspect live state and prepare a recovery/transfer packet, but it may not allocate workers, grant shared leases, integrate/merge, mutate coordinator status or close/archive the programme.
-
-Historical coordinator Issue numbers in these prompts are provenance only; always resolve the current coordinator lifecycle from live GitHub before acting.
-
-### Terra High deterministic control plane + Sol leads
-
-- `OTV2_TERRA_GAME_CONTROL_PLANE.md` — ChatGPT Work / Terra High deterministic control plane with **zero technical or architecture discretion**. **Short invocation: `Oteryn: terra game coordinator`.**
-- `OTV2_SOL_DURABILITY_LEAD.md` — deep Durability lane reasoning/implementation and the **single mutating writer** for its canonical Durability branch/PR. **`Oteryn: sol durability lead`.**
-- `OTV2_SOL_DURABILITY_AUTHORITY_ANALYST.md` — strict read-only Foundation/current-authority analysis for the live Durability candidate. Recommended separate chat, GPT-5.6 Sol High. **`Oteryn: sol durability authority analyst`.**
-- `OTV2_SOL_DURABILITY_CONTINUITY_ANALYST.md` — strict read-only continuity/protection and replacement-transaction analysis for the live Durability candidate. Recommended separate chat, GPT-5.6 Sol High. **`Oteryn: sol durability continuity analyst`.**
-- `OTV2_SOL_DURABILITY_QUALIFICATION_ANALYST.md` — strict read-only whole-diff/regression/main-drift/qualification analysis for the live Durability candidate. Recommended separate chat, GPT-5.6 Sol High. **`Oteryn: sol durability qualification analyst`.**
-- `OTV2_SOL_SERVER_SEAM_LEAD.md` — production Server Seam lead; read-only until exact durable prerequisite/allocation is ready. **`Oteryn: sol server seam lead`.**
-- `OTV2_SOL_CLIENT_QA_LEAD.md` — native Client + truthful Tier 1/Tier 2 QA lead. **`Oteryn: sol client qa lead`.**
-- `OTV2_SOL_MOVEMENT_LEAD.md` — Movement lead gated by current Client/QA and the current resource/dependency closure. **`Oteryn: sol movement lead`.**
-- `OTV2_SOL_COMBAT_LEAD.md` — Combat/death/loot/XP/pickup lead gated by merged Movement and current prerequisites. **`Oteryn: sol combat lead`.**
-- `OTV2_SOL_POST_VSL_EXPANSION.md` — read-only-by-default decomposition of remaining accepted Game work after terminal Movement+Combat VSL. **`Oteryn: sol post-vsl expansion`.**
-- `OTV2_SOL_WORLD_CONTENT_PREP.md` - post-VSL World/Content read-only preparation; no mutation before exact later allocation. **`Oteryn: sol world content prep`.**
-- `OTV2_SOL_NPC_AI_PREP.md` - post-VSL NPC/AI read-only preparation; no mutation before exact later allocation. **`Oteryn: sol npc ai prep`.**
-- `OTV2_SOL_SYSTEMS_ECONOMY_PREP.md` - post-VSL Systems/Economy read-only preparation; no mutation before exact later allocation. **`Oteryn: sol systems economy prep`.**
-- `OTV2_SOL_TOOLING_OPS_PREP.md` - post-VSL Tooling/Ops read-only preparation; no mutation before exact later allocation. **`Oteryn: sol tooling ops prep`.**
-
-The three Durability analyst aliases are acceleration roles, not independent lanes. They may run concurrently with the active Durability Lead because they perform no tracked-file or GitHub mutation and consume no writer slot. They return explicit exact-head packets; the Durability Lead must refresh GitHub, reject stale packets, verify findings and synthesize all implementation itself. If they run in separate ChatGPT chats, cross-chat memory is not authority: only an explicit returned packet may be consumed.
-
-The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. When a programme has durably selected Terra as its unique active control plane, Terra may apply only deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
-
-Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
-The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
-
-### AI review policy
-
-All reusable prompts resolve current protected-main root `AGENTS.md` before external AI review decisions. Game adopts the current organization AI review policy by reference; conflicting older `docs/agents/**` standing-authorization, review-tier or controller prose is subordinate historical/procedural evidence.
-
-The current repository policy is default no external AI review, Codex Spark when an ordinary code change has clear independent-review value, and one Codex deep review on a stable material high-risk/control-plane candidate. External AI review is advisory and never replaces `game-gate`, repository protection or Merge Queue. Re-review only when a material risk-bearing repair makes the prior review no longer representative.
-
-The three Durability analyst aliases are not formal external review and never satisfy this policy gate. Existing handoff fields named `codex_review` are compatibility metadata only and cannot override root `AGENTS.md`.
-
-### Independent Work delivery audit
-
-- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — independent high-effort forensic audit of the live Work coordinator lifecycle with **bounded GitHub audit-evidence write** authority. **Short invocation: `Oteryn: work auditor`.**
-
-The Work auditor independently reconstructs coordinator execution from live GitHub Issue/task/branch/PR/exact-head check/review/merge evidence, treats Work or requesting-agent summaries as claims rather than proof, and verifies programme resolution, allocation timing, path/lease isolation, DAG order, architecture escalation, worker integration, QA truthfulness and closeout. Any canonical Oteryn Game agent or the owner may request a bounded audit of a uniquely identifiable PR/Issue/task/head. After a completed requested audit, the auditor must persist one exact-target GitHub evidence note as a PR COMMENT review/comment or linked Issue comment. That evidence write is non-dispositive and does not consume an implementation writer slot.
-
-The auditor still has no tracked-file, branch/commit, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, production or cross-repository write authority. If it materially authored the target in another role, its result cannot count as genuinely independent. Head movement makes prior audit evidence historical; the new head requires a fresh audit for qualification. It does not supersede the broader `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT`.
-
-### Next-wave parallel preparation
-
-- `OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md` — preparation-wave launcher/matrix. **Short invocation: `Oteryn: next-wave prep swarm`.**
-- `OTV2_PREP_WAVE2_RESOURCE_LIMITS.md` — Issue #93 resource-limit decision preparation. `Oteryn: prep resource limits`.
-- `OTV2_PREP_DURABILITY_TOPOLOGY.md` — Issue #94 Durability topology preparation. `Oteryn: prep durability topology`.
-- `OTV2_CONTENT_FORMAT_SPIKE.md` — Issue #95 evidence-only Content format spike. `Oteryn: content format spike`.
-- `OTV2_PREP_SERVER_SEAM.md` — Issue #96 production gameplay server-seam preparation. `Oteryn: prep server seam`.
-- `OTV2_PREP_PROGRAMME_STATUS.md` — Issue #97 maintained programme-status reconciliation. `Oteryn: prep programme status`.
-
-These preparation prompts are deliberately isolated by domain. They may run concurrently only after each agent verifies live Issue/task ownership and disjoint paths. They do not grant implementation authority. Release Durability/Ability/Interaction/AI/Server Seam independently when their own master-plan gates close; do not wait for unrelated preparation work merely for symmetry.
-
-### Next-wave blocker closure
-
-- `OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md` — owner-authorized blocker-closure coordinator for #93/#115/#116/#123. **Short invocation: `Oteryn: close next-wave blockers`.**
-
-This coordinator may accept conservative evidence-backed first-slice hard maxima only inside the bounded owner authorization recorded by Issue #128, serializes registry canonicalization, and may carry the #115 Foundation verifier/consumer blocker through its separately allocated implementation lifecycle. It grants no Server Seam/gameplay implementation or production/Platform/external-repository authority.
-
-### Direct worker aliases
-
-Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A worker MUST verify a live coordinator allocation naming its lane and exact owned paths before any write. Without that allocation it remains read-only and does not create its own scope.
-
-- `OTV2_IMPL_WORKSPACE_BOOTSTRAP.md` — `Oteryn: impl bootstrap`.
-- `OTV2_IMPL_FOUNDATION_RUNTIME.md` — `Oteryn: impl foundation`.
-- `OTV2_IMPL_SIMULATION.md` — `Oteryn: impl simulation`.
-- `OTV2_IMPL_DOMAIN_CORE.md` — `Oteryn: impl domains`.
-- `OTV2_IMPL_DURABILITY.md` — `Oteryn: impl durability`.
-- `OTV2_IMPL_VSL_CONTENT.md` — `Oteryn: impl content`.
-- `OTV2_IMPL_GAME_ABILITY.md` — `Oteryn: impl ability`.
-- `OTV2_IMPL_GAME_INTERACTION.md` — `Oteryn: impl interaction`.
-- `OTV2_IMPL_GAME_AI.md` — `Oteryn: impl ai`.
-- `OTV2_IMPL_SERVER_SEAM.md` — `Oteryn: impl server seam` (production gameplay listener/client-entry integration; requires the exact coordinator allocation defined by live current authority).
-- `OTV2_IMPL_NATIVE_CLIENT.md` — `Oteryn: impl client`.
-- `OTV2_IMPL_QA_E2E.md` — `Oteryn: impl qa`.
-- `OTV2_IMPL_VSL_MOVEMENT.md` — `Oteryn: impl movement`.
-- `OTV2_IMPL_VSL_COMBAT.md` — `Oteryn: impl combat`.
-- `OTV2_IMPL_GAME_CHANNEL.md` — `Oteryn: impl channel` (later multichannel product lane; not a first bootstrap dependency).
-- `OTV2_CONTENT_FORMAT_SPIKE.md` — `Oteryn: content format spike` (evidence only; cannot select permanent format by itself).
-- `OTV2_IMPL_ANALYTICS.md` — `Oteryn: impl analytics` (later; requires concrete producer event families).
-
-## Safety / authority
-
-A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity or entitlement activation. External AI review follows current root `AGENTS.md` and the organization policy it adopts; metered AI/API use outside that policy still requires the task-specific authority applicable to that use.
-
-High-risk protocol/session/persistence/item/loot/value/multichannel/fencing work still requires genuinely independent exact-head review when current root `AGENTS.md` selects it.
-
-`PROD-ENTITLEMENTS-01` remains excluded from the implementation prompt DAG until separately accepted.
-
-## Reuse rule
-
-Before reuse, evaluate the selected prompt against `../PROMPT_EVAL_STANDARD.md`, read the canonical implementation DAG/scheduler and the operator runbook when owner-facing launch/status guidance is material, and verify all repository state named by the prompt against live GitHub state.
-
-A short invocation is only an alias for resolving the canonical prompt from live `main`; it is not permission to use a cached prompt body, bypass current repository instructions or activate a second control plane.
+Retired prompt bodies normally live under `retired/`; a short compatibility stub may remain at its historical path when moving it would break retained links. Lifecycle status controls dispatchability. Retired programme runbooks live under `../programs/archive/`. Historical coordinates and examples never regain dispatch authority merely because the files remain readable.

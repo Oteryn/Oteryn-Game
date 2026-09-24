@@ -7,8 +7,11 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import textwrap
+import urllib.error
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
@@ -16,6 +19,63 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_GATE = ROOT / ".github/workflows/merge-gate.yml"
+TARGET = "apps/game-server/tests/durability_postgres.rs"
+BLOB_SHA = "1" * 40
+REGISTERED_POSTGRES_TARGETS = {
+    "durability_postgres": "apps/game-server/tests/durability_postgres.rs",
+    "character_authority_postgres": "apps/game-server/tests/character_authority_postgres.rs",
+    "runtime_scope_assignment_postgres": "apps/game-server/tests/runtime_scope_assignment_postgres.rs",
+    "native_admission_source_postgres": "apps/game-server/tests/native_admission_source_postgres.rs",
+}
+
+
+def classification_output(durability_blob: str | None) -> str:
+    lines = []
+    for name in REGISTERED_POSTGRES_TARGETS:
+        blob = durability_blob if name == "durability_postgres" else None
+        lines.append(f"{name}_present={'true' if blob is not None else 'false'}")
+        lines.append(f"{name}_blob={blob or ''}")
+    return "\n".join(lines) + "\n"
+
+# Self-contained snapshot of the protected classifier's >300-file rejection path.
+PROTECTED_PG_CLASSIFIER_FIXTURE = """\
+  rust_linux:
+    steps:
+      - name: Classify Durability PostgreSQL target
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          number_text = os.environ['PULL_NUMBER'].strip()
+          headers = {'Authorization': f"Bearer {os.environ['GH_TOKEN']}"}
+
+          def api(path: str):
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}{path}', headers=headers
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          pull = api(f'/pulls/{number_text}')
+          changed_files = pull.get('changed_files')
+          if (
+              isinstance(changed_files, bool)
+              or not isinstance(changed_files, int)
+              or changed_files < 0
+              or changed_files > 300
+          ):
+              raise SystemExit('invalid or over-cap changed-files count')
+          present = False
+          for page in range(1, (changed_files + 99) // 100 + 1):
+              for item in api(f'/pulls/{number_text}/files?per_page=100&page={page}'):
+                  present |= item.get('filename') == 'apps/game-server/tests/durability_postgres.rs'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"present={'true' if present else 'false'}\\n")
+          PY
+"""
 
 
 def load_validator():
@@ -43,9 +103,87 @@ def inject_step_condition(text: str, step_name: str) -> str:
     return text.replace(marker, marker + "        if: false\n", 1)
 
 
+def missing_target(message="Not Found", code=404):
+    return urllib.error.HTTPError(
+        "https://api.github.test/exact",
+        code,
+        "error",
+        {},
+        io.BytesIO(json.dumps({"message": message}).encode("utf-8")),
+    )
+
+
+def test_registered_postgres_targets_are_materially_routed() -> None:
+    workflows = (
+        MERGE_GATE,
+        ROOT / ".github/workflows/merge-group-gate.yml",
+        ROOT / ".github/workflows/rust.yml",
+    )
+    for workflow in workflows:
+        text = workflow.read_text(encoding="utf-8")
+        for target, target_path in REGISTERED_POSTGRES_TARGETS.items():
+            assert target in text, f"{workflow.name} does not route registered target {target}"
+            assert target_path in text, f"{workflow.name} does not bind registered path {target_path}"
+
+
+def test_pr_gate_rejects_explicit_cargo_test_path_remap() -> None:
+    workflow = MERGE_GATE.read_text(encoding="utf-8")
+    step = load_validator().step_block(
+        load_validator().job_block(workflow, "rust_linux"),
+        "Run registered PostgreSQL E2E targets when allocated",
+    )
+    assert step is not None
+    marker = '            python - "$metadata" "$name" "$path" <<\'PY\'\n'
+    verifier = textwrap.dedent(step.split(marker, 1)[1].split("          PY\n", 1)[0])
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        expected = root / TARGET
+        expected.parent.mkdir(parents=True)
+        expected.write_text("// registered\n", encoding="utf-8")
+        remapped = expected.with_name("remapped.rs")
+        remapped.write_text("// remapped\n", encoding="utf-8")
+        expected_manifest = root / "apps/game-server/Cargo.toml"
+        expected_manifest.write_text("[package]\nname = \"fixture\"\n", encoding="utf-8")
+        wrong_manifest = root / "other/Cargo.toml"
+        wrong_manifest.parent.mkdir(parents=True)
+        wrong_manifest.write_text("[package]\nname = \"wrong\"\n", encoding="utf-8")
+        metadata = root / "metadata.json"
+
+        def package(manifest_path: object = expected_manifest, src_path: Path = expected):
+            return {
+                "name": "oteryn-game-server",
+                "manifest_path": str(manifest_path) if isinstance(manifest_path, Path) else manifest_path,
+                "targets": [{
+                    "name": "durability_postgres", "kind": ["test"], "src_path": str(src_path)
+                }],
+            }
+
+        def verify(packages: list[dict[str, object]]) -> subprocess.CompletedProcess[str]:
+            metadata.write_text(json.dumps({"packages": packages}), encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, "-c", verifier, str(metadata), "durability_postgres", TARGET],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        assert verify([package()]).returncode == 0
+        rejected = verify([package(wrong_manifest)])
+        assert rejected.returncode != 0 and "package manifest is" in rejected.stderr, rejected
+        for packages in (
+            [{key: value for key, value in package().items() if key != "manifest_path"}],
+            [package(True)],
+            [package(), package()],
+        ):
+            assert verify(packages).returncode != 0, packages
+        rejected = verify([package(src_path=remapped)])
+        assert rejected.returncode != 0 and "target source is" in rejected.stderr, rejected
+
+
 def test_postgres_evidence_step_cannot_be_skipped() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    mutated = inject_step_condition(baseline, "Run Durability PostgreSQL E2E when allocated")
+    mutated = inject_step_condition(baseline, "Run registered PostgreSQL E2E targets when allocated")
     errors = validate_mutated_gate(mutated)
     assert errors, "validator accepted a skipped PostgreSQL evidence step"
     assert any("rust_linux" in error and "if" in error for error in errors), errors
@@ -59,12 +197,50 @@ def test_simulation_evidence_step_cannot_be_skipped() -> None:
     assert any("rust_windows" in error and "if" in error for error in errors), errors
 
 
-def run_classifier(files, initial_change=None, final_change=None, expected_base="b" * 40, scope=False, immutable_files=None):
+def test_input_platform_evidence_contract_is_mandatory() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    marker = "      - name: Test Windows input platform\n"
+    command = "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
+    assert baseline.count(marker) == baseline.count(command) == 1
+    mutations = (
+        baseline.replace(marker, "      - name: Optional Windows input platform\n", 1),
+        baseline.replace(marker, marker + "        if: false\n", 1),
+        baseline.replace(command, command.replace("oteryn-input-platform", "oteryn-client"), 1),
+        baseline.replace(marker + "        shell: pwsh\n" + command, "", 1),
+    )
+    for mutated in mutations:
+        errors = validate_mutated_gate(mutated)
+        assert any("rust_windows" in error and "input platform" in error for error in errors), errors
+
+
+def run_classifier(
+    files,
+    initial_change=None,
+    final_change=None,
+    expected_base="b" * 40,
+    scope=False,
+    immutable_files=None,
+    tree_payloads=None,
+    checkout_present=True,
+    checkout_files=None,
+    checkout_blob=BLOB_SHA,
+    commit_payloads=None,
+    workflow_text=None,
+):
     """Execute the real workflow script with only GitHub HTTP responses replaced."""
     validator = load_validator()
+    source_text = workflow_text or MERGE_GATE.read_text(encoding="utf-8")
+    classifier_step = (
+        "Classify registered PostgreSQL targets"
+        if "Classify registered PostgreSQL targets" in source_text
+        else "Classify Durability PostgreSQL target"
+    )
     step = validator.step_block(
-        validator.job_block(MERGE_GATE.read_text(encoding="utf-8"), "scope" if scope else "rust_linux"),
-        "Resolve and validate exact pull request head" if scope else "Classify Durability PostgreSQL target",
+        validator.job_block(
+            source_text,
+            "scope" if scope else "rust_linux",
+        ),
+        "Resolve and validate exact pull request head" if scope else classifier_step,
     )
     assert step is not None
     script = textwrap.dedent(step.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
@@ -80,12 +256,35 @@ def run_classifier(files, initial_change=None, final_change=None, expected_base=
     if final_change:
         final_change(final)
     pulls = iter((initial, final))
+    base_tree_sha = "2" * 40
+    head_tree_sha = "3" * 40
+    commit_payloads = commit_payloads or {
+        "b" * 40: {"sha": "b" * 40, "tree": {"sha": base_tree_sha}},
+        "a" * 40: {"sha": "a" * 40, "tree": {"sha": head_tree_sha}},
+    }
+    present_entry = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+    tree_payloads = tree_payloads or {
+        base_tree_sha: {"sha": base_tree_sha, "truncated": False, "tree": [present_entry]},
+        head_tree_sha: {"sha": head_tree_sha, "truncated": False, "tree": [present_entry]},
+    }
+
+    def response(payload):
+        if isinstance(payload, BaseException):
+            raise payload
+        return io.StringIO(json.dumps(payload))
 
     def urlopen(request, timeout):
         assert timeout == 30
         prefix = "https://api.github.com/repos/Oteryn/Oteryn-Game/pulls/287"
         if request.full_url == prefix:
-            return io.StringIO(json.dumps(next(pulls)))
+            return response(next(pulls))
+        commits = "https://api.github.com/repos/Oteryn/Oteryn-Game/git/commits/"
+        if request.full_url.startswith(commits):
+            return response(commit_payloads[request.full_url.removeprefix(commits)])
+        trees = "https://api.github.com/repos/Oteryn/Oteryn-Game/git/trees/"
+        if request.full_url.startswith(trees):
+            tree_sha = request.full_url.removeprefix(trees).removesuffix("?recursive=1")
+            return response(tree_payloads[tree_sha])
         comparison = f"https://api.github.com/repos/Oteryn/Oteryn-Game/compare/{'b' * 40}...{'a' * 40}?per_page=1"
         if request.full_url == comparison:
             return io.StringIO(json.dumps({"files": files if immutable_files is None else immutable_files}))
@@ -103,7 +302,17 @@ def run_classifier(files, initial_change=None, final_change=None, expected_base=
             "GH_TOKEN": "test-only", "GITHUB_OUTPUT": str(output),
         }
         failure = None
-        with patch.dict(os.environ, env), patch("urllib.request.urlopen", urlopen), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        completed = subprocess.CompletedProcess([], 0, stdout=f"{checkout_blob}\n")
+        def isfile(path):
+            if checkout_files is not None:
+                return path in checkout_files
+            return path == TARGET and checkout_present
+
+        with patch.dict(os.environ, env), patch("urllib.request.urlopen", urlopen), patch(
+            "os.path.isfile", side_effect=isfile
+        ), patch(
+            "subprocess.run", return_value=completed
+        ), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             try:
                 exec(compile(script, "merge-gate.yml:pg_target", "exec"), {})
             except SystemExit as error:
@@ -111,27 +320,30 @@ def run_classifier(files, initial_change=None, final_change=None, expected_base=
         return failure, output.read_text(encoding="utf-8") if output.exists() else ""
 
 
-def test_both_classifiers_bind_aba_to_immutable_diff() -> None:
+def test_classifiers_bind_aba_to_immutable_authority() -> None:
     mutable = [{"filename": "docs/new.md", "status": "modified"}]
     immutable = [{"filename": "apps/game-server/tests/durability_postgres.rs", "status": "removed"}]
-    failures = []
-    for scope in (True, False):
-        failure, output = run_classifier(mutable, immutable_files=immutable, scope=scope)
-        expected_ok = json.loads(dict(line.split("=", 1) for line in output.splitlines()).get("file_records", "[]")) == immutable if scope else output == "removed=true\n"
-        if failure is not None or not expected_ok:
-            failures.append((scope, failure, output))
-    assert not failures, f"A-to-B-to-A substituted mutable diff at authority boundary: {failures}"
+    failure, output = run_classifier(mutable, immutable_files=immutable, scope=True)
+    assert failure is None
+    assert json.loads(dict(line.split("=", 1) for line in output.splitlines())["file_records"]) == immutable
+    failure, output = run_classifier(mutable)
+    assert failure is None and output == classification_output(BLOB_SHA), (failure, output)
 
 
-def test_both_classifiers_reject_comparison_truncation() -> None:
+def test_scope_rejects_comparison_truncation_while_pg_accepts_large_diff() -> None:
     files = [{"filename": f"docs/{i}.md"} for i in range(301)]
-    for scope in (True, False):
-        failure, output = run_classifier(files[:300], scope=scope)
-        assert failure is None and output, (scope, failure, output)
-        failure, output = run_classifier(files, immutable_files=files[:300], scope=scope)
-        assert (failure is None and output.endswith("complete=false\n")) if scope else (failure is not None and not output), "over-cap diff must select full or reject qualification"
-        failure, output = run_classifier(files[:2], immutable_files=files[:1], scope=scope)
-        assert (failure is None and output.endswith("complete=false\n")) if scope else (failure is not None and not output), "incomplete diff must select full or reject qualification"
+    failure, output = run_classifier(files, immutable_files=files[:300], scope=True)
+    assert failure is None and output.endswith("complete=false\n")
+    failure, output = run_classifier([{"filename": f"docs/{i}.md"} for i in range(803)])
+    assert failure is None and output == classification_output(BLOB_SHA), (failure, output)
+
+
+def test_protected_classifier_red_for_valid_803_file_target() -> None:
+    files = [{"filename": f"docs/{i}.md"} for i in range(802)] + [
+        {"filename": "apps/game-server/tests/durability_postgres.rs", "status": "modified"}
+    ]
+    failure, output = run_classifier(files, workflow_text=PROTECTED_PG_CLASSIFIER_FIXTURE)
+    assert failure == "invalid or over-cap changed-files count" and not output, (failure, output)
 
 
 def test_scope_rejects_identity_races() -> None:
@@ -184,7 +396,7 @@ def test_classifier_rejects_identity_races() -> None:
     # Two pages and an unchanged file count reproduce the review's race, not a count mismatch.
     files = [{"filename": f"docs/file-{index}.md", "status": "modified"} for index in range(101)]
     failure, output = run_classifier(files)
-    assert failure is None and output == "removed=false\n", (failure, output)
+    assert failure is None and output == classification_output(BLOB_SHA), (failure, output)
     mutations = {
         "closed": lambda pull: pull.update(state="closed"),
         "head": lambda pull: pull["head"].update(sha="c" * 40),
@@ -211,26 +423,183 @@ def test_classifier_rejects_unbound_base() -> None:
         assert failure is not None and not output, "classifier accepted an invalid or changed base"
 
 
-def test_classifier_preserves_stable_removal_classification() -> None:
-    target = "apps/game-server/tests/durability_postgres.rs"
+def test_classifier_exact_target_state_matrix() -> None:
+    present = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+    executable = {"path": TARGET, "mode": "100755", "type": "blob", "sha": BLOB_SHA}
+    absent = {"path": "docs/readme.md", "mode": "100644", "type": "blob", "sha": "4" * 40}
     cases = (
-        ([], "removed=false\n"),
-        ([{"filename": target, "status": "modified"}], "removed=false\n"),
-        ([{"filename": target, "status": "removed"}], "removed=true\n"),
-        ([{"filename": "other.rs", "previous_filename": target, "status": "renamed"}], "removed=true\n"),
+        ("large-present", present, present, True, None, classification_output(BLOB_SHA)),
+        ("executable-present", executable, executable, True, None, classification_output(BLOB_SHA)),
+        ("introduced", absent, present, True, None, classification_output(BLOB_SHA)),
+        ("both-absent", absent, absent, False, None, classification_output(None)),
+        ("removed", present, absent, False, "removed or renamed", ""),
+        ("renamed-away", present, absent, False, "removed or renamed", ""),
     )
-    for files, expected in cases:
-        failure, output = run_classifier(files)
-        assert failure is None, failure
-        assert output == expected, (files, output)
+    for name, base, head, checkout, expected_failure, expected_output in cases:
+        failure, output = run_classifier(
+            [{"filename": TARGET if name != "renamed-away" else "tests/renamed.rs"}] * 803,
+            tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": [base]},
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": [head]},
+            },
+            checkout_present=checkout,
+        )
+        assert (expected_failure is None and failure is None) or expected_failure in failure, (name, failure)
+        assert output == expected_output, (name, output)
+
+
+def test_classifier_fails_closed_for_each_protected_registered_target_removal() -> None:
+    elsewhere = {"path": "docs/readme.md", "mode": "100644", "type": "blob", "sha": "4" * 40}
+    for name, target in REGISTERED_POSTGRES_TARGETS.items():
+        present = {"path": target, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+        failure, output = run_classifier(
+            [],
+            tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": [present]},
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": [elsewhere]},
+            },
+            checkout_files=set(),
+        )
+        assert f"{name} PostgreSQL target was removed or renamed" in failure and not output, (name, failure, output)
+
+
+def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
+    present = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+    bad = (
+        [],
+        {"sha": "3" * 40, "truncated": True, "tree": []},
+        {"sha": "4" * 40, "truncated": False, "tree": []},
+        {"sha": "3" * 40, "truncated": False, "tree": "invalid"},
+        {"sha": "3" * 40, "truncated": False, "tree": [{"path": TARGET, "type": "tree", "mode": "040000", "sha": BLOB_SHA}]},
+        {"sha": "3" * 40, "truncated": False, "tree": [{"path": TARGET, "type": "blob", "mode": "100644"}]},
+        {"sha": "3" * 40, "truncated": False, "tree": [{"path": TARGET, "type": "blob", "mode": "100644", "sha": "bad"}]},
+        missing_target("forbidden"),
+        missing_target(),
+        missing_target(code=401),
+        missing_target(code=403),
+        missing_target(code=429),
+        missing_target(code=500),
+        urllib.error.URLError("transport"),
+        ValueError("malformed JSON"),
+    )
+    for payload in bad:
+        failure, output = run_classifier(
+            [], tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": [present]},
+                "3" * 40: payload,
+            }
+        )
+        assert failure is not None and not output, payload
+    for api_present, checkout_present in ((True, False), (False, True)):
+        payload = [present] if api_present else []
+        failure, output = run_classifier(
+            [],
+            tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": []},
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": payload},
+            },
+            checkout_present=checkout_present,
+        )
+        assert "target state disagree" in failure and not output
+    failure, output = run_classifier([], checkout_blob="2" * 40)
+    assert "target blob disagree" in failure and not output
+
+
+def test_classifier_rejects_unavailable_exact_commits() -> None:
+    failures = (missing_target(), missing_target(code=403), {"sha": "c" * 40}, [])
+    for commit in ("b" * 40, "a" * 40):
+        for payload in failures:
+            commits = {
+                "b" * 40: {"sha": "b" * 40, "tree": {"sha": "2" * 40}},
+                "a" * 40: {"sha": "a" * 40, "tree": {"sha": "3" * 40}},
+            }
+            commits[commit] = payload
+            failure, output = run_classifier([], commit_payloads=commits)
+            assert "exact commit inspection" in failure and not output, (commit, payload)
+
+
+def test_classifier_requires_successful_tree_evidence_for_absence() -> None:
+    for unavailable in (missing_target(), missing_target(code=403), urllib.error.URLError("transport")):
+        failure, output = run_classifier(
+            [],
+            tree_payloads={
+                "2" * 40: unavailable,
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": []},
+            },
+            checkout_present=False,
+        )
+        assert "exact tree inspection failed" in failure and not output
+
+
+def test_classifier_validates_every_tree_entry_before_proving_absence() -> None:
+    valid_elsewhere = (
+        {"path": "docs", "mode": "040000", "type": "tree", "sha": "4" * 40},
+        {"path": "link", "mode": "120000", "type": "blob", "sha": "5" * 40},
+        {"path": "vendor/submodule", "mode": "160000", "type": "commit", "sha": "6" * 40},
+    )
+    valid_trees = {
+        "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": list(valid_elsewhere)},
+        "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": list(valid_elsewhere)},
+    }
+    failure, output = run_classifier([], tree_payloads=valid_trees, checkout_present=False)
+    assert failure is None and output == classification_output(None), (failure, output)
+
+    malformed_paths = (None, "", "/absolute", "bad\x00path", "a//b", "./a", "a/../b")
+    invalid_entries = [
+        {"path": path, "mode": "100644", "type": "blob", "sha": "4" * 40}
+        for path in malformed_paths
+    ]
+    invalid_entries.append(
+        {"path": "docs/readme.md", "mode": "bogus", "type": "blob", "sha": "4" * 40}
+    )
+    legal_modes = {
+        "blob": ("100644", "100755", "120000"),
+        "tree": ("040000",),
+        "commit": ("160000",),
+    }
+    for entry_type in legal_modes:
+        for other_type, modes in legal_modes.items():
+            if entry_type != other_type:
+                invalid_entries.extend(
+                    {"path": "elsewhere", "mode": mode, "type": entry_type, "sha": "4" * 40}
+                    for mode in modes
+                )
+    for entry in invalid_entries:
+        trees = copy.deepcopy(valid_trees)
+        trees["3" * 40]["tree"] = [entry]
+        failure, output = run_classifier([], tree_payloads=trees, checkout_present=False)
+        assert "malformed entry" in failure and not output, entry
+
+    for target_entry in (
+        {"path": TARGET, "mode": "120000", "type": "blob", "sha": "4" * 40},
+        {"path": TARGET, "mode": "040000", "type": "tree", "sha": "4" * 40},
+        {"path": TARGET, "mode": "160000", "type": "commit", "sha": "4" * 40},
+    ):
+        trees = copy.deepcopy(valid_trees)
+        trees["3" * 40]["tree"] = [target_entry]
+        failure, output = run_classifier([], tree_payloads=trees)
+        assert "unexpected" in failure and not output, target_entry
+
+
+def test_classifier_rejects_invalid_changed_file_counts() -> None:
+    for value in (-1, True, "803", None):
+        failure, output = run_classifier([], initial_change=lambda pull, value=value: pull.update(changed_files=value))
+        assert failure is not None and not output
+    for value in (-1, True, 1.0, "0", None):
+        failure, output = run_classifier(
+            [], final_change=lambda pull, value=value: pull.update(changed_files=value)
+        )
+        assert "invalid post-inspection changed-files count" in failure and not output
 
 
 def test_evidence_step_condition_family() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    assert not validate_mutated_gate(baseline), "unmodified gate must pass before mutation checks"
+    baseline_errors = validate_mutated_gate(baseline)
+    assert not baseline_errors, baseline_errors
     for job, name in (
-        ("rust_linux", "Run Durability PostgreSQL E2E when allocated"),
+        ("rust_linux", "Run registered PostgreSQL E2E targets when allocated"),
         ("rust_windows", "Verify deterministic simulation golden fixtures"),
+        ("rust_windows", "Test Windows input platform"),
     ):
         marker = f"      - name: {name}\n"
         for condition in ('"if": false', "'if': false", "continue-on-error: true", '"continue-on-error": true', "'continue-on-error': true"):
@@ -240,7 +609,8 @@ def test_evidence_step_condition_family() -> None:
 
 def test_evidence_job_failure_cannot_be_tolerated() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
-    assert not validate_mutated_gate(baseline), "stable gate must pass before mutation checks"
+    baseline_errors = validate_mutated_gate(baseline)
+    assert not baseline_errors, baseline_errors
     accepted = []
     for job in ("rust_linux", "rust_windows"):
         marker = f"  {job}:\n"
@@ -262,21 +632,131 @@ def test_postgres_early_exit_cannot_preserve_contract_strings() -> None:
     assert errors, "validator accepted early exit before PG evidence with contract strings intact"
 
 
+def test_post_classification_target_drift_cannot_preserve_contract_strings() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    evidence = load_validator().step_block(
+        load_validator().job_block(baseline, "rust_linux"),
+        "Run registered PostgreSQL E2E targets when allocated",
+    )
+    assert evidence is not None
+    mutations = (
+        evidence.replace('                checkout_blob="$(git hash-object -- "$path")"\n', "", 1),
+        evidence.replace(
+            '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then\n',
+            '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ ]]; then\n',
+            1,
+        ),
+        evidence.replace(
+            '                if [[ ! -f "$path" || -L "$path" ]]; then\n',
+            '                if [[ ! -f "$path" ]]; then\n',
+            1,
+        ),
+        evidence.replace(
+            '                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then\n',
+            '                if [[ -e "$path" ]]; then\n',
+            1,
+        ),
+    )
+    for mutated_evidence in mutations:
+        assert mutated_evidence != evidence
+        mutated = baseline.replace(evidence, mutated_evidence, 1)
+        # The fixed Cargo commands and target mappings remain, but deleting or
+        # mutating a target after classification must no longer validate.
+        for name, target in REGISTERED_POSTGRES_TARGETS.items():
+            assert f"run_registered_target {name} {target}" in mutated
+        errors = validate_mutated_gate(mutated)
+        assert errors, "validator accepted post-classification target drift with old commands intact"
+
+
+def test_cargo_target_source_remap_cannot_preserve_contract_strings() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    evidence = load_validator().step_block(
+        load_validator().job_block(baseline, "rust_linux"),
+        "Run registered PostgreSQL E2E targets when allocated",
+    )
+    assert evidence is not None
+    mutations = (
+        evidence.replace(
+            "              matches = [target for target in targets if target.get('name') == name]\n",
+            "              matches = [target for target in targets if target.get('src_path')]\n",
+            1,
+        ),
+        evidence.replace(
+            "              if len(matches) != 1 or matches[0].get('kind') != ['test']:\n",
+            "              if not matches:\n",
+            1,
+        ),
+        evidence.replace(
+            "              if observed != expected:\n",
+            "              if not observed:\n",
+            1,
+        ),
+        evidence.replace('                verify_registered_target_binding "$name" "$path"\n', "", 1),
+    )
+    for mutated_evidence in mutations:
+        assert mutated_evidence != evidence
+        mutated = baseline.replace(evidence, mutated_evidence, 1)
+        for name, target in REGISTERED_POSTGRES_TARGETS.items():
+            assert f"run_registered_target {name} {target}" in mutated
+        assert validate_mutated_gate(mutated), (
+            "validator accepted an explicit [[test]] name/path remap bypass while fixed commands remained"
+        )
+
+
+def test_fixed_postgres_target_mapping_cannot_be_suppressed() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    baseline_errors = validate_mutated_gate(baseline)
+    assert not baseline_errors, baseline_errors
+    for name, target in REGISTERED_POSTGRES_TARGETS.items():
+        variable = name.upper()
+        marker = (
+            f'          run_registered_target {name} {target} '
+            f'"${variable}_PRESENT" "${variable}_BLOB"\n'
+        )
+        assert baseline.count(marker) == 1, (name, target)
+        errors = validate_mutated_gate(baseline.replace(marker, "", 1))
+        assert any("rust_linux" in error for error in errors), (name, errors)
+
+
+def test_postgres_digest_and_invocation_are_mandatory() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
+    assert any("rust_linux" in error and "exactly match" in error for error in validate_mutated_gate(stale))
+    invocation = '              cargo +1.94.0 test --locked -p oteryn-game-server --test "$name"\n'
+    assert baseline.count(invocation) == 1
+    errors = validate_mutated_gate(baseline.replace(invocation, "", 1))
+    assert any("rust_linux" in error for error in errors), errors
+
+
 def main() -> int:
     tests = (
+        test_registered_postgres_targets_are_materially_routed,
+        test_pr_gate_rejects_explicit_cargo_test_path_remap,
         test_postgres_evidence_step_cannot_be_skipped,
         test_simulation_evidence_step_cannot_be_skipped,
+        test_input_platform_evidence_contract_is_mandatory,
         test_classifier_rejects_identity_races,
         test_classifier_rejects_unbound_base,
-        test_classifier_preserves_stable_removal_classification,
+        test_classifier_exact_target_state_matrix,
+        test_classifier_fails_closed_for_each_protected_registered_target_removal,
+        test_classifier_rejects_bad_target_evidence_and_checkout_mismatch,
+        test_classifier_rejects_unavailable_exact_commits,
+        test_classifier_requires_successful_tree_evidence_for_absence,
+        test_classifier_validates_every_tree_entry_before_proving_absence,
+        test_classifier_rejects_invalid_changed_file_counts,
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
         test_scope_preserves_stable_classification,
         test_scope_bounds_environment_transport,
-        test_both_classifiers_bind_aba_to_immutable_diff,
-        test_both_classifiers_reject_comparison_truncation,
+        test_classifiers_bind_aba_to_immutable_authority,
+        test_scope_rejects_comparison_truncation_while_pg_accepts_large_diff,
+        test_protected_classifier_red_for_valid_803_file_target,
         test_evidence_job_failure_cannot_be_tolerated,
         test_postgres_early_exit_cannot_preserve_contract_strings,
+        test_post_classification_target_drift_cannot_preserve_contract_strings,
+        test_cargo_target_source_remap_cannot_preserve_contract_strings,
+        test_fixed_postgres_target_mapping_cannot_be_suppressed,
+        test_postgres_digest_and_invocation_are_mandatory,
     )
     for test in tests:
         test()

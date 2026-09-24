@@ -1,31 +1,30 @@
-# Oteryn v2 Terra + Sol Execution Scheduler
+# Oteryn v2 Work + Sol Execution Scheduler
 
 ## Purpose
 
-Provide one canonical launch sheet for the execution model defined by `2026-08-27-oteryn-game-terra-sol-parallel-execution-design.md`.
+Provide the canonical launch sheet for the current Work + Sol execution model. The retained file path preserves compatibility with the historical 2026-08-27 Terra+Sol design.
 
-The scheduler is interpreted by the programme's uniquely active control-plane profile. When Terra is selected, `Oteryn: terra game coordinator` applies it as a deterministic dependency/ownership map, not technical decision authority. Every invocation resolves live GitHub; the examples below are not cached state authority.
+The scheduler is interpreted by `Oteryn: work coordinator`, the sole reusable mutating Game control plane. Every invocation resolves live GitHub; the examples below are not cached state authority.
 
-Owner-facing placement, model/effort selection and `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reporting are standardized by `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is subordinate to this scheduler and live GitHub; it never activates a lane or transfers control-plane authority.
+Owner-facing placement and `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reporting are standardized by `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is subordinate to this scheduler and live GitHub; it never activates a lane or transfers control-plane authority.
 
 ## Roles
 
-| Alias | Requested profile | Default mode | Purpose |
+| Alias | Execution placement | Default mode | Purpose |
 | --- | --- | --- | --- |
-| `Oteryn: terra game coordinator` | Work / Terra High | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | GitHub state, DAG, ownership, leases, deterministic integration |
-| `Oteryn: work coordinator` | ChatGPT Work / Terra High when selected for deterministic execution | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | legacy/reusable Work delivery control plane |
-| `Oteryn: sol supervising architect` | GPT-5.6 Sol Extra High | ON_DEMAND | material architecture/cross-lane decisions |
-| `Oteryn: work auditor` | GPT-5.6 Sol highest available, independent | AUDIT_READ + EVIDENCE_WRITE | forensic audit plus bounded exact-target GitHub audit note |
-| `Oteryn: owner execution guide` | GPT-5.6 Sol Extra High | READ_ONLY | owner-facing live launch/model/effort/status guidance; never a control plane |
-| `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | single mutating writer and technical synthesis owner for the current Durability critical lane |
-| `Oteryn: sol durability authority analyst` | GPT-5.6 Sol High | READ_ONLY | Foundation/current-authority snapshot and final-COMMIT revalidation analysis for the live Durability candidate |
-| `Oteryn: sol durability continuity analyst` | GPT-5.6 Sol High | READ_ONLY | continuity/protection-shape and replacement transaction-ordering analysis for the live Durability candidate |
-| `Oteryn: sol durability qualification analyst` | GPT-5.6 Sol High | READ_ONLY | whole-diff consistency, regression-gap, main-drift and qualification-plan analysis for the live Durability candidate |
-| `Oteryn: sol server seam lead` | GPT-5.6 Sol Extra High | READ_ONLY until Durability terminal | production server/client-entry seam |
-| `Oteryn: sol client qa lead` | GPT-5.6 Sol Extra High | READ_ONLY until Server Seam terminal | native client + Tier 1/Tier 2 evidence |
-| `Oteryn: sol movement lead` | GPT-5.6 Sol Extra High | READ_ONLY until Client/QA + current Movement resource/dependency gate terminal | authoritative Movement |
-| `Oteryn: sol combat lead` | GPT-5.6 Sol Extra High | READ_ONLY until Movement terminal | authoritative Combat/death/loot/XP/pickup |
-| `Oteryn: sol post-vsl expansion` | GPT-5.6 Sol Extra High | READ_ONLY planning | decompose all remaining accepted Game work after VSL |
+| `Oteryn: work coordinator` | ChatGPT Work | CONTROL_PLANE when live authority permits mutation; otherwise READ_ONLY_RECONCILIATION | GitHub state, DAG, ownership, leases and governed integration |
+| `Oteryn: sol supervising architect` | separate specialist session | ON_DEMAND | material architecture/cross-lane decisions |
+| `Oteryn: work auditor` | separate independent session | AUDIT_READ + EVIDENCE_WRITE | forensic audit plus bounded exact-target GitHub audit note |
+| `Oteryn: owner execution guide` | separate read-only session | READ_ONLY | owner-facing live launch/status guidance; never a control plane |
+| `Oteryn: sol durability lead` | separate specialist session | MUTATING when allocated | single mutating writer and technical synthesis owner for the current Durability critical lane |
+| `Oteryn: sol durability authority analyst` | separate read-only session | READ_ONLY | Foundation/current-authority snapshot and final-COMMIT revalidation analysis for the live Durability candidate |
+| `Oteryn: sol durability continuity analyst` | separate read-only session | READ_ONLY | continuity/protection-shape and replacement transaction-ordering analysis for the live Durability candidate |
+| `Oteryn: sol durability qualification analyst` | separate read-only session | READ_ONLY | whole-diff consistency, regression-gap, main-drift and qualification-plan analysis for the live Durability candidate |
+| `Oteryn: sol server seam lead` | separate specialist session | READ_ONLY until Durability terminal | production server/client-entry seam |
+| `Oteryn: sol client qa lead` | separate specialist session | READ_ONLY until Server Seam terminal | native client + Tier 1/Tier 2 evidence |
+| `Oteryn: sol movement lead` | separate specialist session | READ_ONLY until Client/QA + current Movement resource/dependency gate terminal | authoritative Movement |
+| `Oteryn: sol combat lead` | separate specialist session | READ_ONLY until Movement terminal | authoritative Combat/death/loot/XP/pickup |
+| `Oteryn: sol post-vsl expansion` | separate read-only session | READ_ONLY planning | decompose all remaining accepted Game work after VSL |
 
 `Oteryn: owner execution guide` may inspect this scheduler, live tasks and exact PR evidence to tell the owner what to launch. It cannot allocate workers, trigger Codex, request Work Auditor evidence, mutate coordinator state, grant leases, merge or close anything.
 
@@ -33,19 +32,18 @@ The three Durability analyst aliases are reusable read-only accelerators. They n
 
 ## Control-plane activation
 
-Exactly one mutating control-plane profile may own one programme lifecycle.
+`OTV2_WORK_DELIVERY_COORDINATOR` is the sole reusable mutating Game control-plane profile.
 
-- If the current coordinator Issue/task contains `active_control_plane_profile`, use it exactly.
-- For a legacy lifecycle without that field, the profile already named as canonical coordinator prompt/owner remains active; any other reusable control-plane profile is `RECOVERY_READ_ONLY`.
-- A profile switch requires a durable docs/governance transition merged to protected `main` that updates the current coordinator Issue/task and releases the previous profile before the new one mutates.
-- Alias invocation, model selection, chat instruction, `reusable` status or tool availability never transfers control-plane authority.
-- If exactly one active profile cannot be proven, classify `POLICY_CONFLICT`; neither profile may allocate, grant shared leases, integrate/merge, mutate coordinator status or close out the programme.
+- The live coordinator Issue/task still determines whether Work may mutate or must remain read-only.
+- Alias invocation, execution configuration, chat instruction or tool availability never expands Work authority.
+- If live authority/ownership cannot be resolved, classify `POLICY_CONFLICT` and keep Work read-only until the conflict is resolved.
+- The retired Terra profile is historical provenance only and is never a fallback control plane.
 
-Historical coordinator Issue numbers in this document are provenance only. Every invocation must resolve the current live coordinator lifecycle from GitHub before using a profile as mutating control plane.
+Historical coordinator Issue numbers in this document are provenance only. Resolve the current live coordinator lifecycle from GitHub before any mutating control-plane action.
 
 ## Global concurrency
 
-- Exactly one control-plane profile may mutate the programme; the inactive Work/Terra profile is read-only recovery.
+- Exactly one Work control plane may mutate the programme; when mutation is not authorized, Work remains read-only reconciliation.
 - The Work auditor's bounded PR/Issue COMMENT evidence writes do not consume implementation writer slots and do not make the auditor a mutating control plane.
 - The owner execution guide is read-only and does not consume an implementation writer slot.
 - Up to five Sol chats may be active when their responsibilities are distinct.
@@ -243,7 +241,7 @@ Current protected-main root `AGENTS.md` and the organization AI review policy it
 - Re-review only when a material risk-bearing repair makes the previous review no longer representative.
 - Do not recreate local R0/R1/R2 tiers or standing review-controller authority.
 
-A lane lead applies this current policy to its stable candidate. Work/Terra verify that the candidate followed current protected-main policy but do not invent stricter local routing or adjudicate technical findings. Existing handoff fields named `codex_review` may remain compatibility metadata; they never outrank root `AGENTS.md`.
+A lane lead applies this current policy to its stable candidate. Work verifies that the candidate followed current protected-main policy but does not invent stricter local routing or adjudicate technical findings. Existing handoff fields named `codex_review` may remain compatibility metadata; they never outrank root `AGENTS.md`.
 
 The three Durability analyst roles are not formal external review and never satisfy this gate.
 
@@ -285,7 +283,7 @@ Oteryn: sol tooling ops prep
 
 Each may only return a `READY_FOR_ALLOCATION_PROPOSAL` packet; none may mutate, allocate itself, claim a lease, integrate or close out a lane before a later exact merged allocation.
 
-Terra does not create future technical lanes itself. When Terra is the active control plane, it consumes the accepted expansion result and applies the same allocation/ownership/concurrency state machine recursively until all accepted Game programme lanes are terminal.
+Work does not create future technical lanes itself. It consumes accepted expansion results and applies the same allocation/ownership/concurrency state machine recursively until all accepted Game programme lanes are terminal.
 
 ## Decision routing table
 
@@ -301,7 +299,7 @@ Terra does not create future technical lanes itself. When Terra is the active co
 | product priority/scope/authority decision | `OWNER_DECISION_REQUIRED` |
 | canonical rules conflict | `POLICY_CONFLICT` |
 | external condition unchanged | `WAITING_EXTERNAL` |
-| every integration predicate proven | mechanical expected-head integration permitted |
+| every integration predicate proven | use only the authenticated bound META 3.1 native exact-head Merge Queue contract; if its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate |
 
 ## Owner launch sheet
 
