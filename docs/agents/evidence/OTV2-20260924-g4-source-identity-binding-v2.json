@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "task_id": "OTV2-20260924-g4-source-identity-binding-v2",
+  "base": {
+    "branch": "main",
+    "sha": "3cbcc87a00ebe377f8275161df1e91cd73401831",
+    "refreshed_and_verified": true
+  },
+  "allocation": {
+    "control_plane_issue": 162,
+    "comment_id": 5816360124,
+    "writer_count": 1,
+    "candidate_authoring_allocated": true,
+    "remote_publication_requested": false,
+    "protected_integration_gate": "#841 policy repin"
+  },
+  "decision": "docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md",
+  "implementation": {
+    "carrier": "ProjectV2SourceIdentityBinding",
+    "document": "provenance/sources.json",
+    "source_join": ["source_key", "source_revision"],
+    "identity_key": ["source_key", "source_revision", "identity_namespace", "external_id"],
+    "identity_namespace_syntax": "one nonempty source segment and one nonempty identifier-kind segment separated by exactly one slash",
+    "client_appearance_target_family": "Presentation",
+    "binding_count_limit": "ProjectEvidenceLimits.max_decoded_fields",
+    "target_identity": ["family", "key", "revision"],
+    "dispositions": ["EXACT", "ACCEPTED_ALIAS"],
+    "empty_serialization_preserved": true,
+    "population_performed": false,
+    "tests_cover": [
+      "verbatim lexical external ID",
+      "same ID in distinct namespaces and exact source revisions",
+      "Presentation and Item targets",
+      "unresolved source and target rejection",
+      "duplicate and conflicting identity rejection",
+      "invalid namespace segment rejection",
+      "empty binding wire shape preservation"
+    ]
+  },
+  "validation": {
+    "attempted": ["cargo fmt --check"],
+    "result": "BLOCKED",
+    "reason": "cargo and rustc are unavailable in the local execution environment",
+    "focused_rust_tests": "NOT_RUN"
+  },
+  "policy": {
+    "binding_version": "3.1.0",
+    "authority_commit": "21bc49bccef4874b037aabcbde9732b904187c32",
+    "checkout_contains_policy_document": false,
+    "note": "Active control plane reports the #841 policy repin integration gate remains open."
+  },
+  "candidate": {
+    "branch": "agent/otv2-g4-source-identity-binding-v2",
+    "commit": null,
+    "remote_publication": "NOT_AUTHORIZED"
+  }
+}
