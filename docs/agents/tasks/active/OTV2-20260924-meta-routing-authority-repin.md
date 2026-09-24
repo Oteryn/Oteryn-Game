@@ -20,6 +20,9 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/agents/META_AGENT_POLICY_BINDING.json
   - tools/agents/tests/test_meta_agent_policy_adoption.py
+  - docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md
+  - docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md
+  - docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md
   - docs/agents/tasks/active/OTV2-20260924-meta-routing-authority-repin.md
 public_contracts: []
 depends_on:
@@ -38,7 +41,8 @@ Repin Game's immutable META 3.1 provider binding from its prior protected ancest
 
 - PROVEN: Oteryn/Oteryn PR #224 protected-integrated at `1bfb5ff98c8aa156e73669a14e083a1d464c29fb` with successful real `merge_group` META CI.
 - PROVEN: Game already contains the provider-local direct/delegated routing consumption introduced by protected PR #817.
-- DERIVED: this task therefore needs only the immutable authority repin, exact-authority regression and lifecycle record; it must not re-copy META routing policy into Game.
+- DERIVED: this task needs the immutable authority repin, exact-authority regression and only the minimal wording repairs required for three reusable prompts to defer route selection to the bound META router; it must not re-copy META routing policy into Game.
+- PROVEN: fresh validation of the repinned candidate identified exactly three reusable prompt consumers whose route wording was rejected by the new central policy; those three prompt paths are therefore explicitly owned by this repair.
 - UNKNOWN: final exact Game candidate SHA until PR creation/freeze.
 
 ## High-risk authority/recovery qualification
@@ -49,13 +53,14 @@ NOT_APPLICABLE: this governance-only task performs no runtime, durable, producti
 
 - [ ] Binding authority commit equals `1bfb5ff98c8aa156e73669a14e083a1d464c29fb`.
 - [ ] Game provider-adoption regression expects the same exact authority.
+- [ ] Bound META provider-policy validation accepts all changed reusable prompt consumers without provider-local route selection.
 - [ ] Exact-head Agent Governance / required Game CI are green.
 - [ ] Applicable independent review has zero unresolved material findings.
 - [ ] Integration occurs through protected Merge Queue with real `merge_group` `game-gate` and protected-main readback.
 
 ## Excluded scope
 
-No gameplay/runtime/protocol/persistence/Cargo/vendor/workflow/ruleset/protection/production/secret mutation. No direct merge, generic auto-merge, bypass, force/reset/rebase or provider-local Merge Queue bridge.
+No gameplay/runtime/protocol/persistence/Cargo/vendor/workflow/ruleset/protection/production/secret mutation and no reusable-prompt changes beyond the three explicitly owned integration-wording repairs. No direct merge, generic auto-merge, bypass, force/reset/rebase or provider-local Merge Queue bridge.
 
 ## Validation
 
