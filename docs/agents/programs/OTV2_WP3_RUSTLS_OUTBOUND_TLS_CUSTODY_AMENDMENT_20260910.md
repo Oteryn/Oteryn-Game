@@ -119,12 +119,12 @@ This HIGH-risk control-plane candidate cannot authorize or integrate itself. It 
 3. a genuinely independent exact-head HIGH-risk/deep review reports P0/P1/P2=0 and required review threads/requested-changes are clear;
 4. the human owner explicitly authorizes the exact reviewed candidate head for protected integration;
 5. fresh target-bound preflight verifies repository, PR, `base=main`, exact head, authorization and eligibility;
-6. integration uses only the bound META 3.1 native exact-head REST `merge-async` route with exact `sha` and `merge_action="merge_queue"`;
+6. protected integration resolves the current immutable bound META capability router and uses freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract;
 7. accepted submission is reconciled by UUID and strictly later executor sequence, then real `merge_group` aggregate `game-gate` must succeed;
 8. protected `main` readback proves this exact amendment is integrated;
 9. Work freshly verifies #351/#356 ownership/head and explicitly activates this amendment for the SAME canonical worker.
 
-If the native exact-head Merge Queue operation is unavailable, preserve the candidate and return `BLOCKED_CAPABILITY_UNAVAILABLE`; no alternate merge primitive is authorized.
+If neither direct nor delegated integration capability is freshly proven, preserve the candidate and return `BLOCKED_CAPABILITY_UNAVAILABLE`; no alternate merge primitive is authorized.
 ## Source anchors
 
 At canonical source head `933ccef...`:
@@ -148,7 +148,7 @@ allocation-only NOT_ACTIVE_CONDITIONAL candidate
 -> independent HIGH-risk exact-head review P0/P1/P2=0
 -> explicit human-owner authorization of the exact reviewed head
 -> fresh target/head/eligibility preflight
--> META 3.1 native exact-head merge-async merge_queue
+-> bound META capability router: DIRECT_CAPABLE | DELEGATED_CAPABLE
 -> same-UUID later-sequence reconciliation
 -> real merge_group game-gate SUCCESS
 -> protected-main readback
