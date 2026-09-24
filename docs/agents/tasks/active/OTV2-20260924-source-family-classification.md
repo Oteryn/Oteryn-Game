@@ -1,10 +1,10 @@
 task_id: OTV2-20260924-source-family-classification
 mode: IMPLEMENT
-status: in_progress
+status: validating
 repository: Oteryn/Oteryn-Game
 branch: agent/full-content-g3-source-family-classification-20260924
 base_sha: ea8a563026e10b5464ece55c7ee0c790e716a786
-pr: pending
+pr: 828
 head_sha: pending
 final_head_sha: pending
 owned_paths:
@@ -54,5 +54,7 @@ Winterlight Solstice page ID `45642` remains `UNKNOWN`: it is a World Quest page
 - Focused counterexamples cover Mount-list World Quest, infobox without root/surface, root without base infobox, same-ID dual provenance, same-title distinct IDs, parse-error/redirect/no-infobox unknown, and corrupt input digest.
 - Run local focused tests and exact-input classification reproduction. The hosted exact-head workflow verifies the G2 artifact metadata, run/head, ZIP bytes, exact archive members, universe digest, schemas and counts, then uploads the full classified output and compact manifest as a 14-day artifact.
 - Preserve input artifact and deterministic classified-universe digests in the evidence record. Exact-head Agent Governance, Architecture Semantic Audit, Merge Gate/game-gate, and the G3 workflow must pass before returning the draft PR as `READY_FOR_INTEGRATION`.
+
+First hosted classification run `35986595291` passed both jobs at candidate `67aaa41f505c2da588315cafc833f2914ba16676`. It uploaded artifact `10801758693` (`source-family-classification-67aaa41f505c2da588315cafc833f2914ba16676`), ZIP SHA-256 `cb39d2404317328b7efee71e489ea93413d9ac3eefb0c92f6ce4b2c143d082d7`, 14-day retention. The task packet/evidence metadata is being corrected; final exact-head qualification must run after that write.
 
 Coordinator owns independent review, admission through governed Merge Queue, and terminal merge-group/protected-main readback.
