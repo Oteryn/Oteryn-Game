@@ -1,3 +1,5 @@
+> Lifecycle closeout: **ARCHIVED AFTER CANONICAL PR MERGE**. Canonical PR #803 merged as `c07240d50473b8697cbe10641028cd0e7eb2d1e4`. This packet is no longer active; any nonterminal wording below is retained only as historical provenance.
+
 # OTV2-20260923-item-wiki-first-census
 
 ```yaml

@@ -374,7 +374,7 @@ async fn record_issuance(
             Ok(())
         }
         Ok(false) => Err(Failure::Rejected(
-            "issuance conflicts, is stale or changes the source authority".into(),
+            "issuance conflicts, is stale, changes the source authority or precedes fresh-store initialization".into(),
         )),
         Err(error) => Err(Failure::Ambiguous(format!(
             "issuance outcome unknown ({error:?}); re-run with the same inputs"
