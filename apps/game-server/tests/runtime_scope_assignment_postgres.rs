@@ -3334,6 +3334,14 @@ fn s2_initialization_and_descriptors_require_recorded_issuances() -> TestResult 
                 };
             assert!(issue(first.clone(), "platform", true).await?);
             assert!(issue(first.clone(), "platform", true).await?);
+            // A second fresh-store authorization is refused, before and after
+            // initialization, so the runtime cannot choose an initial descriptor.
+            let competing = DescriptorRegistration {
+                revision: 5,
+                facts: vec![5],
+                installed_at: 50,
+            };
+            assert!(!issue(competing.clone(), "platform", true).await?);
             // Different content for a recorded revision is refused.
             assert!(!issue(first.clone(), "platform", false).await?);
             // Initialization with content other than the issuance rejects.
@@ -3346,6 +3354,7 @@ fn s2_initialization_and_descriptors_require_recorded_issuances() -> TestResult 
             );
             root.initialize_native_admission_source(&node, provenance.clone(), first.clone())
                 .await?;
+            assert!(!issue(competing.clone(), "platform", true).await?);
             assert_eq!(
                 root.read_native_admission_source_registration().await?,
                 Some((provenance.clone(), first.clone()))
