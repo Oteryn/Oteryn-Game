@@ -28,12 +28,14 @@ use super::character_authority::{
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::fresh_admission::{FreshAdmissionStore, OwnerRevalidation};
 use super::native_admission_source::fence_custody;
 use super::runtime_scope_assignment::{
     AssignmentState, NodeIncarnationProof, channel_scope, load_assignment,
     prove_current_incarnation, require_history_matches_high_water, scope_key, writer_high_water,
 };
 use super::{DurabilityError, DurabilityRoot, MAX_ADMISSION_GUARD_BYTES};
+use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use oteryn_game_server::admission_evidence::{Facts, Request, Response, decode_response};
 use oteryn_game_server::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
@@ -49,6 +51,9 @@ use oteryn_game_server::foundation::fnd04_verifier::{
     FreshPublishedCurrentObservationV1, FreshSigningTrustObservationV1, fresh_source_sealed,
 };
 use oteryn_game_server::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1;
+use oteryn_game_server::foundation::fresh_admission_durability::{
+    FreshAdmissionCommitRequestV1, FreshAdmissionDurableOutcomeV1,
+};
 use oteryn_game_server::foundation::{
     ChannelId, CharacterId, Fnd04ConsumerError, Fnd04EvidenceError, Fnd04EvidenceScope,
     PRE_ADMISSION_PROFILE, RuntimeScopeRefV1, WorldId,
@@ -515,59 +520,102 @@ impl DurabilityRoot {
             .run(move |pass, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(pass, deadline).await?;
-                    if !prove_current_incarnation(&mut tx, &holder).await? {
-                        return Err(DurabilityError::Unavailable);
-                    }
                     lock_admission_relations(&mut tx).await?;
-                    let (world_id, channel_id) = channel_scope(subject.runtime_scope())
-                        .map_err(|_| DurabilityError::Unavailable)?;
-                    let high_water = writer_high_water(&mut tx, false).await?;
-                    require_history_matches_high_water(&mut tx, high_water).await?;
-                    let assignment =
-                        load_assignment(&mut tx, &scope_key(world_id, channel_id), false)
-                            .await?
-                            .ok_or(DurabilityError::Unavailable)?;
-                    if assignment.state != AssignmentState::Assigned
-                        || assignment.holder != Some(holder.fact())
-                    {
-                        return Err(DurabilityError::Unavailable);
-                    }
                     let store = AdmissionGuardStore::from_root(root);
-                    let mut rows = Vec::with_capacity(4);
-                    for key in subject.keys() {
-                        rows.push(
-                            store
-                                .load_locked(&mut tx, &key)
-                                .await?
-                                .ok_or(DurabilityError::Unavailable)?,
-                        );
-                    }
-                    let account = account_floor(&mut tx, &subject.account_id)
-                        .await?
-                        .ok_or(DurabilityError::Unavailable)?;
-                    let trust = trust_floor(&mut tx, &subject.signing_key_id)
-                        .await?
-                        .ok_or(DurabilityError::Unavailable)?;
-                    let record = load_current_character(
-                        &mut tx,
-                        &recovery,
-                        *subject.character_id.as_bytes(),
-                    )
-                    .await?
-                    .ok_or(DurabilityError::Unavailable)?;
+                    let composition =
+                        resolve_current(&mut tx, &store, &recovery, &holder, subject).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    FreshAdmissionComposition::resolve(
-                        subject,
-                        rows,
-                        &account,
-                        &trust,
-                        &record,
-                        assignment.ownership_generation,
-                    )
+                    Ok(composition)
                 })
             })
             .await
     }
+}
+
+impl DurabilityRoot {
+    /// Durable fresh-admission commit that revalidates every owner inside the
+    /// commit transaction: the sealed composition is recomputed from the
+    /// current S2 floors, #414 Character (under the recovery fence), #415
+    /// assignment and guards, and the commit is rejected as stale authority
+    /// unless it is exactly the composition the request was prepared from.
+    pub async fn commit_composed_fresh_admission(
+        &self,
+        character: &ReconciledCharacterAuthority<'_, '_>,
+        holder: &NodeIncarnationProof,
+        composition: &FreshAdmissionComposition,
+        request: &FreshAdmissionCommitRequestV1,
+    ) -> Result<FreshAdmissionDurableOutcomeV1> {
+        let recovery = character
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let holder = holder.clone();
+        let expected = composition.clone();
+        let store = AdmissionGuardStore::from_root(self.clone());
+        let revalidate: OwnerRevalidation = Box::new(move |tx| {
+            Box::pin(async move {
+                match resolve_current(tx, &store, &recovery, &holder, expected.subject.clone())
+                    .await
+                {
+                    Ok(current) => Ok(current == expected),
+                    Err(DurabilityError::Unavailable) => Ok(false),
+                    Err(error) => Err(error),
+                }
+            })
+        });
+        FreshAdmissionStore::from_root(self.clone())
+            .commit_revalidated(request, Some(revalidate))
+            .await
+    }
+}
+
+/// Resolve the sealed composition from the current owners inside `tx`. The
+/// caller holds the admission relation locks.
+async fn resolve_current(
+    tx: &mut Transaction<'_, Postgres>,
+    store: &AdmissionGuardStore,
+    recovery: &CharacterRecoveryFenceV1,
+    holder: &NodeIncarnationProof,
+    subject: FreshAdmissionSubject,
+) -> Result<FreshAdmissionComposition> {
+    if !prove_current_incarnation(tx, holder).await? {
+        return Err(DurabilityError::Unavailable);
+    }
+    let (world_id, channel_id) =
+        channel_scope(subject.runtime_scope()).map_err(|_| DurabilityError::Unavailable)?;
+    let high_water = writer_high_water(tx, false).await?;
+    require_history_matches_high_water(tx, high_water).await?;
+    let assignment = load_assignment(tx, &scope_key(world_id, channel_id), false)
+        .await?
+        .ok_or(DurabilityError::Unavailable)?;
+    if assignment.state != AssignmentState::Assigned || assignment.holder != Some(holder.fact()) {
+        return Err(DurabilityError::Unavailable);
+    }
+    let mut rows = Vec::with_capacity(4);
+    for key in subject.keys() {
+        rows.push(
+            store
+                .load_locked(tx, &key)
+                .await?
+                .ok_or(DurabilityError::Unavailable)?,
+        );
+    }
+    let account = account_floor(tx, &subject.account_id)
+        .await?
+        .ok_or(DurabilityError::Unavailable)?;
+    let trust = trust_floor(tx, &subject.signing_key_id)
+        .await?
+        .ok_or(DurabilityError::Unavailable)?;
+    let record = load_current_character(tx, recovery, *subject.character_id.as_bytes())
+        .await?
+        .ok_or(DurabilityError::Unavailable)?;
+    FreshAdmissionComposition::resolve(
+        subject,
+        rows,
+        &account,
+        &trust,
+        &record,
+        assignment.ownership_generation,
+    )
 }
 
 /// #414 owner/world binding: the Character belongs to exactly this Platform
@@ -593,7 +641,7 @@ fn canonical_uuid(value: &[u8; 16]) -> String {
 /// Sealed, already-resolved owner facts for one fresh admission. There is no
 /// public constructor; only [`DurabilityRoot::compose_fresh_admission`]
 /// creates it from the locked owners.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FreshAdmissionComposition {
     subject: FreshAdmissionSubject,
     rows: Vec<AdmissionAuthorityPublicationChangeV1>,

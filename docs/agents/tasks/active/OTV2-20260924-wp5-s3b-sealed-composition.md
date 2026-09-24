@@ -22,6 +22,7 @@ owned_paths:
   - apps/game-server/src/durability/fresh_admission_composition.rs
   - apps/game-server/src/durability/mod.rs
   - apps/game-server/src/durability/character_authority.rs
+  - apps/game-server/src/durability/fresh_admission.rs
   - apps/game-server/src/durability/native_admission_source.rs
   - apps/game-server/src/durability/runtime_scope_assignment.rs
   - apps/game-server/tests/wp5_s3b_composition.rs
@@ -60,6 +61,8 @@ external_repositories: []
 - New S3-B paths: the composition module, the harness, the workflow, and the topology overlay. The overlay has the Platform intent environment variables and the nginx route. The protected S3-A topology files are reused unchanged.
 - Minimal visibility changes (`pub(super)`) in S2 (`fence_custody`) and #415 (`channel_scope`, `scope_key`, `load_assignment`, `writer_high_water`, `require_history_matches_high_water`), so the composition can resolve owner facts in its own transaction.
 - One #414 in-transaction reader, `load_current_character`, which asserts the recovery fence in the caller's transaction. `record_for` becomes `pub(super)`.
+
+- Commit-boundary revalidation. `FreshAdmissionStore` gains `commit_revalidated`, an owner-revalidation hook that runs inside the commit transaction; `commit` is unchanged. `commit_composed_fresh_admission` uses the hook to recompute the sealed composition from the current S2 floors, the #414 Character under the recovery fence, the #415 assignment and the guards. It rejects the commit as stale authority unless the result equals the prepared composition. This addresses Codex finding 4090536307.
 
 ## Qualification
 

@@ -33,6 +33,7 @@ mod fresh_admission_composition_linkage {
         let _ = std::mem::size_of::<FreshAdmissionSubject>();
         let _ = DurabilityRoot::publish_fresh_admission_sources;
         let _ = DurabilityRoot::compose_fresh_admission;
+        let _ = DurabilityRoot::commit_composed_fresh_admission;
     }
 }
 

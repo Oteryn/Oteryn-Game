@@ -708,7 +708,7 @@ fn composition_flow(
                 now,
             )?;
             let store = FreshAdmissionStore::from_root(root.clone());
-            match store.commit(&request).await? {
+            match root.commit_composed_fresh_admission(&authority, &node_a, &composition, &request).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 1 not committed: {other:?}").into()),
             }
@@ -781,7 +781,27 @@ fn composition_flow(
                 AuthenticatedTransportRefV1::decode(&[0x53; 16])?,
                 now,
             )?;
-            match store.commit(&request).await? {
+            // An owner change between composition and commit (a newer S2 floor)
+            // is caught at the commit boundary: the prepared request is stale.
+            ingest(&root, &node_b, descriptor, &accounts[1], &key_id).await?;
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
+                FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority => {}
+                other => return Err(format!("owner change not revalidated at commit: {other:?}").into()),
+            }
+            evidence("owner_change_between_compose_and_commit=rejected_stale_authority");
+            let (generation_two, observed) = ingest(&root, &node_b, descriptor, &accounts[1], &key_id).await?;
+            let now = now_seconds()?.max(observed);
+            root.publish_fresh_admission_sources(&authority, &node_b, &subject_two, now).await?;
+            let composition = root.compose_fresh_admission(&authority, &node_b, &subject_two).await?;
+            token_grant.security_generation = generation_two;
+            let request = admission_request(
+                &composition,
+                &runtime_bound_grant(&root, &token_grant, scope, now).await?,
+                GameSessionId::decode(&v7(3, 0x06))?,
+                AuthenticatedTransportRefV1::decode(&[0x53; 16])?,
+                now,
+            )?;
+            match root.commit_composed_fresh_admission(&authority, &node_b, &composition, &request).await? {
                 FreshAdmissionDurableOutcomeV1::Committed(_) => {}
                 other => return Err(format!("admission 2 not committed: {other:?}").into()),
             }
