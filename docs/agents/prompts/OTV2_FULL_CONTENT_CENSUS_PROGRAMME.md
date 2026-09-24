@@ -115,6 +115,24 @@ For each family/batch, classify every source entity as one of:
 
 Use multi-signal identity matching. Never match on title alone when exact IDs, aliases, source IDs, appearances, coordinates, relationships or other stronger evidence exists.
 
+#### Multi-source identity binding requirement
+
+Before mass canonical population, apply `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`.
+
+Required invariants:
+
+- canonical Oteryn identity remains `family + namespaced ProductionKey + exact definition revision`;
+- legacy/wiki/OTS/client numeric IDs are retained as **namespaced source identities with exact source revision/digest**, never as canonical Oteryn identity;
+- new G4 contracts must not persist an unqualified bare `id` when the value is external;
+- exact binding uniqueness is scoped by source + source revision + identity namespace + external ID;
+- the same integer in TibiaWiki, Canary, Crystal or a client has no cross-source meaning by itself;
+- many source IDs may bind to one Oteryn definition, but one exact source identity/revision cannot canonically bind to multiple Oteryn targets;
+- probable/ambiguous/conflict/no-match states remain evidence and are not promoted as canonical bindings;
+- presentation/render identities remain separate: `definition -> Presentation -> Asset`; client appearance/sprite IDs normally bind to Presentation rather than minting Item/Creature/WorldObject identity;
+- source-ID continuity must survive later comparisons so tooling can deterministically join Oteryn ↔ wiki ↔ OTS/client evidence without name-only rematching.
+
+Current WorldProject/v2 has dataset provenance and candidate `SourceId` observations but no proven generic first-class per-entity multi-source binding. Pilot/read-only G4 analysis may proceed when artifacts retain the complete tuple. Before family-wide canonical population at scale, either prove an accepted existing carrier satisfies the architecture decision or land the minimum sufficient typed v2 binding gap closure. Do not create `ProjectV3` or a second identity system for this.
+
 Preferred bounded flow:
 
 `discover/reuse -> dedupe -> classify -> resolve identity -> verify fields -> promote eligible exact data -> compile/test`.
@@ -168,6 +186,7 @@ The programme is terminal only when:
 - all in-scope source identities are globally accounted for;
 - family ownership/disposition is complete;
 - required family crosswalks are complete or explicitly dispositioned;
+- exact promoted entities retain recoverable namespaced source-identity bindings, or an explicit bounded gap blocks only the affected family population rather than discarding source IDs;
 - promotable exact gaps have been repaired or formally deferred with evidence;
 - world-placement scale is measured;
 - required placement reconciliation is complete;
