@@ -76,6 +76,8 @@
   - two separate Platform routes, each with its own source authority namespace, endpoint, expected peer name and service trust roots. The source authority is the value S1 responses are bound to, and it is distinct from the TLS peer name:
     - the admission evidence source (S1/S2);
     - the Character bootstrap intent issuer (#414).
+
+    Neither route is trusted from configuration alone. Each carries a descriptor revision, and its endpoint, peer name, trust-root digest and client-identity digest must exactly equal the latest control-plane issuance recorded for that route (D2). A configured revision lower than the latest recorded one, or equal to it with different facts, fails boot. The same rule applies to the S2 admission descriptor (D3 step 4).
 - **Secrets and trust material are never inline values.** The document gives only file paths, each read once at start:
   - gameplay TLS certificate chain and key;
   - per Platform route: the operator-provisioned service trust roots, plus that route's mTLS client certificate and key. The two routes use distinct client identities. The trust roots are separate from the gameplay certificate chain, and an empty root set rejects, as `ProducerDescriptor::new` already requires;
@@ -105,7 +107,7 @@ A second binary target in the same crate, `oteryn-game-ops`, performs control-pl
   - submit or reconcile assignments;
   - configure the Character interpretation;
   - admit the fresh Character recovery generation;
-  - record the S2 fresh-store issuance.
+  - record route descriptor issuances (S2 fresh-store and later revisions, Character intent).
 - **Runtime privileges.** The runtime role may only perform the fenced runtime work: registration consumption, S2 custody and observations, readiness, Character reads and bootstrap, and admission.
 - **Recorded actor.** The recorded `ControlActor` is derived from the authenticated database session role, never from a caller-supplied label.
 - **Exact-scope authorization.** Group membership alone never authorizes an assignment.
@@ -134,7 +136,7 @@ The exact grant lists are part of the implementation. Negative tests must prove 
   - **Recovery after a failure.** After an ambiguous admission or a lost acknowledgement, the operator re-runs the action with that request file. The same inputs reproduce the same generation-1 transition for the retry or reconciliation; new inputs would conflict.
   - **Idempotence.** The re-run returns the already-admitted generation-1 record and never authorizes a second fresh store.
 - **The S2 fresh-store authorization.** It is required by the S2 evidence decision: a genuinely new store initializes only under an independently authorized fresh-store provenance record. The tool issues it as a file holding the complete `FreshStoreProvenance`: namespace, authorization reference, source authority and the exact `initialized_at` timestamp fixed at issuance. The file also holds the descriptor registration revision, `installed_at` and facts. Because every field is fixed at issuance, an ambiguous initialization can be compared exactly on restart. Issuing it never initializes the store itself.
-  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new issuance table keyed by descriptor revision. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
+  - **Durable, control-plane-authenticated issuance.** The file alone proves nothing. The tool first writes it durably, then records the exact canonical content through a new control-plane operation into a new issuance table keyed by route (S2 admission evidence or Character intent) and descriptor revision. The Character-intent route is issued the same way, without fresh-store provenance, before the node enables Character bootstrap. Only the control-plane role may insert, and the recorded actor comes from the authenticated session role. An exact replay returns success; different content rejects.
   - **Initialization binds to it.** `initialize_native_admission_source` is changed to require, in the same transaction, a recorded issuance whose content equals the supplied provenance and descriptor exactly; otherwise it rejects. The runtime role can read that row but never write it, so a process holding only runtime credentials cannot fabricate or select the initial source and trust descriptor.
   - §4 requires the negative tests.
 
@@ -199,7 +201,7 @@ Rejected alternatives:
       - source revision: the current guard's source revision plus one, or 1 under `Bootstrap`;
       - decision identity: derived deterministically from the `NodeId`, ownership generation, source revision and `ready` value, so it is unique per revision;
       - observed at: the node's clock at publication, with clock uncertainty 0 because the node observes its own state. The publication validator rejects both a decreasing value and a value later than the node's `now`. If the current guard's `source_observed_at` is ahead of the node's clock by at most the accepted five-second uncertainty bound, the node waits until its clock passes that value and then publishes, so the value never decreases and is never future-dated. A larger gap fails boot with a clock-skew error;
-      - restored high-water under `Bootstrap`: the highest publication revision the new read API finds in the guard history for the key, or 0 when there is none.
+      - `Bootstrap` only on a clean key: no current guard and no guard history, with restored high-water 0 and publication revision 1, as the existing validator requires. History without a current guard is invalid stored state and fails boot. Reconstructing a Runtime guard after a restore is not part of this slice (§5).
 
       The `ready = false` shutdown publication (step 10) uses the same rules; if its bounded wait would exceed the shutdown budget, shutdown proceeds without it, as step 10 already allows for a failed non-ready publication.
 9. **Serve.** Run two loops under the same shutdown token:
@@ -293,7 +295,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
   - A replayed authorization under a different `NodeId` or binding rejects registration.
   - An exact replay after a lost registration response returns the original proof, and boot continues.
 - **Scope grants.** A control-plane login is refused an assignment for a scope or operation it has no grant for, and is refused writing a grant.
-- **Descriptor revisions.** A higher configured descriptor revision without a matching recorded issuance fails boot.
+- **Descriptor revisions.** For both Platform routes, a configured descriptor revision without a matching recorded issuance, or rolled back below the latest recorded one, fails boot.
 - **Readiness clock.** A replacement node whose clock is behind the prior publication's `source_observed_at` by less than the uncertainty bound waits and then publishes readiness; a larger gap fails boot.
 - **Mixed S1 results.** When the account exchange returns an authenticated denial and the trust exchange fails, the denial is accepted into S2 and a later delayed lower-revision allow is refused.
 - **Credential separation.** With the runtime credential, each of the following is refused by the database:
@@ -330,6 +332,7 @@ This is physical qualification with the shipped binaries in the existing WP5 top
 ## 5. Explicit non-decisions
 
 This decision does not choose or decide any of the following:
+- Runtime guard reconstruction after a database restore that left guard history without a current guard; such a state fails boot closed;
 - the orchestrator, container image, systemd unit or Kubernetes shape;
 - the secret-delivery product;
 - production endpoints, certificates or credentials;
