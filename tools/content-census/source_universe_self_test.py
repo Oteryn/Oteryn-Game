@@ -141,6 +141,14 @@ def test_discovery_index_deduplicates_and_rejects_conflicts() -> None:
     )
 
 
+
+def test_discovery_preserves_case_distinct_canonical_titles() -> None:
+    index = census.DiscoveryIndex(max_pages=4, exclusion_aliases=set())
+    assert index.add(1, "HP", root_id="r", discovery_kind="PAGE_LINK")
+    assert index.add(2, "Hp", root_id="r", discovery_kind="PAGE_LINK")
+    assert set(index.by_id) == {1, 2}
+
+
 def test_discovery_index_drops_exact_hard_exclusion() -> None:
     excluded = {census.normalized_title("Imbuement Tool")}
     index = census.DiscoveryIndex(max_pages=1, exclusion_aliases=excluded)
