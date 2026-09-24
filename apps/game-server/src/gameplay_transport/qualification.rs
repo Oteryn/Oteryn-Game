@@ -789,8 +789,13 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         let mut output = Vec::new();
         let _ =
             tokio::time::timeout(Duration::from_secs(20), plaintext.read_to_end(&mut output)).await;
-        if !output.is_empty() {
-            return Err("plaintext received a gameplay reply".into());
+        // The TLS layer may answer with an alert record (content type 0x15);
+        // nothing else, and never a Foundation frame, may come back.
+        if output
+            .first()
+            .is_some_and(|content_type| *content_type != 0x15)
+        {
+            return Err(format!("plaintext received a non-alert reply: {output:02x?}").into());
         }
         if committed_admissions(&url).await? != 0 {
             return Err("a transport negative committed an admission".into());
