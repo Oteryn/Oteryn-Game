@@ -40,6 +40,9 @@ pub struct CharacterRecoveryFenceV1 {
 #[derive(Debug)]
 pub struct CharacterRecoveryStore {
     directory: PathBuf,
+    /// The service user that owns the directory, lock and record
+    /// (OPS-NODE-BOOT-01 D1). Files this process creates are handed to it.
+    owner: u32,
     authority_scope_id: String,
     issuer_identity: String,
     generation_guard: Arc<RwLock<()>>,
@@ -74,10 +77,30 @@ impl CharacterRecoveryTransition<'_> {
 }
 
 impl CharacterRecoveryStore {
+    /// Open the store owned by this process's effective user.
     pub fn open(
         retained_directory: impl AsRef<Path>,
         authority_scope_id: impl Into<String>,
         issuer_identity: impl Into<String>,
+    ) -> Result<Self, CharacterRecoveryError> {
+        Self::open_owned_by(
+            retained_directory,
+            authority_scope_id,
+            issuer_identity,
+            rustix::process::geteuid().as_raw(),
+        )
+    }
+
+    /// Open the store whose directory, lock and record belong to `owner`. The
+    /// directory must be owned by `owner` and not writable by group or others,
+    /// and its parent must not be writable by group or others. Lock and record
+    /// files created here are exclusive, mode 0600 and handed to `owner`
+    /// through the open descriptor before any content is written.
+    pub fn open_owned_by(
+        retained_directory: impl AsRef<Path>,
+        authority_scope_id: impl Into<String>,
+        issuer_identity: impl Into<String>,
+        owner: u32,
     ) -> Result<Self, CharacterRecoveryError> {
         let authority_scope_id = authority_scope_id.into();
         let issuer_identity = issuer_identity.into();
@@ -92,8 +115,27 @@ impl CharacterRecoveryStore {
         let directory = directory
             .canonicalize()
             .map_err(|_| CharacterRecoveryError::Unavailable)?;
+        let handle = secure_open(&directory, false, false)?;
+        let stat = rustix::fs::fstat(&handle).map_err(|_| CharacterRecoveryError::Unavailable)?;
+        if rustix::fs::FileType::from_raw_mode(stat.st_mode) != rustix::fs::FileType::Directory
+            || stat.st_uid != owner
+            || stat.st_mode & 0o022 != 0
+        {
+            return Err(CharacterRecoveryError::Unavailable);
+        }
+        let parent = File::open(
+            directory
+                .parent()
+                .ok_or(CharacterRecoveryError::Unavailable)?,
+        )
+        .map_err(|_| CharacterRecoveryError::Unavailable)?;
+        let stat = rustix::fs::fstat(&parent).map_err(|_| CharacterRecoveryError::Unavailable)?;
+        if (stat.st_uid != owner && stat.st_uid != 0) || stat.st_mode & 0o022 != 0 {
+            return Err(CharacterRecoveryError::Unavailable);
+        }
         Ok(Self {
             directory,
+            owner,
             authority_scope_id,
             issuer_identity,
             generation_guard: Arc::new(RwLock::new(())),
@@ -209,8 +251,21 @@ impl CharacterRecoveryStore {
     }
 
     fn lock(&self, operation: FlockOperation) -> Result<File, CharacterRecoveryError> {
-        let file = secure_open(&self.directory.join(LOCK_NAME), true, false)?;
-        ensure_regular(&file)?;
+        let path = self.directory.join(LOCK_NAME);
+        let file = match secure_open(&path, true, false) {
+            Ok(file) => file,
+            Err(_) if !path.exists() && fs::symlink_metadata(&path).is_err() => {
+                // Fresh installation: exclusive create, handed to the owner.
+                let file = match secure_open(&path, true, true) {
+                    Ok(file) => file,
+                    Err(_) => secure_open(&path, true, false)?,
+                };
+                self.hand_off(&file)?;
+                file
+            }
+            Err(error) => return Err(error),
+        };
+        self.ensure_owned(&file)?;
         rustix::fs::flock(&file, operation).map_err(|_| CharacterRecoveryError::Unavailable)?;
         Ok(file)
     }
@@ -222,7 +277,7 @@ impl CharacterRecoveryStore {
             Err(CharacterRecoveryError::Unavailable) if !path.exists() => return Ok(None),
             Err(error) => return Err(error),
         };
-        ensure_regular(&file)?;
+        self.ensure_owned(&file)?;
         let mut bytes = Vec::new();
         file.take((MAX_RECORD_BYTES + 1) as u64)
             .read_to_end(&mut bytes)
@@ -247,8 +302,9 @@ impl CharacterRecoveryStore {
         );
         let temp = self.directory.join(&temp_name);
         let mut file = secure_open(&temp, true, true)?;
-        ensure_regular(&file)?;
         let result = (|| {
+            self.hand_off(&file)?;
+            self.ensure_owned(&file)?;
             file.write_all(&bytes)
                 .map_err(|_| CharacterRecoveryError::Unavailable)?;
             file.sync_all()
@@ -266,13 +322,38 @@ impl CharacterRecoveryStore {
     }
 }
 
+impl CharacterRecoveryStore {
+    /// Transfer a newly created file to the owner through its descriptor and
+    /// synchronize the directory entry.
+    fn hand_off(&self, file: &File) -> Result<(), CharacterRecoveryError> {
+        rustix::fs::fchown(file, Some(rustix::fs::Uid::from_raw(self.owner)), None)
+            .map_err(|_| CharacterRecoveryError::Unavailable)?;
+        file.sync_all()
+            .map_err(|_| CharacterRecoveryError::Unavailable)?;
+        File::open(&self.directory)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|_| CharacterRecoveryError::Unavailable)
+    }
+
+    /// A regular file owned by the store owner, not writable by group or others.
+    fn ensure_owned(&self, file: &File) -> Result<(), CharacterRecoveryError> {
+        ensure_regular(file)?;
+        let stat = rustix::fs::fstat(file).map_err(|_| CharacterRecoveryError::Unavailable)?;
+        if stat.st_uid != self.owner || stat.st_mode & 0o022 != 0 {
+            return Err(CharacterRecoveryError::Unavailable);
+        }
+        Ok(())
+    }
+}
+
+/// Open without following a final symbolic link. Created files are mode 0600.
 fn secure_open(path: &Path, write: bool, create_new: bool) -> Result<File, CharacterRecoveryError> {
     let mut options = OpenOptions::new();
     options
         .read(true)
         .write(write)
-        .create(write && !create_new)
-        .create_new(create_new);
+        .create_new(create_new)
+        .mode(0o600);
     options.custom_flags(OFlags::NOFOLLOW.bits() as i32);
     options
         .open(path)
@@ -416,7 +497,15 @@ mod tests {
     use super::*;
 
     fn directory(label: &str) -> PathBuf {
-        let path = std::env::temp_dir().join(format!(
+        use std::os::unix::fs::PermissionsExt;
+        // The fence requires a parent that is not writable by group or others.
+        let parent = std::env::temp_dir().join(format!(
+            "oteryn-character-fences-unit-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&parent).expect("fence parent");
+        fs::set_permissions(&parent, fs::Permissions::from_mode(0o700)).expect("fence parent mode");
+        let path = parent.join(format!(
             "oteryn-character-recovery-{label}-{}-{}",
             std::process::id(),
             TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed)
@@ -532,5 +621,43 @@ mod tests {
             Err(CharacterRecoveryError::Unavailable)
         ));
         fs::remove_dir_all(directory).expect("cleanup");
+    }
+
+    #[test]
+    fn directory_and_files_require_the_owner_and_no_group_or_other_write() {
+        use std::os::unix::fs::PermissionsExt;
+        let me = rustix::process::geteuid().as_raw();
+        let path = directory("ownership");
+        // Created files are mode 0600 and owned by the store owner.
+        let store = CharacterRecoveryStore::open(&path, "scope", "issuer").expect("store");
+        store
+            .authorize_fresh_store(event(1), 1)
+            .expect("fresh store");
+        for name in [LOCK_NAME, RECORD_NAME] {
+            let metadata = fs::metadata(path.join(name)).expect("metadata");
+            assert_eq!(metadata.permissions().mode() & 0o777, 0o600);
+        }
+        drop(store);
+        // Another owner is refused.
+        assert!(matches!(
+            CharacterRecoveryStore::open_owned_by(&path, "scope", "issuer", me.wrapping_add(1)),
+            Err(CharacterRecoveryError::Unavailable)
+        ));
+        // A group-writable directory is refused.
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o770)).expect("mode");
+        assert!(matches!(
+            CharacterRecoveryStore::open(&path, "scope", "issuer"),
+            Err(CharacterRecoveryError::Unavailable)
+        ));
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).expect("mode");
+        // A group-writable record is refused before use.
+        fs::set_permissions(path.join(RECORD_NAME), fs::Permissions::from_mode(0o620))
+            .expect("mode");
+        let store = CharacterRecoveryStore::open(&path, "scope", "issuer").expect("store");
+        assert!(matches!(
+            store.seal_current(),
+            Err(CharacterRecoveryError::Unavailable)
+        ));
+        fs::remove_dir_all(&path).expect("cleanup");
     }
 }

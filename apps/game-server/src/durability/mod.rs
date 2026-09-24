@@ -87,6 +87,7 @@ mod character_authority_linkage {
 
     #[test]
     fn character_authority_api_is_linked() {
+        let _ = DurabilityRoot::configure_character_interpretation;
         let _ = std::mem::size_of::<
             oteryn_game_server::character_bootstrap_intent::CharacterBootstrapIntentV1,
         >();

@@ -12,6 +12,7 @@ pub mod domain;
 pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
+pub mod node;
 
 pub use gameplay_transport::{
     GameplayListenerConfig, GameplaySeamOwners, GameplayServeError, serve_gameplay,
