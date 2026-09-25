@@ -498,8 +498,8 @@ impl ChannelActorCarrier {
         let Some(free_head) = self.free_head else {
             return Err(CarrierError::CapacityExceeded);
         };
-        let index = usize::try_from(free_head)
-            .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        let index =
+            usize::try_from(free_head).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
 
         let Slot::VacantReusable {
             generation,
@@ -585,14 +585,10 @@ impl ChannelActorCarrier {
         let (generation, actor, removed_creature) = match &self.slots[index] {
             Slot::Occupied {
                 generation, actor, ..
-            } if *generation == actor_ref.actor_local_generation.0 => {
-                (*generation, *actor, false)
-            }
+            } if *generation == actor_ref.actor_local_generation.0 => (*generation, *actor, false),
             Slot::CreatureOccupied {
                 generation, actor, ..
-            } if *generation == actor_ref.actor_local_generation.0 => {
-                (*generation, *actor, true)
-            }
+            } if *generation == actor_ref.actor_local_generation.0 => (*generation, *actor, true),
             Slot::Occupied { .. }
             | Slot::CreatureOccupied { .. }
             | Slot::VacantReusable { .. }
@@ -958,10 +954,7 @@ fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
         .map_err(|_| CarrierError::AllocationFailed)?;
     for index in 0..explicit_capacity {
         let next_free = if index + 1 < explicit_capacity {
-            Some(
-                u32::try_from(index + 1)
-                    .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
-            )
+            Some(u32::try_from(index + 1).map_err(|_| CarrierError::CapacityArithmeticOverflow)?)
         } else {
             None
         };
