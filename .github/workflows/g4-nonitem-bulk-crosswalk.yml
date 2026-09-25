@@ -42,9 +42,15 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git cat-file -e "$BASE_SHA^{commit}"
-          if [ "$EXPECTED_SHA" != "$BASE_SHA" ]; then
-            test "$(git rev-parse "$EXPECTED_SHA^1")" = "$BASE_SHA"
-          fi
+          git merge-base --is-ancestor "$BASE_SHA" "$EXPECTED_SHA"
+          expected_paths=$(printf '%s\n' \
+            .github/workflows/g4-nonitem-bulk-crosswalk.yml \
+            docs/agents/evidence/OTV2-20260925-g4-nonitem-bulk-crosswalk.json \
+            docs/agents/tasks/active/OTV2-20260925-g4-nonitem-bulk-crosswalk.md \
+            tools/content-census/g4_nonitem_bulk_crosswalk.py \
+            tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py | sort)
+          actual_paths=$(git diff --name-only "$BASE_SHA" "$EXPECTED_SHA" | sort)
+          test "$actual_paths" = "$expected_paths"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -78,7 +84,7 @@ jobs:
           set -euo pipefail
           ROOT="$RUNNER_TEMP/g4-nonitem-bulk-crosswalk"
           python - "$ROOT/bulk-crosswalk.json" "$ROOT/manifest.json" <<'PY'
-          import json, pathlib, sys
+          import datetime, json, pathlib, re, sys
           artifact, manifest = [json.loads(pathlib.Path(p).read_text(encoding="utf-8")) for p in sys.argv[1:]]
           expected = {"Creature":2149,"NPC":1253,"Achievement":569,"Quest":272,"Ability":171,"Outfit":134,"Mount":252}
           assert artifact["schema"] == "OTERYN_G4_NONITEM_BULK_CROSSWALK/v1"
@@ -90,6 +96,22 @@ jobs:
           assert set(artifact["families"]) == set(expected)
           rows = [row for family_rows in artifact["families"].values() for row in family_rows]
           assert len(rows) == len({row["external_id"] for row in rows}) == 4800
+          revalidated = 0
+          for row in rows:
+              if row["source_state"] not in {"SOURCE_REVISION_STABLE", "CURRENT_REVISION_REVALIDATED"}:
+                  continue
+              assert type(row["current_revision_id"]) is int and row["current_revision_id"] > 0, row["external_id"]
+              timestamp = row["current_revision_timestamp"]
+              assert isinstance(timestamp, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", timestamp), row["external_id"]
+              datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+              title = row["current_title"]
+              assert isinstance(title, str) and title.strip() and len(title.encode("utf-8")) <= 512, row["external_id"]
+              assert not any(ord(char) < 32 or ord(char) == 127 for char in title), row["external_id"]
+              assert isinstance(row["current_raw_utf8_sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", row["current_raw_utf8_sha256"]), row["external_id"]
+              assert type(row["current_raw_utf8_bytes"]) is int and row["current_raw_utf8_bytes"] >= 0, row["external_id"]
+              revalidated += row["source_state"] == "CURRENT_REVISION_REVALIDATED"
+          assert manifest["counts"]["current_revision_revalidated_rows"] == revalidated == 2
+          assert {row["external_id"] for row in rows if row["source_state"] == "CURRENT_REVISION_REVALIDATED"}.issuperset({"63947", "46925"})
           assert all(row["canonical_target"] is None and row["production_key"] is None and row["source_identity_binding"] is None for row in rows)
           assert artifact["authority"]["article_prose_retained"] is False
           assert artifact["authority"]["canonical_definition_population"] is False

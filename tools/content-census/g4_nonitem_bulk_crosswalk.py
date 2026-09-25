@@ -87,6 +87,30 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def current_provenance_errors(title: Any, revision_id: Any, timestamp: Any) -> list[str]:
+    """Validate the exact current revision tuple before any parsing occurs."""
+    errors: list[str] = []
+    if type(revision_id) is not int or revision_id <= 0:
+        errors.append("INVALID_CURRENT_REVID")
+    if not isinstance(timestamp, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", timestamp):
+        errors.append("INVALID_CURRENT_TIMESTAMP")
+    else:
+        try:
+            datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            errors.append("INVALID_CURRENT_TIMESTAMP")
+    title_valid = isinstance(title, str) and bool(title.strip())
+    if title_valid:
+        try:
+            title_valid = len(title.encode("utf-8")) <= 512
+        except UnicodeEncodeError:
+            title_valid = False
+        title_valid = title_valid and not any(ord(char) < 32 or ord(char) == 127 for char in title)
+    if not title_valid:
+        errors.append("INVALID_CURRENT_TITLE")
+    return errors
+
+
 def load_previous_crosswalk_module() -> Any:
     path = HERE / "g4_direct_nonitem_family_crosswalk.py"
     spec = importlib.util.spec_from_file_location("g4_previous_crosswalk", path)
@@ -263,27 +287,45 @@ def fetch_current_pages(page_families: dict[int, str]) -> tuple[dict[int, dict[s
         batch = page_ids[offset:offset + BATCH_SIZE]
         try:
             payload = _api_json(batch)
-            pages = payload["query"].get("pages", [])
-            seen: set[int] = set()
+            query = payload.get("query")
+            if not isinstance(query, dict):
+                raise CensusError("WIKI_QUERY_OBJECT_INVALID")
+            pages = query.get("pages")
+            if not isinstance(pages, list):
+                raise CensusError("WIKI_PAGES_LIST_INVALID")
+            page_objects: dict[int, dict[str, Any]] = {}
             for page in pages:
-                if not isinstance(page, dict) or not isinstance(page.get("pageid"), int):
-                    errors["WIKI_PAGE_ROW_INVALID"] += 1
-                    continue
-                page_id = page["pageid"]
-                if page_id not in batch or page_id in seen:
-                    errors["WIKI_PAGE_ID_DUPLICATE_OR_UNREQUESTED"] += 1
-                    continue
+                if not isinstance(page, dict):
+                    raise CensusError("WIKI_PAGE_OBJECT_INVALID")
+                page_id = page.get("pageid")
+                if type(page_id) is not int or page_id <= 0 or page_id not in batch or page_id in page_objects:
+                    raise CensusError("WIKI_PAGE_ID_SET_INVALID")
+                page_objects[page_id] = page
+            seen: set[int] = set()
+            for page_id, page in page_objects.items():
                 seen.add(page_id)
-                revisions = page.get("revisions") or []
-                if page.get("missing") is not None or not revisions:
+                if "missing" in page:
                     fetched[page_id] = {"fetch_state": "SOURCE_UNAVAILABLE", "title": page.get("title")}
                     continue
+                revisions = page.get("revisions")
+                if not isinstance(revisions, list) or not revisions:
+                    fetched[page_id] = {"fetch_state": "MALFORMED_MEDIAWIKI_RESPONSE", "error_code": "WIKI_REVISION_LIST_INVALID"}
+                    continue
                 revision = revisions[0]
-                slots = revision.get("slots", {})
-                main = slots.get("main", {}) if isinstance(slots, dict) else {}
+                if not isinstance(revision, dict):
+                    fetched[page_id] = {"fetch_state": "MALFORMED_MEDIAWIKI_RESPONSE", "error_code": "WIKI_REVISION_OBJECT_INVALID"}
+                    continue
+                slots = revision.get("slots")
+                if not isinstance(slots, dict):
+                    fetched[page_id] = {"fetch_state": "MALFORMED_MEDIAWIKI_RESPONSE", "error_code": "WIKI_SLOTS_OBJECT_INVALID"}
+                    continue
+                main = slots.get("main")
+                if not isinstance(main, dict):
+                    fetched[page_id] = {"fetch_state": "MALFORMED_MEDIAWIKI_RESPONSE", "error_code": "WIKI_MAIN_SLOT_INVALID"}
+                    continue
                 content = main.get("content", main.get("*")) if isinstance(main, dict) else None
                 if not isinstance(content, str):
-                    fetched[page_id] = {"fetch_state": "UNSUPPORTED_SOURCE_SHAPE", "title": page.get("title")}
+                    fetched[page_id] = {"fetch_state": "MALFORMED_MEDIAWIKI_RESPONSE", "error_code": "WIKI_CONTENT_NOT_STRING"}
                     continue
                 encoded = content.encode("utf-8")
                 metadata = {
@@ -291,6 +333,16 @@ def fetch_current_pages(page_families: dict[int, str]) -> tuple[dict[int, dict[s
                     "revision_timestamp": revision.get("timestamp"),
                     "raw_utf8_sha256": sha256_bytes(encoded), "raw_utf8_bytes": len(encoded),
                 }
+                provenance_errors = current_provenance_errors(
+                    metadata["title"], metadata["revision_id"], metadata["revision_timestamp"]
+                )
+                if provenance_errors:
+                    fetched[page_id] = {
+                        **metadata,
+                        "fetch_state": "MALFORMED_CURRENT_PROVENANCE",
+                        "provenance_errors": provenance_errors,
+                    }
+                    continue
                 if len(encoded) > MAX_PAGE_BYTES:
                     fetched[page_id] = {**metadata, "fetch_state": "SOURCE_PAGE_MAX_PLUS_ONE"}
                     continue
@@ -399,9 +451,9 @@ def build_output(g3: dict[str, Any], g3_manifest: dict[str, Any], g4: dict[str, 
         current_infobox_template = live.get("current_infobox_template")
         if status == "STRUCTURED_FAMILY_INFOBOX":
             fields = live.get("structured_fields", {})
-            if live_revision != g4row["revision_id"] or live_digest != g4row["raw_utf8_sha256"]:
-                revision_revalidated += 1
             status = "CURRENT_REVISION_REVALIDATED" if changed or not old_tuple_matches else "SOURCE_REVISION_STABLE"
+            if status == "CURRENT_REVISION_REVALIDATED":
+                revision_revalidated += 1
         raw_rows.append({
             "family": family,
             "source": "TIBIAWIKI_STRUCTURED",
