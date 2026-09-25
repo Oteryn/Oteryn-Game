@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "imports/tibiawiki/",
+  "kind": "import_provenance",
+  "owner": "Import tooling",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "TibiaWiki source mappings/census/reimport metadata; no source IDs become gameplay identity."
+}

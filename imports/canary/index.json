@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "imports/canary/",
+  "kind": "import_provenance",
+  "owner": "Migration tooling",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "READY_UNPOPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Canary hypothesis/test-discovery evidence only."
+}

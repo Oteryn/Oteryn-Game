@@ -1,0 +1,789 @@
+{
+  "schema": "OTERYN_FULL_GAME_TREE_MATERIALIZATION/v1",
+  "status": "MATERIALIZED_CANDIDATE",
+  "admission_main": "1ecdafb91f238bbdee691c08e25208d1dfef36d5",
+  "contract_path": "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json",
+  "contract_target_nodes": 100,
+  "directory_nodes": 97,
+  "new_index_files": 96,
+  "existing_index_files": 1,
+  "unmaterialized_directories": 0,
+  "rows": [
+    {
+      "path": "content/items/definitions/",
+      "index": "content/items/definitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "POPULATED",
+      "owner": "Item",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/items/taxonomy/",
+      "index": "content/items/taxonomy/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item authoring",
+      "kind": "editor_content"
+    },
+    {
+      "path": "content/items/relations/",
+      "index": "content/items/relations/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Interaction/Ability/Document",
+      "kind": "relationship_content"
+    },
+    {
+      "path": "content/loot/",
+      "index": "content/loot/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Loot",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/creatures/definitions/",
+      "index": "content/creatures/definitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Creature",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/creatures/bestiary/",
+      "index": "content/creatures/bestiary/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Creature/Bestiary authoring",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/creatures/bosstiary/",
+      "index": "content/creatures/bosstiary/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Creature/Bosstiary authoring",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/creatures/familiars/",
+      "index": "content/creatures/familiars/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Creature/Ability authoring",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/npcs/definitions/",
+      "index": "content/npcs/definitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "NPC",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/dialogues/",
+      "index": "content/dialogues/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Dialogue",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/services/trade/",
+      "index": "content/services/trade/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Service",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/services/travel/",
+      "index": "content/services/travel/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Service/Interaction",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/services/bank/",
+      "index": "content/services/bank/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Service/Economy",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/services/blessings/",
+      "index": "content/services/blessings/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Service/Ruleset",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/services/tasks/",
+      "index": "content/services/tasks/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Service/Quest",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/services/crafting/",
+      "index": "content/services/crafting/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Service",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/abilities/definitions/",
+      "index": "content/abilities/definitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Ability",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/abilities/effects/",
+      "index": "content/abilities/effects/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Effect",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/abilities/formulas/",
+      "index": "content/abilities/formulas/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Formula",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/quests/definitions/",
+      "index": "content/quests/definitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Quest",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/quests/missions/",
+      "index": "content/quests/missions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Quest",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/quests/objectives/",
+      "index": "content/quests/objectives/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Quest/Interaction",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/quests/rewards/",
+      "index": "content/quests/rewards/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Quest/Reward owners",
+      "kind": "relationship_content"
+    },
+    {
+      "path": "content/achievements/",
+      "index": "content/achievements/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Achievement",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/charms/",
+      "index": "content/charms/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Charm",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/cosmetics/outfits/",
+      "index": "content/cosmetics/outfits/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Outfit",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/cosmetics/mounts/",
+      "index": "content/cosmetics/mounts/index.json",
+      "materialization": "EXISTING_INDEX",
+      "population_state": "POPULATED",
+      "owner": "Mount",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/documents/",
+      "index": "content/documents/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Document",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/interactions/",
+      "index": "content/interactions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Interaction",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/behaviors/",
+      "index": "content/behaviors/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Behavior",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/bosses/",
+      "index": "content/encounters/bosses/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/raids/",
+      "index": "content/encounters/raids/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/world-changes/",
+      "index": "content/encounters/world-changes/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/mini-world-changes/",
+      "index": "content/encounters/mini-world-changes/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/world-quests/",
+      "index": "content/encounters/world-quests/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Quest/Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/arenas/",
+      "index": "content/encounters/arenas/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/encounters/tibiadrome/",
+      "index": "content/encounters/tibiadrome/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/worlds/",
+      "index": "content/world/worlds/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "LEGACY_COMPAT_PRESENT",
+      "owner": "World",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/areas/cities/",
+      "index": "content/world/areas/cities/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Area",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/areas/islands/",
+      "index": "content/world/areas/islands/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Area",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/areas/regions/",
+      "index": "content/world/areas/regions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Area",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/areas/hunting-places/",
+      "index": "content/world/areas/hunting-places/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Area",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/areas/streets/",
+      "index": "content/world/areas/streets/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Area",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/terrain/",
+      "index": "content/world/terrain/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Terrain",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/objects/",
+      "index": "content/world/objects/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "WorldObject/LocalObject",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/transitions/",
+      "index": "content/world/transitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Transition/Interaction",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/world/placements/",
+      "index": "content/world/placements/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "WorldPlacement",
+      "kind": "placement_content"
+    },
+    {
+      "path": "content/houses/",
+      "index": "content/houses/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "House/Area",
+      "kind": "static_content"
+    },
+    {
+      "path": "content/presentations/definitions/",
+      "index": "content/presentations/definitions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Presentation",
+      "kind": "presentation"
+    },
+    {
+      "path": "content/presentations/bindings/",
+      "index": "content/presentations/bindings/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Presentation/Asset",
+      "kind": "presentation"
+    },
+    {
+      "path": "content/assets/catalog/",
+      "index": "content/assets/catalog/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Asset",
+      "kind": "asset_catalog"
+    },
+    {
+      "path": "rulesets/character/vocations/",
+      "index": "rulesets/character/vocations/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character rules",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/character/skills/",
+      "index": "rulesets/character/skills/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character rules",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/character/experience/",
+      "index": "rulesets/character/experience/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/character/stamina/",
+      "index": "rulesets/character/stamina/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/character/soul/",
+      "index": "rulesets/character/soul/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/character/death/",
+      "index": "rulesets/character/death/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character/Death",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/character/blessings/",
+      "index": "rulesets/character/blessings/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character/Death",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/combat/damage/",
+      "index": "rulesets/combat/damage/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Combat/SIM",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/combat/conditions/",
+      "index": "rulesets/combat/conditions/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Combat/Ability",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/combat/cooldowns/",
+      "index": "rulesets/combat/cooldowns/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Ability/Combat",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/party/shared-experience/",
+      "index": "rulesets/party/shared-experience/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Party",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/pvp/skulls/",
+      "index": "rulesets/pvp/skulls/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "PvP",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/pvp/wars/",
+      "index": "rulesets/pvp/wars/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "PvP/Guild",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/pvp/arena/",
+      "index": "rulesets/pvp/arena/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "PvP/Encounter",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/social/marriage/",
+      "index": "rulesets/social/marriage/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character/Social",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/entitlements/premium-gates/",
+      "index": "rulesets/entitlements/premium-gates/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Game entitlement consumption",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/imbuements/",
+      "index": "rulesets/items/imbuements/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/exaltation-forge/",
+      "index": "rulesets/items/exaltation-forge/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Economy",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/enchanting/",
+      "index": "rulesets/items/enchanting/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Interaction",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/doomforging/",
+      "index": "rulesets/items/doomforging/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/charging-system/",
+      "index": "rulesets/items/charging-system/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Ability",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/crystal-shield/",
+      "index": "rulesets/items/crystal-shield/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Combat",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/items/umbral-creation/",
+      "index": "rulesets/items/umbral-creation/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Item/Service",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/bestiary/",
+      "index": "rulesets/progression/bestiary/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/bosstiary/",
+      "index": "rulesets/progression/bosstiary/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/charms/",
+      "index": "rulesets/progression/charms/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/prey/",
+      "index": "rulesets/progression/prey/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression/Economy",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/wheel-of-destiny/",
+      "index": "rulesets/progression/wheel-of-destiny/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/gem-atelier/",
+      "index": "rulesets/progression/gem-atelier/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression/Item",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/weapon-proficiency/",
+      "index": "rulesets/progression/weapon-proficiency/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character progression/Item",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/progression/loyalty/",
+      "index": "rulesets/progression/loyalty/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Character/Account progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/encounters/tibiadrome/",
+      "index": "rulesets/encounters/tibiadrome/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter/Progression",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/encounters/hazard-system/",
+      "index": "rulesets/encounters/hazard-system/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter/Character",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/encounters/soulpit/",
+      "index": "rulesets/encounters/soulpit/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/encounters/holy-shrines/",
+      "index": "rulesets/encounters/holy-shrines/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter/Interaction",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/encounters/taints/bakragore/",
+      "index": "rulesets/encounters/taints/bakragore/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter/Character",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/encounters/taints/goshnar/",
+      "index": "rulesets/encounters/taints/goshnar/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Encounter/Character",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/economy/currencies/",
+      "index": "rulesets/economy/currencies/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Economy",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/economy/npc-trade/",
+      "index": "rulesets/economy/npc-trade/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Economy/Service",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/economy/crafting-upgrades/",
+      "index": "rulesets/economy/crafting-upgrades/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Economy/Service",
+      "kind": "ruleset"
+    },
+    {
+      "path": "rulesets/economy/market/",
+      "index": "rulesets/economy/market/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Market/Economy",
+      "kind": "ruleset"
+    },
+    {
+      "path": "imports/official/",
+      "index": "imports/official/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Import tooling",
+      "kind": "import_provenance"
+    },
+    {
+      "path": "imports/tibiawiki/",
+      "index": "imports/tibiawiki/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "POPULATED",
+      "owner": "Import tooling",
+      "kind": "import_provenance"
+    },
+    {
+      "path": "imports/legacy/",
+      "index": "imports/legacy/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Migration tooling",
+      "kind": "import_provenance"
+    },
+    {
+      "path": "imports/crystalserver/",
+      "index": "imports/crystalserver/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "POPULATED",
+      "owner": "Migration tooling",
+      "kind": "import_provenance"
+    },
+    {
+      "path": "imports/canary/",
+      "index": "imports/canary/index.json",
+      "materialization": "NEW_INDEX",
+      "population_state": "READY_UNPOPULATED",
+      "owner": "Migration tooling",
+      "kind": "import_provenance"
+    }
+  ]
+}
