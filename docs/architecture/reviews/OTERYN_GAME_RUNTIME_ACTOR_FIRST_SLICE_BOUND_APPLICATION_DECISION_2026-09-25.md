@@ -41,7 +41,7 @@ rejected_options:
   - block_all_preproduction_channel_composition_until_production_measurement
 sequencing:
   KAN-27: DEFERRED_UNTIL_PRODUCTION_CAPACITY_ACCEPTANCE
-  KAN-26: MAY_REALLOCATE_AFTER_PROTECTED_READBACK_OF_THIS_DECISION
+  KAN-26: MAY_REALLOCATE_AFTER_PROTECTED_READBACK_AND_FRESH_OWNERSHIP_CUSTODY_OVERLAP_RECONCILIATION
 production_authority_changed: false
 registry_schema_changed: false
 resource_values_changed_for_production: false
@@ -81,7 +81,9 @@ No registry mutation is required by this decision.
 
 ## KAN-26 release boundary
 
-After this decision reaches protected `main`, #162 may freshly allocate
+After this decision reaches protected `main`, #162 must first perform the fresh
+ownership, writable-custody and path/lease-overlap reconciliation required by
+protected #570. Only after that reconciliation is clean may #162 freshly allocate
 `CHANNEL_RUNTIME_COMPOSITION_V1` with `131072` as its explicit finite
 non-production bound.
 
@@ -139,8 +141,9 @@ Before this decision can release KAN-26:
   no unresolved material finding;
 - integration must use the governed Merge Queue;
 - a real `merge_group` `game-gate` must succeed;
-- protected-main readback must contain this exact decision before #162 issues a
-  fresh KAN-26 runtime source lease.
+- protected-main readback must contain this exact decision, and #162 must then
+  complete fresh ownership, writable-custody and overlap reconciliation before it
+  issues a fresh KAN-26 runtime source lease.
 
 No direct merge, generic auto-merge, bypass, force/rebase or production action is
 authorized by this decision.
