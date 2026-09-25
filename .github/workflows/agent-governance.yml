@@ -149,49 +149,7 @@ jobs:
           warnings: list[str] = []
           pattern = re.compile(
               r'^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)'
-              r'(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+
-          if errors:
-              for error in errors:
-                  print(f"- {error}", file=sys.stderr)
-              raise SystemExit(1)
-
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write(f"TARGET_SHA={head_sha}\n")
-
-          print(f"Validated live PR metadata and exact target head {head_sha}.")
-          PY
-
-      - name: Check out exact target
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.TARGET_SHA }}
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        env:
-          EXPECTED_SHA: ${{ env.TARGET_SHA }}
-        run: |
-          actual_sha="$(git rev-parse HEAD)"
-          test "$actual_sha" = "$EXPECTED_SHA"
-          echo "Validated exact checkout: $actual_sha"
-
-      - name: Validate agent governance
-        run: python tools/agents/validate_governance.py
-
-      - name: Test governance lifecycle and discovery
-        run: python -m unittest discover -s tools/agents/tests -p "*governance_lifecycle*.py" -v
-
-      - name: Test META policy adoption
-        run: python -m unittest tools.agents.tests.test_meta_agent_policy_adoption -v
-
-      - name: Validate bound META policy and task prompts
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python tools/agents/validate_inherited_prompt_policy.py
-
-      - name: Validate repository policy
-        run: python tools/repository/validate_repository_policy.py
-
+              r'(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+$'
           )
           if len(title) > 72:
               warnings.append('PR title should be at most 72 characters')
@@ -200,49 +158,7 @@ jobs:
 
           headings: set[str] = set()
           for line in body.splitlines():
-              match = re.match(r'^\s{0,3}##\s+(.+?)\s*#*\s*
-          if errors:
-              for error in errors:
-                  print(f"- {error}", file=sys.stderr)
-              raise SystemExit(1)
-
-          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
-              env_file.write(f"TARGET_SHA={head_sha}\n")
-
-          print(f"Validated live PR metadata and exact target head {head_sha}.")
-          PY
-
-      - name: Check out exact target
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.TARGET_SHA }}
-          persist-credentials: false
-
-      - name: Verify checked-out SHA
-        env:
-          EXPECTED_SHA: ${{ env.TARGET_SHA }}
-        run: |
-          actual_sha="$(git rev-parse HEAD)"
-          test "$actual_sha" = "$EXPECTED_SHA"
-          echo "Validated exact checkout: $actual_sha"
-
-      - name: Validate agent governance
-        run: python tools/agents/validate_governance.py
-
-      - name: Test governance lifecycle and discovery
-        run: python -m unittest discover -s tools/agents/tests -p "*governance_lifecycle*.py" -v
-
-      - name: Test META policy adoption
-        run: python -m unittest tools.agents.tests.test_meta_agent_policy_adoption -v
-
-      - name: Validate bound META policy and task prompts
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python tools/agents/validate_inherited_prompt_policy.py
-
-      - name: Validate repository policy
-        run: python tools/repository/validate_repository_policy.py
-, line)
+              match = re.match(r'^\s{0,3}##\s+(.+?)\s*#*\s*$', line)
               if match:
                   headings.add(' '.join(match.group(1).casefold().split()))
           if 'summary' not in headings:
