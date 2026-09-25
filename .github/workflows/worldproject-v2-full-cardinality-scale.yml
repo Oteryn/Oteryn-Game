@@ -357,3 +357,184 @@ jobs:
               print("Unexpected result status:", json.dumps(result, sort_keys=True))
               sys.exit(1)
           PY
+
+  sharded-census:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Initialize sharded-census artifacts
+        run: |
+          python3 - <<'PY'
+          import json
+          with open("world-project-v2-scale-sharded.json", "w") as stream:
+              json.dump({
+                  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+                  "status": "failed",
+                  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+                  "mode": "sharded",
+                  "placements_requested": 24502036,
+                  "reason": "measurement_not_started",
+                  "max_supervised_shard_peak_rss_bytes": None,
+                  "monolithic_full_world_peak_rss": "NOT_MEASURED_BY_SHARDED_RUN",
+                  "full_world_edit_amplification": "NOT_MEASURED",
+                  "production_layout_selected": False
+              }, stream, indent=2)
+              stream.write("\n")
+          open("world-project-v2-scale-sharded.time.txt", "w").close()
+          open("world-project-v2-scale-sharded.stderr", "w").close()
+          open("world-project-v2-scale-sharded.stdout.txt", "w").close()
+          PY
+      - name: Build and run full-content census one shard at a time
+        shell: bash
+        run: |
+          set -euo pipefail
+          result=world-project-v2-scale-sharded.json
+          time_report=world-project-v2-scale-sharded.time.txt
+          stderr=world-project-v2-scale-sharded.stderr
+          raw=world-project-v2-scale-sharded.stdout.txt
+          set +e
+          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
+          toolchain_rc=$?
+          build_rc=$toolchain_rc
+          if [ "$toolchain_rc" -eq 0 ]; then
+            cargo +1.94.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+            build_rc=$?
+          fi
+          set -e
+          run_rc=125
+          if [ "$toolchain_rc" -eq 0 ] && [ "$build_rc" -eq 0 ]; then
+            set +e
+            /usr/bin/time -v -o "$time_report" bash -c 'ulimit -v 6291456 || exit 76; exec timeout --signal=TERM --kill-after=90s 150m tools/world-project-v2-scale-measurement/target/release/world-project-v2-scale-measurement --mode sharded' >"$raw" 2>>"$stderr"
+            run_rc=$?
+            set -e
+          fi
+          python3 - "$result" "$time_report" "$raw" "$stderr" "$toolchain_rc" "$build_rc" "$run_rc" <<'PY'
+          import json, re, sys
+          result_path, time_path, raw_path, stderr_path, toolchain_text, build_text, run_text = sys.argv[1:]
+          toolchain_rc, build_rc, run_rc = map(int, (toolchain_text, build_text, run_text))
+          try:
+              with open(raw_path) as stream:
+                  data = json.load(stream)
+              parse_error = None
+          except (OSError, json.JSONDecodeError) as exc:
+              data, parse_error = {}, str(exc)
+          try:
+              with open(time_path) as stream:
+                  timing = stream.read()
+          except OSError:
+              timing = ""
+          try:
+              with open(stderr_path) as stream:
+                  stderr = stream.read()
+          except OSError:
+              stderr = ""
+          match = re.search(r"Maximum resident set size \\(kbytes\\):\\s*(\\d+)", timing)
+          peak_kib = int(match.group(1)) if match else None
+          peak = peak_kib * 1024 if peak_kib is not None else None
+          shards = data.get("shards") if isinstance(data.get("shards"), list) else []
+          cursor = 0
+          shard_ranges_valid = bool(shards)
+          for expected_index, shard in enumerate(shards):
+              start = shard.get("placement_start_inclusive")
+              end = shard.get("placement_end_exclusive")
+              count = shard.get("placements_requested")
+              if (shard.get("shard_index") != expected_index or start != cursor or
+                      not isinstance(end, int) or not isinstance(count, int) or
+                      end <= start or end - start != count or
+                      shard.get("placements_loaded") != count or
+                      shard.get("identity_coverage_verified") is not True):
+                  shard_ranges_valid = False
+                  break
+              cursor = end
+          valid = (
+              toolchain_rc == 0 and build_rc == 0 and run_rc == 0 and peak is not None
+              and data.get("status") == "completed"
+              and data.get("mode") == "sharded"
+              and data.get("placements_requested") == 24502036
+              and data.get("placements_loaded") == 24502036
+              and data.get("coverage", {}).get("no_duplicate_or_missing_identities") is True
+              and data.get("coverage", {}).get("shards_completed") == len(shards)
+              and data.get("coverage", {}).get("shards_expected") == len(shards)
+              and shard_ranges_valid and cursor == 24502036
+          )
+          if toolchain_rc != 0:
+              reason = "toolchain_install_failed"
+          elif build_rc != 0:
+              reason = "release_build_failed"
+          elif parse_error is not None:
+              reason = "invalid_sharded_measurement_json"
+          elif run_rc == 76:
+              reason = "virtual_memory_ceiling_setup_failed"
+          elif run_rc != 0:
+              reason = "sharded_measurement_process_failed_or_timed_out"
+          elif peak is None:
+              reason = "supervised_peak_rss_missing"
+          elif not shard_ranges_valid or cursor != 24502036:
+              reason = "shard_range_coverage_mismatch"
+          elif data.get("placements_loaded") != 24502036:
+              reason = "full_content_count_mismatch"
+          elif data.get("coverage", {}).get("no_duplicate_or_missing_identities") is not True:
+              reason = "duplicate_or_missing_identity_claim_not_verified"
+          elif data.get("status") != "completed":
+              reason = "sharded_probe_not_completed"
+          else:
+              reason = None
+          data.update({
+              "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+              "status": "completed" if valid else "failed",
+              "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+              "mode": "sharded",
+              "placements_requested": 24502036,
+              "toolchain_exit_code": toolchain_rc,
+              "release_build_exit_code": build_rc,
+              "exit_code": run_rc,
+              "max_supervised_shard_peak_rss_bytes": peak,
+              "supervised_maximum_resident_set_size_kib": peak_kib,
+              "peak_rss_source": "/usr/bin/time -v maximum resident set size for sequential shard runner (bytes converted from KiB)" if peak is not None else "unavailable",
+              "resource_ceiling_bytes": 6442450944,
+              "wall_clock_limit_seconds": 9000,
+              "monolithic_full_world_peak_rss": "NOT_MEASURED_BY_SHARDED_RUN",
+              "full_world_edit_amplification": "NOT_MEASURED; no canonical full-world snapshot diff is performed",
+              "production_layout_selected": False,
+              "donor_or_source_inputs_accepted": False,
+              "schema_and_chunk_decision": "out_of_scope"
+          })
+          if not valid:
+              data["reason"] = reason or "sharded_measurement_validation_failed"
+              if parse_error is not None:
+                  data["detail"] = parse_error
+              elif "error" in data:
+                  data["detail"] = data["error"]
+              elif stderr:
+                  data["detail"] = stderr[-4000:]
+          with open(result_path, "w") as stream:
+              json.dump(data, stream, indent=2)
+              stream.write("\n")
+          PY
+          cat "$result"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: world-project-v2-scale-sharded-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            world-project-v2-scale-sharded.json
+            world-project-v2-scale-sharded.time.txt
+            world-project-v2-scale-sharded.stderr
+            world-project-v2-scale-sharded.stdout.txt
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Final sharded-census gate
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          with open("world-project-v2-scale-sharded.json") as stream:
+              result = json.load(stream)
+          if result.get("status") != "completed":
+              print("Sharded full-content census failed:", json.dumps(result, sort_keys=True))
+              sys.exit(1)
+          PY
