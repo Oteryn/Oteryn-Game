@@ -209,15 +209,28 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
 
-    for forbidden_control in ("if", "continue-on-error"):
-        if re.search(
-            rf"(?m)^        {re.escape(forbidden_control)}\s*:",
-            step,
-        ):
+    continue_on_error = re.search(r"(?m)^        continue-on-error\s*:", step)
+    if continue_on_error:
+        errors.append(
+            f"{label} metadata step must not use continue-on-error: "
+            "the tested script result must govern the job"
+        )
+
+    step_conditions = re.findall(r"(?m)^        if\s*:\s*(.+?)\s*$", step)
+    if step_name == "Verify pull request target and metadata":
+        expected_condition = (
+            "github.event_name == 'pull_request' || "
+            "github.event_name == 'workflow_dispatch'"
+        )
+        if step_conditions != [expected_condition]:
             errors.append(
-                f"{label} metadata step must not use {forbidden_control}: "
-                "the tested script result must govern the job"
+                f"{label} metadata step must use exactly the supported-event condition "
+                f"{expected_condition!r}, got {step_conditions!r}"
             )
+    elif step_conditions:
+        errors.append(
+            f"{label} metadata step must not be conditionally skipped, got {step_conditions!r}"
+        )
 
     expected_head = "a" * 40
     environment = _metadata_environment(step_name, expected_head)
