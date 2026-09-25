@@ -586,4 +586,3 @@ mod tests {
         assert!(shard_ranges(FULL_PLACEMENTS, 0).is_err());
     }
 }
-
