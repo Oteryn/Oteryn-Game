@@ -17,6 +17,9 @@ pub const MAX_CONFIG_BYTES: usize = 64 * 1024;
 /// Bounded operator-assignment wait (D3 step 6).
 pub const MAX_ASSIGNMENT_WAIT_MS: u64 = 24 * 60 * 60 * 1000;
 pub const MAX_ENTRY_DEADLINE_MS: u64 = 60_000;
+/// Owner-accepted finite bound for the explicitly non-production first slice.
+/// This is a required config value, never a production default or registry value.
+pub const PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY: u32 = 131_072;
 
 /// A rejected configuration. `key` names the offending key; the value is never
 /// echoed.
@@ -74,6 +77,8 @@ pub struct ScopeConfig {
     pub world_id: String,
     pub channel_id: String,
     pub assignment_wait_ms: u64,
+    /// Required explicit non-production first-slice actor bound. No fallback exists.
+    pub preproduction_actor_capacity: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -255,6 +260,9 @@ impl NodeConfig {
         if !(1..=MAX_ASSIGNMENT_WAIT_MS).contains(&self.scope.assignment_wait_ms) {
             return reject("scope.assignment_wait_ms");
         }
+        if self.scope.preproduction_actor_capacity != PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY {
+            return reject("scope.preproduction_actor_capacity");
+        }
         check_database(&self.database)?;
         check_character(&self.character)?;
         if !absolute(&self.control.socket_path) {
@@ -368,6 +376,7 @@ private_key_file = "/etc/oteryn/node/gameplay.key"
 world_id = "01890f4c-3b2a-7c01-8d11-9a321b7c0002"
 channel_id = "01890f4c-3b2a-7c01-8d11-9a321b7c0003"
 assignment_wait_ms = 600000
+preproduction_actor_capacity = 131072
 
 [database]
 transport_ip = "127.0.0.1"
@@ -415,6 +424,10 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
     fn complete_node_configuration_parses() {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
         assert_eq!(config.listener.max_connections, 256);
+        assert_eq!(
+            config.scope.preproduction_actor_capacity,
+            PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY
+        );
         assert_eq!(config.platform.descriptor_revision, 1);
     }
 
@@ -450,6 +463,11 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
                 "max_handshake_units = 64",
                 "max_handshake_units = 65",
                 "listener.max_handshake_units",
+            ),
+            (
+                "preproduction_actor_capacity = 131072",
+                "preproduction_actor_capacity = 131071",
+                "scope.preproduction_actor_capacity",
             ),
             (
                 "password_file = \"/etc/oteryn/node/pg-password\"",
