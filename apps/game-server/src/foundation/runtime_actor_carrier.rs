@@ -418,7 +418,7 @@ struct ChannelActorCarrier {
 
 /// The first composed Channel runtime. The fixed-slot carrier is the only actor
 /// resource: no session map or second index is introduced.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub(crate) struct ChannelRuntimeV1 {
     binding: ChannelRuntimeAssignmentBinding,
     continuity: NamespaceContinuityGuard,
@@ -1585,7 +1585,7 @@ mod tests {
     fn runtime_rejects_invalid_assignment_identity_and_zero_provenance() {
         let world = WorldId::decode(&uuid_v7(50)).expect("world");
         let channel = ChannelId::decode(&uuid_v7(51)).expect("channel");
-        assert_eq!(
+        assert!(matches!(
             ChannelRuntimeV1::from_committed_assignment(
                 world,
                 channel,
@@ -1597,8 +1597,8 @@ mod tests {
                 1,
             ),
             Err(CarrierError::InvalidAssignmentBinding)
-        );
-        assert_eq!(
+        ));
+        assert!(matches!(
             ChannelRuntimeV1::from_committed_assignment(
                 world,
                 channel,
@@ -1610,6 +1610,11 @@ mod tests {
                 1,
             ),
             Err(CarrierError::InvalidAssignmentBinding)
+        ));
+        assert_eq!(
+            size_of::<Slot>(),
+            192,
+            "session binding must stay inside the already measured fixed-slot footprint"
         );
     }
 
