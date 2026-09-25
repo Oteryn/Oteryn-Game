@@ -41,13 +41,24 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: c516182255d3ea1724e91671c8d2187eb622e3df
-          PRIOR_SHA: 71f71733dda4ec18a314c99e5912cf6a86d0674c
+          PRIOR_SHA: b285aa12880876b670b37ca47a2d5f6def0e5f24
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git cat-file -e "$BASE_SHA^{commit}"
+          git cat-file -e "$PRIOR_SHA^{commit}"
           git merge-base --is-ancestor "$BASE_SHA" "$EXPECTED_SHA"
+          git merge-base --is-ancestor 71f71733dda4ec18a314c99e5912cf6a86d0674c "$EXPECTED_SHA"
           test "$(git rev-parse "$EXPECTED_SHA^1")" = "$PRIOR_SHA"
+          expected_paths="$(printf '%s\n' \
+            .github/workflows/g4-nonitem-revision-revalidation.yml \
+            docs/agents/evidence/OTV2-20260924-g4-nonitem-revision-revalidation.json \
+            docs/agents/tasks/active/OTV2-20260924-g4-nonitem-revision-revalidation.md \
+            tools/content-census/g4_nonitem_revision_revalidation.py \
+            tools/content-census/g4_nonitem_revision_revalidation_self_test.py | sort)"
+          actual_paths="$(git diff --name-only "$BASE_SHA" "$EXPECTED_SHA" | sort)"
+          test "$actual_paths" = "$expected_paths"
+          test "$(printf '%s\n' "$actual_paths" | wc -l)" -eq 5
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

@@ -38,9 +38,9 @@ Revalidate only the two revision-drift rows carried from merged #861: Creature p
 - [x] Focused synthetic tests cover direct-shape retention and fail-closed identity, namespace, redirect, revision, content, unsupported-shape and ambiguity cases.
 - [x] Prior exact-head hosted run `36064987451` on `71f71733dda4ec18a314c99e5912cf6a86d0674c` passed pinned-artifact verification and exact-ID current TibiaWiki reads; artifact `10836120790` (archive SHA-256 `7e8280a036c23593027e996db4862876bb748f7bca221882812eabec1834d11b`).
 - [x] Prior hosted result: Creature `63947` current revision `443993` / `2026-09-24T09:09:13Z` / SHA-256 `435ac55fd2663b4c756364e01282efa7ef5888ecd710e6d17a1985b8c51efc41`; Quest `46925` current revision `443994` / `2026-09-24T13:54:17Z` / SHA-256 `9ee5951111700ab8628639ec2521cdf01eafa96cf10b36f62d6d698cce33192a`; both direct-family source shapes remained supported.
-- [ ] Corrected single successor over frozen prior head `71f71733dda4ec18a314c99e5912cf6a86d0674c` is read back; exact-head hosted rerun is pending.
-- [x] Candidate path delta remains within the five allocated paths; workflow requires refreshed base `c516182255d3ea1724e91671c8d2187eb622e3df` as ancestor and frozen prior head as the candidate's direct parent.
-- [x] The failed intermediate attempt `db8f12ca1b4f12a493f7690c0fec625a23248b4c` was only a ref-recoverable workflow assertion failure; the corrected single successor preserves all evidence and repairs the check.
+- [ ] Recovery successor over live predecessor `b285aa12880876b670b37ca47a2d5f6def0e5f24` is read back; exact-head hosted rerun is pending.
+- [x] Publication-integrity incident recorded under allocation `5826888633`: db8 `db8f12ca1b4f12a493f7690c0fec625a23248b4c` failed the first-parent gate; ref was force-moved to sibling b285 before no-force direction arrived. Both remain retrievable; b285 is an ineligible recovery predecessor, not an integration candidate.
+- [x] Recovery workflow requires allocated base `c516182255d3ea1724e91671c8d2187eb622e3df` and R1 `71f71733dda4ec18a314c99e5912cf6a86d0674c` as ancestors, exact sole parent b285, and exact five-path aggregate diff from the allocated base.
 
 ## Excluded scope
 
@@ -49,12 +49,14 @@ No broader G4 non-Item crosswalk rerun, no title identity, no repository target 
 ## Context checkpoint
 
 ```yaml
-status: repair-hosted-rerun-pending
+status: recovery-hosted-rerun-pending
 branch: agent/otv2-g4-nonitem-revision-revalidation
 base_sha: c516182255d3ea1724e91671c8d2187eb622e3df
-previous_frozen_head: 71f71733dda4ec18a314c99e5912cf6a86d0674c
-superseded_intermediate_attempt: db8f12ca1b4f12a493f7690c0fec625a23248b4c (workflow failed at parent assertion)
-prior_hosted_run: 36064987451 (success; superseded by this repair)
+recovery_predecessor: b285aa12880876b670b37ca47a2d5f6def0e5f24
+superseded_attempts: db8f12ca1b4f12a493f7690c0fec625a23248b4c (workflow failed at direct-parent gate), b285aa12880876b670b37ca47a2d5f6def0e5f24 (recovery predecessor only; not integration-eligible)
+publication_integrity_allocation: 5826888633
+prior_hosted_run: 36064987451 (success for pre-recovery R1 head; not recovery qualification)
+failed_recovery_run: 36095496024 (failed before source checks; exact-parent assertion)
 pr: null
-next_action: read back corrected single successor, rerun hosted workflow, and retain resulting artifact
+next_action: read back sole-parent successor over b285, rerun hosted workflow from scratch, verify five-path aggregate diff, and retain resulting artifact
 ```

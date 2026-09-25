@@ -3,7 +3,7 @@
   "task_id": "OTV2-20260924-g4-nonitem-revision-revalidation",
   "issue": 162,
   "issue_comment": 5822760897,
-  "status": "R2_REPAIR_HOSTED_RERUN_PENDING",
+  "status": "R3_RECOVERY_HOSTED_RERUN_PENDING",
   "repository": "Oteryn/Oteryn-Game",
   "branch": "agent/otv2-g4-nonitem-revision-revalidation",
   "base_commit": "c516182255d3ea1724e91671c8d2187eb622e3df",
@@ -102,7 +102,7 @@
     "synthetic_self_test": "PASS_14_CASES",
     "pinned_artifact_reverification": "PASS_ON_PRIOR_EXACT_HEAD_71f71733; successor-head rerun pending",
     "current_source_read": "PASS_ON_PRIOR_EXACT_HEAD_71f71733; successor-head rerun pending",
-    "one_commit_push_live_readback": "CORRECTED_SUCCESSOR_REF_READBACK_PENDING"
+    "one_commit_push_live_readback": "RECOVERY_SUCCESSOR_PENDING"
   },
   "workflow_artifact_only": true,
   "prior_hosted_run": {
@@ -172,10 +172,17 @@
     }
   ],
   "workflow_repair": {
-    "allocated_base_ancestor": "c516182255d3ea1724e91671c8d2187eb622e3df",
-    "candidate_parent_required": "71f71733dda4ec18a314c99e5912cf6a86d0674c",
-    "failed_intermediate_attempt": "db8f12ca1b4f12a493f7690c0fec625a23248b4c",
-    "failed_run_id": 36095496024,
-    "failed_at": "candidate parent assertion; no source/artifact steps executed"
+    "allocation_comment": 5826888633,
+    "allocated_base": "c516182255d3ea1724e91671c8d2187eb622e3df",
+    "required_ancestors": [
+      "c516182255d3ea1724e91671c8d2187eb622e3df",
+      "71f71733dda4ec18a314c99e5912cf6a86d0674c"
+    ],
+    "exact_predecessor": "b285aa12880876b670b37ca47a2d5f6def0e5f24",
+    "bounded_aggregate_diff": "exact five allocated paths from c516 base",
+    "prior_failed_head": "db8f12ca1b4f12a493f7690c0fec625a23248b4c",
+    "prior_failed_run": 36095496024,
+    "superseded_recovery_predecessor": "b285aa12880876b670b37ca47a2d5f6def0e5f24",
+    "publication_integrity_incident": "branch ref was force-moved from db8 to sibling b285 before no-force direction arrived; both commits and run remain retrievable; no further rewrite authorized"
   }
 }
