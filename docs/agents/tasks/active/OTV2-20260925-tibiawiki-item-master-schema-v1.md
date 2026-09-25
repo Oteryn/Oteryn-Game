@@ -2,7 +2,7 @@
 task_id: OTV2-20260925-tibiawiki-item-master-schema-v1
 title: TibiaWiki Item Master Schema v1 census
 mode: ARCHITECTURE_EVIDENCE
-status: authoring
+status: ready_for_validation
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/tibiawiki-item-master-schema-v1-20260925
@@ -58,3 +58,18 @@ TibiaWiki/XML numeric identifiers into canonical gameplay identity.
 The master schema may identify typed authoring gaps (for example light/sleep/use facts
 currently carried only in free-form Wiki attributes). Recording such a gap is not
 runtime authority; executable adoption requires its owning later implementation slice.
+
+## Authoring readback
+
+At pre-freeze remote head `e45e7ab6e7c04533feb8e3229aef2f244d331be9`:
+
+- exactly five allocated paths differ from admission main;
+- field mappings: 71 / 71 unique;
+- current top-level Item families: 50 / 50 unique and assigned;
+- `unassigned_fields=0`;
+- `unassigned_families=0`;
+- `attrib` is retained losslessly and has typed promotion candidates including light/use/sleep/toggle semantics;
+- master schema includes explicit `light` and `bed` capability groups.
+
+The successor commit containing this checkpoint is the intended authoring terminus. Hosted
+exact-head checks and PR review must bind that successor SHA.
