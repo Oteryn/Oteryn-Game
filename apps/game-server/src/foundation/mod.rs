@@ -16,7 +16,7 @@ pub(crate) use runtime_actor_carrier::MovementActorFixture;
 pub(crate) use runtime_actor_carrier::{
     CarrierError, ChannelRuntimeV1, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
     CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult,
+    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
 };
 #[cfg(test)]
 #[allow(dead_code)]
