@@ -81,14 +81,42 @@ jobs:
                   return json.load(response)
 
           def candidate_blob(path: str) -> str:
-              encoded = urllib.parse.quote(path, safe='/')
-              payload = api(f'/contents/{encoded}?ref={expected_head}')
-              if payload.get('encoding') != 'base64' or not isinstance(payload.get('content'), str):
-                  raise SystemExit(f'unable to read candidate {path} as inert content')
-              content = base64.b64decode(payload['content'])
-              return hashlib.sha1(
-                  f'blob {len(content)}\0'.encode('ascii') + content
-              ).hexdigest()
+              commit = api(f'/git/commits/{expected_head}')
+              tree_sha = commit.get('tree', {}).get('sha', '')
+              if re.fullmatch(r'[0-9a-f]{40}', tree_sha) is None:
+                  raise SystemExit('candidate commit has invalid root tree')
+              segments = path.split('/')
+              for index, segment in enumerate(segments):
+                  tree = api(f'/git/trees/{tree_sha}')
+                  entries = tree.get('tree')
+                  if not isinstance(entries, list):
+                      raise SystemExit(f'unable to read candidate tree for {path}')
+                  matches = [entry for entry in entries if entry.get('path') == segment]
+                  if len(matches) != 1:
+                      raise SystemExit(
+                          f'candidate path {path} is missing or ambiguous at segment {segment}'
+                      )
+                  entry = matches[0]
+                  if index < len(segments) - 1:
+                      if entry.get('type') != 'tree' or entry.get('mode') != '040000':
+                          raise SystemExit(
+                              f'candidate path {path} traverses non-tree segment {segment}'
+                          )
+                      tree_sha = entry.get('sha', '')
+                      if re.fullmatch(r'[0-9a-f]{40}', tree_sha) is None:
+                          raise SystemExit(
+                              f'candidate path {path} has invalid tree SHA at {segment}'
+                          )
+                      continue
+                  if entry.get('type') != 'blob' or entry.get('mode') != '100644':
+                      raise SystemExit(
+                          f'candidate protected workflow {path} must be a regular 100644 blob'
+                      )
+                  blob_sha = entry.get('sha', '')
+                  if re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
+                      raise SystemExit(f'candidate protected workflow {path} has invalid blob SHA')
+                  return blob_sha
+              raise SystemExit(f'candidate protected workflow {path} could not be resolved')
 
           pull = api(f'/pulls/{number}')
           live_head = pull.get('head', {}).get('sha', '').lower()
