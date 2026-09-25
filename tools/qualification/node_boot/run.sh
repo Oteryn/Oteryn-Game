@@ -437,12 +437,31 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   await_log awaiting_assignment 120
   local node revision
   node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
+  remember node_c "$node"
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   await_log "readiness ready=true" 60
   sudo kill -TERM "$NODE_PID"
   for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "shutdown state=complete" "$node_log" || fail "replacement did not shut down cleanly"
   evidence "replacement=superseding custody=claimed readiness=cas"
+}
+
+signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never ready
+  ops authorization issue --file launch-e.json --binding node-boot-e --supersedes "$node_c"
+  write_node_config launch-e.json
+  : > "$node_log"
+  start_node
+  await_log awaiting_assignment 120
+  sudo kill -TERM "$NODE_PID"
+  local code=0
+  wait "$NODE_PID" 2>/dev/null || code=$?
+  cat "$node_log"
+  [[ $code == 0 ]] || fail "signal in the assignment wait exit=$code"
+  grep -q 'reason="signal before ready"' "$node_log" || fail "no pre-ready shutdown event"
+  ! grep -q "readiness ready=true" "$node_log" || fail "ready published after the signal"
+  [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after a pre-ready signal"
+  [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
+  evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"
 }
 
 stage operator_setup -- operator_setup
@@ -454,6 +473,7 @@ stage seam_stages character_bootstrap -- seam_stages
 stage graceful_shutdown node_assigned_ready -- graceful_shutdown
 stage restart_without_supersession graceful_shutdown -- restart_without_supersession
 stage superseding_replacement graceful_shutdown -- superseding_replacement
+stage signal_before_ready superseding_replacement -- signal_before_ready
 NODE_PID=""
 
 echo "NODE_BOOT_STAGES"

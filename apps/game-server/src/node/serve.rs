@@ -183,6 +183,10 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             MAX_GAMEPLAY_KEY_BYTES,
         )?,
     )?;
+    // The pair must form the served TLS configuration (D3 step 1), so a
+    // mismatched chain and key fail before registration or readiness.
+    crate::gameplay_transport::validate_gameplay_tls(&gameplay_chain, &gameplay_key)
+        .map_err(|_| invalid("listener.private_key_file"))?;
     let platform = &config.platform;
     let roots = certificates(&secret(
         "platform.trust_roots_file",
@@ -427,7 +431,7 @@ async fn establish_custody(
         (None, Some(file)) => {
             let (provenance, descriptor) = s2_parts(file)?;
             let initialized = root
-                .initialize_native_admission_source(proof, provenance.clone(), descriptor)
+                .initialize_native_admission_source(proof, provenance.clone(), descriptor.clone())
                 .await;
             if initialized.is_err() {
                 // An initialization whose response was lost: compare exactly.
@@ -435,7 +439,7 @@ async fn establish_custody(
                     .await
                     .flatten()
                     .ok_or(BootError::SourceCustody("initialize"))?;
-                if after.0 != provenance {
+                if after != (provenance, descriptor) {
                     return Err(BootError::SourceCustody("initialize"));
                 }
             }
@@ -914,6 +918,12 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     result
 }
 
+/// A signal before readiness was ever published: nothing to withdraw.
+fn stopped_before_ready() {
+    event("event=shutdown reason=\"signal before ready\"");
+    event("event=shutdown state=complete");
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -921,7 +931,11 @@ async fn boot_and_serve(
 ) -> Result<(), BootError> {
     let config = &material.config;
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
-    let proof = register(root, &material.launch).await?;
+    let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
+        stopped_before_ready();
+        return Ok(());
+    };
+    let proof = proof?;
     let evidence = &material.evidence;
     establish_custody(root, &proof, material, evidence).await?;
     // D3 step 5.
@@ -939,7 +953,7 @@ async fn boot_and_serve(
         .await
         .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
-    let generation = first(
+    let Some(generation) = first(
         await_assignment(
             root,
             &proof,
@@ -949,7 +963,15 @@ async fn boot_and_serve(
         signalled.cancelled(),
     )
     .await
-    .ok_or(BootError::AssignmentWait)??;
+    else {
+        stopped_before_ready();
+        return Ok(());
+    };
+    let generation = generation?;
+    if signalled.is_cancelled() {
+        stopped_before_ready();
+        return Ok(());
+    }
     // D3 step 7: both sockets are bound before readiness.
     let listener = TcpListener::bind(config.listener.address)
         .await
@@ -976,6 +998,12 @@ async fn boot_and_serve(
         generation,
         config,
     };
+    // A signal while binding: never publish ready after shutdown was requested.
+    if signalled.is_cancelled() {
+        let _ = std::fs::remove_file(&config.control.socket_path);
+        stopped_before_ready();
+        return Ok(());
+    }
     readiness.publish(true, None).await?;
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
@@ -1060,6 +1088,7 @@ async fn boot_and_serve(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
@@ -1068,6 +1097,23 @@ mod tests {
         assert!(parse_operation_id(b"01890f4c-3b2a-4c01-8d11-9a321b7c0004").is_none());
         assert!(parse_operation_id(b"bootstrap everything").is_none());
         assert!(parse_operation_id(b"01890F4C-3B2A-7C01-8D11-9A321B7C0004").is_none());
+    }
+
+    #[test]
+    fn gameplay_tls_requires_a_matching_chain_and_key() {
+        let issue = || {
+            rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("certificate")
+        };
+        let (first, second) = (issue(), issue());
+        let chain = vec![first.cert.der().clone()];
+        let key = |pair: &rcgen::CertifiedKey<rcgen::KeyPair>| {
+            PrivateKeyDer::Pkcs8(rustls::pki_types::PrivatePkcs8KeyDer::from(
+                pair.signing_key.serialize_der(),
+            ))
+        };
+        let (own, foreign) = (key(&first), key(&second));
+        assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &own).is_ok());
+        assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
     }
 
     #[test]
