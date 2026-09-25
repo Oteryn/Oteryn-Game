@@ -2,9 +2,11 @@
 """Fail-closed wrapper for the Game repository-policy validator."""
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -27,6 +29,15 @@ PR_METADATA_WORKFLOWS = (
         "Verify pull request metadata",
     ),
 )
+
+PR_METADATA_SOURCE_SHA256 = {
+    "Verify pull request target and metadata": (
+        "05d45b8ea60bc48df64b9048154706b9c9ea096e4bea535ed9a4b0a6ff63176d"
+    ),
+    "Verify pull request metadata": (
+        "71a17f7df3087e4513dc208892e40d79cba3d1b408e83a78486aabbb7b898cc4"
+    ),
+}
 
 
 def load_module(path: Path, name: str):
@@ -297,7 +308,7 @@ def _run_metadata_source(
 
     with tempfile.TemporaryDirectory() as directory:
         env = dict(environment)
-        env["GH_TOKEN"] = "fixture-token"
+        env["GH_TOKEN"] = secrets.token_urlsafe(48)
         github_env_path = Path(directory) / "github-env"
         env["GITHUB_ENV"] = str(github_env_path)
         completed = subprocess.run(
@@ -381,6 +392,14 @@ def validate_pr_metadata_workflow_text(
         compile(source, f"{label}:metadata", "exec")
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
+
+    expected_source_hash = PR_METADATA_SOURCE_SHA256.get(step_name)
+    source_hash = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    if source_hash != expected_source_hash:
+        errors.append(
+            f"{label} protected metadata source fingerprint changed: "
+            f"expected {expected_source_hash}, got {source_hash}"
+        )
 
     _require_no_workflow_execution_overrides(text, label, errors)
 
