@@ -35,7 +35,7 @@ PR_METADATA_SOURCE_SHA256 = {
         "05d45b8ea60bc48df64b9048154706b9c9ea096e4bea535ed9a4b0a6ff63176d"
     ),
     "Verify pull request metadata": (
-        "71a17f7df3087e4513dc208892e40d79cba3d1b408e83a78486aabbb7b898cc4"
+        "4603ace39aaadbb979da4add881d01d5cc9cd962dd1db0005819af55e7e72206"
     ),
 }
 
