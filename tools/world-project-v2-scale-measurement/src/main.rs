@@ -254,7 +254,11 @@ fn edit_amplification(total: usize) -> Result<serde_json::Value, Box<dyn Error>>
 fn peak_rss_bytes() -> Option<u64> {
     let status = fs::read_to_string("/proc/self/status").ok()?;
     let kb = status.lines().find_map(|line| {
-        line.strip_prefix("VmHWM:")?.split_whitespace().next()?.parse::<u64>().ok()
+        line.strip_prefix("VmHWM:")?
+            .split_whitespace()
+            .next()?
+            .parse::<u64>()
+            .ok()
     })?;
     Some(kb.saturating_mul(1024))
 }
@@ -298,12 +302,15 @@ fn run(mode: Mode) -> Result<serde_json::Value, (String, String)> {
         .map_err(|error| ("schema_load".into(), error.to_string()))?;
     let loaded_placements = project.v2().map_or(0, |state| state.placements.len());
     if loaded_placements != count {
-        return Err(("schema_load".into(), format!("loaded {loaded_placements} placements; expected {count}")));
+        return Err((
+            "schema_load".into(),
+            format!("loaded {loaded_placements} placements; expected {count}"),
+        ));
     }
     let schema_load_time = load_started.elapsed();
 
-    let staged_write_time = stage_documents(documents)
-        .map_err(|error| ("staged_write".into(), error.to_string()))?;
+    let staged_write_time =
+        stage_documents(documents).map_err(|error| ("staged_write".into(), error.to_string()))?;
     let total = total_bytes(documents);
     let amplification = edit_amplification(total)
         .map_err(|error| ("edit_amplification".into(), error.to_string()))?;
@@ -344,7 +351,6 @@ fn run(mode: Mode) -> Result<serde_json::Value, (String, String)> {
     }))
 }
 
-
 fn shard_ranges(total: usize, shard_size: usize) -> Result<Vec<(usize, usize)>, String> {
     if total == 0 || shard_size == 0 {
         return Err("total placements and shard size must be positive".into());
@@ -373,8 +379,8 @@ fn validate_identity_range(placements: &[ProjectV2Placement], start: usize) -> R
 }
 
 fn run_sharded() -> Result<serde_json::Value, (String, String)> {
-    let ranges = shard_ranges(FULL_PLACEMENTS, SHARD_SIZE)
-        .map_err(|error| ("shard_plan".into(), error))?;
+    let ranges =
+        shard_ranges(FULL_PLACEMENTS, SHARD_SIZE).map_err(|error| ("shard_plan".into(), error))?;
     let mut completed = Vec::with_capacity(ranges.len());
     let mut role_totals: BTreeMap<String, u64> = BTreeMap::new();
     let mut aggregate_bytes = 0u64;
@@ -390,8 +396,13 @@ fn run_sharded() -> Result<serde_json::Value, (String, String)> {
         let build_time = build_started.elapsed();
 
         let serialize_started = Instant::now();
-        let canonical = CanonicalProjectDocuments::from_v2_draft(draft, shard_limits)
-            .map_err(|error| ("serialize_validate".into(), format!("shard {shard_index}: {error}")))?;
+        let canonical =
+            CanonicalProjectDocuments::from_v2_draft(draft, shard_limits).map_err(|error| {
+                (
+                    "serialize_validate".into(),
+                    format!("shard {shard_index}: {error}"),
+                )
+            })?;
         let serialize_time = serialize_started.elapsed();
         let snapshot = canonical
             .into_snapshot(shard_limits)
@@ -399,14 +410,21 @@ fn run_sharded() -> Result<serde_json::Value, (String, String)> {
         let documents = snapshot.documents();
 
         let parse_started = Instant::now();
-        syntax_parse(documents)
-            .map_err(|error| ("syntax_parse".into(), format!("shard {shard_index}: {error}")))?;
+        syntax_parse(documents).map_err(|error| {
+            (
+                "syntax_parse".into(),
+                format!("shard {shard_index}: {error}"),
+            )
+        })?;
         let syntax_parse_time = parse_started.elapsed();
 
         let load_started = Instant::now();
-        let project = snapshot
-            .parse(shard_limits)
-            .map_err(|error| ("schema_load".into(), format!("shard {shard_index}: {error}")))?;
+        let project = snapshot.parse(shard_limits).map_err(|error| {
+            (
+                "schema_load".into(),
+                format!("shard {shard_index}: {error}"),
+            )
+        })?;
         let loaded = project.v2().map_or(0, |state| state.placements.len());
         if loaded != count {
             return Err((
@@ -418,8 +436,12 @@ fn run_sharded() -> Result<serde_json::Value, (String, String)> {
             .map_err(|error| ("coverage".into(), format!("shard {shard_index}: {error}")))?;
         let schema_load_time = load_started.elapsed();
 
-        let staged_write_time = stage_documents(documents)
-            .map_err(|error| ("staged_write".into(), format!("shard {shard_index}: {error}")))?;
+        let staged_write_time = stage_documents(documents).map_err(|error| {
+            (
+                "staged_write".into(),
+                format!("shard {shard_index}: {error}"),
+            )
+        })?;
         let bytes = total_bytes(documents) as u64;
         let roles = role_bytes(documents);
         for (role, value) in &roles {
@@ -515,27 +537,34 @@ fn main() {
         }
     };
     match run(mode) {
-        Ok(result) => println!("{}", serde_json::to_string_pretty(&result).unwrap_or_else(|_| "{\"status\":\"measurement_error\"}".into())),
+        Ok(result) => println!(
+            "{}",
+            serde_json::to_string_pretty(&result)
+                .unwrap_or_else(|_| "{\"status\":\"measurement_error\"}".into())
+        ),
         Err((stage, message)) => {
-            println!("{}", json!({
-                "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
-                "status": "resource_limit",
-                "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
-                "mode": match mode { Mode::Smoke => "smoke", Mode::Full => "full", Mode::Sharded => "sharded" },
-                "placements_requested": mode.placements(),
-                "peak_rss_bytes": peak_rss_bytes(),
-                "peak_rss_source": "probe self-report; supervised full run replaces this with /usr/bin/time -v",
-                "one_placement_edit_amplification": {
-                    "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
-                    "changed_paths": null,
-                    "changed_file_count": null,
-                    "changed_project_bytes": null,
-                    "estimate_status": "unavailable_after_resource_limited_failure"
-                },
-                "failed_stage": stage,
-                "error": message,
-                "schema_and_chunk_decision": "out_of_scope"
-            }));
+            println!(
+                "{}",
+                json!({
+                    "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+                    "status": "resource_limit",
+                    "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+                    "mode": match mode { Mode::Smoke => "smoke", Mode::Full => "full", Mode::Sharded => "sharded" },
+                    "placements_requested": mode.placements(),
+                    "peak_rss_bytes": peak_rss_bytes(),
+                    "peak_rss_source": "probe self-report; supervised full run replaces this with /usr/bin/time -v",
+                    "one_placement_edit_amplification": {
+                        "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
+                        "changed_paths": null,
+                        "changed_file_count": null,
+                        "changed_project_bytes": null,
+                        "estimate_status": "unavailable_after_resource_limited_failure"
+                    },
+                    "failed_stage": stage,
+                    "error": message,
+                    "schema_and_chunk_decision": "out_of_scope"
+                })
+            );
             std::process::exit(75);
         }
     }
@@ -566,8 +595,15 @@ mod tests {
         assert_eq!(ranges.last().map(|range| range.1), Some(FULL_PLACEMENTS));
         assert_eq!(ranges.len(), FULL_PLACEMENTS.div_ceil(SHARD_SIZE));
         assert!(ranges.windows(2).all(|pair| pair[0].1 == pair[1].0));
-        assert!(ranges.iter().all(|(start, end)| end > start && end - start <= SHARD_SIZE));
-        assert_eq!(ranges.iter().map(|(start, end)| end - start).sum::<usize>(), FULL_PLACEMENTS);
+        assert!(
+            ranges
+                .iter()
+                .all(|(start, end)| end > start && end - start <= SHARD_SIZE)
+        );
+        assert_eq!(
+            ranges.iter().map(|(start, end)| end - start).sum::<usize>(),
+            FULL_PLACEMENTS
+        );
     }
 
     #[test]
