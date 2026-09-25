@@ -12,6 +12,8 @@ on:
       - docs/agents/evidence/OTV2-20260925-g4-item-exact-165-selected.json
       - docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json
       - docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json
+      - docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json
+      - content/world/definitions/reference.json
   workflow_dispatch:
 
 permissions:
@@ -63,6 +65,10 @@ jobs:
           python tools/content-census/g4_item_wave1_capture.py \
             --selected docs/agents/evidence/OTV2-20260925-g4-item-exact-165-selected.json \
             --output "$ROOT/source-snapshot.json" "${EXPECT[@]}"
+
+      - name: Reproduce the committed staged facts
+        if: ${{ hashFiles('docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json') != '' }}
+        run: python tools/content-census/g4_item_wave1_stage.py --check
 
       - name: Upload snapshot
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

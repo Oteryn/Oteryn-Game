@@ -8,10 +8,13 @@ use oteryn_game_server::content::{
     CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ImportBatch, ProjectDraft,
     ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2Declaration, ProjectV2DefinitionRef,
     ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family,
-    ProjectV2Identity, ProjectV2Source, ProjectV2SourceIdentityBinding,
-    ProjectV2SourceIdentityDisposition, ProjectV2State, ReferenceCells, ReferenceItemField,
-    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemWeapon,
-    ReferenceRationalPercent, ReferenceSignedPoints, protected_cw2_b1_promoted_item_family_import,
+    ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
+    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
+    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
+    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
+    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
+    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
+    protected_cw2_b1_promoted_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -29,6 +32,16 @@ const ITEM_SELECTED_SHA256: &str =
 const WIKI_REVISION: &str =
     "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a";
 const WIKI_CENSUS_SHA256: &str = "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675";
+const ITEM_WAVE1_STAGED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json");
+const ITEM_WAVE1_STAGED_SHA256: &str =
+    "00f2acd441e9146bdd7f67821bef446c171ea67cd06f666028324b61e544cb95";
+const ITEM_WAVE1_SNAPSHOT_SHA256: &str =
+    "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5";
+const ITEM_WAVE1_STAGE_TOOL_SHA256: &str =
+    "55636673ba3acce7e5276243d38701ec30de9ddfd6ec644da1934b5772bc3d4b";
+const ITEM_WAVE1_ITEMS: usize = 164;
+const ITEM_WAVE1_DEFINITION_FACTS: usize = 290;
 const MOUNT_SELECTED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260925-g4-mount-252-selected.json");
 const MOUNT_SELECTED_SHA256: &str =
@@ -58,7 +71,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 3,
+        max_import_records: 4,
         max_reimport_states: 1,
     }
 }
@@ -404,6 +417,241 @@ fn populate_items(
         source,
         bindings,
         editor,
+    })
+}
+
+fn hex_sha256(payload: &[u8]) -> String {
+    Sha256::digest(payload)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn wave1_group<T>(
+    slot: &mut ReferenceItemField<T>,
+    empty: impl FnOnce() -> T,
+) -> Result<&mut T, Box<dyn std::error::Error>> {
+    if matches!(slot, ReferenceItemField::Unknown) {
+        *slot = ReferenceItemField::Known(empty());
+    }
+    match slot {
+        ReferenceItemField::Known(value) => Ok(value),
+        _ => Err("Item Wave 1 group conflicts with its source field".into()),
+    }
+}
+
+fn apply_wave1_fact(
+    semantics: &mut ReferenceItemSemantics,
+    fact: &Value,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let value = &fact["value"];
+    match fact["field_path"]
+        .as_str()
+        .ok_or("Wave 1 fact path missing")?
+    {
+        "weapon.weapon_type" => {
+            let weapon_type = match value.as_str().ok_or("Wave 1 weapon type missing")? {
+                "AXE" => ReferenceWeaponType::Axe,
+                "CLUB" => ReferenceWeaponType::Club,
+                "DISTANCE" => ReferenceWeaponType::Distance,
+                "FIST" => ReferenceWeaponType::Fist,
+                "SWORD" => ReferenceWeaponType::Sword,
+                _ => return Err("Wave 1 weapon type is outside the source mapping".into()),
+            };
+            promote(&mut weapon(semantics)?.weapon_type, weapon_type)
+        }
+        "imbuement.slot_count" => {
+            let slots = u8::try_from(value.as_u64().ok_or("Wave 1 imbuement slots missing")?)?;
+            let group = wave1_group(&mut semantics.imbuement, || ReferenceItemImbuement {
+                slot_count: ReferenceItemField::Unknown,
+                allowed_family_tiers: ReferenceItemField::Unknown,
+                excluded_families: ReferenceItemField::Unknown,
+            })?;
+            promote(&mut group.slot_count, slots)
+        }
+        "stack.stackable" => {
+            if value.as_bool() != Some(false) {
+                return Err("Wave 1 promotes only stackable=false".into());
+            }
+            let group = wave1_group(&mut semantics.stack, || ReferenceItemStack {
+                stackable: ReferenceItemField::Unknown,
+                stack_max: ReferenceItemField::Unknown,
+            })?;
+            promote(&mut group.stackable, false)
+        }
+        "trade_restrictions.marketable" => {
+            let marketable = value.as_bool().ok_or("Wave 1 marketable missing")?;
+            let group = wave1_group(&mut semantics.trade_restrictions, || {
+                ReferenceItemTradeRestrictions {
+                    tradeable: ReferenceItemField::Unknown,
+                    marketable: ReferenceItemField::Unknown,
+                    vocations: ReferenceItemField::Unknown,
+                    account_binding_policy: ReferenceItemField::Unknown,
+                    character_binding_policy: ReferenceItemField::Unknown,
+                }
+            })?;
+            promote(&mut group.marketable, marketable)
+        }
+        _ => Err("Wave 1 fact path is outside this bounded batch".into()),
+    }
+}
+
+fn wave1_text(value: &Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(text) => Ok(Some(text.clone())),
+        _ => Err("Wave 1 authoring text is not a string".into()),
+    }
+}
+
+fn wave1_authoring(
+    item: ProjectV2DefinitionRef,
+    authoring: &Value,
+) -> Result<ProjectV2ItemAuthoring, Box<dyn std::error::Error>> {
+    let taxonomy = match &authoring["taxonomy"] {
+        Value::Null => None,
+        value => Some(ProjectV2ItemTaxonomy {
+            primary: wave1_text(&value["primary"])?.ok_or("Wave 1 taxonomy primary missing")?,
+            secondary: wave1_text(&value["secondary"])?,
+            tertiary: wave1_text(&value["tertiary"])?,
+        }),
+    };
+    let forge = match &authoring["forge"] {
+        Value::Null => None,
+        value => Some(ProjectV2ItemForgeProfile {
+            classification: u8::try_from(
+                value["classification"]
+                    .as_u64()
+                    .ok_or("Wave 1 Forge class missing")?,
+            )?,
+            max_tier: u8::try_from(
+                value["max_tier"]
+                    .as_u64()
+                    .ok_or("Wave 1 max tier missing")?,
+            )?,
+        }),
+    };
+    let lifecycle = match &authoring["lifecycle"] {
+        Value::Null => None,
+        value => Some(ProjectV2ItemLifecycle {
+            enchantable: Some(
+                value["enchantable"]
+                    .as_bool()
+                    .ok_or("Wave 1 enchantable missing")?,
+            ),
+            ..ProjectV2ItemLifecycle::default()
+        }),
+    };
+    let source_lifecycle = match &authoring["source_lifecycle"] {
+        Value::Null => None,
+        value => Some(ProjectV2ItemSourceLifecycle {
+            implemented: wave1_text(&value["implemented"])?,
+            removed: wave1_text(&value["removed"])?,
+        }),
+    };
+    Ok(ProjectV2ItemAuthoring {
+        item,
+        presentation: None,
+        document: None,
+        taxonomy,
+        forge,
+        proficiency: None,
+        augments: Vec::new(),
+        on_use_interactions: Vec::new(),
+        use_ability: None,
+        required_magic_level: None,
+        consumable: None,
+        use_observation: None,
+        lifecycle,
+        source_lifecycle,
+    })
+}
+
+struct ItemWave1Population {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    authoring: Vec<ProjectV2ItemAuthoring>,
+    promoted: usize,
+}
+
+fn populate_item_wave1(
+    records: &mut [ProjectReferenceRecord],
+    bindings: &[ProjectV2SourceIdentityBinding],
+) -> Result<ItemWave1Population, Box<dyn std::error::Error>> {
+    if hex_sha256(ITEM_WAVE1_STAGED) != ITEM_WAVE1_STAGED_SHA256 {
+        return Err("staged Item Wave 1 input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(ITEM_WAVE1_STAGED)?;
+    if packet["schema"] != "OTERYN_G4_ITEM_WAVE1_STAGED/v1"
+        || packet["batch_id"] != "g4-item-wave1-tibiawiki-r1"
+        || packet["source"]["source_revision"] != WIKI_REVISION
+        || packet["source"]["snapshot_sha256"] != ITEM_WAVE1_SNAPSHOT_SHA256
+        || packet["counts"]["conflicts"] != 0
+    {
+        return Err("staged Item Wave 1 source identity drifted".into());
+    }
+    let items = packet["items"].as_array().ok_or("Wave 1 items missing")?;
+    if items.len() != ITEM_WAVE1_ITEMS {
+        return Err("staged Item Wave 1 count drifted".into());
+    }
+    let mut authoring = Vec::with_capacity(items.len());
+    let mut promoted = 0;
+    let mut facts_seen = 0;
+    for item in items {
+        let target: ProjectV2DefinitionRef = serde_json::from_value(item["target"].clone())?;
+        let external_id = item["external_id"]
+            .as_str()
+            .ok_or("Wave 1 source id missing")?;
+        if !bindings.iter().any(|binding| {
+            binding.target == target
+                && binding.external_id == external_id
+                && binding.source_revision == WIKI_REVISION
+        }) {
+            return Err("Wave 1 target has no protected EXACT source binding".into());
+        }
+        let record = records.iter_mut().find(|record| matches!(
+            record,
+            ProjectReferenceRecord::Item { identity, .. } if identity.key == target.key && identity.revision == target.revision
+        )).ok_or("Wave 1 target is absent")?;
+        let ProjectReferenceRecord::Item { semantics, .. } = record else {
+            return Err("Wave 1 target is not an Item".into());
+        };
+        for fact in item["facts"].as_array().ok_or("Wave 1 facts missing")? {
+            facts_seen += 1;
+            promoted += usize::from(apply_wave1_fact(semantics, fact)?);
+        }
+        authoring.push(wave1_authoring(target, &item["authoring"])?);
+    }
+    if facts_seen != ITEM_WAVE1_DEFINITION_FACTS {
+        return Err("staged Item Wave 1 fact count drifted".into());
+    }
+    authoring.sort_by(|left, right| left.item.cmp(&right.item));
+    let import = ImportBatch {
+        batch_id: "g4-item-wave1-tibiawiki-r1".to_owned(),
+        source_repository: "tibiawiki.com.br".to_owned(),
+        source_revision: format!("tibiawiki-item-wave1-snapshot:{ITEM_WAVE1_SNAPSHOT_SHA256}"),
+        source_artifact_sha256: ITEM_WAVE1_SNAPSHOT_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_G4_ITEM_WAVE1_SOURCE_SNAPSHOT/v1".to_owned(),
+        importer: "OTERYN_G4_ITEM_WAVE1_CAPTURE/v1".to_owned(),
+        mapper: "OTERYN_G4_ITEM_WAVE1_STAGE/v1".to_owned(),
+        mapper_revision: "item-wave1-r1".to_owned(),
+        mapper_sha256: ITEM_WAVE1_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: import.batch_id.clone(),
+        revision: import.source_revision.clone(),
+        sha256: import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    Ok(ItemWave1Population {
+        import,
+        source,
+        authoring,
+        promoted,
     })
 }
 
@@ -760,6 +1008,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         mut bindings,
         mut editor,
     } = populate_items(&mut records)?;
+    let ItemWave1Population {
+        import: wave1_import,
+        source: wave1_source,
+        authoring: item_authoring,
+        promoted: wave1_promoted,
+    } = populate_item_wave1(&mut records, &bindings)?;
     let MountPopulation {
         import: mount_import,
         source: mount_source,
@@ -780,21 +1034,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-outfit-133-r1".to_owned(),
+                project_revision: "g4-item-wave1-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
                 coordinate_frame: "global-target-2026-07-28".to_owned(),
                 records,
-                imports: vec![provenance, wiki_import, mount_import],
+                imports: vec![provenance, wiki_import, wave1_import, mount_import],
                 metadata: Vec::new(),
             },
             state: ProjectV2State {
-                sources: vec![source, wiki_source, mount_source],
+                sources: vec![source, wiki_source, wave1_source, mount_source],
                 declarations,
                 source_identity_bindings: bindings,
                 editor,
+                item_authoring,
                 ..ProjectV2State::default()
             },
         },
@@ -805,7 +1060,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

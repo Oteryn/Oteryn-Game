@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "ea44702db9b13dff784f23f4e017ad499413e843b8ffd33ac0dda2a4d9fa0c49",
+        "a89ba184397ee9d8eb48848d948dcf72b8a2110ab40d6a6e0b38a04dcc7b8001",
     ),
     (
         "definitions/declarations.json",
-        44_331,
-        "baec91d3ff98f53eb71a64ea0d7f3ca00802d742d13783bbc55be0932ce58a24",
+        81_474,
+        "8c691f73472ad14675c8860fc50511e72e51fc1b9e5edf372a679d32d9de6a0d",
     ),
     (
         "definitions/reference.json",
-        7_458_197,
-        "6bd267cf3c272f36ec20f4eecdf0048eb0a5439074a513ff6060b2dfe6693309",
+        7_475_358,
+        "240a5467d795d911669edc3724601fa469961963eea257cc83fbdcc0ec1a4555",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1_931,
-        "230b8d3b00b7c19c48d74e0a5c8825c2fd15c582ee81666c18f9effee8fa9463",
+        1931,
+        "a72ef2c1c99d8dbb7bf6b0c7ef7884e11b0087a370640a847216e345184401b0",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "0e63116285a94c34415d43300e9e019c820732268143ed94672f0a9924621dad",
+        "f9442137d0e73611b1fc4b5d859c70a8e3d5f0d3d6dad40438169dbc04e5dd3e",
     ),
     (
         "provenance/imports.json",
-        2_048,
-        "eb2321e2dd7659f220dfda179ded293a7980dd255f3b961f5f2dd10f48a4bcb9",
+        2677,
+        "ea968bc64f96c00efb1a2c876f413499a38c9915e21e2c294b5cd14534aa5aab",
     ),
     (
         "provenance/sources.json",
-        186_250,
-        "ea81f91588cf70c2acd8fd23e79ea1a1de48515f7c92b32295b04d432d3a5848",
+        186_536,
+        "80033ba3bdf94fa25a3aaab0c25ce2ba4d5acd6a84f870f12e98dee667ec8977",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "d22320e90b42ce7fc955cea4c3849be6d090b106f201c1cde1b3de7c2cc58dba";
+const TREE_SHA256: &str = "e3ef5bdd37d92eb5b8c117beb375d16ca10b8114cdc5f55dcefc139030557186";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
@@ -107,7 +107,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 3,
+        max_import_records: 4,
         max_reimport_states: 1,
     }
 }
@@ -190,6 +190,30 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
     count
 }
 
+/// Typed Item facts promoted by Item enrichment Wave 1.
+fn wave1_atom_count(semantics: &ReferenceItemSemantics) -> usize {
+    use ReferenceItemField::Known;
+
+    let mut count = 0_usize;
+    if let Known(value) = &semantics.weapon {
+        count += usize::from(matches!(&value.weapon_type, Known(_)));
+    }
+    if let Known(value) = &semantics.imbuement {
+        count += usize::from(matches!(&value.slot_count, Known(_)));
+    }
+    if let Known(value) = &semantics.stack {
+        count += usize::from(matches!(&value.stackable, Known(false)));
+        assert!(matches!(&value.stack_max, ReferenceItemField::Unknown));
+    }
+    if let Known(value) = &semantics.trade_restrictions {
+        count += usize::from(matches!(&value.marketable, Known(_)));
+    }
+    if let Known(value) = &semantics.physical {
+        assert!(matches!(&value.weight, ReferenceItemField::Unknown));
+    }
+    count
+}
+
 #[test]
 fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
@@ -240,8 +264,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-outfit-133-r1");
-    assert_eq!(project.imports().len(), 3);
+    assert_eq!(project.project_revision(), "g4-item-wave1-r1");
+    assert_eq!(project.imports().len(), 4);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -262,7 +286,18 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
     );
     assert!(wiki.candidates.is_empty());
-    let mount_import = &project.imports()[2];
+    let wave1_import = &project.imports()[2];
+    assert_eq!(wave1_import.batch_id, "g4-item-wave1-tibiawiki-r1");
+    assert_eq!(
+        wave1_import.source_artifact_sha256,
+        "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+    );
+    assert_eq!(
+        wave1_import.source_revision,
+        "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+    );
+    assert!(wave1_import.candidates.is_empty());
+    let mount_import = &project.imports()[3];
     assert_eq!(mount_import.batch_id, "g4-mount-252-tibiawiki-r1");
     assert_eq!(
         mount_import.source_revision,
@@ -310,13 +345,33 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         } => acquisition_interactions.is_empty() && fields.is_empty(),
         _ => false,
     }));
-    assert!(v2.item_authoring.is_empty());
+    assert_eq!(v2.item_authoring.len(), 164);
+    assert!(v2.item_authoring.iter().all(|entry| {
+        entry.item.family == ProjectV2Family::Item
+            && entry
+                .taxonomy
+                .as_ref()
+                .is_some_and(|taxonomy| !taxonomy.primary.is_empty())
+            && entry
+                .forge
+                .is_none_or(|forge| forge.classification > 0 && forge.max_tier > 0)
+            && entry.proficiency.is_none()
+            && entry.augments.is_empty()
+            && entry.consumable.is_none()
+    }));
+    assert_eq!(
+        v2.item_authoring
+            .iter()
+            .filter(|entry| entry.forge.is_some())
+            .count(),
+        146
+    );
     assert!(v2.authoring_profiles.is_empty());
     assert!(v2.worlds.is_empty());
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 3);
+    assert_eq!(v2.sources.len(), 4);
     assert_eq!(v2.sources[0].key, "oteryn:source.crystalserver");
     assert_eq!(v2.sources[0].import_batch_id, provenance.batch_id);
     assert_eq!(v2.sources[0].revision, provenance.source_revision);
@@ -331,10 +386,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[1].sha256, wiki.source_artifact_sha256);
     assert_eq!(v2.sources[1].evidence, ProjectV2EvidenceClass::Derived);
     assert_eq!(v2.sources[2].key, v2.sources[1].key);
-    assert_eq!(v2.sources[2].import_batch_id, mount_import.batch_id);
-    assert_eq!(v2.sources[2].revision, mount_import.source_revision);
-    assert_eq!(v2.sources[2].sha256, mount_import.source_artifact_sha256);
+    assert_eq!(v2.sources[2].import_batch_id, wave1_import.batch_id);
+    assert_eq!(v2.sources[2].revision, wave1_import.source_revision);
+    assert_eq!(v2.sources[2].sha256, wave1_import.source_artifact_sha256);
     assert_eq!(v2.sources[2].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(v2.sources[3].key, v2.sources[1].key);
+    assert_eq!(v2.sources[3].import_batch_id, mount_import.batch_id);
+    assert_eq!(v2.sources[3].revision, mount_import.source_revision);
+    assert_eq!(v2.sources[3].sha256, mount_import.source_artifact_sha256);
+    assert_eq!(v2.sources[3].evidence, ProjectV2EvidenceClass::Derived);
     assert_eq!(v2.source_identity_bindings.len(), 550);
     assert_eq!(v2.editor.len(), 550);
     let mut outfit_ids = BTreeSet::new();
@@ -353,12 +413,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 assert!(item_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Outfit => {
-                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert_eq!(binding.source_revision, v2.sources[3].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.outfit."));
                 assert!(outfit_ids.insert(&binding.external_id));
             }
             ProjectV2Family::Mount => {
-                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert_eq!(binding.source_revision, v2.sources[3].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.mount."));
                 assert!(mount_ids.insert(&binding.external_id));
             }
@@ -467,6 +527,19 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             });
     assert_eq!(promoted_items, 178);
     assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT + 526);
+    let (wave1_items, wave1_fields) =
+        linked
+            .definitions
+            .iter()
+            .fold((0_usize, 0_usize), |(items, fields), definition| {
+                let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+                    panic!("repository seed contains a non-Item reference definition");
+                };
+                let atoms = wave1_atom_count(&item.semantics);
+                (items + usize::from(atoms > 0), fields + atoms)
+            });
+    assert_eq!(wave1_items, 164);
+    assert_eq!(wave1_fields, 290);
 }
 
 #[test]

@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/eloquent-volta-p6174v
 issue: 162
-pr: null
+pr: 920
 base_sha: 08a8d5d49e767476df7be10949042e539db414ca
 head_sha: null
 final_head_sha: null
