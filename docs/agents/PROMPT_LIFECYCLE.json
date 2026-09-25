@@ -274,7 +274,7 @@
     {
       "prompt_id": "OTV2_IMPL_VSL_MOVEMENT",
       "path": "docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md",
-      "version": "1.2",
+      "version": "1.3",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded movement implementation worker; writes require a current merged allocation.",
@@ -494,10 +494,10 @@
     {
       "prompt_id": "OTV2_SOL_MOVEMENT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
-      "version": "1.3",
+      "version": "1.4",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Movement lane lead; writes require terminal current resource gate/prerequisites and exact merged allocation.",
+      "scope": "Sol Movement lane lead; writes require exact coordinator allocation and prerequisites for the allocated stage; production activation requires terminal resource and Client/QA gates.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_MOVEMENT; it specializes reasoning/leadership under live coordinator allocation."
