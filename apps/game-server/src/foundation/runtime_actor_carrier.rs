@@ -1,9 +1,11 @@
 //! Fixed-bound, pre-production-only Channel actor storage.
 //!
-//! This module is intentionally private and uncomposed. In particular, it does
-//! not issue the continuity authority required to create a carrier.
+//! The module stays crate-private. Its only continuity grant is derived by
+//! `ChannelRuntimeV1::from_committed_assignment` from the committed Channel
+//! assignment that `serve` consumes before readiness; one runtime per
+//! ownership generation is enforced by that composition, not by this module.
 
-use super::{ChannelId, ScopeOwnershipGeneration, WorldId};
+use super::{ChannelId, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId};
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -13,6 +15,8 @@ pub(crate) enum CarrierError {
     CapacityArithmeticOverflow,
     AllocationFailed,
     CapacityExceeded,
+    InvalidAssignmentBinding,
+    PlayerReservationMismatch,
     WrongScope,
     InvalidActorIdentity,
     StaleActorGeneration,
@@ -131,6 +135,60 @@ struct ActorRef {
 /// from a client handle or derived from the fixture Ability `TargetId`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ExactActorRef(ActorRef);
+
+/// One fixed-slot reservation for a fresh GameSession. It is not a playable
+/// actor until the owning durable admission is proven committed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PlayerActorReservation {
+    game_session_id: GameSessionId,
+    actor_ref: ActorRef,
+}
+
+/// Immutable provenance of the committed Channel assignment that created this
+/// runtime. Source revision identifies the exact assignment decision; no
+/// production capacity value lives here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ChannelRuntimeAssignmentBinding {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    node_id: NodeId,
+    node_registration_revision: u64,
+    scope_generation: ScopeOwnershipGeneration,
+    source_revision: u64,
+}
+
+impl ChannelRuntimeAssignmentBinding {
+    pub(crate) const fn world_id(self) -> WorldId {
+        self.world_id
+    }
+
+    pub(crate) const fn channel_id(self) -> ChannelId {
+        self.channel_id
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn matches_committed_assignment(
+        self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+        node_id: NodeId,
+        node_registration_revision: u64,
+        ownership_generation: u64,
+        source_revision: u64,
+        decision_identity: &str,
+    ) -> bool {
+        let decision_revision = decision_identity
+            .strip_prefix("runtime-scope-assignment:")
+            .and_then(|value| value.parse::<u64>().ok());
+        self.world_id == world_id
+            && self.channel_id == channel_id
+            && self.node_id == node_id
+            && self.node_registration_revision == node_registration_revision
+            && self.scope_generation.get() == ownership_generation
+            && self.source_revision == source_revision
+            && decision_revision == Some(source_revision)
+    }
+}
 
 /// A borrow of independently current owner continuity and its matching carrier.
 /// No mutation, admission or continuity-grant method crosses this boundary.
@@ -270,7 +328,11 @@ impl CurrentOwnerExactActorLookup<'_> {
             return false;
         };
         match &self.carrier.slots[index] {
-            Slot::Occupied { generation, .. } => *generation == actor.0.actor_local_generation.0,
+            Slot::Occupied {
+                generation,
+                committed,
+                ..
+            } => *committed && *generation == actor.0.actor_local_generation.0,
             Slot::CreatureOccupied {
                 generation, health, ..
             } => *generation == actor.0.actor_local_generation.0 && *health > 0,
@@ -328,6 +390,10 @@ enum Slot {
     Occupied {
         generation: u64,
         actor: ActorState,
+        /// Present only for the production player binding; fixture actors use None.
+        game_session_id: Option<GameSessionId>,
+        /// False while capacity is reserved but durable fresh admission is unresolved.
+        committed: bool,
         position: Option<VersionedPosition>,
     },
     CreatureOccupied {
@@ -351,6 +417,131 @@ struct ChannelActorCarrier {
     slots: Box<[Slot]>,
     free_head: Option<u32>,
     has_creature: bool,
+}
+
+/// The first composed Channel runtime. The fixed-slot carrier is the only actor
+/// resource: no session map or second index is introduced.
+#[derive(Debug)]
+pub(crate) struct ChannelRuntimeV1 {
+    binding: ChannelRuntimeAssignmentBinding,
+    continuity: NamespaceContinuityGuard,
+    carrier: ChannelActorCarrier,
+}
+
+impl ChannelRuntimeV1 {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn from_committed_assignment(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        node_id: NodeId,
+        node_registration_revision: u64,
+        ownership_generation: u64,
+        source_revision: u64,
+        decision_identity: &str,
+        explicit_capacity: usize,
+    ) -> Result<Self, CarrierError> {
+        if node_registration_revision == 0 || source_revision == 0 {
+            return Err(CarrierError::InvalidAssignmentBinding);
+        }
+        let decision_revision = decision_identity
+            .strip_prefix("runtime-scope-assignment:")
+            .and_then(|value| value.parse::<u64>().ok());
+        if decision_revision != Some(source_revision) {
+            return Err(CarrierError::InvalidAssignmentBinding);
+        }
+        let scope_generation = ScopeOwnershipGeneration::new(ownership_generation)
+            .map_err(|_| CarrierError::InvalidAssignmentBinding)?;
+        let grant = PreProductionContinuityGrant {
+            world_id,
+            channel_id,
+            scope_generation,
+        };
+        let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant);
+        let carrier =
+            ChannelActorCarrier::bootstrap_pre_production(&mut continuity, explicit_capacity)?;
+        Ok(Self {
+            binding: ChannelRuntimeAssignmentBinding {
+                world_id,
+                channel_id,
+                node_id,
+                node_registration_revision,
+                scope_generation,
+                source_revision,
+            },
+            continuity,
+            carrier,
+        })
+    }
+
+    pub(crate) const fn binding(&self) -> ChannelRuntimeAssignmentBinding {
+        self.binding
+    }
+
+    pub(crate) fn reserve_fresh_session(
+        &mut self,
+        game_session_id: GameSessionId,
+    ) -> Result<PlayerActorReservation, CarrierError> {
+        self.carrier
+            .reserve_player(&self.continuity, game_session_id)
+    }
+
+    pub(crate) fn commit_fresh_session(
+        &mut self,
+        reservation: PlayerActorReservation,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.carrier
+            .commit_reserved_player(&self.continuity, reservation)
+    }
+
+    pub(crate) fn rollback_definitely_uncommitted(
+        &mut self,
+        reservation: PlayerActorReservation,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .rollback_reserved_player(&self.continuity, reservation)
+    }
+
+    /// Exact-ref cleanup only. Callers still need an authoritative terminal
+    /// GameSession fact; ordinary socket loss is not such a fact.
+    pub(crate) fn remove_terminal_session(
+        &mut self,
+        game_session_id: GameSessionId,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .remove_terminal_player(&self.continuity, game_session_id, actor)
+    }
+
+    /// Test-only census: (committed player actors, pending player reservations).
+    #[cfg(test)]
+    pub(crate) fn player_slot_counts(&self) -> (usize, usize) {
+        self.carrier
+            .slots
+            .iter()
+            .fold((0, 0), |(committed, pending), slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    ..
+                } => (committed + 1, pending),
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: false,
+                    ..
+                } => (committed, pending + 1),
+                _ => (committed, pending),
+            })
+    }
+
+    #[cfg(test)]
+    fn contains_committed_session(
+        &self,
+        game_session_id: GameSessionId,
+        actor: ExactActorRef,
+    ) -> bool {
+        self.carrier
+            .contains_committed_player(&self.continuity, game_session_id, actor)
+    }
 }
 
 impl ChannelActorCarrier {
@@ -450,7 +641,7 @@ impl ChannelActorCarrier {
         continuity: &NamespaceContinuityGuard,
         actor: ActorState,
     ) -> Result<ActorRef, CarrierError> {
-        self.admit_inner(continuity, actor, None, false)
+        self.admit_inner(continuity, actor, None, true, None, false)
     }
 
     /// Explicit nonshipping HP fixture. Generic actor admission remains distinct.
@@ -480,8 +671,114 @@ impl ChannelActorCarrier {
         self.admit_inner(
             continuity,
             actor,
+            None,
+            true,
             Some((initial_health, target_identity)),
             false,
+        )
+    }
+
+    fn reserve_player(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        game_session_id: GameSessionId,
+    ) -> Result<PlayerActorReservation, CarrierError> {
+        let actor_ref = self.admit_inner(
+            continuity,
+            ActorState(0),
+            Some(game_session_id),
+            false,
+            None,
+            false,
+        )?;
+        Ok(PlayerActorReservation {
+            game_session_id,
+            actor_ref,
+        })
+    }
+
+    fn commit_reserved_player(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        reservation: PlayerActorReservation,
+    ) -> Result<ExactActorRef, CarrierError> {
+        let index = self.validate_ref(continuity, reservation.actor_ref)?;
+        match &mut self.slots[index] {
+            Slot::Occupied {
+                generation,
+                game_session_id: Some(game_session_id),
+                committed,
+                ..
+            } if *generation == reservation.actor_ref.actor_local_generation.0
+                && *game_session_id == reservation.game_session_id
+                && !*committed =>
+            {
+                *committed = true;
+                Ok(ExactActorRef(reservation.actor_ref))
+            }
+            _ => Err(CarrierError::PlayerReservationMismatch),
+        }
+    }
+
+    fn rollback_reserved_player(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        reservation: PlayerActorReservation,
+    ) -> Result<(), CarrierError> {
+        let index = self.validate_ref(continuity, reservation.actor_ref)?;
+        match &self.slots[index] {
+            Slot::Occupied {
+                generation,
+                game_session_id: Some(game_session_id),
+                committed,
+                ..
+            } if *generation == reservation.actor_ref.actor_local_generation.0
+                && *game_session_id == reservation.game_session_id
+                && !*committed => {}
+            _ => return Err(CarrierError::PlayerReservationMismatch),
+        }
+        self.remove(continuity, reservation.actor_ref).map(|_| ())
+    }
+
+    fn remove_terminal_player(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        game_session_id: GameSessionId,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        let index = self.validate_ref(continuity, actor.0)?;
+        match &self.slots[index] {
+            Slot::Occupied {
+                generation,
+                game_session_id: Some(stored_session),
+                committed,
+                ..
+            } if *generation == actor.0.actor_local_generation.0
+                && *stored_session == game_session_id
+                && *committed => {}
+            _ => return Err(CarrierError::PlayerReservationMismatch),
+        }
+        self.remove(continuity, actor.0).map(|_| ())
+    }
+
+    fn contains_committed_player(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        game_session_id: GameSessionId,
+        actor: ExactActorRef,
+    ) -> bool {
+        let Ok(index) = self.validate_ref(continuity, actor.0) else {
+            return false;
+        };
+        matches!(
+            &self.slots[index],
+            Slot::Occupied {
+                generation,
+                game_session_id: Some(stored_session),
+                committed: true,
+                ..
+            } if *generation == actor.0.actor_local_generation.0
+                && *stored_session == game_session_id
         )
     }
 
@@ -489,6 +786,8 @@ impl ChannelActorCarrier {
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor: ActorState,
+        game_session_id: Option<GameSessionId>,
+        committed: bool,
         initial_health: Option<(i64, Arc<[u8]>)>,
         fail_after_selection: bool,
     ) -> Result<ActorRef, CarrierError> {
@@ -546,6 +845,8 @@ impl ChannelActorCarrier {
             Slot::Occupied {
                 generation: next_generation,
                 actor,
+                game_session_id,
+                committed,
                 position: None,
             }
         };
@@ -564,7 +865,10 @@ impl ChannelActorCarrier {
         let index = self.validate_ref(continuity, actor_ref)?;
         match &self.slots[index] {
             Slot::Occupied {
-                generation, actor, ..
+                generation,
+                actor,
+                committed: true,
+                ..
             }
             | Slot::CreatureOccupied {
                 generation, actor, ..
@@ -756,6 +1060,7 @@ impl ChannelActorCarrier {
         match &mut self.slots[index] {
             Slot::Occupied {
                 generation,
+                committed: true,
                 position: stored @ None,
                 ..
             }
@@ -776,6 +1081,7 @@ impl ChannelActorCarrier {
             }
             Slot::Occupied {
                 generation,
+                committed: true,
                 position: Some(_),
                 ..
             }
@@ -800,6 +1106,7 @@ impl ChannelActorCarrier {
         match &self.slots[index] {
             Slot::Occupied {
                 generation,
+                committed: true,
                 position: Some(version),
                 ..
             }
@@ -820,6 +1127,7 @@ impl ChannelActorCarrier {
             }
             Slot::Occupied {
                 generation,
+                committed: true,
                 position: None,
                 ..
             }
@@ -852,6 +1160,7 @@ impl ChannelActorCarrier {
         let (generation, current) = match &self.slots[index] {
             Slot::Occupied {
                 generation,
+                committed: true,
                 position: Some(current),
                 ..
             }
@@ -1208,6 +1517,131 @@ mod tests {
         }
     }
 
+    fn session(raw: u64) -> GameSessionId {
+        GameSessionId::decode(&uuid_v7(raw)).expect("valid GameSessionId fixture")
+    }
+
+    fn node(raw: u64) -> NodeId {
+        NodeId::decode(&uuid_v7(raw)).expect("valid NodeId fixture")
+    }
+
+    fn runtime(capacity: usize) -> ChannelRuntimeV1 {
+        ChannelRuntimeV1::from_committed_assignment(
+            WorldId::decode(&uuid_v7(20)).expect("world"),
+            ChannelId::decode(&uuid_v7(21)).expect("channel"),
+            node(22),
+            7,
+            3,
+            11,
+            "runtime-scope-assignment:11",
+            capacity,
+        )
+        .expect("runtime")
+    }
+
+    #[test]
+    fn composed_runtime_binds_assignment_and_reserves_before_commit() {
+        let mut runtime = runtime(1);
+        let binding = runtime.binding();
+        assert!(binding.matches_committed_assignment(
+            binding.world_id(),
+            binding.channel_id(),
+            node(22),
+            7,
+            3,
+            11,
+            "runtime-scope-assignment:11",
+        ));
+        assert!(!binding.matches_committed_assignment(
+            binding.world_id(),
+            binding.channel_id(),
+            node(22),
+            7,
+            4,
+            12,
+            "runtime-scope-assignment:12",
+        ));
+
+        let first_session = session(30);
+        let reservation = runtime
+            .reserve_fresh_session(first_session)
+            .expect("M reservation succeeds");
+        assert_eq!(
+            runtime.reserve_fresh_session(session(31)),
+            Err(CarrierError::CapacityExceeded)
+        );
+        let actor = runtime
+            .commit_fresh_session(reservation)
+            .expect("durable success commits actor");
+        assert!(runtime.contains_committed_session(first_session, actor));
+        assert_eq!(
+            runtime.remove_terminal_session(session(31), actor),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        runtime
+            .remove_terminal_session(first_session, actor)
+            .expect("authoritative terminal cleanup");
+        assert!(!runtime.contains_committed_session(first_session, actor));
+    }
+
+    #[test]
+    fn definitely_uncommitted_reservation_rolls_back_but_committed_does_not() {
+        let mut runtime = runtime(1);
+        let first_session = session(40);
+        let reservation = runtime
+            .reserve_fresh_session(first_session)
+            .expect("reserve");
+        runtime
+            .rollback_definitely_uncommitted(reservation)
+            .expect("definite noncommit rollback");
+        let second = runtime
+            .reserve_fresh_session(session(41))
+            .expect("capacity restored");
+        let actor = runtime.commit_fresh_session(second).expect("commit");
+        assert_eq!(
+            runtime.rollback_definitely_uncommitted(second),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        assert!(runtime.contains_committed_session(session(41), actor));
+    }
+
+    #[test]
+    fn runtime_rejects_invalid_assignment_identity_and_zero_provenance() {
+        let world = WorldId::decode(&uuid_v7(50)).expect("world");
+        let channel = ChannelId::decode(&uuid_v7(51)).expect("channel");
+        assert!(matches!(
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node(52),
+                0,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                1,
+            ),
+            Err(CarrierError::InvalidAssignmentBinding)
+        ));
+        assert!(matches!(
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node(52),
+                1,
+                1,
+                2,
+                "runtime-scope-assignment:1",
+                1,
+            ),
+            Err(CarrierError::InvalidAssignmentBinding)
+        ));
+        assert_eq!(
+            size_of::<Slot>(),
+            192,
+            "session binding must stay inside the already measured fixed-slot footprint"
+        );
+    }
+
     #[test]
     fn multiple_explicit_fixture_bounds_enforce_m_and_m_plus_one() {
         prove_boundary(1);
@@ -1315,7 +1749,7 @@ mod tests {
         let before = carrier.slots.clone();
         let free_head_before = carrier.free_head;
         assert_eq!(
-            carrier.admit_inner(&continuity, ActorState(2), None, true),
+            carrier.admit_inner(&continuity, ActorState(2), None, true, None, true),
             Err(CarrierError::InjectedAdmissionFailure)
         );
         assert_eq!(carrier.slots, before);

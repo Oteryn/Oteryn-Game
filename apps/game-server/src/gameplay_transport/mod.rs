@@ -15,7 +15,7 @@ use crate::durability::character_authority::{
 };
 use crate::durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
-use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+use crate::durability::runtime_scope_assignment::{AssignmentState, NodeIncarnationProof};
 use crate::foundation::admission_authority_publication::FreshAdmissionClaimTransitionV1;
 use crate::foundation::fnd04_verifier::{
     FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext, fresh_grant_signing_key_id,
@@ -27,8 +27,9 @@ use crate::foundation::fresh_admission_durability::{
     FreshAdmissionOperationV1, FreshAdmissionSubmissionV1,
 };
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelId, GameSessionAuthoritySnapshot, GameSessionId,
-    GameSessionState, WorldId,
+    AuthenticatedTransportRefV1, CarrierError, ChannelId, ChannelRuntimeV1,
+    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PlayerActorReservation,
+    RuntimeScopeRefV1, WorldId,
 };
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FreshAdmissionAttempt,
@@ -42,7 +43,7 @@ use std::sync::Arc;
 use std::task::Poll;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::Semaphore;
+use tokio::sync::{Mutex, Semaphore};
 use tokio_rustls::rustls;
 
 /// Registered Server Seam hard maximum of pre-admission connections. Admitted
@@ -221,6 +222,9 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// First-slice runtime authority remains crate-owned and cannot be supplied
+    /// by a transport or client caller.
+    pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -287,6 +291,7 @@ pub async fn serve_gameplay(
         evidence: owners.evidence,
         world_id: owners.world_id,
         channel_id: owners.channel_id,
+        runtime: owners.runtime,
     };
     serve_listener(
         listener,
@@ -348,6 +353,7 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) evidence: &'a FreshEvidenceSource,
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
+    pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
@@ -428,24 +434,60 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let mut prepared = PreparedRequest(None);
         flow.submit(&mut prepared).map_err(|_| Rejected)?;
         let request = prepared.0.ok_or(Unavailable)?;
+        // Capacity is reserved only after every semantic/authentication check,
+        // but before the durable GameSession mutation. M+1 therefore rejects
+        // without creating a playable/committed session.
+        let reservation = self.reserve_runtime_player(attempt.game_session_id).await?;
         match self
             .root
             .commit_composed_fresh_admission(self.character, self.holder, &composition, &request)
             .await
         {
-            Ok(FreshAdmissionDurableOutcomeV1::Committed(_)) => {}
+            Ok(
+                FreshAdmissionDurableOutcomeV1::Committed(_)
+                | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
+            ) => {}
             // The commit may have landed with its acknowledgement lost: keep
             // the exact operation and reconcile it until the outcome is proven.
             Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
-                self.reconcile(&request, attempt.game_session_id, attempt.transport)
-                    .await?;
+                match self
+                    .reconcile(&request, attempt.game_session_id, attempt.transport)
+                    .await
+                {
+                    ReconciliationDisposition::Committed => {}
+                    ReconciliationDisposition::DefinitelyNotCurrent(refusal) => {
+                        self.rollback_runtime_player(reservation).await?;
+                        return Err(refusal);
+                    }
+                    ReconciliationDisposition::DurableNotOwned => {
+                        // The GameSession is durable but no longer owned by
+                        // this socket; that does not prove it terminal. Keep
+                        // its slot reserved rather than free durable capacity.
+                        return Err(Rejected);
+                    }
+                    ReconciliationDisposition::Unknown => {
+                        // Fail closed. Do not fabricate actor authority and do not
+                        // free a slot whose GameSession may already be durable.
+                        return Err(Unavailable);
+                    }
+                }
             }
-            Ok(_) => return Err(Rejected),
+            Ok(_) => {
+                self.rollback_runtime_player(reservation).await?;
+                return Err(Rejected);
+            }
         }
+        let actor = self
+            .runtime
+            .lock()
+            .await
+            .commit_fresh_session(reservation)
+            .map_err(|_| Unavailable)?;
         Ok(AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
             channel_id: self.channel_id,
+            runtime_actor: Some(actor),
         })
     }
 }
@@ -454,41 +496,107 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReconciliationDisposition {
+    Committed,
+    /// Proven noncommit: the reservation may be rolled back.
+    DefinitelyNotCurrent(AdmissionRefusal),
+    /// Committed, but this socket no longer owns the session.
+    DurableNotOwned,
+    Unknown,
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// `Ok` only when the exact operation is durably committed and this socket
-    /// still owns the session it created. The receipt is read under the
-    /// admission relation locks, so `Absent` proves noncommit.
+    async fn reserve_runtime_player(
+        &self,
+        game_session_id: GameSessionId,
+    ) -> Result<PlayerActorReservation, AdmissionRefusal> {
+        use AdmissionRefusal::{Rejected, Unavailable};
+        let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
+        let assignment = self
+            .root
+            .read_runtime_scope_assignment(scope)
+            .await
+            .map_err(|_| Unavailable)?
+            .ok_or(Rejected)?;
+        let fact = self.holder.fact();
+        let binding = self.runtime.lock().await.binding();
+        if assignment.state != AssignmentState::Assigned
+            || assignment.holder != Some(fact)
+            || !binding.matches_committed_assignment(
+                self.world_id,
+                self.channel_id,
+                fact.node_id(),
+                fact.registration_revision(),
+                assignment.ownership_generation,
+                assignment.source_revision,
+                &assignment.decision_identity,
+            )
+        {
+            return Err(Rejected);
+        }
+        self.runtime
+            .lock()
+            .await
+            .reserve_fresh_session(game_session_id)
+            .map_err(|error| match error {
+                CarrierError::CapacityExceeded => Rejected,
+                _ => Unavailable,
+            })
+    }
+
+    async fn rollback_runtime_player(
+        &self,
+        reservation: PlayerActorReservation,
+    ) -> Result<(), AdmissionRefusal> {
+        self.runtime
+            .lock()
+            .await
+            .rollback_definitely_uncommitted(reservation)
+            .map_err(|_| AdmissionRefusal::Unavailable)
+    }
+
+    /// Committed proves the exact current session belongs to this socket.
+    /// Only absent/conflict prove noncommit and allow reservation rollback. A
+    /// committed receipt whose session this socket no longer owns is durable,
+    /// so its reservation is kept. Repeated read failures remain unknown.
     async fn reconcile(
         &self,
         request: &FreshAdmissionCommitRequestV1,
         game_session_id: GameSessionId,
         transport: AuthenticatedTransportRefV1,
-    ) -> Result<(), AdmissionRefusal> {
+    ) -> ReconciliationDisposition {
         let store = FreshAdmissionStore::from_root(self.root.clone());
         for attempt in 0..RECONCILE_ATTEMPTS {
             if attempt > 0 {
                 tokio::time::sleep(RECONCILE_BACKOFF).await;
             }
             match store.reconcile(request.operation()).await {
-                // The receipt is immutable; the session may since have lost
-                // control, been rebound or terminated.
                 Ok(FreshReconciliation::Committed(snapshot)) => {
                     return if owns_fresh_session(
                         snapshot.current_session,
                         game_session_id,
                         transport,
                     ) {
-                        Ok(())
+                        ReconciliationDisposition::Committed
                     } else {
-                        Err(AdmissionRefusal::Rejected)
+                        ReconciliationDisposition::DurableNotOwned
                     };
                 }
-                Ok(FreshReconciliation::Absent) => return Err(AdmissionRefusal::Unavailable),
-                Ok(FreshReconciliation::Conflict) => return Err(AdmissionRefusal::Rejected),
+                Ok(FreshReconciliation::Absent) => {
+                    return ReconciliationDisposition::DefinitelyNotCurrent(
+                        AdmissionRefusal::Unavailable,
+                    );
+                }
+                Ok(FreshReconciliation::Conflict) => {
+                    return ReconciliationDisposition::DefinitelyNotCurrent(
+                        AdmissionRefusal::Rejected,
+                    );
+                }
                 Err(_) => {}
             }
         }
-        Err(AdmissionRefusal::Unavailable)
+        ReconciliationDisposition::Unknown
     }
 }
 
@@ -604,6 +712,7 @@ mod tests {
                     .map_err(|_| AdmissionRefusal::Unavailable)?,
                 channel_id: crate::foundation::ChannelId::decode(&CHARACTER)
                     .map_err(|_| AdmissionRefusal::Unavailable)?,
+                runtime_actor: None,
             })
         }
     }

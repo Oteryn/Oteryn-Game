@@ -24,7 +24,7 @@ use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
-    RegistrationError,
+    RegistrationError, RuntimeScopeAssignment,
 };
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
@@ -33,7 +33,7 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
     AdmissionPublicationSourceV1,
 };
-use crate::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
+use crate::foundation::{ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, WorldId};
 use crate::gameplay_transport::FreshEvidenceSource;
 use crate::native_admission_source::descriptor::ProducerDescriptor;
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
@@ -48,6 +48,7 @@ use std::task::Poll;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, UnixListener, UnixStream};
+use tokio::sync::Mutex;
 
 /// Registered protocol facts fixed by the build (D5).
 const PROTOCOL_MAJOR: u64 = 1;
@@ -496,7 +497,7 @@ async fn await_assignment(
     proof: &NodeIncarnationProof,
     scope: RuntimeScopeRefV1,
     wait: Duration,
-) -> Result<u64, BootError> {
+) -> Result<RuntimeScopeAssignment, BootError> {
     let fact = proof.fact();
     event(&format!(
         "event=awaiting_assignment node_id={} registration_revision={}",
@@ -513,7 +514,7 @@ async fn await_assignment(
                 "event=assignment_received ownership_generation={}",
                 assignment.ownership_generation
             ));
-            return Ok(assignment.ownership_generation);
+            return Ok(assignment);
         }
         tokio::time::sleep(ASSIGNMENT_POLL).await;
     }
@@ -996,7 +997,29 @@ async fn boot_and_serve(
         stopped_before_ready();
         return Ok(());
     };
-    let generation = generation?;
+    let assignment = generation?;
+    let generation = assignment.ownership_generation;
+    let fact = proof.fact();
+    let runtime = Mutex::new(
+        ChannelRuntimeV1::from_committed_assignment(
+            material.world,
+            material.channel,
+            fact.node_id(),
+            fact.registration_revision(),
+            assignment.ownership_generation,
+            assignment.source_revision,
+            &assignment.decision_identity,
+            usize::try_from(config.scope.preproduction_actor_capacity)
+                .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
+        )
+        .map_err(|_| BootError::Readiness("channel runtime composition"))?,
+    );
+    event(&format!(
+        "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",
+        assignment.ownership_generation,
+        assignment.source_revision,
+        config.scope.preproduction_actor_capacity
+    ));
     if signalled.is_cancelled() {
         stopped_before_ready();
         return Ok(());
@@ -1052,6 +1075,7 @@ async fn boot_and_serve(
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        runtime: &runtime,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(

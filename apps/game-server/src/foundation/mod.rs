@@ -13,11 +13,10 @@ mod runtime_actor_carrier;
 #[allow(unused_imports)] // Path-included Foundation test crates have no Movement module.
 pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
-// Crate-visible seam awaits separately allocated production composition.
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
+    CarrierError, ChannelRuntimeV1, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
     CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult,
+    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
 };
 #[cfg(test)]
 #[allow(dead_code)]

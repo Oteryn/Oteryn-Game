@@ -794,6 +794,21 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         other => return Err(format!("assign: {other:?}").into()),
     };
     let scope_generation = assigned.assignment.ownership_generation;
+    // KAN-26: the Channel runtime is composed from this exact committed
+    // assignment before readiness, as `serve` does.
+    let runtime = tokio::sync::Mutex::new(
+        crate::foundation::ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            holder.fact().node_id(),
+            holder.fact().registration_revision(),
+            assigned.assignment.ownership_generation,
+            assigned.assignment.source_revision,
+            &assigned.assignment.decision_identity,
+            usize::try_from(crate::node::config::PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY)?,
+        )
+        .map_err(|e| format!("channel runtime: {e:?}"))?,
+    );
     publish_readiness(&root, &holder, scope, scope_generation, now_seconds()?).await?;
     let retained = std::path::PathBuf::from(required("WP5_S3B_CHARACTER_FENCE_DIR")?);
     let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
@@ -880,6 +895,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
+            runtime: &runtime,
         },
         &shutdown,
     );
@@ -922,6 +938,16 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         None => return Err(format!("listener ended before the client cases: {served:?}").into()),
     }
     served?;
+    // KAN-26: every committed fresh admission holds exactly one player actor;
+    // refused, replayed and losing attempts leave no reservation behind; and
+    // ordinary disconnect (every client has closed by now) removes nothing.
+    let (committed_players, pending) = runtime.lock().await.player_slot_counts();
+    if committed_players != 2 || pending != 0 || committed_admissions(&url).await? != 2 {
+        return Err(
+            format!("channel runtime committed={committed_players} pending={pending}").into(),
+        );
+    }
+    evidence("channel_runtime committed_players=2 pending_reservations=0 disconnect_removed=0");
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
     Ok(())
 }
