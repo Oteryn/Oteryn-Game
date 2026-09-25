@@ -1,314 +1,395 @@
-# OTV2 Full Content Census Programme
+# OTV2 Full Content Population Programme
 
-Short invocation:
+Canonical invocation:
+
+```text
+Oteryn: full content population
+```
+
+Compatibility invocation:
 
 ```text
 Oteryn: full content census
 ```
 
+The historical lifecycle ID and file path are retained for continuity. After the protected census/classification prerequisites are present, both invocations resolve to the **population-first** behaviour in this prompt.
+
 ## Profile and dispatch semantics
 
-`Oteryn: full content census` is a **scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`**, not a separate programme-lead profile.
+`OTV2_FULL_CONTENT_CENSUS_PROGRAMME` remains a **scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`**, not a second programme lead or mutating control plane.
 
 On invocation:
 
-1. resolve and load the current reusable `OTV2_WORK_DELIVERY_COORDINATOR` prompt and its live control-plane lifecycle/allocation;
-2. use **the same control-plane profile identity, authority, custody rules, integration route and terminal contract** as `Oteryn: work coordinator`;
-3. apply this file only as the Full Tibia Content Census / Crosswalk programme scope delta.
+1. fresh-read protected `main`;
+2. resolve the current reusable `OTV2_WORK_DELIVERY_COORDINATOR` prompt and live control-plane allocation;
+3. use the same profile identity, authority, custody, review and integration route as `Oteryn: work coordinator`;
+4. apply this file only as the Full Content population scope delta.
 
-For uniqueness checks, **do not count `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` as a second active mutating control plane**. It is an alias/specialization of `OTV2_WORK_DELIVERY_COORDINATOR`, so a valid current Work coordinator allocation satisfies the control-plane identity requirement for this alias.
+Do not count this alias as a second active mutating control plane. If the canonical Work coordinator is current and authorized, coordinate this programme directly instead of bouncing routine scheduling back to #162 merely because the scoped alias was used.
 
-This alias grants no authority beyond the canonical Work coordinator. If that canonical control-plane authority is absent, stale, conflicting or not provable, remain read-only and report the exact control-plane blocker. But when it is valid, **do not bounce routine census coordination back to #162 merely because this alias was used**: perform the same scheduling, bounded worker dispatch, integration and closeout duties directly within the census programme scope.
+This prompt grants no authority beyond the canonical Work coordinator.
 
-Use this alias to continue the current Full Tibia Content Structure / Census / Crosswalk programme from the newest protected checkpoint instead of restarting research or rebuilding already integrated gates.
+## Current programme mode: POPULATION_FIRST
 
-## Programme objective
+The source-discovery era is no longer the default execution mode once live protected `main` confirms the integrated census/classification/provenance prerequisites.
 
-Reach a terminal, reproducible answer for the complete in-scope Tibia content universe:
+Treat protected G0-G3 results, the protected Item census, G4 source provenance, the typed source-identity carrier and the full-cardinality measurement as **inputs to implementation**. Do not restart them or create another analysis generation unless a concrete unresolved fact blocks a real canonical write in the current bounded batch.
 
-- what source entities exist;
-- which source records overlap or duplicate one another;
-- which Oteryn family owns each concept;
-- which Oteryn canonical identities already exist;
-- what is missing, conflicting, ambiguous or intentionally excluded;
-- which exact fields/relationships/placements may be promoted;
-- whether current WorldProject/v2 storage scales to the measured real-world placement load;
-- which gaps must actually be implemented before final programme closure.
+Primary objective:
 
-The programme is **source-universe-first, evidence-first and minimum-sufficient**. Do not invent schema versions, duplicate families, new identity systems or generalized import platforms without a proven gap.
+> turn already-discovered source entities into real Oteryn canonical identities, definitions, fields, relationships, tags, presentation bindings and later placements, using the existing WorldProject/v2 model and existing compilation/test paths.
 
-## Protected baseline to preserve
+Success is measured by product population, not by the number of new census/evidence artifacts.
 
-Fresh-read live protected `main` before acting and verify these results remain integrated or have a protected successor:
+## Population-first invariants
 
-- G0 `FULL_CONTENT_STORAGE_STRUCTURE_AND_HIERARCHY_AUDIT`: complete;
-- G1 `FULL_CONTENT_SOURCE_DISCOVERY_AND_FAMILY_CENSUS`: complete;
-- protected wiki-first Item census: reuse as the Item lane; do not restart it;
-- current WorldProject/v2 semantic family model: retain unless later measured evidence proves an actual representation gap;
-- new full-content tooling belongs under `tools/content-census/`; do not mass-move protected predecessor tools for cosmetics.
+1. **No new census/crosswalk/revalidation-only slice by default.** A new analysis-only task/PR is allowed only when an exact unresolved fact blocks canonical population and cannot legally be resolved inside the same bounded family batch.
+2. **A G4 family batch with at least one eligible record must produce a real canonical product delta.** Do not end the batch with only `MISSING_CANONICAL_IDENTITY`, `UNKNOWN` or another report if a safe canonical record or field can already be written.
+3. **Partial canonical records are valid.** Identity completeness and semantic completeness are separate. Known exact fields may be promoted while unrelated fields remain `UNKNOWN` or `CONFLICT`.
+4. **Second-source corroboration is helpful, not a universal admission gate.** If TibiaWiki BR supplies an exact source identity, supported family shape and non-conflicting structured facts sufficient for the bounded claim, absence of a second source does not by itself block canonical population.
+5. **Do not use title-only matching to hijack an existing identity.** Existing Oteryn identities require the strongest available multi-signal match. For a genuinely missing non-Item identity, a new key may be created only under the existing canonical key conventions after exact source identity/family proof plus duplicate/collision checks.
+6. **External IDs never become canonical Oteryn identity.** Preserve exact source key/revision/digest, namespace and verbatim external ID through the existing `ProjectV2SourceIdentityBinding`.
+7. **Unknown evidence stays unknown without blocking siblings.** One unresolved field, relation or source must not stall independent eligible fields/entities in the same batch.
+8. **Do not invent another schema/framework.** No `ProjectV3`, `ItemV2`, `CreatureV2`, generic registry service or new importer platform unless an exact current record proves the protected WorldProject/v2 model cannot represent a required product fact.
+9. **Evidence is an output of product work, not a successor trigger.** Keep one batch end-to-end while the same writer/custody/execution surface can legally carry it.
+10. **Prefer real content over process closure.** Lifecycle/archive cleanup must not consume the critical path while a path-disjoint population batch can legally continue.
 
-Do not trust historical SHAs blindly. Use current protected files, PR state and retained evidence as authority.
+## Protected foundation to reuse
+
+Fresh-read current protected state rather than trusting historical SHAs, but preserve these integrated architectural results unless a protected successor supersedes them:
+
+- G0 storage/family audit;
+- G1 source discovery;
+- G2 exact source overlap/deduplication;
+- G3 family classification and explicit disposition of unresolved rows;
+- protected wiki-first Item source lane;
+- WorldProject/v2 family model;
+- typed `ProjectV2SourceIdentityBinding`;
+- wiki-first G4 source policy;
+- existing Item identity/model/artifact lineage;
+- full-cardinality WorldProject/v2 measurement evidence.
+
+Do not reopen a protected predecessor merely because later current-source observations drift. Revalidate only the exact affected rows needed by the current population batch.
+
+## Canonical storage contract
+
+Use the existing logical storage model. Do not create cosmetic per-family filesystem trees merely to make the repository look catalog-like.
+
+### Definitions
+
+- `definitions/reference.json` — accepted executable/reference definitions already owned by executable Reference families;
+- `definitions/declarations.json` — typed declarative definitions and source-only authoring for families not executable through the Reference linker.
+
+### Source identity and provenance
+
+- `provenance/sources.json` — exact source records and accepted source-identity bindings;
+- `provenance/imports.json` — import/candidate provenance where the existing pipeline requires it.
+
+### Editor catalogue metadata
+
+- `editor/author.json` — display names, aliases and **namespaced editor/catalogue tags**.
+
+Tags help browse, query and author content. They must not replace typed family fields or silently create gameplay semantics.
+
+### Presentation and assets
+
+- `presentations/bindings.json` — Definition/Presentation binding layer;
+- `assets/catalog.json` — immutable asset identity/digest catalogue.
+
+Keep:
+
+`Definition -> Presentation -> Asset`
+
+separate from legacy/client/source IDs.
+
+### World placements
+
+- `worlds/world.json` remains the semantic placement role.
+
+The protected full-cardinality measurement proved the current semantics across the target cardinality only through bounded sequential shards; the monolithic full corpus hit an allocation limit. Therefore **do not block definition population on final world-placement physical layout**, and do not invent ProjectV3. A minimum-sufficient production placement layout/chunking decision belongs to the placement phase after definitions/relationships are populated far enough to consume it.
+
+## Canonical population decision for each source entity
+
+For every bounded family batch, every source entity must end in one of these product-oriented dispositions:
+
+- `MATCH` — bind to an existing canonical Oteryn identity;
+- `CREATE` — create a missing canonical Oteryn identity/definition under existing key conventions;
+- `CONFLICT` — competing evidence prevents the exact bounded write;
+- `AMBIGUOUS` — more than one credible target remains;
+- `SOURCE_ONLY` — evidence is retained but does not define a reusable canonical entity;
+- `RELATIONSHIP_ONLY` — source row contributes a relation to existing/created definitions;
+- `PLACEMENT_ONLY` — source row contributes a world occurrence rather than a new definition;
+- `EXCLUDED` — explicit programme exclusion.
+
+`MISSING_CANONICAL_IDENTITY` is not a terminal success state by itself. Convert it to `CREATE` whenever current evidence safely proves a new identity and the existing canonical model can represent it.
+
+## Family batch execution
+
+Default bounded flow:
+
+`select batch -> resolve/create identity -> write source binding -> write editor metadata/tags -> promote exact fields -> write exact relationships -> compile/test -> integrate`
+
+Do not split these logical substeps into separate tasks/PRs unless there is a real path-custody boundary, distinct required execution surface, material architecture decision or independently mandatory gate.
+
+### Batch sizing
+
+Prefer batches large enough to create visible catalogue progress but small enough to review and qualify deterministically.
+
+Default starting point:
+
+- 100-500 ordinary entities for homogeneous declarative families;
+- smaller batches for high-relationship or executable families;
+- adjust only from measured output/CI/review cost.
+
+Do not spend a separate task choosing an exact batch size when a safe bounded first batch can run immediately.
+
+### Required batch output
+
+When eligible records exist, a completed mutating family batch should report at least:
+
+```text
+selected
+matched
+created
+source_bindings_written
+editor_entries_written
+tags_written
+fields_promoted
+relationships_written
+presentation_bindings_written
+conflict
+ambiguous
+source_only
+placement_only
+blocked
+compiled
+tested
+integrated
+```
+
+The primary progress vector is canonical population, not evidence row count.
+
+## Identity creation and matching
+
+### Existing identities
+
+Use exact IDs/source bindings/aliases/structured fields/relationships and other strong signals. Never remap an existing identity on name similarity alone.
+
+### New non-Item identities
+
+A missing canonical non-Item identity may be created when all are true:
+
+- exact source entity identity is retained;
+- family is sufficiently established for the bounded definition;
+- no existing canonical key/source binding/alias collision resolves to another target;
+- the chosen key follows the existing family/key convention;
+- the new record carries source provenance;
+- no conflicting stronger evidence exists.
+
+Do not wait for every gameplay field to be known.
+
+### Items
+
+Reuse the protected Item identity authority and existing Item model/artifact lineage. Do not mint duplicate parallel Item identities merely because a wiki page is not yet resolved to the protected Item identity space.
+
+For Item batches use the existing bounded flow:
+
+`resolve -> verify -> continuity-if-needed -> promote -> compile/test`.
+
+Partial field promotion is expected.
+
+## Field promotion
+
+Promote atomic facts independently.
+
+Examples of eligible partial population:
+
+- Creature identity + name + exact health while loot remains unknown;
+- NPC identity + presentation/source binding while dialogue remains unknown;
+- Quest identity + known prerequisite/reward relationship while some steps remain unknown;
+- Item identity + exact weight/armor while another stat remains conflict.
+
+Do not require a "complete entity" before writing exact supported fields.
+
+When an exact field does not fit the current model, first prove the representation gap against the protected v2 model. Repair only that gap with minimum sufficient change.
+
+## Tags and aliases
+
+Create useful catalogue metadata in `editor/author.json` during population instead of deferring all discoverability to a later cleanup pass.
+
+Rules:
+
+- aliases remain non-authoritative lookup hints;
+- tags are namespaced/editor metadata;
+- tags never determine gameplay authority;
+- use a small stable vocabulary and reuse existing tags before minting synonyms;
+- family is typed data, not merely a tag;
+- source/provider identity is provenance, not merely a tag.
+
+Do not create a separate tagging framework.
+
+## Relationships
+
+Write typed relationships as soon as both endpoints are safely identified/created.
+
+Examples:
+
+- Creature -> Loot -> Item;
+- NPC -> Dialogue / Service -> Item;
+- Quest -> prerequisite / NPC / Interaction / rewards / Encounter;
+- Item -> Ability / Interaction;
+- WorldObject -> Interaction / Transition / Document;
+- Area -> parent;
+- Definition -> Presentation.
+
+Do not embed relationship facts as freeform tags when a typed v2 relation already exists.
+
+## Source policy
+
+### Primary working source
+
+**TibiaWiki BR is the primary bulk working source** for current static/semi-static identities and structured fields.
+
+### Second structured source
+
+Use a maintained second source when available and genuinely independent. Its absence, HTTP denial or licensing-preflight failure does not block an otherwise safe ordinary canonical identity/field.
+
+Do not create repeated second-source probes for unchanged access failures. Cache the blocker fingerprint and continue population work.
+
+### Official public evidence
+
+Use public CipSoft/Tibia evidence when it directly resolves an exact atomic conflict.
+
+Authenticated Global Tibia/Cyclopedia browsing remains a future verification layer, not a denominator or normal G4 blocker.
+
+### OTS/donors
+
+Use Canary/Crystal/other OTS sources actively for implementation/mechanics/map/quest/spawn hypotheses and missing detail discovery, but not as automatic current static truth.
+
+`CURRENT STRUCTURED REFERENCE DATA > DONOR IMPLEMENTATION` for the same static field unless stronger direct evidence proves otherwise.
+
+## Analysis-only exception
+
+An analysis-only task is permitted only when all are true:
+
+1. a named current population batch is blocked;
+2. the blocker is exact and bounded;
+3. no safe sibling entity/field in that batch can progress around it;
+4. the needed evidence cannot be gathered inside the same writer/custody/execution surface;
+5. the task has a direct consumer population batch and terminal condition.
+
+The analysis output must name the product delta it unlocks.
+
+Do not create a generic "next census", "next crosswalk", "next revalidation" or "next evidence" generation without this linkage.
+
+## G3 UNKNOWN closure consumption
+
+The historical G3 UNKNOWN cohort is not a reason to stop population.
+
+Consume the protected closure dispositions:
+
+- definition-family eligible rows enter the relevant family population batch;
+- relationship-only rows feed relationship batches;
+- source-only rows stay evidence;
+- placement-only rows wait for placement reconciliation;
+- genuinely unresolved rows remain bounded blockers.
+
+Do not force every historical UNKNOWN row into a reusable definition.
+
+## Full-world placement phase
+
+Definition and relationship population may run before final full-world placement layout selection.
+
+When placement reconciliation begins:
+
+1. consume the protected full-cardinality measurement;
+2. select the minimum-sufficient bounded physical layout/chunking compatible with existing v2 semantics;
+3. do not use one monolithic 24.5M-placement in-memory document if the measured path fails;
+4. preserve stable definition identity independently of occurrence/placement identity;
+5. qualify real consumers for load/edit/runtime use;
+6. propose a schema-major change only if measured evidence proves v2 semantics cannot support the required layout.
 
 ## Hard exclusions
 
-These surfaces remain completely outside crawl, inventory, modelling, crosswalk and evidence:
+Keep completely outside crawl, catalogue population and placeholders:
 
 - `Kalkulatory`;
 - `Narzędzie do nasycania` / `Imbuement Tool`;
-- `Dostawca` / official reseller utility surfaces.
+- `Dostawca` / reseller utility surfaces.
 
-Do not create placeholder records for them.
+## Subagent orchestration
 
-## Programme gates
+When the owner asks to use Luna/Sol subagents, the canonical Work coordinator remains the sole coordinator/integrator.
 
-Continue from the first unfinished protected gate.
+Parallelize path-disjoint work:
 
-### G2 — GLOBAL_SOURCE_OVERLAP_AND_DEDUPLICATION
+- **low effort** — mechanical source-row grouping, metadata/tag normalization, exact lifecycle/readback;
+- **medium effort** — ordinary family identity resolution and homogeneous population batches;
+- **high effort** — ambiguous identity conflicts, difficult relationships, representation-gap proof;
+- use read-only subagents freely for preparation;
+- one mutating writer per owned path/branch;
+- aggregate results into product batches rather than creating one PR per subagent.
 
-Goal: convert the nominal G1 source population into the actual global source identity universe.
+Do not stop with "#162 must assign" when the current canonical coordinator already has valid authority to allocate the bounded work.
 
-Required result:
+## Execution lifecycle
 
-- deduplicate exact MediaWiki identities and cross-lane overlaps;
-- identify pages appearing through multiple navigation/root/family routes;
-- keep one source identity with multiple provenance/surface relationships instead of cloning entities;
-- calculate real global unique counts;
-- separate exact duplicates from semantic overlaps that still require later family/crosswalk work;
-- preserve the sealed Item lane and report Item/non-Item overlaps explicitly;
-- retain deterministic digests and compact evidence; bulk working sets stay artifacts/scratch.
+Authorized mutation uses:
 
-Do **not** choose canonical Oteryn identity merely because source pages overlap.
+`AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`
 
-### G3 — CONTENT_FAMILY_CLASSIFICATION_CLOSURE
+Before every API-native write, fresh-read the branch head. After final authoring write, freeze the exact returned SHA, verify the complete bounded diff and owned paths, and do not mutate the frozen head. A repair returns explicitly to AUTHORING and creates a successor candidate requiring fresh qualification.
 
-Goal: close source-to-family routing for every globally unique source entity.
+Use governed Merge Queue only under the current bound META routing. Queue admission is non-terminal; completion requires real `merge_group` aggregate `game-gate` success and protected-main readback.
 
-Required result:
+No direct merge, generic auto-merge, force/reset/rebase, no-op retrigger or protection weakening.
 
-- every entity has an explicit final family disposition;
-- multi-family relationships remain relationships where appropriate instead of being forced into one false family;
-- close `SOURCE_CLASSIFICATION_UNRESOLVED` records with exact evidence or an explicit non-definition disposition;
-- Bestiary/Bosstiary/Familiar remain Creature/Encounter overlays, not duplicate systems;
-- Runes remain Item + Ability + Interaction, not a Rune family;
-- definitions, relationships, placements and mutable runtime state remain separate.
+## Population scoreboard
 
-No `ItemV2`, `CreatureV2`, `TerrainV2`, `WorldObjectV2` or `ProjectV3` unless a later exact gap independently proves it is necessary.
+Owner-facing status should lead with cumulative product counts:
 
-### G4+ — FAMILY CROSSWALKS
+- canonical identities matched;
+- canonical identities created;
+- source bindings written;
+- fields promoted;
+- relationships written;
+- editor aliases/tags written;
+- presentations/assets bound;
+- placements reconciled;
+- unresolved conflicts/ambiguities;
+- exact current blocker;
+- next mutating batch.
 
-Run bounded family batches through the full useful path, reusing existing Oteryn identities and source evidence.
+Evidence/census counts are secondary unless they materially change one of those product numbers.
 
-Families include, as applicable:
+## Completion
 
-`Item`, `Creature`, `NPC`, `Dialogue`, `Service`, `Interaction`, `Quest`, `Encounter`, `Area`, `House`, `WorldObject`, `LocalObject`, `Terrain`, `Transition`, `Ability`, `Effect`, `Formula`, `Document`, `Achievement`, `Outfit`, `Mount`, `Charm`, `Presentation` and related placement/binding owners.
+The programme is complete only when:
 
-For each family/batch, classify every source entity as one of:
+- all in-scope source entities have a final product disposition;
+- eligible missing canonical identities are created;
+- existing identities are matched without duplicate reminting;
+- exact promotable fields are populated or explicitly blocked/deferred;
+- required typed relationships are populated;
+- source identities remain recoverable;
+- catalogue aliases/tags are present where useful;
+- required presentation/asset bindings are populated;
+- required world placements are reconciled using a measured viable physical layout;
+- compile/load/runtime consumers are qualified for the resulting data;
+- exclusions remain absent;
+- final coverage reports canonical product counts, not only source counts;
+- required CI/review/Merge Queue/protected-main closeout is complete.
 
-- exact existing Oteryn identity;
-- high-confidence derived match;
-- ambiguous;
-- conflict;
-- missing canonical identity;
-- source-only/non-promotable;
-- relationship/placement-only;
-- intentionally excluded from gameplay truth.
+## Terminal behaviour
 
-Use multi-signal identity matching. Never match on title alone when exact IDs, aliases, source IDs, appearances, coordinates, relationships or other stronger evidence exists.
+Continue autonomously through the current population batch and the next legal path-disjoint population work while authority/capability permits.
 
-#### Multi-source identity binding requirement
+Stop only for a real boundary:
 
-Before mass canonical population, apply `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`.
+- no valid control-plane/write authority;
+- path/custody conflict;
+- required validation/integration capability unavailable;
+- material architecture decision;
+- an exact source fact blocks the bounded write and no sibling population can proceed.
 
-Required invariants:
-
-- canonical Oteryn identity remains `family + namespaced ProductionKey + exact definition revision`;
-- legacy/wiki/OTS/client numeric IDs are retained as **namespaced source identities with exact source revision/digest**, never as canonical Oteryn identity;
-- new G4 contracts must not persist an unqualified bare `id` when the value is external;
-- exact binding uniqueness is scoped by source + source revision + identity namespace + external ID;
-- the same integer in TibiaWiki, Canary, Crystal or a client has no cross-source meaning by itself;
-- many source IDs may bind to one Oteryn definition, but one exact source identity/revision cannot canonically bind to multiple Oteryn targets;
-- probable/ambiguous/conflict/no-match states remain evidence and are not promoted as canonical bindings;
-- presentation/render identities remain separate: `definition -> Presentation -> Asset`; client appearance/sprite IDs normally bind to Presentation rather than minting Item/Creature/WorldObject identity;
-- source-ID continuity must survive later comparisons so tooling can deterministically join Oteryn ↔ wiki ↔ OTS/client evidence without name-only rematching.
-
-Current WorldProject/v2 has dataset provenance and candidate `SourceId` observations but no proven generic first-class per-entity multi-source binding. Pilot/read-only G4 analysis may proceed when artifacts retain the complete tuple. Before family-wide canonical population at scale, either prove an accepted existing carrier satisfies the architecture decision or land the minimum sufficient typed v2 binding gap closure. Do not create `ProjectV3` or a second identity system for this.
-
-Preferred bounded flow:
-
-`discover/reuse -> dedupe -> classify -> resolve identity -> verify fields -> promote eligible exact data -> compile/test`.
-
-Do not manufacture a new PR/task for every logical substep when the same legal writer/custody can carry one bounded family batch end-to-end.
-
-### Semantic verification and gap closure
-
-After identity resolution:
-
-- distinguish source evidence from Reference gameplay truth;
-- promote only exact/accepted fields the existing canonical model can represent;
-- allow partial promotion: exact fields may become known while unrelated fields remain unknown/conflict;
-- record source authority per field/relationship;
-- repair real Oteryn gaps with minimum sufficient change;
-- do not copy long-form copyrighted prose or protected art assets into the repository.
-
-A zero eligible/promotable set returns to the nearest blocker-reducing source/identity step. It is not justification for another parser/framework layer.
-
-### WORLDPROJECT_V2_FULLWORLD_SCALE_MEASUREMENT
-
-Before bulk world-placement reconciliation, measure the current canonical v2 physical representation on representative/full-world scale.
-
-Measure, do not guess:
-
-- placement count;
-- serialized bytes;
-- parse/load/write cost;
-- diff/change amplification;
-- memory peak;
-- practical CI/editor/runtime handling.
-
-Existing donor/source evidence may expose millions of tiles/placements; historical small synthetic fixtures are not full-world proof.
-
-Only if measured evidence demonstrates a real representation/storage failure may the programme propose chunking/layout/schema changes. Do not jump directly to `ProjectV3`.
-
-### WORLD_PLACEMENT_RECONCILIATION
-
-After the measurement gate permits it:
-
-- reconcile Areas, Terrain, structures, Houses, NPCs, spawns, encounters, transitions, objects, documents and quest-related placements against canonical world coordinates;
-- keep reusable definitions separate from placements;
-- retain typed relationships rather than embedding unrelated mutable runtime state in source definitions;
-- detect duplicate/conflicting placements deterministically;
-- qualify import/load/edit/runtime consumers that actually use the resulting data.
-
-### FINAL_CONTENT_COVERAGE_AND_CLOSURE
-
-The programme is terminal only when:
-
-- all in-scope source identities are globally accounted for;
-- family ownership/disposition is complete;
-- required family crosswalks are complete or explicitly dispositioned;
-- exact promoted entities retain recoverable namespaced source-identity bindings, or an explicit bounded gap blocks only the affected family population rather than discarding source IDs;
-- promotable exact gaps have been repaired or formally deferred with evidence;
-- world-placement scale is measured;
-- required placement reconciliation is complete;
-- no hard-exclusion data was introduced;
-- no speculative duplicate schema/family system was created;
-- compact durable evidence and reproducible tooling remain;
-- final coverage report states exact counts for matched / missing / ambiguous / conflict / source-only / promoted / deferred;
-- required tests, exact-head CI, Merge Queue and protected-main readback pass;
-- active programme task packets are archived correctly;
-- live Global/Cyclopedia verification is not a completion blocker; if useful, leave a bounded future-verifier handoff instead of pulling authenticated Global browsing into G4+.
-
-## Source/evidence doctrine
-
-Prefer structured and revision-addressable sources.
-
-For TibiaWiki/MediaWiki collection:
-
-- preserve exact page ID + canonical title + revision ID/timestamp;
-- handle continuation explicitly and fail closed on malformed loops/drift;
-- retain bounded categories/templates/source shapes instead of article prose;
-- redirects and missing/red navigation links are explicit source states, not silently guessed;
-- full corpora belong in reproducible workflow artifacts/scratch unless a compact committed representation is independently justified.
-
-### G4+ bulk source policy — wiki-first, live Global deferred
-
-For current G4+ family crosswalk, canonical population and gap-closure work, use this phase-specific source policy:
-
-1. **TibiaWiki BR is the primary bulk working source** for current static/semi-static content identities and fields.
-2. Use a second current, maintained structured Tibia encyclopedia/database as an independent cross-check where available. Do not count a mirror/copied dataset as independent corroboration.
-3. Public official CipSoft/Tibia material may resolve an exact atomic field when it directly addresses the same current claim, but **authenticated in-game Global Tibia/Cyclopedia exploration is not part of the G4+ critical path**.
-4. **Do not use Global Tibia/Cyclopedia as the denominator for content completeness.** It exposes ordinary player-facing gameplay items/creatures and selected facts, not the complete Terrain/WorldObject/LocalObject/Transition/Presentation/map-environment universe.
-5. Do not require a Global Tibia login, private client session, manual browsing or controlled live-game observation to admit ordinary G4 records. If wiki/structured sources disagree and public evidence cannot resolve the exact field, retain `CONFLICT`/`UNKNOWN` and continue path-disjoint work.
-6. OTS/donor data remains hypothesis/implementation evidence. It is valuable for mechanics, scripts, quest flow, spawns, maps, edge cases and missing implementation details, but it **must not override a newer current structured-wiki value for the same static field** without stronger direct evidence.
-7. For map/environment content, prefer structured object/terrain/world evidence and exact donor/map provenance as appropriate; never infer that “not visible in Cyclopedia” means “not a real Oteryn content identity”.
-
-The intended current flow is therefore:
-
-`current structured wiki -> second structured cross-check -> family crosswalk -> field verification -> canonical Oteryn population -> compile/test`.
-
-OTS/donor evidence may assist any step but does not become the bulk truth source by convenience.
-
-### Deferred live Global verification
-
-Live authenticated Global Tibia verification is a **future terminal verification layer**, not a prerequisite for G4+.
-
-After canonical family population is mature, the programme may prepare a separate bounded handoff/spec for a future `LIVE_GLOBAL_REFERENCE_VERIFICATION` agent. That future agent may, under separate explicit authority and login/session handling:
-
-- browse player-visible Cyclopedia/content;
-- compare visible current gameplay Item/Creature facts against canonical Oteryn records;
-- classify `MATCH | DRIFT | CONFLICT | NOT_VISIBLE`;
-- propose evidence-backed corrections;
-- detect post-update drift.
-
-It must not use Cyclopedia as the denominator for map/environment content, must not silently mutate canonical data, and must not retroactively block already valid wiki-first G4 work. Implementing or running that authenticated verifier is outside the current G4+ critical path unless the owner later explicitly allocates it.
-
-For OTS/donor/reference sources:
-
-- provenance must include repository/source revision and exact producer/tool version;
-- donor behavior is evidence, not automatically Oteryn truth;
-- copyright/licence boundaries remain binding.
-
-## Execution discipline
-
-At startup:
-
-1. fresh-read protected `main`;
-2. resolve this alias entry **and** the canonical `OTV2_WORK_DELIVERY_COORDINATOR` entry/prompt;
-3. bind this invocation to the same currently valid Work control-plane identity rather than creating another profile;
-4. inspect only current census programme task/evidence/PR state needed for the first unfinished gate;
-5. reconcile already-merged but stale active task packets before treating them as blockers; protected PR/check/main state is authoritative;
-6. classify material facts `PROVEN | DERIVED | UNKNOWN | CONFLICT`;
-7. prove exact worker write allocation/path custody before tracked-file mutation.
-
-If canonical Work control-plane authority is valid, this alias **must coordinate directly**: allocate bounded path-disjoint lanes, select workers/effort, aggregate results, own freeze/validation/integration and continue the programme. Do not stop with “#162 must assign” for routine work that the current canonical coordinator is already authorized to schedule.
-
-If canonical Work control-plane authority itself is absent or conflicting, remain read-only and report that exact blocker.
-
-### Subagent orchestration
-
-When the owner asks to divide work among Luna subagents, treat that as a request for the canonical coordinator to dispatch bounded census lanes under its existing rules:
-
-- keep one coordinator/integrator and no parallel control plane;
-- use **low** effort for mechanical inventory/readback/schema/lifecycle checks;
-- use **medium** effort for bounded deterministic overlap analysis, family routing and ordinary crosswalk batches;
-- use **high** effort for ambiguous source-gap investigations, difficult identity conflicts or multi-signal reconciliation;
-- use read-only subagents freely for path-disjoint analysis; mutating workers require exact branch/path custody from the canonical coordinator;
-- never let two writers own the same branch/path set;
-- aggregate subagent results before deciding the next gate;
-- continue productive path-disjoint work instead of waiting on unrelated CI when governance permits it.
-
-For authorized mutation use ordinary lifecycle:
-
-`AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ`.
-
-Before every API-native write, fresh-read the branch head. After final authoring write, freeze the exact returned SHA, verify the bounded full diff, and do not mutate that frozen head. A repair reopens AUTHORING and creates a successor exact head.
-
-Use governed Merge Queue only. Queue acceptance is non-terminal. Completion requires real `merge_group` aggregate `game-gate` success and protected `main` readback.
-
-Do not use direct merge, generic auto-merge, force/reset/rebase, no-op retrigger commits or protection weakening.
-
-## Progress reporting
-
-Keep owner-facing status concise and cumulative:
-
-- completed gate(s);
-- exact current gate;
-- measured counts/digests that materially changed;
-- blocker, if any;
-- exact next action.
-
-Do not call the entire programme complete when only one family/gate is complete.
-
-## Terminal behavior
-
-Continue autonomously through the current bounded gate and the next legal path-disjoint action while authority/capability and evidence permit it. When invoked with “sam koordynuj”, retain coordinator ownership of decomposition, worker effort selection, synthesis, lifecycle and integration rather than delegating the programme-control decision back to another alias.
-
-Stop only at a real boundary:
-
-- protected integration/qualification still running;
-- exact write/validation/integration capability unavailable;
-- shared path/custody conflict;
-- material architecture decision requiring owner/architect authority;
-- source fact genuinely cannot be resolved from available evidence.
-
-When blocked, preserve valid candidates/evidence and state the smallest concrete action that releases the programme.
+When blocked, preserve the valid candidate and state the smallest action that releases **product population**, not a generic request for more research.
