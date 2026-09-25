@@ -5,6 +5,7 @@
 
 use super::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use std::mem::size_of;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CarrierError {
@@ -26,6 +27,8 @@ pub(crate) enum CarrierError {
     PositionSnapshotMismatch,
     PositionRevisionExhausted,
     InvalidCreatureHealth,
+    InvalidCreatureTarget,
+    CreatureTargetMismatch,
     NotCreature,
     CreatureNotActionable,
     InvalidDamage,
@@ -157,6 +160,7 @@ impl CurrentOwnerExactActorCommit<'_> {
     pub(crate) fn commit_damage(
         &mut self,
         actor: ExactActorRef,
+        target: &[u8],
         occurrence: &[u8],
         binding: &[u8],
         damage: i64,
@@ -164,6 +168,7 @@ impl CurrentOwnerExactActorCommit<'_> {
         self.carrier.commit_creature_damage_inner(
             self.continuity,
             actor.0,
+            target,
             occurrence,
             binding,
             damage,
@@ -181,9 +186,9 @@ impl CurrentOwnerExactActorLookup<'_> {
         };
         match &self.carrier.slots[index] {
             Slot::Occupied { generation, .. } => *generation == actor.0.actor_local_generation.0,
-            Slot::CreatureOccupied { generation, health, .. } => {
-                *generation == actor.0.actor_local_generation.0 && *health > 0
-            }
+            Slot::CreatureOccupied {
+                generation, health, ..
+            } => *generation == actor.0.actor_local_generation.0 && *health > 0,
             Slot::VacantReusable { .. } | Slot::Exhausted { .. } => false,
         }
     }
@@ -243,6 +248,7 @@ enum Slot {
         generation: u64,
         actor: ActorState,
         position: Option<VersionedPosition>,
+        target_identity: Arc<[u8]>,
         health: i64,
         committed: Option<OwnerCommitRecord>,
     },
@@ -264,7 +270,10 @@ impl ChannelActorCarrier {
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
     ) -> CurrentOwnerExactActorCommit<'a> {
-        CurrentOwnerExactActorCommit { carrier: self, continuity }
+        CurrentOwnerExactActorCommit {
+            carrier: self,
+            continuity,
+        }
     }
 
     fn current_owner_exact_lookup<'a>(
@@ -320,23 +329,42 @@ impl ChannelActorCarrier {
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor: ActorState,
+        target_identity: &str,
         initial_health: i64,
     ) -> Result<ActorRef, CarrierError> {
         if initial_health <= 0 {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
-        if self.slots.iter().any(|slot| matches!(slot, Slot::CreatureOccupied { .. })) {
+        if self
+            .slots
+            .iter()
+            .any(|slot| matches!(slot, Slot::CreatureOccupied { .. }))
+        {
             return Err(CarrierError::CapacityExceeded);
         }
-        self.admit_inner(continuity, actor, Some(initial_health), false)
+        if target_identity.is_empty()
+            || target_identity.len() > MAX_OWNER_COMMIT_BINDING_BYTES
+            || !target_identity.bytes().all(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'.' | b'_' | b'-' | b'/')
+            })
+        {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        let target_identity = Arc::from(copy_bounded_binding(target_identity.as_bytes())?);
+        self.admit_inner(
+            continuity,
+            actor,
+            Some((initial_health, target_identity)),
+            false,
+        )
     }
 
     fn admit_inner(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor: ActorState,
-        initial_health: Option<i64>,
+        initial_health: Option<(i64, Arc<[u8]>)>,
         fail_after_selection: bool,
     ) -> Result<ActorRef, CarrierError> {
         // Current outer authority must be proven before slot selection or any
@@ -375,11 +403,12 @@ impl ChannelActorCarrier {
         if fail_after_selection {
             return Err(CarrierError::InjectedAdmissionFailure);
         }
-        self.slots[index] = if let Some(health) = initial_health {
+        self.slots[index] = if let Some((health, target_identity)) = initial_health {
             Slot::CreatureOccupied {
                 generation: next_generation,
                 actor,
                 position: None,
+                target_identity,
                 health,
                 committed: None,
             }
@@ -402,12 +431,14 @@ impl ChannelActorCarrier {
         match &self.slots[index] {
             Slot::Occupied {
                 generation, actor, ..
-            } | Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation, actor, ..
             } if *generation == actor_ref.actor_local_generation.0 => Ok(actor),
-            Slot::Occupied { .. } | Slot::CreatureOccupied { .. } | Slot::VacantReusable { .. } | Slot::Exhausted { .. } => {
-                Err(CarrierError::StaleActorGeneration)
-            }
+            Slot::Occupied { .. }
+            | Slot::CreatureOccupied { .. }
+            | Slot::VacantReusable { .. }
+            | Slot::Exhausted { .. } => Err(CarrierError::StaleActorGeneration),
         }
     }
 
@@ -420,16 +451,18 @@ impl ChannelActorCarrier {
         match &self.slots[index] {
             Slot::Occupied {
                 generation, actor, ..
-            } | Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation, actor, ..
             } if *generation == actor_ref.actor_local_generation.0 => {
                 let (generation, actor) = (*generation, *actor);
                 self.slots[index] = Slot::VacantReusable { generation };
                 Ok(actor)
             }
-            Slot::Occupied { .. } | Slot::CreatureOccupied { .. } | Slot::VacantReusable { .. } | Slot::Exhausted { .. } => {
-                Err(CarrierError::StaleActorGeneration)
-            }
+            Slot::Occupied { .. }
+            | Slot::CreatureOccupied { .. }
+            | Slot::VacantReusable { .. }
+            | Slot::Exhausted { .. } => Err(CarrierError::StaleActorGeneration),
         }
     }
 
@@ -442,6 +475,7 @@ impl ChannelActorCarrier {
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
+        target: &[u8],
         occurrence: &[u8],
         binding: &[u8],
         damage: i64,
@@ -462,11 +496,21 @@ impl ChannelActorCarrier {
         if damage <= 0 {
             return Err(CarrierError::InvalidDamage);
         }
-        let Slot::CreatureOccupied { generation, health, committed, .. } = &self.slots[index] else {
+        let Slot::CreatureOccupied {
+            generation,
+            target_identity,
+            health,
+            committed,
+            ..
+        } = &self.slots[index]
+        else {
             return Err(CarrierError::NotCreature);
         };
         if *generation != actor_ref.actor_local_generation.0 {
             return Err(CarrierError::StaleActorGeneration);
+        }
+        if target_identity.as_ref() != target {
+            return Err(CarrierError::CreatureTargetMismatch);
         }
         if let Some(prior) = committed {
             if prior.binding.split(|byte| *byte == 0).next() != Some(occurrence) {
@@ -475,19 +519,29 @@ impl ChannelActorCarrier {
             if prior.binding.as_ref() != binding || prior.damage != damage {
                 return Err(CarrierError::PlanConflict);
             }
-            return Ok(OwnerDamageResult { applied: false, ..prior.result });
+            return Ok(OwnerDamageResult {
+                applied: false,
+                ..prior.result
+            });
         }
         if *health == 0 {
             return Err(CarrierError::CreatureNotActionable);
         }
-        let next = health.checked_sub(damage).ok_or(CarrierError::DamageOverflow)?.max(0);
+        let next = health
+            .checked_sub(damage)
+            .ok_or(CarrierError::DamageOverflow)?
+            .max(0);
         let result = OwnerDamageResult {
             applied: true,
             health_before: *health,
             health_after: next,
         };
         let binding = copy_bounded_binding(binding)?;
-        let receipt = OwnerCommitRecord { binding, damage, result };
+        let receipt = OwnerCommitRecord {
+            binding,
+            damage,
+            result,
+        };
         if fail_before_write {
             return Err(CarrierError::InjectedCommitFailure);
         }
@@ -497,17 +551,31 @@ impl ChannelActorCarrier {
         if write_index != index {
             return Err(CarrierError::StaleActorGeneration);
         }
-        let Slot::CreatureOccupied { generation, actor, position, health, committed } = &self.slots[index] else {
+        let Slot::CreatureOccupied {
+            generation,
+            actor,
+            position,
+            target_identity,
+            health,
+            committed,
+        } = &self.slots[index]
+        else {
             return Err(CarrierError::StaleActorGeneration);
         };
-        if *generation != actor_ref.actor_local_generation.0 || *health != result.health_before || committed.is_some() {
+        if *generation != actor_ref.actor_local_generation.0
+            || target_identity.as_ref() != target
+            || *health != result.health_before
+            || committed.is_some()
+        {
             return Err(CarrierError::StaleActorGeneration);
         }
-        let (generation, actor, position) = (*generation, *actor, *position);
+        let (generation, actor, position, target_identity) =
+            (*generation, *actor, *position, Arc::clone(target_identity));
         self.slots[index] = Slot::CreatureOccupied {
             generation,
             actor,
             position,
+            target_identity,
             health: next,
             committed: Some(receipt),
         };
@@ -546,7 +614,8 @@ impl ChannelActorCarrier {
                 generation,
                 position: stored @ None,
                 ..
-            } | Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation,
                 position: stored @ None,
                 ..
@@ -565,7 +634,8 @@ impl ChannelActorCarrier {
                 generation,
                 position: Some(_),
                 ..
-            } | Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation,
                 position: Some(_),
                 ..
@@ -588,7 +658,8 @@ impl ChannelActorCarrier {
                 generation,
                 position: Some(version),
                 ..
-            } | Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation,
                 position: Some(version),
                 ..
@@ -598,13 +669,17 @@ impl ChannelActorCarrier {
                 {
                     return Err(CarrierError::PositionSnapshotMismatch);
                 }
-                Ok(PositionSnapshot { actor_ref, version: *version })
+                Ok(PositionSnapshot {
+                    actor_ref,
+                    version: *version,
+                })
             }
             Slot::Occupied {
                 generation,
                 position: None,
                 ..
-            } | Slot::CreatureOccupied {
+            }
+            | Slot::CreatureOccupied {
                 generation,
                 position: None,
                 ..
@@ -631,8 +706,16 @@ impl ChannelActorCarrier {
             return Err(CarrierError::PositionContextMismatch);
         }
         let (generation, current) = match &self.slots[index] {
-            Slot::Occupied { generation, position: Some(current), .. }
-            | Slot::CreatureOccupied { generation, position: Some(current), .. } => (*generation, *current),
+            Slot::Occupied {
+                generation,
+                position: Some(current),
+                ..
+            }
+            | Slot::CreatureOccupied {
+                generation,
+                position: Some(current),
+                ..
+            } => (*generation, *current),
             _ => return Err(CarrierError::PositionSnapshotMismatch),
         };
         if generation != expected.actor_ref.actor_local_generation.0
@@ -654,7 +737,9 @@ impl ChannelActorCarrier {
             revision,
         };
         match &mut self.slots[index] {
-            Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => *position = Some(version),
+            Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
+                *position = Some(version)
+            }
             _ => unreachable!("validated occupied slot"),
         }
         Ok(PositionSnapshot {
@@ -706,7 +791,9 @@ impl ChannelActorCarrier {
 
 fn copy_bounded_binding(bytes: &[u8]) -> Result<Box<[u8]>, CarrierError> {
     let mut owned = Vec::new();
-    owned.try_reserve_exact(bytes.len()).map_err(|_| CarrierError::CommitAllocationFailed)?;
+    owned
+        .try_reserve_exact(bytes.len())
+        .map_err(|_| CarrierError::CommitAllocationFailed)?;
     owned.extend_from_slice(bytes);
     Ok(owned.into_boxed_slice())
 }
