@@ -848,6 +848,7 @@ enum ReferenceTargetClaim {
     PresentationFootprint,
     CollisionFootprint,
     OrderedPlacementSequence,
+    StaticCollision,
 }
 
 // D1 requires per-target-sensitive evidence binding. The evidence manifest currently has no
@@ -857,6 +858,62 @@ enum ReferenceTargetClaim {
 // ENGINE_STATIC_CELL_CARRIER/v1 inputs have engineering provenance only and cannot populate
 // these Reference target claim bindings or authorize Reference activation.
 const REFERENCE_TARGET_CLAIM_CASE_BINDINGS: &[(&str, ReferenceTargetClaim)] = &[];
+
+/// A separately accepted target collision must bind its exact field value and address.
+/// No cell has been admitted. A future #483 case must populate both this binding and the
+/// target claim case binding after exact-field review; a general PROVEN case is insufficient.
+struct ReferenceStaticCollisionCaseBinding {
+    case_id: &'static str,
+    world_id_hex: &'static str,
+    coordinate_frame: &'static str,
+    map_revision: &'static str,
+    cell: LogicalCell,
+    collision: super::CollisionClass,
+}
+const REFERENCE_STATIC_COLLISION_CASE_BINDINGS: &[ReferenceStaticCollisionCaseBinding] = &[];
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceStaticCollisionClaim {
+    pub world_id: WorldId,
+    pub coordinate_frame: CoordinateFrameRef,
+    pub map_revision: MapRevisionRef,
+    pub cell: LogicalCell,
+    pub collision: super::CollisionClass,
+    pub evidence: EvidenceBindingRef,
+}
+
+impl ReferenceStaticCollisionClaim {
+    /// Admission check only; this does not stage or activate a Reference generation.
+    pub fn validate_reference_field(&self) -> Result<(), ContentError> {
+        let authority = ReferenceEvidenceAuthority::load()?;
+        self.evidence
+            .require_reference_promotion(&authority, ReferenceTargetClaim::StaticCollision)?;
+        let case_id = self
+            .evidence
+            .case_key()
+            .as_str()
+            .strip_prefix(REFERENCE_EVIDENCE_CASE_KEY_PREFIX)
+            .ok_or(ContentError::InvalidArtifact(
+                "reference static collision case key is invalid",
+            ))?;
+        let exact = REFERENCE_STATIC_COLLISION_CASE_BINDINGS
+            .iter()
+            .any(|binding| {
+                binding.case_id == case_id
+                    && binding.world_id_hex == super::production::encode_world_id(self.world_id)
+                    && binding.coordinate_frame == self.coordinate_frame.as_str()
+                    && binding.map_revision == self.map_revision.as_str()
+                    && binding.cell == self.cell
+                    && binding.collision == self.collision
+            });
+        if !exact {
+            return Err(ContentError::InvalidArtifact(
+                "reference static collision lacks exact admitted field binding",
+            ));
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct AcceptedReferenceEvidenceTarget {
@@ -2214,6 +2271,34 @@ mod corrective_tests {
                 "reference-playable evidence case domain does not match target-sensitive claim"
             ))
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn static_collision_without_exact_content_world_case_fails_closed() -> Result<(), ContentError>
+    {
+        let authority = ReferenceEvidenceAuthority::load()?;
+        let mut world = [1u8; 16];
+        world[6] = 0x71;
+        world[8] = 0x81;
+        let claim = ReferenceStaticCollisionClaim {
+            world_id: WorldId::decode(&world)
+                .map_err(|_| ContentError::InvalidArtifact("invalid test WorldId"))?,
+            coordinate_frame: CoordinateFrameRef::new("engine-frame")?,
+            map_revision: MapRevisionRef::new("engine-map")?,
+            cell: LogicalCell { x: 0, y: 0, z: 0 },
+            collision: crate::content::CollisionClass::Walkable,
+            evidence: EvidenceBindingRef::new(
+                authority.manifest_revision_atom()?,
+                ProductionKey::new(
+                    "oteryn:reference.case.ability_combat.light_healing.self_heal_semantics.v1",
+                )?,
+                EvidenceDisposition::Proven,
+            ),
+        };
+        assert!(claim.validate_reference_field().is_err());
+        assert!(REFERENCE_STATIC_COLLISION_CASE_BINDINGS.is_empty());
+        assert!(REFERENCE_TARGET_CLAIM_CASE_BINDINGS.is_empty());
         Ok(())
     }
 
