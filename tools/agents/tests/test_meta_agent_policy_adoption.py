@@ -374,10 +374,12 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("former `Oteryn: terra game coordinator` and `Oteryn: implementation coordinator` profiles are retired", readme)
 
         census = entries["OTV2_FULL_CONTENT_CENSUS_PROGRAMME"]
-        self.assertEqual(census["version"], "1.3")
+        self.assertEqual(census["version"], "1.4")
         self.assertEqual(census["status"], "reusable")
         self.assertIs(census["reusable"], True)
         self.assertIn("same OTV2_WORK_DELIVERY_COORDINATOR control-plane profile identity", census["scope"])
+        self.assertIn("Oteryn: full content population", census["scope"])
+        self.assertIn("population-first", census["scope"])
         self.assertIn("not a second coordinator", census["scope"])
 
         coordinator_prompt = (ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md").read_text(
@@ -385,26 +387,36 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         )
         self.assertIn("### Scoped dispatch aliases", coordinator_prompt)
         self.assertIn("OTV2_FULL_CONTENT_CENSUS_PROGRAMME", coordinator_prompt)
-        self.assertIn("do not bounce routine census scheduling back to #162", coordinator_prompt)
+        self.assertIn("Oteryn: full content population", coordinator_prompt)
+        self.assertIn("do not bounce routine content-population scheduling back to #162", coordinator_prompt)
 
         census_prompt = (ROOT / "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md").read_text(
             encoding="utf-8"
         )
-        self.assertIn("scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`", census_prompt)
-        self.assertIn("do not count `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` as a second active mutating control plane", census_prompt)
-        self.assertIn("Do not stop with “#162 must assign”", census_prompt)
-        self.assertIn("### Subagent orchestration", census_prompt)
-        self.assertIn("Luna subagents", census_prompt)
-        self.assertIn("### G4+ bulk source policy — wiki-first, live Global deferred", census_prompt)
-        self.assertIn("TibiaWiki BR is the primary bulk working source", census_prompt)
-        self.assertIn("authenticated in-game Global Tibia/Cyclopedia exploration is not part of the G4+ critical path", census_prompt)
-        self.assertIn("Do not use Global Tibia/Cyclopedia as the denominator for content completeness", census_prompt)
-        self.assertIn("future terminal verification layer", census_prompt)
-        self.assertIn("LIVE_GLOBAL_REFERENCE_VERIFICATION", census_prompt)
-        self.assertIn("#### Multi-source identity binding requirement", census_prompt)
-        self.assertIn("legacy/wiki/OTS/client numeric IDs are retained as **namespaced source identities", census_prompt)
-        self.assertIn("client appearance/sprite IDs normally bind to Presentation", census_prompt)
-        self.assertIn("ProjectV3", census_prompt)
+        for value in (
+            "Oteryn: full content population",
+            "Oteryn: full content census",
+            "scoped dispatch alias for the canonical `OTV2_WORK_DELIVERY_COORDINATOR`",
+            "Current programme mode: POPULATION_FIRST",
+            "No new census/crosswalk/revalidation-only slice by default",
+            "A G4 family batch with at least one eligible record must produce a real canonical product delta",
+            "Partial canonical records are valid",
+            "MISSING_CANONICAL_IDENTITY",
+            "definitions/reference.json",
+            "definitions/declarations.json",
+            "editor/author.json",
+            "provenance/sources.json",
+            "Definition -> Presentation -> Asset",
+            "select batch -> resolve/create identity -> write source binding",
+            "TibiaWiki BR is the primary bulk working source",
+            "Second-source corroboration is helpful, not a universal admission gate",
+            "Do not create a separate tagging framework",
+            "ProjectV3",
+            "Population scoreboard",
+        ):
+            self.assertIn(value, census_prompt)
+        self.assertIn('Do not stop with "#162 must assign"', census_prompt)
+        self.assertIn("## Subagent orchestration", census_prompt)
 
         identity_decision = (ROOT / "docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md").read_text(
             encoding="utf-8"
