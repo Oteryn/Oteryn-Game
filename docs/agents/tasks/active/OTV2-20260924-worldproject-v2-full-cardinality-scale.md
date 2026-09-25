@@ -7,38 +7,49 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: agent/otv2-worldproject-v2-full-cardinality-scale-r5
+branch: agent/otv2-worldproject-v2-scale-r7-sharded
 issue: 162
-pr: 869
+predecessor_pr: 869
 ```
 
-Allocation: R6, Issue #162 comment 5826848733 (bounded repair on the existing R5-owned paths). Branch: `agent/otv2-worldproject-v2-full-cardinality-scale-r5`.
+Allocation: R7, Issue #162 comment 5827206602. Admission protected main: `bf729de00a9f692a7fb3a4c3311ecb09be150eff`. The current protected main may be newer; the R7 branch retains its allocated ancestry and does not rebase/path-merge unrelated work. Predecessor PR #869 is integrated at the admission revision. Continue the assigned branch at its live head and preserve the R6 measurements below.
 
-Implementation lineage base: `c516182255d3ea1724e91671c8d2187eb622e3df` (authorized R5 base refresh, Issue #162 comment 5822887886). R6 is a single bounded successor to frozen R5 head `79306e0c11743681e0f0f395e824185bb5e9a783` under Issue #162 comment 5826848733; do not rebase onto path-disjoint protected-main movement #870. No R4 qualification is reused. It preserves the standalone tool's local SQLx/Tokio patches, fixes probe identifiers rejected by the production atom/key validator, and raises the per-document cumulative JSON string budget proportionally to the number of synthetic placements. The canonical validator remains unchanged. The supervised workflow accepts only a complete exact-cardinality success or a confirmed supervised timeout/VM/OOM-like resource outcome. Invalid JSON, unexpected exits, build/test errors, and unconfirmed probe failures remain `failed`; JSON, `/usr/bin/time -v`, stderr, and raw output are uploaded before a separate final gate fails the job. Status: implementation and repeatable measurement harness. The workflow result is evidence only and does not decide a production limit or storage format.
+## Scope and acceptance
 
-## Scope
+Harness-only deterministic sharded measurement. Keep the existing 2,000-placement smoke and the 24,502,036-placement monolithic full run/resource-limit classification. Add a sequential shard mode covering exactly 24,502,036 global placement identities. Every shard must use the existing real v2 path: ordinary harness draft construction, `CanonicalProjectDocuments::from_v2_draft` canonicalization/validation, snapshot creation, JSON syntax parse, schema-aware snapshot load, and staged role-file write.
 
-Measure the existing canonical World Project v2 writer and reader using exactly 24,502,036 synthetic `CandidateOnly` placements, one synthetic declarative WorldObject definition, one world, one map revision, and one coordinate frame. The harness uses the real `oteryn-game-server` project canonicalization, snapshot parse, and v2 validation APIs. It separately times draft construction, canonical serialization/validation, JSON syntax parsing, schema-aware project loading, and writing the canonical role files into a temporary staged directory.
+Acceptance:
 
-Only the explicit `--mode smoke` and `--mode full` modes are accepted. The probe accepts no file path, donor corpus, source artifact, or reference-world input. All generated records are labeled `SYNTHETIC_SCALE_STRESS_ONLY`; placements remain `CandidateOnly`. No source import, executable lowering, production world data, or game-runtime behavior is exercised.
+- fixed deterministic half-open ordinal ranges with no missing or duplicate identity, checked against each loaded placement key and exact total;
+- synthetic `CandidateOnly` placements, one definition/world/map revision/coordinate frame; no corpus, donor, source, or file-path inputs;
+- per-shard and aggregate canonical role bytes, total bytes, and phase timings; supervised maximum RSS for the sequential shard runner;
+- explicit limitation that sequential shard RSS is not monolithic full-world peak/edit amplification, and does not select a production shard size/layout;
+- no product code, schema, contracts, production placement limit, or ProjectV3 change;
+- exact-head hosted smoke/full/sharded runs and uploaded JSON/time/stderr/raw-output artifacts; independent review and governed integration remain coordinator-owned.
 
-## Measurement and resource boundary
+The shard size is a bounded measurement parameter only (currently 500,000 identities per shard), not a production-layout recommendation.
 
-The result reports bytes by canonical document role and in total, phase timings, and peak resident set size from the supervising `/usr/bin/time -v` process report in both completed and confirmed resource-limited full runs. The one-placement amplification value remains explicitly `ESTIMATE_NOT_GATE_COMPLETE`: it divides estimated whole-project rewrite bytes by an isolated serialized record difference and does not diff two full canonical snapshots or list changed files/bytes. It must not be treated as exact amplification or as a gate result. The run reports `completed` only if every requested placement is serialized and loaded. Only a supervised wall-clock timeout, signal-9 kill under the bounded VM ceiling, or allocator failure accompanied by explicit allocation/OOM evidence is `resource_limit`; every other unexpected exit or invalid result is `failed` with its exit and reason preserved. Full `completed` and `resource_limit` results require the `/usr/bin/time -v` peak RSS measurement. The full artifact is uploaded before a distinct final step fails the workflow for `failed`.
+## Measurement and decision boundaries
 
-Pull requests run the bounded 2,000-placement smoke test separately and also run the supervised 24,502,036-placement full test against `github.event.pull_request.head.sha`. Every explicit `workflow_dispatch` runs the same full test. It is capped at 6 GiB virtual memory and 75 minutes. Its result is an artifact, not a gate that changes the production schema.
+The result reports canonical bytes by role and total, build/canonical-validate/syntax-parse/schema-load/staged-write timings, and maximum supervised shard-runner RSS from `/usr/bin/time -v`. It reports completed only after all 24,502,036 requested identities have been built, canonicalized/validated, parsed, loaded, identity-checked, and staged. The sharded workflow fails closed on any missing/duplicate identity, invalid JSON, missing supervised RSS, incomplete range coverage, failed toolchain/build/process, or unexpected exit. Failure artifacts upload before the final gate.
 
-## Non-goals / decision fence
+The existing monolithic full run remains separately supervised at a 6 GiB virtual-memory ceiling and 75-minute wall-clock limit. It may report only completed exact cardinality, confirmed `resource_limit` with explicit supervisory evidence, or failed. Preserve the protected R6 `resource_limit` result as a truthful prior measurement; do not reinterpret it as product capacity failure or let shard success overwrite it.
 
-- Do not change project schema, evidence defaults, production placement limits, or chunking/storage strategy.
-- Do not import or inspect donor/source-world datasets.
-- Do not interpret a resource-limited harness run as proof that the production path fails; report the exact phase/ceiling and leave the decision to the owner.
-- A completed synthetic measurement is evidence about the measured implementation and runner only, not a production capacity guarantee.
+The shard result must state: `monolithic_full_world_peak_rss = NOT_MEASURED_BY_SHARDED_RUN`; full-world edit amplification was not measured because no canonical full-world snapshot diff was performed; and `production_layout_selected = false`. The harness is synthetic scale evidence only. Do not change validators or production behavior to make a measurement pass.
 
-## R5 diagnostic and R6 repair
+## Non-goals
 
-R5 exact-head workflow run `36065094697` recorded smoke `failed` (2,000 requested; exit 75 at `serialize_validate`: `project JSON string bytes exceed evidence limit`; peak RSS 1,674,924,032 bytes) and full `resource_limit` (explicit `try_reserve_exact` allocator failure before corpus construction; exit 75; `/usr/bin/time -v` peak RSS 3,543,040 bytes). R5 smoke artifact `10835264665` (SHA-256 `52f854447ccc1c938231af3c0c3268be1ac6f9d950682c587c6f523a11cc7faa`); full artifact `10836325885` (SHA-256 `5e8f28d17b25dd2d453431c4e45988c632645c93ea56afe326155d2d82dd7eb0`). The smoke failure came from the harness setting `max_string_bytes` to a fixed 1,024 even though the canonical parser applies it as a cumulative per-document string budget. R6 scales that harness budget by 512 bytes per placement plus a fixed 4 KiB allowance; smoke must still validate all 2,000 placements. Production validation and the full-cardinality target are unchanged.
+- No project schema, evidence-default, production-limit, chunking/storage, or architecture decision.
+- No donor/source-world data, production population, executable lowering, or runtime behavior.
+- No claim of monolithic full-world memory or edit amplification from sequential shards.
+- No recommendation or selection of a production sharding layout.
+
+## Protected R6 predecessor evidence
+
+PR #869 integrated the R6 bounded harness repair at `bf729de00a9f692a7fb3a4c3311ecb09be150eff`. Exact-head run `36095594156` passed smoke and full job gates. Smoke artifact `10847067292` (SHA-256 `c3ebb7dd94a8176638fa3983121a17d8f3051a8ed6191596657cf978b3c54c53`) completed and loaded all 2,000 placements. Full artifact `10847820851` (SHA-256 `ec447a384bb50c9a5d94ce4410c7a345bd2e115ea6b5d836090e02d33715e154`) honestly reported `resource_limit`: `try_reserve_exact` failed during build before the 24,502,036-placement corpus was constructed, exit 75, with supervised peak RSS 3,534,848 bytes. This is bounded-run evidence, not a product-capacity conclusion. R7 preserves both modes and does not reuse R6 exact-head qualification for R7.
+
+Earlier R5/R6 diagnostics remain in the evidence record. R5 smoke exposed the harness's fixed cumulative string budget; R6 repaired only the harness budget. Production canonical validation was not changed.
 
 ## Validation handoff
 
-Every pull request runs separate smoke and supervised full-cardinality jobs on the exact PR head; manual dispatch runs the full job too. Retain the workflow run identity and JSON/time/stderr/raw-output artifacts. Smoke must complete all 2,000 placements. Full may complete all 24,502,036 placements or report a confirmed resource limit; unexpected failures remain failing checks after artifact upload. Full-snapshot changed-file/changed-byte amplification remains not gate-complete and must be reported as an estimate, not upgraded to a measured result without a real canonical snapshot diff.
+Record the R7 exact-head workflow run identity and hosted artifacts for smoke (2,000), monolithic full (24,502,036; completed or proven resource-limit), and sharded full coverage (24,502,036 completed). Preserve the explicit limitations in the evidence artifact. This task record does not authorize ready-for-review, enqueue, merge, or any protected integration action.
