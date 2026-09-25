@@ -107,6 +107,13 @@ jobs:
           import pathlib
           manifest = json.loads((pathlib.Path(os.environ["RUNNER_TEMP"]) / "g3-unknown-closure" / "manifest.json").read_text())
           counts = manifest["counts"]
+          revision = manifest["source_refresh"]
+          if revision["pinned_baseline_absent_pages"] != 1406:
+              raise SystemExit("pinned revision-baseline partition mismatch")
+          if revision["current_source_without_pinned_baseline_pages"] != counts["source_revision_status"].get("NO_PINNED_BASELINE", 0):
+              raise SystemExit("current observations without baselines were not separated")
+          if revision["revision_drift_pages"] > revision["attempted_pages"] - revision["current_source_without_pinned_baseline_pages"]:
+              raise SystemExit("revision drift count includes rows without a pinned baseline")
           if counts["input_unknown_pages"] != 5512 or counts["output_pages"] != 5512:
               raise SystemExit("UNKNOWN closure page partition mismatch")
           if counts["dropped_rows"] != 0 or counts["duplicate_page_ids"] is not False:
