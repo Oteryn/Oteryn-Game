@@ -2,7 +2,7 @@
 task_id: OTV2-20260925-full-game-tree-materialization-v1
 title: Full game tree materialization v1
 mode: MIGRATE
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-game-tree-materialization-v1-20260925
@@ -19,6 +19,7 @@ owned_paths:
   - target-tree leaf index.json files under content/**
   - target-tree leaf index.json files under rulesets/**
   - target-tree leaf index.json files under imports/**
+  - apps/game-server/tests/content_world_project_repository.rs
 ---
 
 # Full game tree materialization v1
@@ -28,11 +29,12 @@ as a Git-visible authoring surface. Existing populated family indices are preser
 New empty-family markers explicitly say READY_UNPOPULATED and never claim content exists.
 
 Acceptance:
-- every target directory has an index.json;
+- every non-world target directory is materialized now unless already populated;
+- the 10 `content/world/**` successor leaves remain explicitly deferred while the legacy canonical package owns that root;
 - existing populated Item/Mount data is not replaced;
-- legacy content/world data is not deleted;
+- legacy content/world data is not deleted or semantically relaxed;
 - rulesets/** becomes physically visible;
-- validator reports zero unmaterialized directories.
+- the repository WorldProject capture still passes with bounded scan limits after the new sibling tree is present.
 
 ## Candidate readback
 
@@ -57,3 +59,7 @@ Minimal repair:
 - defer those 10 world paths until the separately qualified legacy-root transition.
 
 This is an explicit deferred compatibility boundary, not a claim that the world tree is populated.
+
+## CI repair generation
+
+Exact head `d922261cb1092b24c51a9bf3dfb2d9b9126d7fe7` failed `Merge gate / Rust Linux workspace` because the repository-only WorldProject fixture reached `129 > 128` total scanned directory entries after adding legitimate sibling directories under `content/`. Issue #162 comment 5837429915 returns this task to AUTHORING and extends ownership only to `apps/game-server/tests/content_world_project_repository.rs`. The repair must not change the filesystem implementation, runtime semantics, per-scan limit, project evidence limits, package digests, or legacy `content/world/**` bytes.
