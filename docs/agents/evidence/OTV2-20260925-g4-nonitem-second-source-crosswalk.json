@@ -61,6 +61,15 @@
     "second_source": "TibiaWiki/Fandom MediaWiki API only; separate maintained source candidate; fact-level independence remains UNKNOWN",
     "fandom_api": "https://tibia.fandom.com/api.php",
     "family_enumeration": "embeddedin each exact family infobox with MediaWiki continuation",
+    "global_page_budget": {
+      "limit": 20000,
+      "scope": "cumulative enumerated page entries across all seven Fandom families",
+      "enforcement": "incremental before each request, request eilimit capped to min(500, remaining), fail before a continuation request at zero",
+      "fandom_network_request_limit": 20000,
+      "fandom_network_request_scope": "all five Fandom preflight requests plus every family enumeration and revision request",
+      "per_family_limit": 10000,
+      "revision_capture": "only already-budgeted page IDs, batches of at most 10"
+    },
     "revision_provenance": ["page_id", "title", "revision_id", "revision_timestamp", "revision_sha1_base36", "captured_utf8_sha256", "sha1_bytes_consistency_verified"],
     "license_preflight": ["https://tibia.fandom.com/wiki/TibiaWiki:About", "https://www.fandom.com/licensing"],
     "license_verification": "bounded terms bodies must explicitly include CC BY-SA and attribution markers on both project and site licensing pages; HTTP 200 alone is insufficient",
@@ -111,7 +120,7 @@
     "fallback": "if hosted API or terms is blocked, emit SOURCE_UNAVAILABLE with all family statuses UNKNOWN and pass evidence-only gate"
   },
   "validation": {
-    "local_synthetic_self_test": "PASS_LOCAL_REQUALIFICATION_PENDING_CONFIRMATION",
+    "local_synthetic_self_test": "PENDING_GLOBAL_BUDGET_REQUALIFICATION",
     "hosted_source_capture": "PENDING_NEW_HEAD",
     "hosted_artifact_sha256": null,
     "exact_head_ci": "PENDING_NEW_HEAD",
