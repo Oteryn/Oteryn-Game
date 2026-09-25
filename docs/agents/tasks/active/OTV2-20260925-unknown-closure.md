@@ -3,18 +3,18 @@
 ~~~yaml
 task_id: OTV2-20260925-unknown-closure
 title: Deterministic single-wave disposition of G3 UNKNOWN pages
-mode: IMPLEMENTATION
+mode: IMPLEMENT
 status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-g3-unknown-closure-wave
 issue: 162
-pr: null
+pr: 876
 base_sha: 1680eb5dc6145aa3e271ac8665f33a50ed837b76
-head_sha: null
+head_sha: c877eb7bb2e1102c335ce4dfd8e4addc3fa3abe7
 final_head_sha: null
 owner: delegated Luna writer
-allocation_comment_id: 5826864843
+allocation_comment_id: 5827058358
 owned_paths:
   - tools/content-census/unknown_closure.py
   - tools/content-census/unknown_closure_self_test.py
