@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-content-item-g4-165-population-20260925
-pr: null
+pr: 895
 base_sha: 14b48406ade8c6984fd725175990d8b524ba020f
 head_sha: null
 final_head_sha: null
