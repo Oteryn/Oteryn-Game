@@ -2,14 +2,20 @@
 """Fail-closed wrapper for the Game repository-policy validator."""
 from __future__ import annotations
 
+import ast
 import importlib.util
 import re
+import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
+PR_METADATA_WORKFLOWS = (
+    (ROOT / ".github/workflows/agent-governance.yml", "Verify pull request target and metadata"),
+    (ROOT / ".github/workflows/merge-gate.yml", "Verify pull request metadata"),
+)
 
 
 def load_module(path: Path, name: str):
@@ -77,6 +83,245 @@ def validate_protected_base_audit() -> list[str]:
     return errors
 
 
+def _extract_step_python(text: str, step_name: str) -> str:
+    step_marker = f"      - name: {step_name}\n"
+    step_start = text.find(step_marker)
+    if step_start < 0:
+        raise ValueError(f"missing workflow step: {step_name}")
+    heredoc = "          python - <<'PY'\n"
+    source_start = text.find(heredoc, step_start)
+    if source_start < 0:
+        raise ValueError(f"missing Python heredoc in workflow step: {step_name}")
+    source_start += len(heredoc)
+    source_end = text.find("\n          PY\n", source_start)
+    if source_end < 0:
+        raise ValueError(f"unterminated Python heredoc in workflow step: {step_name}")
+    return textwrap.dedent(text[source_start:source_end])
+
+
+def _append_targets(node: ast.AST) -> set[str]:
+    targets: set[str] = set()
+    for child in ast.walk(node):
+        if (
+            isinstance(child, ast.Call)
+            and isinstance(child.func, ast.Attribute)
+            and child.func.attr == "append"
+            and isinstance(child.func.value, ast.Name)
+        ):
+            targets.add(child.func.value.id)
+    return targets
+
+
+def _target_mentions_name(target: ast.AST, name: str) -> bool:
+    return any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(target))
+
+
+def _channel_writes(module: ast.Module, name: str) -> list[ast.AST]:
+    writes: list[ast.AST] = []
+    for node in ast.walk(module):
+        if isinstance(node, ast.AnnAssign) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, ast.Assign) and any(_target_mentions_name(target, name) for target in node.targets):
+            writes.append(node)
+        elif isinstance(node, ast.AugAssign) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, ast.NamedExpr) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, (ast.For, ast.AsyncFor)) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, ast.With):
+            if any(item.optional_vars is not None and _target_mentions_name(item.optional_vars, name) for item in node.items):
+                writes.append(node)
+        elif isinstance(node, ast.ExceptHandler) and node.name == name:
+            writes.append(node)
+        elif isinstance(node, ast.Delete) and any(
+            _target_mentions_name(target, name) for target in node.targets
+        ):
+            writes.append(node)
+    return writes
+
+
+def _is_independent_empty_list_initializer(node: ast.AST, name: str) -> bool:
+    if isinstance(node, ast.AnnAssign):
+        return (
+            isinstance(node.target, ast.Name)
+            and node.target.id == name
+            and isinstance(node.value, ast.List)
+            and not node.value.elts
+        )
+    if isinstance(node, ast.Assign):
+        return (
+            len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == name
+            and isinstance(node.value, ast.List)
+            and not node.value.elts
+        )
+    return False
+
+
+def _channel_mutating_methods(module: ast.Module, name: str) -> set[str]:
+    methods: set[str] = set()
+    for node in ast.walk(module):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == name
+            and node.func.attr != "append"
+        ):
+            methods.add(node.func.attr)
+    return methods
+
+
+def _channel_aliases(module: ast.Module, name: str) -> set[str]:
+    aliases: set[str] = set()
+    for node in ast.walk(module):
+        value = None
+        targets: list[ast.AST] = []
+        if isinstance(node, ast.Assign):
+            value = node.value
+            targets = list(node.targets)
+        elif isinstance(node, ast.AnnAssign):
+            value = node.value
+            targets = [node.target]
+        elif isinstance(node, ast.NamedExpr):
+            value = node.value
+            targets = [node.target]
+        if value is None or not any(
+            isinstance(child, ast.Name) and child.id == name for child in ast.walk(value)
+        ):
+            continue
+        for target in targets:
+            for child in ast.walk(target):
+                if isinstance(child, ast.Name) and child.id != name:
+                    aliases.add(child.id)
+    return aliases
+
+
+def _is_system_exit_raise(node: ast.AST, code: int) -> bool:
+    return (
+        isinstance(node, ast.Raise)
+        and isinstance(node.exc, ast.Call)
+        and isinstance(node.exc.func, ast.Name)
+        and node.exc.func.id == "SystemExit"
+        and len(node.exc.args) == 1
+        and isinstance(node.exc.args[0], ast.Constant)
+        and node.exc.args[0].value == code
+    )
+
+
+def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
+    errors: list[str] = []
+    try:
+        source = _extract_step_python(text, step_name)
+        module = ast.parse(source)
+    except (SyntaxError, ValueError) as exc:
+        return [f"{label} metadata validator is not parseable: {exc}"]
+
+    required_identity_tests = (
+        "state != 'open'",
+        "head_sha != expected_head",
+        "head_repository != repository",
+        "base_ref != 'main'",
+    )
+    top_level_ifs = [stmt for stmt in module.body if isinstance(stmt, ast.If)]
+    tests = [(ast.unparse(stmt.test), stmt) for stmt in top_level_ifs]
+    for required in required_identity_tests:
+        matches = [stmt for rendered, stmt in tests if rendered == required]
+        if len(matches) != 1 or "errors" not in _append_targets(matches[0]):
+            errors.append(f"{label} must hard-fail identity predicate: {required}")
+
+    for channel in ("errors", "warnings"):
+        writes = _channel_writes(module, channel)
+        if len(writes) != 1 or not _is_independent_empty_list_initializer(writes[0], channel):
+            errors.append(
+                f"{label} {channel} channel must have exactly one independent empty-list initializer"
+            )
+        methods = _channel_mutating_methods(module, channel)
+        if methods:
+            errors.append(
+                f"{label} {channel} channel uses forbidden mutating methods: {sorted(methods)!r}"
+            )
+        aliases = _channel_aliases(module, channel)
+        if aliases:
+            errors.append(
+                f"{label} {channel} channel must not be aliased: {sorted(aliases)!r}"
+            )
+
+    warnings_index = next(
+        (
+            index
+            for index, stmt in enumerate(module.body)
+            if isinstance(stmt, ast.AnnAssign)
+            and isinstance(stmt.target, ast.Name)
+            and stmt.target.id == "warnings"
+        ),
+        None,
+    )
+    final_error_guard: ast.If | None = None
+    if warnings_index is None:
+        errors.append(f"{label} missing advisory warnings boundary")
+    else:
+        for stmt in module.body[warnings_index + 1 :]:
+            if isinstance(stmt, ast.If) and ast.unparse(stmt.test) == "errors":
+                final_error_guard = stmt
+                break
+            if "errors" in _append_targets(stmt):
+                errors.append(
+                    f"{label} presentation section must not append blocking errors after warnings boundary"
+                )
+                break
+
+    if final_error_guard is None:
+        errors.append(f"{label} missing final blocking error guard")
+    else:
+        direct_raises = [stmt for stmt in final_error_guard.body if isinstance(stmt, ast.Raise)]
+        if (
+            not final_error_guard.body
+            or not _is_system_exit_raise(final_error_guard.body[-1], 1)
+            or len(direct_raises) != 1
+        ):
+            errors.append(
+                f"{label} final blocking error guard must terminate only with final SystemExit(1)"
+            )
+
+    for rendered, stmt in tests:
+        names = {node.id for node in ast.walk(stmt.test) if isinstance(node, ast.Name)}
+        if names.intersection({"title", "body", "pattern", "headings", "validation_word"}):
+            channels = _append_targets(stmt)
+            if "errors" in channels:
+                errors.append(
+                    f"{label} presentation predicate must not append blocking errors: {rendered}"
+                )
+
+    required_advisory_markers = (
+        "warnings.append('PR title should be at most 72 characters')",
+        "warnings.append('PR title should follow type(scope): imperative summary')",
+        "warnings.append('PR body should include a Summary section')",
+        "warnings.append('PR body should include a Scope section')",
+        "warnings.append('PR body should include a validation section')",
+        "re.compile(r'(?<![a-z0-9])validation(?![a-z0-9])')",
+        "::warning title=PR metadata guidance::",
+    )
+    for marker in required_advisory_markers:
+        if marker not in source:
+            errors.append(f"{label} missing advisory metadata behavior: {marker}")
+    return errors
+
+
+def validate_pr_metadata_advisory_contract() -> list[str]:
+    errors: list[str] = []
+    for path, step_name in PR_METADATA_WORKFLOWS:
+        if not path.is_file():
+            errors.append(f"missing PR metadata workflow: {path.relative_to(ROOT)}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        errors.extend(
+            validate_pr_metadata_workflow_text(text, str(path.relative_to(ROOT)), step_name)
+        )
+    return errors
+
 def validate_pr_gate_contract() -> list[str]:
     module = load_module(PR_GATE_CONTRACT_PATH, "validate_pr_gate_pg_sim")
     return module.validate()
@@ -84,6 +329,7 @@ def validate_pr_gate_contract() -> list[str]:
 
 def main() -> int:
     errors = validate_protected_base_audit()
+    errors.extend(validate_pr_metadata_advisory_contract())
     errors.extend(validate_pr_gate_contract())
     if errors:
         print("Repository policy validation failed:")
