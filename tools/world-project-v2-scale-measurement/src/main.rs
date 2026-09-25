@@ -57,7 +57,7 @@ fn limits(count: usize) -> ProjectEvidenceLimits {
         max_total_bytes: 14 * 1024 * 1024 * 1024,
         max_json_depth: 32,
         max_decoded_fields: count.saturating_mul(32).saturating_add(4_096),
-        max_string_bytes: 1_024,
+        max_string_bytes: count.saturating_mul(512).saturating_add(4_096),
         max_locator_bytes: 256,
         max_locator_segments: 12,
         max_reference_records: count_limit,

@@ -9,12 +9,12 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-worldproject-v2-full-cardinality-scale-r5
 issue: 162
-pr: null
+pr: 869
 ```
 
-Allocation: R5, Issue #162 comment 5822735002. Branch: `agent/otv2-worldproject-v2-full-cardinality-scale-r5`.
+Allocation: R6, Issue #162 comment 5826848733 (bounded repair on the existing R5-owned paths). Branch: `agent/otv2-worldproject-v2-full-cardinality-scale-r5`.
 
-Implementation base: `c516182255d3ea1724e91671c8d2187eb622e3df` (base refresh authorized by Issue #162 comment 5822887886). This R5 replacement supersedes unqualified R4 head `ee43abd5505c3e4117f9af4f651759d8616479ad`; no R4 qualification is reused. It preserves the standalone tool's local SQLx/Tokio patches and fixes probe identifiers rejected by the production atom/key validator. The supervised workflow accepts only a complete exact-cardinality success or a confirmed supervised timeout/VM/OOM-like resource outcome. Invalid JSON, unexpected exits, build/test errors, and unconfirmed probe failures remain `failed`; JSON, `/usr/bin/time -v`, stderr, and raw output are uploaded before a separate final gate fails the job. Status: implementation and repeatable measurement harness. The workflow result is evidence only and does not decide a production limit or storage format.
+Implementation lineage base: `c516182255d3ea1724e91671c8d2187eb622e3df` (authorized R5 base refresh, Issue #162 comment 5822887886). R6 is a single bounded successor to frozen R5 head `79306e0c11743681e0f0f395e824185bb5e9a783` under Issue #162 comment 5826848733; do not rebase onto path-disjoint protected-main movement #870. No R4 qualification is reused. It preserves the standalone tool's local SQLx/Tokio patches, fixes probe identifiers rejected by the production atom/key validator, and raises the per-document cumulative JSON string budget proportionally to the number of synthetic placements. The canonical validator remains unchanged. The supervised workflow accepts only a complete exact-cardinality success or a confirmed supervised timeout/VM/OOM-like resource outcome. Invalid JSON, unexpected exits, build/test errors, and unconfirmed probe failures remain `failed`; JSON, `/usr/bin/time -v`, stderr, and raw output are uploaded before a separate final gate fails the job. Status: implementation and repeatable measurement harness. The workflow result is evidence only and does not decide a production limit or storage format.
 
 ## Scope
 
@@ -34,6 +34,10 @@ Pull requests run the bounded 2,000-placement smoke test separately and also run
 - Do not import or inspect donor/source-world datasets.
 - Do not interpret a resource-limited harness run as proof that the production path fails; report the exact phase/ceiling and leave the decision to the owner.
 - A completed synthetic measurement is evidence about the measured implementation and runner only, not a production capacity guarantee.
+
+## R5 diagnostic and R6 repair
+
+R5 exact-head workflow run `36065094697` recorded smoke `failed` (2,000 requested; exit 75 at `serialize_validate`: `project JSON string bytes exceed evidence limit`; peak RSS 1,674,924,032 bytes) and full `resource_limit` (explicit `try_reserve_exact` allocator failure before corpus construction; exit 75; `/usr/bin/time -v` peak RSS 3,543,040 bytes). R5 smoke artifact `10835264665` (SHA-256 `52f854447ccc1c938231af3c0c3268be1ac6f9d950682c587c6f523a11cc7faa`); full artifact `10836325885` (SHA-256 `5e8f28d17b25dd2d453431c4e45988c632645c93ea56afe326155d2d82dd7eb0`). The smoke failure came from the harness setting `max_string_bytes` to a fixed 1,024 even though the canonical parser applies it as a cumulative per-document string budget. R6 scales that harness budget by 512 bytes per placement plus a fixed 4 KiB allowance; smoke must still validate all 2,000 placements. Production validation and the full-cardinality target are unchanged.
 
 ## Validation handoff
 
