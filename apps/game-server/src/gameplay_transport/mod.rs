@@ -568,9 +568,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ) {
                         ReconciliationDisposition::Committed
                     } else {
-                        ReconciliationDisposition::DefinitelyNotCurrent(
-                            AdmissionRefusal::Rejected,
-                        )
+                        ReconciliationDisposition::DefinitelyNotCurrent(AdmissionRefusal::Rejected)
                     };
                 }
                 Ok(FreshReconciliation::Absent) => {
