@@ -11,7 +11,10 @@ mod protocol;
 mod runtime_actor_carrier;
 #[allow(unused_imports)]
 // Crate-visible seam awaits separately allocated production composition.
-pub(crate) use runtime_actor_carrier::{CurrentOwnerExactActorLookup, ExactActorRef};
+pub(crate) use runtime_actor_carrier::{
+    CarrierError, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, ExactActorRef,
+    OwnerDamageResult,
+};
 #[cfg(test)]
 #[allow(dead_code)]
 mod exact_actor_test_ability {
