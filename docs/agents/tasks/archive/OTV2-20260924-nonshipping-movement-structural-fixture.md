@@ -21,7 +21,7 @@ execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - apps/game-server/src/foundation/movement_static_kernel_structural_tests.rs
-  - docs/agents/tasks/archive/OTV2-20260924-nonshipping-movement-structural-fixture.md
+  - docs/agents/tasks/active/OTV2-20260924-nonshipping-movement-structural-fixture.md
   - docs/agents/evidence/OTV2-20260924-nonshipping-movement-structural-fixture.md
 public_contracts: []
 depends_on: []
