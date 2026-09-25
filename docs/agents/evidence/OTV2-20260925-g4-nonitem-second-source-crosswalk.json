@@ -15,7 +15,7 @@
   "task_packet": {
     "title": "G4 Non-Item second-source crosswalk",
     "mode": "IMPLEMENT",
-    "status": "authoring",
+    "status": "implementing",
     "repository": "Oteryn/Oteryn-Game",
     "base": "main",
     "branch": "agent/otv2-g4-nonitem-second-source-crosswalk",
