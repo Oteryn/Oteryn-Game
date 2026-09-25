@@ -90,6 +90,13 @@ jobs:
           expected = {"Creature":2149,"NPC":1253,"Achievement":569,"Quest":272,"Ability":171,"Outfit":134,"Mount":252}
           assert manifest["counts"]["source_rows"] == 4800
           assert manifest["counts"]["family_rows"] == expected
+          page_budget = manifest["fandom_page_budget"]
+          assert page_budget["limit"] == 20000
+          assert 0 <= page_budget["enumerated_page_entries"] <= page_budget["limit"]
+          assert page_budget["enforced_incrementally"] is True
+          assert page_budget["fandom_network_request_limit"] == 20000
+          assert 0 <= page_budget["fandom_network_requests"] <= page_budget["fandom_network_request_limit"]
+          assert page_budget["request_budget_enforced_before_each_request"] is True
           assert set(artifact["families"]) == set(expected)
           rows = [row for family_rows in artifact["families"].values() for row in family_rows]
           assert len(rows) == len({row["source_tuple"]["external_id"] for row in rows}) == 4800
