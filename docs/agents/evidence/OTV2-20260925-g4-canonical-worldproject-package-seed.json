@@ -1,0 +1,89 @@
+{
+  "schema": "OTERYN_G4_CANONICAL_WORLDPROJECT_PACKAGE_SEED_EVIDENCE/v1",
+  "status": "QUALIFYING",
+  "task_packet": {
+    "task_id": "OTV2-20260925-g4-canonical-worldproject-package-seed",
+    "issue": 162,
+    "issue_comment": 5826953735,
+    "pull_request": 874,
+    "repository": "Oteryn/Oteryn-Game",
+    "branch": "agent/otv2-g4-canonical-worldproject-package-seed",
+    "admission_main": "1680eb5dc6145aa3e271ac8665f33a50ed837b76",
+    "candidate_parent": "baac30827b242fdbcca96ced56e5c28c4af01a67"
+  },
+  "allocated_paths": [
+    "content/world/project.json",
+    "content/world/manifest.json",
+    "content/world/content.lock.json",
+    "content/world/definitions/reference.json",
+    "content/world/definitions/declarations.json",
+    "content/world/worlds/world.json",
+    "content/world/presentations/bindings.json",
+    "content/world/assets/catalog.json",
+    "content/world/provenance/imports.json",
+    "content/world/provenance/sources.json",
+    "content/world/editor/author.json",
+    "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "apps/game-server/tests/content_world_project_repository.rs",
+    ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+    "docs/agents/tasks/active/OTV2-20260925-g4-canonical-worldproject-package-seed.md",
+    "docs/agents/evidence/OTV2-20260925-g4-canonical-worldproject-package-seed.json"
+  ],
+  "canonical_writer": {
+    "api": "CanonicalProjectDocuments::from_v2_draft",
+    "generator": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "rust": "1.94.0",
+    "document_count": 11,
+    "tree_sha256": "eafdbb03dfc9bdbfe3570b4e31f0fa5a84d1e5a81a83ea6485f7e20fed19043c",
+    "two_pass_byte_equality": "PENDING_HOSTED_EXACT_HEAD"
+  },
+  "population": {
+    "family": "Item",
+    "canonical_definitions": 38157,
+    "protected_import_candidates": 38157,
+    "protected_reimport_states": 38157,
+    "definition_revision": "definition-r1",
+    "protected_allocation_sha256": "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966",
+    "preexisting_protected_semantic_items": 23,
+    "preexisting_protected_semantic_fields": 69,
+    "wiki_derived_promotions": 0,
+    "new_g4_source_identity_bindings": 0
+  },
+  "documents": [
+    {"locator":"assets/catalog.json","bytes":56,"sha256":"fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"},
+    {"locator":"content.lock.json","bytes":400,"sha256":"b03a1d70f3f37edbe45bf69b97f514cacf54e361a95e413d8224410cd1fe58db"},
+    {"locator":"definitions/declarations.json","bytes":63,"sha256":"b9e6f5eaae263f0575e848fd5fd6a368d04e3d2d54b1d87042787abdf8fde278"},
+    {"locator":"definitions/reference.json","bytes":7309278,"sha256":"614ce98b2fd13e173772540702b5b05f7cd3ffc4cd2ab91d695ca7fa3470adaa"},
+    {"locator":"editor/author.json","bytes":77,"sha256":"91836a3e71fc6b6ad0918deb05e4b5faeeeffc6da421e4bd0ee7e40a2aaeffe5"},
+    {"locator":"manifest.json","bytes":1932,"sha256":"639e9542f285e82cfe15486c6858a2a56b14b2536316f21a18bb512babb0259d"},
+    {"locator":"presentations/bindings.json","bytes":73,"sha256":"b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"},
+    {"locator":"project.json","bytes":402,"sha256":"d866e2f2c10af713bac4de3ce0fac0ab927969fca715be5453a149649dbacbb3"},
+    {"locator":"provenance/imports.json","bytes":719,"sha256":"9071e9d696bbeaa624ed0d13cc4bcddd0f972771dc8063f7aea0032ca1b7b7f3"},
+    {"locator":"provenance/sources.json","bytes":315,"sha256":"0713724dbbaa6219018773a7a9e2265d24e307214d469fb2587df8bc0ff48bd9"},
+    {"locator":"worlds/world.json","bytes":72,"sha256":"0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"}
+  ],
+  "identity_and_layer_policy": {
+    "canonical_identity_from_legacy_id": false,
+    "wiki_source_records": 0,
+    "source_identity_bindings": 0,
+    "presentation_bindings": 0,
+    "assets": 0,
+    "runtime_or_wire_ids": 0,
+    "runtime_activation_consumer_added": false
+  },
+  "validation": {
+    "local_rust_1_94_canonical_materialization_twice": "NOT_RUN_TOOLCHAIN_UNAVAILABLE",
+    "local_exact_inventory_no_symlinks": "PASS",
+    "local_tree_and_document_digests": "PASS",
+    "local_focused_repository_test": "NOT_RUN_TOOLCHAIN_UNAVAILABLE",
+    "local_focused_worldproject_suites": "NOT_RUN_TOOLCHAIN_UNAVAILABLE",
+    "local_fmt_and_clippy": "NOT_RUN_TOOLCHAIN_UNAVAILABLE",
+    "hosted_exact_head": "PENDING_FINAL_CANDIDATE"
+  },
+  "non_claims": [
+    "NO_WIKI_BINDING_OR_WIKI_SEMANTIC_PROMOTION",
+    "NO_PRESENTATION_ASSET_RUNTIME_OR_WIRE_ID_POPULATION",
+    "NO_RUNTIME_ACTIVATION",
+    "NO_PRODUCTION_AUTHORITY"
+  ]
+}
