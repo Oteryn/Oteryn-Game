@@ -43,6 +43,11 @@ mod reference_artifact;
 mod reference_playable;
 #[cfg(test)]
 pub(crate) mod reference_static_cell;
+#[allow(
+    dead_code,
+    reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
+)]
+pub(crate) mod static_cell_engine;
 
 pub use activation::*;
 #[cfg(test)]
