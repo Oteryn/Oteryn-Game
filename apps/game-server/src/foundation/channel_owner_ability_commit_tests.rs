@@ -4,7 +4,8 @@ use super::super::exact_actor_test_ability::exact_actor_resolution::{
     ExactActorProposal, ExactActorResolutionError, resolve_exact_actor,
 };
 use super::super::exact_actor_test_ability::{
-    AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
+    AbilityIntent, AbilityOccurrence, CalculationStage, CommitGroup, Effect, EffectPlan,
+    ProposalSource, RevisionSet,
 };
 use super::*;
 
@@ -77,10 +78,19 @@ fn resolve(
     .expect("current actor")
 }
 
-fn health(carrier: &ChannelActorCarrier) -> i64 {
+fn health(carrier: &ChannelActorCarrier) -> Option<i64> {
     match &carrier.slots[0] {
-        Slot::CreatureOccupied { health, .. } => *health,
-        _ => panic!("creature slot"),
+        Slot::CreatureOccupied { health, .. } => Some(*health),
+        _ => None,
+    }
+}
+
+fn command<'a>(occurrence: &'a [u8], binding: &'a [u8], damage: i64) -> OwnerDamageCommand<'a> {
+    OwnerDamageCommand {
+        target: b"target:one",
+        occurrence,
+        binding,
+        damage,
     }
 }
 
@@ -112,7 +122,7 @@ fn typed_plan_commits_once_and_identical_replay_returns_original_transition() {
         (false, 20, 13)
     );
     assert_eq!(carrier.slots, after);
-    assert_eq!(health(&carrier), 13);
+    assert_eq!(health(&carrier), Some(13));
 }
 
 #[test]
@@ -146,11 +156,8 @@ fn lethal_damage_disables_actions_but_administrative_remove_is_not_death() {
         carrier.commit_creature_damage_inner(
             &continuity,
             actor.0,
-            b"target:one",
-            b"cast:later",
-            b"cast:later\0binding",
-            1,
-            false
+            command(b"cast:later", b"cast:later\0binding", 1),
+            false,
         ),
         Err(CarrierError::OccurrenceConflict)
     );
@@ -160,7 +167,7 @@ fn lethal_damage_disables_actions_but_administrative_remove_is_not_death() {
     let recycled = carrier
         .admit_creature(&continuity, ActorState(2), "target:one", 30)
         .expect("recycle");
-    assert_eq!(health(&carrier), 30);
+    assert_eq!(health(&carrier), Some(30));
     assert_ne!(
         actor.0.actor_local_generation,
         recycled.actor_local_generation
@@ -184,6 +191,33 @@ fn revisions_plan_and_target_substitutions_leave_slot_byte_identical() {
         plan(occurrence("cast:1", "rules:2"), "target:one", 5),
         plan(cast.clone(), "target:one", 6),
         plan(cast.clone(), "target:two", 5),
+        EffectPlan::immediate(
+            cast.clone(),
+            AbilityIntent::normalize(ProposalSource::Client, "actor:other", &["target:one"])
+                .expect("changed actor marker"),
+            vec![Effect::damage("target:one", 5).expect("damage")],
+            vec![],
+            CommitGroup::atomic("scope:fixture", "group:one").expect("group"),
+        )
+        .expect("changed intent"),
+        EffectPlan::immediate(
+            cast.clone(),
+            AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:one"])
+                .expect("intent"),
+            vec![Effect::damage("target:one", 5).expect("damage")],
+            vec![CalculationStage::new("stage:other").expect("stage")],
+            CommitGroup::atomic("scope:fixture", "group:one").expect("group"),
+        )
+        .expect("changed stage"),
+        EffectPlan::immediate(
+            cast.clone(),
+            AbilityIntent::normalize(ProposalSource::Client, "actor:fixture", &["target:one"])
+                .expect("intent"),
+            vec![Effect::damage("target:one", 5).expect("damage")],
+            vec![],
+            CommitGroup::atomic("scope:fixture", "group:other").expect("group"),
+        )
+        .expect("changed group"),
     ] {
         assert!(
             commit_exact_owner_damage(
@@ -210,11 +244,8 @@ fn owner_and_actor_generation_are_revalidated_after_resolution() {
         carrier.commit_creature_damage_inner(
             &continuity,
             wrong_actor,
-            b"target:one",
-            b"cast:1",
-            b"cast:1\0binding",
-            5,
-            false
+            command(b"cast:1", b"cast:1\0binding", 5),
+            false,
         ),
         Err(CarrierError::WrongScope)
     );
@@ -238,11 +269,8 @@ fn owner_and_actor_generation_are_revalidated_after_resolution() {
         carrier.commit_creature_damage_inner(
             &continuity,
             recycled,
-            b"target:one",
-            b"cast:1",
-            b"cast:1\0binding",
-            5,
-            false
+            command(b"cast:1", b"cast:1\0binding", 5),
+            false,
         ),
         Err(CarrierError::WrongScope)
     );
@@ -258,11 +286,8 @@ fn invalid_magnitude_overflow_and_injected_failure_do_not_mutate_slot() {
             carrier.commit_creature_damage_inner(
                 &continuity,
                 actor.0,
-                b"target:one",
-                b"cast:1",
-                b"cast:1\0binding",
-                damage,
-                false
+                command(b"cast:1", b"cast:1\0binding", damage),
+                false,
             ),
             Err(CarrierError::InvalidDamage)
         );
@@ -272,11 +297,8 @@ fn invalid_magnitude_overflow_and_injected_failure_do_not_mutate_slot() {
         carrier.commit_creature_damage_inner(
             &continuity,
             actor.0,
-            b"target:one",
-            b"cast:1",
-            b"cast:1\0binding",
-            5,
-            true
+            command(b"cast:1", b"cast:1\0binding", 5),
+            true,
         ),
         Err(CarrierError::InjectedCommitFailure)
     );
@@ -289,11 +311,8 @@ fn invalid_magnitude_overflow_and_injected_failure_do_not_mutate_slot() {
         carrier.commit_creature_damage_inner(
             &continuity,
             actor.0,
-            b"target:one",
-            b"cast:1",
-            b"cast:1\0binding",
-            1,
-            false
+            command(b"cast:1", b"cast:1\0binding", 1),
+            false,
         ),
         Err(CarrierError::DamageOverflow)
     );
@@ -317,7 +336,7 @@ fn target_is_bound_to_owner_slot_before_first_commit() {
         ))
     );
     assert_eq!(carrier.slots, before);
-    assert_eq!(health(&carrier), 20);
+    assert_eq!(health(&carrier), Some(20));
     assert!(
         commit_exact_owner_damage(
             &mut carrier.current_owner_exact_commit(&continuity),
@@ -350,10 +369,7 @@ fn second_creature_and_binding_size_bound_reject_without_mutation() {
         carrier.commit_creature_damage_inner(
             &continuity,
             actor.0,
-            b"target:one",
-            b"cast:1",
-            &maximum,
-            1,
+            command(b"cast:1", &maximum, 1),
             true,
         ),
         Err(CarrierError::InjectedCommitFailure)
@@ -364,13 +380,31 @@ fn second_creature_and_binding_size_bound_reject_without_mutation() {
         carrier.commit_creature_damage_inner(
             &continuity,
             actor.0,
-            b"target:one",
-            b"cast:1",
-            &maximum,
-            1,
+            command(b"cast:1", &maximum, 1),
             false,
         ),
         Err(CarrierError::CommitBindingTooLarge)
     );
     assert_eq!(carrier.slots, before);
+}
+
+#[test]
+fn target_marker_4096_accepts_and_4097_rejects_before_slot_mutation() {
+    let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant(90, 1));
+    let mut carrier =
+        ChannelActorCarrier::bootstrap_pre_production(&mut continuity, 1).expect("finite carrier");
+    let before = carrier.slots.clone();
+    let maximum = "a".repeat(MAX_OWNER_COMMIT_BINDING_BYTES);
+    let excessive = "a".repeat(MAX_OWNER_COMMIT_BINDING_BYTES + 1);
+    assert_eq!(
+        carrier.admit_creature(&continuity, ActorState(1), &excessive, 20),
+        Err(CarrierError::InvalidCreatureTarget)
+    );
+    assert_eq!(carrier.slots, before);
+    assert!(
+        carrier
+            .admit_creature(&continuity, ActorState(1), &maximum, 20)
+            .is_ok()
+    );
+    assert_eq!(health(&carrier), Some(20));
 }
