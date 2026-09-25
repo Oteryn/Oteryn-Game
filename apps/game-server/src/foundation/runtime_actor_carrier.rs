@@ -1326,10 +1326,10 @@ mod tests {
     #[test]
     fn exhausted_reuse_marks_only_selected_slot_and_never_reselects_it() {
         let (continuity, mut carrier) = carrier(2);
-        let Slot::VacantReusable { generation, .. } = &mut carrier.slots[0] else {
-            panic!("initial free head must be reusable");
-        };
-        *generation = u64::MAX;
+        assert!(matches!(carrier.slots[0], Slot::VacantReusable { .. }));
+        if let Slot::VacantReusable { generation, .. } = &mut carrier.slots[0] {
+            *generation = u64::MAX;
+        }
         let unrelated = carrier.slots[1].clone();
         assert_eq!(
             carrier.admit(&continuity, ActorState(1)),
