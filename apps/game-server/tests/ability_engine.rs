@@ -7,7 +7,9 @@ mod foundation {
     pub(crate) struct ExactActorRef(pub(crate) u64);
     pub(crate) struct CurrentOwnerExactActorLookup<'a>(pub(crate) &'a ExactActorRef);
     impl CurrentOwnerExactActorLookup<'_> {
-        pub(crate) fn contains(&self, actor: ExactActorRef) -> bool { *self.0 == actor }
+        pub(crate) fn contains(&self, actor: ExactActorRef) -> bool {
+            *self.0 == actor
+        }
     }
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct OwnerDamageResult {
@@ -16,15 +18,28 @@ mod foundation {
         pub(crate) health_after: i64,
     }
     #[derive(Debug, PartialEq, Eq)]
-    pub(crate) enum CarrierError { Invalid }
+    pub(crate) enum CarrierError {
+        Invalid,
+    }
     pub(crate) struct CurrentOwnerExactActorCommit<'a>(pub(crate) &'a mut Option<Vec<u8>>);
     impl CurrentOwnerExactActorCommit<'_> {
         pub(crate) fn commit_damage(
-            &mut self, _actor: ExactActorRef, _occurrence: &[u8], binding: &[u8], damage: i64,
+            &mut self,
+            _actor: ExactActorRef,
+            _target: &[u8],
+            _occurrence: &[u8],
+            binding: &[u8],
+            damage: i64,
         ) -> Result<OwnerDamageResult, CarrierError> {
-            if self.0.is_some() { return Err(CarrierError::Invalid); }
+            if self.0.is_some() {
+                return Err(CarrierError::Invalid);
+            }
             *self.0 = Some(binding.to_vec());
-            Ok(OwnerDamageResult { applied: true, health_before: 20, health_after: 20 - damage })
+            Ok(OwnerDamageResult {
+                applied: true,
+                health_before: 20,
+                health_after: 20 - damage,
+            })
         }
     }
 }
