@@ -17,23 +17,8 @@ pub(crate) use runtime_actor_carrier::{
 };
 #[cfg(test)]
 #[allow(dead_code)]
-mod exact_actor_test_ability {
-    // Include the real occurrence and resolver files without importing the
-    // fixture Ability's unrelated unit tests under another crate root.
-    const MAX_EFFECT_PLAN_BYTES: usize = 4_096;
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub(crate) enum AbilityError {
-        InvalidIdentifier,
-        MissingRevision,
-    }
-    mod occurrence {
-        include!("../ability/occurrence.rs");
-    }
-    pub(crate) use occurrence::{AbilityOccurrence, RevisionSet};
-    pub(crate) mod exact_actor_resolution {
-        include!("../ability/exact_actor_resolution.rs");
-    }
-}
+#[path = "../ability/mod.rs"]
+mod exact_actor_test_ability;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
