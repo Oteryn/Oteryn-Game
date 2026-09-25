@@ -1,7 +1,7 @@
 {
   "schema": "OTERYN_G4_NONITEM_SECOND_SOURCE_CROSSWALK_EVIDENCE/v1",
   "task_id": "OTV2-20260925-g4-nonitem-second-source-crosswalk",
-  "status": "IMPLEMENTATION_PENDING",
+  "status": "AUTHORING_REQUALIFICATION",
   "allocation": {
     "issue": 162,
     "comment_id": 5828248468,
@@ -15,12 +15,12 @@
   "task_packet": {
     "title": "G4 Non-Item second-source crosswalk",
     "mode": "IMPLEMENT",
-    "status": "implementing",
+    "status": "authoring",
     "repository": "Oteryn/Oteryn-Game",
     "base": "main",
     "branch": "agent/otv2-g4-nonitem-second-source-crosswalk",
     "issue": 162,
-    "pr": null,
+    "pr": 882,
     "base_sha": "bfc8b54548a09c59e062873a5dfa48739c477420"
   },
   "owned_paths": [
@@ -61,8 +61,10 @@
     "second_source": "TibiaWiki/Fandom MediaWiki API only; separate maintained source candidate; fact-level independence remains UNKNOWN",
     "fandom_api": "https://tibia.fandom.com/api.php",
     "family_enumeration": "embeddedin each exact family infobox with MediaWiki continuation",
-    "revision_provenance": ["page_id", "title", "revision_id", "revision_timestamp", "revision_sha1", "captured_utf8_sha256"],
+    "revision_provenance": ["page_id", "title", "revision_id", "revision_timestamp", "revision_sha1_base36", "captured_utf8_sha256", "sha1_bytes_consistency_verified"],
     "license_preflight": ["https://tibia.fandom.com/wiki/TibiaWiki:About", "https://www.fandom.com/licensing"],
+    "license_verification": "bounded terms bodies must explicitly include CC BY-SA and attribution markers on both project and site licensing pages; HTTP 200 alone is insufficient",
+    "redirect_policy": "same HTTPS origin required between requested and final URL for Fandom/API/library receipts",
     "attribution": "TibiaWiki community contributors; CC BY-SA subject to per-page notices",
     "raw_prose_retained": false,
     "assets_retained": false,
@@ -92,16 +94,29 @@
   "preflight": {
     "local_browser_status": "FANDOM_API_DIRECT_OPEN_UNAVAILABLE_HTTP_402_OR_TOOL_RESTRICTION",
     "protected_predecessor_status": "UNAVAILABLE_HTTP_402",
-    "hosted_status": "PENDING_EXACT_CANDIDATE_WORKFLOW",
+    "previous_hosted_status": "SOURCE_UNAVAILABLE_TERMS_HTTP_403",
+    "previous_hosted_run_id": 36106643830,
+    "previous_hosted_artifact_id": 10851705418,
+    "previous_hosted_artifact_zip_sha256": "ae6614c9abaebff54ccb6130c8845fd5de5c856ba8871b4cd0bb76db94a69789",
+    "previous_hosted_output_sha256": "ba1d78635000cf8ea17f9bd06f7b82ad2e272a615013c4b58bc78c2548da585f",
+    "previous_hosted_receipts": {
+      "fandom_siteinfo_api_help_enumeration": "HTTP_200",
+      "fandom_project_about": "HTTP_403",
+      "fandom_site_licensing": "HTTP_403",
+      "official_tibia_creature_achievement_spell_pages": "HTTP_403",
+      "family_corroboration_statuses": "UNKNOWN_ALL_SEVEN",
+      "source_rows_preserved": 4800
+    },
+    "hosted_status": "PENDING_REQUALIFICATION_AT_NEW_HEAD",
     "fallback": "if hosted API or terms is blocked, emit SOURCE_UNAVAILABLE with all family statuses UNKNOWN and pass evidence-only gate"
   },
   "validation": {
-    "local_synthetic_self_test": "PASS_LOCAL",
-    "hosted_source_capture": "PENDING",
+    "local_synthetic_self_test": "PASS_LOCAL_REQUALIFICATION_PENDING_CONFIRMATION",
+    "hosted_source_capture": "PENDING_NEW_HEAD",
     "hosted_artifact_sha256": null,
-    "exact_head_ci": "PENDING",
+    "exact_head_ci": "PENDING_NEW_HEAD",
     "candidate_sha": null,
-    "draft_pr": null,
+    "draft_pr": 882,
     "merge_queue": "COORDINATOR_ONLY_NOT_REQUESTED"
   }
 }
