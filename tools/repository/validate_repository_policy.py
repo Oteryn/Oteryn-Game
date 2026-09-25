@@ -174,6 +174,43 @@ def _channel_mutating_methods(module: ast.Module, name: str) -> set[str]:
     return methods
 
 
+def _channel_aliases(module: ast.Module, name: str) -> set[str]:
+    aliases: set[str] = set()
+    for node in ast.walk(module):
+        value = None
+        targets: list[ast.AST] = []
+        if isinstance(node, ast.Assign):
+            value = node.value
+            targets = list(node.targets)
+        elif isinstance(node, ast.AnnAssign):
+            value = node.value
+            targets = [node.target]
+        elif isinstance(node, ast.NamedExpr):
+            value = node.value
+            targets = [node.target]
+        if value is None or not any(
+            isinstance(child, ast.Name) and child.id == name for child in ast.walk(value)
+        ):
+            continue
+        for target in targets:
+            for child in ast.walk(target):
+                if isinstance(child, ast.Name) and child.id != name:
+                    aliases.add(child.id)
+    return aliases
+
+
+def _is_system_exit_raise(node: ast.AST, code: int) -> bool:
+    return (
+        isinstance(node, ast.Raise)
+        and isinstance(node.exc, ast.Call)
+        and isinstance(node.exc.func, ast.Name)
+        and node.exc.func.id == "SystemExit"
+        and len(node.exc.args) == 1
+        and isinstance(node.exc.args[0], ast.Constant)
+        and node.exc.args[0].value == code
+    )
+
+
 def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
     errors: list[str] = []
     try:
@@ -206,6 +243,11 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
             errors.append(
                 f"{label} {channel} channel uses forbidden mutating methods: {sorted(methods)!r}"
             )
+        aliases = _channel_aliases(module, channel)
+        if aliases:
+            errors.append(
+                f"{label} {channel} channel must not be aliased: {sorted(aliases)!r}"
+            )
 
     warnings_index = next(
         (
@@ -234,19 +276,15 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
     if final_error_guard is None:
         errors.append(f"{label} missing final blocking error guard")
     else:
-        terminal_raises = [
-            stmt
-            for stmt in final_error_guard.body
-            if isinstance(stmt, ast.Raise)
-            and isinstance(stmt.exc, ast.Call)
-            and isinstance(stmt.exc.func, ast.Name)
-            and stmt.exc.func.id == "SystemExit"
-            and len(stmt.exc.args) == 1
-            and isinstance(stmt.exc.args[0], ast.Constant)
-            and stmt.exc.args[0].value == 1
-        ]
-        if len(terminal_raises) != 1:
-            errors.append(f"{label} final blocking error guard must raise SystemExit(1)")
+        direct_raises = [stmt for stmt in final_error_guard.body if isinstance(stmt, ast.Raise)]
+        if (
+            not final_error_guard.body
+            or not _is_system_exit_raise(final_error_guard.body[-1], 1)
+            or len(direct_raises) != 1
+        ):
+            errors.append(
+                f"{label} final blocking error guard must terminate only with final SystemExit(1)"
+            )
 
     for rendered, stmt in tests:
         names = {node.id for node in ast.walk(stmt.test) if isinstance(node, ast.Name)}
