@@ -1,15 +1,48 @@
 {
   "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT_EVIDENCE/v1",
-  "allocation_revision": "R6",
-  "allocation_comment": 5826848733,
-  "base_refresh_comment": 5822887886,
-  "branch": "agent/otv2-worldproject-v2-full-cardinality-scale-r5",
-  "evidence_status": "measurement_pending",
-  "implementation_base": "c516182255d3ea1724e91671c8d2187eb622e3df",
-  "supersedes": "ee43abd5505c3e4117f9af4f651759d8616479ad",
-  "task_path": "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md",
+  "allocation_revision": "R7",
+  "allocation_comment": 5827206602,
+  "branch": "agent/otv2-worldproject-v2-scale-r7-sharded",
+  "admission_main": "bf729de00a9f692a7fb3a4c3311ecb09be150eff",
+  "current_protected_main_at_resume": "bfc8b54548a09c59e062873a5dfa48739c477420",
+  "evidence_status": "pending_exact_head_hosted_qualification",
+  "predecessor_pr": 869,
+  "predecessor_r6": {
+    "merge_commit": "bf729de00a9f692a7fb3a4c3311ecb09be150eff",
+    "exact_head_run": 36095594156,
+    "smoke": {
+      "status": "completed",
+      "placements_requested": 2000,
+      "placements_loaded": 2000,
+      "artifact": {
+        "id": 10847067292,
+        "sha256": "c3ebb7dd94a8176638fa3983121a17d8f3051a8ed6191596657cf978b3c54c53"
+      }
+    },
+    "monolithic_full": {
+      "status": "resource_limit",
+      "placements_requested": 24502036,
+      "placements_loaded": null,
+      "failed_stage": "build",
+      "reason": "probe_reported_confirmed_allocation_failure",
+      "detail": "try_reserve_exact failed before construction of the full placement corpus",
+      "exit_code": 75,
+      "peak_rss_bytes": 3534848,
+      "artifact": {
+        "id": 10847820851,
+        "sha256": "ec447a384bb50c9a5d94ce4410c7a345bd2e115ea6b5d836090e02d33715e154"
+      }
+    }
+  },
   "measurement_tool": "tools/world-project-v2-scale-measurement",
   "workflow": ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+  "task_path": "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md",
+  "owned_paths": [
+    "tools/world-project-v2-scale-measurement/src/main.rs",
+    ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+    "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md",
+    "docs/agents/evidence/OTV2-20260924-worldproject-v2-full-cardinality-scale.json"
+  ],
   "target_placements": 24502036,
   "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
   "synthetic_shape": {
@@ -17,80 +50,71 @@
     "worlds": 1,
     "map_revisions": 1,
     "coordinate_frames": 1,
-    "disposition": "CandidateOnly"
+    "placement_disposition": "CandidateOnly"
   },
-  "measured_dimensions": [
-    "canonical bytes by role and total",
-    "draft build time",
-    "canonical serialization and validation time",
-    "JSON syntax parse time",
-    "schema-aware load time",
-    "staged role-file write time",
-    "peak resident set size from /usr/bin/time -v for full success/confirmed-resource-limit runs",
-    "one-placement edit amplification"
+  "shard_policy": {
+    "mode": "sequential",
+    "shard_size": 500000,
+    "expected_shards": 50,
+    "coverage_method": "contiguous half-open global ordinals plus per-loaded-key equality checks",
+    "exact_loaded_total_required": 24502036
+  },
+  "stages": [
+    "draft construction",
+    "real v2 canonicalize/validate",
+    "snapshot materialization",
+    "JSON syntax parse",
+    "schema-aware snapshot load",
+    "staged role-file write"
   ],
-  "resource_policy": {
-    "full_virtual_memory_ceiling_bytes": 6442450944,
-    "full_wall_clock_limit_seconds": 4500,
-    "full_runs_on_pull_request_head": true,
-    "full_runs_on_manual_dispatch": true,
-    "peak_rss_source": "/usr/bin/time -v maximum resident set size, converted from KiB",
-    "outcomes": [
-      "completed",
-      "resource_limit",
-      "failed"
-    ],
-    "resource_limit_classification": "Only supervised timeout, signal-9 kill under the VM ceiling, or an allocator failure with explicit allocation/OOM evidence and recorded peak RSS is resource_limit; other nonzero exits or invalid JSON are failed.",
-    "failure_artifacts_uploaded_before_final_gate": [
-      "result JSON",
-      "GNU time -v report",
-      "stderr",
-      "raw stdout"
-    ]
+  "metrics": [
+    "per-shard and aggregate role bytes",
+    "total serialized bytes",
+    "per-shard and aggregate stage timings",
+    "maximum supervised shard-runner RSS from /usr/bin/time -v"
+  ],
+  "limits": {
+    "smoke_placements": 2000,
+    "monolithic_full_vm_ceiling_bytes": 6442450944,
+    "monolithic_full_wall_clock_seconds": 4500,
+    "sharded_vm_ceiling_bytes": 6442450944,
+    "sharded_wall_clock_seconds": 9000
   },
-  "one_placement_amplification": {
-    "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
-    "changed_paths": null,
-    "changed_file_count": null,
-    "changed_project_bytes": null,
-    "reason": "isolated placement-record byte difference divided into estimated whole-project rewrite bytes; full canonical snapshots are not diffed",
-    "resource_limited_run_status": "unavailable_after_early_failure"
+  "sharded_measurement_fence": {
+    "monolithic_full_world_peak_rss": "NOT_MEASURED_BY_SHARDED_RUN",
+    "full_world_edit_amplification": "NOT_MEASURED; no canonical full-world snapshot diff",
+    "production_layout_selected": false,
+    "production_layout_or_schema_decision": "out_of_scope",
+    "donor_or_source_inputs": false
   },
-  "donor_or_source_inputs": false,
-  "schema_or_chunk_decision": "out_of_scope",
-  "run_identity": null,
-  "result_artifact": null,
-  "previous_revision": "R5",
-  "r5_exact_head_run": {
-    "run_id": 36065094697,
-    "head_sha": "79306e0c11743681e0f0f395e824185bb5e9a783",
-    "smoke": {
+  "hosted_run_binding": {
+    "qualification": "R7 workflow jobs run on the exact PR head; hosted result JSON/time/stderr/raw-output artifacts bind to the PR head SHA in their artifact names",
+    "post_run_metadata_update": "prohibited for this frozen evidence candidate; report live run and artifact IDs from GitHub Actions/PR checks"
+  },
+  "previous_revision": "R6",
+  "prior_diagnostics": {
+    "r5_exact_head_run": 36065094697,
+    "r5_head": "79306e0c11743681e0f0f395e824185bb5e9a783",
+    "r5_smoke": {
       "status": "failed",
-      "reason": "smoke_process_exit",
       "exit_code": 75,
       "failed_stage": "serialize_validate",
-      "detail": "project JSON string bytes exceed evidence limit because harness max_string_bytes was fixed at 1024 while canonical parser budgets cumulative document strings",
       "peak_rss_bytes": 1674924032,
       "artifact": {
         "id": 10835264665,
         "sha256": "52f854447ccc1c938231af3c0c3268be1ac6f9d950682c587c6f523a11cc7faa"
       }
     },
-    "full": {
+    "r5_full": {
       "status": "resource_limit",
-      "reason": "probe_reported_confirmed_allocation_failure",
       "exit_code": 75,
       "failed_stage": "build",
-      "detail": "try_reserve_exact for the 24,502,036-placement vector returned allocator error before corpus construction",
+      "detail": "try_reserve_exact allocation failed before corpus construction",
       "peak_rss_bytes": 3543040,
       "artifact": {
         "id": 10836325885,
         "sha256": "5e8f28d17b25dd2d453431c4e45988c632645c93ea56afe326155d2d82dd7eb0"
       }
     }
-  },
-  "r6_repair": {
-    "status": "implementation_pending_hosted_requalification",
-    "fix": "scale cumulative document string budget as 512 bytes per synthetic placement plus 4096 bytes fixed allowance; do not change production validators"
   }
 }
