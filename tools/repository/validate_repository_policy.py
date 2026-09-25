@@ -157,7 +157,7 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
 
     for rendered, stmt in tests:
         names = {node.id for node in ast.walk(stmt.test) if isinstance(node, ast.Name)}
-        if names.intersection({"title", "pattern", "headings", "validation_word"}):
+        if names.intersection({"title", "body", "pattern", "headings", "validation_word"}):
             channels = _append_targets(stmt)
             if "errors" in channels:
                 errors.append(
