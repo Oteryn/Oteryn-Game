@@ -4,7 +4,7 @@
 task_id: OTV2-20260925-channel-actor-carrier-o1-admission
 title: Replace ChannelActorCarrier admission scans with O(1) free-list
 mode: IMPLEMENT
-status: ready_for_integration
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/channel-actor-carrier-o1-admission-20260925
