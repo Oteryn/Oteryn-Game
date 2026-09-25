@@ -799,5 +799,20 @@
     "content/world/transitions/",
     "content/world/placements/"
   ],
-  "deferred_reason": "Legacy canonical WorldProject seed compares content/world recursively; successor world markers must wait for the separately qualified legacy-root transition."
+  "deferred_reason": "Legacy canonical WorldProject seed compares content/world recursively; successor world markers must wait for the separately qualified legacy-root transition.",
+  "ci_repair": {
+    "failed_head": "d922261cb1092b24c51a9bf3dfb2d9b9126d7fe7",
+    "workflow_run_id": 36171370478,
+    "failed_job_id": 108191864202,
+    "failure": "content_world_project_repository reached total directory entries scanned 129 > 128 after materializing successor siblings under content/",
+    "ambient_content_entries_legacy_baseline": 6,
+    "ambient_content_entries_candidate": 22,
+    "bounded_sibling_delta": 16,
+    "repository_fixture_total_scan_limit_before": 128,
+    "repository_fixture_total_scan_limit_after": 144,
+    "per_directory_scan_limit": 32,
+    "filesystem_implementation_changed": false,
+    "runtime_semantics_changed": false,
+    "legacy_world_bytes_changed": false
+  }
 }
