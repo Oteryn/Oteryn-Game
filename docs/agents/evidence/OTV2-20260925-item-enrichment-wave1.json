@@ -1,0 +1,91 @@
+{
+  "schema": "OTERYN_ITEM_ENRICHMENT_WAVE_EVIDENCE/v1",
+  "task": "OTV2-20260925-item-enrichment-wave1",
+  "jira": "KAN-16",
+  "admission_main": "08a8d5d49e767476df7be10949042e539db414ca",
+  "source": {
+    "source_key": "oteryn:source.tibiawiki",
+    "census_revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+    "identity_set": "docs/agents/evidence/OTV2-20260925-g4-item-exact-165-selected.json (165 EXACT bindings; sha256 c624a978bfc83d2dc57865126c6cda63dc21eb4134ee6eb7dc91a6b198ec945c)",
+    "snapshot": "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json",
+    "snapshot_sha256": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+    "snapshot_capture_run": 36183576917,
+    "snapshot_artifact_id": 10885546247,
+    "pinning": "every page refetched by recorded revision_id; sha256(wikitext) must equal the recorded source_digest; no prose retained",
+    "legacy_batch": {
+      "batch_id": "g4-item-wave1-tibiawiki-r1",
+      "source_revision": "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+    }
+  },
+  "pipeline": {
+    "capture": "tools/content-census/g4_item_wave1_capture.py (CI: .github/workflows/g4-item-wave1-capture.yml, reproduces the committed snapshot with --expect)",
+    "stage": "tools/content-census/g4_item_wave1_stage.py (--check reproduces the committed staged document)",
+    "staged": "docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json",
+    "staged_sha256": "00f2acd441e9146bdd7f67821bef446c171ea67cd06f666028324b61e544cb95",
+    "apply": "apps/game-server/examples/materialize_content_world_project_v2.rs (canonical legacy seed; promote() fails on contradiction)",
+    "successor": "tools/content-migration/world_project_v2_to_tree.py",
+    "validate": "tools/content-migration/validate_world_project_v2_to_tree.py, apps/game-server/tests/content_world_project_repository.rs"
+  },
+  "counts": {
+    "items_examined": 165,
+    "exact_identity_matches": 165,
+    "items_enriched": 164,
+    "items_rejected_post_cut": 1,
+    "fields_promoted": 1022,
+    "definition_fields_promoted": 290,
+    "authoring_fields_promoted": 732,
+    "taxonomy_assignments": 164,
+    "family_profiles_assigned": 153,
+    "relations_added": 221,
+    "unknown_preserved": 736,
+    "ambiguous_rejected": 480,
+    "probable_not_applied": 66,
+    "no_match_not_applied": 6207,
+    "conflicts": 0,
+    "canonical_item_count": 38157,
+    "item_records_changed": 164
+  },
+  "per_field": {
+    "forge.classification": 146,
+    "forge.max_tier": 146,
+    "imbuement.slot_count": 75,
+    "lifecycle.enchantable": 136,
+    "source_lifecycle.implemented": 121,
+    "source_lifecycle.removed": 1,
+    "stack.stackable": 48,
+    "taxonomy.primary": 164,
+    "taxonomy.secondary": 18,
+    "trade_restrictions.marketable": 5,
+    "weapon.weapon_type": 162
+  },
+  "blocked_unknown": {
+    "physical.weight": "TYPED_WEIGHT_UNIT (runtime u32 unit not accepted)",
+    "equipment.patterns (hands/slottype/levelrequired/vocrequired)": "SLOT_SEMANTICS / REQUIREMENTS_EQUIP_PATTERN",
+    "stack.stackable=true": "STACK_MAX unknown (validation requires a known stack maximum)",
+    "taxonomy.item_class": "no typed ProjectV2ItemTaxonomy slot",
+    "family_profile for 'Armas de Arremesso'": "not in protected family_assignments"
+  },
+  "runtime_source": "legacy_until_separately_qualified",
+  "next_waves": [
+    {
+      "wave": 2,
+      "scope": "Remaining structured fields for the same 164 Items once owning contracts accept them: weight unit, equipment slot pattern and requirements, stack maximum.",
+      "prerequisite": "typed contract acceptance (TYPED_WEIGHT_UNIT, SLOT_SEMANTICS, STACK_MAX)"
+    },
+    {
+      "wave": 3,
+      "scope": "New EXACT identity bindings for non-weapon families (armor, shields, containers, runes, tools), matched with multi-signal non-title evidence (armor, volume, charges) under the #877 matcher rules.",
+      "prerequisite": "fresh exact-revision census snapshot; zero-conflict unique matches only"
+    },
+    {
+      "wave": 4,
+      "scope": "Disambiguate the 480 AMBIGUOUS and 66 PROBABLE pages with an independent second source; apply only proven unique matches.",
+      "prerequisite": "second-source corroboration evidence"
+    },
+    {
+      "wave": "5+",
+      "scope": "Bounded bulk waves of up to ~1,000 Items each through the same capture, stage, apply and validate pipeline until all bindable Items are enriched.",
+      "prerequisite": "each wave frozen and validated independently"
+    }
+  ]
+}

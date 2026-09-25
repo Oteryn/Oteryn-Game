@@ -1,0 +1,79 @@
+name: G4 Item Wave 1 frozen-revision capture
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/content-census/g4_item_wave1_capture.py
+      - tools/content-census/g4_item_wave1_capture_self_test.py
+      - tools/content-census/g4_item_wave1_stage.py
+      - tools/content-census/g4_item_wave1_stage_self_test.py
+      - .github/workflows/g4-item-wave1-capture.yml
+      - docs/agents/evidence/OTV2-20260925-g4-item-exact-165-selected.json
+      - docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json
+      - docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json
+      - docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json
+      - content/world/definitions/reference.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g4-item-wave1-capture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: G4 Item Wave 1 frozen-revision capture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run synthetic tests
+        run: |
+          set -euo pipefail
+          python tools/content-census/g4_item_wave1_capture_self_test.py
+          if [ -f tools/content-census/g4_item_wave1_stage_self_test.py ]; then
+            python tools/content-census/g4_item_wave1_stage_self_test.py
+          fi
+
+      - name: Capture exact revisions and reproduce the committed snapshot
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-wave1"
+          mkdir -p "$ROOT"
+          SNAPSHOT=docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-source-snapshot.json
+          EXPECT=()
+          if [ -f "$SNAPSHOT" ]; then EXPECT=(--expect "$SNAPSHOT"); fi
+          python tools/content-census/g4_item_wave1_capture.py \
+            --selected docs/agents/evidence/OTV2-20260925-g4-item-exact-165-selected.json \
+            --output "$ROOT/source-snapshot.json" "${EXPECT[@]}"
+
+      - name: Reproduce the committed staged facts
+        if: ${{ hashFiles('docs/agents/evidence/OTV2-20260925-item-enrichment-wave1-staged.json') != '' }}
+        run: python tools/content-census/g4_item_wave1_stage.py --check
+
+      - name: Upload snapshot
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-item-wave1-snapshot-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/g4-item-wave1/source-snapshot.json
+          if-no-files-found: error
+          retention-days: 14

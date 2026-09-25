@@ -4,7 +4,7 @@
   "kind": "editor_content",
   "owner": "Item authoring",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Item categories/tags/family profiles; never gameplay identity."
+  "notes": "Item categories/tags/family profiles; never gameplay identity. Populated for Item enrichment Wave 1 (164 Items) in items.json; other Items remain unpopulated."
 }
