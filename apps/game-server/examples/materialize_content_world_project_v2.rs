@@ -38,6 +38,14 @@ const MOUNT_SOURCE_SHA256: &str =
     "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713";
 const MOUNT_CROSSWALK_SHA256: &str =
     "38d827ba66bb7a04a3f5a94bbb873ca4485d4b7c873de957812a9c1be20a67c5";
+const OUTFIT_SELECTED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260925-g4-outfit-133-selected.json");
+const OUTFIT_SELECTED_SHA256: &str =
+    "4cb19c97ca4047fe79ca4033af7e99344cdaaca9898ad7c76bea5f77742b0a31";
+const OUTFIT_CROSSWALK_SHA256: &str =
+    "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396";
+const OUTFIT_SOURCE_REVISION: &str = MOUNT_SOURCE_REVISION;
+const OUTFIT_SOURCE_SHA256: &str = MOUNT_SOURCE_SHA256;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -577,6 +585,158 @@ fn populate_mounts(
     })
 }
 
+struct OutfitPopulation {
+    declarations: Vec<ProjectV2Declaration>,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+    editor: Vec<ProjectV2EditorEntry>,
+}
+
+fn outfit_key(name: &str) -> Result<String, Box<dyn std::error::Error>> {
+    if name.is_empty() || !name.is_ascii() {
+        return Err("Outfit name cannot produce an ASCII canonical key".into());
+    }
+    let mut slug = String::new();
+    for byte in name.bytes() {
+        if byte.is_ascii_alphanumeric() {
+            slug.push(char::from(byte.to_ascii_lowercase()));
+        } else if !slug.is_empty() && !slug.ends_with('_') {
+            slug.push('_');
+        }
+    }
+    let slug = slug.trim_end_matches('_');
+    if slug.is_empty() {
+        return Err("Outfit name has no canonical key characters".into());
+    }
+    Ok(format!("oteryn:content.outfit.{slug}"))
+}
+
+fn populate_outfits(
+    existing_bindings: &[ProjectV2SourceIdentityBinding],
+) -> Result<OutfitPopulation, Box<dyn std::error::Error>> {
+    let selected_sha256 = Sha256::digest(OUTFIT_SELECTED)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    if selected_sha256 != OUTFIT_SELECTED_SHA256 {
+        return Err("selected Outfit input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(OUTFIT_SELECTED)?;
+    let source = &packet["source"];
+    if packet["schema"] != "OTERYN_G4_OUTFIT_133_SELECTED/v1"
+        || source["source_key"] != "oteryn:source.tibiawiki"
+        || source["source_revision"] != OUTFIT_SOURCE_REVISION
+        || source["identity_namespace"] != "mediawiki/page_id"
+        || source["source_capture_sha256"] != OUTFIT_SOURCE_SHA256
+        || source["crosswalk_sha256"] != OUTFIT_CROSSWALK_SHA256
+        || source["source_capture_artifact_id"] != 10831362943_u64
+        || source["crosswalk_artifact_id"] != 10832769419_u64
+        || source["exact_page_id_join_rows"] != 134_u64
+        || source["target_cut"] != "2026-07-28T23:59:59Z"
+        || packet["population_policy"]["typed_premium"] != "UNKNOWN"
+        || packet["population_policy"]["presentation_assets"] != "UNKNOWN"
+        || packet["population_policy"]["acquisition_interactions"] != "UNKNOWN"
+        || packet["population_policy"]["runtime_activation"] != false
+    {
+        return Err("selected Outfit source or policy drifted".into());
+    }
+    let selected = packet["selected"].as_array().ok_or("Outfit rows missing")?;
+    let blocked = packet["blocked"]
+        .as_array()
+        .ok_or("Outfit blocked rows missing")?;
+    if selected.len() != 133 || blocked.len() != 1 {
+        return Err("Outfit selection partition drifted".into());
+    }
+    let blocked_row = blocked[0]
+        .as_array()
+        .ok_or("Outfit blocked row malformed")?;
+    if blocked_row.len() != 6
+        || blocked_row[0] != "68724"
+        || blocked_row[1] != 441933_u64
+        || blocked_row[2] != "2026-08-04T13:38:39Z"
+        || blocked_row[3] != "4c2172a553e341247ff923099a3e16dde22fb66535fbda9b48f3adba7318ed22"
+        || blocked_row[4] != "Captain's Outfits"
+        || blocked_row[5] != "POST_TARGET_CUT_REVISION"
+    {
+        return Err("Outfit post-cut blocker drifted".into());
+    }
+
+    let mut declarations = Vec::with_capacity(133);
+    let mut bindings = Vec::with_capacity(133);
+    let mut editor = Vec::with_capacity(133);
+    let mut keys = BTreeSet::new();
+    let mut page_ids = BTreeSet::new();
+    for row in selected {
+        let row = row.as_array().ok_or("Outfit selected row malformed")?;
+        if row.len() != 6 {
+            return Err("Outfit selected row width drifted".into());
+        }
+        let page_id = row[0].as_str().ok_or("Outfit page ID missing")?;
+        let parsed_id: u64 = page_id.parse()?;
+        let revision = row[1].as_u64().unwrap_or(0);
+        let timestamp = row[2].as_str().ok_or("Outfit page timestamp missing")?;
+        let digest = row[3].as_str().ok_or("Outfit page digest missing")?;
+        let title = row[4].as_str().ok_or("Outfit title missing")?;
+        let key = row[5].as_str().ok_or("Outfit canonical key missing")?;
+        if parsed_id == 0
+            || page_id != parsed_id.to_string()
+            || revision == 0
+            || timestamp.len() != 20
+            || !timestamp.ends_with('Z')
+            || timestamp > "2026-07-28T23:59:59Z"
+            || !timestamp
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || matches!(byte, b'-' | b':' | b'T' | b'Z'))
+            || digest.len() != 64
+            || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || outfit_key(title)? != key
+            || !keys.insert(key.to_owned())
+            || !page_ids.insert(page_id.to_owned())
+            || existing_bindings.iter().any(|binding| {
+                binding.identity_namespace == "mediawiki/page_id" && binding.external_id == page_id
+            })
+        {
+            return Err("Outfit identity, provenance or collision check failed".into());
+        }
+        let target = ProjectV2DefinitionRef {
+            family: ProjectV2Family::Outfit,
+            key: key.to_owned(),
+            revision: "definition-r1".to_owned(),
+        };
+        declarations.push(ProjectV2Declaration::Outfit {
+            identity: ProjectV2Identity {
+                key: key.to_owned(),
+                revision: target.revision.clone(),
+            },
+            presentations: Vec::new(),
+            premium: None,
+            acquisition_interactions: Vec::new(),
+            fields: Vec::new(),
+        });
+        bindings.push(ProjectV2SourceIdentityBinding {
+            source_key: "oteryn:source.tibiawiki".to_owned(),
+            source_revision: OUTFIT_SOURCE_REVISION.to_owned(),
+            identity_namespace: "mediawiki/page_id".to_owned(),
+            external_id: page_id.to_owned(),
+            target: target.clone(),
+            disposition: ProjectV2SourceIdentityDisposition::Exact,
+        });
+        editor.push(ProjectV2EditorEntry {
+            target,
+            display_name: title.to_owned(),
+            description: String::new(),
+            categories: Vec::new(),
+            notes: Vec::new(),
+            aliases: Vec::new(),
+            tags: vec!["oteryn:editor.outfit".to_owned()],
+        });
+    }
+    Ok(OutfitPopulation {
+        declarations,
+        bindings,
+        editor,
+    })
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
     let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
@@ -603,16 +763,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let MountPopulation {
         import: mount_import,
         source: mount_source,
-        declarations,
+        mut declarations,
         bindings: mount_bindings,
         editor: mount_editor,
     } = populate_mounts(&records, &bindings)?;
     bindings.extend(mount_bindings);
     editor.extend(mount_editor);
+    let OutfitPopulation {
+        declarations: outfit_declarations,
+        bindings: outfit_bindings,
+        editor: outfit_editor,
+    } = populate_outfits(&bindings)?;
+    declarations.extend(outfit_declarations);
+    bindings.extend(outfit_bindings);
+    editor.extend(outfit_editor);
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-mount-252-r1".to_owned(),
+                project_revision: "g4-outfit-133-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
@@ -637,7 +805,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 mounts=252 mount_fields=0 tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

@@ -32,6 +32,8 @@ def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
 def main() -> int:
     reference = load(LEGACY / "definitions" / "reference.json")
     declarations = load(LEGACY / "definitions" / "declarations.json")
+    legacy_mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
+    require(len(legacy_mount_declarations) == 252, "LEGACY_MOUNT_COUNT")
     editor = load(LEGACY / "editor" / "author.json")
     sources = load(LEGACY / "provenance" / "sources.json")
     project = load(ROOT / "content" / "project.json")
@@ -73,7 +75,7 @@ def main() -> int:
 
     mount_payload = load(ROOT / mount_index["shards"][0]["path"])
     migrated_mounts = [row["declaration"] for row in mount_payload["records"]]
-    require(migrated_mounts == declarations["records"], "MOUNT_DECLARATION_ROUNDTRIP")
+    require(migrated_mounts == legacy_mount_declarations, "MOUNT_DECLARATION_ROUNDTRIP")
     mount_editors: list[Any] = []
     mount_bindings: list[Any] = []
     for row in mount_payload["records"]:

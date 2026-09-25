@@ -6,7 +6,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-content-tree-migration-v1-20260925
-base_sha: 2389c6671000b8b0efe341540a62e303e307ad15
+base_sha: 9728d30669a85579d333f826ebe7f812c76337ad
 issue: 162
 pr: 905
 jira: KAN-16
@@ -47,3 +47,7 @@ Fresh exact-head validation is required after this repair.
 - Mount source bindings: 252
 - legacy `content/world/**`: byte-preserved / not mutated
 - runtime switch: forbidden in this slice
+
+## Current-main refresh
+
+Refreshed onto `main@9728d30669a85579d333f826ebe7f812c76337ad`. The protected declarations file now also contains 133 Outfit records. The migration and validator explicitly filter `kind == "Mount"`; the 252 Mount declaration payloads are unchanged, so no Item/Mount shard data was reminted.

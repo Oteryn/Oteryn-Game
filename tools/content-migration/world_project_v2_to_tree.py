@@ -11,7 +11,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
-ADMISSION_MAIN = "2389c6671000b8b0efe341540a62e303e307ad15"
+ADMISSION_MAIN = "9728d30669a85579d333f826ebe7f812c76337ad"
 REVISION = "tree-items-mounts-r1"
 
 def canonical_bytes(value: Any) -> bytes:
@@ -71,8 +71,12 @@ def main() -> int:
             "records": rows,
         })
 
+    mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
+    if len(mount_declarations) != 252:
+        raise RuntimeError(f"MOUNT_SOURCE_COUNT_MISMATCH:{len(mount_declarations)}")
+
     mount_rows = []
-    for declaration in declarations["records"]:
+    for declaration in mount_declarations:
         target = {"family": "Mount", "key": declaration["identity"]["key"], "revision": declaration["identity"]["revision"]}
         key = target_id(target)
         row: dict[str, Any] = {"declaration": declaration}
