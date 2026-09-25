@@ -1,13 +1,13 @@
 {
   "schema": "OTERYN_FULL_GAME_TREE_MATERIALIZATION/v1",
-  "status": "MATERIALIZED_CANDIDATE",
+  "status": "MATERIALIZED_NON_WORLD_READY_WORLD_DEFERRED_LEGACY_CONFLICT",
   "admission_main": "1ecdafb91f238bbdee691c08e25208d1dfef36d5",
   "contract_path": "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json",
   "contract_target_nodes": 100,
   "directory_nodes": 97,
-  "new_index_files": 96,
+  "new_index_files": 86,
   "existing_index_files": 1,
-  "unmaterialized_directories": 0,
+  "unmaterialized_directories": 10,
   "rows": [
     {
       "path": "content/items/definitions/",
@@ -308,7 +308,7 @@
     {
       "path": "content/world/worlds/",
       "index": "content/world/worlds/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "LEGACY_COMPAT_PRESENT",
       "owner": "World",
       "kind": "static_content"
@@ -316,7 +316,7 @@
     {
       "path": "content/world/areas/cities/",
       "index": "content/world/areas/cities/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Area",
       "kind": "static_content"
@@ -324,7 +324,7 @@
     {
       "path": "content/world/areas/islands/",
       "index": "content/world/areas/islands/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Area",
       "kind": "static_content"
@@ -332,7 +332,7 @@
     {
       "path": "content/world/areas/regions/",
       "index": "content/world/areas/regions/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Area",
       "kind": "static_content"
@@ -340,7 +340,7 @@
     {
       "path": "content/world/areas/hunting-places/",
       "index": "content/world/areas/hunting-places/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Area",
       "kind": "static_content"
@@ -348,7 +348,7 @@
     {
       "path": "content/world/areas/streets/",
       "index": "content/world/areas/streets/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Area",
       "kind": "static_content"
@@ -356,7 +356,7 @@
     {
       "path": "content/world/terrain/",
       "index": "content/world/terrain/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Terrain",
       "kind": "static_content"
@@ -364,7 +364,7 @@
     {
       "path": "content/world/objects/",
       "index": "content/world/objects/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "WorldObject/LocalObject",
       "kind": "static_content"
@@ -372,7 +372,7 @@
     {
       "path": "content/world/transitions/",
       "index": "content/world/transitions/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "Transition/Interaction",
       "kind": "static_content"
@@ -380,7 +380,7 @@
     {
       "path": "content/world/placements/",
       "index": "content/world/placements/index.json",
-      "materialization": "NEW_INDEX",
+      "materialization": "DEFERRED_LEGACY_ROOT_CONFLICT",
       "population_state": "READY_UNPOPULATED",
       "owner": "WorldPlacement",
       "kind": "placement_content"
@@ -785,5 +785,19 @@
       "owner": "Migration tooling",
       "kind": "import_provenance"
     }
-  ]
+  ],
+  "materialized_directories": 87,
+  "deferred_directories": [
+    "content/world/worlds/",
+    "content/world/areas/cities/",
+    "content/world/areas/islands/",
+    "content/world/areas/regions/",
+    "content/world/areas/hunting-places/",
+    "content/world/areas/streets/",
+    "content/world/terrain/",
+    "content/world/objects/",
+    "content/world/transitions/",
+    "content/world/placements/"
+  ],
+  "deferred_reason": "Legacy canonical WorldProject seed compares content/world recursively; successor world markers must wait for the separately qualified legacy-root transition."
 }

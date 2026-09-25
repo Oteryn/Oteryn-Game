@@ -36,10 +36,24 @@ Acceptance:
 
 ## Candidate readback
 
-- 97 target directory nodes are materialized.
-- 96 new directory indices were added; 1 populated index was preserved.
-- unmaterialized directories: 0.
+- 87/97 target directory nodes are physically materialized now.
+- 86 new directory indices were added; 1 populated index was preserved.
+- 10 successor world directories are intentionally deferred because legacy `content/world/**` is still the exact canonical WorldProject package root.
 - existing Item/Mount and legacy WorldProject files remain outside deletion scope.
 - canonical PR: #911.
 
 The successor commit containing this PR binding is the exact candidate for validation.
+
+## Legacy-root repair
+
+The first candidate correctly exposed a real compatibility conflict: G4 canonical
+WorldProject seed performs a recursive exact comparison of `content/world`, so adding
+successor-only directory markers beneath that legacy root breaks package reproducibility.
+
+Minimal repair:
+- remove only the 10 successor world marker files from this slice;
+- preserve their target paths in the protected tree contract;
+- materialize all non-world Content/Ruleset/Import branches now;
+- defer those 10 world paths until the separately qualified legacy-root transition.
+
+This is an explicit deferred compatibility boundary, not a claim that the world tree is populated.
