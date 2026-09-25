@@ -4,8 +4,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ProjectDraft,
-    ProjectEvidenceLimits, ProjectV2Draft, ProjectV2State,
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ProjectDraft, ProjectEvidenceLimits,
+    ProjectV2Draft, ProjectV2EvidenceClass, ProjectV2Source, ProjectV2State,
     protected_cw2_b1_promoted_item_family_import,
 };
 use sha2::{Digest, Sha256};
@@ -28,8 +28,8 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_reimport_states: CW2_B1_FULL_ITEM_FAMILY_COUNT,
+        max_import_records: 1,
+        max_reimport_states: 1,
     }
 }
 
@@ -39,8 +39,7 @@ fn output_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let Some(value) = arguments.next() else {
         return Err("usage: materialize_content_world_project_v2 --output-root <path>".into());
     };
-    if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root"))
-        || arguments.next().is_some()
+    if flag.as_deref() != Some(std::ffi::OsStr::new("--output-root")) || arguments.next().is_some()
     {
         return Err("usage: materialize_content_world_project_v2 --output-root <path>".into());
     }
@@ -75,7 +74,9 @@ fn write_documents(
         tree.update(bytes);
 
         let destination = root.join(locator);
-        let parent = destination.parent().ok_or("document locator has no parent")?;
+        let parent = destination
+            .parent()
+            .ok_or("document locator has no parent")?;
         fs::create_dir_all(parent)?;
         let mut file = OpenOptions::new()
             .write(true)
@@ -84,7 +85,14 @@ fn write_documents(
         file.write_all(bytes)?;
         file.sync_all()?;
     }
-    Ok(format!("{:x}", tree.finalize()))
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let digest = tree.finalize();
+    let mut value = String::with_capacity(64);
+    for byte in digest {
+        value.push(char::from(HEX[usize::from(byte >> 4)]));
+        value.push(char::from(HEX[usize::from(byte & 0x0f)]));
+    }
+    Ok(value)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -93,6 +101,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if promoted.family.records.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
         return Err("protected promoted Item family count drifted".into());
     }
+    let mut provenance = promoted.family.batch;
+    provenance.candidates.clear();
+    provenance.reimport_states.clear();
+    let source = ProjectV2Source {
+        key: "oteryn:source.crystalserver".to_owned(),
+        import_batch_id: provenance.batch_id.clone(),
+        revision: provenance.source_revision.clone(),
+        sha256: provenance.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
@@ -103,10 +121,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
                 coordinate_frame: "global-target-2026-07-28".to_owned(),
                 records: promoted.family.records,
-                imports: vec![promoted.family.batch],
+                imports: vec![provenance],
                 metadata: Vec::new(),
             },
-            state: ProjectV2State::default(),
+            state: ProjectV2State {
+                sources: vec![source],
+                ..ProjectV2State::default()
+            },
         },
         limits(),
     )?;
