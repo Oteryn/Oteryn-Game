@@ -640,11 +640,15 @@ fn populate_outfits(
         return Err("selected Outfit source or policy drifted".into());
     }
     let selected = packet["selected"].as_array().ok_or("Outfit rows missing")?;
-    let blocked = packet["blocked"].as_array().ok_or("Outfit blocked rows missing")?;
+    let blocked = packet["blocked"]
+        .as_array()
+        .ok_or("Outfit blocked rows missing")?;
     if selected.len() != 133 || blocked.len() != 1 {
         return Err("Outfit selection partition drifted".into());
     }
-    let blocked_row = blocked[0].as_array().ok_or("Outfit blocked row malformed")?;
+    let blocked_row = blocked[0]
+        .as_array()
+        .ok_or("Outfit blocked row malformed")?;
     if blocked_row.len() != 6
         || blocked_row[0] != "68724"
         || blocked_row[1] != 441933_u64
