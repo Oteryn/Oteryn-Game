@@ -16,8 +16,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        400,
-        "b03a1d70f3f37edbe45bf69b97f514cacf54e361a95e413d8224410cd1fe58db",
+        376,
+        "cf1071b0026ed6417cf33ee892c54ceaa55b8739bde8c252cd93f72bc5c98620",
     ),
     (
         "definitions/declarations.json",
@@ -26,18 +26,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        7_309_278,
-        "614ce98b2fd13e173772540702b5b05f7cd3ffc4cd2ab91d695ca7fa3470adaa",
+        7_458_197,
+        "6bd267cf3c272f36ec20f4eecdf0048eb0a5439074a513ff6060b2dfe6693309",
     ),
     (
         "editor/author.json",
-        77,
-        "91836a3e71fc6b6ad0918deb05e4b5faeeeffc6da421e4bd0ee7e40a2aaeffe5",
+        35_113,
+        "f3cfb2e4c04abe2e38d11cbc514908655fd7c0fb9996fe9763fe9311aa93c4b6",
     ),
     (
         "manifest.json",
-        1_932,
-        "639e9542f285e82cfe15486c6858a2a56b14b2536316f21a18bb512babb0259d",
+        1_930,
+        "acddd89b388fddec1c54d5389de6d8ab8ae618b267a48da28104299f605dce91",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        402,
-        "d866e2f2c10af713bac4de3ce0fac0ab927969fca715be5453a149649dbacbb3",
+        394,
+        "269b09102b4b9e7d458bb18a35f6107ecbce8cf271289a903603fd833d662898",
     ),
     (
         "provenance/imports.json",
-        719,
-        "9071e9d696bbeaa624ed0d13cc4bcddd0f972771dc8063f7aea0032ca1b7b7f3",
+        1_386,
+        "0f63720ce6763f540240d70e4b05e0aafa07721a6b3614160a3f5f39cb03d16c",
     ),
     (
         "provenance/sources.json",
-        315,
-        "0713724dbbaa6219018773a7a9e2265d24e307214d469fb2587df8bc0ff48bd9",
+        54_302,
+        "81f55d61ae47a6032f906e3a189b88ebf4319ca2eac48fbecf9bf0125ee3619d",
     ),
     (
         "worlds/world.json",
@@ -65,9 +65,9 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
         "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
-const TREE_SHA256: &str = "eafdbb03dfc9bdbfe3570b4e31f0fa5a84d1e5a81a83ea6485f7e20fed19043c";
-const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_098_651;
-const FULL_FAMILY_MAX_STRING_BYTES: usize = 42_332_603;
+const TREE_SHA256: &str = "2649b6f2b6cfff35014f078f32530c66508266e5bf6e3ebea01491b596209c06";
+const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
+const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
 fn project_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -86,7 +86,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 1,
+        max_import_records: 2,
         max_reimport_states: 1,
     }
 }
@@ -208,8 +208,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-canonical-worldproject-r1");
-    assert_eq!(project.imports().len(), 1);
+    assert_eq!(project.project_revision(), "g4-item-exact-165-r1");
+    assert_eq!(project.imports().len(), 2);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -223,6 +223,13 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert!(provenance.candidates.is_empty());
     assert!(provenance.reimport_states.is_empty());
+    let wiki = &project.imports()[1];
+    assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
+    assert_eq!(
+        wiki.source_artifact_sha256,
+        "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
+    );
+    assert!(wiki.candidates.is_empty());
 
     let v2 = project.v2().expect("WorldProject/v2 state");
     assert!(v2.declarations.is_empty());
@@ -232,7 +239,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 1);
+    assert_eq!(v2.sources.len(), 2);
     assert_eq!(v2.sources[0].key, "oteryn:source.crystalserver");
     assert_eq!(v2.sources[0].import_batch_id, provenance.batch_id);
     assert_eq!(v2.sources[0].revision, provenance.source_revision);
@@ -241,8 +248,28 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         v2.sources[0].evidence,
         ProjectV2EvidenceClass::OtsHypothesisOnly
     );
-    assert!(v2.source_identity_bindings.is_empty());
-    assert!(v2.editor.is_empty());
+    assert_eq!(v2.sources[1].key, "oteryn:source.tibiawiki");
+    assert_eq!(v2.sources[1].import_batch_id, wiki.batch_id);
+    assert_eq!(v2.sources[1].revision, wiki.source_revision);
+    assert_eq!(v2.sources[1].sha256, wiki.source_artifact_sha256);
+    assert_eq!(v2.sources[1].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(v2.source_identity_bindings.len(), 165);
+    assert_eq!(v2.editor.len(), 165);
+    for binding in &v2.source_identity_bindings {
+        assert_eq!(binding.source_key, v2.sources[1].key);
+        assert_eq!(binding.source_revision, v2.sources[1].revision);
+        assert_eq!(binding.identity_namespace, "mediawiki/page_id");
+        assert_eq!(binding.target.family, ProjectV2Family::Item);
+        assert_eq!(
+            binding.disposition,
+            ProjectV2SourceIdentityDisposition::Exact
+        );
+    }
+    for entry in &v2.editor {
+        assert!(!entry.display_name.is_empty());
+        assert_eq!(entry.tags, ["oteryn:editor.item"]);
+        assert!(entry.aliases.is_empty());
+    }
 
     let rewritten = project
         .canonical_documents(limits())
@@ -279,6 +306,6 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 let atoms = promoted_atom_count(&item.semantics);
                 (items + usize::from(atoms > 0), fields + atoms)
             });
-    assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
-    assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
+    assert_eq!(promoted_items, 178);
+    assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT + 526);
 }
