@@ -167,6 +167,40 @@ def _step_mapping_entries(step: str) -> dict[str, list[str]]:
     return _mapping_entries_at_indent(step, 8, "workflow metadata step")
 
 
+def _literal_child_mapping(
+    block: str,
+    marker: str,
+    child_indent: int,
+    label: str,
+) -> dict[str, list[str]]:
+    if block.count(marker) != 1:
+        raise ValueError(f"{label} must contain exactly one literal mapping marker")
+    start = block.find(marker) + len(marker)
+    remainder = block[start:]
+    parent_indent = len(marker) - len(marker.lstrip(" "))
+    child_lines: list[str] = []
+    for line in remainder.splitlines():
+        if line.strip() and len(line) - len(line.lstrip(" ")) <= parent_indent:
+            break
+        child_lines.append(line)
+    child_block = "\n".join(child_lines)
+    return _mapping_entries_at_indent(child_block, child_indent, label)
+
+
+def _require_exact_mapping(
+    actual: dict[str, list[str]],
+    expected: dict[str, str],
+    label: str,
+    errors: list[str],
+) -> None:
+    expected_lists = {key: [value] for key, value in expected.items()}
+    if actual != expected_lists:
+        errors.append(
+            f"{label} must match the protected mapping exactly: "
+            f"expected {expected_lists!r}, got {actual!r}"
+        )
+
+
 def _extract_step_python(step: str, step_name: str) -> str:
     run_header = "        run: |\n"
     if step.count(run_header) != 1:
@@ -176,7 +210,7 @@ def _extract_step_python(step: str, step_name: str) -> str:
     run_start = step.find(run_header)
     run_payload = step[run_start + len(run_header) :]
     heredoc = "          python - <<'PY'\n"
-    terminator = "\n          PY"
+    terminator = "\n          PY\n"
     if not run_payload.startswith(heredoc):
         raise ValueError(
             f"workflow step run block must start with the Python heredoc: {step_name}"
@@ -318,6 +352,82 @@ def validate_pr_metadata_workflow_text(
         compile(source, f"{label}:metadata", "exec")
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
+
+    if job_name == "validate":
+        allowed_job_keys = {"name", "runs-on", "timeout-minutes", "env", "steps"}
+        allowed_step_keys = {"name", "if", "env", "run"}
+        expected_job_env = {
+            "TARGET_SHA": "${{ github.sha }}",
+        }
+        expected_step_env = {
+            "EVENT_NAME": "${{ github.event_name }}",
+            "REPOSITORY": "${{ github.repository }}",
+            "EVENT_SHA": "${{ github.sha }}",
+            "GH_TOKEN": "${{ github.token }}",
+            "EVENT_PR_NUMBER": "${{ github.event.pull_request.number }}",
+            "EVENT_PR_HEAD_SHA": "${{ github.event.pull_request.head.sha }}",
+            "DISPATCH_PR_NUMBER": "${{ github.event.inputs.pull_request_number }}",
+            "DISPATCH_EXPECTED_HEAD_SHA": "${{ github.event.inputs.expected_head_sha }}",
+        }
+        job_env = _literal_child_mapping(
+            job,
+            "    env:\n",
+            6,
+            f"{label} job env",
+        )
+        _require_exact_mapping(
+            job_env,
+            expected_job_env,
+            f"{label} job env",
+            errors,
+        )
+    elif job_name == "governance":
+        allowed_job_keys = {
+            "name",
+            "needs",
+            "runs-on",
+            "timeout-minutes",
+            "permissions",
+            "steps",
+        }
+        allowed_step_keys = {"name", "env", "run"}
+        expected_step_env = {
+            "EXPECTED_HEAD": "${{ needs.scope.outputs.target_sha }}",
+            "GH_TOKEN": "${{ github.token }}",
+            "PULL_NUMBER": "${{ needs.scope.outputs.pr_number }}",
+            "REPOSITORY": "${{ github.repository }}",
+        }
+    else:
+        return [f"{label} unsupported metadata job: {job_name}"]
+
+    if set(job_entries) != allowed_job_keys:
+        errors.append(
+            f"{label} job {job_name} keys must remain exactly "
+            f"{sorted(allowed_job_keys)!r}, got {sorted(job_entries)!r}"
+        )
+    if set(step_entries) != allowed_step_keys:
+        errors.append(
+            f"{label} metadata step keys must remain exactly "
+            f"{sorted(allowed_step_keys)!r}, got {sorted(step_entries)!r}"
+        )
+
+    if step_entries.get("env") != [""]:
+        errors.append(
+            f"{label} metadata step env must remain a literal nested mapping"
+        )
+    else:
+        step_env = _literal_child_mapping(
+            step,
+            "        env:\n",
+            10,
+            f"{label} metadata step env",
+        )
+        _require_exact_mapping(
+            step_env,
+            expected_step_env,
+            f"{label} metadata step env",
+            errors,
+        )
 
     job_continue_on_error = job_entries.get("continue-on-error", [])
     if job_continue_on_error:
