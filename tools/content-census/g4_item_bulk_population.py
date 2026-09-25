@@ -247,7 +247,7 @@ def compile_bulk(census: dict[str, Any], census_manifest: dict[str, Any], crossw
             inverted[field][value].append(target_key)
 
     provisional: list[dict[str, Any]] = []
-    exact_claims: dict[str, set[str]] = defaultdict(set)
+    page_exact_claims: dict[str, set[str]] = defaultdict(set)
     target_claims: dict[str, set[str]] = defaultdict(set)
     page_payloads: dict[int, dict[str, Any]] = {}
     for page in pages:
@@ -296,10 +296,14 @@ def compile_bulk(census: dict[str, Any], census_manifest: dict[str, Any], crossw
             status, reason = "NO_MATCH", "NO_SHARED_NON_TITLE_SIGNAL"
         else:
             status, reason = "NO_MATCH", "INSUFFICIENT_NON_TITLE_AGREEMENTS"
-        if status == "PENDING_UNIQUENESS":
-            target_key = exact[0]["target_key"]
-            exact_claims[target_key].add(external_id)
-            target_claims[external_id].add(target_key)
+        # Register every multi-signal exact candidate before deciding whether
+        # this page itself is unique. An ambiguous page can still contest a
+        # target claimed by an otherwise unique page, so reverse uniqueness
+        # must be computed from the complete candidate relation.
+        for candidate in exact:
+            target_key = candidate["target_key"]
+            page_exact_claims[external_id].add(target_key)
+            target_claims[target_key].add(external_id)
         row = {
             "source": SOURCE_ID,
             "source_role": "STRUCTURED_REFERENCE_DATA",
@@ -323,16 +327,19 @@ def compile_bulk(census: dict[str, Any], census_manifest: dict[str, Any], crossw
 
     binding_candidates: list[dict[str, Any]] = []
     by_external = {row["external_id"]: row for row in provisional}
-    for target_key, external_ids in exact_claims.items():
-        if len(external_ids) != 1:
-            for external_id in external_ids:
-                by_external[external_id].update(status="AMBIGUOUS", reason="MULTIPLE_SOURCE_PAGES_CLAIM_ONE_TARGET")
-            continue
-        external_id = next(iter(external_ids))
-        if len(target_claims.get(external_id, set())) != 1:
-            by_external[external_id].update(status="AMBIGUOUS", reason="ONE_SOURCE_PAGE_CLAIMS_MULTIPLE_TARGETS")
-            continue
+    for external_id, target_keys_for_page in page_exact_claims.items():
         row = by_external[external_id]
+        if row["status"] == "CONFLICT":
+            continue
+        if len(target_keys_for_page) != 1:
+            row.update(status="AMBIGUOUS", reason="MULTIPLE_MULTI_SIGNAL_TARGETS")
+            continue
+        target_key = next(iter(target_keys_for_page))
+        if len(target_claims.get(target_key, set())) != 1:
+            row.update(status="AMBIGUOUS", reason="MULTIPLE_SOURCE_PAGES_CLAIM_ONE_TARGET")
+            continue
+        if row["status"] != "PENDING_UNIQUENESS":
+            raise BulkError("EXACT_CANDIDATE_STATUS_INVALID")
         row.update(status="EXACT", reason="UNIQUE_TARGET_TWO_OR_MORE_NON_TITLE_AGREEMENTS_ZERO_CONFLICTS")
         binding_candidates.append({
             "source_key": SOURCE_KEY,
