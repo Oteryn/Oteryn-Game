@@ -56,8 +56,9 @@ def main() -> int:
     item_editors: list[Any] = []
     item_bindings: list[Any] = []
     expected_start = 0
-    for shard_ref in item_index["shards"]:
-        payload = load(ROOT / shard_ref["path"])
+    for shard_path in item_index["shards"]:
+        require(isinstance(shard_path, str), "ITEM_SHARD_REF")
+        payload = load(ROOT / shard_path)
         require(payload["shard"]["start"] == expected_start, "ITEM_SHARD_GAP")
         require(payload["shard"]["count"] == len(payload["records"]), "ITEM_SHARD_COUNT")
         for row in payload["records"]:
@@ -73,7 +74,8 @@ def main() -> int:
 
     require(migrated_items == reference["records"] and expected_start == 38157, "ITEM_DEFINITION_ROUNDTRIP")
 
-    mount_payload = load(ROOT / mount_index["shards"][0]["path"])
+    require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
+    mount_payload = load(ROOT / mount_index["shards"][0])
     migrated_mounts = [row["declaration"] for row in mount_payload["records"]]
     require(migrated_mounts == legacy_mount_declarations, "MOUNT_DECLARATION_ROUNDTRIP")
     mount_editors: list[Any] = []

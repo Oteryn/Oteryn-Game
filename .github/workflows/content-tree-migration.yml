@@ -1,0 +1,59 @@
+name: Content Tree Migration Equivalence
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - content/items/**
+      - content/cosmetics/**
+      - content/project.json
+      - content/manifest.json
+      - content/content.lock.json
+      - content/world/definitions/reference.json
+      - content/world/definitions/declarations.json
+      - content/world/editor/author.json
+      - content/world/provenance/sources.json
+      - imports/tibiawiki/bindings/**
+      - tools/content-migration/**
+      - .github/workflows/content-tree-migration.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-tree-migration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Content tree / Item+Mount equivalence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Validate successor Item/Mount tree against legacy WorldProject
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-migration/test_world_project_v2_to_tree.py \
+            tools/content-migration/validate_world_project_v2_to_tree.py
+          python tools/content-migration/test_world_project_v2_to_tree.py
+          python tools/content-migration/validate_world_project_v2_to_tree.py
