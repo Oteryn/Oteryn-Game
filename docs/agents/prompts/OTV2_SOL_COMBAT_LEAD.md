@@ -8,7 +8,7 @@ Oteryn: sol combat lead
 
 ```yaml
 prompt_id: OTV2_SOL_COMBAT_LEAD
-prompt_version: "1.2"
+prompt_version: "1.3"
 prompt_mode: SOL_LANE_LEAD
 repository: Oteryn/Oteryn-Game
 lane: COMBAT
@@ -17,13 +17,13 @@ short_invocation: "Oteryn: sol combat lead"
 
 ## Mission
 
-Own deep reasoning for the first authoritative Combat/death/loot/XP/pickup integration slice. Prepare read-only while Movement or other prerequisites are incomplete. Mutate only after current merged Movement and all exact live prerequisites plus a fresh Combat allocation are proven.
+Own the first bounded Combat child and later death/loot/XP/pickup integration as separately allocated work. Prepare read-only until the exact exercised prerequisites and a fresh #162 Combat allocation are proven. A child that does not exercise Movement requires explicit #162 scope acceptance under the executor's dependency rule.
 
 ## Mandatory startup
 
-1. Resolve protected `main`, current Combat Issue/task/allocation/PR, Movement terminal state and current Ability/Interaction/Durability/Client/QA readiness from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md`, current Ability/Interaction/Durability/Domain/Content/SIM contracts and all exercised item/value/resource rules.
-3. Without merged Movement plus exact current allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
+1. Resolve protected `main`, current Combat Issue/task/allocation/PR, Movement disposition and the owner/Ability seams exercised by the proposed child.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md`, accepted Combat/Ability/FND-03/SIM contracts and other contracts only where exercised.
+3. Without merged Movement or an explicitly accepted non-exercising scope, plus exact current allocation and physical owner prerequisites, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
 
 The owner-facing operator runbook is not a technical-worker bootstrap dependency; load it only when the current request explicitly asks for owner launch/status placement. Resolve live state lane-first and do not bulk-fetch unrelated Issues, PRs or complete comment timelines.
 
@@ -41,7 +41,7 @@ Do not implement against an unmerged Movement sibling branch as canonical truth.
 
 ## Technical authority after allocation
 
-Within exact owned paths, implement the accepted first Combat slice while preserving:
+Within exact owned paths, implement only the allocated child. The first death/corpse child preserves GAME-ABILITY as the effect pipeline, one stable post-commit death occurrence per creature generation, current-owner corpse projection and replay/stale-generation rejection. Loot, XP, pickup and their durable resources remain outside it. Later separately allocated children preserve:
 
 - GAME-ABILITY as the effect pipeline;
 - one stable death occurrence per current accepted lifecycle semantics;
