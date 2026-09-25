@@ -164,7 +164,7 @@ def _valid_pull(expected_head: str) -> dict[str, object]:
     return {
         "state": "open",
         "title": "fix(ci): preserve advisory metadata",
-        "body": "## Summary\\nok\\n## Scope\\nok\\n## Exact-head validation\\nok\\n",
+        "body": "## Summary\nok\n## Scope\nok\n## Exact-head validation\nok\n",
         "head": {
             "sha": expected_head,
             "repo": {"full_name": "Oteryn/Oteryn-Game"},
@@ -224,7 +224,7 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
                 errors.append(f"{label} missing advisory metadata warning: {warning}")
 
     prevalidation = _valid_pull(expected_head)
-    prevalidation["body"] = "## Summary\\nok\\n## Scope\\nok\\n## Prevalidation notes\\nok\\n"
+    prevalidation["body"] = "## Summary\nok\n## Scope\nok\n## Prevalidation notes\nok\n"
     result = execute("prevalidation-heading", prevalidation)
     if result is not None:
         code, stdout, stderr = result
@@ -239,7 +239,7 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
             )
 
     invalidation = _valid_pull(expected_head)
-    invalidation["body"] = "## Summary\\nok\\n## Scope\\nok\\n## Invalidation risks\\nok\\n"
+    invalidation["body"] = "## Summary\nok\n## Scope\nok\n## Invalidation risks\nok\n"
     result = execute("invalidation-heading", invalidation)
     if result is not None:
         code, stdout, stderr = result
