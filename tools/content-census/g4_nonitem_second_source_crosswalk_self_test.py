@@ -104,6 +104,36 @@ def main() -> None:
     assert len(captured_family) == 1
     assert captured_family[0]["revision_id"] == 101 and captured_family[0]["source_sha1"] == revision_sha1
 
+    # A shared cap is applied incrementally across families. The second family
+    # is stopped before its continuation request or revision fetch can occur.
+    budget = MODULE.FandomPageBudget(limit=3)
+    family_calls = []
+    cap_content = "{{Infobox Creature|name=Budget Test|health=10|experience=1}}"
+    cap_sha = MODULE.mediawiki_sha1_base36(cap_content.encode("utf-8"))
+    def fake_budget_api(params):
+        family_calls.append(dict(params))
+        if params.get("list") == "embeddedin" and params.get("eititle") == "Template:Infobox Creature":
+            assert params["eilimit"] == "3"
+            return {"query": {"embeddedin": [{"pageid": 30, "title": "Budget A"}, {"pageid": 31, "title": "Budget B"}]}}, {}
+        if params.get("list") == "embeddedin" and params.get("eititle") == "Template:Infobox NPC":
+            assert params["eilimit"] == "1"
+            return {"query": {"embeddedin": [{"pageid": 32, "title": "Budget NPC"}]}, "continue": {"eicontinue": "next", "continue": "||"}}, {}
+        if params.get("prop") == "revisions":
+            page_ids = [int(page_id) for page_id in params["pageids"].split("|")]
+            return {"query": {"pages": [{"pageid": page_id, "title": f"Budget {page_id}", "revisions": [{"revid": page_id, "timestamp": "2026-09-02T00:00:00Z", "sha1": cap_sha, "slots": {"main": {"content": cap_content}}}]} for page_id in page_ids]}}, {}
+        raise AssertionError(f"unexpected API request after budget boundary: {params}")
+    with patch.object(MODULE, "_api_json", side_effect=fake_budget_api), patch.object(MODULE.time, "sleep"):
+        assert len(MODULE.capture_family("Creature", page_budget=budget)) == 2
+        expect_error("FANDOM_GLOBAL_PAGE_BUDGET_EXHAUSTED", lambda: MODULE.capture_family("NPC", page_budget=budget))
+    assert budget.used == 3
+    assert budget.request_count == 3
+    assert len(family_calls) == 3
+    assert sum(1 for call in family_calls if call.get("eititle") == "Template:Infobox NPC") == 1
+    assert not any(call.get("prop") == "revisions" and call.get("pageids") == "32" for call in family_calls)
+    request_budget = MODULE.FandomPageBudget(limit=10, request_limit=1)
+    request_budget.begin_request()
+    expect_error("FANDOM_GLOBAL_REQUEST_BUDGET_EXHAUSTED", request_budget.begin_request)
+
     # Terms need explicit license and attribution signals, not just HTTP 200.
     project_terms = b"<p>All text under Creative Commons Attribution-Share Alike (CC BY-SA); attribution required.</p>"
     license_terms = b"<p>Content license: CC BY-SA. Attribution to authors is required.</p>"
