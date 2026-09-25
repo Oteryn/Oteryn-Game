@@ -88,20 +88,28 @@ def validate_protected_base_audit() -> list[str]:
     return errors
 
 
-def _extract_step_python(text: str, step_name: str) -> str:
+def _extract_step_text(text: str, step_name: str) -> str:
     step_marker = f"      - name: {step_name}\n"
     step_start = text.find(step_marker)
     if step_start < 0:
         raise ValueError(f"missing workflow step: {step_name}")
+    next_step = text.find("\n      - name: ", step_start + len(step_marker))
+    if next_step < 0:
+        raise ValueError(f"workflow step has no bounded successor: {step_name}")
+    return text[step_start:next_step]
+
+
+def _extract_step_python(text: str, step_name: str) -> str:
+    step = _extract_step_text(text, step_name)
     heredoc = "          python - <<'PY'\n"
-    source_start = text.find(heredoc, step_start)
+    source_start = step.find(heredoc)
     if source_start < 0:
         raise ValueError(f"missing Python heredoc in workflow step: {step_name}")
     source_start += len(heredoc)
-    source_end = text.find("\n          PY\n", source_start)
+    source_end = step.find("\n          PY\n", source_start)
     if source_end < 0:
         raise ValueError(f"unterminated Python heredoc in workflow step: {step_name}")
-    return textwrap.dedent(text[source_start:source_end])
+    return textwrap.dedent(step[source_start:source_end])
 
 
 def _run_metadata_source(
@@ -109,7 +117,7 @@ def _run_metadata_source(
     label: str,
     environment: dict[str, str],
     pull: dict[str, object],
-) -> tuple[int, str, str]:
+) -> tuple[int, str, str, str]:
     stdout = io.StringIO()
     stderr = io.StringIO()
     payload = json.dumps(pull).encode("utf-8")
@@ -122,7 +130,8 @@ def _run_metadata_source(
     with tempfile.TemporaryDirectory() as directory:
         env = dict(environment)
         env["GH_TOKEN"] = "fixture-token"
-        env["GITHUB_ENV"] = str(Path(directory) / "github-env")
+        github_env_path = Path(directory) / "github-env"
+        env["GITHUB_ENV"] = str(github_env_path)
         exit_code = 0
         with (
             patch.dict(os.environ, env, clear=True),
@@ -139,19 +148,37 @@ def _run_metadata_source(
                     exit_code = exc.code
                 else:
                     exit_code = 1
-    return exit_code, stdout.getvalue(), stderr.getvalue()
+        github_env = (
+            github_env_path.read_text(encoding="utf-8")
+            if github_env_path.is_file()
+            else ""
+        )
+    return exit_code, stdout.getvalue(), stderr.getvalue(), github_env
 
 
-def _metadata_environment(step_name: str, expected_head: str) -> dict[str, str]:
+def _metadata_environment(
+    step_name: str,
+    expected_head: str,
+    event_name: str = "pull_request",
+) -> dict[str, str]:
     common = {
         "REPOSITORY": "Oteryn/Oteryn-Game",
     }
     if step_name == "Verify pull request target and metadata":
-        return common | {
-            "EVENT_NAME": "pull_request",
-            "EVENT_PR_NUMBER": "914",
-            "EVENT_PR_HEAD_SHA": expected_head,
-        }
+        if event_name == "pull_request":
+            return common | {
+                "EVENT_NAME": "pull_request",
+                "EVENT_PR_NUMBER": "914",
+                "EVENT_PR_HEAD_SHA": expected_head,
+            }
+        if event_name == "workflow_dispatch":
+            return common | {
+                "EVENT_NAME": "workflow_dispatch",
+                "DISPATCH_PR_NUMBER": "914",
+                "DISPATCH_EXPECTED_HEAD_SHA": expected_head,
+                "EVENT_SHA": expected_head,
+            }
+        raise ValueError(f"unsupported agent-governance event: {event_name}")
     if step_name == "Verify pull request metadata":
         return common | {
             "PULL_NUMBER": "914",
@@ -176,30 +203,65 @@ def _valid_pull(expected_head: str) -> dict[str, object]:
 def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
     errors: list[str] = []
     try:
+        step = _extract_step_text(text, step_name)
         source = _extract_step_python(text, step_name)
         compile(source, f"{label}:metadata", "exec")
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
 
+    for forbidden_control in ("if", "continue-on-error"):
+        if re.search(
+            rf"(?m)^        {re.escape(forbidden_control)}\s*:",
+            step,
+        ):
+            errors.append(
+                f"{label} metadata step must not use {forbidden_control}: "
+                "the tested script result must govern the job"
+            )
+
     expected_head = "a" * 40
     environment = _metadata_environment(step_name, expected_head)
 
-    def execute(name: str, pull: dict[str, object]) -> tuple[int, str, str] | None:
+    def execute(
+        name: str,
+        pull: dict[str, object],
+        fixture_environment: dict[str, str] | None = None,
+    ) -> tuple[int, str, str, str] | None:
         try:
-            return _run_metadata_source(source, f"{label}:{name}", environment, pull)
+            return _run_metadata_source(
+                source,
+                f"{label}:{name}",
+                fixture_environment or environment,
+                pull,
+            )
         except Exception as exc:
             errors.append(f"{label} metadata fixture {name} raised unexpectedly: {exc}")
             return None
 
+    def require_target_sha(
+        name: str,
+        result: tuple[int, str, str, str] | None,
+    ) -> None:
+        if step_name != "Verify pull request target and metadata" or result is None:
+            return
+        _code, _stdout, _stderr, github_env = result
+        expected = f"TARGET_SHA={expected_head}\n"
+        if github_env != expected:
+            errors.append(
+                f"{label} metadata fixture {name} must write exactly {expected.strip()} "
+                f"to GITHUB_ENV, got {github_env!r}"
+            )
+
     baseline = execute("baseline", _valid_pull(expected_head))
     if baseline is not None:
-        code, stdout, stderr = baseline
+        code, stdout, stderr, _github_env = baseline
         if code != 0:
             errors.append(
                 f"{label} valid PR metadata must succeed, got exit {code}: {stderr.strip()}"
             )
         if "::warning title=PR metadata guidance::" in stdout:
             errors.append(f"{label} valid PR metadata must not emit presentation warnings")
+    require_target_sha("baseline", baseline)
 
     presentation = _valid_pull(expected_head)
     presentation["title"] = "not conventional " + ("x" * 80)
@@ -213,7 +275,7 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
         "PR body should include a validation section",
     )
     if result is not None:
-        code, stdout, stderr = result
+        code, stdout, stderr, _github_env = result
         if code != 0:
             errors.append(
                 f"{label} presentation-only metadata must remain advisory, got exit {code}: "
@@ -222,12 +284,13 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
         for warning in required_warnings:
             if warning not in stdout:
                 errors.append(f"{label} missing advisory metadata warning: {warning}")
+    require_target_sha("presentation-advisory", result)
 
     prevalidation = _valid_pull(expected_head)
     prevalidation["body"] = "## Summary\nok\n## Scope\nok\n## Prevalidation notes\nok\n"
     result = execute("prevalidation-heading", prevalidation)
     if result is not None:
-        code, stdout, stderr = result
+        code, stdout, stderr, _github_env = result
         if code != 0:
             errors.append(
                 f"{label} prevalidation heading fixture must remain advisory, got exit {code}: "
@@ -237,12 +300,13 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
             errors.append(
                 f"{label} must not treat Prevalidation as a validation heading"
             )
+    require_target_sha("prevalidation-heading", result)
 
     invalidation = _valid_pull(expected_head)
     invalidation["body"] = "## Summary\nok\n## Scope\nok\n## Invalidation risks\nok\n"
     result = execute("invalidation-heading", invalidation)
     if result is not None:
-        code, stdout, stderr = result
+        code, stdout, stderr, _github_env = result
         if code != 0:
             errors.append(
                 f"{label} invalidation heading fixture must remain advisory, got exit {code}: "
@@ -252,6 +316,7 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
             errors.append(
                 f"{label} must not treat Invalidation as a validation heading"
             )
+    require_target_sha("invalidation-heading", result)
 
     identity_cases: tuple[tuple[str, dict[str, object]], ...] = (
         ("closed", {"state": "closed"}),
@@ -259,21 +324,82 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
         ("repository-mismatch", {"head": {"sha": expected_head, "repo": {"full_name": "Other/Repo"}}}),
         ("base-mismatch", {"base": {"ref": "release"}}),
     )
-    for name, mutation in identity_cases:
-        pull = _valid_pull(expected_head)
-        pull.update(mutation)
-        result = execute(name, pull)
-        if result is None:
-            continue
-        code, _stdout, stderr = result
-        if code != 1:
-            errors.append(
-                f"{label} identity fixture {name} must fail with SystemExit(1), "
-                f"got {code}: {stderr.strip()}"
+
+    def validate_identity_matrix(
+        prefix: str,
+        fixture_environment: dict[str, str],
+    ) -> None:
+        for name, mutation in identity_cases:
+            pull = _valid_pull(expected_head)
+            pull.update(mutation)
+            result = execute(
+                f"{prefix}-{name}",
+                pull,
+                fixture_environment,
             )
+            if result is None:
+                continue
+            code, _stdout, stderr, _github_env = result
+            if code != 1:
+                errors.append(
+                    f"{label} identity fixture {prefix}-{name} must fail with SystemExit(1), "
+                    f"got {code}: {stderr.strip()}"
+                )
+
+    validate_identity_matrix("pull-request", environment)
+
+    if step_name == "Verify pull request target and metadata":
+        dispatch_environment = _metadata_environment(
+            step_name,
+            expected_head,
+            "workflow_dispatch",
+        )
+        dispatch_baseline = execute(
+            "dispatch-baseline",
+            _valid_pull(expected_head),
+            dispatch_environment,
+        )
+        if dispatch_baseline is not None:
+            code, stdout, stderr, _github_env = dispatch_baseline
+            if code != 0:
+                errors.append(
+                    f"{label} workflow_dispatch baseline must succeed, got exit {code}: "
+                    f"{stderr.strip()}"
+                )
+            if "::warning title=PR metadata guidance::" in stdout:
+                errors.append(
+                    f"{label} workflow_dispatch baseline must not emit presentation warnings"
+                )
+        require_target_sha("dispatch-baseline", dispatch_baseline)
+        validate_identity_matrix("workflow-dispatch", dispatch_environment)
+
+        dispatch_input_cases = (
+            ("bad-pr-number", {"DISPATCH_PR_NUMBER": "0"}),
+            (
+                "bad-expected-head",
+                {
+                    "DISPATCH_EXPECTED_HEAD_SHA": "not-a-sha",
+                    "EVENT_SHA": "not-a-sha",
+                },
+            ),
+            ("dispatch-ref-head-mismatch", {"EVENT_SHA": "b" * 40}),
+        )
+        for name, mutation in dispatch_input_cases:
+            result = execute(
+                name,
+                _valid_pull(expected_head),
+                dispatch_environment | mutation,
+            )
+            if result is None:
+                continue
+            code, _stdout, stderr, _github_env = result
+            if code != 1:
+                errors.append(
+                    f"{label} workflow_dispatch fixture {name} must fail with SystemExit(1), "
+                    f"got {code}: {stderr.strip()}"
+                )
 
     return errors
-
 
 def validate_pr_metadata_advisory_contract() -> list[str]:
     errors: list[str] = []
