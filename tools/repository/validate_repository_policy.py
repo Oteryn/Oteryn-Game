@@ -2,16 +2,14 @@
 """Fail-closed wrapper for the Game repository-policy validator."""
 from __future__ import annotations
 
-import contextlib
 import importlib.util
-import io
 import json
-import os
 import re
+import subprocess
+import sys
 import tempfile
 import textwrap
 from pathlib import Path
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
@@ -265,62 +263,58 @@ def _run_metadata_source(
     environment: dict[str, str],
     pull: dict[str, object],
 ) -> tuple[int, str, str, str]:
-    stdout = io.StringIO()
-    stderr = io.StringIO()
     payload = json.dumps(pull).encode("utf-8")
+    if environment.get("EVENT_NAME") == "workflow_dispatch":
+        fixture_pr = environment.get("DISPATCH_PR_NUMBER", "")
+    elif "PULL_NUMBER" in environment:
+        fixture_pr = environment.get("PULL_NUMBER", "")
+    else:
+        fixture_pr = environment.get("EVENT_PR_NUMBER", "")
+    expected_url = (
+        f"https://api.github.com/repos/{environment['REPOSITORY']}/pulls/{fixture_pr}"
+    )
 
-    def urlopen(request, timeout=30):
-        if timeout != 30:
-            raise AssertionError(f"{label} changed GitHub metadata timeout: {timeout}")
-        if environment.get("EVENT_NAME") == "workflow_dispatch":
-            fixture_pr = environment.get("DISPATCH_PR_NUMBER", "")
-        elif "PULL_NUMBER" in environment:
-            fixture_pr = environment.get("PULL_NUMBER", "")
-        else:
-            fixture_pr = environment.get("EVENT_PR_NUMBER", "")
-        expected_url = (
-            f"https://api.github.com/repos/{environment['REPOSITORY']}/pulls/{fixture_pr}"
+    child_source = "\n".join(
+        (
+            "import io",
+            "import os",
+            "import urllib.request",
+            f"payload = {payload!r}",
+            f"expected_url = {expected_url!r}",
+            "def urlopen(request, timeout=30):",
+            "    if timeout != 30:",
+            "        os._exit(97)",
+            "    if getattr(request, 'full_url', None) != expected_url:",
+            "        os._exit(97)",
+            "    if request.get_method() != 'GET':",
+            "        os._exit(97)",
+            "    return io.BytesIO(payload)",
+            "urllib.request.urlopen = urlopen",
+            f"source = {source!r}",
+            f"exec(compile(source, {f'{label}:metadata'!r}, 'exec'), {{}})",
         )
-        actual_url = getattr(request, "full_url", None)
-        if actual_url != expected_url:
-            raise AssertionError(
-                f"{label} changed GitHub metadata request target: "
-                f"expected {expected_url}, got {actual_url!r}"
-            )
-        if request.get_method() != "GET":
-            raise AssertionError(
-                f"{label} changed GitHub metadata request method: {request.get_method()}"
-            )
-        return io.BytesIO(payload)
+    )
 
     with tempfile.TemporaryDirectory() as directory:
         env = dict(environment)
         env["GH_TOKEN"] = "fixture-token"
         github_env_path = Path(directory) / "github-env"
         env["GITHUB_ENV"] = str(github_env_path)
-        exit_code = 0
-        with (
-            patch.dict(os.environ, env, clear=True),
-            patch("urllib.request.urlopen", side_effect=urlopen),
-            contextlib.redirect_stdout(stdout),
-            contextlib.redirect_stderr(stderr),
-        ):
-            try:
-                exec(compile(source, f"{label}:metadata", "exec"), {})
-            except SystemExit as exc:
-                if exc.code is None:
-                    exit_code = 0
-                elif isinstance(exc.code, int) and not isinstance(exc.code, bool):
-                    exit_code = exc.code
-                else:
-                    exit_code = 1
+        completed = subprocess.run(
+            [sys.executable, "-c", child_source],
+            cwd=directory,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
         github_env = (
             github_env_path.read_text(encoding="utf-8")
             if github_env_path.is_file()
             else ""
         )
-    return exit_code, stdout.getvalue(), stderr.getvalue(), github_env
-
+    return completed.returncode, completed.stdout, completed.stderr, github_env
 
 def _metadata_environment(
     step_name: str,
@@ -598,6 +592,26 @@ def validate_pr_metadata_workflow_text(
                 f"to GITHUB_ENV, got {github_env!r}"
             )
 
+    def require_success_output(
+        name: str,
+        result: tuple[int, str, str, str] | None,
+    ) -> None:
+        if result is None:
+            return
+        code, stdout, _stderr, _github_env = result
+        if code != 0:
+            return
+        if step_name == "Verify pull request target and metadata":
+            expected_line = (
+                f"Validated live PR metadata and exact target head {expected_head}."
+            )
+        else:
+            expected_line = f"Validated PR metadata for exact head {expected_head}."
+        if expected_line not in stdout:
+            errors.append(
+                f"{label} metadata fixture {name} must reach the terminal success output"
+            )
+
     baseline = execute("baseline", _valid_pull(expected_head))
     if baseline is not None:
         code, stdout, stderr, _github_env = baseline
@@ -608,6 +622,7 @@ def validate_pr_metadata_workflow_text(
         if "::warning title=PR metadata guidance::" in stdout:
             errors.append(f"{label} valid PR metadata must not emit presentation warnings")
     require_target_sha("baseline", baseline)
+    require_success_output("baseline", baseline)
 
     presentation = _valid_pull(expected_head)
     presentation["title"] = "not conventional " + ("x" * 80)
@@ -631,6 +646,7 @@ def validate_pr_metadata_workflow_text(
             if warning not in stdout:
                 errors.append(f"{label} missing advisory metadata warning: {warning}")
     require_target_sha("presentation-advisory", result)
+    require_success_output("presentation-advisory", result)
 
     prevalidation = _valid_pull(expected_head)
     prevalidation["body"] = "## Summary\nok\n## Scope\nok\n## Prevalidation notes\nok\n"
@@ -647,6 +663,7 @@ def validate_pr_metadata_workflow_text(
                 f"{label} must not treat Prevalidation as a validation heading"
             )
     require_target_sha("prevalidation-heading", result)
+    require_success_output("prevalidation-heading", result)
 
     invalidation = _valid_pull(expected_head)
     invalidation["body"] = "## Summary\nok\n## Scope\nok\n## Invalidation risks\nok\n"
@@ -663,6 +680,7 @@ def validate_pr_metadata_workflow_text(
                 f"{label} must not treat Invalidation as a validation heading"
             )
     require_target_sha("invalidation-heading", result)
+    require_success_output("invalidation-heading", result)
 
     identity_cases: tuple[tuple[str, dict[str, object]], ...] = (
         ("closed", {"state": "closed"}),
@@ -717,6 +735,7 @@ def validate_pr_metadata_workflow_text(
                     f"{label} workflow_dispatch baseline must not emit presentation warnings"
                 )
         require_target_sha("dispatch-baseline", dispatch_baseline)
+        require_success_output("dispatch-baseline", dispatch_baseline)
         validate_identity_matrix("workflow-dispatch", dispatch_environment)
 
         dispatch_input_cases = (
