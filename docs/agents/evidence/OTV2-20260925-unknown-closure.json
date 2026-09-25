@@ -1,0 +1,80 @@
+{
+  "schema": "OTERYN_G3_UNKNOWN_CLOSURE_CONTRACT/v1",
+  "task_id": "OTV2-20260925-unknown-closure",
+  "allocation": {
+    "issue": 162,
+    "comment_id": 5826864843,
+    "branch": "agent/otv2-g3-unknown-closure-wave",
+    "base_sha": "1680eb5dc6145aa3e271ac8665f33a50ed837b76"
+  },
+  "pinned_input": {
+    "g3_artifact_id": 10801778929,
+    "g3_run_id": 35986883931,
+    "g3_head_sha": "20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+    "g3_zip_sha256": "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+    "universe_sha256": "1562382c66ad471a46309eaa5ae2fe9e7b3b1e3c8c2d5fc047ee8faa65bd1666",
+    "ledger_sha256": "117c3e6ae487b4d29a68042d9c3507ae965d569b31d5472c6b4e886a96789392"
+  },
+  "expected_pinned_partition": {
+    "unknown_pages": 5512,
+    "shapes": {
+      "STRUCTURED_PRIMARY": 3803,
+      "NO_INFOBOX_ITEM": 1399,
+      "STRUCTURED_ALTERNATE": 187,
+      "REDIRECT": 104,
+      "SOURCE_CLASSIFICATION_UNRESOLVED": 12,
+      "INFOBOX_ITEM_PARSE_ERROR": 7
+    },
+    "structured_primary": {
+      "object_only": 3121,
+      "object_world_quest_overlap": 1,
+      "hunts": 521,
+      "world_change": 12,
+      "world_quest_only": 17,
+      "residual": 131
+    }
+  },
+  "exact_route_signature": {
+    "family": "Encounter",
+    "root": "world-changes",
+    "surface": "Zmiany świata",
+    "current_template": "Predefinição:Infobox World Change",
+    "required_source_shape": "STRUCTURED_PRIMARY",
+    "reject_competing_templates": [
+      "Predefinição:Infobox Object",
+      "Predefinição:Infobox World Quest",
+      "Predefinição:Infobox Hunts"
+    ],
+    "expected_pinned_candidates": 12
+  },
+  "expected_offline_reproduction": {
+    "exact_signature_definition_family_routes": 12,
+    "unresolved_ambiguous_or_nondefinition": 4094,
+    "unresolved_no_pinned_baseline": 1406,
+    "relationship_only_pages": 539,
+    "multi_family_definition_candidates": 3121,
+    "ambiguous_residual_pages": 131,
+    "source_shape_only_or_unresolved_pages": 1709
+  },
+  "expected_row_dimensions_when_wiki_unavailable": {
+    "family_disposition": {"UNRESOLVED_NO_CURRENT_SOURCE": 5512},
+    "relationship_disposition": {"CANDIDATE_RELATIONSHIPS_PRESERVED": 4106, "NO_DIRECT_RELATIONSHIP_CLAIM": 1406},
+    "placement_disposition": {"NO_EXACT_PLACEMENT_RECORD_IN_PINNED_CENSUS": 5512},
+    "source_only_disposition": {"NOT_SOURCE_ONLY": 3803, "SOURCE_ONLY_OR_NONPROMOTABLE_EVIDENCE": 1709},
+    "exclusion_disposition": {"NOT_EXCLUDED": 5512}
+  },
+  "gates": {
+    "current_source_revisions": "Only exact revision matches close a row; drift and 401/403/429/network failures remain row-level unverified/unresolved.",
+    "exact_ids": "Exactly 5,512 unique page IDs; no dropped rows.",
+    "redirects": "No title-only resolution; exact target page-ID proof required.",
+    "relationships": "Preserve all candidate relationship evidence; do not force one family.",
+    "hard_exclusions": [
+      "Kalkulatory",
+      "Narzędzie do nasycania",
+      "Dostawca"
+    ],
+    "canonical_identity": "No target identity selection, ProductionKey minting, binding, semantic promotion, placement, or production mutation."
+  },
+  "storage": "Complete per-page output is retained only as a 14-day hosted workflow artifact; this file is the compact contract.",
+  "status": "CONTRACT_PENDING_HOSTED_RUN"
+}

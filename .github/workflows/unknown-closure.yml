@@ -1,0 +1,130 @@
+name: G3 UNKNOWN Closure
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/content-census/unknown_closure.py
+      - tools/content-census/unknown_closure_self_test.py
+      - .github/workflows/unknown-closure.yml
+      - docs/agents/evidence/OTV2-20260925-unknown-closure.json
+      - docs/agents/tasks/active/OTV2-20260925-unknown-closure.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unknown-closure-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  close-unknown:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    name: Content census / G3 UNKNOWN closure
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Fetch and verify pinned G3 artifact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import pathlib
+          import sys
+          sys.path.insert(0, "tools/content-census")
+          from global_source_overlap_fetch_artifacts import download_archive, extract_exact_members
+
+          spec = {
+              "id": 10801778929,
+              "name": "source-family-classification-20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+              "size_in_bytes": 1427897,
+              "digest": "sha256:a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7",
+              "run_id": 35986883931,
+              "head_sha": "20e8e5d99b7b42b6fd008e67029623ea7a4a8e3a",
+              "members": ("source-family-classified-universe.json", "manifest.json"),
+          }
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "g3-source-family"
+          root.mkdir(parents=True, exist_ok=True)
+          archive = root / "g3.zip"
+          digest = download_archive(spec, os.environ["GITHUB_TOKEN"], archive)
+          extract_exact_members(archive, spec, root, "g3")
+          if digest != "a63635e4cdfcd237cf69b5e2fe0471c30723e45fe3ab2ccc9095730a9337d2e7":
+              raise SystemExit("pinned G3 artifact digest mismatch")
+          PY
+
+      - name: Rebuild the exact pinned UNKNOWN ledger
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/unknown_disposition_ledger.py \
+            tools/content-census/unknown_closure.py \
+            tools/content-census/unknown_closure_self_test.py
+          out="$RUNNER_TEMP/g3-unknown-ledger"
+          mkdir -p "$out"
+          python tools/content-census/unknown_disposition_ledger.py \
+            --input-zip "$RUNNER_TEMP/g3-source-family/g3.zip" \
+            --ledger-output "$out/ledger.json" \
+            --manifest-output "$out/manifest.json"
+          cmp docs/agents/evidence/OTV2-20260924-unknown-disposition-ledger.json "$out/manifest.json"
+          python tools/content-census/unknown_closure_self_test.py "$out/ledger.json"
+
+      - name: Refresh current page IDs, revisions, and structured source shapes
+        run: |
+          set -euo pipefail
+          python tools/content-census/unknown_closure.py \
+            --input-ledger "$RUNNER_TEMP/g3-unknown-ledger/ledger.json" \
+            --out-dir "$RUNNER_TEMP/g3-unknown-closure"
+
+      - name: Verify closure manifest invariants
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          manifest = json.loads((pathlib.Path(os.environ["RUNNER_TEMP"]) / "g3-unknown-closure" / "manifest.json").read_text())
+          counts = manifest["counts"]
+          if counts["input_unknown_pages"] != 5512 or counts["output_pages"] != 5512:
+              raise SystemExit("UNKNOWN closure page partition mismatch")
+          if counts["dropped_rows"] != 0 or counts["duplicate_page_ids"] is not False:
+              raise SystemExit("UNKNOWN closure contains dropped/duplicate rows")
+          if counts["hard_excluded_rows"] != 0:
+              raise SystemExit("hard-excluded row was retained")
+          if manifest["invariants"]["canonical_target_selection_performed"] is not False:
+              raise SystemExit("canonical identity selection was claimed")
+          if manifest["invariants"]["production_population_performed"] is not False:
+              raise SystemExit("production population was claimed")
+          PY
+
+      - name: Upload complete closure evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unknown-closure-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g3-unknown-closure/unknown-closure-rows.json
+            ${{ runner.temp }}/g3-unknown-closure/manifest.json
+          if-no-files-found: error
+          retention-days: 14
