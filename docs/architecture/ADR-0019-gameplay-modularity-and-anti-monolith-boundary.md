@@ -1,6 +1,6 @@
 # ADR-0019: Gameplay modularity and anti-monolith boundary
 
-- Status: **Owner-directed architecture; pending protected integration**
+- Status: **Accepted**
 - Date: 2026-09-25
 - Decision owner: repository owner
 - Applies to: gameplay-system implementation inside the Oteryn GameNode, including systems such as Bestiary, Bosstiary, Exaltation Forge, Wheel of Destiny, Prey, Charms, Imbuements, Achievements and Weapon Proficiency
@@ -234,7 +234,7 @@ Costs:
 
 ## Integration status
 
-This document records the owner's 2026-09-25 direction. Until it is integrated to protected `main`, it is a candidate repository change and does not by itself authorize runtime implementation.
+This document records the owner's 2026-09-25 direction and was protected-integrated through PR #906 at `9728d30669a85579d333f826ebe7f812c76337ad`. Architecture acceptance does not by itself authorize runtime implementation.
 
 `IMPLEMENTATION_AUTHORITY: NONE`
 
