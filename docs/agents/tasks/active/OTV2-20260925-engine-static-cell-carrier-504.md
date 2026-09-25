@@ -33,7 +33,7 @@ external_repositories: []
 
 ## Outcome
 
-A versioned, reusable server-only production Rust carrier reads one exact addressed static cell from an immutable, bounded generation scope. Its constructors, codec and lookup accept typed **engineering** claims only. Reference target claim bindings remain empty and no Reference generation is activated.
+A versioned, crate-private and unactivated production Rust carrier reads one exact addressed static cell from an immutable, bounded generation scope. Its constructors, codec and lookup accept typed **engineering** claims only. A separate typed Reference collision claim checks exact per-cell binding plus admitted field provenance and currently fails closed for every case. Reference target claim bindings remain empty and no Reference generation is activated.
 
 ## Architecture and source of truth
 
@@ -44,7 +44,7 @@ A versioned, reusable server-only production Rust carrier reads one exact addres
 
 ## High-risk authority/recovery qualification
 
-NOT_APPLICABLE: no current actor mutation, activation, production authority grant, durable write or recovery interpretation. The caller supplies current active scope independently; this carrier cannot establish that a stored generation remains active.
+NOT_APPLICABLE: no current actor mutation, activation, production authority grant, durable write or recovery interpretation. The caller supplies scope independently; this carrier cannot establish that a stored generation remains active and is not an authority to make Movement legality decisions.
 
 ## Acceptance criteria
 
@@ -59,7 +59,7 @@ Reference collision admission, #483 continuity, activation, production Movement,
 
 ## Validation
 
-Focused Rust, fmt, strict Clippy and exact-head `game-gate`: pending repository CI. Host has no Rust. Separate inherited governance validator stale active packets #853/#869/#876 remain outside this lease.
+Focused local Rust `cargo test --offline --locked -p oteryn-game-server --lib static`: 21 PASS (including four carrier and one Reference claim test). Rust 1.94 strict Clippy `--lib --tests -- -D warnings`: PASS; rustfmt, JSON, diff and governance: PASS. Exact-head hosted `game-gate`: pending repository CI. Separate inherited prompt-policy validator stale active packets #853/#869/#876 remain outside this lease.
 
 ## Self-review
 
