@@ -295,9 +295,24 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 }
 
 async fn backoff(attempt: &mut u32) {
-    let delay = Duration::from_millis(200_u64.saturating_mul(1 << (*attempt).min(5)));
+    backoff_within(attempt, None).await;
+}
+
+/// The exponential retry delay for `attempt`, never longer than `remaining`.
+fn retry_delay(attempt: u32, remaining: Option<Duration>) -> Duration {
+    let delay =
+        Duration::from_millis(200_u64.saturating_mul(1 << attempt.min(5))).min(RETRY_BACKOFF_MAX);
+    remaining.map_or(delay, |remaining| delay.min(remaining))
+}
+
+/// Back off without sleeping past `budget`, so a budgeted retry loop
+/// returns by its deadline.
+async fn backoff_within(attempt: &mut u32, budget: Option<tokio::time::Instant>) {
+    let remaining =
+        budget.map(|deadline| deadline.saturating_duration_since(tokio::time::Instant::now()));
+    let delay = retry_delay(*attempt, remaining);
     *attempt = attempt.saturating_add(1);
-    tokio::time::sleep(delay.min(RETRY_BACKOFF_MAX)).await;
+    tokio::time::sleep(delay).await;
 }
 
 /// Re-establish the durability holder after any reported demand, and at a
@@ -590,7 +605,7 @@ impl Readiness<'_> {
                         return Err(BootError::Readiness("guard chain"));
                     }
                     self.root.request_ready();
-                    backoff(&mut attempt).await;
+                    backoff_within(&mut attempt, budget).await;
                 }
             }
         };
@@ -715,7 +730,7 @@ impl Readiness<'_> {
                     }
                     Err(_) => {
                         self.root.request_ready();
-                        backoff(&mut attempt).await;
+                        backoff_within(&mut attempt, budget).await;
                     }
                 }
             }
@@ -1158,6 +1173,47 @@ mod tests {
         let (own, foreign) = (key(&first), key(&second));
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &own).is_ok());
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
+    }
+
+    #[test]
+    fn retry_delay_never_exceeds_the_remaining_budget() {
+        // Unbudgeted retries grow exponentially up to the cap.
+        assert_eq!(retry_delay(0, None), Duration::from_millis(200));
+        assert_eq!(retry_delay(3, None), Duration::from_millis(1600));
+        assert_eq!(retry_delay(9, None), RETRY_BACKOFF_MAX);
+        // A budgeted retry sleeps at most the time left before the deadline.
+        assert_eq!(
+            retry_delay(9, Some(Duration::from_millis(700))),
+            Duration::from_millis(700)
+        );
+        assert_eq!(retry_delay(9, Some(Duration::ZERO)), Duration::ZERO);
+        assert_eq!(
+            retry_delay(0, Some(Duration::from_secs(3))),
+            Duration::from_millis(200)
+        );
+    }
+
+    #[test]
+    fn budgeted_backoff_returns_by_the_deadline() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            // Unclamped, attempt 9 would sleep the full 5 s cap.
+            let started = tokio::time::Instant::now();
+            let deadline = started + Duration::from_millis(300);
+            let mut attempt = 9;
+            backoff_within(&mut attempt, Some(deadline)).await;
+            let elapsed = started.elapsed();
+            assert!(elapsed >= Duration::from_millis(300), "{elapsed:?}");
+            assert!(elapsed < Duration::from_secs(1), "{elapsed:?}");
+            assert_eq!(attempt, 10);
+            // Past the deadline it does not sleep at all.
+            let late = tokio::time::Instant::now();
+            backoff_within(&mut attempt, Some(deadline)).await;
+            assert!(late.elapsed() < Duration::from_millis(100));
+        });
     }
 
     #[test]
