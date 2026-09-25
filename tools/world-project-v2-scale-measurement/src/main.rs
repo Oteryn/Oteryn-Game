@@ -14,11 +14,13 @@ const WORLD_KEY: &str = "oteryn:world.scale-probe";
 const DEFINITION_KEY: &str = "oteryn:content.world-object.scale-probe";
 const MAP_REVISION: &str = "map-scale-probe-r1";
 const COORDINATE_FRAME: &str = "global-target-2026-09-24";
+const SHARD_SIZE: usize = 500_000;
 
 #[derive(Clone, Copy, Debug)]
 enum Mode {
     Smoke,
     Full,
+    Sharded,
 }
 
 impl Mode {
@@ -27,15 +29,16 @@ impl Mode {
         match args.as_slice() {
             [flag, mode] if flag == "--mode" && mode == "smoke" => Ok(Self::Smoke),
             [flag, mode] if flag == "--mode" && mode == "full" => Ok(Self::Full),
-            [] => Err("pass --mode smoke or --mode full explicitly".into()),
-            _ => Err("only --mode smoke or --mode full is accepted; input paths are forbidden".into()),
+            [flag, mode] if flag == "--mode" && mode == "sharded" => Ok(Self::Sharded),
+            [] => Err("pass --mode smoke, --mode full, or --mode sharded explicitly".into()),
+            _ => Err("only --mode smoke, --mode full, or --mode sharded is accepted; input paths are forbidden".into()),
         }
     }
 
     fn placements(self) -> usize {
         match self {
             Self::Smoke => SMOKE_PLACEMENTS,
-            Self::Full => FULL_PLACEMENTS,
+            Self::Full | Self::Sharded => FULL_PLACEMENTS,
         }
     }
 }
@@ -112,13 +115,13 @@ fn placement(index: usize) -> ProjectV2Placement {
     }
 }
 
-fn build_draft(count: usize) -> Result<ProjectV2Draft, String> {
+fn build_draft_range(start: usize, count: usize) -> Result<ProjectV2Draft, String> {
     let mut placements = Vec::new();
     placements
         .try_reserve_exact(count)
         .map_err(|error| format!("placement allocation failed: {error}"))?;
-    for index in 0..count {
-        placements.push(placement(index));
+    for offset in 0..count {
+        placements.push(placement(start + offset));
     }
 
     Ok(ProjectV2Draft {
@@ -154,6 +157,10 @@ fn build_draft(count: usize) -> Result<ProjectV2Draft, String> {
             editor: vec![],
         },
     })
+}
+
+fn build_draft(count: usize) -> Result<ProjectV2Draft, String> {
+    build_draft_range(0, count)
 }
 
 fn total_bytes(documents: &BTreeMap<String, Vec<u8>>) -> usize {
@@ -247,7 +254,11 @@ fn edit_amplification(total: usize) -> Result<serde_json::Value, Box<dyn Error>>
 fn peak_rss_bytes() -> Option<u64> {
     let status = fs::read_to_string("/proc/self/status").ok()?;
     let kb = status.lines().find_map(|line| {
-        line.strip_prefix("VmHWM:")?.split_whitespace().next()?.parse::<u64>().ok()
+        line.strip_prefix("VmHWM:")?
+            .split_whitespace()
+            .next()?
+            .parse::<u64>()
+            .ok()
     })?;
     Some(kb.saturating_mul(1024))
 }
@@ -262,6 +273,9 @@ fn elapsed_ms(value: Duration) -> u128 {
 }
 
 fn run(mode: Mode) -> Result<serde_json::Value, (String, String)> {
+    if matches!(mode, Mode::Sharded) {
+        return run_sharded();
+    }
     let count = mode.placements();
     let limits = limits(count);
 
@@ -288,12 +302,15 @@ fn run(mode: Mode) -> Result<serde_json::Value, (String, String)> {
         .map_err(|error| ("schema_load".into(), error.to_string()))?;
     let loaded_placements = project.v2().map_or(0, |state| state.placements.len());
     if loaded_placements != count {
-        return Err(("schema_load".into(), format!("loaded {loaded_placements} placements; expected {count}")));
+        return Err((
+            "schema_load".into(),
+            format!("loaded {loaded_placements} placements; expected {count}"),
+        ));
     }
     let schema_load_time = load_started.elapsed();
 
-    let staged_write_time = stage_documents(documents)
-        .map_err(|error| ("staged_write".into(), error.to_string()))?;
+    let staged_write_time =
+        stage_documents(documents).map_err(|error| ("staged_write".into(), error.to_string()))?;
     let total = total_bytes(documents);
     let amplification = edit_amplification(total)
         .map_err(|error| ("edit_amplification".into(), error.to_string()))?;
@@ -308,7 +325,7 @@ fn run(mode: Mode) -> Result<serde_json::Value, (String, String)> {
         "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
         "status": "completed",
         "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
-        "mode": match mode { Mode::Smoke => "smoke", Mode::Full => "full" },
+        "mode": match mode { Mode::Smoke => "smoke", Mode::Full => "full", Mode::Sharded => "sharded" },
         "placements_requested": count,
         "placements_loaded": loaded_placements,
         "synthetic_definitions": 1,
@@ -334,6 +351,183 @@ fn run(mode: Mode) -> Result<serde_json::Value, (String, String)> {
     }))
 }
 
+fn shard_ranges(total: usize, shard_size: usize) -> Result<Vec<(usize, usize)>, String> {
+    if total == 0 || shard_size == 0 {
+        return Err("total placements and shard size must be positive".into());
+    }
+    let mut ranges = Vec::new();
+    let mut start = 0usize;
+    while start < total {
+        let end = start.saturating_add(shard_size).min(total);
+        ranges.push((start, end));
+        start = end;
+    }
+    Ok(ranges)
+}
+
+fn validate_identity_range(placements: &[ProjectV2Placement], start: usize) -> Result<(), String> {
+    for (offset, record) in placements.iter().enumerate() {
+        let expected = format!("oteryn:placement.scale-probe.{:08}", start + offset);
+        if record.key != expected {
+            return Err(format!(
+                "identity coverage mismatch at offset {offset}: expected {expected}, found {}",
+                record.key
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn run_sharded() -> Result<serde_json::Value, (String, String)> {
+    let ranges =
+        shard_ranges(FULL_PLACEMENTS, SHARD_SIZE).map_err(|error| ("shard_plan".into(), error))?;
+    let mut completed = Vec::with_capacity(ranges.len());
+    let mut role_totals: BTreeMap<String, u64> = BTreeMap::new();
+    let mut aggregate_bytes = 0u64;
+    let mut aggregate_timings = [0u128; 5];
+    let mut placements_loaded = 0usize;
+
+    for (shard_index, (start, end)) in ranges.iter().copied().enumerate() {
+        let count = end - start;
+        let shard_limits = limits(count);
+        let build_started = Instant::now();
+        let draft = build_draft_range(start, count)
+            .map_err(|error| ("build".into(), format!("shard {shard_index}: {error}")))?;
+        let build_time = build_started.elapsed();
+
+        let serialize_started = Instant::now();
+        let canonical =
+            CanonicalProjectDocuments::from_v2_draft(draft, shard_limits).map_err(|error| {
+                (
+                    "serialize_validate".into(),
+                    format!("shard {shard_index}: {error}"),
+                )
+            })?;
+        let serialize_time = serialize_started.elapsed();
+        let snapshot = canonical
+            .into_snapshot(shard_limits)
+            .map_err(|error| ("snapshot".into(), format!("shard {shard_index}: {error}")))?;
+        let documents = snapshot.documents();
+
+        let parse_started = Instant::now();
+        syntax_parse(documents).map_err(|error| {
+            (
+                "syntax_parse".into(),
+                format!("shard {shard_index}: {error}"),
+            )
+        })?;
+        let syntax_parse_time = parse_started.elapsed();
+
+        let load_started = Instant::now();
+        let project = snapshot.parse(shard_limits).map_err(|error| {
+            (
+                "schema_load".into(),
+                format!("shard {shard_index}: {error}"),
+            )
+        })?;
+        let loaded = project.v2().map_or(0, |state| state.placements.len());
+        if loaded != count {
+            return Err((
+                "schema_load".into(),
+                format!("shard {shard_index} loaded {loaded}; expected {count}"),
+            ));
+        }
+        validate_identity_range(&project.v2().expect("v2 snapshot").placements, start)
+            .map_err(|error| ("coverage".into(), format!("shard {shard_index}: {error}")))?;
+        let schema_load_time = load_started.elapsed();
+
+        let staged_write_time = stage_documents(documents).map_err(|error| {
+            (
+                "staged_write".into(),
+                format!("shard {shard_index}: {error}"),
+            )
+        })?;
+        let bytes = total_bytes(documents) as u64;
+        let roles = role_bytes(documents);
+        for (role, value) in &roles {
+            *role_totals.entry((*role).to_string()).or_default() += *value as u64;
+        }
+
+        let phases = [
+            elapsed_ms(build_time),
+            elapsed_ms(serialize_time),
+            elapsed_ms(syntax_parse_time),
+            elapsed_ms(schema_load_time),
+            elapsed_ms(staged_write_time),
+        ];
+        for (total, phase) in aggregate_timings.iter_mut().zip(phases) {
+            *total += phase;
+        }
+        aggregate_bytes += bytes;
+        placements_loaded += loaded;
+        completed.push(json!({
+            "shard_index": shard_index,
+            "placement_start_inclusive": start,
+            "placement_end_exclusive": end,
+            "placements_requested": count,
+            "placements_loaded": loaded,
+            "identity_coverage_verified": true,
+            "role_bytes": roles,
+            "total_bytes": bytes,
+            "timings_ms": {
+                "build": phases[0],
+                "serialize_and_canonical_validate": phases[1],
+                "syntax_parse": phases[2],
+                "schema_load": phases[3],
+                "staged_write": phases[4]
+            }
+        }));
+    }
+
+    if placements_loaded != FULL_PLACEMENTS {
+        return Err((
+            "coverage".into(),
+            format!("loaded {placements_loaded}; expected {FULL_PLACEMENTS}"),
+        ));
+    }
+    Ok(json!({
+        "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+        "status": "completed",
+        "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+        "mode": "sharded",
+        "placements_requested": FULL_PLACEMENTS,
+        "placements_loaded": placements_loaded,
+        "coverage": {
+            "method": "contiguous half-open global identity ranges; every loaded identity checked against its expected global ordinal",
+            "shard_size_target": SHARD_SIZE,
+            "shards_expected": ranges.len(),
+            "shards_completed": completed.len(),
+            "no_duplicate_or_missing_identities": true,
+            "first_placement_index": 0,
+            "last_placement_index_inclusive": FULL_PLACEMENTS - 1
+        },
+        "synthetic_definitions": 1,
+        "worlds": 1,
+        "map_revisions": 1,
+        "coordinate_frames": 1,
+        "placement_disposition": "CandidateOnly",
+        "donor_inputs_accepted": false,
+        "source_inputs_accepted": false,
+        "role_bytes": role_totals,
+        "total_bytes": aggregate_bytes,
+        "timings_ms": {
+            "build": aggregate_timings[0],
+            "serialize_and_canonical_validate": aggregate_timings[1],
+            "syntax_parse": aggregate_timings[2],
+            "schema_load": aggregate_timings[3],
+            "staged_write": aggregate_timings[4]
+        },
+        "max_supervised_shard_peak_rss_bytes": null,
+        "peak_rss_source": "pending workflow /usr/bin/time -v measurement of the sequential shard runner",
+        "monolithic_full_world_peak_rss": "NOT_MEASURED_BY_SHARDED_RUN",
+        "full_world_edit_amplification": "NOT_MEASURED; no canonical full-world snapshot diff is performed",
+        "production_layout_selected": false,
+        "limitation": "Synthetic bounded sequential shards exercise the real v2 canonicalize/validate/load/staged-write path for all 24,502,036 identities. This is not a monolithic full-world peak-RSS measurement, not full-world edit amplification, and does not select a production shard layout.",
+        "shards": completed,
+        "schema_and_chunk_decision": "out_of_scope"
+    }))
+}
+
 fn main() {
     let mode = match Mode::parse_args() {
         Ok(mode) => mode,
@@ -343,28 +537,88 @@ fn main() {
         }
     };
     match run(mode) {
-        Ok(result) => println!("{}", serde_json::to_string_pretty(&result).unwrap_or_else(|_| "{\"status\":\"measurement_error\"}".into())),
+        Ok(result) => println!(
+            "{}",
+            serde_json::to_string_pretty(&result)
+                .unwrap_or_else(|_| "{\"status\":\"measurement_error\"}".into())
+        ),
         Err((stage, message)) => {
-            println!("{}", json!({
-                "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
-                "status": "resource_limit",
-                "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
-                "mode": match mode { Mode::Smoke => "smoke", Mode::Full => "full" },
-                "placements_requested": mode.placements(),
-                "peak_rss_bytes": peak_rss_bytes(),
-                "peak_rss_source": "probe self-report; supervised full run replaces this with /usr/bin/time -v",
-                "one_placement_edit_amplification": {
-                    "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
-                    "changed_paths": null,
-                    "changed_file_count": null,
-                    "changed_project_bytes": null,
-                    "estimate_status": "unavailable_after_resource_limited_failure"
-                },
-                "failed_stage": stage,
-                "error": message,
-                "schema_and_chunk_decision": "out_of_scope"
-            }));
+            println!(
+                "{}",
+                json!({
+                    "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT/v1",
+                    "status": "resource_limit",
+                    "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+                    "mode": match mode { Mode::Smoke => "smoke", Mode::Full => "full", Mode::Sharded => "sharded" },
+                    "placements_requested": mode.placements(),
+                    "peak_rss_bytes": peak_rss_bytes(),
+                    "peak_rss_source": "probe self-report; supervised full run replaces this with /usr/bin/time -v",
+                    "one_placement_edit_amplification": {
+                        "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
+                        "changed_paths": null,
+                        "changed_file_count": null,
+                        "changed_project_bytes": null,
+                        "estimate_status": "unavailable_after_resource_limited_failure"
+                    },
+                    "failed_stage": stage,
+                    "error": message,
+                    "schema_and_chunk_decision": "out_of_scope"
+                })
+            );
             std::process::exit(75);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shard_ranges_are_contiguous_complete_and_non_overlapping() {
+        let ranges = shard_ranges(29, 8).unwrap();
+        assert_eq!(ranges, vec![(0, 8), (8, 16), (16, 24), (24, 29)]);
+        let mut visited = vec![false; 29];
+        for (start, end) in ranges {
+            for index in start..end {
+                assert!(!visited[index], "duplicate index {index}");
+                visited[index] = true;
+            }
+        }
+        assert!(visited.into_iter().all(|seen| seen));
+    }
+
+    #[test]
+    fn target_plan_covers_exact_full_cardinality() {
+        let ranges = shard_ranges(FULL_PLACEMENTS, SHARD_SIZE).unwrap();
+        assert_eq!(ranges.first(), Some(&(0, SHARD_SIZE)));
+        assert_eq!(ranges.last().map(|range| range.1), Some(FULL_PLACEMENTS));
+        assert_eq!(ranges.len(), FULL_PLACEMENTS.div_ceil(SHARD_SIZE));
+        assert!(ranges.windows(2).all(|pair| pair[0].1 == pair[1].0));
+        assert!(
+            ranges
+                .iter()
+                .all(|(start, end)| end > start && end - start <= SHARD_SIZE)
+        );
+        assert_eq!(
+            ranges.iter().map(|(start, end)| end - start).sum::<usize>(),
+            FULL_PLACEMENTS
+        );
+    }
+
+    #[test]
+    fn identity_validator_rejects_duplicate_or_missing_ordinals() {
+        let valid = vec![placement(10), placement(11), placement(12)];
+        assert!(validate_identity_range(&valid, 10).is_ok());
+        let duplicate = vec![placement(10), placement(10), placement(12)];
+        assert!(validate_identity_range(&duplicate, 10).is_err());
+        let missing = vec![placement(10), placement(12)];
+        assert!(validate_identity_range(&missing, 10).is_err());
+    }
+
+    #[test]
+    fn shard_planner_rejects_empty_ranges() {
+        assert!(shard_ranges(0, SHARD_SIZE).is_err());
+        assert!(shard_ranges(FULL_PLACEMENTS, 0).is_err());
     }
 }
