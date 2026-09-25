@@ -88,7 +88,7 @@
     "canonical_identity": "No target identity selection, ProductionKey minting, binding, semantic promotion, placement, or production mutation."
   },
   "storage": "Complete per-page output is retained only as a 14-day hosted workflow artifact; this file is the compact contract.",
-  "status": "SUCCESSOR_CANDIDATE_VALIDATION_PENDING",
+  "status": "R3_P1_REPAIR_HOSTED_VALIDATION_PENDING",
   "previous_candidate_validation": {
     "head_sha": "c877eb7bb2e1102c335ce4dfd8e4addc3fa3abe7",
     "g3_run_id": 36096684047,
@@ -102,5 +102,39 @@
     "exact_signature_routes": 12,
     "expires_at": "2026-10-09T05:00:44Z",
     "note": "Superseded by task/evidence repair; successor candidate requires fresh exact-head validation."
+  },
+  "superseded_candidate_validation": {
+    "head_sha": "94869dc86eebabf1f9800ce7b6e6296eea4e7ad4",
+    "g3_run_id": 36096964425,
+    "g3_artifact_id": 10847971737,
+    "artifact_sha256": "0646f6e412a955d356ac11c5f32e71b61587972e6861fb2950a3df7017e74a1e",
+    "hosted_runs": {
+      "governance": 36096964423,
+      "semantic_audit": 36096964443,
+      "merge_gate": 36096964434
+    },
+    "result": "SUPERSEDED_BY_REVIEWER_P1",
+    "note": "R2 PASS checks/artifact are superseded because revision_drift_pages included current observations without a pinned revision baseline."
+  },
+  "reviewer_disposition": {
+    "P1": {
+      "status": "REPAIRED_PENDING_EXACT_HEAD_VALIDATION",
+      "requirement": "revision_drift_pages counts only rows with a non-empty pinned revision baseline that differs from the current revision.",
+      "separate_counts": [
+        "pinned_baseline_absent_pages",
+        "current_source_without_pinned_baseline_pages",
+        "verified_same_revision_pages",
+        "revision_drift_pages"
+      ],
+      "focused_tests": [
+        "empty baseline with changed current revision is not drift",
+        "non-empty baseline with changed current revision is drift"
+      ]
+    },
+    "P2": {
+      "status": "HARDENING",
+      "blocking": false,
+      "disposition": "Batch failure fanout remains fail-closed; deferred without scope expansion."
+    }
   }
 }
