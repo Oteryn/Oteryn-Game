@@ -6,11 +6,12 @@ use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
     CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ImportBatch, ProjectDraft,
-    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2Draft, ProjectV2EditorEntry,
-    ProjectV2EvidenceClass, ProjectV2Source, ProjectV2SourceIdentityBinding, ProjectV2State,
-    ReferenceCells, ReferenceItemField, ReferenceItemPresentation, ReferenceItemSemantics,
-    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints,
-    protected_cw2_b1_promoted_item_family_import,
+    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2Declaration, ProjectV2DefinitionRef,
+    ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family,
+    ProjectV2Identity, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, ReferenceCells, ReferenceItemField,
+    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemWeapon,
+    ReferenceRationalPercent, ReferenceSignedPoints, protected_cw2_b1_promoted_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -28,6 +29,15 @@ const ITEM_SELECTED_SHA256: &str =
 const WIKI_REVISION: &str =
     "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a";
 const WIKI_CENSUS_SHA256: &str = "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675";
+const MOUNT_SELECTED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260925-g4-mount-252-selected.json");
+const MOUNT_SELECTED_SHA256: &str =
+    "31201df8f737a1e22ed719152deb98a9825e6b3f196d7ee8e3109dd1759067b0";
+const MOUNT_SOURCE_REVISION: &str = "tibiawiki-nonitem-g1-snapshot:0b7caf98940305a91c5384dfb828c0afcf016f087f71572ec71d7c936c6387df";
+const MOUNT_SOURCE_SHA256: &str =
+    "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713";
+const MOUNT_CROSSWALK_SHA256: &str =
+    "38d827ba66bb7a04a3f5a94bbb873ca4485d4b7c873de957812a9c1be20a67c5";
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -40,7 +50,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 2,
+        max_import_records: 3,
         max_reimport_states: 1,
     }
 }
@@ -389,6 +399,184 @@ fn populate_items(
     })
 }
 
+struct MountPopulation {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    declarations: Vec<ProjectV2Declaration>,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+    editor: Vec<ProjectV2EditorEntry>,
+}
+
+fn mount_key(name: &str) -> Result<String, Box<dyn std::error::Error>> {
+    if name.is_empty() || !name.is_ascii() {
+        return Err("Mount name cannot produce an ASCII canonical key".into());
+    }
+    let mut slug = String::new();
+    for byte in name.bytes() {
+        if byte.is_ascii_alphanumeric() {
+            slug.push(char::from(byte.to_ascii_lowercase()));
+        } else if !slug.is_empty() && !slug.ends_with('_') {
+            slug.push('_');
+        }
+    }
+    let slug = slug.trim_end_matches('_');
+    if slug.is_empty() {
+        return Err("Mount name has no canonical key characters".into());
+    }
+    Ok(format!("oteryn:content.mount.{slug}"))
+}
+
+fn populate_mounts(
+    records: &[ProjectReferenceRecord],
+    item_bindings: &[ProjectV2SourceIdentityBinding],
+) -> Result<MountPopulation, Box<dyn std::error::Error>> {
+    let selected_sha256 = Sha256::digest(MOUNT_SELECTED)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    if selected_sha256 != MOUNT_SELECTED_SHA256 {
+        return Err("selected Mount input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(MOUNT_SELECTED)?;
+    let source = &packet["source"];
+    if packet["schema"] != "OTERYN_G4_MOUNT_252_SELECTED/v1"
+        || source["source_key"] != "oteryn:source.tibiawiki"
+        || source["source_revision"] != MOUNT_SOURCE_REVISION
+        || source["source_capture_sha256"] != MOUNT_SOURCE_SHA256
+        || source["crosswalk_sha256"] != MOUNT_CROSSWALK_SHA256
+        || source["source_capture_artifact_id"] != 10831362943_u64
+        || source["crosswalk_artifact_id"] != 10848111721_u64
+        || source["exact_raw_source_tuple_matches"] != 252_u64
+        || packet["population_policy"]["typed_speed_bonus"] != "UNKNOWN"
+        || packet["population_policy"]["typed_premium"] != "UNKNOWN"
+    {
+        return Err("selected Mount source or field policy drifted".into());
+    }
+    let selected = packet["selected"].as_array().ok_or("Mount rows missing")?;
+    if selected.len() != 252 {
+        return Err("Mount selection count drifted".into());
+    }
+    let mut declarations = Vec::with_capacity(252);
+    let mut bindings = Vec::with_capacity(252);
+    let mut editor = Vec::with_capacity(252);
+    let mut keys = BTreeSet::new();
+    let mut page_ids = BTreeSet::new();
+    let item_keys = records
+        .iter()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item { identity, .. } => Some(identity.key.as_str()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    for row in selected {
+        let page_id = row["external_id"].as_str().ok_or("Mount page ID missing")?;
+        let parsed_id: u64 = page_id.parse()?;
+        let title = row["display_name"].as_str().ok_or("Mount title missing")?;
+        let key = mount_key(title)?;
+        let revision = row["current_revision_id"].as_u64().unwrap_or(0);
+        let timestamp = row["current_revision_timestamp"]
+            .as_str()
+            .ok_or("Mount page timestamp missing")?;
+        let digest = row["current_raw_utf8_sha256"]
+            .as_str()
+            .ok_or("Mount page digest missing")?;
+        if parsed_id == 0
+            || page_id != parsed_id.to_string()
+            || revision == 0
+            || timestamp.len() != 20
+            || !timestamp.ends_with('Z')
+            || timestamp > "2026-07-28T23:59:59Z"
+            || !timestamp
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || matches!(byte, b'-' | b':' | b'T' | b'Z'))
+            || digest.len() != 64
+            || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || row["canonical_key_proposal"] != key
+            || row["canonical_revision"] != "definition-r1"
+            || row["source_key"] != "oteryn:source.tibiawiki"
+            || row["identity_namespace"] != "mediawiki/page_id"
+            || row["source_state"] != "SOURCE_REVISION_STABLE"
+            || row["concept_resolution"] != "UNIQUE_MULTI_SIGNAL_SOURCE_CONCEPT_CANDIDATE"
+            || row["structured_fields"]["name"] != title
+            || row["structured_fields"]
+                .as_object()
+                .map(|fields| fields.len())
+                != Some(3)
+            || !keys.insert(key.clone())
+            || !page_ids.insert(page_id.to_owned())
+            || item_keys.contains(key.as_str())
+            || item_bindings.iter().any(|binding| {
+                binding.identity_namespace == "mediawiki/page_id" && binding.external_id == page_id
+            })
+        {
+            return Err("Mount identity, provenance or collision check failed".into());
+        }
+        let target = ProjectV2DefinitionRef {
+            family: ProjectV2Family::Mount,
+            key: key.clone(),
+            revision: "definition-r1".to_owned(),
+        };
+        declarations.push(ProjectV2Declaration::Mount {
+            identity: ProjectV2Identity {
+                key,
+                revision: target.revision.clone(),
+            },
+            presentation: None,
+            speed_bonus: None,
+            premium: None,
+            taming_item: None,
+            acquisition_interactions: Vec::new(),
+            fields: Vec::new(),
+        });
+        bindings.push(ProjectV2SourceIdentityBinding {
+            source_key: "oteryn:source.tibiawiki".to_owned(),
+            source_revision: MOUNT_SOURCE_REVISION.to_owned(),
+            identity_namespace: "mediawiki/page_id".to_owned(),
+            external_id: page_id.to_owned(),
+            target: target.clone(),
+            disposition: ProjectV2SourceIdentityDisposition::Exact,
+        });
+        editor.push(ProjectV2EditorEntry {
+            target,
+            display_name: title.to_owned(),
+            description: String::new(),
+            categories: Vec::new(),
+            notes: Vec::new(),
+            aliases: Vec::new(),
+            tags: vec!["oteryn:editor.mount".to_owned()],
+        });
+    }
+    let import = ImportBatch {
+        batch_id: "g4-mount-252-tibiawiki-r1".to_owned(),
+        source_repository: "tibiawiki.com.br".to_owned(),
+        source_revision: MOUNT_SOURCE_REVISION.to_owned(),
+        source_artifact_sha256: MOUNT_SOURCE_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_G4_NON_ITEM_SOURCE_CAPTURE/v1".to_owned(),
+        importer: "OTERYN_G4_NONITEM_BULK_CROSSWALK/v1".to_owned(),
+        mapper: "OTERYN_G4_NONITEM_BULK_CROSSWALK/v1".to_owned(),
+        mapper_revision: "a3cc319aa4582c90cd9d03efd81e2ab0cabf1bb0".to_owned(),
+        mapper_sha256: "d927b2bebf3616f8c6e716ad32018698edd323d745078363448eb3f933c7f2d2"
+            .to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: import.batch_id.clone(),
+        revision: import.source_revision.clone(),
+        sha256: import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    Ok(MountPopulation {
+        import,
+        source,
+        declarations,
+        bindings,
+        editor,
+    })
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
     let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
@@ -409,24 +597,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ItemPopulation {
         import: wiki_import,
         source: wiki_source,
-        bindings,
-        editor,
+        mut bindings,
+        mut editor,
     } = populate_items(&mut records)?;
+    let MountPopulation {
+        import: mount_import,
+        source: mount_source,
+        declarations,
+        bindings: mount_bindings,
+        editor: mount_editor,
+    } = populate_mounts(&records, &bindings)?;
+    bindings.extend(mount_bindings);
+    editor.extend(mount_editor);
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-item-exact-165-r1".to_owned(),
+                project_revision: "g4-mount-252-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
                 coordinate_frame: "global-target-2026-07-28".to_owned(),
                 records,
-                imports: vec![provenance, wiki_import],
+                imports: vec![provenance, wiki_import, mount_import],
                 metadata: Vec::new(),
             },
             state: ProjectV2State {
-                sources: vec![source, wiki_source],
+                sources: vec![source, wiki_source, mount_source],
+                declarations,
                 source_identity_bindings: bindings,
                 editor,
                 ..ProjectV2State::default()
@@ -439,7 +637,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} wiki_bindings=165 wiki_fields=526 tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 mounts=252 mount_fields=0 tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

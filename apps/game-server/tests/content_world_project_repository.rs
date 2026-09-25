@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        376,
-        "cf1071b0026ed6417cf33ee892c54ceaa55b8739bde8c252cd93f72bc5c98620",
+        361,
+        "e77b77eb2fce2c7612b3359f7e383bafec892006513bf98f0bf6649a4579bd00",
     ),
     (
         "definitions/declarations.json",
-        63,
-        "b9e6f5eaae263f0575e848fd5fd6a368d04e3d2d54b1d87042787abdf8fde278",
+        28_364,
+        "e1df6d290aa4824bbb94bf3427949619fdb56b17202d5b9018127d77b604c1d5",
     ),
     (
         "definitions/reference.json",
@@ -31,13 +31,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "editor/author.json",
-        35_113,
-        "f3cfb2e4c04abe2e38d11cbc514908655fd7c0fb9996fe9763fe9311aa93c4b6",
+        90_521,
+        "db78e18c829a560a3d8248a005890cf8b981c46e799497293ffed78157b95fc7",
     ),
     (
         "manifest.json",
-        1_930,
-        "acddd89b388fddec1c54d5389de6d8ab8ae618b267a48da28104299f605dce91",
+        1_929,
+        "38b68c904d00f48ccb845c38ddb44fadb3fb077d5c60b2f0d1f967b52ae9e134",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        394,
-        "269b09102b4b9e7d458bb18a35f6107ecbce8cf271289a903603fd833d662898",
+        389,
+        "3419da94198b562092fe8d3ff09776d1ee5cb99c8a3502317eba0600dd37e88e",
     ),
     (
         "provenance/imports.json",
-        1_386,
-        "0f63720ce6763f540240d70e4b05e0aafa07721a6b3614160a3f5f39cb03d16c",
+        2_048,
+        "eb2321e2dd7659f220dfda179ded293a7980dd255f3b961f5f2dd10f48a4bcb9",
     ),
     (
         "provenance/sources.json",
-        54_302,
-        "81f55d61ae47a6032f906e3a189b88ebf4319ca2eac48fbecf9bf0125ee3619d",
+        140_093,
+        "8c34c3f3198345ec630137b6878c7b59e9c4f1fe88bba9edbb988969267aef07",
     ),
     (
         "worlds/world.json",
@@ -65,7 +65,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
         "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
-const TREE_SHA256: &str = "2649b6f2b6cfff35014f078f32530c66508266e5bf6e3ebea01491b596209c06";
+const TREE_SHA256: &str = "f2d779a0abe89a1442e5a85af1aed24e55e581e9d7e4985c47a2ca9a70fa73e2";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
@@ -86,7 +86,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 2,
+        max_import_records: 3,
         max_reimport_states: 1,
     }
 }
@@ -208,8 +208,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-item-exact-165-r1");
-    assert_eq!(project.imports().len(), 2);
+    assert_eq!(project.project_revision(), "g4-mount-252-r1");
+    assert_eq!(project.imports().len(), 3);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -230,16 +230,40 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
     );
     assert!(wiki.candidates.is_empty());
+    let mount_import = &project.imports()[2];
+    assert_eq!(mount_import.batch_id, "g4-mount-252-tibiawiki-r1");
+    assert_eq!(
+        mount_import.source_revision,
+        "tibiawiki-nonitem-g1-snapshot:0b7caf98940305a91c5384dfb828c0afcf016f087f71572ec71d7c936c6387df"
+    );
+    assert_eq!(
+        mount_import.source_artifact_sha256,
+        "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713"
+    );
+    assert!(mount_import.candidates.is_empty());
+    assert!(mount_import.reimport_states.is_empty());
 
     let v2 = project.v2().expect("WorldProject/v2 state");
-    assert!(v2.declarations.is_empty());
+    assert_eq!(v2.declarations.len(), 252);
+    assert!(v2.declarations.iter().all(|declaration| matches!(
+        declaration,
+        ProjectV2Declaration::Mount {
+            presentation: None,
+            speed_bonus: None,
+            premium: None,
+            taming_item: None,
+            acquisition_interactions,
+            fields,
+            ..
+        } if acquisition_interactions.is_empty() && fields.is_empty()
+    )));
     assert!(v2.item_authoring.is_empty());
     assert!(v2.authoring_profiles.is_empty());
     assert!(v2.worlds.is_empty());
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 2);
+    assert_eq!(v2.sources.len(), 3);
     assert_eq!(v2.sources[0].key, "oteryn:source.crystalserver");
     assert_eq!(v2.sources[0].import_batch_id, provenance.batch_id);
     assert_eq!(v2.sources[0].revision, provenance.source_revision);
@@ -253,23 +277,73 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[1].revision, wiki.source_revision);
     assert_eq!(v2.sources[1].sha256, wiki.source_artifact_sha256);
     assert_eq!(v2.sources[1].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.source_identity_bindings.len(), 165);
-    assert_eq!(v2.editor.len(), 165);
+    assert_eq!(v2.sources[2].key, v2.sources[1].key);
+    assert_eq!(v2.sources[2].import_batch_id, mount_import.batch_id);
+    assert_eq!(v2.sources[2].revision, mount_import.source_revision);
+    assert_eq!(v2.sources[2].sha256, mount_import.source_artifact_sha256);
+    assert_eq!(v2.sources[2].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(v2.source_identity_bindings.len(), 417);
+    assert_eq!(v2.editor.len(), 417);
+    let mut mount_ids = BTreeSet::new();
+    let mut item_ids = BTreeSet::new();
     for binding in &v2.source_identity_bindings {
-        assert_eq!(binding.source_key, v2.sources[1].key);
-        assert_eq!(binding.source_revision, v2.sources[1].revision);
+        assert_eq!(binding.source_key, "oteryn:source.tibiawiki");
         assert_eq!(binding.identity_namespace, "mediawiki/page_id");
-        assert_eq!(binding.target.family, ProjectV2Family::Item);
         assert_eq!(
             binding.disposition,
             ProjectV2SourceIdentityDisposition::Exact
         );
+        match binding.target.family {
+            ProjectV2Family::Item => {
+                assert_eq!(binding.source_revision, v2.sources[1].revision);
+                assert!(item_ids.insert(&binding.external_id));
+            }
+            ProjectV2Family::Mount => {
+                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert!(binding.target.key.starts_with("oteryn:content.mount."));
+                assert!(mount_ids.insert(&binding.external_id));
+            }
+            _ => panic!("only Item and Mount source bindings are populated"),
+        }
     }
+    assert_eq!(item_ids.len(), 165);
+    assert_eq!(mount_ids.len(), 252);
+    assert!(item_ids.is_disjoint(&mount_ids));
+    let mount_keys = v2
+        .declarations
+        .iter()
+        .map(|declaration| match declaration {
+            ProjectV2Declaration::Mount { identity, .. } => identity.key.as_str(),
+            _ => panic!("only Mount declarations are populated"),
+        })
+        .collect::<BTreeSet<_>>();
+    assert_eq!(mount_keys.len(), 252);
+    assert!(
+        v2.source_identity_bindings
+            .iter()
+            .filter(|binding| binding.target.family == ProjectV2Family::Mount)
+            .all(|binding| mount_keys.contains(binding.target.key.as_str()))
+    );
+    let mut mount_editor = 0;
+    let mut item_editor = 0;
     for entry in &v2.editor {
         assert!(!entry.display_name.is_empty());
-        assert_eq!(entry.tags, ["oteryn:editor.item"]);
         assert!(entry.aliases.is_empty());
+        match entry.target.family {
+            ProjectV2Family::Item => {
+                assert_eq!(entry.tags, ["oteryn:editor.item"]);
+                item_editor += 1;
+            }
+            ProjectV2Family::Mount => {
+                assert_eq!(entry.tags, ["oteryn:editor.mount"]);
+                assert!(mount_keys.contains(entry.target.key.as_str()));
+                mount_editor += 1;
+            }
+            _ => panic!("only Item and Mount editor entries are populated"),
+        }
     }
+    assert_eq!(item_editor, 165);
+    assert_eq!(mount_editor, 252);
 
     let rewritten = project
         .canonical_documents(limits())
