@@ -65,14 +65,35 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
         "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
+/// Successor authoring-tree directory markers that coexist under the legacy package root.
+///
+/// They are not WorldProject manifest locators: capture opens only control and manifest-listed
+/// documents, so these files never enter the legacy package, its digests or runtime content.
+const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
+    "areas/cities/index.json",
+    "areas/hunting-places/index.json",
+    "areas/islands/index.json",
+    "areas/regions/index.json",
+    "areas/streets/index.json",
+    "objects/index.json",
+    "placements/index.json",
+    "terrain/index.json",
+    "transitions/index.json",
+    "worlds/index.json",
+];
+const TREE_CONTRACT: &str =
+    "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
+const TREE_DIRECTORY_NODES: usize = 97;
 const TREE_SHA256: &str = "d22320e90b42ce7fc955cea4c3849be6d090b106f201c1cde1b3de7c2cc58dba";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
+fn repository_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
 fn project_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join("content/world")
+    repository_root().join("content/world")
 }
 
 fn limits() -> ProjectEvidenceLimits {
@@ -99,7 +120,9 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // (22 entries versus the 6-entry legacy baseline). Root lookup scans that
         // ambient parent, so retain the original 128-entry evidence budget plus
         // exactly that bounded sibling delta without relaxing the per-scan limit.
-        max_total_directory_entries_scanned: 144,
+        // The 10 successor world markers add 5 siblings to the package root (seen by
+        // each of the 11 locator lookups) plus 1 entry in worlds/: exactly 56 more.
+        max_total_directory_entries_scanned: 144 + 56,
     }
 }
 
@@ -170,9 +193,14 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 #[test]
 fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
     let root = project_root();
-    let mut actual = Vec::new();
-    collect_files(&root, &root, &mut actual);
+    let mut files = Vec::new();
+    collect_files(&root, &root, &mut files);
+    let (mut markers, mut actual): (Vec<_>, Vec<_>) = files
+        .into_iter()
+        .partition(|locator| SUCCESSOR_TREE_MARKERS.contains(&locator.as_str()));
+    markers.sort();
     actual.sort();
+    assert_eq!(markers, SUCCESSOR_TREE_MARKERS);
     assert_eq!(
         actual,
         DOCUMENTS
@@ -439,4 +467,87 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             });
     assert_eq!(promoted_items, 178);
     assert_eq!(promoted_fields, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT + 526);
+}
+
+#[test]
+fn full_game_tree_contract_nodes_are_materialized_without_entering_legacy_package() {
+    let repository = repository_root();
+    let contract: serde_json::Value = serde_json::from_slice(
+        &fs::read(repository.join(TREE_CONTRACT)).expect("read full game tree contract"),
+    )
+    .expect("full game tree contract is JSON");
+    let nodes = contract["target_tree_nodes"]
+        .as_array()
+        .expect("contract target tree nodes");
+    let directories = nodes
+        .iter()
+        .filter(|node| {
+            node["path"]
+                .as_str()
+                .is_some_and(|path| path.ends_with('/'))
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(directories.len(), TREE_DIRECTORY_NODES);
+
+    let mut world_markers = Vec::new();
+    for node in &directories {
+        let path = node["path"].as_str().expect("contract node path");
+        assert!(!path.contains("..") && !path.starts_with('/'), "{path}");
+        let marker = repository.join(path).join("index.json");
+        let metadata = fs::symlink_metadata(&marker).expect("tree node index is materialized");
+        assert!(metadata.is_file(), "{path}");
+        let Some(locator) = path.strip_prefix("content/world/") else {
+            continue;
+        };
+        let payload: serde_json::Value =
+            serde_json::from_slice(&fs::read(&marker).expect("read world tree marker"))
+                .expect("world tree marker is JSON");
+        assert_eq!(payload["schema"], "OTERYN_GAME_TREE_DIRECTORY/v1", "{path}");
+        assert_eq!(payload["path"], path);
+        assert_eq!(payload["kind"], node["kind"], "{path}");
+        assert_eq!(payload["owner"], node["owner"], "{path}");
+        assert!(
+            matches!(
+                payload["population_state"].as_str(),
+                Some("READY_UNPOPULATED" | "LEGACY_COMPAT_PRESENT")
+            ),
+            "{path}"
+        );
+        world_markers.push(format!("{locator}index.json"));
+    }
+    world_markers.sort();
+    assert_eq!(world_markers, SUCCESSOR_TREE_MARKERS);
+
+    let legacy_locators = DOCUMENTS
+        .iter()
+        .map(|(locator, _, _)| *locator)
+        .collect::<BTreeSet<_>>();
+    assert!(
+        SUCCESSOR_TREE_MARKERS
+            .iter()
+            .all(|marker| !legacy_locators.contains(marker))
+    );
+
+    let root = project_root();
+    let project = capture_world_project(
+        root.parent().expect("package has content parent"),
+        OsStr::new("world"),
+        filesystem_limits(),
+    )
+    .expect("capture tracked canonical package beside successor markers");
+    let v2 = project.v2().expect("WorldProject/v2 state");
+    assert!(v2.worlds.is_empty());
+    assert!(v2.placements.is_empty());
+    let rewritten = project
+        .canonical_documents(limits())
+        .expect("canonical deterministic rewrite");
+    assert_eq!(
+        rewritten
+            .documents()
+            .keys()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>(),
+        legacy_locators
+    );
+    assert_eq!(tree_digest(&root), TREE_SHA256);
 }

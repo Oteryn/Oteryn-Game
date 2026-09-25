@@ -7,6 +7,9 @@ on:
       - apps/game-server/examples/materialize_content_world_project_v2.rs
       - apps/game-server/tests/content_world_project_repository.rs
       - .github/workflows/g4-canonical-worldproject-package-seed.yml
+      - tools/content-schema/validate_materialized_game_tree.py
+      - docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json
+      - docs/agents/evidence/OTV2-20260925-world-successor-tree-closure-v1.json
       - docs/agents/tasks/active/OTV2-20260925-g4-canonical-worldproject-package-seed.md
       - docs/agents/evidence/OTV2-20260925-g4-canonical-worldproject-package-seed.json
 
@@ -47,11 +50,22 @@ jobs:
 
       - name: Compare tracked package
         if: ${{ hashFiles('content/world/project.json') != '' }}
-        run: diff --no-dereference --recursive content/world "$RUNNER_TEMP/world-a"
+        run: |
+          set -euo pipefail
+          # Successor authoring-tree directory markers are not WorldProject locators. Remove
+          # exactly the contract-declared set (each must exist), then require an exact package.
+          tracked="$RUNNER_TEMP/tracked-legacy"
+          cp -a content/world "$tracked"
+          python3 tools/content-schema/validate_materialized_game_tree.py --print-world-markers > "$RUNNER_TEMP/world-markers.txt"
+          test "$(wc -l < "$RUNNER_TEMP/world-markers.txt")" -eq 10
+          while IFS= read -r marker; do rm -- "${tracked:?}/${marker:?}"; done < "$RUNNER_TEMP/world-markers.txt"
+          find "$tracked" -mindepth 1 -type d -empty -delete
+          diff --no-dereference --recursive "$tracked" "$RUNNER_TEMP/world-a"
 
       - name: Focused validation
         if: ${{ hashFiles('content/world/project.json') != '' }}
         run: |
+          python3 tools/content-schema/validate_materialized_game_tree.py
           cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_repository
           cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_v2
           cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
