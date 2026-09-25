@@ -112,6 +112,64 @@ def _append_targets(node: ast.AST) -> set[str]:
     return targets
 
 
+def _target_mentions_name(target: ast.AST, name: str) -> bool:
+    return any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(target))
+
+
+def _channel_writes(module: ast.Module, name: str) -> list[ast.AST]:
+    writes: list[ast.AST] = []
+    for node in ast.walk(module):
+        if isinstance(node, ast.AnnAssign) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, ast.Assign) and any(_target_mentions_name(target, name) for target in node.targets):
+            writes.append(node)
+        elif isinstance(node, ast.AugAssign) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, ast.NamedExpr) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, (ast.For, ast.AsyncFor)) and _target_mentions_name(node.target, name):
+            writes.append(node)
+        elif isinstance(node, ast.With):
+            if any(item.optional_vars is not None and _target_mentions_name(item.optional_vars, name) for item in node.items):
+                writes.append(node)
+        elif isinstance(node, ast.ExceptHandler) and node.name == name:
+            writes.append(node)
+    return writes
+
+
+def _is_independent_empty_list_initializer(node: ast.AST, name: str) -> bool:
+    if isinstance(node, ast.AnnAssign):
+        return (
+            isinstance(node.target, ast.Name)
+            and node.target.id == name
+            and isinstance(node.value, ast.List)
+            and not node.value.elts
+        )
+    if isinstance(node, ast.Assign):
+        return (
+            len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == name
+            and isinstance(node.value, ast.List)
+            and not node.value.elts
+        )
+    return False
+
+
+def _channel_mutating_methods(module: ast.Module, name: str) -> set[str]:
+    methods: set[str] = set()
+    for node in ast.walk(module):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == name
+            and node.func.attr != "append"
+        ):
+            methods.add(node.func.attr)
+    return methods
+
+
 def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
     errors: list[str] = []
     try:
@@ -132,6 +190,18 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
         matches = [stmt for rendered, stmt in tests if rendered == required]
         if len(matches) != 1 or "errors" not in _append_targets(matches[0]):
             errors.append(f"{label} must hard-fail identity predicate: {required}")
+
+    for channel in ("errors", "warnings"):
+        writes = _channel_writes(module, channel)
+        if len(writes) != 1 or not _is_independent_empty_list_initializer(writes[0], channel):
+            errors.append(
+                f"{label} {channel} channel must have exactly one independent empty-list initializer"
+            )
+        methods = _channel_mutating_methods(module, channel)
+        if methods:
+            errors.append(
+                f"{label} {channel} channel uses forbidden mutating methods: {sorted(methods)!r}"
+            )
 
     warnings_index = next(
         (

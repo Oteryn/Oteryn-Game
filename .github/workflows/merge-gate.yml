@@ -165,7 +165,7 @@ jobs:
 
   lanes:
     name: Merge gate / trusted-base risk lanes
-    needs: [scope, governance]
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -338,7 +338,7 @@ jobs:
 
   dependency_review:
     name: Merge gate / dependency review
-    needs: [scope, governance]
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -353,7 +353,7 @@ jobs:
 
   codeql:
     name: Merge gate / CodeQL (${{ matrix.language }})
-    needs: [scope, governance]
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -386,7 +386,7 @@ jobs:
 
   routing_contract:
     name: Merge gate / routing contract
-    needs: [scope, governance]
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -432,7 +432,7 @@ jobs:
 
   atlas_fullworld:
     name: Merge gate / Atlas fullworld source
-    needs: [scope, lanes, governance]
+    needs: [scope, lanes]
     if: needs.lanes.outputs.atlas_fullworld == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -466,7 +466,7 @@ jobs:
 
   rust_policy:
     name: Merge gate / Rust policy and metadata
-    needs: [scope, lanes, governance]
+    needs: [scope, lanes]
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -529,7 +529,7 @@ jobs:
 
   rust_linux:
     name: Merge gate / Rust Linux workspace
-    needs: [scope, lanes, governance]
+    needs: [scope, lanes]
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -855,7 +855,7 @@ jobs:
 
   rust_windows:
     name: Merge gate / Rust Windows client
-    needs: [scope, lanes, governance]
+    needs: [scope, lanes]
     if: needs.lanes.outputs.windows == 'true'
     runs-on: windows-2025
     timeout-minutes: 60
@@ -917,7 +917,7 @@ jobs:
 
   rust_supply_chain:
     name: Merge gate / Rust supply chain
-    needs: [scope, lanes, governance]
+    needs: [scope, lanes]
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
