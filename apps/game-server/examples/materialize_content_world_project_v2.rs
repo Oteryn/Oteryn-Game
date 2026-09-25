@@ -240,17 +240,16 @@ fn apply_field(
     }
 }
 
+struct ItemPopulation {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+    editor: Vec<ProjectV2EditorEntry>,
+}
+
 fn populate_items(
     records: &mut [ProjectReferenceRecord],
-) -> Result<
-    (
-        ImportBatch,
-        ProjectV2Source,
-        Vec<ProjectV2SourceIdentityBinding>,
-        Vec<ProjectV2EditorEntry>,
-    ),
-    Box<dyn std::error::Error>,
-> {
+) -> Result<ItemPopulation, Box<dyn std::error::Error>> {
     let selected_sha256 = Sha256::digest(ITEM_SELECTED)
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -382,7 +381,12 @@ fn populate_items(
         sha256: import.source_artifact_sha256.clone(),
         evidence: ProjectV2EvidenceClass::Derived,
     };
-    Ok((import, source, bindings, editor))
+    Ok(ItemPopulation {
+        import,
+        source,
+        bindings,
+        editor,
+    })
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -402,7 +406,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
     };
     let mut records = promoted.family.records;
-    let (wiki_import, wiki_source, bindings, editor) = populate_items(&mut records)?;
+    let ItemPopulation {
+        import: wiki_import,
+        source: wiki_source,
+        bindings,
+        editor,
+    } = populate_items(&mut records)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
