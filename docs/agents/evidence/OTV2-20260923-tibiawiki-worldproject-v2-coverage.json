@@ -14,12 +14,13 @@
     "copyright_boundary": "Long-form TibiaWiki/Tibia prose, book bodies, sprites and artwork are not copied. The schema can hold Oteryn-owned/licensed document content."
   },
   "summary": {
-    "domain_groups": 19,
-    "records": 49,
+    "domain_groups": 20,
+    "records": 52,
     "unclassified": 0,
     "material_missing_after_candidate": 0,
-    "runtime_or_durable_owned": 8,
-    "editor_provenance_external": 5
+    "runtime_or_durable_owned": 9,
+    "editor_provenance_external": 5,
+    "amendment_note": "hazard domain (3 records) added post-G0; https://www.tibiawiki.com.br/wiki/Hazard returned HTTP 403 in this execution environment (same api_constraint as the original census), so this addition is DERIVED from established, stable Hazard System structure rather than a freshly rendered page read"
   },
   "dispositions": [
     "COVERED",
@@ -57,7 +58,8 @@
     "https://www.tibiawiki.com.br/wiki/Weapon_Proficiency",
     "https://www.tibiawiki.com.br/wiki/Wheel_of_Destiny",
     "https://www.tibiawiki.com.br/wiki/Prey_System",
-    "https://www.tibiawiki.com.br/wiki/Stamina"
+    "https://www.tibiawiki.com.br/wiki/Stamina",
+    "https://www.tibiawiki.com.br/wiki/Hazard"
   ],
   "records": [
     {
@@ -402,6 +404,27 @@
       "owner": "none / evidence only",
       "status": "EXTERNAL_NOT_CONTENT",
       "resolution": "not Oteryn gameplay/world content"
+    },
+    {
+      "domain": "hazard",
+      "concept": "hazard zone assignment (which Area/rooms belong to a hazard zone), tier scale, unlock prerequisites, presentation",
+      "owner": "Area authoring + editor taxonomy",
+      "status": "COVERED_BY_CANDIDATE",
+      "resolution": "hazard zone is a tiered Area attribute; no new top-level family required"
+    },
+    {
+      "domain": "hazard",
+      "concept": "per-tier creature stat/loot modifier (extra HP/damage/crit chance, extra rare-drop chance) and hazard crystal/skull drop scoped to a hazard-tiered Area",
+      "owner": "Creature/Loot + Area scope",
+      "status": "RELATIONSHIP_ONLY",
+      "resolution": "modifier scoped to Area+Creature relationship, mirrors existing spawn/location relationship pattern; not a new Creature or Item identity"
+    },
+    {
+      "domain": "hazard",
+      "concept": "character's current hazard tier per zone, active hazard crystal/point balance, death-in-hazard penalty tracking, revive/skull cooldown",
+      "owner": "Character progression durability",
+      "status": "DURABLE_PLAYER_STATE",
+      "resolution": "explicitly excluded from WorldProject, same boundary as Bestiary counters/Prey rolls"
     }
   ]
 }

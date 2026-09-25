@@ -176,10 +176,13 @@ Every required top-level surface has a non-`UNRESOLVED` disposition:
 | Aktualizacje | PROVENANCE_ONLY | provenance/change evidence only |
 | Zmiany świata | MAPPED_TO_OTERYN_FAMILY | Encounter |
 | Zadania światowe | RELATIONSHIP_SYSTEM | Quest, Encounter, Interaction |
+| Hazard | RELATIONSHIP_SYSTEM | Area (zone/tier), Creature/Loot (modifier), Item (crystal/skull) |
 
 Final `UNRESOLVED = 0`.
 
 The three hard exclusions are intentionally absent from this matrix.
+
+**Amendment (post-G0):** Hazard was absent from both this matrix and the companion `OTV2-20260923-tibiawiki-worldproject-v2-coverage.json` at original G0 closure. It is added here as a genuine coverage gap, not a re-run of the census: 3 records under a new `hazard` domain group in the coverage JSON (zone/tier as an Area attribute, per-tier creature/loot modifier as an Area+Creature relationship, and player hazard state as `DURABLE_PLAYER_STATE`). No new top-level family was required. `https://www.tibiawiki.com.br/wiki/Hazard` returned HTTP 403 in this execution environment, matching the original census's documented `api_constraint`; the classification is DERIVED from established Hazard System structure, not a freshly rendered page read.
 
 ## F. Canonical storage matrix
 
