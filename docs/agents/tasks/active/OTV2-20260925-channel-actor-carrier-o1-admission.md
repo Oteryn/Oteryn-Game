@@ -4,7 +4,7 @@
 task_id: OTV2-20260925-channel-actor-carrier-o1-admission
 title: Replace ChannelActorCarrier admission scans with O(1) free-list
 mode: IMPLEMENT
-status: validating
+status: ready_for_integration
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/channel-actor-carrier-o1-admission-20260925
@@ -17,7 +17,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: work-coordinator
 created_at: 2026-09-25T00:00:00Z
-updated_at: 2026-09-25T15:00:00Z
+updated_at: 2026-09-25T16:12:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
@@ -39,5 +39,6 @@ external_repositories: []
 - **Excluded:** production M, registry mutation, activation, >1-creature support, RL-05 widening, Ability, Movement, Content, protocol, foundation/mod.rs, Cargo/workspace, SQL, workflows or production.
 - **RED:** historical head `92a4eff554f94816985b336cd36405deb050260f` was executed through validation-only PR #901; the reuse-order test failed exactly against the old lowest-index scan. PR #901 is closed and must never integrate.
 - **GREEN:** PR #899 head `d8409b56fc3303978bdfc1a25192ba4af0519fb2` passed Agent governance, Architecture semantic audit, full Merge Gate, strict Clippy, affected/workspace tests and aggregate `game-gate`. The evidence packet records exact run/job IDs.
-- **Current state:** implementation and canonical CI are green. Fresh physical release-mode M=4,096/M=131,072 measurements plus exact post-change Slot-size recapture remain pending because the current execution surface exposes no authorized arbitrary release benchmark for this branch.
-- **Integration:** keep PR #899 draft and do not enqueue until physical qualification is completed or #162/#530 explicitly revises that acceptance requirement.
+- **Physical qualification:** PASS. PR #899 comment 5834840597 measured release-mode M=4,096 and M=131,072 on named `ASSUMED-REF-A`; post-change `size_of::<Slot>()` remains 192 B. The evidence packet records the exact ranges and limitations.
+- **Current state:** implementation + required physical evidence are complete. Only fresh exact-head CI on the metadata-successor candidate remains before integration.
+- **Integration:** after fresh exact-head governance/architecture/full `game-gate` succeeds, the coordinator may mark PR #899 ready and enqueue it only through the governed Merge Queue route, then require protected-main readback. Production M / registry / runtime activation remain separate #530/#162 work.
