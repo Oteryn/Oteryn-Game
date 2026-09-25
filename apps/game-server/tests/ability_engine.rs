@@ -17,6 +17,12 @@ mod foundation {
         pub(crate) health_before: i64,
         pub(crate) health_after: i64,
     }
+    pub(crate) struct OwnerDamageCommand<'a> {
+        pub(crate) target: &'a [u8],
+        pub(crate) occurrence: &'a [u8],
+        pub(crate) binding: &'a [u8],
+        pub(crate) damage: i64,
+    }
     #[derive(Debug, PartialEq, Eq)]
     pub(crate) enum CarrierError {
         Invalid,
@@ -26,19 +32,16 @@ mod foundation {
         pub(crate) fn commit_damage(
             &mut self,
             _actor: ExactActorRef,
-            _target: &[u8],
-            _occurrence: &[u8],
-            binding: &[u8],
-            damage: i64,
+            command: OwnerDamageCommand<'_>,
         ) -> Result<OwnerDamageResult, CarrierError> {
             if self.0.is_some() {
                 return Err(CarrierError::Invalid);
             }
-            *self.0 = Some(binding.to_vec());
+            *self.0 = Some(command.binding.to_vec());
             Ok(OwnerDamageResult {
                 applied: true,
                 health_before: 20,
-                health_after: 20 - damage,
+                health_after: 20 - command.damage,
             })
         }
     }
