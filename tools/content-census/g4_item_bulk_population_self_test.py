@@ -91,6 +91,42 @@ def test_duplicate_page_claims_block_binding_and_collision_conflicts() -> None:
     assert evidence["rows"][0]["status"] == "CONFLICT"
 
 
+def test_ambiguous_page_claim_blocks_other_page_from_target() -> None:
+    inputs = make_inputs([page(1, 10, 5), page(2, 0, 0)])
+    census, census_manifest, crosswalk, _ = inputs
+    crosswalk["source_profiles"][0]["candidate_observations"] = [
+        {"native_field": "attack", "source_value": "10", "nested_values": []},
+        {"native_field": "defense", "source_value": "5", "nested_values": []},
+        {"native_field": "range", "source_value": "2", "nested_values": []},
+        {"native_field": "hit", "source_value": "10", "nested_values": []},
+    ]
+    crosswalk["source_profiles"][1]["candidate_observations"] = [
+        {"native_field": "attack", "source_value": "10", "nested_values": []},
+        {"native_field": "defense", "source_value": "5", "nested_values": []},
+        {"native_field": "range", "source_value": "3", "nested_values": []},
+        {"native_field": "hit", "source_value": "20", "nested_values": []},
+    ]
+    # X has two shared agreements to both A and B and is therefore ambiguous.
+    census["pages"][0]["normalized_fields"].pop("range")
+    # Y agrees on two different fields that uniquely identify A; it must still
+    # not bind because X also claims A as one of its exact candidates.
+    census["pages"][1]["normalized_fields"] = {
+        "range": {"state": "VALUE", "value": 2},
+        "hit": {"state": "VALUE", "value": 10},
+    }
+    stable = dict(census)
+    stable.pop("retrieval_timestamp")
+    census_manifest["full_output"]["sha256"] = bulk.digest(bulk.canonical_bytes(census))
+    census_manifest["full_output"]["stable_without_retrieval_timestamp_sha256"] = bulk.digest(bulk.canonical_bytes(stable))
+    with patch.object(bulk, "EXPECTED_CANONICAL_ITEMS", 2), patch.object(bulk, "EXPECTED_DISCOVERY_PAGES", 2):
+        evidence, manifest = bulk.compile_bulk(*inputs)
+    assert manifest["typed_binding_candidate_count"] == 0
+    by_page = {row["external_id"]: row for row in evidence["rows"]}
+    assert by_page["1"]["status"] == "AMBIGUOUS"
+    assert by_page["2"]["status"] == "AMBIGUOUS"
+    assert by_page["2"]["reason"] == "MULTIPLE_SOURCE_PAGES_CLAIM_ONE_TARGET"
+
+
 def test_names_and_numeric_ids_do_not_create_identity() -> None:
     row = page(101, 0, 0, name="oteryn:item.registry.a")
     row["normalized_fields"]["range"]["value"] = 9
@@ -114,6 +150,7 @@ def test_field_type_bounds_are_fail_closed() -> None:
 def main() -> None:
     test_unique_exact_binding_and_field_candidates()
     test_duplicate_page_claims_block_binding_and_collision_conflicts()
+    test_ambiguous_page_claim_blocks_other_page_from_target()
     test_names_and_numeric_ids_do_not_create_identity()
     test_field_type_bounds_are_fail_closed()
     print("g4-item-bulk-population-self-test: PASS")
