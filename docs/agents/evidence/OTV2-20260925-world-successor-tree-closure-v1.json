@@ -1,0 +1,40 @@
+{
+  "schema": "OTERYN_FULL_GAME_TREE_WORLD_CLOSURE/v1",
+  "status": "MATERIALIZED_ALL_TARGET_DIRECTORIES",
+  "admission_main": "d1a236f00014d56bfaa2df9a81fa59a2cacb2b88",
+  "contract_path": "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json",
+  "predecessor_evidence": "docs/agents/evidence/OTV2-20260925-full-game-tree-materialization-v1.json",
+  "predecessor_pr": 911,
+  "jira": "KAN-16",
+  "directory_nodes": 97,
+  "materialized_directories_before": 87,
+  "materialized_directories": 97,
+  "unmaterialized_directories": 0,
+  "legacy_root": "content/world",
+  "world_markers": [
+    "areas/cities/index.json",
+    "areas/hunting-places/index.json",
+    "areas/islands/index.json",
+    "areas/regions/index.json",
+    "areas/streets/index.json",
+    "objects/index.json",
+    "placements/index.json",
+    "terrain/index.json",
+    "transitions/index.json",
+    "worlds/index.json"
+  ],
+  "compatibility": {
+    "mechanism": "Successor directory markers are an exact contract-derived allowlist beside, not inside, the legacy WorldProject package inventory.",
+    "worldproject_capture": "unchanged; capture opens only control documents and manifest-listed locators",
+    "legacy_manifest_changed": false,
+    "legacy_documents_changed": false,
+    "legacy_tree_sha256": "d22320e90b42ce7fc955cea4c3849be6d090b106f201c1cde1b3de7c2cc58dba",
+    "filesystem_implementation_changed": false,
+    "runtime_source": "legacy_until_separately_qualified",
+    "runtime_switch_authorized": false,
+    "g4_seed_comparison": "remove exactly the contract-declared markers from a copy, then exact recursive diff against the materialized package",
+    "repository_test_inventory": "exact legacy documents plus exact successor marker allowlist",
+    "in_place_publication_note": "publish_world_project still rejects unmanaged entries in a live root; no production caller publishes into the repository content/world root"
+  },
+  "population": "No Area, Terrain, WorldObject, Transition or WorldPlacement content is populated by this closure."
+}
