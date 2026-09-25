@@ -2,8 +2,10 @@
 """Fail-closed wrapper for the Game repository-policy validator."""
 from __future__ import annotations
 
+import ast
 import importlib.util
 import re
+import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -11,8 +13,8 @@ CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
 PR_METADATA_WORKFLOWS = (
-    ROOT / ".github/workflows/agent-governance.yml",
-    ROOT / ".github/workflows/merge-gate.yml",
+    (ROOT / ".github/workflows/agent-governance.yml", "Verify pull request target and metadata"),
+    (ROOT / ".github/workflows/merge-gate.yml", "Verify pull request metadata"),
 )
 
 
@@ -81,40 +83,113 @@ def validate_protected_base_audit() -> list[str]:
     return errors
 
 
-def validate_pr_metadata_advisory_contract() -> list[str]:
+def _extract_step_python(text: str, step_name: str) -> str:
+    step_marker = f"      - name: {step_name}\n"
+    step_start = text.find(step_marker)
+    if step_start < 0:
+        raise ValueError(f"missing workflow step: {step_name}")
+    heredoc = "          python - <<'PY'\n"
+    source_start = text.find(heredoc, step_start)
+    if source_start < 0:
+        raise ValueError(f"missing Python heredoc in workflow step: {step_name}")
+    source_start += len(heredoc)
+    source_end = text.find("\n          PY\n", source_start)
+    if source_end < 0:
+        raise ValueError(f"unterminated Python heredoc in workflow step: {step_name}")
+    return textwrap.dedent(text[source_start:source_end])
+
+
+def _append_targets(node: ast.AST) -> set[str]:
+    targets: set[str] = set()
+    for child in ast.walk(node):
+        if (
+            isinstance(child, ast.Call)
+            and isinstance(child.func, ast.Attribute)
+            and child.func.attr == "append"
+            and isinstance(child.func.value, ast.Name)
+        ):
+            targets.add(child.func.value.id)
+    return targets
+
+
+def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
     errors: list[str] = []
-    forbidden = (
-        "errors.append('PR title must be at most 72 characters')",
-        'errors.append("PR title must be at most 72 characters")',
-        "errors.append('PR title must follow type(scope): imperative summary')",
-        'errors.append("PR title must follow type(scope): imperative summary")',
-        "errors.append(f'PR body is missing {heading}')",
-        'errors.append(f"PR body is missing {heading}")',
+    try:
+        source = _extract_step_python(text, step_name)
+        module = ast.parse(source)
+    except (SyntaxError, ValueError) as exc:
+        return [f"{label} metadata validator is not parseable: {exc}"]
+
+    required_identity_tests = (
+        "state != 'open'",
+        "head_sha != expected_head",
+        "head_repository != repository",
+        "base_ref != 'main'",
     )
-    required = (
-        "warnings: list[str] = []",
+    top_level_ifs = [stmt for stmt in module.body if isinstance(stmt, ast.If)]
+    tests = [(ast.unparse(stmt.test), stmt) for stmt in top_level_ifs]
+    for required in required_identity_tests:
+        matches = [stmt for rendered, stmt in tests if rendered == required]
+        if len(matches) != 1 or "errors" not in _append_targets(matches[0]):
+            errors.append(f"{label} must hard-fail identity predicate: {required}")
+
+    warnings_index = next(
+        (
+            index
+            for index, stmt in enumerate(module.body)
+            if isinstance(stmt, ast.AnnAssign)
+            and isinstance(stmt.target, ast.Name)
+            and stmt.target.id == "warnings"
+        ),
+        None,
+    )
+    if warnings_index is None:
+        errors.append(f"{label} missing advisory warnings boundary")
+    else:
+        for stmt in module.body[warnings_index + 1 :]:
+            if isinstance(stmt, ast.If) and ast.unparse(stmt.test) == "errors":
+                break
+            if "errors" in _append_targets(stmt):
+                errors.append(
+                    f"{label} presentation section must not append blocking errors after warnings boundary"
+                )
+                break
+
+    for rendered, stmt in tests:
+        names = {node.id for node in ast.walk(stmt.test) if isinstance(node, ast.Name)}
+        if names.intersection({"title", "pattern", "headings", "validation_word"}):
+            channels = _append_targets(stmt)
+            if "errors" in channels:
+                errors.append(
+                    f"{label} presentation predicate must not append blocking errors: {rendered}"
+                )
+
+    required_advisory_markers = (
         "warnings.append('PR title should be at most 72 characters')",
         "warnings.append('PR title should follow type(scope): imperative summary')",
-        "any('validation' in heading for heading in headings)",
+        "warnings.append('PR body should include a Summary section')",
+        "warnings.append('PR body should include a Scope section')",
+        "warnings.append('PR body should include a validation section')",
+        "re.compile(r'(?<![a-z0-9])validation(?![a-z0-9])')",
         "::warning title=PR metadata guidance::",
     )
-    for path in PR_METADATA_WORKFLOWS:
+    for marker in required_advisory_markers:
+        if marker not in source:
+            errors.append(f"{label} missing advisory metadata behavior: {marker}")
+    return errors
+
+
+def validate_pr_metadata_advisory_contract() -> list[str]:
+    errors: list[str] = []
+    for path, step_name in PR_METADATA_WORKFLOWS:
         if not path.is_file():
             errors.append(f"missing PR metadata workflow: {path.relative_to(ROOT)}")
             continue
         text = path.read_text(encoding="utf-8")
-        for fragment in forbidden:
-            if fragment in text:
-                errors.append(
-                    f"{path.relative_to(ROOT)} must not hard-fail presentation-only PR metadata: {fragment}"
-                )
-        for fragment in required:
-            if fragment not in text:
-                errors.append(
-                    f"{path.relative_to(ROOT)} missing advisory PR metadata contract: {fragment}"
-                )
+        errors.extend(
+            validate_pr_metadata_workflow_text(text, str(path.relative_to(ROOT)), step_name)
+        )
     return errors
-
 
 def validate_pr_gate_contract() -> list[str]:
     module = load_module(PR_GATE_CONTRACT_PATH, "validate_pr_gate_pg_sim")

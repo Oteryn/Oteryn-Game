@@ -165,7 +165,8 @@ jobs:
               warnings.append('PR body should include a Summary section')
           if 'scope' not in headings:
               warnings.append('PR body should include a Scope section')
-          if not any('validation' in heading for heading in headings):
+          validation_word = re.compile(r'(?<![a-z0-9])validation(?![a-z0-9])')
+          if not any(validation_word.search(heading) for heading in headings):
               warnings.append('PR body should include a validation section')
 
           for warning in warnings:
