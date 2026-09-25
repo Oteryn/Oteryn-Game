@@ -2,11 +2,16 @@
 """Fail-closed wrapper for the Game repository-policy validator."""
 from __future__ import annotations
 
-import ast
+import contextlib
 import importlib.util
+import io
+import json
+import os
 import re
+import tempfile
 import textwrap
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
@@ -99,214 +104,174 @@ def _extract_step_python(text: str, step_name: str) -> str:
     return textwrap.dedent(text[source_start:source_end])
 
 
-def _append_targets(node: ast.AST) -> set[str]:
-    targets: set[str] = set()
-    for child in ast.walk(node):
-        if (
-            isinstance(child, ast.Call)
-            and isinstance(child.func, ast.Attribute)
-            and child.func.attr == "append"
-            and isinstance(child.func.value, ast.Name)
+def _run_metadata_source(
+    source: str,
+    label: str,
+    environment: dict[str, str],
+    pull: dict[str, object],
+) -> tuple[int, str, str]:
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    payload = json.dumps(pull).encode("utf-8")
+
+    def urlopen(request, timeout=30):
+        if timeout != 30:
+            raise AssertionError(f"{label} changed GitHub metadata timeout: {timeout}")
+        return io.BytesIO(payload)
+
+    with tempfile.TemporaryDirectory() as directory:
+        env = dict(environment)
+        env["GH_TOKEN"] = "fixture-token"
+        env["GITHUB_ENV"] = str(Path(directory) / "github-env")
+        exit_code = 0
+        with (
+            patch.dict(os.environ, env, clear=True),
+            patch("urllib.request.urlopen", side_effect=urlopen),
+            contextlib.redirect_stdout(stdout),
+            contextlib.redirect_stderr(stderr),
         ):
-            targets.add(child.func.value.id)
-    return targets
+            try:
+                exec(compile(source, f"{label}:metadata", "exec"), {})
+            except SystemExit as exc:
+                if exc.code is None:
+                    exit_code = 0
+                elif isinstance(exc.code, int) and not isinstance(exc.code, bool):
+                    exit_code = exc.code
+                else:
+                    exit_code = 1
+    return exit_code, stdout.getvalue(), stderr.getvalue()
 
 
-def _target_mentions_name(target: ast.AST, name: str) -> bool:
-    return any(isinstance(node, ast.Name) and node.id == name for node in ast.walk(target))
+def _metadata_environment(step_name: str, expected_head: str) -> dict[str, str]:
+    common = {
+        "REPOSITORY": "Oteryn/Oteryn-Game",
+    }
+    if step_name == "Verify pull request target and metadata":
+        return common | {
+            "EVENT_NAME": "pull_request",
+            "EVENT_PR_NUMBER": "914",
+            "EVENT_PR_HEAD_SHA": expected_head,
+        }
+    if step_name == "Verify pull request metadata":
+        return common | {
+            "PULL_NUMBER": "914",
+            "EXPECTED_HEAD": expected_head,
+        }
+    raise ValueError(f"unsupported PR metadata step: {step_name}")
 
 
-def _channel_writes(module: ast.Module, name: str) -> list[ast.AST]:
-    writes: list[ast.AST] = []
-    for node in ast.walk(module):
-        if isinstance(node, ast.AnnAssign) and _target_mentions_name(node.target, name):
-            writes.append(node)
-        elif isinstance(node, ast.Assign) and any(_target_mentions_name(target, name) for target in node.targets):
-            writes.append(node)
-        elif isinstance(node, ast.AugAssign) and _target_mentions_name(node.target, name):
-            writes.append(node)
-        elif isinstance(node, ast.NamedExpr) and _target_mentions_name(node.target, name):
-            writes.append(node)
-        elif isinstance(node, (ast.For, ast.AsyncFor)) and _target_mentions_name(node.target, name):
-            writes.append(node)
-        elif isinstance(node, ast.With):
-            if any(item.optional_vars is not None and _target_mentions_name(item.optional_vars, name) for item in node.items):
-                writes.append(node)
-        elif isinstance(node, ast.ExceptHandler) and node.name == name:
-            writes.append(node)
-        elif isinstance(node, ast.Delete) and any(
-            _target_mentions_name(target, name) for target in node.targets
-        ):
-            writes.append(node)
-    return writes
-
-
-def _is_independent_empty_list_initializer(node: ast.AST, name: str) -> bool:
-    if isinstance(node, ast.AnnAssign):
-        return (
-            isinstance(node.target, ast.Name)
-            and node.target.id == name
-            and isinstance(node.value, ast.List)
-            and not node.value.elts
-        )
-    if isinstance(node, ast.Assign):
-        return (
-            len(node.targets) == 1
-            and isinstance(node.targets[0], ast.Name)
-            and node.targets[0].id == name
-            and isinstance(node.value, ast.List)
-            and not node.value.elts
-        )
-    return False
-
-
-def _channel_mutating_methods(module: ast.Module, name: str) -> set[str]:
-    methods: set[str] = set()
-    for node in ast.walk(module):
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == name
-            and node.func.attr != "append"
-        ):
-            methods.add(node.func.attr)
-    return methods
-
-
-def _channel_aliases(module: ast.Module, name: str) -> set[str]:
-    aliases: set[str] = set()
-    for node in ast.walk(module):
-        value = None
-        targets: list[ast.AST] = []
-        if isinstance(node, ast.Assign):
-            value = node.value
-            targets = list(node.targets)
-        elif isinstance(node, ast.AnnAssign):
-            value = node.value
-            targets = [node.target]
-        elif isinstance(node, ast.NamedExpr):
-            value = node.value
-            targets = [node.target]
-        if value is None or not any(
-            isinstance(child, ast.Name) and child.id == name for child in ast.walk(value)
-        ):
-            continue
-        for target in targets:
-            for child in ast.walk(target):
-                if isinstance(child, ast.Name) and child.id != name:
-                    aliases.add(child.id)
-    return aliases
-
-
-def _is_system_exit_raise(node: ast.AST, code: int) -> bool:
-    return (
-        isinstance(node, ast.Raise)
-        and isinstance(node.exc, ast.Call)
-        and isinstance(node.exc.func, ast.Name)
-        and node.exc.func.id == "SystemExit"
-        and len(node.exc.args) == 1
-        and isinstance(node.exc.args[0], ast.Constant)
-        and node.exc.args[0].value == code
-    )
+def _valid_pull(expected_head: str) -> dict[str, object]:
+    return {
+        "state": "open",
+        "title": "fix(ci): preserve advisory metadata",
+        "body": "## Summary\\nok\\n## Scope\\nok\\n## Exact-head validation\\nok\\n",
+        "head": {
+            "sha": expected_head,
+            "repo": {"full_name": "Oteryn/Oteryn-Game"},
+        },
+        "base": {"ref": "main"},
+    }
 
 
 def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
     errors: list[str] = []
     try:
         source = _extract_step_python(text, step_name)
-        module = ast.parse(source)
+        compile(source, f"{label}:metadata", "exec")
     except (SyntaxError, ValueError) as exc:
-        return [f"{label} metadata validator is not parseable: {exc}"]
+        return [f"{label} metadata validator is not executable: {exc}"]
 
-    required_identity_tests = (
-        "state != 'open'",
-        "head_sha != expected_head",
-        "head_repository != repository",
-        "base_ref != 'main'",
+    expected_head = "a" * 40
+    environment = _metadata_environment(step_name, expected_head)
+
+    def execute(name: str, pull: dict[str, object]) -> tuple[int, str, str] | None:
+        try:
+            return _run_metadata_source(source, f"{label}:{name}", environment, pull)
+        except Exception as exc:
+            errors.append(f"{label} metadata fixture {name} raised unexpectedly: {exc}")
+            return None
+
+    baseline = execute("baseline", _valid_pull(expected_head))
+    if baseline is not None:
+        code, stdout, stderr = baseline
+        if code != 0:
+            errors.append(
+                f"{label} valid PR metadata must succeed, got exit {code}: {stderr.strip()}"
+            )
+        if "::warning title=PR metadata guidance::" in stdout:
+            errors.append(f"{label} valid PR metadata must not emit presentation warnings")
+
+    presentation = _valid_pull(expected_head)
+    presentation["title"] = "not conventional " + ("x" * 80)
+    presentation["body"] = ""
+    result = execute("presentation-advisory", presentation)
+    required_warnings = (
+        "PR title should be at most 72 characters",
+        "PR title should follow type(scope): imperative summary",
+        "PR body should include a Summary section",
+        "PR body should include a Scope section",
+        "PR body should include a validation section",
     )
-    top_level_ifs = [stmt for stmt in module.body if isinstance(stmt, ast.If)]
-    tests = [(ast.unparse(stmt.test), stmt) for stmt in top_level_ifs]
-    for required in required_identity_tests:
-        matches = [stmt for rendered, stmt in tests if rendered == required]
-        if len(matches) != 1 or "errors" not in _append_targets(matches[0]):
-            errors.append(f"{label} must hard-fail identity predicate: {required}")
+    if result is not None:
+        code, stdout, stderr = result
+        if code != 0:
+            errors.append(
+                f"{label} presentation-only metadata must remain advisory, got exit {code}: "
+                f"{stderr.strip()}"
+            )
+        for warning in required_warnings:
+            if warning not in stdout:
+                errors.append(f"{label} missing advisory metadata warning: {warning}")
 
-    for channel in ("errors", "warnings"):
-        writes = _channel_writes(module, channel)
-        if len(writes) != 1 or not _is_independent_empty_list_initializer(writes[0], channel):
+    prevalidation = _valid_pull(expected_head)
+    prevalidation["body"] = "## Summary\\nok\\n## Scope\\nok\\n## Prevalidation notes\\nok\\n"
+    result = execute("prevalidation-heading", prevalidation)
+    if result is not None:
+        code, stdout, stderr = result
+        if code != 0:
             errors.append(
-                f"{label} {channel} channel must have exactly one independent empty-list initializer"
+                f"{label} prevalidation heading fixture must remain advisory, got exit {code}: "
+                f"{stderr.strip()}"
             )
-        methods = _channel_mutating_methods(module, channel)
-        if methods:
+        if "PR body should include a validation section" not in stdout:
             errors.append(
-                f"{label} {channel} channel uses forbidden mutating methods: {sorted(methods)!r}"
-            )
-        aliases = _channel_aliases(module, channel)
-        if aliases:
-            errors.append(
-                f"{label} {channel} channel must not be aliased: {sorted(aliases)!r}"
+                f"{label} must not treat Prevalidation as a validation heading"
             )
 
-    warnings_index = next(
-        (
-            index
-            for index, stmt in enumerate(module.body)
-            if isinstance(stmt, ast.AnnAssign)
-            and isinstance(stmt.target, ast.Name)
-            and stmt.target.id == "warnings"
-        ),
-        None,
+    invalidation = _valid_pull(expected_head)
+    invalidation["body"] = "## Summary\\nok\\n## Scope\\nok\\n## Invalidation risks\\nok\\n"
+    result = execute("invalidation-heading", invalidation)
+    if result is not None:
+        code, stdout, stderr = result
+        if code != 0:
+            errors.append(
+                f"{label} invalidation heading fixture must remain advisory, got exit {code}: "
+                f"{stderr.strip()}"
+            )
+        if "PR body should include a validation section" not in stdout:
+            errors.append(
+                f"{label} must not treat Invalidation as a validation heading"
+            )
+
+    identity_cases: tuple[tuple[str, dict[str, object]], ...] = (
+        ("closed", {"state": "closed"}),
+        ("head-mismatch", {"head": {"sha": "b" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}}),
+        ("repository-mismatch", {"head": {"sha": expected_head, "repo": {"full_name": "Other/Repo"}}}),
+        ("base-mismatch", {"base": {"ref": "release"}}),
     )
-    final_error_guard: ast.If | None = None
-    if warnings_index is None:
-        errors.append(f"{label} missing advisory warnings boundary")
-    else:
-        for stmt in module.body[warnings_index + 1 :]:
-            if isinstance(stmt, ast.If) and ast.unparse(stmt.test) == "errors":
-                final_error_guard = stmt
-                break
-            if "errors" in _append_targets(stmt):
-                errors.append(
-                    f"{label} presentation section must not append blocking errors after warnings boundary"
-                )
-                break
-
-    if final_error_guard is None:
-        errors.append(f"{label} missing final blocking error guard")
-    else:
-        direct_raises = [stmt for stmt in final_error_guard.body if isinstance(stmt, ast.Raise)]
-        if (
-            not final_error_guard.body
-            or not _is_system_exit_raise(final_error_guard.body[-1], 1)
-            or len(direct_raises) != 1
-        ):
+    for name, mutation in identity_cases:
+        pull = _valid_pull(expected_head)
+        pull.update(mutation)
+        result = execute(name, pull)
+        if result is None:
+            continue
+        code, _stdout, stderr = result
+        if code != 1:
             errors.append(
-                f"{label} final blocking error guard must terminate only with final SystemExit(1)"
+                f"{label} identity fixture {name} must fail with SystemExit(1), "
+                f"got {code}: {stderr.strip()}"
             )
 
-    for rendered, stmt in tests:
-        names = {node.id for node in ast.walk(stmt.test) if isinstance(node, ast.Name)}
-        if names.intersection({"title", "body", "pattern", "headings", "validation_word"}):
-            channels = _append_targets(stmt)
-            if "errors" in channels:
-                errors.append(
-                    f"{label} presentation predicate must not append blocking errors: {rendered}"
-                )
-
-    required_advisory_markers = (
-        "warnings.append('PR title should be at most 72 characters')",
-        "warnings.append('PR title should follow type(scope): imperative summary')",
-        "warnings.append('PR body should include a Summary section')",
-        "warnings.append('PR body should include a Scope section')",
-        "warnings.append('PR body should include a validation section')",
-        "re.compile(r'(?<![a-z0-9])validation(?![a-z0-9])')",
-        "::warning title=PR metadata guidance::",
-    )
-    for marker in required_advisory_markers:
-        if marker not in source:
-            errors.append(f"{label} missing advisory metadata behavior: {marker}")
     return errors
 
 
