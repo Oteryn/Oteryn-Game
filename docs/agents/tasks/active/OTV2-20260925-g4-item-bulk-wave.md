@@ -1,10 +1,10 @@
 ---
 task_id: OTV2-20260925-g4-item-bulk-wave
 mode: IMPLEMENT
-status: implementing
+status: hosted_qualification
 issue: 162
 issue_comment: 5826892380
-pr: null
+pr: 877
 repository: Oteryn/Oteryn-Game
 base_commit: 1680eb5dc6145aa3e271ac8665f33a50ed837b76
 branch: agent/otv2-g4-item-bulk-wave
