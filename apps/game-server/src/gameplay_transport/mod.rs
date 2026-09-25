@@ -443,7 +443,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .commit_composed_fresh_admission(self.character, self.holder, &composition, &request)
             .await
         {
-            Ok(FreshAdmissionDurableOutcomeV1::Committed(_)) => {}
+            Ok(
+                FreshAdmissionDurableOutcomeV1::Committed(_)
+                | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
+            ) => {}
             // The commit may have landed with its acknowledgement lost: keep
             // the exact operation and reconcile it until the outcome is proven.
             Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
