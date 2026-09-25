@@ -2,12 +2,13 @@
 task_id: OTV2-20260925-full-game-content-ruleset-tree-v1
 title: Full Game Content and Ruleset Tree v1
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-game-content-ruleset-tree-v1-20260925
 base_sha: 2389c6671000b8b0efe341540a62e303e307ad15
 issue: 162
+pr: 904
 jira: KAN-16
 allocation_comment: 5835217784
 created_at: 2026-09-25T17:30:00+02:00
@@ -58,3 +59,19 @@ proof and protected-main readback.
 
 PR #903 Item Master Schema is complementary Item-detail evidence, not a merge
 dependency for this directory/ownership contract.
+
+## Authoring readback
+
+Pre-freeze remote readback before canonical PR binding:
+
+- five allocated paths only;
+- protected domains: 19/19;
+- selected system surfaces: 39/39;
+- target Game tree nodes: 100 unique paths;
+- Store owner: Oteryn/Oteryn-Platform with no Game static/ruleset path;
+- durable state scopes: ItemInstance, Character, Account, World/Channel, House, Market;
+- `unassigned_domains=0`;
+- `unassigned_systems=0`.
+
+Canonical PR: #904. The successor commit containing this task metadata is the candidate
+that must receive fresh exact-head validation.
