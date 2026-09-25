@@ -8,6 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-engine-static-cell-carrier-504
+issue: 504
 pr: null
 base_sha: bfc8b54548a09c59e062873a5dfa48739c477420
 head_sha: null
