@@ -436,6 +436,21 @@ def validate_pr_metadata_workflow_text(
             f"{label} job env",
             errors,
         )
+        workflow_permissions = _literal_child_mapping(
+            text,
+            "permissions:\n",
+            2,
+            f"{label} workflow permissions",
+        )
+        _require_exact_mapping(
+            workflow_permissions,
+            {
+                "contents": "read",
+                "pull-requests": "read",
+            },
+            f"{label} workflow permissions",
+            errors,
+        )
     elif job_name == "governance":
         allowed_step_keys = {"env", "run"}
         expected_job_entries = {
@@ -456,6 +471,31 @@ def validate_pr_metadata_workflow_text(
             "PULL_NUMBER": "${{ needs.scope.outputs.pr_number }}",
             "REPOSITORY": "${{ github.repository }}",
         }
+        workflow_entries = _mapping_entries_at_indent(
+            text,
+            0,
+            f"{label} workflow",
+        )
+        if workflow_entries.get("permissions") != ["{}"]:
+            errors.append(
+                f"{label} workflow permissions must remain exactly empty, "
+                f"got {workflow_entries.get('permissions')!r}"
+            )
+        job_permissions = _literal_child_mapping(
+            job,
+            "    permissions:\n",
+            6,
+            f"{label} job permissions",
+        )
+        _require_exact_mapping(
+            job_permissions,
+            {
+                "contents": "read",
+                "pull-requests": "read",
+            },
+            f"{label} job permissions",
+            errors,
+        )
     else:
         return [f"{label} unsupported metadata job: {job_name}"]
 
