@@ -1,7 +1,7 @@
 ---
 task_id: OTV2-20260925-g4-item-bulk-wave
 mode: IMPLEMENT
-status: hosted_qualification
+status: implementing
 issue: 162
 issue_comment: 5826892380
 pr: 877
