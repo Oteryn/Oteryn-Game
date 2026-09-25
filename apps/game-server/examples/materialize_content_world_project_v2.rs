@@ -58,7 +58,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 4,
+        max_import_records: 3,
         max_reimport_states: 1,
     }
 }
@@ -586,7 +586,6 @@ fn populate_mounts(
 }
 
 struct OutfitPopulation {
-    import: ImportBatch,
     declarations: Vec<ProjectV2Declaration>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
     editor: Vec<ProjectV2EditorEntry>,
@@ -727,22 +726,7 @@ fn populate_outfits(
             tags: vec!["oteryn:editor.outfit".to_owned()],
         });
     }
-    let import = ImportBatch {
-        batch_id: "g4-outfit-133-tibiawiki-r1".to_owned(),
-        source_repository: "tibiawiki.com.br".to_owned(),
-        source_revision: OUTFIT_SOURCE_REVISION.to_owned(),
-        source_artifact_sha256: OUTFIT_SOURCE_SHA256.to_owned(),
-        access_disposition: "PENDING".to_owned(),
-        source_generation_profile: "OTERYN_G4_NON_ITEM_SOURCE_CAPTURE/v1".to_owned(),
-        importer: "OTERYN_G4_DIRECT_NONITEM_FAMILY_CROSSWALK/v1".to_owned(),
-        mapper: "OTERYN_G4_OUTFIT_133_SELECTED/v1".to_owned(),
-        mapper_revision: "d2b8769789a4cb6ea2d392489aca3137590a5d7b".to_owned(),
-        mapper_sha256: OUTFIT_SELECTED_SHA256.to_owned(),
-        candidates: Vec::new(),
-        reimport_states: Vec::new(),
-    };
     Ok(OutfitPopulation {
-        import,
         declarations,
         bindings,
         editor,
@@ -782,7 +766,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bindings.extend(mount_bindings);
     editor.extend(mount_editor);
     let OutfitPopulation {
-        import: outfit_import,
         declarations: outfit_declarations,
         bindings: outfit_bindings,
         editor: outfit_editor,
@@ -800,7 +783,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
                 coordinate_frame: "global-target-2026-07-28".to_owned(),
                 records,
-                imports: vec![provenance, wiki_import, mount_import, outfit_import],
+                imports: vec![provenance, wiki_import, mount_import],
                 metadata: Vec::new(),
             },
             state: ProjectV2State {
