@@ -134,6 +134,10 @@ def _channel_writes(module: ast.Module, name: str) -> list[ast.AST]:
                 writes.append(node)
         elif isinstance(node, ast.ExceptHandler) and node.name == name:
             writes.append(node)
+        elif isinstance(node, ast.Delete) and any(
+            _target_mentions_name(target, name) for target in node.targets
+        ):
+            writes.append(node)
     return writes
 
 
@@ -213,17 +217,36 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
         ),
         None,
     )
+    final_error_guard: ast.If | None = None
     if warnings_index is None:
         errors.append(f"{label} missing advisory warnings boundary")
     else:
         for stmt in module.body[warnings_index + 1 :]:
             if isinstance(stmt, ast.If) and ast.unparse(stmt.test) == "errors":
+                final_error_guard = stmt
                 break
             if "errors" in _append_targets(stmt):
                 errors.append(
                     f"{label} presentation section must not append blocking errors after warnings boundary"
                 )
                 break
+
+    if final_error_guard is None:
+        errors.append(f"{label} missing final blocking error guard")
+    else:
+        terminal_raises = [
+            stmt
+            for stmt in final_error_guard.body
+            if isinstance(stmt, ast.Raise)
+            and isinstance(stmt.exc, ast.Call)
+            and isinstance(stmt.exc.func, ast.Name)
+            and stmt.exc.func.id == "SystemExit"
+            and len(stmt.exc.args) == 1
+            and isinstance(stmt.exc.args[0], ast.Constant)
+            and stmt.exc.args[0].value == 1
+        ]
+        if len(terminal_raises) != 1:
+            errors.append(f"{label} final blocking error guard must raise SystemExit(1)")
 
     for rendered, stmt in tests:
         names = {node.id for node in ast.walk(stmt.test) if isinstance(node, ast.Name)}
