@@ -96,22 +96,11 @@ def validate_protected_base_audit() -> list[str]:
     return errors
 
 
-def _extract_step_text(text: str, step_name: str) -> str:
-    step_marker = f"      - name: {step_name}\n"
-    step_start = text.find(step_marker)
-    if step_start < 0:
-        raise ValueError(f"missing workflow step: {step_name}")
-    next_step = text.find("\n      - name: ", step_start + len(step_marker))
-    if next_step < 0:
-        raise ValueError(f"workflow step has no bounded successor: {step_name}")
-    return text[step_start:next_step]
-
-
 def _extract_job_text(text: str, job_name: str) -> str:
     job_marker = f"  {job_name}:\n"
+    if text.count(job_marker) != 1:
+        raise ValueError(f"workflow must contain exactly one job: {job_name}")
     job_start = text.find(job_marker)
-    if job_start < 0:
-        raise ValueError(f"missing workflow job: {job_name}")
     remainder = text[job_start + len(job_marker) :]
     next_job = re.search(r"(?m)^  [A-Za-z0-9_-]+:\s*$", remainder)
     job_end = (
@@ -120,6 +109,19 @@ def _extract_job_text(text: str, job_name: str) -> str:
         else len(text)
     )
     return text[job_start:job_end]
+
+
+def _extract_step_text(job: str, step_name: str) -> str:
+    step_marker = f"      - name: {step_name}\n"
+    if job.count(step_marker) != 1:
+        raise ValueError(
+            f"job must contain exactly one workflow step named: {step_name}"
+        )
+    step_start = job.find(step_marker)
+    next_step = job.find("\n      - name: ", step_start + len(step_marker))
+    if next_step < 0:
+        raise ValueError(f"workflow step has no bounded successor: {step_name}")
+    return job[step_start:next_step]
 
 
 def _normalize_mapping_key(raw_key: str) -> str:
@@ -165,17 +167,28 @@ def _step_mapping_entries(step: str) -> dict[str, list[str]]:
     return _mapping_entries_at_indent(step, 8, "workflow metadata step")
 
 
-def _extract_step_python(text: str, step_name: str) -> str:
-    step = _extract_step_text(text, step_name)
+def _extract_step_python(step: str, step_name: str) -> str:
+    run_header = "        run: |\n"
+    if step.count(run_header) != 1:
+        raise ValueError(
+            f"workflow step must contain exactly one literal run block: {step_name}"
+        )
+    run_start = step.find(run_header)
+    run_payload = step[run_start + len(run_header) :]
     heredoc = "          python - <<'PY'\n"
-    source_start = step.find(heredoc)
-    if source_start < 0:
-        raise ValueError(f"missing Python heredoc in workflow step: {step_name}")
-    source_start += len(heredoc)
-    source_end = step.find("\n          PY\n", source_start)
-    if source_end < 0:
-        raise ValueError(f"unterminated Python heredoc in workflow step: {step_name}")
-    return textwrap.dedent(step[source_start:source_end])
+    terminator = "\n          PY"
+    if not run_payload.startswith(heredoc):
+        raise ValueError(
+            f"workflow step run block must start with the Python heredoc: {step_name}"
+        )
+    if not run_payload.endswith(terminator):
+        raise ValueError(
+            f"workflow step run block must end with the Python heredoc terminator: {step_name}"
+        )
+    source = run_payload[len(heredoc) : -len(terminator)]
+    if "\n          PY\n" in source:
+        raise ValueError(f"workflow step contains an early heredoc terminator: {step_name}")
+    return textwrap.dedent(source)
 
 
 def _run_metadata_source(
@@ -294,14 +307,14 @@ def validate_pr_metadata_workflow_text(
     errors: list[str] = []
     try:
         job = _extract_job_text(text, job_name)
-        step = _extract_step_text(text, step_name)
+        step = _extract_step_text(job, step_name)
         job_entries = _mapping_entries_at_indent(
             job,
             4,
             f"{label} job {job_name}",
         )
         step_entries = _step_mapping_entries(step)
-        source = _extract_step_python(text, step_name)
+        source = _extract_step_python(step, step_name)
         compile(source, f"{label}:metadata", "exec")
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
