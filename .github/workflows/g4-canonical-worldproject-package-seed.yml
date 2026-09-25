@@ -1,0 +1,68 @@
+name: G4 canonical WorldProject package seed
+
+on:
+  pull_request:
+    paths:
+      - content/world/**
+      - apps/game-server/examples/materialize_content_world_project_v2.rs
+      - apps/game-server/tests/content_world_project_repository.rs
+      - .github/workflows/g4-canonical-worldproject-package-seed.yml
+      - docs/agents/tasks/active/OTV2-20260925-g4-canonical-worldproject-package-seed.md
+      - docs/agents/evidence/OTV2-20260925-g4-canonical-worldproject-package-seed.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g4-canonical-worldproject-package-seed-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+      - name: Materialize twice
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b"
+          diff --no-dereference --recursive "$RUNNER_TEMP/world-a" "$RUNNER_TEMP/world-b"
+          test "$(find "$RUNNER_TEMP/world-a" -type f | wc -l)" -eq 11
+          test -z "$(find "$RUNNER_TEMP/world-a" -type l -print -quit)"
+
+      - name: Compare tracked package
+        if: ${{ hashFiles('content/world/project.json') != '' }}
+        run: diff --no-dereference --recursive content/world "$RUNNER_TEMP/world-a"
+
+      - name: Focused validation
+        if: ${{ hashFiles('content/world/project.json') != '' }}
+        run: |
+          cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_repository
+          cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_project_v2
+          cargo +1.94.0 test --locked -p oteryn-game-server --test content_world_cw2_b1_import
+          cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
+          cargo +1.94.0 fmt --all -- --check
+
+      - name: Upload canonical package candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-canonical-worldproject-package-seed-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/world-a
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 7
