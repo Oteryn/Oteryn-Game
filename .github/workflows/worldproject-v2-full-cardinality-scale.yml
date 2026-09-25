@@ -432,7 +432,7 @@ jobs:
                   stderr = stream.read()
           except OSError:
               stderr = ""
-          match = re.search(r"Maximum resident set size \\(kbytes\\):\\s*(\\d+)", timing)
+          match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", timing)
           peak_kib = int(match.group(1)) if match else None
           peak = peak_kib * 1024 if peak_kib is not None else None
           shards = data.get("shards") if isinstance(data.get("shards"), list) else []
