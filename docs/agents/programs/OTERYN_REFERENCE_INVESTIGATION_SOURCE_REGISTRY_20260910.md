@@ -337,7 +337,7 @@ A conflict in `loot_probability` must not contaminate an independently well-supp
 
 ## 6a. Full Content G4+ phase profile
 
-For the `Oteryn: full content census` programme, G4+ family crosswalk/population uses a narrower phase policy than the generic Reference investigation flow.
+For canonical `Oteryn: full content population` (legacy compatibility invocation: `Oteryn: full content census`), G4+ uses a narrower phase policy than the generic Reference investigation flow. Protected census/crosswalk outputs are inputs to population; additional analysis-only work must directly unblock a named canonical population batch.
 
 During G4+:
 
