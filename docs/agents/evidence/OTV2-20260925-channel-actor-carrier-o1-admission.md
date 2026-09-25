@@ -1,6 +1,6 @@
 # OTV2-20260925 ChannelActorCarrier O(1) admission evidence
 
-Status: VALIDATING / PHYSICAL_RELEASE_MEASUREMENT_PENDING
+Status: READY_FOR_INTEGRATION / PHYSICAL_RELEASE_MEASUREMENT_PASS
 
 ## Admission state
 
@@ -8,7 +8,7 @@ Status: VALIDATING / PHYSICAL_RELEASE_MEASUREMENT_PENDING
 - Allocation: #162 comment 5832603591.
 - Governing resource issue: #530.
 - Canonical PR: #899.
-- Exact current candidate before this evidence update: `d8409b56fc3303978bdfc1a25192ba4af0519fb2`.
+- Runtime implementation candidate measured directly: `4dc024fb422be5956f2ad22fe69e4de45192181c`.
 - Exact owned runtime path: `apps/game-server/src/foundation/runtime_actor_carrier.rs`.
 - Open-PR overlap census at allocation: 30 open PRs, zero touching the runtime path.
 - Jira workstream: KAN-24, active High priority.
@@ -69,19 +69,35 @@ No external AI review is required by the bound META review policy for this ordin
 
 ## Physical measurement status
 
-Existing #530 evidence remains historical input only:
-- protected pre-task `Slot` size was measured as 192 B on the named ASSUMED-REF-A x86_64 profile;
-- M=131,072 linear admission/reuse scans were measured at hundreds of microseconds and full fill around 26.4 s;
-- production M remains OPEN.
+The allocation's remaining physical acceptance item is now satisfied by PR #899 comment 5834840597 against exact source head `4dc024fb422be5956f2ad22fe69e4de45192181c`.
 
-The allocation requires fresh release-mode timings at M=4,096 and M=131,072 plus an exact post-change `size_of::<Slot>()` recapture before this lane can claim full physical qualification.
+Named host/profile: `ASSUMED-REF-A` — x86_64, 4 shared Intel Xeon vCPU @ 2.80 GHz, 15 GiB RAM, Linux 6.18, Rust 1.94.0, release build, single-thread harness. The temporary measurement harness was not committed.
 
-Current execution surfaces can run the repository's canonical PR gate, but expose no authorized arbitrary release-benchmark dispatch for this exact branch. Local container network access cannot resolve github.com, and adding a permanent workflow or recursive benchmark harness would exceed the allocated three-path/minimum-sufficient scope.
+Measured layout:
+- `size_of::<Slot>() = 192 B` before and after the free-list change;
+- `size_of::<ActorRef>() = 56 B`;
+- the intrusive `next_free: Option<u32>` adds no measured bytes per slot.
 
-Therefore:
+Release-mode ranges:
+
+| M | source | fill from empty | M+1 reject | worst-hole churn | random churn | exact lookup |
+|---:|---|---:|---:|---:|---:|---:|
+| 4,096 | base `d092fe97` | 6.6–6.7 ms | 3.1 µs | 3.2 µs | 1.6–2.3 µs | 9–10 ns |
+| 4,096 | #899 `4dc024fb` | 0.19–0.34 ms | 3–6 ns | 29–45 ns | 28–67 ns | 9–15 ns |
+| 131,072 | base `d092fe97` | 26.4–26.5 s | 384–418 µs | 370–463 µs | 203–238 µs | 42–64 ns |
+| 131,072 | #899 `4dc024fb` | 9.2–9.9 ms | 3 ns | 21 ns | 178–266 ns | 61–68 ns |
+
+Additional #899 points: M=16,384 fill 0.96–1.34 ms; M=65,536 fill 4.5–5.1 ms. The result demonstrates that admission/rejection/churn no longer scale with M while exact lookup remains the same direct-index code path.
+
+The measurement closes only the O(1)-admission acceptance item. It does **not** select production M, authorize >1 creature, register a runtime-actor capacity row, activate a Channel runtime, or widen Movement/Ability/Content/protocol scope.
+
+## Integration disposition
+
 - semantic/algorithmic implementation qualification: PASS;
-- canonical exact-head CI: PASS;
-- physical release-mode measurement: PENDING;
-- production M / registry row / activation: still OPEN and explicitly not claimed.
+- physical release-mode measurement: PASS;
+- source scope: unchanged one-file bounded implementation;
+- external AI review: not required by current bound policy for this slice;
+- production M / registry row / runtime activation: OPEN and explicitly outside PR #899;
+- next requirement: fresh exact-head CI on the final metadata successor head, then coordinator-owned governed Merge Queue and protected-main readback.
 
-Do not mark this task `READY_FOR_INTEGRATION` until the required physical measurement is obtained on an authorized named execution surface, or #162/#530 explicitly revises that acceptance requirement.
+The physical measurement is bound to unchanged runtime source bytes at `4dc024fb`; subsequent task/evidence-only metadata authoring does not invalidate the source measurement. Any runtime-source change requires a fresh physical qualification.
