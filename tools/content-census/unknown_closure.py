@@ -551,6 +551,7 @@ def build_output(ledger: dict, refresh: dict[int, dict], refresh_meta: dict) -> 
         "schema": "OTERYN_G3_UNKNOWN_CLOSURE_MANIFEST/v1",
         "input": output["input"],
         "counts": output["counts"],
+        "source_refresh": output["source_refresh"],
         "authority": output["authority"],
         "invariants": {
             "exact_5512_page_id_partition": len(rows) == 5512 and len(ids) == len(set(ids)),
