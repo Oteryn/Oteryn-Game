@@ -11,7 +11,7 @@ branch: agent/otv2-g3-unknown-closure-wave
 issue: 162
 pr: 876
 base_sha: 1680eb5dc6145aa3e271ac8665f33a50ed837b76
-head_sha: c877eb7bb2e1102c335ce4dfd8e4addc3fa3abe7
+head_sha: 94869dc86eebabf1f9800ce7b6e6296eea4e7ad4
 final_head_sha: null
 owner: delegated Luna writer
 allocation_comment_id: 5827058358
@@ -50,5 +50,10 @@ Current Wiki access failures, drift and malformed responses fail closed per row.
 ## Validation and closeout
 
 The hosted workflow verifies the exact G3 artifact run, archive digest, manifest, universe digest and 5,512 count; regenerates the prior ledger and byte-compares its compact manifest; runs offline counterexample tests; refreshes current source page IDs/revisions/shapes; verifies the exact row partition and authority invariants; and uploads complete rows plus manifest with 14-day retention.
+
+## Reviewer disposition
+
+- P1: R2 counted current rows without pinned revision IDs as revision drift. The repair separately counts all absent baselines, reachable current rows without a baseline, verified same-revision rows, and true drift (a non-empty pinned baseline that differs from the current revision). Focused regressions cover empty-baseline changes and true drift. R2 run/artifact results are superseded pending exact-head rerun.
+- P2: Batch failure fanout remains fail-closed. Further hardening is non-blocking HARDENING and is not part of this repair.
 
 Exact branch freeze, draft PR, workflow run, artifact details, and final row counts are recorded at coordinator handoff. Writer does not mark ready or enqueue Merge Queue.
