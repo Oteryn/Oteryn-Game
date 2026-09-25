@@ -1,11 +1,18 @@
 {
   "schema": "OTERYN_G4_ITEM_BINDING_PILOT_EVIDENCE/v1",
-  "status": "R3_IMPLEMENTATION_IN_PROGRESS",
+  "status": "MERGED_AND_ARCHIVED",
+  "archive_allocation": {
+    "issue": 162,
+    "comment_id": 5822855188,
+    "branch": "agent/otv2-g4-item-binding-pilot-archive",
+    "base_commit": "c516182255d3ea1724e91671c8d2187eb622e3df",
+    "scope": "archive-only task move and terminal evidence update; no implementation, workflow, source, binding, definition, population, or promotion change"
+  },
   "task_packet": {
     "task_id": "OTV2-20260924-g4-item-binding-pilot",
     "issue": 162,
     "issue_comment": 5822552124,
-    "pr": null,
+    "pr": 863,
     "repository": "Oteryn/Oteryn-Game",
     "branch": "agent/otv2-g4-item-binding-pilot-r3",
     "base_commit": "b1ea95cdce07856650dac3d5fe4dcf6ea22f4071",
@@ -110,5 +117,32 @@
     "NO_GAMEPLAY_FIELD_PROMOTION",
     "NO_PRESENTATION_ASSET_RUNTIME_OR_CLIENT_ID_MUTATION",
     "NO_PRODUCTION_AUTHORITY"
-  ]
+  ],
+  "closeout": {
+    "status": "MERGED_AND_ARCHIVED",
+    "pull_request": 863,
+    "candidate_head": "d5f886404174667ef600cfd404aa176289a504bc",
+    "merge_commit": "c516182255d3ea1724e91671c8d2187eb622e3df",
+    "protected_main_readback": "c516182255d3ea1724e91671c8d2187eb622e3df",
+    "hosted_revalidation_run_id": 36062546418,
+    "hosted_artifact_id": 10835326792,
+    "artifact_archive_sha256": "1083f374b8a9f9d0c95c9ea5dd30f49f56fd1809fe2a4a7c616de7aed6065a0d",
+    "hosted_evidence_sha256": "c0f4574590f704409127daa1e1dd3864e4546fb0150b0f2aa716c2f7e0d9b06c",
+    "independent_review_comment_id": 5822717700,
+    "governed_executor_run_id": 36063081061,
+    "merge_group_run_id": 36063133423,
+    "terminal_issue_comment_id": 5822854979,
+    "implementation_paths_released": true,
+    "revalidation_result": {
+      "protected_stable_digest_drift_preserved": true,
+      "rows": 22,
+      "unresolved_source_shape": 22,
+      "typed_binding_candidates": 0
+    },
+    "project_v2_source_population": false,
+    "item_definition_mutation": false,
+    "gameplay_field_promotion": false,
+    "presentation_asset_runtime_or_client_id_mutation": false,
+    "semantic_promotion": false
+  }
 }

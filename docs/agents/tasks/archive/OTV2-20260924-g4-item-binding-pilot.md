@@ -1,14 +1,16 @@
 ---
 task_id: OTV2-20260924-g4-item-binding-pilot
 mode: IMPLEMENT
-status: implementing
+status: archived
 issue: 162
-issue_comment: 5822552124
-pr: null
+issue_comment: 5822855188
+pr: 863
 repository: Oteryn/Oteryn-Game
-base_commit: b1ea95cdce07856650dac3d5fe4dcf6ea22f4071
-branch: agent/otv2-g4-item-binding-pilot-r3
+base_commit: c516182255d3ea1724e91671c8d2187eb622e3df
+branch: agent/otv2-g4-item-binding-pilot-archive
 ---
+
+Lifecycle closeout: **MERGED AND ARCHIVED**. PR #863 merged exact head `d5f886404174667ef600cfd404aa176289a504bc` into protected `main` as `c516182255d3ea1724e91671c8d2187eb622e3df`. Hosted revalidation run `36062546418` succeeded and produced artifact `10835326792` (archive SHA-256 `1083f374b8a9f9d0c95c9ea5dd30f49f56fd1809fe2a4a7c616de7aed6065a0d`; evidence SHA-256 `c0f4574590f704409127daa1e1dd3864e4546fb0150b0f2aa716c2f7e0d9b06c`). Independent review passed (PR comment `5822717700`), governed executor run `36063081061` succeeded, and merge-group run `36063133423` succeeded. Terminal integration is recorded at #162 comment `5822854979`. The protected stable-digest drift remains unresolved: 22 rows are `UNRESOLVED_SOURCE_SHAPE`, with 0 typed binding candidates. Implementation paths are released. No Project population, definition, gameplay, presentation, runtime, client-ID, or semantic promotion was performed.
 
 # G4 Item exact-binding pilot
 
