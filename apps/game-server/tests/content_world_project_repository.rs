@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        363,
-        "d3a7fce702d60d453790a5453a9e0f13456706e60bd46d04f0bddbfc0ce9f6d6",
+        364,
+        "ea44702db9b13dff784f23f4e017ad499413e843b8ffd33ac0dda2a4d9fa0c49",
     ),
     (
         "definitions/declarations.json",
-        44_330,
-        "dcda0a026fbe0f9b9b26484a9f71d05c45d8ee11227c11616d47301393f3780a",
+        44_331,
+        "baec91d3ff98f53eb71a64ea0d7f3ca00802d742d13783bbc55be0932ce58a24",
     ),
     (
         "definitions/reference.json",
@@ -31,13 +31,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "editor/author.json",
-        121_656,
-        "1a617729f62cac71764c65b76cf4fff7c7cae2450274430abe31a4fcae40f79f",
+        121_646,
+        "f389b80aac424f7a974b4c96d7feae2528b1ce4db2ef17b4a50f4b04166d0a8a",
     ),
     (
         "manifest.json",
-        1_930,
-        "0b7dd0d4875871d28fb1ac3652d7ae912a7a17518df1779ce695f4b25a6a2821",
+        1_931,
+        "230b8d3b00b7c19c48d74e0a5c8825c2fd15c582ee81666c18f9effee8fa9463",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        389,
-        "2b4a666919432b79cccdfdf664fb3833a2c6629d94ca9323dc6646b49402fb9c",
+        390,
+        "0e63116285a94c34415d43300e9e019c820732268143ed94672f0a9924621dad",
     ),
     (
         "provenance/imports.json",
@@ -56,8 +56,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "provenance/sources.json",
-        186_249,
-        "4d41af5e230adc4c327b862b64934fbfb845594e167802001555f25ca07050d1",
+        186_250,
+        "ea81f91588cf70c2acd8fd23e79ea1a1de48515f7c92b32295b04d432d3a5848",
     ),
     (
         "worlds/world.json",
@@ -65,7 +65,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
         "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
-const TREE_SHA256: &str = "01d40f8ae58545925904e5196346616c8d6a4986f1865da99a85a2aa994bc28e";
+const TREE_SHA256: &str = "d22320e90b42ce7fc955cea4c3849be6d090b106f201c1cde1b3de7c2cc58dba";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
@@ -266,9 +266,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             acquisition_interactions,
             fields,
             ..
-        } => presentations.is_empty()
-            && acquisition_interactions.is_empty()
-            && fields.is_empty(),
+        } => presentations.is_empty() && acquisition_interactions.is_empty() && fields.is_empty(),
         ProjectV2Declaration::Mount {
             presentation: None,
             speed_bonus: None,
@@ -337,7 +335,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
-    assert!(!outfit_ids.contains("68724"));
+    assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));
     assert_eq!(mount_ids.len(), 252);
     assert!(item_ids.is_disjoint(&outfit_ids));
     assert!(item_ids.is_disjoint(&mount_ids));
