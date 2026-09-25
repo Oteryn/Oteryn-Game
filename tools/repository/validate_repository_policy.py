@@ -99,6 +99,26 @@ def _extract_step_text(text: str, step_name: str) -> str:
     return text[step_start:next_step]
 
 
+def _step_mapping_entries(step: str) -> dict[str, list[str]]:
+    entries: dict[str, list[str]] = {}
+    key_pattern = re.compile(
+        r"""^        (?P<key>"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[A-Za-z0-9_-]+)\s*:\s*(?P<value>.*?)\s*$"""
+    )
+    for line in step.splitlines():
+        match = key_pattern.match(line)
+        if match is None:
+            continue
+        raw_key = match.group("key")
+        if raw_key.startswith('"'):
+            key = json.loads(raw_key)
+        elif raw_key.startswith("'"):
+            key = raw_key[1:-1].replace("''", "'")
+        else:
+            key = raw_key
+        entries.setdefault(key, []).append(match.group("value"))
+    return entries
+
+
 def _extract_step_python(text: str, step_name: str) -> str:
     step = _extract_step_text(text, step_name)
     heredoc = "          python - <<'PY'\n"
@@ -125,6 +145,25 @@ def _run_metadata_source(
     def urlopen(request, timeout=30):
         if timeout != 30:
             raise AssertionError(f"{label} changed GitHub metadata timeout: {timeout}")
+        if environment.get("EVENT_NAME") == "workflow_dispatch":
+            fixture_pr = environment.get("DISPATCH_PR_NUMBER", "")
+        elif "PULL_NUMBER" in environment:
+            fixture_pr = environment.get("PULL_NUMBER", "")
+        else:
+            fixture_pr = environment.get("EVENT_PR_NUMBER", "")
+        expected_url = (
+            f"https://api.github.com/repos/{environment['REPOSITORY']}/pulls/{fixture_pr}"
+        )
+        actual_url = getattr(request, "full_url", None)
+        if actual_url != expected_url:
+            raise AssertionError(
+                f"{label} changed GitHub metadata request target: "
+                f"expected {expected_url}, got {actual_url!r}"
+            )
+        if request.get_method() != "GET":
+            raise AssertionError(
+                f"{label} changed GitHub metadata request method: {request.get_method()}"
+            )
         return io.BytesIO(payload)
 
     with tempfile.TemporaryDirectory() as directory:
@@ -209,14 +248,15 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
 
-    continue_on_error = re.search(r"(?m)^        continue-on-error\s*:", step)
+    step_entries = _step_mapping_entries(step)
+    continue_on_error = step_entries.get("continue-on-error", [])
     if continue_on_error:
         errors.append(
             f"{label} metadata step must not use continue-on-error: "
-            "the tested script result must govern the job"
+            f"the tested script result must govern the job, got {continue_on_error!r}"
         )
 
-    step_conditions = re.findall(r"(?m)^        if\s*:\s*(.+?)\s*$", step)
+    step_conditions = step_entries.get("if", [])
     if step_name == "Verify pull request target and metadata":
         expected_condition = (
             "github.event_name == 'pull_request' || "
