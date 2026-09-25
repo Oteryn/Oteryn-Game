@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-22T10:42:46+00:00",
+  "updated_at": "2026-09-25T08:55:50+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -4808,6 +4808,28 @@
         "348,236,191 bytes rejected before pair staging",
         "checked-add overflow rejects the generation without partial publication"
       ]
+    },
+    {
+      "id": "MOVE-RL-03",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
+      "unit": "candidate attempts per decision",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject attempted candidate 2 before any second Content static-cell lookup, actor compare-commit, or result publication; bound decision work without limiting EngineeringStaticCellIndex population.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one attempted adjacent destination candidate is permitted with the qualified static-cell and current-owner position checks",
+        "max+1=2: attempted candidate 2 fails as CAPACITY_EXCEEDED before a second Content lookup, actor compare-commit, or result publication; position and revision remain unchanged on rejection"
+      ],
+      "consumers": [
+        "isolated, unactivated production Movement local-step kernel"
+      ],
+      "notes": "Accepted by resource owner in #139 comment 5829651359 for the #889 ENGINE_READINESS proof, under the VSL-MOVE-01 owner baseline. This per-decision limit does not admit or activate the July-28 Reference data target (#483), certify Reference parity, bound the static-cell index population, or close other Movement resource rows."
     }
   ]
 }
