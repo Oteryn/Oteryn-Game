@@ -281,10 +281,12 @@ pub(crate) fn commit_exact_owner_damage(
     owner
         .commit_damage(
             resolved.target(),
-            target.as_str().as_bytes(),
-            plan.occurrence().id().as_str().as_bytes(),
-            &binding,
-            *magnitude,
+            crate::foundation::OwnerDamageCommand {
+                target: target.as_str().as_bytes(),
+                occurrence: plan.occurrence().id().as_str().as_bytes(),
+                binding: &binding,
+                damage: *magnitude,
+            },
         )
         .map_err(OwnerCommitError::Owner)
 }
