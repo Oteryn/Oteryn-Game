@@ -41,13 +41,13 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: c516182255d3ea1724e91671c8d2187eb622e3df
+          PRIOR_SHA: 71f71733dda4ec18a314c99e5912cf6a86d0674c
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           git cat-file -e "$BASE_SHA^{commit}"
-          if [ "$EXPECTED_SHA" != "$BASE_SHA" ]; then
-            test "$(git rev-parse "$EXPECTED_SHA^1")" = "$BASE_SHA"
-          fi
+          git merge-base --is-ancestor "$BASE_SHA" "$EXPECTED_SHA"
+          test "$(git rev-parse "$EXPECTED_SHA^1")" = "$PRIOR_SHA"
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

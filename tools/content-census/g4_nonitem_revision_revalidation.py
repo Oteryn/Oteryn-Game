@@ -379,7 +379,7 @@ def build_revalidation(g3: dict[str, Any], g3_manifest: dict[str, Any], g4: dict
         "schema": MANIFEST_SCHEMA,
         "status": "G4_NONITEM_REVISION_REVALIDATION_SOURCE_ONLY",
         "repository": REPOSITORY,
-        "allocation": {"issue": 162, "comment": 5822760897, "base_sha": "ead12491b10bec15cc2d9f53f07dbd320edd9d57"},
+        "allocation": {"issue": 162, "comment": 5822760897, "base_sha": "c516182255d3ea1724e91671c8d2187eb622e3df"},
         "inputs": {
             "g3": {"artifact_id": ARTIFACTS["g3"]["id"], "run_id": ARTIFACTS["g3"]["run_id"], "head_sha": ARTIFACTS["g3"]["head_sha"], "archive_sha256": ARTIFACTS["g3"]["digest"].removeprefix("sha256:")},
             "g4": {"artifact_id": ARTIFACTS["g4"]["id"], "run_id": ARTIFACTS["g4"]["run_id"], "head_sha": ARTIFACTS["g4"]["head_sha"], "archive_sha256": ARTIFACTS["g4"]["digest"].removeprefix("sha256:")},

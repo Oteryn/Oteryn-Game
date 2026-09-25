@@ -3,7 +3,7 @@
   "task_id": "OTV2-20260924-g4-nonitem-revision-revalidation",
   "issue": 162,
   "issue_comment": 5822760897,
-  "status": "IMPLEMENTING",
+  "status": "R2_REPAIR_HOSTED_RERUN_PENDING",
   "repository": "Oteryn/Oteryn-Game",
   "branch": "agent/otv2-g4-nonitem-revision-revalidation",
   "base_commit": "c516182255d3ea1724e91671c8d2187eb622e3df",
@@ -52,7 +52,10 @@
         "page_id": 63947,
         "family": "Creature",
         "direct_signature": "G1_CREATURES_STWORZENIA_INFOBOX_CRIATURA_CRIATURAS",
-        "pinned_g3": {"revision_id": 441850, "revision_timestamp": "2026-08-04T08:50:36Z"},
+        "pinned_g3": {
+          "revision_id": 441850,
+          "revision_timestamp": "2026-08-04T08:50:36Z"
+        },
         "pinned_g4": {
           "external_id": "63947",
           "page_key": "mediawiki/tibiawiki.com.br/page_id/63947",
@@ -66,7 +69,10 @@
         "page_id": 46925,
         "family": "Quest",
         "direct_signature": "G1_QUESTS_ZADANIA_INFOBOX_QUEST",
-        "pinned_g3": {"revision_id": 423929, "revision_timestamp": "2025-04-08T20:56:18Z"},
+        "pinned_g3": {
+          "revision_id": 423929,
+          "revision_timestamp": "2025-04-08T20:56:18Z"
+        },
         "pinned_g4": {
           "external_id": "46925",
           "page_key": "mediawiki/tibiawiki.com.br/page_id/46925",
@@ -94,9 +100,82 @@
   "validation": {
     "py_compile": "PASS",
     "synthetic_self_test": "PASS_14_CASES",
-    "pinned_artifact_reverification": "HOSTED_WORKFLOW_PENDING",
-    "current_source_read": "HOSTED_WORKFLOW_PENDING",
-    "one_commit_push_live_readback": "PENDING"
+    "pinned_artifact_reverification": "PASS_ON_PRIOR_EXACT_HEAD_71f71733; successor-head rerun pending",
+    "current_source_read": "PASS_ON_PRIOR_EXACT_HEAD_71f71733; successor-head rerun pending",
+    "one_commit_push_live_readback": "CORRECTED_SUCCESSOR_REF_READBACK_PENDING"
   },
-  "workflow_artifact_only": true
+  "workflow_artifact_only": true,
+  "prior_hosted_run": {
+    "run_id": 36064987451,
+    "head_sha": "71f71733dda4ec18a314c99e5912cf6a86d0674c",
+    "conclusion": "success",
+    "artifact_id": 10836120790,
+    "archive_size_bytes": 2722,
+    "archive_sha256": "7e8280a036c23593027e996db4862876bb748f7bca221882812eabec1834d11b",
+    "artifact_payload_sha256": "ff9235e3ecd01c83704d41f5c8287e77a45f80bc19da90b3aa9c4b8cd0df0e2d",
+    "superseded_by_allocation_comment": 5826845130
+  },
+  "source_revalidation_result": [
+    {
+      "page_id": 63947,
+      "family": "Creature",
+      "source_identity": {
+        "source_key": "TIBIAWIKI_STRUCTURED",
+        "source_namespace": "mediawiki/tibiawiki.com.br",
+        "identity_namespace": "mediawiki/page_id",
+        "external_id": "63947",
+        "page_key": "mediawiki/tibiawiki.com.br/page_id/63947"
+      },
+      "pinned_g3": {
+        "revision_id": 441850,
+        "revision_timestamp": "2026-08-04T08:50:36Z"
+      },
+      "pinned_g4": {
+        "revision_id": 443993,
+        "revision_timestamp": "2026-09-24T09:09:13Z",
+        "raw_utf8_sha256": "435ac55fd2663b4c756364e01282efa7ef5888ecd710e6d17a1985b8c51efc41"
+      },
+      "current": {
+        "revision_id": 443993,
+        "revision_timestamp": "2026-09-24T09:09:13Z",
+        "raw_utf8_sha256": "435ac55fd2663b4c756364e01282efa7ef5888ecd710e6d17a1985b8c51efc41"
+      },
+      "direct_family_shape": "DIRECT_FAMILY_SOURCE_SHAPE_SUPPORTED",
+      "binding_or_population": false
+    },
+    {
+      "page_id": 46925,
+      "family": "Quest",
+      "source_identity": {
+        "source_key": "TIBIAWIKI_STRUCTURED",
+        "source_namespace": "mediawiki/tibiawiki.com.br",
+        "identity_namespace": "mediawiki/page_id",
+        "external_id": "46925",
+        "page_key": "mediawiki/tibiawiki.com.br/page_id/46925"
+      },
+      "pinned_g3": {
+        "revision_id": 423929,
+        "revision_timestamp": "2025-04-08T20:56:18Z"
+      },
+      "pinned_g4": {
+        "revision_id": 443994,
+        "revision_timestamp": "2026-09-24T13:54:17Z",
+        "raw_utf8_sha256": "9ee5951111700ab8628639ec2521cdf01eafa96cf10b36f62d6d698cce33192a"
+      },
+      "current": {
+        "revision_id": 443994,
+        "revision_timestamp": "2026-09-24T13:54:17Z",
+        "raw_utf8_sha256": "9ee5951111700ab8628639ec2521cdf01eafa96cf10b36f62d6d698cce33192a"
+      },
+      "direct_family_shape": "DIRECT_FAMILY_SOURCE_SHAPE_SUPPORTED",
+      "binding_or_population": false
+    }
+  ],
+  "workflow_repair": {
+    "allocated_base_ancestor": "c516182255d3ea1724e91671c8d2187eb622e3df",
+    "candidate_parent_required": "71f71733dda4ec18a314c99e5912cf6a86d0674c",
+    "failed_intermediate_attempt": "db8f12ca1b4f12a493f7690c0fec625a23248b4c",
+    "failed_run_id": 36095496024,
+    "failed_at": "candidate parent assertion; no source/artifact steps executed"
+  }
 }

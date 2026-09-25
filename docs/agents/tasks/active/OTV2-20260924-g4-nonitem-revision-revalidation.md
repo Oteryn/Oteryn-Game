@@ -36,9 +36,11 @@ Revalidate only the two revision-drift rows carried from merged #861: Creature p
 - [x] Exact G3 and #857 artifact specifications are pinned to immutable IDs, runs, heads, sizes, archive digests, member sets and payload digests.
 - [x] Only the two named page IDs are selected after strict validation of the full immutable source artifacts.
 - [x] Focused synthetic tests cover direct-shape retention and fail-closed identity, namespace, redirect, revision, content, unsupported-shape and ambiguity cases.
-- [ ] Hosted workflow verifies pinned artifact metadata and runs exact-ID current TibiaWiki reads.
-- [ ] Exact single commit is pushed and live branch head is read back.
-- [ ] Final path delta contains only the five allocated paths.
+- [x] Prior exact-head hosted run `36064987451` on `71f71733dda4ec18a314c99e5912cf6a86d0674c` passed pinned-artifact verification and exact-ID current TibiaWiki reads; artifact `10836120790` (archive SHA-256 `7e8280a036c23593027e996db4862876bb748f7bca221882812eabec1834d11b`).
+- [x] Prior hosted result: Creature `63947` current revision `443993` / `2026-09-24T09:09:13Z` / SHA-256 `435ac55fd2663b4c756364e01282efa7ef5888ecd710e6d17a1985b8c51efc41`; Quest `46925` current revision `443994` / `2026-09-24T13:54:17Z` / SHA-256 `9ee5951111700ab8628639ec2521cdf01eafa96cf10b36f62d6d698cce33192a`; both direct-family source shapes remained supported.
+- [ ] Corrected single successor over frozen prior head `71f71733dda4ec18a314c99e5912cf6a86d0674c` is read back; exact-head hosted rerun is pending.
+- [x] Candidate path delta remains within the five allocated paths; workflow requires refreshed base `c516182255d3ea1724e91671c8d2187eb622e3df` as ancestor and frozen prior head as the candidate's direct parent.
+- [x] The failed intermediate attempt `db8f12ca1b4f12a493f7690c0fec625a23248b4c` was only a ref-recoverable workflow assertion failure; the corrected single successor preserves all evidence and repairs the check.
 
 ## Excluded scope
 
@@ -47,10 +49,12 @@ No broader G4 non-Item crosswalk rerun, no title identity, no repository target 
 ## Context checkpoint
 
 ```yaml
-status: implementing
+status: repair-hosted-rerun-pending
 branch: agent/otv2-g4-nonitem-revision-revalidation
 base_sha: c516182255d3ea1724e91671c8d2187eb622e3df
-head_sha: null
+previous_frozen_head: 71f71733dda4ec18a314c99e5912cf6a86d0674c
+superseded_intermediate_attempt: db8f12ca1b4f12a493f7690c0fec625a23248b4c (workflow failed at parent assertion)
+prior_hosted_run: 36064987451 (success; superseded by this repair)
 pr: null
-next_action: finish five-path implementation, validate, publish one commit, and read back live branch head
+next_action: read back corrected single successor, rerun hosted workflow, and retain resulting artifact
 ```
