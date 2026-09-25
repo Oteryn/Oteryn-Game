@@ -10,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
+PR_METADATA_WORKFLOWS = (
+    ROOT / ".github/workflows/agent-governance.yml",
+    ROOT / ".github/workflows/merge-gate.yml",
+)
 
 
 def load_module(path: Path, name: str):
@@ -77,6 +81,41 @@ def validate_protected_base_audit() -> list[str]:
     return errors
 
 
+def validate_pr_metadata_advisory_contract() -> list[str]:
+    errors: list[str] = []
+    forbidden = (
+        "errors.append('PR title must be at most 72 characters')",
+        'errors.append("PR title must be at most 72 characters")',
+        "errors.append('PR title must follow type(scope): imperative summary')",
+        'errors.append("PR title must follow type(scope): imperative summary")',
+        "errors.append(f'PR body is missing {heading}')",
+        'errors.append(f"PR body is missing {heading}")',
+    )
+    required = (
+        "warnings: list[str] = []",
+        "warnings.append('PR title should be at most 72 characters')",
+        "warnings.append('PR title should follow type(scope): imperative summary')",
+        "any('validation' in heading for heading in headings)",
+        "::warning title=PR metadata guidance::",
+    )
+    for path in PR_METADATA_WORKFLOWS:
+        if not path.is_file():
+            errors.append(f"missing PR metadata workflow: {path.relative_to(ROOT)}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        for fragment in forbidden:
+            if fragment in text:
+                errors.append(
+                    f"{path.relative_to(ROOT)} must not hard-fail presentation-only PR metadata: {fragment}"
+                )
+        for fragment in required:
+            if fragment not in text:
+                errors.append(
+                    f"{path.relative_to(ROOT)} missing advisory PR metadata contract: {fragment}"
+                )
+    return errors
+
+
 def validate_pr_gate_contract() -> list[str]:
     module = load_module(PR_GATE_CONTRACT_PATH, "validate_pr_gate_pg_sim")
     return module.validate()
@@ -84,6 +123,7 @@ def validate_pr_gate_contract() -> list[str]:
 
 def main() -> int:
     errors = validate_protected_base_audit()
+    errors.extend(validate_pr_metadata_advisory_contract())
     errors.extend(validate_pr_gate_contract())
     if errors:
         print("Repository policy validation failed:")
