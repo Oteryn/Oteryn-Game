@@ -323,6 +323,7 @@ struct PositionSnapshot {
 enum Slot {
     VacantReusable {
         generation: u64,
+        next_free: Option<u32>,
     },
     Occupied {
         generation: u64,
@@ -348,6 +349,8 @@ struct ChannelActorCarrier {
     channel_id: ChannelId,
     scope_generation: ScopeOwnershipGeneration,
     slots: Box<[Slot]>,
+    free_head: Option<u32>,
+    has_creature: bool,
 }
 
 impl ChannelActorCarrier {
@@ -437,6 +440,8 @@ impl ChannelActorCarrier {
             channel_id: continuity.channel_id,
             scope_generation: continuity.current_generation,
             slots: slots.into_boxed_slice(),
+            free_head: Some(0),
+            has_creature: false,
         })
     }
 
@@ -460,11 +465,7 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
-        if self
-            .slots
-            .iter()
-            .any(|slot| matches!(slot, Slot::CreatureOccupied { .. }))
-        {
+        if self.has_creature {
             return Err(CarrierError::CapacityExceeded);
         }
         if target_identity.is_empty()
@@ -494,21 +495,25 @@ impl ChannelActorCarrier {
         // Current outer authority must be proven before slot selection or any
         // mutation, including terminal generation-exhaustion bookkeeping.
         self.validate_current_continuity(continuity)?;
-        let Some(index) = self
-            .slots
-            .iter()
-            .position(|slot| matches!(slot, Slot::VacantReusable { .. }))
-        else {
+        let Some(free_head) = self.free_head else {
             return Err(CarrierError::CapacityExceeded);
         };
+        let index = usize::try_from(free_head)
+            .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
 
-        let Slot::VacantReusable { generation } = &self.slots[index] else {
-            unreachable!("selection accepts reusable slots only");
+        let Slot::VacantReusable {
+            generation,
+            next_free,
+        } = &self.slots[index]
+        else {
+            unreachable!("free-list head must name a reusable slot");
         };
         let generation = *generation;
+        let next_free = *next_free;
         let Some(next_generation) = generation.checked_add(1) else {
             // Protected #541 exception: this is the sole failure that mutates state.
             self.slots[index] = Slot::Exhausted { generation };
+            self.free_head = next_free;
             return Err(CarrierError::ActorGenerationExhausted);
         };
         let actor_local_id = index
@@ -527,6 +532,7 @@ impl ChannelActorCarrier {
         if fail_after_selection {
             return Err(CarrierError::InjectedAdmissionFailure);
         }
+        let is_creature = initial_health.is_some();
         self.slots[index] = if let Some((health, target_identity)) = initial_health {
             Slot::CreatureOccupied {
                 generation: next_generation,
@@ -543,6 +549,10 @@ impl ChannelActorCarrier {
                 position: None,
             }
         };
+        self.free_head = next_free;
+        if is_creature {
+            self.has_creature = true;
+        }
         Ok(actor_ref)
     }
 
@@ -572,22 +582,33 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<ActorState, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
-        match &self.slots[index] {
+        let (generation, actor, removed_creature) = match &self.slots[index] {
             Slot::Occupied {
                 generation, actor, ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                (*generation, *actor, false)
             }
-            | Slot::CreatureOccupied {
+            Slot::CreatureOccupied {
                 generation, actor, ..
             } if *generation == actor_ref.actor_local_generation.0 => {
-                let (generation, actor) = (*generation, *actor);
-                self.slots[index] = Slot::VacantReusable { generation };
-                Ok(actor)
+                (*generation, *actor, true)
             }
             Slot::Occupied { .. }
             | Slot::CreatureOccupied { .. }
             | Slot::VacantReusable { .. }
-            | Slot::Exhausted { .. } => Err(CarrierError::StaleActorGeneration),
+            | Slot::Exhausted { .. } => return Err(CarrierError::StaleActorGeneration),
+        };
+        let free_index =
+            u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        self.slots[index] = Slot::VacantReusable {
+            generation,
+            next_free: self.free_head,
+        };
+        self.free_head = Some(free_index);
+        if removed_creature {
+            self.has_creature = false;
         }
+        Ok(actor)
     }
 
     /// One fixed-size receipt is retained in the creature's own slot. On
@@ -935,7 +956,20 @@ fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
     slots
         .try_reserve_exact(explicit_capacity)
         .map_err(|_| CarrierError::AllocationFailed)?;
-    slots.resize(explicit_capacity, Slot::VacantReusable { generation: 0 });
+    for index in 0..explicit_capacity {
+        let next_free = if index + 1 < explicit_capacity {
+            Some(
+                u32::try_from(index + 1)
+                    .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+            )
+        } else {
+            None
+        };
+        slots.push(Slot::VacantReusable {
+            generation: 0,
+            next_free,
+        });
+    }
     Ok(slots)
 }
 
@@ -1286,20 +1320,23 @@ mod tests {
             .admit(&continuity, ActorState(1))
             .expect("unrelated actor");
         let before = carrier.slots.clone();
+        let free_head_before = carrier.free_head;
         assert_eq!(
             carrier.admit_inner(&continuity, ActorState(2), None, true),
             Err(CarrierError::InjectedAdmissionFailure)
         );
         assert_eq!(carrier.slots, before);
+        assert_eq!(carrier.free_head, free_head_before);
         assert_eq!(carrier.lookup(&continuity, first), Ok(&ActorState(1)));
     }
 
     #[test]
     fn exhausted_reuse_marks_only_selected_slot_and_never_reselects_it() {
         let (continuity, mut carrier) = carrier(2);
-        carrier.slots[0] = Slot::VacantReusable {
-            generation: u64::MAX,
+        let Slot::VacantReusable { generation, .. } = &mut carrier.slots[0] else {
+            panic!("initial free head must be reusable");
         };
+        *generation = u64::MAX;
         let unrelated = carrier.slots[1].clone();
         assert_eq!(
             carrier.admit(&continuity, ActorState(1)),
@@ -1316,6 +1353,28 @@ mod tests {
             .admit(&continuity, ActorState(2))
             .expect("skip exhausted slot");
         assert_eq!(admitted.actor_local_id, ActorLocalId(2));
+    }
+
+    #[test]
+    fn one_creature_marker_tracks_successful_admit_and_remove_only() {
+        let (continuity, mut carrier) = carrier(2);
+        assert!(!carrier.has_creature);
+
+        let creature = carrier
+            .admit_creature(&continuity, ActorState(1), "target:one", 20)
+            .expect("first creature");
+        assert!(carrier.has_creature);
+        assert_eq!(
+            carrier.admit_creature(&continuity, ActorState(2), "target:two", 20),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert_eq!(carrier.remove(&continuity, creature), Ok(ActorState(1)));
+        assert!(!carrier.has_creature);
+
+        carrier
+            .admit_creature(&continuity, ActorState(3), "target:three", 20)
+            .expect("creature slot is reusable");
+        assert!(carrier.has_creature);
     }
 
     #[test]
