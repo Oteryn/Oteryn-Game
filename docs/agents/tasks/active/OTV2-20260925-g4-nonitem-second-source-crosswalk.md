@@ -4,7 +4,7 @@
 task_id: OTV2-20260925-g4-nonitem-second-source-crosswalk
 title: G4 Non-Item second-source crosswalk
 mode: IMPLEMENT
-status: authoring
+status: implementing
 repository: Oteryn/Oteryn-Game
 base: main
 base_branch: main
