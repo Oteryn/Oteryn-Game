@@ -6,6 +6,7 @@
 extern crate self as oteryn_game_server;
 
 #[allow(dead_code)]
+#[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
 
 pub mod character_bootstrap_intent;
