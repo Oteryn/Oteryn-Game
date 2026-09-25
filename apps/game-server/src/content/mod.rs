@@ -41,6 +41,7 @@ mod project;
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;
+mod static_cell_engine;
 #[cfg(test)]
 pub(crate) mod reference_static_cell;
 
@@ -87,6 +88,7 @@ pub use reference_artifact::{
     ReferencePlayableExpectation, ReferencePlayableGenerationIdentity, ReferenceServerItem,
 };
 pub use reference_playable::*;
+pub use static_cell_engine::*;
 
 #[cfg(test)]
 mod tests;
