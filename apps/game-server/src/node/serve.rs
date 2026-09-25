@@ -60,6 +60,7 @@ const RETRY_BACKOFF_MAX: Duration = Duration::from_secs(5);
 const ASSIGNMENT_POLL: Duration = Duration::from_secs(1);
 const PENDING_RECONCILE_ATTEMPTS: u32 = 5;
 const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
+const DRAIN_MARGIN: Duration = Duration::from_secs(1);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
@@ -918,6 +919,13 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     result
 }
 
+/// The drain after readiness is withdrawn: long enough for an in-flight
+/// admission (bounded by the entry deadline) or Character bootstrap (bounded
+/// by the control deadline) to reach its own outcome.
+fn drain_budget(entry_deadline: Duration) -> Duration {
+    CONTROL_DEADLINE.max(entry_deadline) + DRAIN_MARGIN
+}
+
 /// A signal before readiness was ever published: nothing to withdraw.
 fn stopped_before_ready() {
     event("event=shutdown reason=\"signal before ready\"");
@@ -1068,14 +1076,17 @@ async fn boot_and_serve(
     }
     shutdown.cancel();
     loops_stop.cancel();
-    // In-flight admissions and an in-flight bootstrap complete.
+    // In-flight admissions and an in-flight bootstrap complete within their
+    // own deadlines, which bound the drain.
     let _ = first(
         async {
             let _ = gameplay.as_mut().await;
             control_task.as_mut().await;
             expiry.as_mut().await;
         },
-        tokio::time::sleep(SHUTDOWN_BUDGET),
+        tokio::time::sleep(drain_budget(Duration::from_millis(
+            config.listener.entry_deadline_ms,
+        ))),
     )
     .await;
     let _ = std::fs::remove_file(&config.control.socket_path);
@@ -1114,6 +1125,13 @@ mod tests {
         let (own, foreign) = (key(&first), key(&second));
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &own).is_ok());
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
+    }
+
+    #[test]
+    fn drain_outlasts_every_in_flight_deadline() {
+        assert!(drain_budget(Duration::from_secs(1)) > CONTROL_DEADLINE);
+        let longest = Duration::from_millis(super::super::config::MAX_ENTRY_DEADLINE_MS);
+        assert!(drain_budget(longest) > longest);
     }
 
     #[test]

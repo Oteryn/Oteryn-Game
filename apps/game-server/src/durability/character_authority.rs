@@ -302,20 +302,19 @@ impl DurabilityRoot {
         let record = recovery.record().clone();
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            // Any surviving Character row is evidence of prior state: never "fresh".
-            let existing: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_recovery_admissions) + (SELECT count(*) FROM game_character_account_guards) + (SELECT count(*) FROM game_character_roots) + (SELECT count(*) FROM game_character_operation_receipts) + (SELECT count(*) FROM game_character_audit_outbox) + (SELECT count(*) FROM game_character_audit_legal_holds) + (SELECT count(*) FROM game_character_bootstrap_intent_floors) + (SELECT count(*) FROM game_character_interpretations)")
+            // The definer admits generation one only into an empty Character
+            // store; any surviving Character row is evidence of prior state,
+            // except exactly this admission re-run after a lost acknowledgement
+            // (migration 0007).
+            let admitted: bool = sqlx::query_scalar("SELECT game_character_admit_fresh_recovery($1, encode($2,'hex')::uuid, $3::numeric, $4)")
+                .bind(&record.authority_scope_id)
+                .bind(record.recovery_event_id.as_slice())
+                .bind(record.issued_at.to_string())
+                .bind(&record.issuer_identity)
                 .fetch_one(&mut *tx).await?;
-            if existing != 0 {
-                // A re-run after a lost acknowledgement finds exactly this
-                // generation-one admission and nothing else admitted since.
-                let only_this: bool = sqlx::query_scalar("SELECT count(*) = 1 FROM game_character_recovery_admissions").fetch_one(&mut *tx).await?;
-                if only_this && compare_recovery_fence(&mut tx, &record, false).await.is_ok() {
-                    commit_semantic_transaction(tx, deadline).await?;
-                    return Ok(Ok(()));
-                }
+            if !admitted {
                 return Ok(Err(CharacterAuthorityError::Conflict));
             }
-            insert_recovery_admission(&mut tx, &record).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(()))
         })).await?
@@ -493,26 +492,12 @@ async fn insert_recovery_admission(
     Ok(())
 }
 
+/// Compare the latest admission with `record`, holding it FOR SHARE.
 async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
-    compare_recovery_fence(tx, record, true).await
-}
-
-/// Compare the latest admission with `record`; `lock` holds it FOR SHARE.
-/// Admissions are append-only, so the control-plane idempotence check of the
-/// fresh store compares without a row lock (it holds no UPDATE privilege).
-async fn compare_recovery_fence(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    record: &CharacterRecoveryFenceV1,
-    lock: bool,
-) -> std::result::Result<(), DurabilityError> {
-    let sql = if lock {
-        "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE"
-    } else {
-        "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1"
-    };
+    let sql = "SELECT authority_scope_id, recovery_generation::text, recovery_event_id::text, predecessor_generation::text, predecessor_digest, issued_at::text, issuer_identity FROM game_character_recovery_admissions ORDER BY recovery_generation DESC LIMIT 1 FOR SHARE";
     let row = sqlx::query(sql)
         .fetch_optional(&mut **tx)
         .await?

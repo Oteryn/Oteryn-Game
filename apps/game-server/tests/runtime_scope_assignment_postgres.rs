@@ -3159,6 +3159,7 @@ fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
                 for sql in [
                     "SELECT game_character_configure_interpretation('p', 'r', 'c', 's')",
                     "INSERT INTO game_character_recovery_admissions (authority_scope_id) VALUES ('x')",
+                    "SELECT game_character_admit_fresh_recovery('x', '01890f4c-3b2a-7c01-8d11-9a321b7c0013', 1, 'x')",
                     "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
                      VALUES ('x', '01890f4c-3b2a-7c01-8d11-9a321b7c0001', '01890f4c-3b2a-7c01-8d11-9a321b7c0001', 1)",
                     "INSERT INTO game_runtime_scope_assignment_receipts (operation_key) VALUES ('\\x00'::bytea)",
@@ -3250,6 +3251,37 @@ fn runtime_credential_cannot_perform_control_plane_actions() -> TestResult {
                     "42501",
                 )
                 .await?;
+                direct.close().await?;
+
+                // The control login admits only generation one of an empty
+                // Character store, through the definer (migration 0007): a
+                // direct admission row, such as a successor, is refused.
+                let mut direct = sqlx::PgConnection::connect(&control_url).await?;
+                expect_sql_state(
+                    sqlx::query(
+                        "INSERT INTO game_character_recovery_admissions (authority_scope_id, recovery_generation, \
+                         recovery_event_id, predecessor_generation, predecessor_digest, issued_at, issuer_identity, reconciled_at) \
+                         VALUES ('scope', 1, '01890f4c-3b2a-7c01-8d11-9a321b7c0011', 0, NULL, 1, 'ops', 0)",
+                    )
+                    .execute(&mut direct)
+                    .await,
+                    "42501",
+                )
+                .await?;
+                let admit = "SELECT game_character_admit_fresh_recovery('scope', $1::uuid, 1, 'ops')";
+                for (event, expected) in [
+                    ("01890f4c-3b2a-7c01-8d11-9a321b7c0011", true),
+                    // An exact re-run after a lost acknowledgement.
+                    ("01890f4c-3b2a-7c01-8d11-9a321b7c0011", true),
+                    // A different generation one once the store is admitted.
+                    ("01890f4c-3b2a-7c01-8d11-9a321b7c0012", false),
+                ] {
+                    let admitted: bool = sqlx::query_scalar(admit)
+                        .bind(event)
+                        .fetch_one(&mut direct)
+                        .await?;
+                    assert_eq!(admitted, expected, "{event}");
+                }
                 direct.close().await?;
 
                 // A login of this database cannot connect to another Game

@@ -158,24 +158,24 @@ fn now_seconds() -> Result<i64, Failure> {
 
 impl Operator {
     fn read_state(&self, name: &str) -> Result<Vec<u8>, Failure> {
-        secure_file::read_in(
+        self.read_state_optional(name)?
+            .ok_or_else(|| Failure::Input(format!("retained file {name}: missing")))
+    }
+
+    /// A retained file, or `None` when it does not exist. Node-read files
+    /// belong to the service user and all others to root; the owner is taken
+    /// from the opened descriptor.
+    fn read_state_optional(&self, name: &str) -> Result<Option<Vec<u8>>, Failure> {
+        match secure_file::read_in_owned_by_any(
             &self.state,
             name,
             FileClass::Secret,
-            self.owner_of(name)?,
+            &[0, self.config.operator.service_uid],
             MAX_OPERATOR_FILE_BYTES,
-        )
-        .map_err(|error| Failure::Input(format!("retained file {name}: {error:?}")))
-    }
-
-    /// Node-read files belong to the service user; all others to root.
-    fn owner_of(&self, name: &str) -> Result<u32, Failure> {
-        let stat = rustix::fs::statat(&self.state, name, rustix::fs::AtFlags::SYMLINK_NOFOLLOW)
-            .map_err(|_| Failure::Input(format!("retained file {name}: missing")))?;
-        if stat.st_uid == 0 || stat.st_uid == self.config.operator.service_uid {
-            Ok(stat.st_uid)
-        } else {
-            Err(Failure::Input(format!("retained file {name}: Owner")))
+        ) {
+            Ok(bytes) => Ok(Some(bytes)),
+            Err(secure_file::FileError::Missing) => Ok(None),
+            Err(error) => Err(Failure::Input(format!("retained file {name}: {error:?}"))),
         }
     }
 
@@ -466,10 +466,10 @@ async fn character(operator: &Operator, mut arguments: Arguments) -> Outcome {
             arguments.finish()?;
             // A retained request is reused exactly; otherwise a new one is
             // written durably before the fence advances.
-            let request = match operator.owner_of(&name) {
-                Ok(_) => CharacterRecoveryRequestFile::decode(&operator.read_state(&name)?)
+            let request = match operator.read_state_optional(&name)? {
+                Some(bytes) => CharacterRecoveryRequestFile::decode(&bytes)
                     .map_err(|_| Failure::Input("recovery request".into()))?,
-                Err(_) => {
+                None => {
                     let request = CharacterRecoveryRequestFile {
                         version: FILE_VERSION,
                         recovery_event_id: hex(

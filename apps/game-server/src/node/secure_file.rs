@@ -42,6 +42,8 @@ pub enum FileError {
     TooLarge,
     /// Exclusive creation found an existing entry.
     Exists,
+    /// The named entry does not exist.
+    Missing,
 }
 
 const GROUP_OTHER_ALL: u32 = 0o077;
@@ -145,6 +147,33 @@ pub fn read_in(
     owner: u32,
     max: usize,
 ) -> Result<Vec<u8>, FileError> {
+    let (file, stat) = open_entry(directory, name).map_err(|error| match error {
+        FileError::Missing => FileError::Unavailable,
+        other => other,
+    })?;
+    check_file(&stat, class, owner)?;
+    read_bounded(file, max)
+}
+
+/// Read one checked file relative to a validated directory when its owner is
+/// any of `owners`. The owner is taken from the opened descriptor, never from
+/// a separate path lookup. A missing entry is `Missing`.
+pub fn read_in_owned_by_any(
+    directory: &OwnedFd,
+    name: &str,
+    class: FileClass,
+    owners: &[u32],
+    max: usize,
+) -> Result<Vec<u8>, FileError> {
+    let (file, stat) = open_entry(directory, name)?;
+    if !owners.contains(&stat.st_uid) {
+        return Err(FileError::Owner);
+    }
+    check_file(&stat, class, stat.st_uid)?;
+    read_bounded(file, max)
+}
+
+fn open_entry(directory: &OwnedFd, name: &str) -> Result<(OwnedFd, rustix::fs::Stat), FileError> {
     if !valid_entry_name(name) {
         return Err(FileError::InvalidPath);
     }
@@ -156,11 +185,11 @@ pub fn read_in(
     ) {
         Ok(file) => file,
         Err(rustix::io::Errno::LOOP) => return Err(FileError::SymbolicLink),
+        Err(rustix::io::Errno::NOENT) => return Err(FileError::Missing),
         Err(_) => return Err(FileError::Unavailable),
     };
     let stat = rustix::fs::fstat(&file).map_err(|_| FileError::Unavailable)?;
-    check_file(&stat, class, owner)?;
-    read_bounded(file, max)
+    Ok((file, stat))
 }
 
 /// Validate the operator state directory and every ancestor up to `/`, each
@@ -389,10 +418,29 @@ mod tests {
             create_exclusive(&handle, "../escape", None, b""),
             Err(FileError::InvalidPath)
         );
+        // The owner comes from the opened descriptor.
+        assert_eq!(
+            read_in_owned_by_any(&handle, "request", FileClass::Secret, &[me], 64),
+            Ok(b"exact".to_vec())
+        );
+        assert_eq!(
+            read_in_owned_by_any(
+                &handle,
+                "request",
+                FileClass::Secret,
+                &[me.wrapping_add(1)],
+                64
+            ),
+            Err(FileError::Owner)
+        );
         remove_in(&handle, "request").expect("remove");
         assert_eq!(
             read_in(&handle, "request", FileClass::Secret, me, 64),
             Err(FileError::Unavailable)
+        );
+        assert_eq!(
+            read_in_owned_by_any(&handle, "request", FileClass::Secret, &[me], 64),
+            Err(FileError::Missing)
         );
         std::fs::remove_dir_all(&directory).expect("cleanup");
     }

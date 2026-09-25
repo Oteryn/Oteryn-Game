@@ -1,10 +1,10 @@
 //! Character-specific, non-rollback recovery register retained outside PostgreSQL.
 
-use rustix::fs::{FlockOperation, OFlags};
-use std::fs::{self, File, OpenOptions};
+use rustix::fs::{AtFlags, FlockOperation, Mode, OFlags};
+use std::fs::File;
 use std::io::{Read, Write};
-use std::os::unix::fs::OpenOptionsExt;
-use std::path::{Path, PathBuf};
+use std::os::fd::{AsFd, OwnedFd};
+use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -39,7 +39,10 @@ pub struct CharacterRecoveryFenceV1 {
 /// The one Character-generation guard shared by ordinary transactions and recovery.
 #[derive(Debug)]
 pub struct CharacterRecoveryStore {
-    directory: PathBuf,
+    /// The validated retained directory. Every entry is opened, created,
+    /// renamed and synchronized relative to this descriptor, so a later
+    /// rename or replacement of the path cannot redirect the store.
+    directory: OwnedFd,
     /// The service user that owns the directory, lock and record
     /// (OPS-NODE-BOOT-01 D1). Files this process creates are handed to it.
     owner: u32,
@@ -106,27 +109,27 @@ impl CharacterRecoveryStore {
         let issuer_identity = issuer_identity.into();
         validate_id(&authority_scope_id)?;
         validate_id(&issuer_identity)?;
-        let directory = retained_directory.as_ref();
-        let metadata =
-            fs::symlink_metadata(directory).map_err(|_| CharacterRecoveryError::Unavailable)?;
-        if !metadata.file_type().is_dir() || metadata.file_type().is_symlink() {
-            return Err(CharacterRecoveryError::Unavailable);
-        }
-        let directory = directory
-            .canonicalize()
-            .map_err(|_| CharacterRecoveryError::Unavailable)?;
-        let handle = secure_open(&directory, false, false)?;
-        let stat = rustix::fs::fstat(&handle).map_err(|_| CharacterRecoveryError::Unavailable)?;
+        let directory = rustix::fs::openat(
+            rustix::fs::CWD,
+            retained_directory.as_ref(),
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| CharacterRecoveryError::Unavailable)?;
+        let stat =
+            rustix::fs::fstat(&directory).map_err(|_| CharacterRecoveryError::Unavailable)?;
         if rustix::fs::FileType::from_raw_mode(stat.st_mode) != rustix::fs::FileType::Directory
             || stat.st_uid != owner
             || stat.st_mode & 0o022 != 0
         {
             return Err(CharacterRecoveryError::Unavailable);
         }
-        let parent = File::open(
-            directory
-                .parent()
-                .ok_or(CharacterRecoveryError::Unavailable)?,
+        // The parent of the opened directory itself, not of a path.
+        let parent = rustix::fs::openat(
+            &directory,
+            "..",
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
+            Mode::empty(),
         )
         .map_err(|_| CharacterRecoveryError::Unavailable)?;
         let stat = rustix::fs::fstat(&parent).map_err(|_| CharacterRecoveryError::Unavailable)?;
@@ -251,17 +254,20 @@ impl CharacterRecoveryStore {
     }
 
     fn lock(&self, operation: FlockOperation) -> Result<File, CharacterRecoveryError> {
-        let path = self.directory.join(LOCK_NAME);
-        let file = match secure_open(&path, true, false) {
-            Ok(file) => file,
-            Err(_) if !path.exists() && fs::symlink_metadata(&path).is_err() => {
+        let file = match self.open_entry(LOCK_NAME, true, false) {
+            Ok(Some(file)) => file,
+            Ok(None) => {
                 // Fresh installation: exclusive create, handed to the owner.
-                let file = match secure_open(&path, true, true) {
-                    Ok(file) => file,
-                    Err(_) => secure_open(&path, true, false)?,
-                };
-                self.hand_off(&file)?;
-                file
+                match self.open_entry(LOCK_NAME, true, true)? {
+                    Some(file) => {
+                        self.hand_off(&file)?;
+                        file
+                    }
+                    // Created concurrently by another opener.
+                    None => self
+                        .open_entry(LOCK_NAME, true, false)?
+                        .ok_or(CharacterRecoveryError::Unavailable)?,
+                }
             }
             Err(error) => return Err(error),
         };
@@ -271,11 +277,8 @@ impl CharacterRecoveryStore {
     }
 
     fn read_optional(&self) -> Result<Option<CharacterRecoveryFenceV1>, CharacterRecoveryError> {
-        let path = self.directory.join(RECORD_NAME);
-        let file = match secure_open(&path, false, false) {
-            Ok(file) => file,
-            Err(CharacterRecoveryError::Unavailable) if !path.exists() => return Ok(None),
-            Err(error) => return Err(error),
+        let Some(file) = self.open_entry(RECORD_NAME, false, false)? else {
+            return Ok(None);
         };
         self.ensure_owned(&file)?;
         let mut bytes = Vec::new();
@@ -300,8 +303,9 @@ impl CharacterRecoveryStore {
             std::process::id(),
             TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed)
         );
-        let temp = self.directory.join(&temp_name);
-        let mut file = secure_open(&temp, true, true)?;
+        let mut file = self
+            .open_entry(&temp_name, true, true)?
+            .ok_or(CharacterRecoveryError::Unavailable)?;
         let result = (|| {
             self.hand_off(&file)?;
             self.ensure_owned(&file)?;
@@ -309,14 +313,12 @@ impl CharacterRecoveryStore {
                 .map_err(|_| CharacterRecoveryError::Unavailable)?;
             file.sync_all()
                 .map_err(|_| CharacterRecoveryError::Unavailable)?;
-            fs::rename(&temp, self.directory.join(RECORD_NAME))
+            rustix::fs::renameat(&self.directory, &temp_name, &self.directory, RECORD_NAME)
                 .map_err(|_| CharacterRecoveryError::Unavailable)?;
-            File::open(&self.directory)
-                .and_then(|directory| directory.sync_all())
-                .map_err(|_| CharacterRecoveryError::Unavailable)
+            self.sync_directory()
         })();
         if result.is_err() {
-            let _ = fs::remove_file(&temp);
+            let _ = rustix::fs::unlinkat(&self.directory, &temp_name, AtFlags::empty());
         }
         result
     }
@@ -330,9 +332,33 @@ impl CharacterRecoveryStore {
             .map_err(|_| CharacterRecoveryError::Unavailable)?;
         file.sync_all()
             .map_err(|_| CharacterRecoveryError::Unavailable)?;
-        File::open(&self.directory)
-            .and_then(|directory| directory.sync_all())
-            .map_err(|_| CharacterRecoveryError::Unavailable)
+        self.sync_directory()
+    }
+
+    fn sync_directory(&self) -> Result<(), CharacterRecoveryError> {
+        rustix::fs::fsync(self.directory.as_fd()).map_err(|_| CharacterRecoveryError::Unavailable)
+    }
+
+    /// Open one entry of the retained directory without following a final
+    /// symbolic link. `Ok(None)` is a missing entry, or on `create_new` an
+    /// entry that already exists. Created files are mode 0600.
+    fn open_entry(
+        &self,
+        name: &str,
+        write: bool,
+        create_new: bool,
+    ) -> Result<Option<File>, CharacterRecoveryError> {
+        let mut flags = OFlags::NOFOLLOW | OFlags::CLOEXEC;
+        flags |= if write { OFlags::RDWR } else { OFlags::RDONLY };
+        if create_new {
+            flags |= OFlags::CREATE | OFlags::EXCL;
+        }
+        match rustix::fs::openat(&self.directory, name, flags, Mode::RUSR | Mode::WUSR) {
+            Ok(fd) => Ok(Some(File::from(fd))),
+            Err(rustix::io::Errno::NOENT) if !create_new => Ok(None),
+            Err(rustix::io::Errno::EXIST) if create_new => Ok(None),
+            Err(_) => Err(CharacterRecoveryError::Unavailable),
+        }
     }
 
     /// A regular file owned by the store owner, not writable by group or others.
@@ -344,20 +370,6 @@ impl CharacterRecoveryStore {
         }
         Ok(())
     }
-}
-
-/// Open without following a final symbolic link. Created files are mode 0600.
-fn secure_open(path: &Path, write: bool, create_new: bool) -> Result<File, CharacterRecoveryError> {
-    let mut options = OpenOptions::new();
-    options
-        .read(true)
-        .write(write)
-        .create_new(create_new)
-        .mode(0o600);
-    options.custom_flags(OFlags::NOFOLLOW.bits() as i32);
-    options
-        .open(path)
-        .map_err(|_| CharacterRecoveryError::Unavailable)
 }
 
 fn ensure_regular(file: &File) -> Result<(), CharacterRecoveryError> {
@@ -495,6 +507,8 @@ mod tests {
     #![allow(clippy::expect_used)]
 
     use super::*;
+    use std::fs;
+    use std::path::PathBuf;
 
     fn directory(label: &str) -> PathBuf {
         use std::os::unix::fs::PermissionsExt;
@@ -538,6 +552,32 @@ mod tests {
         assert_eq!(sealed.record.recovery_event_id, event(1));
         drop(sealed);
         fs::remove_dir_all(directory).expect("cleanup");
+    }
+
+    #[test]
+    fn a_renamed_or_replaced_directory_cannot_redirect_the_store() {
+        let directory = directory("pinned");
+        let store = CharacterRecoveryStore::open(&directory, "character-primary", "game-ops")
+            .expect("store");
+        drop(
+            store
+                .authorize_fresh_store(event(1), 100)
+                .expect("fresh authorization"),
+        );
+        // The owner renames the validated directory and puts an empty one in
+        // its place: the store keeps working on the directory it validated.
+        let moved = directory.with_extension("moved");
+        fs::rename(&directory, &moved).expect("rename");
+        fs::create_dir(&directory).expect("replacement");
+        let sealed = store.seal_current().expect("sealed");
+        assert_eq!(sealed.record.recovery_event_id, event(1));
+        drop(sealed);
+        drop(store.begin_recovery(1, event(2), 200).expect("successor"));
+        assert!(moved.join(RECORD_NAME).exists());
+        assert!(!directory.join(RECORD_NAME).exists());
+        assert!(!directory.join(LOCK_NAME).exists());
+        fs::remove_dir_all(&directory).expect("cleanup");
+        fs::remove_dir_all(moved).expect("cleanup");
     }
 
     #[test]
