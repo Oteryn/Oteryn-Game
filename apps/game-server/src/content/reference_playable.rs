@@ -854,6 +854,8 @@ enum ReferenceTargetClaim {
 // CONTENT_WORLD mechanic case that can authorize any of these claims. Keep this exact-case
 // consumer binding empty until a separately accepted manifest case establishes the semantics;
 // a PROVEN case from another domain must never become geometry/footprint/order authority.
+// ENGINE_STATIC_CELL_CARRIER/v1 inputs have engineering provenance only and cannot populate
+// these Reference target claim bindings or authorize Reference activation.
 const REFERENCE_TARGET_CLAIM_CASE_BINDINGS: &[(&str, ReferenceTargetClaim)] = &[];
 
 #[derive(Debug, Deserialize)]
