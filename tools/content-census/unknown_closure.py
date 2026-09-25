@@ -237,6 +237,37 @@ def refresh_universe(pages: list[dict], *, sleep_seconds: float = 0.05) -> tuple
     return observations, meta
 
 
+
+def revision_census(pages: list[dict], observations: dict[int, dict]) -> dict[str, int]:
+    """Count revision states without treating absent baselines as drift."""
+    baseline_absent = 0
+    current_without_baseline = 0
+    same_revision = 0
+    revision_drift = 0
+    for row in pages:
+        expected = row.get("pinned_revision_ids", [])
+        if not expected:
+            baseline_absent += 1
+        current = observations.get(row["page_id"])
+        if not isinstance(current, dict) or "refresh_error" in current:
+            continue
+        revision_id = current.get("revision_id")
+        if not isinstance(revision_id, int) or isinstance(revision_id, bool):
+            continue
+        if not expected:
+            current_without_baseline += 1
+        elif expected == [revision_id]:
+            same_revision += 1
+        else:
+            revision_drift += 1
+    return {
+        "pinned_baseline_absent_pages": baseline_absent,
+        "current_source_without_pinned_baseline_pages": current_without_baseline,
+        "verified_same_revision_pages": same_revision,
+        "revision_drift_pages": revision_drift,
+    }
+
+
 def current_shape(source: dict) -> str:
     if source.get("redirect") is True:
         return "REDIRECT"
@@ -466,6 +497,7 @@ def disposition(row: dict, current: dict | None) -> dict:
 def build_output(ledger: dict, refresh: dict[int, dict], refresh_meta: dict) -> tuple[dict, dict]:
     pages = validate_ledger(ledger)
     subtype_counts = pinned_template_partition(pages)
+    refresh_meta = {**refresh_meta, **revision_census(pages, refresh)}
     rows = [disposition(row, refresh.get(row["page_id"])) for row in pages]
     ids = [row["page_id"] for row in rows]
     if len(ids) != 5512 or len(ids) != len(set(ids)):
@@ -565,17 +597,6 @@ def main() -> None:
         meta = {"attempted_pages": 0, "verified_same_revision_pages": 0, "revision_drift_pages": 0, "source_unavailable_pages": 5512, "refresh_failures": {"OFFLINE_PINNED_ONLY": 5512}}
     else:
         refresh, meta = refresh_universe(pages)
-        same = 0
-        drift = 0
-        for row in pages:
-            current = refresh.get(row["page_id"], {})
-            if current and "refresh_error" not in current:
-                if row.get("pinned_revision_ids", []) == [current.get("revision_id")]:
-                    same += 1
-                else:
-                    drift += 1
-        meta["verified_same_revision_pages"] = same
-        meta["revision_drift_pages"] = drift
     output, compact = build_output(ledger, refresh, meta)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     (args.out_dir / "unknown-closure-rows.json").write_bytes(canonical(output))
