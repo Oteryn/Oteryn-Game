@@ -497,14 +497,20 @@ impl ChannelActorCarrier {
         if write_index != index {
             return Err(CarrierError::StaleActorGeneration);
         }
-        let Slot::CreatureOccupied { generation, health, committed, .. } = &mut self.slots[index] else {
+        let Slot::CreatureOccupied { generation, actor, position, health, committed } = &self.slots[index] else {
             return Err(CarrierError::StaleActorGeneration);
         };
         if *generation != actor_ref.actor_local_generation.0 || *health != result.health_before || committed.is_some() {
             return Err(CarrierError::StaleActorGeneration);
         }
-        *health = next;
-        *committed = Some(receipt);
+        let (generation, actor, position) = (*generation, *actor, *position);
+        self.slots[index] = Slot::CreatureOccupied {
+            generation,
+            actor,
+            position,
+            health: next,
+            committed: Some(receipt),
+        };
         Ok(result)
     }
 
