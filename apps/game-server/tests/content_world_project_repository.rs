@@ -95,7 +95,11 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
     ProjectFilesystemLimits {
         project: limits(),
         max_entries_per_directory_scan: 32,
-        max_total_directory_entries_scanned: 128,
+        // The successor authoring tree adds 16 legitimate siblings under content/
+        // (22 entries versus the 6-entry legacy baseline). Root lookup scans that
+        // ambient parent, so retain the original 128-entry evidence budget plus
+        // exactly that bounded sibling delta without relaxing the per-scan limit.
+        max_total_directory_entries_scanned: 144,
     }
 }
 

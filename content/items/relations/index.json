@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "content/items/relations/",
+  "kind": "relationship_content",
+  "owner": "Item/Interaction/Ability/Document",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "READY_UNPOPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Explicit Item relations not owned by another forward relation."
+}
