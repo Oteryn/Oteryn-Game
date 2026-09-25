@@ -173,13 +173,17 @@ def _literal_child_mapping(
     child_indent: int,
     label: str,
 ) -> dict[str, list[str]]:
-    if block.count(marker) != 1:
-        raise ValueError(f"{label} must contain exactly one literal mapping marker")
-    start = block.find(marker) + len(marker)
-    remainder = block[start:]
-    parent_indent = len(marker) - len(marker.lstrip(" "))
+    marker_line = marker.rstrip("\n")
+    lines = block.splitlines()
+    matches = [index for index, line in enumerate(lines) if line == marker_line]
+    if len(matches) != 1:
+        raise ValueError(
+            f"{label} must contain exactly one literal mapping marker "
+            f"at its exact indentation, got {len(matches)}"
+        )
+    parent_indent = len(marker_line) - len(marker_line.lstrip(" "))
     child_lines: list[str] = []
-    for line in remainder.splitlines():
+    for line in lines[matches[0] + 1 :]:
         if line.strip() and len(line) - len(line.lstrip(" ")) <= parent_indent:
             break
         child_lines.append(line)
