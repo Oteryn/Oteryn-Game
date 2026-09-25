@@ -54,6 +54,9 @@ def main() -> None:
     assert output["counts"]["output_pages"] == 5512
     assert output["counts"]["exact_signature_definition_family_routes"] == 12
     assert output["counts"]["source_revision_status"]["NO_PINNED_BASELINE"] == 1406
+    assert manifest["source_refresh"]["pinned_baseline_absent_pages"] == 1406
+    assert manifest["source_refresh"]["current_source_without_pinned_baseline_pages"] == 1406
+    assert manifest["source_refresh"]["revision_drift_pages"] == 0
     assert output["counts"]["family_disposition"] == {
         "ROUTED_EXACT_SOURCE_SIGNATURE": 12,
         "UNRESOLVED_AMBIGUOUS_OR_NONDEFINITION": 4094,
@@ -123,6 +126,21 @@ def main() -> None:
     drift_result = closure.disposition(first_world, drift)
     assert drift_result["source_revision_status"] == "DRIFT"
     assert drift_result["definition_family"] is None
+    drift_census = closure.revision_census(pages, {first_world["page_id"]: drift})
+    assert drift_census["revision_drift_pages"] == 1
+    assert drift_census["pinned_baseline_absent_pages"] == 1406
+    assert drift_census["current_source_without_pinned_baseline_pages"] == 0
+
+    no_baseline = next(r for r in pages if not r.get("pinned_revision_ids"))
+    changed_without_baseline = dict(fresh[no_baseline["page_id"]], revision_id=999999)
+    no_baseline_result = closure.disposition(no_baseline, changed_without_baseline)
+    assert no_baseline_result["source_revision_status"] == "NO_PINNED_BASELINE"
+    no_baseline_census = closure.revision_census(
+        pages, {no_baseline["page_id"]: changed_without_baseline}
+    )
+    assert no_baseline_census["revision_drift_pages"] == 0
+    assert no_baseline_census["pinned_baseline_absent_pages"] == 1406
+    assert no_baseline_census["current_source_without_pinned_baseline_pages"] == 1
 
     title_drift = dict(fresh[first_world["page_id"]], title="Unobserved Moved Title")
     title_result = closure.disposition(first_world, title_drift)
