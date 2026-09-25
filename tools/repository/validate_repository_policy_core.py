@@ -352,6 +352,13 @@ def main() -> int:
     merge_gate = ROOT / ".github/workflows/merge-gate.yml"
     if merge_gate.is_file():
         text = merge_gate.read_text(encoding="utf-8")
+        for forbidden_fragment, label in (
+            ("errors.append('PR title", "blocking PR title presentation lint"),
+            ('errors.append("PR title', "blocking PR title presentation lint"),
+            ("PR body is missing {heading}", "blocking exact PR heading presentation lint"),
+        ):
+            if forbidden_fragment in text:
+                errors.append(f"merge gate must not contain {label}")
         top_level_keys = canonical_top_level_yaml_keys(text)
         if top_level_keys != EXPECTED_MERGE_GATE_TOP_LEVEL_KEYS:
             errors.append(
@@ -555,6 +562,17 @@ def main() -> int:
                     errors.append(
                         f"merge-group gate job {job} missing canonical fragment: {fragment.strip()}"
                     )
+
+    agent_governance = ROOT / ".github/workflows/agent-governance.yml"
+    if agent_governance.is_file():
+        text = agent_governance.read_text(encoding="utf-8")
+        for forbidden_fragment, label in (
+            ("errors.append('PR title", "blocking PR title presentation lint"),
+            ('errors.append("PR title', "blocking PR title presentation lint"),
+            ("PR body is missing {heading}", "blocking exact PR heading presentation lint"),
+        ):
+            if forbidden_fragment in text:
+                errors.append(f"agent governance must not contain {label}")
 
     rust_workflow = ROOT / ".github/workflows/rust.yml"
     if rust_workflow.is_file():
