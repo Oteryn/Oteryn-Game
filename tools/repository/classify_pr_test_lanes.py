@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Select product CI lanes from the exact candidate tree.
 
-Cargo metadata owns package dependency closure. Files outside Cargo packages are
+Cargo metadata owns package dependency closure. Reviewed non-Cargo roots are
 auxiliary unless the exact candidate's product/build sources reference them.
-Canonical routing/build controls remain conservative FULL inputs. This avoids
-historical snapshot repins while keeping real non-Cargo product inputs attached
-to their consuming packages.
+Unknown roots and canonical routing/build controls remain conservative FULL
+inputs. This avoids historical snapshot repins while keeping real non-Cargo
+product inputs attached to their consuming packages.
 """
 from __future__ import annotations
 
@@ -214,7 +214,7 @@ def auxiliary_path(roots: dict[str, str], path: str) -> bool:
     if path.startswith("tools/game-atlas-"):
         return False
     if (
-        path.startswith(("docs/", ".github/", "tools/"))
+        path.startswith(("docs/", ".github/", "tools/", "content/", "imports/"))
         or PurePosixPath(path).name in {
             "AGENTS.md", "AGENTS.override.md", "README.md", "CHANGELOG.md",
             "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "LICENSE-ASSETS.md",
