@@ -41,7 +41,7 @@ Do not implement against an unmerged Movement sibling branch as canonical truth.
 
 ## Technical authority after allocation
 
-Within exact owned paths, implement only the allocated child. The first death/corpse child preserves GAME-ABILITY as the effect pipeline, one stable post-commit death occurrence per creature generation, current-owner corpse projection and replay/stale-generation rejection. Loot, XP, pickup and their durable resources remain outside it. Later separately allocated children preserve:
+Within exact owned paths, implement only the allocated child. The first death/corpse child is non-production, fixed to one creature with no retained concurrent workflow collection. It preserves GAME-ABILITY as the effect pipeline, one current-owner dead/non-actionable transition that stops ordinary actions, one stable post-commit death occurrence per creature generation, current-owner corpse projection and replay/stale-generation rejection. Administrative despawn creates no death. Loot, XP, pickup and their durable resources remain outside it. Later separately allocated children preserve:
 
 - GAME-ABILITY as the effect pipeline;
 - one stable death occurrence per current accepted lifecycle semantics;
