@@ -4,12 +4,12 @@
 //! select Reference formulas, introduce protocol identifiers, or compose the game-server root.
 
 #![forbid(unsafe_code)]
+// This private, unactivated module keeps its established fixture facade for
+// standalone tests while the production composition remains closed.
+#![allow(unused_imports)]
 
-mod commit;
+pub(crate) mod commit;
 mod effects;
-// The standalone fixture integration test has no Foundation root. Foundation
-// includes this exact source in its test-only carrier composition instead.
-#[cfg(not(test))]
 #[allow(dead_code)]
 pub(crate) mod exact_actor_resolution;
 mod intent;
