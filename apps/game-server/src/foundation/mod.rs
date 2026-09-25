@@ -9,11 +9,15 @@ pub mod fnd04_verifier;
 mod protocol;
 #[allow(dead_code)]
 mod runtime_actor_carrier;
+#[cfg(test)]
+#[allow(unused_imports)] // Path-included Foundation test crates have no Movement module.
+pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
 // Crate-visible seam awaits separately allocated production composition.
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, ExactActorRef,
-    OwnerDamageCommand, OwnerDamageResult,
+    CarrierError, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
+    CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition, MovementPositionContext,
+    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult,
 };
 #[cfg(test)]
 #[allow(dead_code)]

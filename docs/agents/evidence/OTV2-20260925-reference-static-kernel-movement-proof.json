@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "task_id": "OTV2-20260925-reference-static-kernel-movement-proof",
+  "classification": "PROVEN",
+  "base_sha": "1f1c29d2614c098a6665cee34d06b06c2ad92339",
+  "profile": "REFERENCE_LOCAL_STEP_STATIC_KERNEL/v1",
+  "authority": "UNACTIVATED_ENGINEERING_ONLY",
+  "reference_collision_status": "UNKNOWN",
+  "reference_case_bindings": [],
+  "engine_candidate": {
+    "attempted_destinations_per_decision_max": 1,
+    "real_content_key_lookups_per_decision_max": 1,
+    "content_index_cells_per_engineering_candidate": 4,
+    "rl02_inputs_per_owner_work_cycle": "SEPARATE_RESOURCE",
+    "rl03_registry_maximum": "UNSELECTED",
+    "directions": [
+      "NORTH",
+      "EAST",
+      "SOUTH",
+      "WEST"
+    ],
+    "vertical_delta": 0,
+    "capacity_max_plus_one": "SECOND_ATTEMPT_FAILS_BEFORE_SECOND_LOOKUP_OR_OWNER_WRITE",
+    "physical_attempts_max": 1,
+    "physical_attempts_max_plus_one": 2,
+    "physical_real_content_lookups_after_second_attempt": 1,
+    "physical_owner_revision_after_rejected_second_attempt": 1
+  },
+  "actor_boundary": {
+    "position_store": "FOUNDATION_CURRENT_OWNER_ORDINARY_SLOT",
+    "creature_slot": "FAIL_CLOSED_ON_READ_AND_COMMIT",
+    "commit": "EXACT_SNAPSHOT_COMPARE_AND_REVISION_INCREASE",
+    "ability_capability_reuse": false
+  },
+  "validation": "LOCAL_REAL_MOVEMENT_6_PASS_STRICT_CLIPPY_LIB_TESTS_PASS_FORMAT_GOVERNANCE_PASS_EXACT_HEAD_CI_PENDING"
+}

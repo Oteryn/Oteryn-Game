@@ -26,6 +26,8 @@ pub(crate) enum CarrierError {
     PositionContextMismatch,
     PositionSnapshotMismatch,
     PositionRevisionExhausted,
+    MovementCreatureUnavailable,
+    MovementNonCardinal,
     InvalidCreatureHealth,
     InvalidCreatureTarget,
     CreatureTargetMismatch,
@@ -40,6 +42,13 @@ pub(crate) enum CarrierError {
     PlanConflict,
     InjectedCommitFailure,
 }
+
+impl std::fmt::Display for CarrierError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+impl std::error::Error for CarrierError {}
 
 /// Authority supplied by a future, independently accepted assignment consumer.
 ///
@@ -136,6 +145,83 @@ pub(crate) struct CurrentOwnerExactActorLookup<'a> {
 pub(crate) struct CurrentOwnerExactActorCommit<'a> {
     carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
+}
+
+/// Borrowed, current-owner position capability for one ordinary actor slot.
+/// It cannot admit/remove an actor, issue continuity, or commit Ability damage.
+pub(crate) struct CurrentOwnerMovementPosition<'a> {
+    carrier: &'a mut ChannelActorCarrier,
+    continuity: &'a NamespaceContinuityGuard,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct MovementLocalPosition {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) floor: i16,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct MovementPositionContext(PreProductionPositionContext);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct MovementPositionSnapshot(PositionSnapshot);
+
+impl MovementPositionSnapshot {
+    pub(crate) const fn position(self) -> MovementLocalPosition {
+        let position = self.0.version.position;
+        MovementLocalPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        }
+    }
+
+    pub(crate) const fn context(self) -> MovementPositionContext {
+        MovementPositionContext(self.0.version.context)
+    }
+
+    pub(crate) const fn revision(self) -> u64 {
+        self.0.version.revision
+    }
+
+    pub(crate) const fn world_id(self) -> WorldId {
+        self.0.version.context.world_id
+    }
+}
+
+impl CurrentOwnerMovementPosition<'_> {
+    pub(crate) fn read(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .read_movement_position(self.continuity, actor.0)
+    }
+
+    pub(crate) fn commit_cardinal(
+        &mut self,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let before = expected.position();
+        let east = before.x.checked_add(1).is_some_and(|x| x == next.x) && next.y == before.y;
+        let west = before.x.checked_sub(1).is_some_and(|x| x == next.x) && next.y == before.y;
+        let south = before.y.checked_add(1).is_some_and(|y| y == next.y) && next.x == before.x;
+        let north = before.y.checked_sub(1).is_some_and(|y| y == next.y) && next.x == before.x;
+        if next.floor != before.floor || !(east || west || south || north) {
+            return Err(CarrierError::MovementNonCardinal);
+        }
+        self.carrier.commit_movement_position(
+            self.continuity,
+            expected.0,
+            LocalPosition {
+                x: next.x,
+                y: next.y,
+                floor: next.floor,
+            },
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -265,6 +351,45 @@ struct ChannelActorCarrier {
 }
 
 impl ChannelActorCarrier {
+    fn current_owner_movement_position<'a>(
+        &'a mut self,
+        continuity: &'a NamespaceContinuityGuard,
+    ) -> CurrentOwnerMovementPosition<'a> {
+        CurrentOwnerMovementPosition {
+            carrier: self,
+            continuity,
+        }
+    }
+
+    fn read_movement_position(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        if matches!(&self.slots[index], Slot::CreatureOccupied { .. }) {
+            return Err(CarrierError::MovementCreatureUnavailable);
+        }
+        self.read_position(continuity, actor_ref)
+            .map(MovementPositionSnapshot)
+    }
+
+    fn commit_movement_position(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        expected: PositionSnapshot,
+        next: LocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let index = self.validate_ref(continuity, expected.actor_ref)?;
+        if matches!(&self.slots[index], Slot::CreatureOccupied { .. }) {
+            return Err(CarrierError::MovementCreatureUnavailable);
+        }
+        // An exclusive carrier borrow prevents a slot replacement between this check and
+        // the existing private exact-snapshot/revision compare-commit.
+        self.compare_commit_position(continuity, expected, expected.version.context, next)
+            .map(MovementPositionSnapshot)
+    }
+
     fn current_owner_exact_commit<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
@@ -816,6 +941,171 @@ fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
 
 #[cfg(test)]
 const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
+
+/// Foundation-only factory. Path-included Foundation integration crates do not import Content;
+/// the Movement library tests supply real Content claims outside this module.
+#[cfg(test)]
+pub(crate) struct MovementActorFixture {
+    owner: NamespaceContinuityGuard,
+    carrier: ChannelActorCarrier,
+    actor: ExactActorRef,
+}
+
+#[cfg(test)]
+impl MovementActorFixture {
+    pub(crate) fn new(
+        position: MovementLocalPosition,
+        creature: bool,
+    ) -> Result<Self, CarrierError> {
+        fn uuid(seed: u8) -> [u8; 16] {
+            let mut bytes = [seed; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes
+        }
+        let grant = PreProductionContinuityGrant {
+            world_id: WorldId::decode(&uuid(10)).map_err(|_| CarrierError::WrongScope)?,
+            channel_id: ChannelId::decode(&uuid(11)).map_err(|_| CarrierError::WrongScope)?,
+            scope_generation: ScopeOwnershipGeneration::new(1)
+                .map_err(|_| CarrierError::WrongScope)?,
+        };
+        let mut owner = NamespaceContinuityGuard::from_pre_production_grant(grant);
+        let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1)?;
+        let actor = if creature {
+            carrier.admit_creature(&owner, ActorState(1), "engineering:creature", 20)?
+        } else {
+            carrier.admit(&owner, ActorState(1))?
+        };
+        let context = PreProductionPositionContext {
+            world_id: owner.world_id,
+            channel_id: owner.channel_id,
+            scope_generation: owner.current_generation,
+            coordinate_frame_marker: 11,
+            map_revision_marker: 12,
+            content_generation_marker: 13,
+        };
+        carrier.initialize_position(
+            &owner,
+            actor,
+            context,
+            LocalPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+        )?;
+        Ok(Self {
+            owner,
+            carrier,
+            actor: ExactActorRef(actor),
+        })
+    }
+
+    pub(crate) const fn world_id(&self) -> WorldId {
+        self.owner.world_id
+    }
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+
+    pub(crate) fn current_position(&self) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .read_movement_position(&self.owner, self.actor.0)
+    }
+
+    pub(crate) fn raw_position(&self) -> Result<(MovementLocalPosition, u64), CarrierError> {
+        let version = self
+            .carrier
+            .read_position(&self.owner, self.actor.0)?
+            .version;
+        Ok((
+            MovementLocalPosition {
+                x: version.position.x,
+                y: version.position.y,
+                floor: version.position.floor,
+            },
+            version.revision,
+        ))
+    }
+
+    pub(crate) fn borrow_position(&mut self) -> CurrentOwnerMovementPosition<'_> {
+        self.carrier.current_owner_movement_position(&self.owner)
+    }
+
+    pub(crate) fn wrong_context(&self) -> Result<MovementPositionContext, CarrierError> {
+        let mut context = self
+            .carrier
+            .read_position(&self.owner, self.actor.0)?
+            .version
+            .context;
+        context.coordinate_frame_marker += 1;
+        Ok(MovementPositionContext(context))
+    }
+
+    pub(crate) fn intervening_write(&mut self) -> Result<(), CarrierError> {
+        let expected = self.carrier.read_position(&self.owner, self.actor.0)?;
+        self.carrier.compare_commit_position(
+            &self.owner,
+            expected,
+            expected.version.context,
+            expected.version.position,
+        )?;
+        Ok(())
+    }
+
+    pub(crate) fn recycle(&mut self) -> Result<(), CarrierError> {
+        let old = self.carrier.read_position(&self.owner, self.actor.0)?;
+        self.carrier.remove(&self.owner, self.actor.0)?;
+        let actor = self.carrier.admit(&self.owner, ActorState(2))?;
+        self.carrier.initialize_position(
+            &self.owner,
+            actor,
+            old.version.context,
+            old.version.position,
+        )?;
+        self.actor = ExactActorRef(actor);
+        Ok(())
+    }
+
+    pub(crate) fn become_creature(&mut self) -> Result<(), CarrierError> {
+        let old = self.carrier.read_position(&self.owner, self.actor.0)?;
+        self.carrier.remove(&self.owner, self.actor.0)?;
+        let actor =
+            self.carrier
+                .admit_creature(&self.owner, ActorState(3), "engineering:creature", 20)?;
+        self.carrier.initialize_position(
+            &self.owner,
+            actor,
+            old.version.context,
+            old.version.position,
+        )?;
+        self.actor = ExactActorRef(actor);
+        Ok(())
+    }
+
+    pub(crate) fn advance_owner(&mut self) -> Result<(), CarrierError> {
+        self.owner.advance(PreProductionContinuityGrant {
+            world_id: self.owner.world_id,
+            channel_id: self.owner.channel_id,
+            scope_generation: ScopeOwnershipGeneration::new(2)
+                .map_err(|_| CarrierError::WrongScope)?,
+        })
+    }
+
+    pub(crate) fn exhaust_position_revision(&mut self) -> Result<(), CarrierError> {
+        let index = self.carrier.validate_ref(&self.owner, self.actor.0)?;
+        if let Slot::Occupied {
+            position: Some(version),
+            ..
+        } = &mut self.carrier.slots[index]
+        {
+            version.revision = u64::MAX;
+            Ok(())
+        } else {
+            Err(CarrierError::MovementCreatureUnavailable)
+        }
+    }
+}
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]

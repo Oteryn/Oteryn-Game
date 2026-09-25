@@ -16,6 +16,11 @@ pub mod domain;
 pub mod durability;
 pub mod foundation;
 mod gameplay_transport;
+#[allow(
+    dead_code,
+    reason = "unactivated local Movement proof awaits the separate production composition lease"
+)]
+mod movement;
 pub mod node;
 
 pub use gameplay_transport::{
