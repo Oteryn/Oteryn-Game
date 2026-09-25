@@ -43,8 +43,10 @@ MAX_MEMBER_BYTES = 16 * 1024 * 1024
 MAX_HTTP_BYTES = 20 * 1024 * 1024
 MAX_PAGE_BYTES = 16 * 1024 * 1024
 MAX_TOTAL_FANDOM_PAGES = 20_000
+MAX_TOTAL_FANDOM_REQUESTS = 20_000
 MAX_PAGES_PER_FAMILY = 10_000
 BATCH_SIZE = 10
+MAX_EMBEDDEDIN_RESULTS = 500
 FAMILY_COUNTS = {"Creature": 2149, "NPC": 1253, "Achievement": 569, "Quest": 272, "Ability": 171, "Outfit": 134, "Mount": 252}
 FANDOM_TEMPLATES = {
     "Creature": "Template:Infobox Creature", "NPC": "Template:Infobox NPC",
@@ -71,6 +73,32 @@ ALIASES = {
 
 class CaptureError(RuntimeError):
     pass
+
+
+class FandomPageBudget:
+    """Shared hard cap for page entries materialized across all families."""
+
+    def __init__(self, limit: int = MAX_TOTAL_FANDOM_PAGES, request_limit: int = MAX_TOTAL_FANDOM_REQUESTS) -> None:
+        if type(limit) is not int or limit <= 0 or type(request_limit) is not int or request_limit <= 0:
+            raise ValueError("page and request budget limits must be positive integers")
+        self.limit = limit
+        self.used = 0
+        self.request_limit = request_limit
+        self.request_count = 0
+
+    @property
+    def remaining(self) -> int:
+        return self.limit - self.used
+
+    def consume(self, count: int) -> None:
+        if type(count) is not int or count < 0 or self.used + count > self.limit:
+            raise CaptureError("FANDOM_GLOBAL_PAGE_BUDGET_EXHAUSTED")
+        self.used += count
+
+    def begin_request(self) -> None:
+        if self.request_count >= self.request_limit:
+            raise CaptureError("FANDOM_GLOBAL_REQUEST_BUDGET_EXHAUSTED")
+        self.request_count += 1
 
 
 def canonical_bytes(value: Any) -> bytes:
@@ -153,7 +181,7 @@ def _license_marker_status(project_body: bytes | None, license_body: bytes | Non
     }
 
 
-def preflight_fandom() -> dict[str, Any]:
+def preflight_fandom(*, page_budget: FandomPageBudget | None = None) -> dict[str, Any]:
     tests = {
         "siteinfo": _api_url({"action": "query", "meta": "siteinfo", "siprop": "general|statistics", "format": "json", "formatversion": "2"}),
         "api_help": _api_url({"action": "help", "modules": "query+revisions", "format": "json"}),
@@ -164,6 +192,8 @@ def preflight_fandom() -> dict[str, Any]:
     receipts: dict[str, Any] = {}
     payloads: dict[str, bytes] = {}
     for name, url in tests.items():
+        if page_budget is not None:
+            page_budget.begin_request()
         receipt, body = _request_receipt(url, max_bytes=512 * 1024)
         receipts[name] = receipt
         if body is not None:
@@ -393,15 +423,25 @@ def validate_fandom_revision(pageid: Any, title: Any, revision: Any, content: An
     return {"family": family, "source": "TIBIAWIKI_FANDOM", "source_namespace": "mediawiki/tibia.fandom.com", "identity_namespace": "mediawiki/page_id", "external_id": str(pageid), "page_key": f"mediawiki/tibia.fandom.com/page_id/{pageid}", "title": title, "revision_id": revid, "revision_timestamp": timestamp, "source_sha1": source_sha1, "source_digest": sha256(encoded), "raw_utf8_bytes": len(encoded), "facts": parse_fandom_infobox(content, family), "attribution": "TibiaWiki community contributors; CC BY-SA as displayed by the source, subject to per-page notices", "license": "CC-BY-SA", "content_retained": False}
 
 
-def capture_family(family: str) -> list[dict[str, Any]]:
+def capture_family(family: str, *, page_budget: FandomPageBudget | None = None) -> list[dict[str, Any]]:
+    if family not in FANDOM_TEMPLATES:
+        raise CaptureError(f"FANDOM_FAMILY_UNSUPPORTED:{family}")
+    budget = page_budget if page_budget is not None else FandomPageBudget()
     pages: dict[int, str] = {}
     cont: dict[str, str] = {}
     seen_cont: set[str] = set()
     while True:
-        params = {"action": "query", "list": "embeddedin", "eititle": FANDOM_TEMPLATES[family], "eilimit": "max", "format": "json", "formatversion": "2", **cont}
+        if budget.remaining <= 0:
+            raise CaptureError("FANDOM_GLOBAL_PAGE_BUDGET_EXHAUSTED")
+        request_limit = min(MAX_EMBEDDEDIN_RESULTS, budget.remaining)
+        params = {"action": "query", "list": "embeddedin", "eititle": FANDOM_TEMPLATES[family], "eilimit": str(request_limit), "format": "json", "formatversion": "2", **cont}
+        budget.begin_request()
         payload, _ = _api_json(params)
         listing = payload["query"].get("embeddedin")
         if not isinstance(listing, list): raise CaptureError(f"FANDOM_ENUMERATION_INVALID:{family}")
+        if len(listing) > request_limit:
+            raise CaptureError("FANDOM_GLOBAL_PAGE_BUDGET_RESPONSE_EXCEEDED")
+        budget.consume(len(listing))
         for page in listing:
             pageid, title = page.get("pageid"), page.get("title")
             if type(pageid) is not int or pageid <= 0 or not isinstance(title, str) or not title.strip(): raise CaptureError(f"FANDOM_PAGE_ID_INVALID:{family}")
@@ -417,6 +457,7 @@ def capture_family(family: str) -> list[dict[str, Any]]:
     ids = sorted(pages)
     for offset in range(0, len(ids), BATCH_SIZE):
         batch = ids[offset:offset + BATCH_SIZE]
+        budget.begin_request()
         payload, _ = _api_json({"action": "query", "pageids": "|".join(map(str, batch)), "prop": "revisions", "rvprop": "ids|timestamp|sha1|content", "rvslots": "main", "format": "json", "formatversion": "2"})
         listed = payload["query"].get("pages")
         if not isinstance(listed, list): raise CaptureError(f"FANDOM_REVISIONS_INVALID:{family}")
@@ -543,19 +584,20 @@ def build_artifact(primary: dict[str, Any], primary_manifest: dict[str, Any], pr
 
 def run(output: Path, manifest_path: Path) -> int:
     primary, primary_manifest, primary_receipt = fetch_primary_artifact()
-    preflight = preflight_fandom()
+    page_budget = FandomPageBudget()
+    preflight = preflight_fandom(page_budget=page_budget)
     official = official_receipts()
     pages = None
     if preflight.get("state") == "ACCESSIBLE":
         try:
-            pages = {family: capture_family(family) for family in FAMILY_COUNTS}
-            if sum(len(rows) for rows in pages.values()) > MAX_TOTAL_FANDOM_PAGES:
-                raise CaptureError("FANDOM_TOTAL_PAGE_COUNT_MAX_PLUS_ONE")
+            pages = {family: capture_family(family, page_budget=page_budget) for family in FAMILY_COUNTS}
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError, CaptureError, json.JSONDecodeError) as exc:
-            preflight["capture_error"] = type(exc).__name__ + (f":HTTP_{exc.code}" if isinstance(exc, urllib.error.HTTPError) else "")
+            preflight["capture_error"] = (str(exc) if isinstance(exc, CaptureError) else type(exc).__name__ + (f":HTTP_{exc.code}" if isinstance(exc, urllib.error.HTTPError) else ""))[:256]
             preflight["state"] = "SOURCE_UNAVAILABLE"
             pages = None
     artifact, manifest = build_artifact(primary, primary_manifest, primary_receipt, preflight, pages, official, utc_now())
+    manifest["fandom_page_budget"] = {"limit": page_budget.limit, "enumerated_page_entries": page_budget.used, "enforced_incrementally": True, "request_limit": "eilimit=min(500, remaining shared budget); no next request at zero", "fandom_network_request_limit": page_budget.request_limit, "fandom_network_requests": page_budget.request_count, "request_budget_enforced_before_each_request": True}
+    manifest["artifact_sha256"] = sha256(canonical_bytes(artifact))
     output.parent.mkdir(parents=True, exist_ok=True); manifest_path.parent.mkdir(parents=True, exist_ok=True)
     output.write_bytes(canonical_bytes(artifact)); manifest_path.write_bytes(canonical_bytes(manifest))
     print(f"{artifact['status']}: rows=4800 sha256={manifest['artifact_sha256']}")
