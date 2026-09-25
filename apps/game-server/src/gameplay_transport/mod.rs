@@ -254,6 +254,15 @@ impl std::fmt::Display for GameplayServeError {
 
 impl std::error::Error for GameplayServeError {}
 
+/// Check that the gameplay certificate chain and key form the served TLS 1.3
+/// configuration, before anything is bound or published.
+pub(crate) fn validate_gameplay_tls(
+    certificates: &[rustls::pki_types::CertificateDer<'static>],
+    private_key: &rustls::pki_types::PrivateKeyDer<'static>,
+) -> Result<(), rustls::Error> {
+    tcp_tls::tls_config(certificates.to_vec(), private_key.clone_key()).map(|_| ())
+}
+
 /// The production gameplay seam: TCP + TLS 1.3 (ALPN `oteryn-game/1`),
 /// bounded FND-02 framing and fresh admission through the composed owners,
 /// served on `listener` until `shutdown`.
