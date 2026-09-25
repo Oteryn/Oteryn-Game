@@ -252,7 +252,7 @@
     {
       "prompt_id": "OTV2_IMPL_VSL_COMBAT",
       "path": "docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded authoritative combat implementation worker; writes require a current merged allocation.",
@@ -505,10 +505,10 @@
     {
       "prompt_id": "OTV2_SOL_COMBAT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
-      "version": "1.1",
+      "version": "1.3",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Combat lane lead; writes require merged Movement/current prerequisites and exact Combat allocation.",
+      "scope": "Sol Combat lane lead; writes require merged Movement or an explicitly accepted non-exercising child, physical owner prerequisites and exact Combat allocation.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_COMBAT; it specializes reasoning/leadership under live coordinator allocation."
