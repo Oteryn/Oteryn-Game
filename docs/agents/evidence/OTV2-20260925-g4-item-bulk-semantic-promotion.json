@@ -1,0 +1,36 @@
+{
+  "schema": "OTERYN_G4_ITEM_BULK_SEMANTIC_PROMOTION_EVIDENCE/v1",
+  "status": "LIVE_SOURCE_REVALIDATION_PENDING",
+  "task_id": "OTV2-20260925-g4-item-bulk-wave",
+  "prior_packet": {
+    "path": "docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json",
+    "target_cut": "2026-07-28",
+    "prior_promoted_fields": 69,
+    "prior_promoted_items": 23,
+    "current_source_drift_invalidates_reuse": true
+  },
+  "revalidation": {
+    "source": "fresh current TibiaWiki census, same batch as identity matching",
+    "supported_destinations": [
+      "presentation.name",
+      "weapon.attack",
+      "weapon.defense",
+      "weapon.extra_defense",
+      "weapon.range_cells",
+      "weapon.hit_chance",
+      "protection.armor",
+      "charges.count",
+      "container.capacity"
+    ],
+    "binding_required_before_field_candidate": true,
+    "overwriting_known_reference_values": false,
+    "reference_item_semantics_applied": false,
+    "project_v2_source_bindings_persisted": false
+  },
+  "hosted_result": null,
+  "non_claims": [
+    "NO_REUSE_OF_STALE_69_FIELD_PACKET",
+    "NO_AUTOMATIC_VALUE_FROM_MISSING_OR_UNPARSED_FIELDS",
+    "NO_REFERENCE_RUNTIME_PROMOTION_WITHOUT_APPLICABLE_EXACT_CURRENT_PACKET"
+  ]
+}
