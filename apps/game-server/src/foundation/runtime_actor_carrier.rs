@@ -164,6 +164,7 @@ impl ChannelRuntimeAssignmentBinding {
         self.channel_id
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn matches_committed_assignment(
         self,
         world_id: WorldId,
@@ -507,6 +508,27 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.carrier
             .remove_terminal_player(&self.continuity, game_session_id, actor)
+    }
+
+    /// Test-only census: (committed player actors, pending player reservations).
+    #[cfg(test)]
+    pub(crate) fn player_slot_counts(&self) -> (usize, usize) {
+        self.carrier
+            .slots
+            .iter()
+            .fold((0, 0), |(committed, pending), slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    ..
+                } => (committed + 1, pending),
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: false,
+                    ..
+                } => (committed, pending + 1),
+                _ => (committed, pending),
+            })
     }
 
     #[cfg(test)]
@@ -1725,7 +1747,7 @@ mod tests {
         let before = carrier.slots.clone();
         let free_head_before = carrier.free_head;
         assert_eq!(
-            carrier.admit_inner(&continuity, ActorState(2), None, true),
+            carrier.admit_inner(&continuity, ActorState(2), None, true, None, true),
             Err(CarrierError::InjectedAdmissionFailure)
         );
         assert_eq!(carrier.slots, before);

@@ -2,7 +2,7 @@
 task_id: OTV2-20260925-channel-runtime-composition-v1
 title: Channel runtime composition v1
 mode: IMPLEMENT
-status: implementing
+status: completed-on-merge
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/channel-runtime-composition-v1-20260925
@@ -10,6 +10,11 @@ base_sha: d1a236f00014d56bfaa2df9a81fa59a2cacb2b88
 issue: 162
 jira: KAN-26
 allocation_comment: 5838196310
+allocation_extensions:
+  - 5838407976  # tools/qualification/node_boot/run.sh
+  - 5838711560  # writer succession; compile-required test fixtures
+writer_succession: 5838711560  # owner-declared hung ChatGPT writer replaced by the #162 control-plane session from 0ddeb503
+pr: 913
 owned_paths:
   - apps/game-server/src/node/config.rs
   - apps/game-server/src/node/serve.rs
@@ -19,6 +24,9 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs
   - docs/agents/tasks/active/OTV2-20260925-channel-runtime-composition-v1.md
   - docs/agents/evidence/OTV2-20260925-channel-runtime-composition-v1.md
+  - tools/qualification/node_boot/run.sh
+  - apps/game-server/src/gameplay_transport/qualification.rs
+  - apps/game-server/src/foundation/movement_static_kernel_structural_tests.rs
 ---
 
 # Channel runtime composition v1

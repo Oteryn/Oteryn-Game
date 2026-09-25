@@ -207,6 +207,7 @@ private_key_file = "$BASE/node/secrets/gameplay.key"
 world_id = "$WORLD_ID"
 channel_id = "$CHANNEL_ID"
 assignment_wait_ms = 120000
+preproduction_actor_capacity = 131072
 [database]
 transport_ip = "127.0.0.1"
 port = $PG_PORT

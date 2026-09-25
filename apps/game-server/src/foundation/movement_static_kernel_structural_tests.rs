@@ -685,6 +685,8 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
         Slot::Occupied {
             generation: fixture.actor.actor_local_generation.0,
             actor: ActorState(2),
+            game_session_id: None,
+            committed: true,
             position: Some(fixture.snapshot.version),
         }
     );
