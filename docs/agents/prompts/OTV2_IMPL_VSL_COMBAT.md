@@ -26,7 +26,7 @@ Before the first write, verify either the exact **merged Movement VSL prerequisi
 
 ## Target outcome
 
-The first separately allocated child, if its physical prerequisites exist, may prove only:
+The first separately allocated child, if its physical prerequisites exist, may prove only a **non-production fixed-one-creature structural component**, with no retained concurrent death/corpse/workflow collection:
 
 ```text
 committed lethal GAME-ABILITY result
@@ -35,6 +35,7 @@ committed lethal GAME-ABILITY result
 ```
 
 Use one explicit non-shipping fixture only where needed for unknown Reference values. Do not exercise loot, XP, pickup, Item transactions or DUR-03 merely to qualify this child. It does not claim production Movement, real client journey or Reference parity.
+Production corpse multiplicity/storage requires a separately accepted finite COMBAT-RL-02 limit. The current Channel owner must mark the creature dead and non-actionable exactly once, stop its ordinary action generation and link that transition to the death occurrence; administrative despawn must not create a death or corpse.
 
 The later full PvE journey remains:
 
@@ -74,7 +75,7 @@ Exact Global damage, XP, drop chance/rate, timing or balance values remain `UNKN
 
 ## Anti-dup/failure requirements
 
-Prove the cases exercised by the allocated child. For the death/corpse child, cover nonlethal/rejected input, exact lethal commit, duplicate/replayed occurrence, changed payload/revision, stale actor/owner generation and stale completion; injected failure before/after projection must preserve one logical projection on replay. Do not claim process-restart recovery from a test-only owner. Later value children additionally prove:
+Prove the cases exercised by the allocated child. For the death/corpse child, cover nonlethal/rejected input, exact lethal commit and one dead/non-actionable transition, no subsequent ordinary action, administrative despawn without death, duplicate/replayed occurrence, changed payload/revision, stale actor/owner generation and stale completion; injected failure before/after projection must preserve one logical projection on replay. Do not claim process-restart recovery from a test-only owner. Later value children additionally prove:
 
 - duplicate/retried lethal input cannot create a second death occurrence;
 - crash/lost response before/after durable loot commit cannot mint twice;
