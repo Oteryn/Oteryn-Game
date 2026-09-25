@@ -23,7 +23,7 @@ A lifecycle entry may explicitly define a **scoped dispatch alias** that resolve
 - may not add write, allocation, review, production, cross-repository or integration authority;
 - does not require a second coordinator handoff merely because the owner invoked the scoped alias.
 
-The registered `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` alias (`Oteryn: full content census`) is one such scoped dispatch alias. When its lifecycle entry is reusable and this Work control plane is the current valid coordinator, execute its census scope directly under this profile. Do not classify the census alias itself as a competing active control plane and do not bounce routine census scheduling back to #162.
+The registered `OTV2_FULL_CONTENT_CENSUS_PROGRAMME` alias is one such scoped dispatch alias. Its canonical invocation is `Oteryn: full content population`; legacy `Oteryn: full content census` remains a compatibility invocation. When its lifecycle entry is reusable and this Work control plane is the current valid coordinator, execute its population-first scope directly under this profile. Do not classify the alias itself as a competing active control plane and do not bounce routine content-population scheduling back to #162.
 
 ## Startup
 
