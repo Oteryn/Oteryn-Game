@@ -337,6 +337,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     }
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
+    assert!(!outfit_ids.contains("68724"));
     assert_eq!(mount_ids.len(), 252);
     assert!(item_ids.is_disjoint(&outfit_ids));
     assert!(item_ids.is_disjoint(&mount_ids));
