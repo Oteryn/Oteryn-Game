@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import html
 import hashlib
 import json
 import os
@@ -84,7 +85,14 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def _http_get(url: str, *, token: str | None = None, max_bytes: int = MAX_HTTP_BYTES) -> tuple[bytes, dict[str, str]]:
+def _origin(url: str) -> tuple[str, str, int | None]:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme.casefold() != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise CaptureError("HTTPS_ORIGIN_INVALID")
+    return parsed.scheme.casefold(), parsed.hostname.casefold(), parsed.port
+
+
+def _http_get(url: str, *, token: str | None = None, max_bytes: int = MAX_HTTP_BYTES) -> tuple[bytes, dict[str, str], str]:
     headers = {"User-Agent": "Oteryn-G4-SecondSourceCrosswalk/1.0 (evidence-only)", "Accept": "application/json,text/html,*/*"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -94,13 +102,19 @@ def _http_get(url: str, *, token: str | None = None, max_bytes: int = MAX_HTTP_B
         body = response.read(max_bytes + 1)
         if len(body) > max_bytes:
             raise CaptureError("HTTP_RESPONSE_MAX_PLUS_ONE")
-        return body, {k.casefold(): v for k, v in response.headers.items()}
+        return body, {k.casefold(): v for k, v in response.headers.items()}, response.geturl()
 
 
 def _request_receipt(url: str, *, token: str | None = None, max_bytes: int = MAX_HTTP_BYTES) -> tuple[dict[str, Any], bytes | None]:
     try:
-        body, headers = _http_get(url, token=token, max_bytes=max_bytes)
-        return ({"url": url, "state": "HTTP_200", "http_status": 200, "response_bytes": len(body), "response_sha256": sha256(body), "etag": headers.get("etag"), "last_modified": headers.get("last-modified"), "rate_limit_headers": {k: v for k, v in headers.items() if "rate" in k or k == "retry-after"}}, body)
+        body, headers, final_url = _http_get(url, token=token, max_bytes=max_bytes)
+        receipt = {"url": url, "final_url": final_url, "state": "HTTP_200", "http_status": 200, "response_bytes": len(body), "response_sha256": sha256(body), "etag": headers.get("etag"), "last_modified": headers.get("last-modified"), "rate_limit_headers": {k: v for k, v in headers.items() if "rate" in k or k == "retry-after"}}
+        if _origin(url) != _origin(final_url):
+            receipt["state"] = "REDIRECT_ORIGIN_MISMATCH"
+            receipt["redirect_origin_mismatch"] = True
+            return receipt, None
+        receipt["redirect_origin_mismatch"] = False
+        return receipt, body
     except urllib.error.HTTPError as exc:
         retry_after = exc.headers.get("Retry-After") if exc.headers else None
         return ({"url": url, "state": f"HTTP_{exc.code}", "http_status": exc.code, "retry_after": retry_after, "response_sha256": None, "response_bytes": None}, None)
@@ -114,6 +128,29 @@ def _request_receipt(url: str, *, token: str | None = None, max_bytes: int = MAX
 
 def _api_url(params: dict[str, str]) -> str:
     return FANDOM_API + "?" + urllib.parse.urlencode(params)
+
+
+def _license_marker_status(project_body: bytes | None, license_body: bytes | None) -> dict[str, bool]:
+    def text_markers(body: bytes | None) -> tuple[bool, bool]:
+        if body is None:
+            return False, False
+        text = html.unescape(body.decode("utf-8", errors="replace"))
+        text = re.sub(r"<script\b[^>]*>.*?</script\s*>|<style\b[^>]*>.*?</style\s*>", " ", text, flags=re.I | re.S)
+        text = re.sub(r"<[^>]{0,1024}>", " ", text)
+        text = re.sub(r"\s+", " ", text).casefold()
+        license_marker = any(marker in text for marker in ("creative commons attribution-share alike", "creative commons attribution share alike", "cc by-sa", "cc-by-sa", "cc by sa"))
+        attribution_marker = "attribution" in text and ("license" in text or "licence" in text or license_marker)
+        return license_marker, attribution_marker
+
+    project_license, project_attribution = text_markers(project_body)
+    site_license, site_attribution = text_markers(license_body)
+    return {
+        "project_cc_by_sa_marker": project_license,
+        "project_attribution_marker": project_attribution,
+        "site_cc_by_sa_marker": site_license,
+        "site_attribution_marker": site_attribution,
+        "verified": all((project_license, project_attribution, site_license, site_attribution)),
+    }
 
 
 def preflight_fandom() -> dict[str, Any]:
@@ -134,7 +171,10 @@ def preflight_fandom() -> dict[str, Any]:
         # One small serial probe per endpoint; do not retry on 429/5xx.
         time.sleep(0.05)
     api_ok = all(receipts[name].get("state") == "HTTP_200" for name in ("siteinfo", "api_help", "enumeration_probe"))
-    terms_ok = all(receipts[name].get("state") == "HTTP_200" for name in ("project_terms", "license_terms"))
+    marker_status = _license_marker_status(payloads.get("project_terms"), payloads.get("license_terms"))
+    terms_http_ok = all(receipts[name].get("state") == "HTTP_200" for name in ("project_terms", "license_terms"))
+    receipts["license_marker_checks"] = marker_status
+    terms_ok = terms_http_ok and marker_status["verified"]
     parsed_ok = True
     for name in ("siteinfo", "enumeration_probe"):
         if name in payloads:
@@ -146,7 +186,7 @@ def preflight_fandom() -> dict[str, Any]:
                 parsed_ok = False
     if not parsed_ok:
         receipts["response_shape"] = {"state": "MALFORMED_API_RESPONSE"}
-    return {"state": "ACCESSIBLE" if api_ok and terms_ok and parsed_ok else "SOURCE_UNAVAILABLE", "api_available": api_ok and parsed_ok, "terms_verified": terms_ok, "receipts": receipts, "rate_limit_policy": "one serial request per family/page batch; 100ms pacing; no automatic retries; retain 429 and Retry-After as exact source state", "rate_limit_headers_observed": any(bool(r.get("rate_limit_headers")) for r in receipts.values())}
+    return {"state": "ACCESSIBLE" if api_ok and terms_ok and parsed_ok else "SOURCE_UNAVAILABLE", "api_available": api_ok and parsed_ok, "terms_http_ok": terms_http_ok, "terms_verified": terms_ok, "receipts": receipts, "rate_limit_policy": "one serial request per family/page batch; 100ms pacing; no automatic retries; retain 429 and Retry-After as exact source state", "rate_limit_headers_observed": any(bool(r.get("rate_limit_headers")) for r in receipts.values())}
 
 
 def fetch_primary_artifact() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -172,7 +212,10 @@ def fetch_primary_artifact() -> tuple[dict[str, Any], dict[str, Any], dict[str, 
         allowed_host = host == "release-assets.githubusercontent.com" or host.endswith(".blob.core.windows.net") or host.endswith(".amazonaws.com")
         if parsed.scheme != "https" or not allowed_host or parsed.username or parsed.password:
             raise CaptureError("PROTECTED_875_ARTIFACT_REDIRECT_HOST_INVALID") from exc
-        archive, _ = _http_get(signed_url, max_bytes=MAX_ZIP_BYTES)
+        archive, _, final_url = _http_get(signed_url, max_bytes=MAX_ZIP_BYTES)
+        final_host = (urllib.parse.urlparse(final_url).hostname or "").casefold()
+        if final_host != host and not final_host.endswith(".blob.core.windows.net") and not final_host.endswith(".amazonaws.com"):
+            raise CaptureError("PROTECTED_875_ARTIFACT_FINAL_REDIRECT_HOST_INVALID")
     if len(archive) > MAX_ZIP_BYTES: raise CaptureError("PROTECTED_875_ARTIFACT_MAX_PLUS_ONE")
     archive_sha = sha256(archive)
     if archive_sha != PRIMARY_ARTIFACT_SHA256:
@@ -305,10 +348,25 @@ def parse_fandom_infobox(text: str, family: str) -> dict[str, str]:
 
 
 def _api_json(params: dict[str, str]) -> tuple[dict[str, Any], dict[str, str]]:
-    body, headers = _http_get(_api_url(params), max_bytes=MAX_HTTP_BYTES)
+    url = _api_url(params)
+    body, headers, final_url = _http_get(url, max_bytes=MAX_HTTP_BYTES)
+    if _origin(url) != _origin(final_url): raise CaptureError("FANDOM_API_REDIRECT_ORIGIN_MISMATCH")
     value = json.loads(body)
     if not isinstance(value, dict) or not isinstance(value.get("query"), dict): raise CaptureError("FANDOM_API_SHAPE_INVALID")
     return value, headers
+
+
+def mediawiki_sha1_base36(data: bytes) -> str:
+    """Return MediaWiki's base-36 encoding of SHA-1 over revision bytes."""
+    value = int.from_bytes(hashlib.sha1(data).digest(), "big")
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    if value == 0:
+        return "0"
+    digits: list[str] = []
+    while value:
+        value, remainder = divmod(value, 36)
+        digits.append(alphabet[remainder])
+    return "".join(reversed(digits))
 
 
 def validate_continuation(next_cont: Any, seen: set[str], family: str) -> tuple[dict[str, str] | None, str | None]:
@@ -324,12 +382,14 @@ def validate_fandom_revision(pageid: Any, title: Any, revision: Any, content: An
         raise CaptureError(f"FANDOM_PAGE_ID_OR_TITLE_INVALID:{family}")
     if not isinstance(revision, dict): raise CaptureError(f"FANDOM_REVISION_OBJECT_INVALID:{family}")
     revid, timestamp, source_sha1 = revision.get("revid"), revision.get("timestamp"), revision.get("sha1")
-    if type(revid) is not int or revid <= 0 or not isinstance(timestamp, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", timestamp) or not isinstance(source_sha1, str) or not re.fullmatch(r"[0-9a-f]{40}", source_sha1) or not isinstance(content, str):
+    if type(revid) is not int or revid <= 0 or not isinstance(timestamp, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", timestamp) or not isinstance(source_sha1, str) or not re.fullmatch(r"[0-9a-z]{1,31}", source_sha1) or not isinstance(content, str):
         raise CaptureError(f"FANDOM_REVISION_PROVENANCE_INVALID:{family}")
     try: datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
     except ValueError as exc: raise CaptureError(f"FANDOM_REVISION_TIMESTAMP_INVALID:{family}") from exc
     encoded = content.encode("utf-8")
     if len(encoded) > MAX_PAGE_BYTES: raise CaptureError("FANDOM_PAGE_MAX_PLUS_ONE")
+    if mediawiki_sha1_base36(encoded) != source_sha1:
+        raise CaptureError(f"FANDOM_REVISION_SHA1_CONTENT_MISMATCH:{family}")
     return {"family": family, "source": "TIBIAWIKI_FANDOM", "source_namespace": "mediawiki/tibia.fandom.com", "identity_namespace": "mediawiki/page_id", "external_id": str(pageid), "page_key": f"mediawiki/tibia.fandom.com/page_id/{pageid}", "title": title, "revision_id": revid, "revision_timestamp": timestamp, "source_sha1": source_sha1, "source_digest": sha256(encoded), "raw_utf8_bytes": len(encoded), "facts": parse_fandom_infobox(content, family), "attribution": "TibiaWiki community contributors; CC BY-SA as displayed by the source, subject to per-page notices", "license": "CC-BY-SA", "content_retained": False}
 
 
@@ -374,7 +434,7 @@ def capture_family(family: str) -> list[dict[str, Any]]:
             content = main.get("content", main.get("*")) if isinstance(main, dict) else None
             record = validate_fandom_revision(pageid, page.get("title"), revision, content, family)
             result.append(record)
-            del content, encoded
+            del content
         time.sleep(0.1)
     return result
 
