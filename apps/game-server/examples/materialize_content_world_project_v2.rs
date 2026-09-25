@@ -554,7 +554,7 @@ fn populate_mounts(
         access_disposition: "PENDING".to_owned(),
         source_generation_profile: "OTERYN_G4_NON_ITEM_SOURCE_CAPTURE/v1".to_owned(),
         importer: "OTERYN_G4_NONITEM_BULK_CROSSWALK/v1".to_owned(),
-        mapper: "OTERYN_G4_MOUNT_252_SELECTED/v1".to_owned(),
+        mapper: "OTERYN_G4_NONITEM_BULK_CROSSWALK/v1".to_owned(),
         mapper_revision: "a3cc319aa4582c90cd9d03efd81e2ab0cabf1bb0".to_owned(),
         mapper_sha256: "d927b2bebf3616f8c6e716ad32018698edd323d745078363448eb3f933c7f2d2"
             .to_owned(),
