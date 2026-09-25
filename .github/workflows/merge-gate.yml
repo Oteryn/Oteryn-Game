@@ -267,14 +267,47 @@ jobs:
           errors: list[str] = []
           title = pull.get('title', '')
           body = pull.get('body') or ''
-          if pull.get('state') != 'open':
+          state = pull.get('state')
+          head_sha = pull.get('head', {}).get('sha', '')
+          head_repository = pull.get('head', {}).get('repo', {}).get('full_name')
+          base_ref = pull.get('base', {}).get('ref')
+          expected_head = os.environ['EXPECTED_HEAD']
+          repository = os.environ['REPOSITORY']
+          if state != 'open':
               errors.append('merge gate requires an open pull request')
-          if pull.get('head', {}).get('sha', '') != os.environ['EXPECTED_HEAD']:
+          if head_sha != expected_head:
               errors.append('pull request head moved after scope validation')
-          if pull.get('head', {}).get('repo', {}).get('full_name') != os.environ['REPOSITORY']:
+          if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
-          if pull.get('base', {}).get('ref') != 'main':
+          if base_ref != 'main':
               errors.append('merge gate only accepts pull requests targeting main')
+
+          warnings: list[str] = []
+          pattern = re.compile(
+              r'^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)'
+              r'(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+$'
+          )
+          if len(title) > 72:
+              warnings.append('PR title should be at most 72 characters')
+          if not pattern.fullmatch(title):
+              warnings.append('PR title should follow type(scope): imperative summary')
+
+          headings: set[str] = set()
+          for line in body.splitlines():
+              match = re.match(r'^\s{0,3}##\s+(.+?)\s*#*\s*$', line)
+              if match:
+                  headings.add(' '.join(match.group(1).casefold().split()))
+          if 'summary' not in headings:
+              warnings.append('PR body should include a Summary section')
+          if 'scope' not in headings:
+              warnings.append('PR body should include a Scope section')
+          validation_word = re.compile(r'(?<![a-z0-9])validation(?![a-z0-9])')
+          if not any(validation_word.search(heading) for heading in headings):
+              warnings.append('PR body should include a validation section')
+
+          for warning in warnings:
+              safe = warning.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::warning title=PR metadata guidance::{safe}')
 
           if errors:
               for error in errors:
