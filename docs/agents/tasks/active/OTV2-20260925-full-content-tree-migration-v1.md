@@ -27,6 +27,23 @@ owned_paths:
 
 # Full content tree migration v1
 
-Candidate contains 38,157 Item definitions in 77 deterministic shards and 252 Mount declarations in one shard. Exact legacy definition/declaration objects plus Item/Mount editor/source bindings are preserved. Legacy content/world remains unchanged and runtime remains legacy_until_separately_qualified.
+Candidate materializes 38,157 Item definitions in 77 deterministic shards and 252 Mount declarations in one shard. Legacy `content/world/**` remains untouched and runtime remains `legacy_until_separately_qualified`.
 
-Validation must prove exact Item/Mount semantic round-trip, editor/source-binding equality, identity uniqueness/cardinality and import-binding equality.
+## Material repair
+
+Exact-head readback found that attached source bindings are grouped by definition in the successor tree, while the legacy provenance document uses a different global list order. The first validator therefore produced a false order-sensitive Mount failure.
+
+The repaired validator compares editor/binding collections canonically while requiring every attached binding/editor target to equal the containing definition identity. The migration script is also complete enough to regenerate shards, imports, family indices, manifest, lock and project controls from a clean protected WorldProject/v2 input.
+
+Fresh exact-head validation is required after this repair.
+
+## Current invariant target
+
+- Items: 38,157 / 77 shards
+- Item editor entries: 165
+- Item source bindings: 165
+- Mounts: 252 / 1 shard
+- Mount editor entries: 252
+- Mount source bindings: 252
+- legacy `content/world/**`: byte-preserved / not mutated
+- runtime switch: forbidden in this slice
