@@ -107,6 +107,15 @@ jobs:
           else:
               allowed = {"EXACT_CANDIDATE","PROBABLE","AMBIGUOUS","CONFLICT","NO_MATCH","SOURCE_UNAVAILABLE"}
               assert artifact["status"] == "CAPTURED_EVIDENCE_ONLY"
+              assert manifest["fandom_preflight"]["state"] == "ACCESSIBLE"
+              assert manifest["fandom_preflight"]["terms_verified"] is True
+              marker_checks = manifest["fandom_preflight"]["receipts"]["license_marker_checks"]
+              assert marker_checks["verified"] is True
+              assert all(marker_checks[k] is True for k in ("project_cc_by_sa_marker","project_attribution_marker","site_cc_by_sa_marker","site_attribution_marker"))
+              for receipt in manifest["fandom_preflight"]["receipts"].values():
+                  if isinstance(receipt, dict) and receipt.get("http_status") == 200:
+                      assert receipt.get("redirect_origin_mismatch") is False
+                      assert receipt.get("final_url")
               assert all(row["independent_source"]["crosswalk"]["state"] in allowed for row in rows)
               assert all(row["independent_source"]["crosswalk"]["state"] != "EXACT_CANDIDATE" or len(row["independent_source"]["crosswalk"].get("matching_facts", [])) >= 2 for row in rows)
           print(f"G4 second-source evidence: PASS status={artifact['status']} rows={len(rows)} sha256={manifest['artifact_sha256']}")
