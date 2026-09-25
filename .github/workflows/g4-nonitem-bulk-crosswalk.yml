@@ -1,0 +1,110 @@
+name: G4 Non-Item Bulk Crosswalk
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/g4_nonitem_bulk_crosswalk.py
+      - tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py
+      - .github/workflows/g4-nonitem-bulk-crosswalk.yml
+      - docs/agents/tasks/active/OTV2-20260925-g4-nonitem-bulk-crosswalk.md
+      - docs/agents/evidence/OTV2-20260925-g4-nonitem-bulk-crosswalk.json
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: g4-nonitem-bulk-crosswalk-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: G4 / current-source non-Item bulk crosswalk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out exact candidate and protected base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact candidate and allocated parent
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: 1680eb5dc6145aa3e271ac8665f33a50ed837b76
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git cat-file -e "$BASE_SHA^{commit}"
+          if [ "$EXPECTED_SHA" != "$BASE_SHA" ]; then
+            test "$(git rev-parse "$EXPECTED_SHA^1")" = "$BASE_SHA"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run focused local tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/g4_nonitem_bulk_crosswalk.py \
+            tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py
+          python tools/content-census/g4_nonitem_bulk_crosswalk_self_test.py
+
+      - name: Fetch current revisions and build artifact-only family partitions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-nonitem-bulk-crosswalk"
+          python tools/content-census/g4_nonitem_bulk_crosswalk.py \
+            --work-dir "$ROOT/inputs" \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --base-sha 1680eb5dc6145aa3e271ac8665f33a50ed837b76 \
+            --output "$ROOT/bulk-crosswalk.json" \
+            --manifest-output "$ROOT/manifest.json"
+
+      - name: Gate exact partition and evidence-only result
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-nonitem-bulk-crosswalk"
+          python - "$ROOT/bulk-crosswalk.json" "$ROOT/manifest.json" <<'PY'
+          import json, pathlib, sys
+          artifact, manifest = [json.loads(pathlib.Path(p).read_text(encoding="utf-8")) for p in sys.argv[1:]]
+          expected = {"Creature":2149,"NPC":1253,"Achievement":569,"Quest":272,"Ability":171,"Outfit":134,"Mount":252}
+          assert artifact["schema"] == "OTERYN_G4_NONITEM_BULK_CROSSWALK/v1"
+          assert manifest["schema"] == "OTERYN_G4_NONITEM_BULK_CROSSWALK_MANIFEST/v1"
+          assert manifest["counts"]["direct_rows"] == sum(expected.values()) == 4800
+          assert manifest["counts"]["duplicate_or_dropped_page_ids"] == 0
+          assert manifest["counts"]["baseline_revision_drift_page_ids"] == [63947,46925]
+          assert all(manifest["families"][family]["rows"] == count for family, count in expected.items())
+          assert set(artifact["families"]) == set(expected)
+          rows = [row for family_rows in artifact["families"].values() for row in family_rows]
+          assert len(rows) == len({row["external_id"] for row in rows}) == 4800
+          assert all(row["canonical_target"] is None and row["production_key"] is None and row["source_identity_binding"] is None for row in rows)
+          assert artifact["authority"]["article_prose_retained"] is False
+          assert artifact["authority"]["canonical_definition_population"] is False
+          assert artifact["authority"]["semantic_field_promotion"] is False
+          assert not manifest["source_fetch_errors_by_class"], manifest["source_fetch_errors_by_class"]
+          print("G4 Non-Item current-source bulk crosswalk: PASS (4,800 rows, seven family partitions)")
+          PY
+
+      - name: Upload artifact-only current-source crosswalk
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-nonitem-bulk-crosswalk-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g4-nonitem-bulk-crosswalk/bulk-crosswalk.json
+            ${{ runner.temp }}/g4-nonitem-bulk-crosswalk/manifest.json
+          if-no-files-found: warn
+          retention-days: 14
