@@ -2,12 +2,13 @@
 task_id: OTV2-20260925-full-game-tree-materialization-v1
 title: Full game tree materialization v1
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-game-tree-materialization-v1-20260925
 base_sha: 1ecdafb91f238bbdee691c08e25208d1dfef36d5
 issue: 162
+pr: 911
 jira: KAN-16
 allocation_comment: 5837065048
 created_at: 2026-09-25T19:58:00+02:00
@@ -32,3 +33,13 @@ Acceptance:
 - legacy content/world data is not deleted;
 - rulesets/** becomes physically visible;
 - validator reports zero unmaterialized directories.
+
+## Candidate readback
+
+- 97 target directory nodes are materialized.
+- 96 new directory indices were added; 1 populated index was preserved.
+- unmaterialized directories: 0.
+- existing Item/Mount and legacy WorldProject files remain outside deletion scope.
+- canonical PR: #911.
+
+The successor commit containing this PR binding is the exact candidate for validation.
