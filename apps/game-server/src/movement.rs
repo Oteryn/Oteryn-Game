@@ -63,9 +63,9 @@ pub(crate) struct MovementEngineeringSelection<'a> {
 
 /// No mutation or result publication is possible until the entire decision has passed its
 /// candidate budget. An over-budget attempt poisons this decision even after a prior WALKABLE.
-pub(crate) struct MovementDecision {
+pub(crate) struct MovementDecision<'a> {
     expected: MovementPositionSnapshot,
-    scope: EngineeringStaticCellScope,
+    scope: &'a EngineeringStaticCellScope,
     destination: MovementLocalPosition,
     cell: LogicalCell,
     attempted: usize,
@@ -74,12 +74,12 @@ pub(crate) struct MovementDecision {
     failure: Option<MovementError>,
 }
 
-impl MovementDecision {
+impl<'a> MovementDecision<'a> {
     pub(crate) fn begin(
         owner: &CurrentOwnerMovementPosition<'_>,
         actor: ExactActorRef,
         expected: MovementPositionSnapshot,
-        selection: &MovementEngineeringSelection<'_>,
+        selection: &MovementEngineeringSelection<'a>,
         direction: CardinalStep,
     ) -> Result<Self, MovementError> {
         let current = owner.read(actor).map_err(MovementError::Actor)?;
@@ -109,7 +109,7 @@ impl MovementDecision {
         };
         Ok(Self {
             expected,
-            scope: selection.content_scope.clone(),
+            scope: selection.content_scope,
             destination,
             cell: LogicalCell {
                 x,
@@ -141,7 +141,7 @@ impl MovementDecision {
             return Err(MovementError::CapacityExceeded);
         }
         self.real_content_lookups += 1;
-        match index.lookup(&self.scope, self.cell) {
+        match index.lookup(self.scope, self.cell) {
             Ok(CollisionClass::Walkable) => {
                 self.qualified = true;
                 Ok(())
