@@ -3,8 +3,9 @@
 //! decides admission itself and fails closed for every message it does not own.
 
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelId, CharacterId, FoundationProtocolError, GameSessionId,
-    MessageType, WorldId, decode_wire_envelope, encode_protocol_error, encode_server_accepted,
+    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
+    GameSessionId, MessageType, WorldId, decode_wire_envelope, encode_protocol_error,
+    encode_server_accepted,
 };
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -30,6 +31,9 @@ pub(crate) struct AdmittedSession {
     pub(crate) game_session_id: GameSessionId,
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
+    /// Present for the composed production fresh-admission path. Transport-only
+    /// fixtures may omit it; the transport never invents or mutates actor authority.
+    pub(crate) runtime_actor: Option<ExactActorRef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -250,6 +254,7 @@ mod tests {
                 game_session_id: attempt.game_session_id,
                 world_id: WorldId::decode(&WORLD).expect("world"),
                 channel_id: ChannelId::decode(&CHANNEL).expect("channel"),
+                runtime_actor: None,
             })
         }
     }
@@ -366,6 +371,7 @@ mod tests {
                 game_session_id: GameSessionId::decode(&SESSION)?,
                 world_id: WorldId::decode(&WORLD)?,
                 channel_id: ChannelId::decode(&CHANNEL)?,
+                runtime_actor: None,
             };
             assert_eq!(end, ConnectionEnd::AdmittedThenDisconnected(admitted));
             assert_eq!(authority.calls.get(), 1);
