@@ -26,6 +26,8 @@ jobs:
       pull-requests: read
     env:
       EXPECTED_MERGE_GROUP_GATE_BLOB: "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+      EXPECTED_AGENT_GOVERNANCE_BLOB: "a1a597016af6d17315b46d5720396182a6cf8bae"
+      EXPECTED_MERGE_GATE_BLOB: "f120f64efc48d45a0b633fe750dc1fe00b3dee9b"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -49,6 +51,8 @@ jobs:
           number = os.environ['EVENT_PR_NUMBER'].strip()
           expected_head = os.environ['EVENT_PR_HEAD_SHA'].strip().lower()
           expected_gate_blob = os.environ['EXPECTED_MERGE_GROUP_GATE_BLOB'].strip().lower()
+          expected_agent_governance_blob = os.environ['EXPECTED_AGENT_GOVERNANCE_BLOB'].strip().lower()
+          expected_merge_gate_blob = os.environ['EXPECTED_MERGE_GATE_BLOB'].strip().lower()
 
           if re.fullmatch(r'[1-9][0-9]*', number) is None:
               raise SystemExit('invalid pull request number')
@@ -56,6 +60,10 @@ jobs:
               raise SystemExit('invalid pull request head SHA')
           if re.fullmatch(r'[0-9a-f]{40}', expected_gate_blob) is None:
               raise SystemExit('protected-base merge-group gate blob pin is invalid')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_agent_governance_blob) is None:
+              raise SystemExit('protected-base agent-governance blob pin is invalid')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_merge_gate_blob) is None:
+              raise SystemExit('protected-base merge-gate blob pin is invalid')
 
           headers = {
               'Accept': 'application/vnd.github+json',
@@ -71,6 +79,16 @@ jobs:
               )
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
+
+          def candidate_blob(path: str) -> str:
+              encoded = urllib.parse.quote(path, safe='/')
+              payload = api(f'/contents/{encoded}?ref={expected_head}')
+              if payload.get('encoding') != 'base64' or not isinstance(payload.get('content'), str):
+                  raise SystemExit(f'unable to read candidate {path} as inert content')
+              content = base64.b64decode(payload['content'])
+              return hashlib.sha1(
+                  f'blob {len(content)}\0'.encode('ascii') + content
+              ).hexdigest()
 
           pull = api(f'/pulls/{number}')
           live_head = pull.get('head', {}).get('sha', '').lower()
@@ -117,6 +135,20 @@ jobs:
                   'candidate modifies the protected-base audit itself; require explicit owner-authorized '
                   'audit rotation and independent deep review before integration'
               )
+
+          protected_workflow_blobs = {
+              '.github/workflows/agent-governance.yml': expected_agent_governance_blob,
+              '.github/workflows/merge-gate.yml': expected_merge_gate_blob,
+          }
+          for path, expected_blob in protected_workflow_blobs.items():
+              if path not in changed:
+                  continue
+              actual_blob = candidate_blob(path)
+              if actual_blob != expected_blob:
+                  raise SystemExit(
+                      f'candidate {path} does not match the protected-base approved blob: '
+                      f'expected {expected_blob}, got {actual_blob}'
+                  )
 
           encoded_path = urllib.parse.quote('.github/workflows/merge-group-gate.yml', safe='/')
           payload = api(f'/contents/{encoded_path}?ref={expected_head}')
