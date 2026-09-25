@@ -31,8 +31,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "editor/author.json",
-        121_646,
-        "f389b80aac424f7a974b4c96d7feae2528b1ce4db2ef17b4a50f4b04166d0a8a",
+        121_657,
+        "a41044d85174f5c8f9a86c8433d880f43ea48a0c988d7772260a02eb78deea42",
     ),
     (
         "manifest.json",
