@@ -950,6 +950,14 @@ def main() -> int:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert module.main() == 0
+    spec = importlib.util.spec_from_file_location(
+        "content_routing_regressions",
+        Path(__file__).with_name("test_classify_content_routing.py"),
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.main() == 0
     print(f"Canonical PR PG/SIM validator regressions PASS: {len(tests)}")
     return 0
 
