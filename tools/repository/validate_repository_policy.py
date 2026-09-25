@@ -167,6 +167,36 @@ def _step_mapping_entries(step: str) -> dict[str, list[str]]:
     return _mapping_entries_at_indent(step, 8, "workflow metadata step")
 
 
+def _metadata_step_prefix(job: str, step_name: str) -> str:
+    steps_marker = "    steps:\n"
+    if job.count(steps_marker) != 1:
+        raise ValueError("metadata job must contain exactly one literal steps mapping")
+    step_marker = f"      - name: {step_name}\n"
+    if job.count(step_marker) != 1:
+        raise ValueError(
+            f"metadata job must contain exactly one protected step: {step_name}"
+        )
+    steps_start = job.find(steps_marker) + len(steps_marker)
+    step_start = job.find(step_marker, steps_start)
+    if step_start < 0:
+        raise ValueError(f"protected metadata step is not inside steps: {step_name}")
+    return job[steps_start:step_start]
+
+
+def _require_no_workflow_execution_overrides(
+    text: str,
+    label: str,
+    errors: list[str],
+) -> None:
+    entries = _mapping_entries_at_indent(text, 0, f"{label} workflow")
+    for forbidden in ("env", "defaults"):
+        if forbidden in entries:
+            errors.append(
+                f"{label} workflow must not define top-level {forbidden}: "
+                "metadata interpreter execution must remain runner-controlled"
+            )
+
+
 def _literal_child_mapping(
     block: str,
     marker: str,
@@ -346,6 +376,7 @@ def validate_pr_metadata_workflow_text(
     try:
         job = _extract_job_text(text, job_name)
         step = _extract_step_text(job, step_name)
+        step_prefix = _metadata_step_prefix(job, step_name)
         job_entries = _mapping_entries_at_indent(
             job,
             4,
@@ -357,9 +388,29 @@ def validate_pr_metadata_workflow_text(
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
 
+    _require_no_workflow_execution_overrides(text, label, errors)
+
     if job_name == "validate":
-        allowed_job_keys = {"name", "runs-on", "timeout-minutes", "env", "steps"}
-        allowed_step_keys = {"name", "if", "env", "run"}
+        allowed_step_keys = {"if", "env", "run"}
+        expected_job_entries = {
+            "name": "Agent governance / validate",
+            "runs-on": "ubuntu-24.04",
+            "timeout-minutes": "10",
+            "env": "",
+            "steps": "",
+        }
+        expected_prefix = (
+            "      - name: Set up Python\n"
+            "        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0\n"
+            "        with:\n"
+            "          python-version: '3.12'\n"
+            "\n"
+        )
+        if step_prefix != expected_prefix:
+            errors.append(
+                f"{label} metadata step must be preceded only by the protected "
+                "setup-python step"
+            )
         expected_job_env = {
             "TARGET_SHA": "${{ github.sha }}",
         }
@@ -386,15 +437,19 @@ def validate_pr_metadata_workflow_text(
             errors,
         )
     elif job_name == "governance":
-        allowed_job_keys = {
-            "name",
-            "needs",
-            "runs-on",
-            "timeout-minutes",
-            "permissions",
-            "steps",
+        allowed_step_keys = {"env", "run"}
+        expected_job_entries = {
+            "name": "Merge gate / governance",
+            "needs": "scope",
+            "runs-on": "ubuntu-24.04",
+            "timeout-minutes": "10",
+            "permissions": "",
+            "steps": "",
         }
-        allowed_step_keys = {"name", "env", "run"}
+        if step_prefix:
+            errors.append(
+                f"{label} metadata step must be the first step in the governance job"
+            )
         expected_step_env = {
             "EXPECTED_HEAD": "${{ needs.scope.outputs.target_sha }}",
             "GH_TOKEN": "${{ github.token }}",
@@ -404,11 +459,12 @@ def validate_pr_metadata_workflow_text(
     else:
         return [f"{label} unsupported metadata job: {job_name}"]
 
-    if set(job_entries) != allowed_job_keys:
-        errors.append(
-            f"{label} job {job_name} keys must remain exactly "
-            f"{sorted(allowed_job_keys)!r}, got {sorted(job_entries)!r}"
-        )
+    _require_exact_mapping(
+        job_entries,
+        expected_job_entries,
+        f"{label} job {job_name}",
+        errors,
+    )
     if set(step_entries) != allowed_step_keys:
         errors.append(
             f"{label} metadata step keys must remain exactly "
