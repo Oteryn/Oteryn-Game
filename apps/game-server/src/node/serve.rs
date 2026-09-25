@@ -60,7 +60,6 @@ const RETRY_BACKOFF_MAX: Duration = Duration::from_secs(5);
 const ASSIGNMENT_POLL: Duration = Duration::from_secs(1);
 const PENDING_RECONCILE_ATTEMPTS: u32 = 5;
 const SHUTDOWN_BUDGET: Duration = Duration::from_secs(10);
-const DRAIN_MARGIN: Duration = Duration::from_secs(1);
 const AUDIT_INTERVAL: Duration = Duration::from_secs(60 * 60);
 const AUDIT_BATCH: u16 = 64;
 const AUDIT_RUN_CAP: u32 = 64;
@@ -574,13 +573,27 @@ impl Readiness<'_> {
     ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
         let key = AdmissionAuthorityGuardKeyV1::Runtime(self.scope);
         let guards = AdmissionGuardStore::from_root(self.root.clone());
-        // History without a current guard is invalid stored state (D3).
-        let current = guards
-            .load(std::slice::from_ref(&key))
-            .await
-            .map_err(|_| BootError::Readiness("guard chain"))?
-            .pop()
-            .flatten();
+        // History without a current guard is invalid stored state (D3). A
+        // durability holder that is re-establishing is retried within the
+        // shutdown budget, or a bounded number of times at boot.
+        let mut attempt = 0;
+        let current = loop {
+            match guards.load(std::slice::from_ref(&key)).await {
+                Ok(mut rows) => break rows.pop().flatten(),
+                Err(error) => {
+                    let exhausted = match budget {
+                        Some(deadline) => tokio::time::Instant::now() >= deadline,
+                        None => attempt >= PENDING_RECONCILE_ATTEMPTS,
+                    };
+                    if exhausted {
+                        event(&format!("event=readiness_guard_chain error={error:?}"));
+                        return Err(BootError::Readiness("guard chain"));
+                    }
+                    self.root.request_ready();
+                    backoff(&mut attempt).await;
+                }
+            }
+        };
         let (precondition, publication_revision, source_revision, previous_observed) =
             match &current {
                 None => (
@@ -919,13 +932,6 @@ pub async fn run(config_path: &Path) -> Result<(), BootError> {
     result
 }
 
-/// The drain after readiness is withdrawn: long enough for an in-flight
-/// admission (bounded by the entry deadline) or Character bootstrap (bounded
-/// by the control deadline) to reach its own outcome.
-fn drain_budget(entry_deadline: Duration) -> Duration {
-    CONTROL_DEADLINE.max(entry_deadline) + DRAIN_MARGIN
-}
-
 /// A signal before readiness was ever published: nothing to withdraw.
 fn stopped_before_ready() {
     event("event=shutdown reason=\"signal before ready\"");
@@ -1051,44 +1057,71 @@ async fn boot_and_serve(
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));
     let mut signal = pin!(signalled.cancelled());
     let mut serve_error = None;
+    // A loop that ended is never polled again.
+    let (mut gameplay_done, mut control_done, mut expiry_done) = (false, false, false);
     let reason = poll_fn(|context| {
         if signal.as_mut().poll(context).is_ready() {
             return Poll::Ready("signal");
         }
         if let Poll::Ready(result) = gameplay.as_mut().poll(context) {
             serve_error = result.err();
+            gameplay_done = true;
             return Poll::Ready("gameplay loop ended");
         }
         if control_task.as_mut().poll(context).is_ready() {
+            control_done = true;
             return Poll::Ready("control loop ended");
         }
         if expiry.as_mut().poll(context).is_ready() {
+            expiry_done = true;
             return Poll::Ready("audit expiry loop ended");
         }
         Poll::Pending
     })
     .await;
     event(&format!("event=shutdown reason=\"{reason}\""));
-    // D3 step 10: withdraw readiness first, within the shutdown budget.
+    // D3 step 10: withdraw readiness first, within the shutdown budget. The
+    // loops keep being driven meanwhile, so work already inside a durability
+    // pass finishes and releases the holder the withdrawal needs.
     let budget = tokio::time::Instant::now() + SHUTDOWN_BUDGET;
-    if readiness.publish(false, Some(budget)).await.is_err() {
-        event("event=readiness ready=false result=failed");
+    let mut withdrawal = pin!(readiness.publish(false, Some(budget)));
+    let withdrawn = poll_fn(|context| {
+        if let Poll::Ready(result) = withdrawal.as_mut().poll(context) {
+            return Poll::Ready(result);
+        }
+        if !gameplay_done && let Poll::Ready(result) = gameplay.as_mut().poll(context) {
+            serve_error = serve_error.take().or(result.err());
+            gameplay_done = true;
+        }
+        if !control_done && control_task.as_mut().poll(context).is_ready() {
+            control_done = true;
+        }
+        if !expiry_done && expiry.as_mut().poll(context).is_ready() {
+            expiry_done = true;
+        }
+        Poll::Pending
+    })
+    .await;
+    if let Err(error) = withdrawn {
+        event(&format!(
+            "event=readiness ready=false result=failed reason=\"{error}\""
+        ));
     }
     shutdown.cancel();
     loops_stop.cancel();
-    // In-flight admissions and an in-flight bootstrap complete within their
-    // own deadlines, which bound the drain.
-    let _ = first(
-        async {
-            let _ = gameplay.as_mut().await;
-            control_task.as_mut().await;
-            expiry.as_mut().await;
-        },
-        tokio::time::sleep(drain_budget(Duration::from_millis(
-            config.listener.entry_deadline_ms,
-        ))),
-    )
-    .await;
+    // In-flight admissions and an in-flight bootstrap are never cancelled
+    // midway: each runs to its own outcome under the bounds of its durability
+    // passes and Platform exchanges. The supervisor's stop timeout is the
+    // outer bound; a kill after it is recovered like any crash.
+    if !gameplay_done {
+        let _ = gameplay.as_mut().await;
+    }
+    if !control_done {
+        control_task.as_mut().await;
+    }
+    if !expiry_done {
+        expiry.as_mut().await;
+    }
     let _ = std::fs::remove_file(&config.control.socket_path);
     event("event=shutdown state=complete");
     if serve_error.is_some() {
@@ -1125,13 +1158,6 @@ mod tests {
         let (own, foreign) = (key(&first), key(&second));
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &own).is_ok());
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
-    }
-
-    #[test]
-    fn drain_outlasts_every_in_flight_deadline() {
-        assert!(drain_budget(Duration::from_secs(1)) > CONTROL_DEADLINE);
-        let longest = Duration::from_millis(super::super::config::MAX_ENTRY_DEADLINE_MS);
-        assert!(drain_budget(longest) > longest);
     }
 
     #[test]

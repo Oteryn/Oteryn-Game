@@ -41,6 +41,7 @@ external_repositories: []
   - **Admission definer.** The control role admits only generation one of an empty Character store, through the definer `game_character_admit_fresh_recovery` (migration 0007). Its direct `INSERT` on recovery admissions is revoked.
   - **Retained-file owner.** `oteryn-game-ops` takes a retained file's owner from the opened descriptor instead of a separate path lookup, and a missing file is distinguished from a refused one.
   - **Fence directory.** The Character recovery fence keeps its validated directory descriptor. It opens, creates, renames and synchronizes every entry relative to that descriptor, and checks the parent of the opened directory.
-  - **Shutdown drain.** After readiness is withdrawn, the drain lets an in-flight admission or bootstrap reach its own deadline.
-- **Validation:** tests for the control role (direct insert refused, definer admission and replay), the descriptor-owner read, directory pinning and the drain budget.
+  - **Shutdown drain.** After readiness is withdrawn, the drain never cancels an in-flight admission or bootstrap midway. Each runs to its own outcome under its internal bounds, and the supervisor's stop timeout is the outer bound. A loop that already ended is not polled again.
+  - **Readiness withdrawal.** The serving loops keep being driven while readiness is withdrawn. Before this, an in-flight durability pass, such as the first audit-expiry pass, was suspended while it held the only holder connection, and `ready=false` then failed. The guard-chain read is retried within the budget, and the failure reason is logged.
+- **Validation:** tests for the control role (direct insert refused, definer admission and replay), the descriptor-owner read and directory pinning.
 - **Excluded:** successor recovery admission tooling, which stays an owner-privileged recovery operation. Also excluded: Platform or production changes.
