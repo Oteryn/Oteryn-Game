@@ -2,7 +2,7 @@
 task_id: OTV2-20260925-full-game-tree-materialization-v1
 title: Full game tree materialization v1
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/full-game-tree-materialization-v1-20260925
@@ -63,3 +63,7 @@ This is an explicit deferred compatibility boundary, not a claim that the world 
 ## CI repair generation
 
 Exact head `d922261cb1092b24c51a9bf3dfb2d9b9126d7fe7` failed `Merge gate / Rust Linux workspace` because the repository-only WorldProject fixture reached `129 > 128` total scanned directory entries after adding legitimate sibling directories under `content/`. Issue #162 comment 5837429915 returns this task to AUTHORING and extends ownership only to `apps/game-server/tests/content_world_project_repository.rs`. The repair must not change the filesystem implementation, runtime semantics, per-scan limit, project evidence limits, package digests, or legacy `content/world/**` bytes.
+
+## Repair candidate ready for qualification
+
+The bounded repository-fixture repair is authored. `max_total_directory_entries_scanned` is now 144 (= prior 128 + the verified 16-entry ambient sibling delta), while `max_entries_per_directory_scan` remains 32. No filesystem implementation or runtime limit was changed. The next exact branch head after this task-record write is the new frozen candidate; all candidate-specific CI evidence from `d922261cb1092b24c51a9bf3dfb2d9b9126d7fe7` is superseded.
