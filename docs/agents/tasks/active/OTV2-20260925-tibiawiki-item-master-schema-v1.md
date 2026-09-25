@@ -1,8 +1,8 @@
 ---
 task_id: OTV2-20260925-tibiawiki-item-master-schema-v1
 title: TibiaWiki Item Master Schema v1 census
-mode: ARCHITECTURE_EVIDENCE
-status: ready_for_validation
+mode: CONTRACT
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/tibiawiki-item-master-schema-v1-20260925
@@ -73,3 +73,11 @@ At pre-freeze remote head `e45e7ab6e7c04533feb8e3229aef2f244d331be9`:
 
 The successor commit containing this checkpoint is the intended authoring terminus. Hosted
 exact-head checks and PR review must bind that successor SHA.
+
+## Governance repair
+
+The first frozen candidate failed Agent Governance because the task packet used two
+non-contract lifecycle enums. The task metadata is corrected only to
+`mode: CONTRACT` and `status: validating`, both declared by
+`docs/agents/GOVERNANCE_CONTRACT.json`. No product/schema/evidence/validator bytes
+are changed by this repair.
