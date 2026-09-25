@@ -20,12 +20,10 @@ def canonical_bytes(value: Any) -> bytes:
 def load(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
-def write(relative: str, value: Any) -> int:
-    data = canonical_bytes(value)
+def write(relative: str, value: Any) -> None:
     path = ROOT / relative
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    return len(data)
+    path.write_bytes(canonical_bytes(value))
 
 def target_id(target: dict[str, Any]) -> tuple[str, str, str]:
     return (target["family"], target["key"], target["revision"])
@@ -48,7 +46,6 @@ def main() -> int:
     for rows in bindings.values():
         rows.sort(key=canonical_bytes)
 
-    sizes: dict[str, int] = {}
     item_shards: list[str] = []
     for start in range(0, len(reference["records"]), ITEM_SHARD_SIZE):
         rows = []
@@ -63,7 +60,7 @@ def main() -> int:
         end = start + len(rows) - 1
         relative = f"content/items/definitions/items-{start:05d}-{end:05d}.json"
         item_shards.append(relative)
-        sizes[relative] = write(relative, {
+        write(relative, {
             "schema": "OTERYN_ITEM_AUTHORING_SHARD/v1",
             "family": "Item",
             "source_legacy_role": "content/world/definitions/reference.json",
@@ -86,7 +83,7 @@ def main() -> int:
             row["source_bindings"] = bindings[key]
         mount_rows.append(row)
     mount_relative = f"content/cosmetics/mounts/mounts-00000-{len(mount_rows)-1:05d}.json"
-    sizes[mount_relative] = write(mount_relative, {
+    write(mount_relative, {
         "schema": "OTERYN_MOUNT_AUTHORING_SHARD/v1",
         "family": "Mount",
         "source_legacy_role": "content/world/definitions/declarations.json",
@@ -105,14 +102,14 @@ def main() -> int:
         "imports/tibiawiki/bindings/mounts.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Mount", "bindings": mount_bindings},
     }
     for relative, value in outputs.items():
-        sizes[relative] = write(relative, value)
+        write(relative, value)
 
-    sizes["content/items/index.json"] = write("content/items/index.json", {
+    write("content/items/index.json", {
         "schema": "OTERYN_FAMILY_INDEX/v1",
         "family": "Item",
         "record_count": len(reference["records"]),
         "shard_size": ITEM_SHARD_SIZE,
-        "shards": [{"path": path, "bytes": sizes[path]} for path in item_shards],
+        "shards": item_shards,
         "legacy_source": {
             "path": "content/world/definitions/reference.json",
             "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "reference.json"),
@@ -123,11 +120,11 @@ def main() -> int:
         "attached_editor_entries": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
         "attached_source_bindings": len(item_bindings),
     })
-    sizes["content/cosmetics/mounts/index.json"] = write("content/cosmetics/mounts/index.json", {
+    write("content/cosmetics/mounts/index.json", {
         "schema": "OTERYN_FAMILY_INDEX/v1",
         "family": "Mount",
         "record_count": len(mount_rows),
-        "shards": [{"path": mount_relative, "bytes": sizes[mount_relative]}],
+        "shards": [mount_relative],
         "legacy_source": {
             "path": "content/world/definitions/declarations.json",
             "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "declarations.json"),
@@ -142,7 +139,7 @@ def main() -> int:
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
         "project_revision": REVISION,
         "admission_main": ADMISSION_MAIN,
-        "managed_files": [{"path": path, "bytes": sizes[path]} for path in managed],
+        "managed_files": [{"path": path} for path in managed],
         "families": {
             "Item": {"records": len(reference["records"]), "index": "content/items/index.json"},
             "Mount": {"records": len(mount_rows), "index": "content/cosmetics/mounts/index.json"},
