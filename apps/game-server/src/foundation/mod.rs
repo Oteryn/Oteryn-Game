@@ -13,10 +13,11 @@ mod runtime_actor_carrier;
 // Crate-visible seam awaits separately allocated production composition.
 pub(crate) use runtime_actor_carrier::{
     CarrierError, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup, ExactActorRef,
-    OwnerDamageResult,
+    OwnerDamageCommand, OwnerDamageResult,
 };
 #[cfg(test)]
 #[allow(dead_code)]
+#[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
 #[path = "../ability/mod.rs"]
 mod exact_actor_test_ability;
 mod snapshot_facade;
