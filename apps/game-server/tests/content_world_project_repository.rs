@@ -16,13 +16,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        361,
-        "e77b77eb2fce2c7612b3359f7e383bafec892006513bf98f0bf6649a4579bd00",
+        364,
+        "ea44702db9b13dff784f23f4e017ad499413e843b8ffd33ac0dda2a4d9fa0c49",
     ),
     (
         "definitions/declarations.json",
-        28_364,
-        "e1df6d290aa4824bbb94bf3427949619fdb56b17202d5b9018127d77b604c1d5",
+        44_331,
+        "baec91d3ff98f53eb71a64ea0d7f3ca00802d742d13783bbc55be0932ce58a24",
     ),
     (
         "definitions/reference.json",
@@ -31,13 +31,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "editor/author.json",
-        90_521,
-        "db78e18c829a560a3d8248a005890cf8b981c46e799497293ffed78157b95fc7",
+        121_657,
+        "a41044d85174f5c8f9a86c8433d880f43ea48a0c988d7772260a02eb78deea42",
     ),
     (
         "manifest.json",
-        1_929,
-        "38b68c904d00f48ccb845c38ddb44fadb3fb077d5c60b2f0d1f967b52ae9e134",
+        1_931,
+        "230b8d3b00b7c19c48d74e0a5c8825c2fd15c582ee81666c18f9effee8fa9463",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        389,
-        "3419da94198b562092fe8d3ff09776d1ee5cb99c8a3502317eba0600dd37e88e",
+        390,
+        "0e63116285a94c34415d43300e9e019c820732268143ed94672f0a9924621dad",
     ),
     (
         "provenance/imports.json",
@@ -56,8 +56,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "provenance/sources.json",
-        140_093,
-        "8c34c3f3198345ec630137b6878c7b59e9c4f1fe88bba9edbb988969267aef07",
+        186_250,
+        "ea81f91588cf70c2acd8fd23e79ea1a1de48515f7c92b32295b04d432d3a5848",
     ),
     (
         "worlds/world.json",
@@ -65,7 +65,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
         "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
-const TREE_SHA256: &str = "f2d779a0abe89a1442e5a85af1aed24e55e581e9d7e4985c47a2ca9a70fa73e2";
+const TREE_SHA256: &str = "d22320e90b42ce7fc955cea4c3849be6d090b106f201c1cde1b3de7c2cc58dba";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
@@ -208,7 +208,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-mount-252-r1");
+    assert_eq!(project.project_revision(), "g4-outfit-133-r1");
     assert_eq!(project.imports().len(), 3);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -244,9 +244,29 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(mount_import.reimport_states.is_empty());
 
     let v2 = project.v2().expect("WorldProject/v2 state");
-    assert_eq!(v2.declarations.len(), 252);
-    assert!(v2.declarations.iter().all(|declaration| matches!(
-        declaration,
+    assert_eq!(v2.declarations.len(), 385);
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Outfit { .. }))
+            .count(),
+        133
+    );
+    assert_eq!(
+        v2.declarations
+            .iter()
+            .filter(|declaration| matches!(declaration, ProjectV2Declaration::Mount { .. }))
+            .count(),
+        252
+    );
+    assert!(v2.declarations.iter().all(|declaration| match declaration {
+        ProjectV2Declaration::Outfit {
+            presentations,
+            premium: None,
+            acquisition_interactions,
+            fields,
+            ..
+        } => presentations.is_empty() && acquisition_interactions.is_empty() && fields.is_empty(),
         ProjectV2Declaration::Mount {
             presentation: None,
             speed_bonus: None,
@@ -255,8 +275,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             acquisition_interactions,
             fields,
             ..
-        } if acquisition_interactions.is_empty() && fields.is_empty()
-    )));
+        } => acquisition_interactions.is_empty() && fields.is_empty(),
+        _ => false,
+    }));
     assert!(v2.item_authoring.is_empty());
     assert!(v2.authoring_profiles.is_empty());
     assert!(v2.worlds.is_empty());
@@ -282,8 +303,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[2].revision, mount_import.source_revision);
     assert_eq!(v2.sources[2].sha256, mount_import.source_artifact_sha256);
     assert_eq!(v2.sources[2].evidence, ProjectV2EvidenceClass::Derived);
-    assert_eq!(v2.source_identity_bindings.len(), 417);
-    assert_eq!(v2.editor.len(), 417);
+    assert_eq!(v2.source_identity_bindings.len(), 550);
+    assert_eq!(v2.editor.len(), 550);
+    let mut outfit_ids = BTreeSet::new();
     let mut mount_ids = BTreeSet::new();
     let mut item_ids = BTreeSet::new();
     for binding in &v2.source_identity_bindings {
@@ -298,32 +320,57 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 assert_eq!(binding.source_revision, v2.sources[1].revision);
                 assert!(item_ids.insert(&binding.external_id));
             }
+            ProjectV2Family::Outfit => {
+                assert_eq!(binding.source_revision, v2.sources[2].revision);
+                assert!(binding.target.key.starts_with("oteryn:content.outfit."));
+                assert!(outfit_ids.insert(&binding.external_id));
+            }
             ProjectV2Family::Mount => {
                 assert_eq!(binding.source_revision, v2.sources[2].revision);
                 assert!(binding.target.key.starts_with("oteryn:content.mount."));
                 assert!(mount_ids.insert(&binding.external_id));
             }
-            _ => panic!("only Item and Mount source bindings are populated"),
+            _ => panic!("only Item, Outfit and Mount source bindings are populated"),
         }
     }
     assert_eq!(item_ids.len(), 165);
+    assert_eq!(outfit_ids.len(), 133);
+    assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));
     assert_eq!(mount_ids.len(), 252);
+    assert!(item_ids.is_disjoint(&outfit_ids));
     assert!(item_ids.is_disjoint(&mount_ids));
+    assert!(outfit_ids.is_disjoint(&mount_ids));
+    let outfit_keys = v2
+        .declarations
+        .iter()
+        .filter_map(|declaration| match declaration {
+            ProjectV2Declaration::Outfit { identity, .. } => Some(identity.key.as_str()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
     let mount_keys = v2
         .declarations
         .iter()
-        .map(|declaration| match declaration {
-            ProjectV2Declaration::Mount { identity, .. } => identity.key.as_str(),
-            _ => panic!("only Mount declarations are populated"),
+        .filter_map(|declaration| match declaration {
+            ProjectV2Declaration::Mount { identity, .. } => Some(identity.key.as_str()),
+            _ => None,
         })
         .collect::<BTreeSet<_>>();
+    assert_eq!(outfit_keys.len(), 133);
     assert_eq!(mount_keys.len(), 252);
+    assert!(
+        v2.source_identity_bindings
+            .iter()
+            .filter(|binding| binding.target.family == ProjectV2Family::Outfit)
+            .all(|binding| outfit_keys.contains(binding.target.key.as_str()))
+    );
     assert!(
         v2.source_identity_bindings
             .iter()
             .filter(|binding| binding.target.family == ProjectV2Family::Mount)
             .all(|binding| mount_keys.contains(binding.target.key.as_str()))
     );
+    let mut outfit_editor = 0;
     let mut mount_editor = 0;
     let mut item_editor = 0;
     for entry in &v2.editor {
@@ -334,15 +381,21 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 assert_eq!(entry.tags, ["oteryn:editor.item"]);
                 item_editor += 1;
             }
+            ProjectV2Family::Outfit => {
+                assert_eq!(entry.tags, ["oteryn:editor.outfit"]);
+                assert!(outfit_keys.contains(entry.target.key.as_str()));
+                outfit_editor += 1;
+            }
             ProjectV2Family::Mount => {
                 assert_eq!(entry.tags, ["oteryn:editor.mount"]);
                 assert!(mount_keys.contains(entry.target.key.as_str()));
                 mount_editor += 1;
             }
-            _ => panic!("only Item and Mount editor entries are populated"),
+            _ => panic!("only Item, Outfit and Mount editor entries are populated"),
         }
     }
     assert_eq!(item_editor, 165);
+    assert_eq!(outfit_editor, 133);
     assert_eq!(mount_editor, 252);
 
     let rewritten = project
