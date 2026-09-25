@@ -3,7 +3,7 @@
   "task_id": "OTV2-20260925-unknown-closure",
   "allocation": {
     "issue": 162,
-    "comment_id": 5826864843,
+    "comment_id": 5827058358,
     "branch": "agent/otv2-g3-unknown-closure-wave",
     "base_sha": "1680eb5dc6145aa3e271ac8665f33a50ed837b76"
   },
@@ -57,11 +57,23 @@
     "source_shape_only_or_unresolved_pages": 1709
   },
   "expected_row_dimensions_when_wiki_unavailable": {
-    "family_disposition": {"UNRESOLVED_NO_CURRENT_SOURCE": 5512},
-    "relationship_disposition": {"CANDIDATE_RELATIONSHIPS_PRESERVED": 4106, "NO_DIRECT_RELATIONSHIP_CLAIM": 1406},
-    "placement_disposition": {"NO_EXACT_PLACEMENT_RECORD_IN_PINNED_CENSUS": 5512},
-    "source_only_disposition": {"NOT_SOURCE_ONLY": 3803, "SOURCE_ONLY_OR_NONPROMOTABLE_EVIDENCE": 1709},
-    "exclusion_disposition": {"NOT_EXCLUDED": 5512}
+    "family_disposition": {
+      "UNRESOLVED_NO_CURRENT_SOURCE": 5512
+    },
+    "relationship_disposition": {
+      "CANDIDATE_RELATIONSHIPS_PRESERVED": 4106,
+      "NO_DIRECT_RELATIONSHIP_CLAIM": 1406
+    },
+    "placement_disposition": {
+      "NO_EXACT_PLACEMENT_RECORD_IN_PINNED_CENSUS": 5512
+    },
+    "source_only_disposition": {
+      "NOT_SOURCE_ONLY": 3803,
+      "SOURCE_ONLY_OR_NONPROMOTABLE_EVIDENCE": 1709
+    },
+    "exclusion_disposition": {
+      "NOT_EXCLUDED": 5512
+    }
   },
   "gates": {
     "current_source_revisions": "Only exact revision matches close a row; drift and 401/403/429/network failures remain row-level unverified/unresolved.",
@@ -76,5 +88,19 @@
     "canonical_identity": "No target identity selection, ProductionKey minting, binding, semantic promotion, placement, or production mutation."
   },
   "storage": "Complete per-page output is retained only as a 14-day hosted workflow artifact; this file is the compact contract.",
-  "status": "CONTRACT_PENDING_HOSTED_RUN"
+  "status": "SUCCESSOR_CANDIDATE_VALIDATION_PENDING",
+  "previous_candidate_validation": {
+    "head_sha": "c877eb7bb2e1102c335ce4dfd8e4addc3fa3abe7",
+    "g3_run_id": 36096684047,
+    "g3_artifact_id": 10847747882,
+    "artifact_sha256": "c4a313c9866895d7850e726dbcfa234d314035b5eee779a085ce4874ec3b86b8",
+    "result": "PASS",
+    "rows": 5512,
+    "dropped_rows": 0,
+    "duplicate_page_ids": false,
+    "hard_excluded_rows": 0,
+    "exact_signature_routes": 12,
+    "expires_at": "2026-10-09T05:00:44Z",
+    "note": "Superseded by task/evidence repair; successor candidate requires fresh exact-head validation."
+  }
 }
