@@ -145,6 +145,15 @@ pub(crate) struct OwnerDamageResult {
     pub(crate) health_after: i64,
 }
 
+/// Immutable, borrowed Ability proposal. Authority is checked by the owner,
+/// independently of these bytes, before the single slot replacement.
+pub(crate) struct OwnerDamageCommand<'a> {
+    pub(crate) target: &'a [u8],
+    pub(crate) occurrence: &'a [u8],
+    pub(crate) binding: &'a [u8],
+    pub(crate) damage: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct OwnerCommitRecord {
     binding: Box<[u8]>,
@@ -160,20 +169,10 @@ impl CurrentOwnerExactActorCommit<'_> {
     pub(crate) fn commit_damage(
         &mut self,
         actor: ExactActorRef,
-        target: &[u8],
-        occurrence: &[u8],
-        binding: &[u8],
-        damage: i64,
+        command: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.carrier.commit_creature_damage_inner(
-            self.continuity,
-            actor.0,
-            target,
-            occurrence,
-            binding,
-            damage,
-            false,
-        )
+        self.carrier
+            .commit_creature_damage_inner(self.continuity, actor.0, command, false)
     }
 }
 
@@ -475,12 +474,15 @@ impl ChannelActorCarrier {
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
-        target: &[u8],
-        occurrence: &[u8],
-        binding: &[u8],
-        damage: i64,
+        command: OwnerDamageCommand<'_>,
         fail_before_write: bool,
     ) -> Result<OwnerDamageResult, CarrierError> {
+        let OwnerDamageCommand {
+            target,
+            occurrence,
+            binding,
+            damage,
+        } = command;
         let index = self.validate_ref(continuity, actor_ref)?;
         if occurrence.is_empty() || binding.is_empty() {
             return Err(CarrierError::InvalidCommitBinding);
