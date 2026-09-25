@@ -1253,6 +1253,33 @@ mod tests {
     }
 
     #[test]
+    fn multiple_removed_holes_reuse_in_lifo_removal_order() {
+        let (continuity, mut carrier) = carrier(4);
+        let refs = (0..4)
+            .map(|value| {
+                carrier
+                    .admit(&continuity, ActorState(value))
+                    .expect("initial admit")
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(carrier.remove(&continuity, refs[1]), Ok(ActorState(1)));
+        assert_eq!(carrier.remove(&continuity, refs[3]), Ok(ActorState(3)));
+
+        let first_reuse = carrier
+            .admit(&continuity, ActorState(10))
+            .expect("first recycled admit");
+        let second_reuse = carrier
+            .admit(&continuity, ActorState(11))
+            .expect("second recycled admit");
+
+        assert_eq!(first_reuse.actor_local_id, refs[3].actor_local_id);
+        assert_eq!(second_reuse.actor_local_id, refs[1].actor_local_id);
+        assert_eq!(first_reuse.actor_local_generation.0, 2);
+        assert_eq!(second_reuse.actor_local_generation.0, 2);
+    }
+
+    #[test]
     fn representable_post_selection_failure_rolls_back_everything() {
         let (continuity, mut carrier) = carrier(2);
         let first = carrier
