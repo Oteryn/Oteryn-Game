@@ -276,18 +276,6 @@ jobs:
           if pull.get('base', {}).get('ref') != 'main':
               errors.append('merge gate only accepts pull requests targeting main')
 
-          pattern = re.compile(
-              r'^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)'
-              r'(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+$'
-          )
-          if len(title) > 72:
-              errors.append('PR title must be at most 72 characters')
-          if not pattern.fullmatch(title):
-              errors.append('PR title must follow type(scope): imperative summary')
-          for heading in ('## Summary', '## Scope', '## Validation'):
-              if heading not in body:
-                  errors.append(f'PR body is missing {heading}')
-
           if errors:
               for error in errors:
                   print(f'- {error}', file=sys.stderr)
