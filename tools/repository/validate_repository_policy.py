@@ -18,8 +18,16 @@ CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
 PR_METADATA_WORKFLOWS = (
-    (ROOT / ".github/workflows/agent-governance.yml", "Verify pull request target and metadata"),
-    (ROOT / ".github/workflows/merge-gate.yml", "Verify pull request metadata"),
+    (
+        ROOT / ".github/workflows/agent-governance.yml",
+        "validate",
+        "Verify pull request target and metadata",
+    ),
+    (
+        ROOT / ".github/workflows/merge-gate.yml",
+        "governance",
+        "Verify pull request metadata",
+    ),
 )
 
 
@@ -99,24 +107,62 @@ def _extract_step_text(text: str, step_name: str) -> str:
     return text[step_start:next_step]
 
 
-def _step_mapping_entries(step: str) -> dict[str, list[str]]:
-    entries: dict[str, list[str]] = {}
-    key_pattern = re.compile(
-        r"""^        (?P<key>"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[A-Za-z0-9_-]+)\s*:\s*(?P<value>.*?)\s*$"""
+def _extract_job_text(text: str, job_name: str) -> str:
+    job_marker = f"  {job_name}:\n"
+    job_start = text.find(job_marker)
+    if job_start < 0:
+        raise ValueError(f"missing workflow job: {job_name}")
+    remainder = text[job_start + len(job_marker) :]
+    next_job = re.search(r"(?m)^  [A-Za-z0-9_-]+:\s*$", remainder)
+    job_end = (
+        job_start + len(job_marker) + next_job.start()
+        if next_job is not None
+        else len(text)
     )
-    for line in step.splitlines():
-        match = key_pattern.match(line)
-        if match is None:
+    return text[job_start:job_end]
+
+
+def _normalize_mapping_key(raw_key: str) -> str:
+    if raw_key.startswith('"'):
+        key = json.loads(raw_key)
+        if not isinstance(key, str):
+            raise ValueError(f"non-string YAML mapping key: {raw_key}")
+        return key
+    if raw_key.startswith("'"):
+        return raw_key[1:-1].replace("''", "'")
+    return raw_key
+
+
+def _mapping_entries_at_indent(
+    block: str,
+    indent: int,
+    label: str,
+) -> dict[str, list[str]]:
+    entries: dict[str, list[str]] = {}
+    prefix = " " * indent
+    deeper_prefix = prefix + " "
+    key_pattern = re.compile(
+        r"""(?P<key>"(?:[^"\\]|\\.)*"|'(?:[^']|'')*'|[A-Za-z0-9_-]+)\s*:\s*(?P<value>.*?)\s*$"""
+    )
+    for line_number, line in enumerate(block.splitlines(), start=1):
+        if not line.startswith(prefix) or line.startswith(deeper_prefix):
             continue
-        raw_key = match.group("key")
-        if raw_key.startswith('"'):
-            key = json.loads(raw_key)
-        elif raw_key.startswith("'"):
-            key = raw_key[1:-1].replace("''", "'")
-        else:
-            key = raw_key
+        content = line[indent:]
+        if not content.strip() or content.lstrip().startswith("#"):
+            continue
+        match = key_pattern.fullmatch(content)
+        if match is None:
+            raise ValueError(
+                f"{label} contains unsupported YAML mapping syntax at line "
+                f"{line_number}: {content!r}"
+            )
+        key = _normalize_mapping_key(match.group("key"))
         entries.setdefault(key, []).append(match.group("value"))
     return entries
+
+
+def _step_mapping_entries(step: str) -> dict[str, list[str]]:
+    return _mapping_entries_at_indent(step, 8, "workflow metadata step")
 
 
 def _extract_step_python(text: str, step_name: str) -> str:
@@ -239,16 +285,40 @@ def _valid_pull(expected_head: str) -> dict[str, object]:
     }
 
 
-def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) -> list[str]:
+def validate_pr_metadata_workflow_text(
+    text: str,
+    label: str,
+    job_name: str,
+    step_name: str,
+) -> list[str]:
     errors: list[str] = []
     try:
+        job = _extract_job_text(text, job_name)
         step = _extract_step_text(text, step_name)
+        job_entries = _mapping_entries_at_indent(
+            job,
+            4,
+            f"{label} job {job_name}",
+        )
+        step_entries = _step_mapping_entries(step)
         source = _extract_step_python(text, step_name)
         compile(source, f"{label}:metadata", "exec")
     except (SyntaxError, ValueError) as exc:
         return [f"{label} metadata validator is not executable: {exc}"]
 
-    step_entries = _step_mapping_entries(step)
+    job_continue_on_error = job_entries.get("continue-on-error", [])
+    if job_continue_on_error:
+        errors.append(
+            f"{label} job {job_name} must not use continue-on-error, "
+            f"got {job_continue_on_error!r}"
+        )
+    job_conditions = job_entries.get("if", [])
+    if job_conditions:
+        errors.append(
+            f"{label} job {job_name} must not be conditionally skipped, "
+            f"got {job_conditions!r}"
+        )
+
     continue_on_error = step_entries.get("continue-on-error", [])
     if continue_on_error:
         errors.append(
@@ -456,13 +526,18 @@ def validate_pr_metadata_workflow_text(text: str, label: str, step_name: str) ->
 
 def validate_pr_metadata_advisory_contract() -> list[str]:
     errors: list[str] = []
-    for path, step_name in PR_METADATA_WORKFLOWS:
+    for path, job_name, step_name in PR_METADATA_WORKFLOWS:
         if not path.is_file():
             errors.append(f"missing PR metadata workflow: {path.relative_to(ROOT)}")
             continue
         text = path.read_text(encoding="utf-8")
         errors.extend(
-            validate_pr_metadata_workflow_text(text, str(path.relative_to(ROOT)), step_name)
+            validate_pr_metadata_workflow_text(
+                text,
+                str(path.relative_to(ROOT)),
+                job_name,
+                step_name,
+            )
         )
     return errors
 
