@@ -1,0 +1,96 @@
+{
+  "schema": "OTERYN_WORLD_PROJECT_SCALE_MEASUREMENT_EVIDENCE/v1",
+  "allocation_revision": "R6",
+  "allocation_comment": 5826848733,
+  "base_refresh_comment": 5822887886,
+  "branch": "agent/otv2-worldproject-v2-full-cardinality-scale-r5",
+  "evidence_status": "measurement_pending",
+  "implementation_base": "c516182255d3ea1724e91671c8d2187eb622e3df",
+  "supersedes": "ee43abd5505c3e4117f9af4f651759d8616479ad",
+  "task_path": "docs/agents/tasks/active/OTV2-20260924-worldproject-v2-full-cardinality-scale.md",
+  "measurement_tool": "tools/world-project-v2-scale-measurement",
+  "workflow": ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+  "target_placements": 24502036,
+  "input_class": "SYNTHETIC_SCALE_STRESS_ONLY",
+  "synthetic_shape": {
+    "definitions": 1,
+    "worlds": 1,
+    "map_revisions": 1,
+    "coordinate_frames": 1,
+    "disposition": "CandidateOnly"
+  },
+  "measured_dimensions": [
+    "canonical bytes by role and total",
+    "draft build time",
+    "canonical serialization and validation time",
+    "JSON syntax parse time",
+    "schema-aware load time",
+    "staged role-file write time",
+    "peak resident set size from /usr/bin/time -v for full success/confirmed-resource-limit runs",
+    "one-placement edit amplification"
+  ],
+  "resource_policy": {
+    "full_virtual_memory_ceiling_bytes": 6442450944,
+    "full_wall_clock_limit_seconds": 4500,
+    "full_runs_on_pull_request_head": true,
+    "full_runs_on_manual_dispatch": true,
+    "peak_rss_source": "/usr/bin/time -v maximum resident set size, converted from KiB",
+    "outcomes": [
+      "completed",
+      "resource_limit",
+      "failed"
+    ],
+    "resource_limit_classification": "Only supervised timeout, signal-9 kill under the VM ceiling, or an allocator failure with explicit allocation/OOM evidence and recorded peak RSS is resource_limit; other nonzero exits or invalid JSON are failed.",
+    "failure_artifacts_uploaded_before_final_gate": [
+      "result JSON",
+      "GNU time -v report",
+      "stderr",
+      "raw stdout"
+    ]
+  },
+  "one_placement_amplification": {
+    "measurement_status": "ESTIMATE_NOT_GATE_COMPLETE",
+    "changed_paths": null,
+    "changed_file_count": null,
+    "changed_project_bytes": null,
+    "reason": "isolated placement-record byte difference divided into estimated whole-project rewrite bytes; full canonical snapshots are not diffed",
+    "resource_limited_run_status": "unavailable_after_early_failure"
+  },
+  "donor_or_source_inputs": false,
+  "schema_or_chunk_decision": "out_of_scope",
+  "run_identity": null,
+  "result_artifact": null,
+  "previous_revision": "R5",
+  "r5_exact_head_run": {
+    "run_id": 36065094697,
+    "head_sha": "79306e0c11743681e0f0f395e824185bb5e9a783",
+    "smoke": {
+      "status": "failed",
+      "reason": "smoke_process_exit",
+      "exit_code": 75,
+      "failed_stage": "serialize_validate",
+      "detail": "project JSON string bytes exceed evidence limit because harness max_string_bytes was fixed at 1024 while canonical parser budgets cumulative document strings",
+      "peak_rss_bytes": 1674924032,
+      "artifact": {
+        "id": 10835264665,
+        "sha256": "52f854447ccc1c938231af3c0c3268be1ac6f9d950682c587c6f523a11cc7faa"
+      }
+    },
+    "full": {
+      "status": "resource_limit",
+      "reason": "probe_reported_confirmed_allocation_failure",
+      "exit_code": 75,
+      "failed_stage": "build",
+      "detail": "try_reserve_exact for the 24,502,036-placement vector returned allocator error before corpus construction",
+      "peak_rss_bytes": 3543040,
+      "artifact": {
+        "id": 10836325885,
+        "sha256": "5e8f28d17b25dd2d453431c4e45988c632645c93ea56afe326155d2d82dd7eb0"
+      }
+    }
+  },
+  "r6_repair": {
+    "status": "implementation_pending_hosted_requalification",
+    "fix": "scale cumulative document string budget as 512 bytes per synthetic placement plus 4096 bytes fixed allowance; do not change production validators"
+  }
+}
