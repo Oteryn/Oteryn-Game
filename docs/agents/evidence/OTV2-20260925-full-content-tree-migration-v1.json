@@ -1,1 +1,30 @@
-{"admission_main":"2389c6671000b8b0efe341540a62e303e307ad15","generated":{"item_editor_entries":165,"item_records":38157,"item_shards":77,"item_source_bindings":165,"mount_editor_entries":252,"mount_records":252,"mount_shards":1,"mount_source_bindings":252},"invariants":{"canonical_identity_reminted":false,"item_definition_payload":"EXACT_LEGACY_OBJECT_PRESERVED","legacy_worldproject_mutated":false,"mount_declaration_payload":"EXACT_LEGACY_OBJECT_PRESERVED","runtime_switch_authorized":false,"source_numeric_identity_promoted":false},"pr":905,"schema":"OTERYN_FULL_CONTENT_TREE_MIGRATION_EVIDENCE/v1","status":"CANDIDATE_GENERATED_EXACT_ROUNDTRIP_REQUIRED","task":"OTV2-20260925-full-content-tree-migration-v1"}
+{
+  "schema": "OTERYN_FULL_CONTENT_TREE_MIGRATION_EVIDENCE/v1",
+  "status": "CANDIDATE_REPAIRED_EXACT_ROUNDTRIP_REQUIRED",
+  "admission_main": "2389c6671000b8b0efe341540a62e303e307ad15",
+  "task": "OTV2-20260925-full-content-tree-migration-v1",
+  "pr": 905,
+  "generated": {
+    "item_records": 38157,
+    "item_shards": 77,
+    "mount_records": 252,
+    "mount_shards": 1,
+    "item_editor_entries": 165,
+    "mount_editor_entries": 252,
+    "item_source_bindings": 165,
+    "mount_source_bindings": 252
+  },
+  "invariants": {
+    "legacy_worldproject_mutated": false,
+    "runtime_switch_authorized": false,
+    "canonical_identity_reminted": false,
+    "source_numeric_identity_promoted": false,
+    "item_definition_payload": "EXACT_LEGACY_OBJECT_PRESERVED",
+    "mount_declaration_payload": "EXACT_LEGACY_OBJECT_PRESERVED"
+  },
+  "material_repair": {
+    "reason": "Initial validator compared attached source bindings in legacy list order even though successor attachment order is definition-local.",
+    "correction": "Compare editor/binding collections canonically while requiring each attached target to equal the containing definition identity.",
+    "reproducibility": "Migration tool now regenerates shards, imports, family indices, manifest, lock and project controls."
+  }
+}
