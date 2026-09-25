@@ -1,0 +1,1410 @@
+{
+  "schema": "OTERYN_TIBIAWIKI_ITEM_MASTER_FIELD_CENSUS/v1",
+  "status": "FIELD_CENSUS_CLOSED_UNASSIGNED_ZERO",
+  "date": "2026-09-25",
+  "repository": "Oteryn/Oteryn-Game",
+  "admission_main": "2389c6671000b8b0efe341540a62e303e307ad15",
+  "task": "OTV2-20260925-tibiawiki-item-master-schema-v1",
+  "sources": {
+    "infobox_item_source": "https://www.tibiawiki.com.br/index.php?action=edit&title=Predefini%C3%A7%C3%A3o%3AInfobox_Item",
+    "item_navigation_source": "https://www.tibiawiki.com.br/index.php?action=edit&title=Predefini%C3%A7%C3%A3o%3AItens",
+    "oteryn_reference_item": "apps/game-server/src/content/reference_playable.rs",
+    "oteryn_worldproject_v2": "apps/game-server/src/content/project/v2.rs"
+  },
+  "methodology": {
+    "template_source_visibility": "TibiaWiki protected edit-source page states the source may be viewed/copied; census records parameter names and structural meaning only, not copied prose/content bodies.",
+    "parameter_scope": "All parameters observed in the current top-level Infobox Item source, including render controls.",
+    "family_scope": "All 50 current families linked from the top-level Predefinição:Itens navigation surface.",
+    "authority": "Wiki values are source/reference observations. Existing Oteryn typed owners remain authoritative; candidate-only gaps do not become executable by presence."
+  },
+  "summary": {
+    "template_parameters": 71,
+    "content_parameters": 67,
+    "template_control_parameters": 4,
+    "navigation_families": 50,
+    "family_profiles": 22,
+    "unassigned_fields": 0,
+    "unassigned_families": 0
+  },
+  "field_mappings": [
+    {
+      "source_parameter": "GetValue",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "value_shape": "string",
+      "existing_owner": false,
+      "notes": "MediaWiki render/query control; never content."
+    },
+    {
+      "source_parameter": "List",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "value_shape": "string",
+      "existing_owner": false,
+      "notes": "MediaWiki list renderer selector; never content."
+    },
+    {
+      "source_parameter": "DropList",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "value_shape": "string",
+      "existing_owner": false,
+      "notes": "MediaWiki drop-list rendering control; never content."
+    },
+    {
+      "source_parameter": "hidetemplate",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "value_shape": "boolean-ish",
+      "existing_owner": false,
+      "notes": "MediaWiki presentation control; never content."
+    },
+    {
+      "source_parameter": "name",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "identity.name",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Canonical display name; canonical Oteryn id remains separate and stable."
+    },
+    {
+      "source_parameter": "mana",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "use.mana_cost",
+      "value_shape": "integer-or-source-text",
+      "existing_owner": true,
+      "notes": "Item use/cast mana observation; execution remains Ability/Interaction-owned."
+    },
+    {
+      "source_parameter": "skillboost",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.skill_boost",
+      "value_shape": "typed modifier list",
+      "existing_owner": true,
+      "notes": "Parse into Reference skill modifiers; preserve original observation on parse ambiguity."
+    },
+    {
+      "source_parameter": "resist",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "protection.resistances",
+      "value_shape": "typed resistance list",
+      "existing_owner": true,
+      "notes": "Parse exact resistance kinds/percentages; no free-text runtime authority."
+    },
+    {
+      "source_parameter": "modificadores",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.misc",
+      "value_shape": "typed modifier list",
+      "existing_owner": true,
+      "notes": "Critical/leech/reflect/shield/perfect-shot and other supported typed modifiers."
+    },
+    {
+      "source_parameter": "volume",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "container.capacity",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Container direct capacity/volume."
+    },
+    {
+      "source_parameter": "armor",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "protection.armor",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Armor points."
+    },
+    {
+      "source_parameter": "attack",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.attack",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Weapon attack."
+    },
+    {
+      "source_parameter": "elementattack",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.elemental_attack",
+      "value_shape": "typed elemental attack",
+      "existing_owner": true,
+      "notes": "Element + points."
+    },
+    {
+      "source_parameter": "range",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.range_cells",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Attack/use range in cells."
+    },
+    {
+      "source_parameter": "hit",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.hit_chance",
+      "value_shape": "exact percent",
+      "existing_owner": true,
+      "notes": "Hit chance; preserve exact rational representation."
+    },
+    {
+      "source_parameter": "defense",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.defense",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Weapon/shield defense."
+    },
+    {
+      "source_parameter": "defensemod",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.extra_defense",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Extra defense modifier."
+    },
+    {
+      "source_parameter": "charges",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "charges.count",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Definition charge count/capability, not mutable current instance charge state."
+    },
+    {
+      "source_parameter": "mantra",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.mantra",
+      "value_shape": "typed modifier",
+      "existing_owner": true,
+      "notes": "Monk/Mantra modifier source fact."
+    },
+    {
+      "source_parameter": "vocrequired",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "requirements.vocations",
+      "value_shape": "string-list",
+      "existing_owner": true,
+      "notes": "Equip/use vocation requirements; family profile selects use vs equip context."
+    },
+    {
+      "source_parameter": "levelrequired",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "requirements.min_level",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Equip/use minimum level; family profile selects context."
+    },
+    {
+      "source_parameter": "augments",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.augments",
+      "value_shape": "typed augment list",
+      "existing_owner": true,
+      "notes": "Source authoring; execution owner remains Ability/Effect/Progression as applicable."
+    },
+    {
+      "source_parameter": "imbuement",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "imbuement.slot_count",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Imbuement slot count."
+    },
+    {
+      "source_parameter": "classificacao",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "forge.classification",
+      "value_shape": "integer enum",
+      "existing_owner": true,
+      "notes": "Exaltation Forge class; max tier is derived by the source rule and retained explicitly."
+    },
+    {
+      "source_parameter": "weight",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "physical.weight",
+      "value_shape": "exact decimal + unit oz",
+      "existing_owner": true,
+      "notes": "Preserve exact source decimal and normalize deterministically for runtime."
+    },
+    {
+      "source_parameter": "elemental_bond",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.elemental_bond",
+      "value_shape": "typed element/bond",
+      "existing_owner": true,
+      "notes": "Monk Elemental Bond item modifier."
+    },
+    {
+      "source_parameter": "flavortext",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "presentation.flavor_text",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Player-facing flavour/description text; not identity."
+    },
+    {
+      "source_parameter": "attrib",
+      "disposition": "SOURCE_TEXT_PRESERVE_AND_PARSE",
+      "canonical_path": "source_observations.attributes_text",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Losslessly retain; promote recognised light/use/sleep/transform/etc facts into typed capabilities."
+    },
+    {
+      "source_parameter": "hands",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "equipment.hands",
+      "value_shape": "enum",
+      "existing_owner": true,
+      "notes": "One/two-hand occupancy source fact."
+    },
+    {
+      "source_parameter": "enchantable",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "lifecycle.enchantable",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Static definition capability."
+    },
+    {
+      "source_parameter": "enchanted",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "lifecycle.enchanted_variant",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Static/source variant marker; current instance enchant state remains durability-owned."
+    },
+    {
+      "source_parameter": "stackable",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "stack.stackable",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Stack capability."
+    },
+    {
+      "source_parameter": "duration",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "temporal.duration",
+      "value_shape": "exact duration",
+      "existing_owner": true,
+      "notes": "Definition duration; mutable deadline/budget is runtime/durability state."
+    },
+    {
+      "source_parameter": "damagetype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "use.damage_type",
+      "value_shape": "enum-or-source-text",
+      "existing_owner": true,
+      "notes": "Wand/rod/rune-like use observation; executable damage remains Ability/Effect-owned."
+    },
+    {
+      "source_parameter": "damage",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "use.damage",
+      "value_shape": "integer/range/source-text",
+      "existing_owner": true,
+      "notes": "Source-only use damage observation until bound to Ability/Effect."
+    },
+    {
+      "source_parameter": "destructible",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "lifecycle.destructible",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Static destructibility capability."
+    },
+    {
+      "source_parameter": "writable",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "readable.writable",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Definition permits writing; mutable player-written body is ItemInstance state."
+    },
+    {
+      "source_parameter": "readable",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "readable.readable",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Definition permits reading."
+    },
+    {
+      "source_parameter": "edible",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "consumable.edible",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Food/consumable static capability."
+    },
+    {
+      "source_parameter": "sounds",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "presentation.sounds",
+      "value_shape": "string-list",
+      "existing_owner": true,
+      "notes": "Presentation/audio observations; no gameplay authority."
+    },
+    {
+      "source_parameter": "droppedby",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.loot.creatures",
+      "value_shape": "definition refs",
+      "existing_owner": true,
+      "notes": "Reverse discovery only; canonical relation is Creature/Loot -> Item."
+    },
+    {
+      "source_parameter": "droppedRaidby",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.loot.raids",
+      "value_shape": "encounter refs",
+      "existing_owner": true,
+      "notes": "Reverse discovery only; canonical relation is Encounter/Loot -> Item."
+    },
+    {
+      "source_parameter": "droppedEventby",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.loot.events",
+      "value_shape": "encounter refs",
+      "existing_owner": true,
+      "notes": "Reverse discovery only; canonical relation is Encounter/Loot -> Item."
+    },
+    {
+      "source_parameter": "taskitem",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.delivery_tasks",
+      "value_shape": "task refs",
+      "existing_owner": true,
+      "notes": "Task membership/reward relation; not Item intrinsic state."
+    },
+    {
+      "source_parameter": "implemented",
+      "disposition": "PROVENANCE",
+      "canonical_path": "provenance.implemented_version",
+      "value_shape": "version string",
+      "existing_owner": true,
+      "notes": "Source lifecycle metadata; does not determine gameplay identity."
+    },
+    {
+      "source_parameter": "removed",
+      "disposition": "PROVENANCE",
+      "canonical_path": "provenance.removed_version",
+      "value_shape": "version string",
+      "existing_owner": true,
+      "notes": "Source lifecycle metadata; does not determine gameplay identity."
+    },
+    {
+      "source_parameter": "mercado",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "trade.marketable",
+      "value_shape": "boolean",
+      "existing_owner": true,
+      "notes": "Marketability policy source fact; actual market transactions are Economy-owned."
+    },
+    {
+      "source_parameter": "notes",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "editor.notes",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Editor/source notes; never direct gameplay authority."
+    },
+    {
+      "source_parameter": "perk1",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[1]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "perk2",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[2]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "perk3",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[3]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "perk4",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[4]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "perk5",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[5]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "perk6",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[6]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "perk7",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[7]",
+      "value_shape": "typed perk declaration",
+      "existing_owner": true,
+      "notes": "Weapon Proficiency level/perk source."
+    },
+    {
+      "source_parameter": "regenseconds",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "consumable.regeneration_seconds",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Food regeneration source duration."
+    },
+    {
+      "source_parameter": "dromevalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "economy.drome_points",
+      "value_shape": "integer",
+      "existing_owner": false,
+      "notes": "Owned by Drome/economy rules; do not make intrinsic Item value."
+    },
+    {
+      "source_parameter": "htaskvalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "economy.hunting_task_points",
+      "value_shape": "integer",
+      "existing_owner": false,
+      "notes": "Owned by task/economy rules; do not make intrinsic Item value."
+    },
+    {
+      "source_parameter": "storevalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "platform.store_tibia_coins",
+      "value_shape": "integer",
+      "existing_owner": false,
+      "notes": "Commercial entitlement/store price; Platform/commercial owner."
+    },
+    {
+      "source_parameter": "tournamentvalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "legacy.tournament_coins",
+      "value_shape": "integer",
+      "existing_owner": false,
+      "notes": "Historical/external economy metadata."
+    },
+    {
+      "source_parameter": "buyfrom",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.sold_by",
+      "value_shape": "npc/service refs",
+      "existing_owner": true,
+      "notes": "Canonical relation is NPC Service -> Item offer."
+    },
+    {
+      "source_parameter": "sellto",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.bought_by",
+      "value_shape": "npc/service refs",
+      "existing_owner": true,
+      "notes": "Canonical relation is NPC Service -> Item offer."
+    },
+    {
+      "source_parameter": "primarytype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.primary",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Source/editor taxonomy, not canonical identity."
+    },
+    {
+      "source_parameter": "secondarytype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.secondary",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Source/editor taxonomy, not canonical identity."
+    },
+    {
+      "source_parameter": "tertiarytype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.tertiary",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Source/editor taxonomy, not canonical identity."
+    },
+    {
+      "source_parameter": "itemclass",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.item_class",
+      "value_shape": "string",
+      "existing_owner": true,
+      "notes": "Top-level source/editor taxonomy."
+    },
+    {
+      "source_parameter": "type",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.weapon_type",
+      "value_shape": "enum-or-source-text",
+      "existing_owner": true,
+      "notes": "Weapon subtype where applicable."
+    },
+    {
+      "source_parameter": "writechars",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "readable.max_characters",
+      "value_shape": "integer",
+      "existing_owner": true,
+      "notes": "Maximum authored text length when writing is allowed."
+    },
+    {
+      "source_parameter": "value",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "editor.estimated_value",
+      "value_shape": "source value/text",
+      "existing_owner": true,
+      "notes": "Community/estimated value; not authoritative economy value."
+    },
+    {
+      "source_parameter": "npcvalue",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.npc_buys_for",
+      "value_shape": "currency amount",
+      "existing_owner": true,
+      "notes": "Price when NPC buys from player; canonical Service offer."
+    },
+    {
+      "source_parameter": "npcprice",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.npc_sells_for",
+      "value_shape": "currency amount",
+      "existing_owner": true,
+      "notes": "Price when NPC sells to player; canonical Service offer."
+    }
+  ],
+  "canonical_master_schema": {
+    "identity": [
+      "id",
+      "name",
+      "aliases"
+    ],
+    "presentation": [
+      "flavor_text",
+      "sounds",
+      "variants"
+    ],
+    "taxonomy": [
+      "item_class",
+      "primary",
+      "secondary",
+      "tertiary",
+      "tags"
+    ],
+    "physical": [
+      "weight",
+      "movable",
+      "pickupable"
+    ],
+    "stack": [
+      "stackable",
+      "max_count"
+    ],
+    "requirements": [
+      "min_level",
+      "vocations",
+      "context"
+    ],
+    "equipment": [
+      "slot",
+      "hands",
+      "reserved_slots",
+      "groups"
+    ],
+    "weapon": [
+      "weapon_type",
+      "ammunition",
+      "attack",
+      "defense",
+      "extra_defense",
+      "range_cells",
+      "hit_chance",
+      "max_hit_chance",
+      "elemental_attack"
+    ],
+    "protection": [
+      "armor",
+      "resistances"
+    ],
+    "modifiers": [
+      "skill_boost",
+      "mantra",
+      "elemental_bond",
+      "misc"
+    ],
+    "charges": [
+      "count"
+    ],
+    "temporal": [
+      "duration",
+      "consumption_mode",
+      "decay_target"
+    ],
+    "container": [
+      "capacity"
+    ],
+    "imbuement": [
+      "slot_count",
+      "allowed_family_tiers",
+      "excluded_families"
+    ],
+    "forge": [
+      "classification",
+      "max_tier"
+    ],
+    "proficiency": [
+      "levels",
+      "perks",
+      "shaping",
+      "augments"
+    ],
+    "consumable": [
+      "edible",
+      "regeneration_seconds"
+    ],
+    "fluid": [
+      "fluid_type"
+    ],
+    "readable": [
+      "readable",
+      "writable",
+      "max_characters",
+      "document_binding"
+    ],
+    "light": [
+      "emits",
+      "color",
+      "intensity",
+      "radius",
+      "when_equipped",
+      "toggleable"
+    ],
+    "bed": [
+      "sleepable"
+    ],
+    "use": [
+      "usable",
+      "use_with",
+      "interactions",
+      "ability",
+      "damage",
+      "damage_type",
+      "mana_cost"
+    ],
+    "lifecycle": [
+      "enchantable",
+      "enchanted_variant",
+      "destructible",
+      "transforms"
+    ],
+    "trade": [
+      "marketable"
+    ],
+    "source_observations": [
+      "attributes_text"
+    ],
+    "editor": [
+      "notes",
+      "estimated_value"
+    ]
+  },
+  "attrib_promotion_candidates": [
+    {
+      "concept": "light emission",
+      "target": [
+        "light.emits",
+        "light.color",
+        "light.intensity",
+        "light.radius",
+        "light.when_equipped"
+      ],
+      "evidence_note": "Current light-source pages commonly express light only in attrib prose."
+    },
+    {
+      "concept": "usable/use-with",
+      "target": [
+        "use.usable",
+        "use.use_with",
+        "use.interactions"
+      ],
+      "evidence_note": "Wiki attrib commonly states that an item can be used."
+    },
+    {
+      "concept": "sleepable bed",
+      "target": [
+        "bed.sleepable",
+        "use.interactions"
+      ],
+      "evidence_note": "Bed/furniture attributes may state that players can sleep/use the object."
+    },
+    {
+      "concept": "toggleable light/object",
+      "target": [
+        "light.toggleable",
+        "use.interactions"
+      ],
+      "evidence_note": "Some lamps explicitly toggle on/off."
+    },
+    {
+      "concept": "presentation variant",
+      "target": [
+        "presentation.variants",
+        "lifecycle.transforms"
+      ],
+      "evidence_note": "Some objects change appearance or have alternate versions."
+    },
+    {
+      "concept": "teleport/transition",
+      "target": [
+        "use.interactions"
+      ],
+      "evidence_note": "Teleport effects belong to Interaction/Transition owners, not raw Item text."
+    },
+    {
+      "concept": "redundant typed fact",
+      "target": [
+        "stack.stackable",
+        "equipment.hands",
+        "lifecycle.enchantable",
+        "lifecycle.destructible",
+        "readable.readable",
+        "readable.writable",
+        "temporal.duration"
+      ],
+      "evidence_note": "Infobox prose may repeat dedicated parameters; typed parameter wins only after consistency validation."
+    }
+  ],
+  "source_text_policy": {
+    "attributes_text": "Always retain the exact bounded source observation until every meaningful clause is either promoted or explicitly editor-only; never execute raw text.",
+    "notes": "Retain as editor/source notes only; extract relationships or typed facts into their owners when independently qualified.",
+    "no_source_id_in_gameplay": "MediaWiki page ids/revisions and legacy/XML numeric ids remain importer/provenance coordinates only; gameplay content uses stable Oteryn identity."
+  },
+  "reverse_relationship_policy": {
+    "droppedby": "Creature/Loot -> Item",
+    "droppedRaidby": "Encounter/Loot -> Item",
+    "droppedEventby": "Encounter/Loot -> Item",
+    "buyfrom": "NPC Service -> Item offer",
+    "sellto": "NPC Service -> Item offer",
+    "npcprice": "NPC Service sell-to-player price",
+    "npcvalue": "NPC Service buy-from-player price",
+    "taskitem": "Task/Objective -> Item relation"
+  },
+  "external_value_policy": {
+    "dromevalue": "Drome/economy owner",
+    "htaskvalue": "Hunting task/economy owner",
+    "storevalue": "Platform/commercial owner",
+    "tournamentvalue": "Historical/external economy",
+    "value": "Editor/community estimate only"
+  },
+  "navigation_families": [
+    "Capacetes",
+    "Botas",
+    "Armaduras",
+    "Escudos",
+    "Calças",
+    "Spellbooks",
+    "Aljavas",
+    "Extra Slot",
+    "Machados",
+    "Distância",
+    "Clavas",
+    "Espadas",
+    "Wands",
+    "Rods",
+    "Munição",
+    "Punhos",
+    "Antigas Wands e Rods",
+    "Réplicas de Armas",
+    "Livros",
+    "Recipientes",
+    "Prêmios de Eventos",
+    "Decorações",
+    "Documentos e Papéis",
+    "Dolls e Bears",
+    "Troféus",
+    "Instrumentos Musicais",
+    "Itens de Fansites",
+    "Runas de Decoração",
+    "Itens de Addons",
+    "Itens de Imbuements",
+    "Itens Encantados",
+    "Jogos e Diversão",
+    "Itens de Quest",
+    "Itens de Festa",
+    "Cristais (Itens)",
+    "Valiosos",
+    "Delivery Tasks",
+    "Runas",
+    "Lixos",
+    "Amuletos e Colares",
+    "Anéis",
+    "Chaves",
+    "Fontes de Luz",
+    "Ferramentas",
+    "Ferramentas de Cozinha",
+    "Itens de Domar",
+    "Produtos de Criaturas",
+    "Comidas",
+    "Líquidos",
+    "Plantas e Ervas"
+  ],
+  "family_profiles": [
+    {
+      "profile_id": "equipment_armor",
+      "navigation_families": [
+        "Capacetes",
+        "Botas",
+        "Armaduras",
+        "Calças"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Armor/body equipment; special items may also emit light, carry duration/charges or use interactions."
+    },
+    {
+      "profile_id": "equipment_offhand",
+      "navigation_families": [
+        "Escudos",
+        "Spellbooks",
+        "Extra Slot",
+        "Amuletos e Colares",
+        "Anéis"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "charges",
+        "temporal",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Offhand/accessory equipment is capability-composed; ring/amulet duration and charges are optional."
+    },
+    {
+      "profile_id": "container_equipment",
+      "navigation_families": [
+        "Aljavas"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "container",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Quiver/container equipment."
+    },
+    {
+      "profile_id": "weapon_melee",
+      "navigation_families": [
+        "Machados",
+        "Clavas",
+        "Espadas",
+        "Punhos",
+        "Réplicas de Armas"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "proficiency",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Melee/fist weapons; light/use/lifecycle capabilities may coexist."
+    },
+    {
+      "profile_id": "weapon_distance",
+      "navigation_families": [
+        "Distância",
+        "Munição"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "stack",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Distance weapons and ammunition; profile remains permissive because ammunition and launchers differ."
+    },
+    {
+      "profile_id": "weapon_magic",
+      "navigation_families": [
+        "Wands",
+        "Rods",
+        "Antigas Wands e Rods"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "equipment",
+        "weapon",
+        "use",
+        "requirements",
+        "modifiers",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Wand/rod damage and mana facts lower only through owned Ability/Effect execution."
+    },
+    {
+      "profile_id": "rune",
+      "navigation_families": [
+        "Runas",
+        "Runas de Decoração"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "charges",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Gameplay runes use Item+Ability+Interaction; decorative runes may carry presentation only."
+    },
+    {
+      "profile_id": "document",
+      "navigation_families": [
+        "Livros",
+        "Documentos e Papéis"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "readable",
+        "presentation",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Static readable body/metadata is authoring; player-written mutable body stays ItemInstance/durability."
+    },
+    {
+      "profile_id": "container",
+      "navigation_families": [
+        "Recipientes"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "container",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Generic backpacks/bags/containers; liquid containers can additionally use fluid."
+    },
+    {
+      "profile_id": "decoration",
+      "navigation_families": [
+        "Decorações",
+        "Dolls e Bears",
+        "Troféus",
+        "Instrumentos Musicais",
+        "Jogos e Diversão"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "presentation",
+        "use",
+        "light",
+        "lifecycle",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Decoration may be usable, sound-producing, light-emitting or transforming."
+    },
+    {
+      "profile_id": "event_collectible",
+      "navigation_families": [
+        "Prêmios de Eventos",
+        "Itens de Fansites",
+        "Itens de Festa"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "presentation",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Collectibles; no special gameplay semantics inferred from category alone."
+    },
+    {
+      "profile_id": "progression_material",
+      "navigation_families": [
+        "Itens de Addons",
+        "Itens de Imbuements",
+        "Delivery Tasks"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "use",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Material/task relations live with the consuming system, not as free-form Item behavior."
+    },
+    {
+      "profile_id": "transformation_item",
+      "navigation_families": [
+        "Itens Encantados"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "lifecycle",
+        "use",
+        "temporal",
+        "charges",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Static transformation/enchantment authoring only; mutable instance state stays durability-owned."
+    },
+    {
+      "profile_id": "quest_item",
+      "navigation_families": [
+        "Itens de Quest"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "use",
+        "readable",
+        "container",
+        "fluid",
+        "light",
+        "lifecycle",
+        "presentation"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Quest items are intentionally broad; quest category alone never invents semantics."
+    },
+    {
+      "profile_id": "material_valuable",
+      "navigation_families": [
+        "Cristais (Itens)",
+        "Valiosos",
+        "Produtos de Criaturas"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Materials/valuables; loot and NPC price are relationships."
+    },
+    {
+      "profile_id": "trash",
+      "navigation_families": [
+        "Lixos"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "use"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Discardable/trash classification does not itself define value or destruction policy."
+    },
+    {
+      "profile_id": "key",
+      "navigation_families": [
+        "Chaves"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "use"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Keys bind to Interaction/lock semantics, never numeric source IDs as identity."
+    },
+    {
+      "profile_id": "light_source",
+      "navigation_families": [
+        "Fontes de Luz"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "light",
+        "use",
+        "temporal",
+        "lifecycle",
+        "presentation"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Light semantics may be embedded in Wiki attrib text; retain raw source and promote typed emission/color/toggle/duration when evidenced."
+    },
+    {
+      "profile_id": "tool",
+      "navigation_families": [
+        "Ferramentas",
+        "Ferramentas de Cozinha",
+        "Itens de Domar"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "use",
+        "charges",
+        "temporal",
+        "lifecycle",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Tools/taming items route effects through typed Interaction/Ability relations."
+    },
+    {
+      "profile_id": "food",
+      "navigation_families": [
+        "Comidas"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Food uses edible/regeneration facts."
+    },
+    {
+      "profile_id": "fluid",
+      "navigation_families": [
+        "Líquidos"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "fluid",
+        "use",
+        "requirements",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Fluid/potion semantics may bind Ability/Effect; liquid-container behavior remains typed."
+    },
+    {
+      "profile_id": "plant",
+      "navigation_families": [
+        "Plantas e Ervas"
+      ],
+      "required_core": [
+        "identity.id",
+        "identity.name",
+        "taxonomy"
+      ],
+      "expected_capabilities": [
+        "physical",
+        "stack",
+        "consumable",
+        "use",
+        "trade"
+      ],
+      "additional_capabilities_allowed": true,
+      "notes": "Plants/herbs may be materials or consumables."
+    }
+  ],
+  "family_assignments": {
+    "Capacetes": "equipment_armor",
+    "Botas": "equipment_armor",
+    "Armaduras": "equipment_armor",
+    "Escudos": "equipment_offhand",
+    "Calças": "equipment_armor",
+    "Spellbooks": "equipment_offhand",
+    "Aljavas": "container_equipment",
+    "Extra Slot": "equipment_offhand",
+    "Machados": "weapon_melee",
+    "Distância": "weapon_distance",
+    "Clavas": "weapon_melee",
+    "Espadas": "weapon_melee",
+    "Wands": "weapon_magic",
+    "Rods": "weapon_magic",
+    "Munição": "weapon_distance",
+    "Punhos": "weapon_melee",
+    "Antigas Wands e Rods": "weapon_magic",
+    "Réplicas de Armas": "weapon_melee",
+    "Livros": "document",
+    "Recipientes": "container",
+    "Prêmios de Eventos": "event_collectible",
+    "Decorações": "decoration",
+    "Documentos e Papéis": "document",
+    "Dolls e Bears": "decoration",
+    "Troféus": "decoration",
+    "Instrumentos Musicais": "decoration",
+    "Itens de Fansites": "event_collectible",
+    "Runas de Decoração": "rune",
+    "Itens de Addons": "progression_material",
+    "Itens de Imbuements": "progression_material",
+    "Itens Encantados": "transformation_item",
+    "Jogos e Diversão": "decoration",
+    "Itens de Quest": "quest_item",
+    "Itens de Festa": "event_collectible",
+    "Cristais (Itens)": "material_valuable",
+    "Valiosos": "material_valuable",
+    "Delivery Tasks": "progression_material",
+    "Runas": "rune",
+    "Lixos": "trash",
+    "Amuletos e Colares": "equipment_offhand",
+    "Anéis": "equipment_offhand",
+    "Chaves": "key",
+    "Fontes de Luz": "light_source",
+    "Ferramentas": "tool",
+    "Ferramentas de Cozinha": "tool",
+    "Itens de Domar": "tool",
+    "Produtos de Criaturas": "material_valuable",
+    "Comidas": "food",
+    "Líquidos": "fluid",
+    "Plantas e Ervas": "plant"
+  },
+  "known_authoring_gaps_vs_current_executable_item": [
+    "typed light emission/color/toggle/equipped-state authoring",
+    "sleepable-bed authoring",
+    "explicit generic usable/use-with authoring separate from raw attrib prose",
+    "presentation variant authoring for transformable/decorative objects"
+  ],
+  "completion_invariant": "Every current top-level Infobox Item parameter and every current top-level Item navigation family has one explicit disposition/profile; unknown gameplay truth may remain unknown, but schema ownership may not remain unassigned."
+}
