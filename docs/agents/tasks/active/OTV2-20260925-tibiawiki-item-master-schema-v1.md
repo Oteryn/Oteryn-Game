@@ -8,6 +8,7 @@ base_branch: main
 branch: agent/tibiawiki-item-master-schema-v1-20260925
 base_sha: 2389c6671000b8b0efe341540a62e303e307ad15
 issue: 162
+pr: 903
 jira: KAN-16
 allocation_comment: 5834862904
 created_at: 2026-09-25T17:08:00+02:00
@@ -81,3 +82,6 @@ non-contract lifecycle enums. The task metadata is corrected only to
 `mode: CONTRACT` and `status: validating`, both declared by
 `docs/agents/GOVERNANCE_CONTRACT.json`. No product/schema/evidence/validator bytes
 are changed by this repair.
+
+The canonical PR is now bound as `pr: 903`, satisfying the governance requirement for
+a validating active task packet. No non-task file changes accompany this metadata repair.
