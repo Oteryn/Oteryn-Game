@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         361,
-        "0b2f2af319943dfef97a419beb8707ab22c8070ee7d32f6baf2b82933a2859b1",
+        "e77b77eb2fce2c7612b3359f7e383bafec892006513bf98f0bf6649a4579bd00",
     ),
     (
         "definitions/declarations.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1_929,
-        "ce7499a52cd88b9446cc025b15da14bd9c05ff6e401fc018a503782cfeb3ba66",
+        "38b68c904d00f48ccb845c38ddb44fadb3fb077d5c60b2f0d1f967b52ae9e134",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         389,
-        "fe42185c151ebd2cc3884866755f9e0c8365e5aa4b627e898fc53bb1aafdcc85",
+        "3419da94198b562092fe8d3ff09776d1ee5cb99c8a3502317eba0600dd37e88e",
     ),
     (
         "provenance/imports.json",
-        2_044,
-        "1c2da1de7540e5a2222783d4cbb2ea53a61b16c6bd075fd2b12c5a107578a2c1",
+        2_048,
+        "eb2321e2dd7659f220dfda179ded293a7980dd255f3b961f5f2dd10f48a4bcb9",
     ),
     (
         "provenance/sources.json",
@@ -65,7 +65,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
         "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa",
     ),
 ];
-const TREE_SHA256: &str = "683b7957001f77c234f6c327e58c6c19c828255086e26ede6dbeeff038416dd0";
+const TREE_SHA256: &str = "f2d779a0abe89a1442e5a85af1aed24e55e581e9d7e4985c47a2ca9a70fa73e2";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
