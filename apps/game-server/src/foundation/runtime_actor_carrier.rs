@@ -1,7 +1,9 @@
 //! Fixed-bound, pre-production-only Channel actor storage.
 //!
-//! This module is intentionally private and uncomposed. In particular, it does
-//! not issue the continuity authority required to create a carrier.
+//! The module stays crate-private. Its only continuity grant is derived by
+//! `ChannelRuntimeV1::from_committed_assignment` from the committed Channel
+//! assignment that `serve` consumes before readiness; one runtime per
+//! ownership generation is enforced by that composition, not by this module.
 
 use super::{ChannelId, GameSessionId, NodeId, ScopeOwnershipGeneration, WorldId};
 use std::mem::size_of;

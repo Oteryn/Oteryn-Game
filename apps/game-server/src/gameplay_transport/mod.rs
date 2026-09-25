@@ -459,6 +459,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         self.rollback_runtime_player(reservation).await?;
                         return Err(refusal);
                     }
+                    ReconciliationDisposition::DurableNotOwned => {
+                        // The GameSession is durable but no longer owned by
+                        // this socket; that does not prove it terminal. Keep
+                        // its slot reserved rather than free durable capacity.
+                        return Err(Rejected);
+                    }
                     ReconciliationDisposition::Unknown => {
                         // Fail closed. Do not fabricate actor authority and do not
                         // free a slot whose GameSession may already be durable.
@@ -493,7 +499,10 @@ const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReconciliationDisposition {
     Committed,
+    /// Proven noncommit: the reservation may be rolled back.
     DefinitelyNotCurrent(AdmissionRefusal),
+    /// Committed, but this socket no longer owns the session.
+    DurableNotOwned,
     Unknown,
 }
 
@@ -548,9 +557,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Committed proves the exact current session belongs to this socket.
-    /// Absent/conflict or a committed receipt whose session is already no
-    /// longer current are definitive and allow reservation rollback. Repeated
-    /// read failures remain unknown.
+    /// Only absent/conflict prove noncommit and allow reservation rollback. A
+    /// committed receipt whose session this socket no longer owns is durable,
+    /// so its reservation is kept. Repeated read failures remain unknown.
     async fn reconcile(
         &self,
         request: &FreshAdmissionCommitRequestV1,
@@ -571,7 +580,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ) {
                         ReconciliationDisposition::Committed
                     } else {
-                        ReconciliationDisposition::DefinitelyNotCurrent(AdmissionRefusal::Rejected)
+                        ReconciliationDisposition::DurableNotOwned
                     };
                 }
                 Ok(FreshReconciliation::Absent) => {
