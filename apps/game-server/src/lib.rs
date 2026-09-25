@@ -5,6 +5,9 @@
 
 extern crate self as oteryn_game_server;
 
+#[allow(dead_code)]
+mod ability;
+
 pub mod character_bootstrap_intent;
 pub mod character_recovery_fence;
 pub mod content;
