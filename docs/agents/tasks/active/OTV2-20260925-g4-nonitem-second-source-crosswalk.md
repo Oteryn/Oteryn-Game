@@ -4,13 +4,13 @@
 task_id: OTV2-20260925-g4-nonitem-second-source-crosswalk
 title: G4 Non-Item second-source crosswalk
 mode: IMPLEMENT
-status: implementing
+status: authoring
 repository: Oteryn/Oteryn-Game
 base: main
 base_branch: main
 branch: agent/otv2-g4-nonitem-second-source-crosswalk
 issue: 162
-pr: null
+pr: 882
 base_sha: bfc8b54548a09c59e062873a5dfa48739c477420
 head_sha: null
 final_head_sha: null
@@ -42,6 +42,10 @@ The amended stop condition is explicit: if the hosted Fandom API or license/abou
 - No title-only exact match; no canonical identity, ProductionKey, source binding, definition population, presentation identity or semantic field promotion.
 - If the preflight blocks, all second-source statuses stay `UNKNOWN`; no source family absence is inferred.
 
+## Requalification amendment
+
+The first hosted candidate (head `dbfe50d6f2df120dd3d3e9243673e8fdd86e967c`, PR #882) produced a valid fail-closed `SOURCE_UNAVAILABLE` artifact, but independent review found that the accessible revision loop deleted a local variable it did not own and that HTTP 200 alone was treated as license verification. The amendment fixes the capture loop, checks explicit CC BY-SA and attribution markers in bounded project/site terms content, enforces same-origin final URLs after redirects, and verifies MediaWiki's base-36 revision SHA-1 against the captured UTF-8 bytes. New synthetic coverage exercises full accessible family capture and positive/negative paths for terms, redirect origin, and revision digest. The hosted result below is historical only; requalification remains pending.
+
 ## Validation
 
-The local synthetic self-test covers continuation/repeated-token handling, independent-source qualification, duplicate-title collisions, alias/non-title-only behavior, exact revision SHA-1/timestamp validation, unsupported Ability shapes, and title-only rejection. The hosted workflow verifies the exact #875 cohort, runs the endpoint/terms preflight once, applies the bounded capture if accessible, validates source-unavailable evidence if blocked, and uploads only compact artifacts. No hosted capture or source availability is asserted before the exact candidate run.
+The local synthetic self-test covers continuation/repeated-token handling, independent-source qualification, duplicate-title collisions, alias/non-title-only behavior, exact revision SHA-1/timestamp validation, unsupported Ability shapes, title-only rejection, a full synthetic accessible-family capture, explicit terms-marker positive/negative cases, redirect-origin positive/negative cases, and revision-SHA1 mismatch rejection. The hosted workflow verifies the exact #875 cohort, runs the endpoint/terms preflight once, applies the bounded capture if accessible, validates source-unavailable evidence if blocked, and uploads only compact artifacts. The prior hosted attempt found Fandom siteinfo/help/enumeration HTTP 200 but About/licensing HTTP 403; official Tibia public library receipts were HTTP 403. It correctly emitted all-family `UNKNOWN` statuses. This amendment is pending exact-head hosted requalification.
