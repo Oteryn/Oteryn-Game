@@ -17,8 +17,8 @@
       "defense": 5,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 51,
-        "denominator": 100
+        "numerator": 4,
+        "denominator": 5
       }
     },
     "resistances": [
@@ -229,6 +229,17 @@
       {
         "item": {
           "family": "Item",
+          "key": "canary:item/3081",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.0604,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
           "key": "canary:item/3049",
           "revision": "canary-47dfd51f"
         },
@@ -245,7 +256,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 0.86,
+        "probability_percent": 0.9656,
         "skip_later_same_item_after_success": false
       },
       {
@@ -256,18 +267,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 1.31,
-        "skip_later_same_item_after_success": false
-      },
-      {
-        "item": {
-          "family": "Item",
-          "key": "canary:item/9690",
-          "revision": "canary-47dfd51f"
-        },
-        "min_count": 1,
-        "max_count": 1,
-        "probability_percent": 1.87,
+        "probability_percent": 1.1768,
         "skip_later_same_item_after_success": false
       },
       {
@@ -278,7 +278,18 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 1.94,
+        "probability_percent": 1.6295,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/9690",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.9916,
         "skip_later_same_item_after_success": false
       },
       {
@@ -289,7 +300,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 7.002,
+        "probability_percent": 7.4532,
         "skip_later_same_item_after_success": false
       },
       {
@@ -300,7 +311,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 8.8,
+        "probability_percent": 10.35,
         "skip_later_same_item_after_success": false
       },
       {
@@ -311,7 +322,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 10.61,
+        "probability_percent": 10.7423,
         "skip_later_same_item_after_success": false
       },
       {
@@ -322,7 +333,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 14.4,
+        "probability_percent": 14.7254,
         "skip_later_same_item_after_success": false
       }
     ]

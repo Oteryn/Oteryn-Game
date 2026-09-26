@@ -1,0 +1,5302 @@
+{
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "resolution_rule": "Monsters::deserializeSpell -> Spells::getSpellByName: rune spells, then instant spells, case-insensitive, before built-in kinds",
+  "monster_files_scanned": 1656,
+  "monster_files_unreadable": [
+    {
+      "file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "error": "[string \"<python>\"]:132: attempt to call field 'getByName' (a nil value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+      "error": "[string \"<python>\"]:112: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "error": "[string \"<python>\"]:71: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/quests/soul_war/goshnars_cruelty.lua",
+      "error": "[string \"<python>\"]:107: attempt to perform arithmetic on field 'goshnarsCrueltyWaveInterval' (a nil value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/quests/soul_war/goshnars_malice.lua",
+      "error": "[string \"<python>\"]:137: attempt to call field 'getByName' (a nil value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/quests/the_secret_library/bosses/grand_master_oberon_functions.lua",
+      "error": "no monster registered"
+    }
+  ],
+  "monster_files_registered_before_error": [
+    {
+      "file": "data-otservbr-global/monster/birds/headpecker.lua",
+      "error_after_register": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/giants/hulking_prehemoth.lua",
+      "error_after_register": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/mammals/gore_horn.lua",
+      "error_after_register": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/mammals/gorerilla.lua",
+      "error_after_register": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/mammals/nighthunter.lua",
+      "error_after_register": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/mammals/sabretooth.lua",
+      "error_after_register": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/plants/stalking_stalk.lua",
+      "error_after_register": "[string \"<python>\"]:124: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/reptiles/emerald_tortoise.lua",
+      "error_after_register": "[string \"<python>\"]:132: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/reptiles/mantosaurus.lua",
+      "error_after_register": "[string \"<python>\"]:125: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/reptiles/noxious_ripptor.lua",
+      "error_after_register": "[string \"<python>\"]:122: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    },
+    {
+      "file": "data-otservbr-global/monster/vermins/sulphider.lua",
+      "error_after_register": "[string \"<python>\"]:123: attempt to call global 'RegisterPrimalPackBeast' (a string value)"
+    }
+  ],
+  "spell_registrations_indexed": 804,
+  "distinct_referenced_spells": 274,
+  "shadowed_builtin_kinds": {
+    "fear": 3,
+    "soulwars fear": 4
+  },
+  "tiers_by_spell": {
+    "NOOP": 1,
+    "P1": 15,
+    "P2": 166,
+    "P3": 48,
+    "P4": 44
+  },
+  "tiers_by_monster_reference": {
+    "NOOP": 4,
+    "P1": 37,
+    "P2": 281,
+    "P3": 94,
+    "P4": 87
+  },
+  "primitive_spell_counts_by_tier": {
+    "NOOP": {
+      "combat.COMBAT_PARAM_EFFECT": 1,
+      "combat.COMBAT_PARAM_TYPE": 1,
+      "combat.setArea": 1,
+      "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE": 1
+    },
+    "P1": {
+      "combat.COMBAT_PARAM_TYPE": 15,
+      "combat.COMBAT_PARAM_EFFECT": 14,
+      "combat.COMBAT_PARAM_DISTANCEEFFECT": 12,
+      "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE": 12,
+      "combat.setArea": 7,
+      "combat.COMBAT_PARAM_BLOCKARMOR": 2,
+      "combat.addCondition": 2,
+      "condition.CONDITION_FIRE": 2,
+      "condition.addDamage": 2,
+      "condition_param.CONDITION_PARAM_DELAYED": 2,
+      "combat.COMBAT_PARAM_USECHARGES": 1,
+      "combat.setCallback.CALLBACK_PARAM_SKILLVALUE": 1
+    },
+    "P2": {
+      "combat.COMBAT_PARAM_EFFECT": 164,
+      "combat.setArea": 145,
+      "combat.COMBAT_PARAM_TYPE": 131,
+      "combat.addCondition": 58,
+      "condition_param.CONDITION_PARAM_TICKS": 32,
+      "condition.addDamage": 26,
+      "condition_param.CONDITION_PARAM_DELAYED": 26,
+      "condition.CONDITION_PARALYZE": 24,
+      "condition.setFormula": 24,
+      "combat.COMBAT_PARAM_DISTANCEEFFECT": 22,
+      "condition.CONDITION_ENERGY": 10,
+      "combat.COMBAT_PARAM_CHAIN_EFFECT": 8,
+      "combat.setCallback.CALLBACK_PARAM_CHAINVALUE": 8,
+      "condition.CONDITION_FIRE": 7,
+      "condition.CONDITION_DROWN": 6,
+      "condition.CONDITION_ATTRIBUTES": 5,
+      "condition.CONDITION_FREEZING": 2,
+      "condition.CONDITION_ROOTED": 2,
+      "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT": 2,
+      "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT": 2,
+      "condition_param.CONDITION_PARAM_STAT_MAGICPOINTS": 2,
+      "combat.COMBAT_PARAM_BLOCKARMOR": 1,
+      "combat.COMBAT_PARAM_DISPEL": 1,
+      "combat.COMBAT_PARAM_SHOOT_EFFECT": 1,
+      "combat.COMBAT_PARAM_USECHARGES": 1,
+      "combat.setCallback.CALLBACK_PARAM_SKILLVALUE": 1,
+      "condition.CONDITION_FEARED": 1,
+      "condition.CONDITION_POISON": 1,
+      "condition_param.CONDITION_PARAM_SKILL_DEFENSE": 1,
+      "condition_param.CONDITION_PARAM_SKILL_DISTANCE": 1,
+      "condition_param.CONDITION_PARAM_SKILL_MELEE": 1,
+      "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT": 1
+    },
+    "P3": {
+      "combat.COMBAT_PARAM_EFFECT": 46,
+      "combat.setArea": 39,
+      "combat.addCondition": 34,
+      "condition.CONDITION_ATTRIBUTES": 25,
+      "condition_param.CONDITION_PARAM_TICKS": 25,
+      "combat.COMBAT_PARAM_TYPE": 23,
+      "combat.COMBAT_PARAM_DISTANCEEFFECT": 16,
+      "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT": 13,
+      "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT": 11,
+      "condition.CONDITION_CURSED": 9,
+      "condition.addDamage": 9,
+      "condition_param.CONDITION_PARAM_DELAYED": 9,
+      "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT": 9,
+      "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT": 3
+    },
+    "P4": {
+      "combat.COMBAT_PARAM_EFFECT": 34,
+      "combat.COMBAT_PARAM_TYPE": 29,
+      "combat.setArea": 28,
+      "combat.setCallback.CALLBACK_PARAM_TARGETTILE": 12,
+      "condition_param.CONDITION_PARAM_TICKS": 6,
+      "combat.setCallback.CALLBACK_PARAM_TARGETCREATURE": 4,
+      "combat.COMBAT_PARAM_DISTANCEEFFECT": 3,
+      "combat.addCondition": 3,
+      "combat.setFormula": 3,
+      "combat.COMBAT_PARAM_AGGRESSIVE": 2,
+      "combat.COMBAT_PARAM_CHAIN_EFFECT": 2,
+      "combat.setCallback.CALLBACK_PARAM_CHAINPICKER": 2,
+      "combat.setCallback.CALLBACK_PARAM_CHAINVALUE": 2,
+      "condition.CONDITION_ATTRIBUTES": 2,
+      "condition.CONDITION_OUTFIT": 2,
+      "condition.setOutfit": 2,
+      "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT": 2,
+      "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT": 2,
+      "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT": 2,
+      "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT": 2,
+      "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE": 1,
+      "condition.CONDITION_FEARED": 1,
+      "condition.CONDITION_PARALYZE": 1,
+      "condition.CONDITION_REGENERATION": 1,
+      "condition.setFormula": 1,
+      "condition.setTicks": 1,
+      "condition_param.CONDITION_PARAM_HEALTHGAIN": 1,
+      "condition_param.CONDITION_PARAM_HEALTHTICKS": 1,
+      "condition_param.CONDITION_PARAM_SUBID": 1
+    }
+  },
+  "spells": [
+    {
+      "name": "abyssador poison wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "abyssador"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/abyssador_poison_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "aftershock wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "aftershock"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/aftershock_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "aggressivelavawave",
+      "monster_references": 4,
+      "example_monsters": [
+        "aggressive_lava",
+        "fiery_blood",
+        "fiery_heart",
+        "the_flaming_orchid"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/aggresive_lava_wave.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "anomaly break",
+      "monster_references": 15,
+      "example_monsters": [
+        "aftershock",
+        "anomaly",
+        "charged_anomaly",
+        "charging_outburst",
+        "eradicator"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/anomaly_break.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "onCastSpell: local pos = creature:getPosition() anomalyBreak(pos)"
+      ]
+    },
+    {
+      "name": "anomaly wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "anomaly"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/anomaly_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "arachnophobicawavedice",
+      "monster_references": 1,
+      "example_monsters": [
+        "arachnophobica"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/arachnophobica_wavedice.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "arachnophobicawaveenergy",
+      "monster_references": 1,
+      "example_monsters": [
+        "arachnophobica"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/arachnophobica_waveenergy.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "askarak wave",
+      "monster_references": 3,
+      "example_monsters": [
+        "askarak_demon",
+        "askarak_lord",
+        "askarak_prince"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/askarak_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "barbarian brutetamer skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "barbarian_brutetamer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/barbarian_brutetamer_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "berserk",
+      "monster_references": 5,
+      "example_monsters": [
+        "animated_sword",
+        "mazzinor",
+        "mooh'tah_master",
+        "stonerefiner",
+        "sword_of_vengeance"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/berserk.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_BLOCKARMOR",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.COMBAT_PARAM_USECHARGES",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_SKILLVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "betrayed wraith skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "betrayed_wraith"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/betrayed_wraith_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big death wave",
+      "monster_references": 5,
+      "example_monsters": [
+        "sineater_inferniarch",
+        "the_flaming_orchid",
+        "the_nightmare_beast",
+        "the_primal_menace",
+        "the_rage"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_death_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big energy purple wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "outburst"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_energy_purple_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big energy purple wave2",
+      "monster_references": 1,
+      "example_monsters": [
+        "frenzy"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_energy_purple_wave2.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big energy wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "eradicator"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_energy_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big explosion wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_rage"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_explosion_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big lifedrain wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "eradicator2"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_lifedrain_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "big skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "outburst"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/big_skill_reducer.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSE",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCE",
+        "condition_param.CONDITION_PARAM_SKILL_MELEE",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTS",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "blast ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "sulphider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/blast_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "blightwalker curse",
+      "monster_references": 5,
+      "example_monsters": [
+        "blightwalker",
+        "elder_bloodjaw",
+        "shadow_tentacle",
+        "tentacle_of_the_deep_terror",
+        "unbound_blightwalker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/blightwalker_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "boulder ring",
+      "monster_references": 2,
+      "example_monsters": [
+        "ahau",
+        "mitmah_vanguard"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/boulder_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "breach brood reducer",
+      "monster_references": 3,
+      "example_monsters": [
+        "breach_brood",
+        "instable_breach_brood",
+        "soul_reaper"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/breach_brood_reducer.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTS",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "brimstone bug wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "brimstone_bug"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/brimstone_bug_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "bulltaur avalanche",
+      "monster_references": 1,
+      "example_monsters": [
+        "bulltaur_alchemist"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/bulltaur_alchemist_avalanche.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "bulltaur explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "bulltaur_forgepriest"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/bulltaur_forge_priest_explosion.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "bulltaurewave",
+      "monster_references": 1,
+      "example_monsters": [
+        "bulltaur_forgepriest"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/bulltaur_ewave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "bullwark paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "bullwark"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/bullwark_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "charge vortex",
+      "monster_references": 1,
+      "example_monsters": [
+        "charged_anomaly"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/charge_vortex.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "load_error: [string \"<python>\"]:2: attempt to call global 'Position' (a string value)"
+      ]
+    },
+    {
+      "name": "charged energy elemental electrify",
+      "monster_references": 1,
+      "example_monsters": [
+        "soul_of_dragonking_zyrtarch"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/charged_energy_elemental_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "choking fear drown",
+      "monster_references": 4,
+      "example_monsters": [
+        "choking_fear",
+        "hellflayer",
+        "the_scourge_of_oblivion",
+        "vexclaw"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/choking_fear_drown.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_DROWN",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "cliff strider electrify",
+      "monster_references": 1,
+      "example_monsters": [
+        "cliff_strider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/cliff_strider_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "cliff strider skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "cliff_strider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/cliff_strider_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "corym vanguard wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "corym_vanguard",
+        "pirat_artillerist"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/corym_vanguard_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "crystal wolf wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "crystal_wolf"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/crystal_wolf_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "dark torturer skill reducer",
+      "monster_references": 4,
+      "example_monsters": [
+        "dark_torturer",
+        "deaththrower",
+        "eclipse_knight",
+        "morgaroth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/dark_torturer_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "death beam",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_nightmare_beast"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/death_beam.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "death blob curse",
+      "monster_references": 3,
+      "example_monsters": [
+        "condensed_sins",
+        "death_blob",
+        "horrible_dream"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/death_blob_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "death chain",
+      "monster_references": 8,
+      "example_monsters": [
+        "cobra_vizier",
+        "dragolisk",
+        "infernal_demon",
+        "mega_dragon",
+        "naga_archer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/death_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "deepling spellsinger skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "deepling_master_librarian",
+        "deepling_spellsinger"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/deepling_spellsinger_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "defiler paralyze 1",
+      "monster_references": 1,
+      "example_monsters": [
+        "disgusting_ooze"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/defiler_paralyze_1.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "defiler paralyze 2",
+      "monster_references": 1,
+      "example_monsters": [
+        "disgusting_ooze"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/defiler_paralyze_2.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "defiler paralyze 3",
+      "monster_references": 1,
+      "example_monsters": [
+        "disgusting_ooze"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/defiler_paralyze_3.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "demon outcast skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "demon_outcast",
+        "unbound_demon_outcast"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/demon_outcast_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "demon paralyze",
+      "monster_references": 2,
+      "example_monsters": [
+        "enthralled_demon",
+        "overcharged_demon"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/demon_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "destroy magic walls",
+      "monster_references": 5,
+      "example_monsters": [
+        "bony_sea_devil",
+        "brachiodemon",
+        "cloak_of_terror",
+        "many_faces",
+        "the_monster"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/destroy_magic_walls.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "onCastSpell: -- check tiles around the caster local position = creature:getPosition() for x = -2, 2 do for y = -2, 2 do local tile = Tile(position.x + x, position.y + y, pos"
+      ]
+    },
+    {
+      "name": "destruction summon",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_destruction"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/destruction_summon.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: if destructionSummonDelay == false then if destructionSummon < 3 then Game.createMonster(\"Disruption\", { x = creature:getPosition().x + math.random(-1, 1), y = "
+      ]
+    },
+    {
+      "name": "devourer death wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "streaked_devourer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/devourer_death_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "devourer paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "devourer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/devourer_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "devourer summon",
+      "monster_references": 1,
+      "example_monsters": [
+        "world_devourer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/devourer_summon.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: local creatures = { \"Greed\", \"Frenzy\", \"Disruption\" } local monster = creatures[math.random(#creatures)] if devourerSummon < 3 then Game.createMonster(monster, "
+      ]
+    },
+    {
+      "name": "devourer wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "devourer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/devourer_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "diabolic imp skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "diabolic_imp",
+        "the_imperor"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/diabolic_imp_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "divine missile",
+      "monster_references": 1,
+      "example_monsters": [
+        "mazzinor"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/divine_missile.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "djinn cancel invisibility",
+      "monster_references": 2,
+      "example_monsters": [
+        "blue_djinn",
+        "green_djinn"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/djinn_cancel_invisibility.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISPEL",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "djinn electrify",
+      "monster_references": 5,
+      "example_monsters": [
+        "blue_djinn",
+        "efreet",
+        "fahim_the_wise",
+        "green_djinn",
+        "marid"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/djinn_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "doctor marrow explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "doctor_marrow"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/doctor_marrow_explosion.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETCREATURE"
+      ],
+      "reasons": [
+        "onCastSpell: local target = Creature(var:getNumber()) if not target then return false end local targetPos = target:getPosition() target:say(\"You are being targeted by Doctor"
+      ]
+    },
+    {
+      "name": "dragonling wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "dragonling"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/dragonling_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "draken abomination curse",
+      "monster_references": 1,
+      "example_monsters": [
+        "draken_abomination"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/draken_abomination_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "dread intruder wave",
+      "monster_references": 3,
+      "example_monsters": [
+        "dread_intruder",
+        "dreadful_disruptor",
+        "stabilizing_dread_intruder"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/dread_intruder_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "dread rcircle",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_dread_maiden"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/dread_maiden_rcircle.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "dreadbeast skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "dreadbeast"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/dreadbeast_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "earth beammy",
+      "monster_references": 1,
+      "example_monsters": [
+        "megasylvan_yselda"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/megasylvan_yselda_ebeam.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "elder wyrm wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "elder_wyrm"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/elder_wyrm_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "emberbeastarea",
+      "monster_references": 1,
+      "example_monsters": [
+        "ember_beast"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/emberBeastArea.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "emberbeasthur",
+      "monster_references": 1,
+      "example_monsters": [
+        "ember_beast"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/emberBeastHur.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "emerald tortoise large ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "emerald_tortoise"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/emerald_tortoise_large_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "emerald tortoise small explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "emerald_tortoise"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/emerald_tortoise_small_explosion.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "emerald tortoise small ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "emerald_tortoise"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/emerald_tortoise_small_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "energized raging mage skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "energized_raging_mage"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/energized_raging_mage_skill_reducer.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "energy beam",
+      "monster_references": 4,
+      "example_monsters": [
+        "maxxenius",
+        "mooh'tah_master",
+        "pirat_bombardier",
+        "pirat_mate"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/energy_beam.lua",
+      "tier": "NOOP",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": [
+        "script returns false for a non-player caster: local player = creature:getPlayer() if not creature or not player then return false end return player:instantSkillWOD(\"B"
+      ]
+    },
+    {
+      "name": "energy chain",
+      "monster_references": 8,
+      "example_monsters": [
+        "carnivostrich",
+        "converter",
+        "courage_leech",
+        "emerald_tortoise",
+        "harpy"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/energy_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "energy elemental electrify",
+      "monster_references": 1,
+      "example_monsters": [
+        "energy_elemental"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/energy_elemental_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "energy pulse explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "energy_pulse"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/energy_pulse_explosion.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: return combat:execute(creature, var), creature:remove()"
+      ]
+    },
+    {
+      "name": "energy ring",
+      "monster_references": 2,
+      "example_monsters": [
+        "harpy",
+        "white_weretiger"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/energy_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "energy strike",
+      "monster_references": 3,
+      "example_monsters": [
+        "the_scourge_of_oblivion",
+        "vexclaw",
+        "voidshard"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/energy_strike.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "energy wave",
+      "monster_references": 3,
+      "example_monsters": [
+        "maxxenius",
+        "pirat_bombardier",
+        "pirat_mate"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/energy_wave.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": [
+        "player/familiar-only branches ignored for a monster caster"
+      ]
+    },
+    {
+      "name": "energy wavet",
+      "monster_references": 1,
+      "example_monsters": [
+        "tentuglys_head"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/tentuglys_head_energyT.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "enslaved dwarf skill reducer 1",
+      "monster_references": 1,
+      "example_monsters": [
+        "enslaved_dwarf"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/enslaved_dwarf_skill_reducer_1.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "enslaved dwarf skill reducer 2",
+      "monster_references": 1,
+      "example_monsters": [
+        "enslaved_dwarf"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/enslaved_dwarf_skill_reducer_2.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "eruption of destruction explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "eruption_of_destruction"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/eruption_of_destruction_explosion.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "load_error: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)"
+      ]
+    },
+    {
+      "name": "explosion rune",
+      "monster_references": 1,
+      "example_monsters": [
+        "chasm_spawn"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/explosion.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/explosion_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_BLOCKARMOR",
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "explosion wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "cobra_vizier",
+        "custodian"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/explosion_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "extended energy chain",
+      "monster_references": 2,
+      "example_monsters": [
+        "vibrant_phantom",
+        "walking_pillar"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/extended_energy_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "extended fire chain",
+      "monster_references": 3,
+      "example_monsters": [
+        "darklight_construct",
+        "gorger_inferniarch",
+        "infernal_phantom"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/extended_fire_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "extended holy chain",
+      "monster_references": 5,
+      "example_monsters": [
+        "darklight_striker",
+        "distorted_phantom",
+        "many_faces",
+        "mould_phantom",
+        "vibrant_phantom"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/extended_holy_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "fear",
+      "monster_references": 3,
+      "example_monsters": [
+        "doctor_marrow",
+        "fungosaurus",
+        "shrieking_cry-stal"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/fear.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_FEARED",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "registered spell shadows the built-in spell kind of the same name"
+      ]
+    },
+    {
+      "name": "ferumbras electrify",
+      "monster_references": 3,
+      "example_monsters": [
+        "destabilized_ferumbras",
+        "ferumbras_mortal_shell",
+        "ferumbras_soul_splinter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ferumbras_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ferumbras soulfire",
+      "monster_references": 3,
+      "example_monsters": [
+        "destabilized_ferumbras",
+        "ferumbras_mortal_shell",
+        "ferumbras_soul_splinter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ferumbras_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "feversleep skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "terrorsleep"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/feversleep_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "fire wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "feral_sphinx",
+        "thawing_dragon_lord"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/fire_wave.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "fireball rune",
+      "monster_references": 1,
+      "example_monsters": [
+        "flameborn"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/fireball.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/fireball_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "firering",
+      "monster_references": 2,
+      "example_monsters": [
+        "amenef_the_burning",
+        "burning_gladiator"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/burning_gladiator_firering.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "firex",
+      "monster_references": 2,
+      "example_monsters": [
+        "amenef_the_burning",
+        "burning_gladiator"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/burning_gladiator_firex.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "foamsplash",
+      "monster_references": 1,
+      "example_monsters": [
+        "foam_stalker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/foam_splash.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: addEvent(runSpell, 1000, creature:getId(), combat, var) addEvent(runSpell, 2000, creature:getId(), combat2, var) addEvent(runSpell, 3000, creature:getId(), comb"
+      ]
+    },
+    {
+      "name": "forest fury skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "forest_fury"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/forest_fury_skill_reducer_1.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "frazzlemaw paralyze",
+      "monster_references": 2,
+      "example_monsters": [
+        "lovely_frazzlemaw",
+        "rustheap_golem"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/frazzlemaw_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "freed soul spell",
+      "monster_references": 1,
+      "example_monsters": [
+        "freed_soul"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/freed_soul_spell.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "frozen minion beam",
+      "monster_references": 1,
+      "example_monsters": [
+        "frozen_minion"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/frozen_minion_beam.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_AGGRESSIVE",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETCREATURE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE"
+      ]
+    },
+    {
+      "name": "frozen minion wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "frozen_minion"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/frozen_minion_wave.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_AGGRESSIVE",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETCREATURE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE"
+      ]
+    },
+    {
+      "name": "fury skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "fury",
+        "furyosa"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/fury_skill_reducer_1.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "gaz'haragoth death",
+      "monster_references": 1,
+      "example_monsters": [
+        "gaz'haragoth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_death.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "load_error: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)"
+      ]
+    },
+    {
+      "name": "gaz'haragoth iceball",
+      "monster_references": 1,
+      "example_monsters": [
+        "gaz'haragoth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_iceball.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "cast voice line before the combat"
+      ]
+    },
+    {
+      "name": "gaz'haragoth paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "gaz'haragoth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "gaz'haragoth summon",
+      "monster_references": 1,
+      "example_monsters": [
+        "gaz'haragoth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_summon.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "load_error: cannot open @DATA_DIRECTORY/scripts/spells/monster/gaz_functions.lua: No such file or directory"
+      ]
+    },
+    {
+      "name": "ghastly dragon curse",
+      "monster_references": 5,
+      "example_monsters": [
+        "dragon_wrath",
+        "essence_of_malice",
+        "ethershreck",
+        "ghastly_dragon",
+        "sharpclaw"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ghastly_dragon_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ghastly dragon paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "dragon_wrath"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ghastly_dragon_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ghastly dragon wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "dragon_wrath",
+        "ghastly_dragon"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ghastly_dragon_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ghoulish hyaena wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "ghoulish_hyaena"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ghoulish_hyaena_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_POISON",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "girtablilu poison wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "venerable_girtablilu"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/girtablilu_poison_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "glooth fairy paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "professor_maxxen"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/glooth_fairy_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "glooth fairy skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "glooth_fairy",
+        "professor_maxxen"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/glooth_fairy_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "gorerilla large ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "gorerilla"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/gorerilla_large_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "gorerilla small ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "gorerilla"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/gorerilla_small_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "greedy eye beam",
+      "monster_references": 1,
+      "example_monsters": [
+        "a_greedy_eye"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/quests/soul_war/spell-eye_beam.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "haunted treeling paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "possessed_tree"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/haunted_treeling_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "headpecker explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "headpecker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/headpecker_explosion.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "heal brain head",
+      "monster_references": 1,
+      "example_monsters": [
+        "cerebellum"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/heal_brain_head.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "load_error: [string \"<python>\"]:2: attempt to call global 'Position' (a string value)"
+      ]
+    },
+    {
+      "name": "hellfire fighter soulfire",
+      "monster_references": 2,
+      "example_monsters": [
+        "hellfire_fighter",
+        "rage_of_mazoran"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/hellfire_fighter_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "hellspawn soulfire",
+      "monster_references": 2,
+      "example_monsters": [
+        "flameborn",
+        "hellspawn"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/hellspawn_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "hirintror freeze",
+      "monster_references": 3,
+      "example_monsters": [
+        "hirintror",
+        "melting_frozen_horror",
+        "solid_frozen_horror"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/hirintror_freeze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FREEZING",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "hirintror skill reducer",
+      "monster_references": 3,
+      "example_monsters": [
+        "hirintror",
+        "melting_frozen_horror",
+        "solid_frozen_horror"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/hirintror_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "hot dog wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "hot_dog"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/hot_dog_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "hunger summon",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_hunger"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/hunger_summon.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: if hungerSummonDelay == false then if hungerSummon < 3 then Game.createMonster(\"Greed\", { x = creature:getPosition().x + math.random(-1, 1), y = creature:getPos"
+      ]
+    },
+    {
+      "name": "ice chain",
+      "monster_references": 12,
+      "example_monsters": [
+        "bony_sea_devil",
+        "capricious_phantom",
+        "distorted_phantom",
+        "druid's_apparition",
+        "earl_osam"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ice_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ice crystal bomb",
+      "monster_references": 1,
+      "example_monsters": [
+        "thawing_dragon_lord"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ice_crystal_bomb.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_BLOCKARMOR",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.COMBAT_PARAM_USECHARGES",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_SKILLVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ice golem paralyze",
+      "monster_references": 3,
+      "example_monsters": [
+        "hirintror",
+        "melting_frozen_horror",
+        "solid_frozen_horror"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ice_golem_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ice golem skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "ice_golem"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ice_golem_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ice strike",
+      "monster_references": 1,
+      "example_monsters": [
+        "knight_familiar"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/ice_strike.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "ignite",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_flaming_orchid"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/ignite.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "iksyapunacwave",
+      "monster_references": 1,
+      "example_monsters": [
+        "iks_yapunac"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/iksyapunac_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "katex deatht",
+      "monster_references": 1,
+      "example_monsters": [
+        "katex_blood_tongue"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/katex_blood_deathT.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "kraknaknork explosion wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "kraknaknork"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/kraknaknork_explosion_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "kraknaknork ice wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "kraknaknork"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/kraknaknork_ice_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "kraknaknork poison wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "kraknaknork"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/kraknaknork_poison_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lancer beetle curse",
+      "monster_references": 1,
+      "example_monsters": [
+        "lancer_beetle"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lancer_beetle_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largeblackring",
+      "monster_references": 1,
+      "example_monsters": [
+        "meandering_mushroom"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_black_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largedeathring",
+      "monster_references": 1,
+      "example_monsters": [
+        "oozing_carcass"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_blackportal_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largefirering",
+      "monster_references": 3,
+      "example_monsters": [
+        "bloated_man-maggot",
+        "darklight_construct",
+        "darklight_emitter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_fire_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largeholyring",
+      "monster_references": 2,
+      "example_monsters": [
+        "converter",
+        "wandering_pillar"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_holy_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largeicering",
+      "monster_references": 1,
+      "example_monsters": [
+        "rotten_man-maggot"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_ice_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largepinkring",
+      "monster_references": 2,
+      "example_monsters": [
+        "darklight_striker",
+        "walking_pillar"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_pink_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largepoisonring",
+      "monster_references": 2,
+      "example_monsters": [
+        "mycobiontic_beetle",
+        "sopping_corpus"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_poison_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "largeredring",
+      "monster_references": 1,
+      "example_monsters": [
+        "darklight_matter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/large_red_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lava golem soulfire",
+      "monster_references": 2,
+      "example_monsters": [
+        "lava_golem",
+        "minion_of_versperoth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lava_golem_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lavafungus ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "lavafungus"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lavafungus_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lavafungus x wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "lavafungus"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lavafungus_x_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lisa paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "lisa"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lisa_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lisa skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "lisa"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lisa_skill_reducer.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "lisa wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "lisa"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lisa_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lizard magistratus curse",
+      "monster_references": 1,
+      "example_monsters": [
+        "lizard_magistratus"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lizard_magistratus_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lleech wavet",
+      "monster_references": 1,
+      "example_monsters": [
+        "srezz_yellow_eyes"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/srezz_lleechT.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lloyd wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "lloyd"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lloyd_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lloyd wave2",
+      "monster_references": 1,
+      "example_monsters": [
+        "lloyd"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lloyd_wave2.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lloyd wave3",
+      "monster_references": 1,
+      "example_monsters": [
+        "lloyd"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lloyd_wave3.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "lord azaram wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "lord_azaram"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/lord_azaram_wave.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "magma crawler soulfire",
+      "monster_references": 1,
+      "example_monsters": [
+        "magma_crawler"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/magma_crawler_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "magma crawler wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "magma_crawler"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/magma_crawler_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "makarawatersplash",
+      "monster_references": 1,
+      "example_monsters": [
+        "makara"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/makara_watersplash.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mana drain chain",
+      "monster_references": 1,
+      "example_monsters": [
+        "timira_the_many-headed"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mana_drain_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mana leechmy",
+      "monster_references": 1,
+      "example_monsters": [
+        "megasylvan_yselda"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/megasylvan_yselda_mleech.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mantosaurus ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "mantosaurus"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mantosaurus_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "massive energy elemental electrify",
+      "monster_references": 1,
+      "example_monsters": [
+        "massive_energy_elemental"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/massive_energy_elemental_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "massive fire elemental soulfire",
+      "monster_references": 2,
+      "example_monsters": [
+        "massive_fire_elemental",
+        "raging_fire"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/massive_fire_elemental_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "medusa paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_last_lore_keeper"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/medusa_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mercurial menace ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "mercurial_menace"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mercurial_menace_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "metal gargoyle curse",
+      "monster_references": 1,
+      "example_monsters": [
+        "metal_gargoyle"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/metal_gargoyle_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "minotaur amazon paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "minotaur_amazon"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/minotaur_amazon_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mitmahseekwave",
+      "monster_references": 1,
+      "example_monsters": [
+        "mitmah_seer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mitmahseer_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mooh'tah master skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "mooh'tah_warrior"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mooh'tah_master_skill_reducer.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mutated bat curse",
+      "monster_references": 3,
+      "example_monsters": [
+        "bruise_payne",
+        "dreadwing",
+        "mutated_bat"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mutated_bat_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "mutated rat paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_lord_of_the_lice"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/mutated_rat_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "nagadeath",
+      "monster_references": 2,
+      "example_monsters": [
+        "naga_archer",
+        "rogue_naga"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/naga_death_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "nagadeathattack",
+      "monster_references": 4,
+      "example_monsters": [
+        "corrupt_naga",
+        "naga_archer",
+        "naga_warrior",
+        "rogue_naga"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/naga_death.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "nighthunter wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "nighthunter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/nighthunter_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "nightstalker paralyze",
+      "monster_references": 3,
+      "example_monsters": [
+        "nightstalker",
+        "shadow_fiend",
+        "sin_devourer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/nightstalker_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "noxious ripptor wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "noxious_ripptor"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/noxious_ripptor_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "omrafir beam",
+      "monster_references": 1,
+      "example_monsters": [
+        "omrafir"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/omrafir_beam.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setFormula",
+        "condition.CONDITION_REGENERATION",
+        "condition_param.CONDITION_PARAM_HEALTHGAIN",
+        "condition_param.CONDITION_PARAM_HEALTHTICKS",
+        "condition_param.CONDITION_PARAM_SUBID",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "onCastSpell: if not creature:getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT, 88888) then creature:say(\"OMRAFIR INHALES DEEPLY!\", TALKTYPE_MONSTER_YELL) creature:ad"
+      ]
+    },
+    {
+      "name": "omrafir wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "omrafir"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/omrafir_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "orewalker wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "orewalker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/orewalker_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "outburst explode",
+      "monster_references": 1,
+      "example_monsters": [
+        "charging_outburst"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/outburst_explode.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: outExplode() delayedCastSpell(creature, var) Game.setStorageValue(GlobalStorage.HeartOfDestruction.OutburstChargingKilled, 1) addEvent(removeOutburst, 1000, cre"
+      ]
+    },
+    {
+      "name": "phantasm drown",
+      "monster_references": 3,
+      "example_monsters": [
+        "countess_sorrow",
+        "phantasm",
+        "phantasm_summon"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/phantasm_drown.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_DROWN",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "pirate corsair skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "dirtbeard",
+        "pirate_corsair"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/pirate_corsair_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "pixie skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "pixie"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/pixie_skill_reducer.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "plagirath bog",
+      "monster_references": 1,
+      "example_monsters": [
+        "plagirath"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/plagirath_bog.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE",
+        "condition.CONDITION_OUTFIT",
+        "condition.setOutfit",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "onCastSpell: local target = creature:getTarget() addEvent(spellDamage, 10 * 1000, creature:getId(), target:getId(), var) return combat:execute(creature, var)"
+      ]
+    },
+    {
+      "name": "plaguesmith wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "plaguesmith"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/plaguesmith_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "podzillaphyschain",
+      "monster_references": 2,
+      "example_monsters": [
+        "quara_looter",
+        "rootthing_bug_tracker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/podzillaphys_chain.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINPICKER",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_CHAINPICKER"
+      ]
+    },
+    {
+      "name": "poison chain",
+      "monster_references": 3,
+      "example_monsters": [
+        "mould_phantom",
+        "rootthing_amber_shaper",
+        "rotten_golem"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/poison_chain.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINPICKER",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_CHAINPICKER"
+      ]
+    },
+    {
+      "name": "practise fire wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_hunger"
+      ],
+      "kind": "instant",
+      "script": "data/scripts/spells/attack/practise_fire_wave.lua",
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quara constrictor electrify",
+      "monster_references": 3,
+      "example_monsters": [
+        "inky",
+        "quara_constrictor",
+        "renegade_quara_constrictor"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_constrictor_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quara constrictor freeze",
+      "monster_references": 2,
+      "example_monsters": [
+        "quara_constrictor",
+        "renegade_quara_constrictor"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_constrictor_freeze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FREEZING",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quaracrossdeath",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_plunderer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_plunderer_cross.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quaralargeicering",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_raider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_raider_icering.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quararaidershoot",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_raider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_raider_shoot.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quaraseamonster",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_raider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_raider_watercreature.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quarasmallicering",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_looter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_looter_small_icering.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quarasmokedeath",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_plunderer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_plunderer_smoke.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "quarawatersplash",
+      "monster_references": 1,
+      "example_monsters": [
+        "quara_raider"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/quara_raider_watersplash.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rage summon",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_rage"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rage_summon.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: if rageSummon < 3 then Game.createMonster(\"Frenzy\", { x = creature:getPosition().x + math.random(-1, 1), y = creature:getPosition().y + math.random(-1, 1), z = "
+      ]
+    },
+    {
+      "name": "ravennouslavalurkertarget",
+      "monster_references": 1,
+      "example_monsters": [
+        "ravenous_lava_lurker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ravennousLavaLurkerTarget.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "ravennouslavalurkerwave",
+      "monster_references": 1,
+      "example_monsters": [
+        "ravenous_lava_lurker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/ravennousLavaLurkerWave.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "reality reaver wave",
+      "monster_references": 3,
+      "example_monsters": [
+        "reality_reaver",
+        "spark_of_destruction",
+        "stabilizing_reality_reaver"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/reality_reaver_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "remorseless wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "the_corruptor_of_souls",
+        "the_remorseless_corruptor"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/remorseless_wave.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "root",
+      "monster_references": 6,
+      "example_monsters": [
+        "branchy_crawler",
+        "doctor_marrow",
+        "fungosaurus",
+        "gore_horn",
+        "mitmah_vanguard"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/root.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_ROOTED",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "root wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "undertaker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/root_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ROOTED",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rot elemental paralyze",
+      "monster_references": 2,
+      "example_monsters": [
+        "aggressive_matter",
+        "rot_elemental"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rot_elemental_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rotthingshaper",
+      "monster_references": 1,
+      "example_monsters": [
+        "rootthing_amber_shaper"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthing_shaper.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setFormula"
+      ],
+      "reasons": [
+        "onCastSpell: for _, combat in pairs(combats) do combat:execute(creature, var) end return true"
+      ]
+    },
+    {
+      "name": "rotthingwave",
+      "monster_references": 1,
+      "example_monsters": [
+        "rootthing_nutshell"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthing_wave.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setFormula"
+      ],
+      "reasons": [
+        "onCastSpell: for _, combat in pairs(combats) do combat:execute(creature, var) end return true"
+      ]
+    },
+    {
+      "name": "rotthligexplo",
+      "monster_references": 1,
+      "example_monsters": [
+        "rootthing_bug_tracker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthing_explo.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rotthligholyulus",
+      "monster_references": 1,
+      "example_monsters": [
+        "rootthing_bug_tracker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthingholy_ulus.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rotthligulus",
+      "monster_references": 1,
+      "example_monsters": [
+        "rootthing_nutshell"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthing_ulus.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rupture wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "rupture"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rupture_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rustheap golem electrify",
+      "monster_references": 1,
+      "example_monsters": [
+        "rustheap_golem"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rustheap_golem_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "rustheap golem wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "rustheap_golem"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/rustheap_golem_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "sabretooth wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "sabretooth"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/sabretooth_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "sapling explode",
+      "monster_references": 1,
+      "example_monsters": [
+        "carnisylvan_sapling"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/sapling_explode.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": [
+        "onCastSpell: addEvent(removeSapling, 1, creature.uid) return combat:execute(creature, var)"
+      ]
+    },
+    {
+      "name": "sea serpent drown",
+      "monster_references": 1,
+      "example_monsters": [
+        "sea_serpent"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/sea_serpent_drown.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_DROWN",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "seacrest serpent wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "seacrest_serpent"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/seacrest_serpent_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "shaburak wave",
+      "monster_references": 3,
+      "example_monsters": [
+        "shaburak_demon",
+        "shaburak_lord",
+        "shaburak_prince"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/shaburak_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "shlorg paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "weakened_shlorg"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/shlorg_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "shock head skill reducer 1",
+      "monster_references": 1,
+      "example_monsters": [
+        "shock_head"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/shock_head_skill_reducer_1.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "shock head skill reducer 2",
+      "monster_references": 1,
+      "example_monsters": [
+        "shock_head"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/shock_head_skill_reducer_2.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "silencer skill reducer",
+      "monster_references": 3,
+      "example_monsters": [
+        "enfeebled_silencer",
+        "silencer",
+        "sin_devourer"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/silencer_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "singlecloudchain",
+      "monster_references": 9,
+      "example_monsters": [
+        "drume",
+        "goshnars_greed",
+        "goshnars_hatred",
+        "goshnars_spite",
+        "hardened_usurper_knight"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/single_cloud_chain.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE"
+      ],
+      "reasons": [
+        "onCastSpell: local target = Creature(var.number) if not target then return false end local creaturePos = creature:getPosition() local path = creaturePos:getPathTo(target:get"
+      ]
+    },
+    {
+      "name": "singledeathchain",
+      "monster_references": 5,
+      "example_monsters": [
+        "hardened_usurper_warlock",
+        "kesar",
+        "lion_commander",
+        "usurper_commander",
+        "usurper_warlock"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/single_death_chain.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE"
+      ],
+      "reasons": [
+        "onCastSpell: local target = Creature(var.number) if not target then return false end local creaturePos = creature:getPosition() local path = creaturePos:getPathTo(target:get"
+      ]
+    },
+    {
+      "name": "singleicechain",
+      "monster_references": 3,
+      "example_monsters": [
+        "hardened_usurper_warlock",
+        "kesar",
+        "usurper_warlock"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/single_ice_chain.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE"
+      ],
+      "reasons": [
+        "onCastSpell: local target = Creature(var.number) if not target then return false end local creaturePos = creature:getPosition() local path = creaturePos:getPathTo(target:get"
+      ]
+    },
+    {
+      "name": "souleater drown",
+      "monster_references": 3,
+      "example_monsters": [
+        "corrupted_soul",
+        "lovely_souleater",
+        "souleater"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/souleater_drown.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_DROWN",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "souleater wave",
+      "monster_references": 3,
+      "example_monsters": [
+        "corrupted_soul",
+        "lovely_souleater",
+        "souleater"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/souleater_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "soulfire rune",
+      "monster_references": 4,
+      "example_monsters": [
+        "draken_elite",
+        "draken_spellweaver",
+        "magma_crawler",
+        "paiz_the_pauperizer"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/soul_fire.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/soulfire_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "soulsnatcher-lifedrain-beam",
+      "monster_references": 1,
+      "example_monsters": [
+        "soulsnatcher"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+      "other_registrations": [
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua"
+      ],
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "soulsnatcher-lifedrain-missile",
+      "monster_references": 1,
+      "example_monsters": [
+        "soulsnatcher"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+      "other_registrations": [
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua"
+      ],
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "soulsnatcher-manadrain-ball",
+      "monster_references": 1,
+      "example_monsters": [
+        "soulsnatcher"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+      "other_registrations": [
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua"
+      ],
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "soulwars fear",
+      "monster_references": 4,
+      "example_monsters": [
+        "bony_sea_devil",
+        "goshnars_spite",
+        "hazardous_phantom",
+        "turbulent_elemental"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/soulwars_fear.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_FEARED",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "onCastSpell: creature:getPosition():sendMagicEffect(CONST_ME_GHOST_SMOKE) addEvent(executeCombat, 2000, creature:getId(), var) return true",
+        "registered spell shadows the built-in spell kind of the same name"
+      ]
+    },
+    {
+      "name": "source of corruption wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_source_of_corruption"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/source_of_corruption_wave.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "sparks chain",
+      "monster_references": 2,
+      "example_monsters": [
+        "crazed_summer_vanguard",
+        "insane_siren"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/sparks_chain.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_CHAIN_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_CHAINVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "spectre drown",
+      "monster_references": 2,
+      "example_monsters": [
+        "fetter",
+        "spectre"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/spectre_drown.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_DROWN",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "spider queen wrap",
+      "monster_references": 1,
+      "example_monsters": [
+        "spider_queen"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/spider_queen_wrap.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_OUTFIT",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition.setOutfit",
+        "condition.setTicks",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "onCastSpell: local target = creature:getTarget() if target and target:isPlayer() then if combat:execute(creature, var) then target:addCondition(conditionOutfit) target:sendT"
+      ]
+    },
+    {
+      "name": "stalagmite rune",
+      "monster_references": 2,
+      "example_monsters": [
+        "cave_devourer",
+        "tunnel_tyrant"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/stalagmite.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/stalagmite_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "stampor skill reducer",
+      "monster_references": 2,
+      "example_monsters": [
+        "stampor",
+        "tromphonyte"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/stampor_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "stone shower rune",
+      "monster_references": 5,
+      "example_monsters": [
+        "alptramun",
+        "cave_devourer",
+        "chasm_spawn",
+        "stonerefiner",
+        "tunnel_tyrant"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/stone_shower.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/stone_shower_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "sudden death rune",
+      "monster_references": 5,
+      "example_monsters": [
+        "knight_familiar",
+        "lost_exile",
+        "scarlett_etzel",
+        "xogixath"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/sudden_death.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/sudden_death_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "sulphur spouter wave",
+      "monster_references": 1,
+      "example_monsters": [
+        "sulphur_spouter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/sulphur_spouter_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "summon challenge",
+      "monster_references": 2,
+      "example_monsters": [
+        "druid_familiar",
+        "sorcerer_familiar"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/summonchallenge.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETCREATURE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETCREATURE"
+      ]
+    },
+    {
+      "name": "targetfirering",
+      "monster_references": 2,
+      "example_monsters": [
+        "priestess_of_the_wild_sun",
+        "sister_hetai"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/priestess_firering.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_SHOOT_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "tenebris summon",
+      "monster_references": 1,
+      "example_monsters": [
+        "lady_tenebris"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/tenebris_summon.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE"
+      ],
+      "reasons": [
+        "onCastSpell: local mid = Game.createMonster(\"shadow fiend\", Position(math.random(32906, 32918), math.random(31594, 31604), 14)) if not mid then return end mid:say(\"The shado"
+      ]
+    },
+    {
+      "name": "tenebris ultimate",
+      "monster_references": 1,
+      "example_monsters": [
+        "lady_tenebris"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/tenebris_ultimate.lua",
+      "tier": "P4",
+      "primitives": [],
+      "reasons": [
+        "load_error: [string \"<python>\"]:2: attempt to index field 'BASE_ID' (a nil value)"
+      ]
+    },
+    {
+      "name": "the welter paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "the_welter"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/the_welter_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "thunderstorm ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "carnivostrich"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/thunderstorm_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "thunderstorm rune",
+      "monster_references": 2,
+      "example_monsters": [
+        "energized_raging_mage",
+        "raging_mage"
+      ],
+      "kind": "rune",
+      "script": "data/scripts/runes/thunderstorm.lua",
+      "other_registrations": [
+        "data/scripts/spells/conjuring/thunderstorm_rune.lua"
+      ],
+      "tier": "P1",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_LEVELMAGICVALUE"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "timira explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "timira_the_many-headed"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/timira_fire_explosion.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "timira fire ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "timira_the_many-headed"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/timira_fire_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "tyrn electrify",
+      "monster_references": 1,
+      "example_monsters": [
+        "tyrn"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/tyrn_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "tyrn skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "tyrn"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/tyrn_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "unchained fire beam",
+      "monster_references": 1,
+      "example_monsters": [
+        "unchained_fire"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/unchained_fire_beam.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "unchained fire explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "unchained_fire"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/unchained_fire_explosion.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "undead dragon curse",
+      "monster_references": 5,
+      "example_monsters": [
+        "death_dragon",
+        "haunted_dragon",
+        "undead_dragon",
+        "zanakeph",
+        "zorvorax"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/undead_dragon_curse.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_CURSED",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "undertaker square explosion",
+      "monster_references": 1,
+      "example_monsters": [
+        "undertaker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/undertaker_square_explosion.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "urmahlulluring",
+      "monster_references": 5,
+      "example_monsters": [
+        "urmahlullu_the_immaculate",
+        "urmahlullu_the_tamed",
+        "urmahlullu_the_weakened",
+        "wildness_of_urmahlullu",
+        "wisdom_of_urmahlullu"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/urmahlullu_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "vulcongra soulfire",
+      "monster_references": 1,
+      "example_monsters": [
+        "vulcongra"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/vulcongra_soulfire.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_FIRE",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "walker skill reducer",
+      "monster_references": 1,
+      "example_monsters": [
+        "walker"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/walker_skill_reducer.lua",
+      "tier": "P4",
+      "primitives": [
+        "combat.setArea",
+        "combat.setCallback.CALLBACK_PARAM_TARGETTILE",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_DISTANCEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": [
+        "per-target Lua combat callback: CALLBACK_PARAM_TARGETTILE"
+      ]
+    },
+    {
+      "name": "war golem electrify",
+      "monster_references": 6,
+      "example_monsters": [
+        "glooth_golem",
+        "glooth_masher",
+        "glooth_slasher",
+        "glooth_trasher",
+        "professor_maxxen"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/war_golem_electrify.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "condition.CONDITION_ENERGY",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "war golem skill reducer",
+      "monster_references": 8,
+      "example_monsters": [
+        "glooth_fairy",
+        "glooth_golem",
+        "glooth_masher",
+        "glooth_slasher",
+        "glooth_trasher"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/war_golem_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "warden ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "crypt_warden"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/warden_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "warden x",
+      "monster_references": 1,
+      "example_monsters": [
+        "crypt_warden"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/warden_x.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "warlock skill reducer",
+      "monster_references": 3,
+      "example_monsters": [
+        "hellflayer",
+        "warlock",
+        "zarabustor"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/warlock_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_DISTANCEEFFECT",
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_DEFENSEPERCENT",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "wave t",
+      "monster_references": 2,
+      "example_monsters": [
+        "cobra_assassin",
+        "sun-marked_goanna"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/wave_t.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "werecrocodile fire ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "feral_werecrocodile"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/werecrocodile_fire_ring.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "werelion wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "memory_of_a_werelion",
+        "werelion"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/werelion_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "werewolf skill reducer",
+      "monster_references": 3,
+      "example_monsters": [
+        "darkfang",
+        "hemming",
+        "werewolf"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/werewolf_skill_reducer.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_ATTRIBUTES",
+        "condition_param.CONDITION_PARAM_SKILL_MELEEPERCENT",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "white pale paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "white_pale"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/white_pale_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "white shade paralyze",
+      "monster_references": 3,
+      "example_monsters": [
+        "lost_time",
+        "time_keeper",
+        "time_waster"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/white_shade_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "white weretiger ice ring",
+      "monster_references": 1,
+      "example_monsters": [
+        "white_weretiger"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/white_weretiger_ice_ring.lua",
+      "tier": "P3",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "woodling paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "woodling"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/woodling_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "worm priestess paralyze",
+      "monster_references": 1,
+      "example_monsters": [
+        "worm_priestess"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/worm_priestess_paralyze.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_PARALYZE",
+        "condition.setFormula",
+        "condition_param.CONDITION_PARAM_TICKS"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "wyrm wave",
+      "monster_references": 2,
+      "example_monsters": [
+        "diamond_servant_replica",
+        "wyrm"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/wyrm_wave.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.setArea"
+      ],
+      "reasons": []
+    },
+    {
+      "name": "young sea serpent drown",
+      "monster_references": 1,
+      "example_monsters": [
+        "young_sea_serpent"
+      ],
+      "kind": "instant",
+      "script": "data-otservbr-global/scripts/spells/monster/young_sea_serpent_drown.lua",
+      "tier": "P2",
+      "primitives": [
+        "combat.COMBAT_PARAM_EFFECT",
+        "combat.COMBAT_PARAM_TYPE",
+        "combat.addCondition",
+        "combat.setArea",
+        "condition.CONDITION_DROWN",
+        "condition.addDamage",
+        "condition_param.CONDITION_PARAM_DELAYED"
+      ],
+      "reasons": []
+    }
+  ]
+}

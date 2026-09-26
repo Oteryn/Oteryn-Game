@@ -178,6 +178,14 @@ if __name__=='__main__':
     case('partial original prose blocks readiness',lambda m,d,c:manifest('partial_text','original_text'))
     case('script cannot be hidden as metadata',lambda m,d,c:manifest('metadata_only','script'))
     case('manifest missing destination',lambda m,d,c:manifest(destination='/monster/creature/missing'))
+    wiki={'kind':'mediawiki','api':'https://tibia.fandom.com/api.php','title':'Synthetic page','page_id':1,'revision_id':1,
+          'content_sha256':'0'*64}
+    case('mediawiki revision source accepted',lambda m,d,c:{**manifest(),'sources':manifest()['sources']+[wiki]},True)
+    case('mediawiki source requires content hash',
+        lambda m,d,c:{**manifest(),'sources':manifest()['sources']+[{k:v for k,v in wiki.items() if k!='content_sha256'}]})
+    case('mediawiki source rejects unpinned revision',lambda m,d,c:{**manifest(),'sources':manifest()['sources']+[{**wiki,'revision_id':0}]})
+    case('git source rejects abbreviated revision',
+        lambda m,d,c:{**manifest(),'sources':[{'repository':'opentibiabr/canary','revision':'47dfd51f'}]})
     case('manifest source index valid',lambda m,d,c:{**manifest(),'entries':[{**manifest()['entries'][0],'source_index':9}]} )
 
     for percent in (0.0003,0.29,1.4,4.93):

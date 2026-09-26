@@ -9,6 +9,16 @@
     "MATCH": 239,
     "WIKI_UNKNOWN": 8
   },
+  "loot_chance_rule": "highest-version Loot Statistics block at the cut; estimate = times / kills with a 95% Wilson interval; fewer than 10 drops is low_confidence. CONSISTENT = Canary inside the interval",
+  "loot_chance_totals": {
+    "CONSISTENT": 66,
+    "DIFF": 23,
+    "NOT_OBSERVED": 5
+  },
+  "loot_chance_confidence": {
+    "estimate": 79,
+    "low_confidence": 10
+  },
   "monsters": [
     {
       "monster": "rat",
@@ -22,6 +32,74 @@
       "current_revision_timestamp": "2026-06-25T08:08:05Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:30Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Rat",
+        "page_id": 40711,
+        "cut_revision_id": 1198087,
+        "cut_revision_timestamp": "2026-07-28T23:21:09Z",
+        "cut_content_sha256": "81f22c44b0ce75c116f2707b907339a63dfa4b65ec7f6c29c62a25c2f70aa5e8",
+        "current_revision_id": 1206491,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:23:11Z",
+        "status": "COMPARED",
+        "version": "9.63",
+        "version_line": 4,
+        "kills": 28581,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "gold coin",
+            "wiki_name": "Gold Coin",
+            "times": 25770,
+            "amount": "1-4",
+            "line": 8
+          },
+          {
+            "name": "cheese",
+            "wiki_name": "Cheese",
+            "times": 10162,
+            "amount": "1",
+            "line": 9
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "gold coin",
+          "canary_percent": 100.0,
+          "canary_amount": "1-4",
+          "wiki_item": "Gold Coin",
+          "wiki_line": 8,
+          "wiki_amount": "1-4",
+          "times": 25770,
+          "kills": 28581,
+          "wiki_percent": 90.164795,
+          "interval_95_wilson": [
+            89.8141,
+            90.5047
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "cheese",
+          "canary_percent": 39.41,
+          "canary_amount": "1",
+          "wiki_item": "Cheese",
+          "wiki_line": 9,
+          "wiki_amount": "1",
+          "times": 10162,
+          "kills": 28581,
+          "wiki_percent": 35.555089,
+          "interval_95_wilson": [
+            35.0021,
+            36.1119
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -29,21 +107,24 @@
           "canary": 20,
           "wiki": 20,
           "wiki_raw": "20",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 5,
           "wiki": 5,
           "wiki_raw": "5",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 1,
           "wiki": 1,
           "wiki_raw": "1",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -51,6 +132,7 @@
           "wiki": 67,
           "wiki_raw": "67",
           "status": "MATCH",
+          "wiki_line": 49,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -58,7 +140,8 @@
           "canary": 0.07,
           "wiki": 0.12,
           "wiki_raw": "0.12",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -66,6 +149,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -74,6 +158,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -82,6 +167,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -90,6 +176,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -98,6 +185,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -106,6 +194,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -114,6 +203,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -122,6 +212,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -130,6 +221,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -137,84 +229,96 @@
           "canary": 200,
           "wiki": 200,
           "wiki_raw": "200",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": 200,
           "wiki": 200,
           "wiki_raw": "200",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 23
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 24
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 28
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "flee_health",
           "canary": 5,
           "wiki": 5,
           "wiki_raw": "5",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 48
         },
         {
           "field": "bestiary.class",
           "canary": "mammal",
           "wiki": "mammal",
           "wiki_raw": "Mammal",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "trivial",
           "wiki": "trivial",
           "wiki_raw": "Trivial",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page.",
+          "wiki_line": 53
         }
       ]
     },
@@ -230,6 +334,345 @@
       "current_revision_timestamp": "2026-06-25T06:52:47Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:32Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Cyclops",
+        "page_id": 32767,
+        "cut_revision_id": 1195914,
+        "cut_revision_timestamp": "2026-07-13T22:50:26Z",
+        "cut_content_sha256": "50974c37e4c9b944482915d52132d93ac2f6e7dc0b1bb77edcf71812d7ee45af",
+        "current_revision_id": 1204709,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:23:12Z",
+        "status": "COMPARED",
+        "version": "11.02",
+        "version_line": 4,
+        "kills": 12500,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "gold coin",
+            "wiki_name": "Gold Coin",
+            "times": 10311,
+            "amount": "1-47",
+            "line": 8
+          },
+          {
+            "name": "meat",
+            "wiki_name": "Meat",
+            "times": 3710,
+            "amount": "1",
+            "line": 9
+          },
+          {
+            "name": "short sword",
+            "wiki_name": "Short Sword",
+            "times": 998,
+            "amount": "1",
+            "line": 10
+          },
+          {
+            "name": "cyclops toe",
+            "wiki_name": "Cyclops Toe",
+            "times": 617,
+            "amount": "1",
+            "line": 11
+          },
+          {
+            "name": "plate shield",
+            "wiki_name": "Plate Shield",
+            "times": 330,
+            "amount": "1",
+            "line": 12
+          },
+          {
+            "name": "heavy old tome",
+            "wiki_name": "Heavy Old Tome",
+            "times": 265,
+            "amount": "1",
+            "line": 13
+          },
+          {
+            "name": "battle shield",
+            "wiki_name": "Battle Shield",
+            "times": 194,
+            "amount": "1",
+            "line": 14
+          },
+          {
+            "name": "halberd",
+            "wiki_name": "Halberd",
+            "times": 123,
+            "amount": "1",
+            "line": 15
+          },
+          {
+            "name": "dark helmet",
+            "wiki_name": "Dark Helmet",
+            "times": 29,
+            "amount": "1",
+            "line": 16
+          },
+          {
+            "name": "wolf tooth chain",
+            "wiki_name": "Wolf Tooth Chain",
+            "times": 28,
+            "amount": "1",
+            "line": 17
+          },
+          {
+            "name": "old rag",
+            "wiki_name": "Old Rag",
+            "times": 22,
+            "amount": "1",
+            "line": 18
+          },
+          {
+            "name": "health potion",
+            "wiki_name": "Health Potion",
+            "times": 19,
+            "amount": "1",
+            "line": 19
+          },
+          {
+            "name": "cyclops trophy",
+            "wiki_name": "Cyclops Trophy",
+            "times": 9,
+            "amount": "1",
+            "line": 20
+          },
+          {
+            "name": "club ring",
+            "wiki_name": "Club Ring",
+            "times": 5,
+            "amount": "1",
+            "line": 21
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "wolf tooth chain",
+          "canary_percent": 0.19,
+          "canary_amount": "1",
+          "wiki_item": "Wolf Tooth Chain",
+          "wiki_line": 17,
+          "wiki_amount": "1",
+          "times": 28,
+          "kills": 12500,
+          "wiki_percent": 0.224,
+          "interval_95_wilson": [
+            0.155,
+            0.3236
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "gold coin",
+          "canary_percent": 82.0,
+          "canary_amount": "1-47",
+          "wiki_item": "Gold Coin",
+          "wiki_line": 8,
+          "wiki_amount": "1-47",
+          "times": 10311,
+          "kills": 12500,
+          "wiki_percent": 82.488,
+          "interval_95_wilson": [
+            81.8118,
+            83.1443
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "club ring",
+          "canary_percent": 0.09,
+          "canary_amount": "1",
+          "wiki_item": "Club Ring",
+          "wiki_line": 21,
+          "wiki_amount": "1",
+          "times": 5,
+          "kills": 12500,
+          "wiki_percent": 0.04,
+          "interval_95_wilson": [
+            0.0171,
+            0.0936
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "halberd",
+          "canary_percent": 1.003,
+          "canary_amount": "1",
+          "wiki_item": "Halberd",
+          "wiki_line": 15,
+          "wiki_amount": "1",
+          "times": 123,
+          "kills": 12500,
+          "wiki_percent": 0.984,
+          "interval_95_wilson": [
+            0.8254,
+            1.1727
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "short sword",
+          "canary_percent": 8.0,
+          "canary_amount": "1",
+          "wiki_item": "Short Sword",
+          "wiki_line": 10,
+          "wiki_amount": "1",
+          "times": 998,
+          "kills": 12500,
+          "wiki_percent": 7.984,
+          "interval_95_wilson": [
+            7.5217,
+            8.4722
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "dark helmet",
+          "canary_percent": 0.22,
+          "canary_amount": "1",
+          "wiki_item": "Dark Helmet",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 29,
+          "kills": 12500,
+          "wiki_percent": 0.232,
+          "interval_95_wilson": [
+            0.1616,
+            0.333
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "plate shield",
+          "canary_percent": 2.5,
+          "canary_amount": "1",
+          "wiki_item": "Plate Shield",
+          "wiki_line": 12,
+          "wiki_amount": "1",
+          "times": 330,
+          "kills": 12500,
+          "wiki_percent": 2.64,
+          "interval_95_wilson": [
+            2.3732,
+            2.9359
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "battle shield",
+          "canary_percent": 1.4,
+          "canary_amount": "1",
+          "wiki_item": "Battle Shield",
+          "wiki_line": 14,
+          "wiki_amount": "1",
+          "times": 194,
+          "kills": 12500,
+          "wiki_percent": 1.552,
+          "interval_95_wilson": [
+            1.3497,
+            1.7841
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "meat",
+          "canary_percent": 30.07,
+          "canary_amount": "1",
+          "wiki_item": "Meat",
+          "wiki_line": 9,
+          "wiki_amount": "1",
+          "times": 3710,
+          "kills": 12500,
+          "wiki_percent": 29.68,
+          "interval_95_wilson": [
+            28.8855,
+            30.487
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "cyclops trophy",
+          "canary_percent": 0.08,
+          "canary_amount": "1",
+          "wiki_item": "Cyclops Trophy",
+          "wiki_line": 20,
+          "wiki_amount": "1",
+          "times": 9,
+          "kills": 12500,
+          "wiki_percent": 0.072,
+          "interval_95_wilson": [
+            0.0379,
+            0.1368
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "health potion",
+          "canary_percent": 0.21,
+          "canary_amount": "1",
+          "wiki_item": "Health Potion",
+          "wiki_line": 19,
+          "wiki_amount": "1",
+          "times": 19,
+          "kills": 12500,
+          "wiki_percent": 0.152,
+          "interval_95_wilson": [
+            0.0973,
+            0.2373
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "cyclops toe",
+          "canary_percent": 4.93,
+          "canary_amount": "1",
+          "wiki_item": "Cyclops Toe",
+          "wiki_line": 11,
+          "wiki_amount": "1",
+          "times": 617,
+          "kills": 12500,
+          "wiki_percent": 4.936,
+          "interval_95_wilson": [
+            4.5699,
+            5.3298
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "heavy old tome",
+          "canary_percent": 1.0,
+          "canary_amount": "1",
+          "wiki_item": "Heavy Old Tome",
+          "wiki_line": 13,
+          "wiki_amount": "1",
+          "times": 265,
+          "kills": 12500,
+          "wiki_percent": 2.12,
+          "interval_95_wilson": [
+            1.8818,
+            2.3876
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -237,21 +680,24 @@
           "canary": 260,
           "wiki": 260,
           "wiki_raw": "260",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 150,
           "wiki": 150,
           "wiki_raw": "150",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 17,
           "wiki": 17,
           "wiki_raw": "17",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -259,6 +705,7 @@
           "wiki": 95,
           "wiki_raw": "95",
           "status": "MATCH",
+          "wiki_line": 46,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -266,7 +713,8 @@
           "canary": 0.62,
           "wiki": 0.97,
           "wiki_raw": "0.97",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -274,6 +722,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 28,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -282,6 +731,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -290,6 +740,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -298,6 +749,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -306,6 +758,7 @@
           "wiki": 25,
           "wiki_raw": "75%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -314,6 +767,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -322,6 +776,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -330,6 +785,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -338,6 +794,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -345,84 +802,96 @@
           "canary": 490,
           "wiki": 490,
           "wiki_raw": "490",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": 490,
           "wiki": 490,
           "wiki_raw": "490",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 22
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 23
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "flee_health",
           "canary": 0,
           "wiki": 0,
           "wiki_raw": "0",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 45
         },
         {
           "field": "bestiary.class",
           "canary": "giant",
           "wiki": "giant",
           "wiki_raw": "Giant",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page.",
+          "wiki_line": 49
         }
       ]
     },
@@ -438,6 +907,220 @@
       "current_revision_timestamp": "2026-06-25T07:16:54Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:33Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Orc Spearman",
+        "page_id": 39160,
+        "cut_revision_id": 1198004,
+        "cut_revision_timestamp": "2026-07-27T22:09:51Z",
+        "cut_content_sha256": "68f00bbef0d2f2ade3bb55e65fdb68b7aa782936f5dee78781759c7dbf2aab25",
+        "current_revision_id": 1206488,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:23:13Z",
+        "status": "COMPARED",
+        "version": "11.02",
+        "version_line": 4,
+        "kills": 21566,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "gold coin",
+            "wiki_name": "Gold Coin",
+            "times": 5244,
+            "amount": "1-11",
+            "line": 9
+          },
+          {
+            "name": "spear",
+            "wiki_name": "Spear",
+            "times": 3867,
+            "amount": "1",
+            "line": 10
+          },
+          {
+            "name": "studded legs",
+            "wiki_name": "Studded Legs",
+            "times": 2043,
+            "amount": "1",
+            "line": 11
+          },
+          {
+            "name": "studded helmet",
+            "wiki_name": "Studded Helmet",
+            "times": 1911,
+            "amount": "1",
+            "line": 12
+          },
+          {
+            "name": "machete",
+            "wiki_name": "Machete",
+            "times": 625,
+            "amount": "1",
+            "line": 13
+          },
+          {
+            "name": "heavy old tome",
+            "wiki_name": "Heavy Old Tome",
+            "times": 436,
+            "amount": "1",
+            "line": 14
+          },
+          {
+            "name": "orc tooth",
+            "wiki_name": "Orc Tooth",
+            "times": 27,
+            "amount": "1",
+            "line": 16
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "gold coin",
+          "canary_percent": 25.05,
+          "canary_amount": "1-11",
+          "wiki_item": "Gold Coin",
+          "wiki_line": 9,
+          "wiki_amount": "1-11",
+          "times": 5244,
+          "kills": 21566,
+          "wiki_percent": 24.316053,
+          "interval_95_wilson": [
+            23.7481,
+            24.8931
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "spear",
+          "canary_percent": 17.44,
+          "canary_amount": "1",
+          "wiki_item": "Spear",
+          "wiki_line": 10,
+          "wiki_amount": "1",
+          "times": 3867,
+          "kills": 21566,
+          "wiki_percent": 17.931003,
+          "interval_95_wilson": [
+            17.4247,
+            18.4487
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "machete",
+          "canary_percent": 3.0,
+          "canary_amount": "1",
+          "wiki_item": "Machete",
+          "wiki_line": 13,
+          "wiki_amount": "1",
+          "times": 625,
+          "kills": 21566,
+          "wiki_percent": 2.89808,
+          "interval_95_wilson": [
+            2.6824,
+            3.1305
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "studded legs",
+          "canary_percent": 10.0,
+          "canary_amount": "1",
+          "wiki_item": "Studded Legs",
+          "wiki_line": 11,
+          "wiki_amount": "1",
+          "times": 2043,
+          "kills": 21566,
+          "wiki_percent": 9.473245,
+          "interval_95_wilson": [
+            9.0896,
+            9.8713
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "studded helmet",
+          "canary_percent": 9.0,
+          "canary_amount": "1",
+          "wiki_item": "Studded Helmet",
+          "wiki_line": 12,
+          "wiki_amount": "1",
+          "times": 1911,
+          "kills": 21566,
+          "wiki_percent": 8.86117,
+          "interval_95_wilson": [
+            8.4892,
+            9.2478
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "meat",
+          "canary_percent": 30.2,
+          "canary_amount": "1",
+          "status": "NOT_OBSERVED",
+          "times": 0,
+          "kills": 21566,
+          "interval_95_wilson": [
+            0.0,
+            0.0178
+          ],
+          "note": "Not listed in the highest-version block."
+        },
+        {
+          "item": "orc tooth",
+          "canary_percent": 0.15,
+          "canary_amount": "1",
+          "wiki_item": "Orc Tooth",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 27,
+          "kills": 21566,
+          "wiki_percent": 0.125197,
+          "interval_95_wilson": [
+            0.0861,
+            0.1821
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "orc leather",
+          "canary_percent": 2.3,
+          "canary_amount": "1",
+          "status": "NOT_OBSERVED",
+          "times": 0,
+          "kills": 21566,
+          "interval_95_wilson": [
+            0.0,
+            0.0178
+          ],
+          "note": "Not listed in the highest-version block."
+        },
+        {
+          "item": "heavy old tome",
+          "canary_percent": 1.0,
+          "canary_amount": "1",
+          "wiki_item": "Heavy Old Tome",
+          "wiki_line": 14,
+          "wiki_amount": "1",
+          "times": 436,
+          "kills": 21566,
+          "wiki_percent": 2.021701,
+          "interval_95_wilson": [
+            1.8422,
+            2.2183
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -445,21 +1128,24 @@
           "canary": 105,
           "wiki": 105,
           "wiki_raw": "105",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 38,
           "wiki": 38,
           "wiki_raw": "38",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 6,
           "wiki": 6,
           "wiki_raw": "6",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -467,6 +1153,7 @@
           "wiki": 88,
           "wiki_raw": "88",
           "status": "MATCH",
+          "wiki_line": 50,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -474,7 +1161,8 @@
           "canary": 0.3,
           "wiki": 0.48,
           "wiki_raw": "0.48",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -482,6 +1170,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -490,6 +1179,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -498,6 +1188,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -506,6 +1197,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -514,6 +1206,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -522,6 +1215,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -530,6 +1224,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -538,6 +1233,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -546,6 +1242,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -553,84 +1250,96 @@
           "canary": 310,
           "wiki": 310,
           "wiki_raw": "310",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": 310,
           "wiki": 310,
           "wiki_raw": "310",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 28
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 32
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "flee_health",
           "canary": 10,
           "wiki": 10,
           "wiki_raw": "10",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 51
         },
         {
           "field": "bestiary.class",
           "canary": "humanoid",
           "wiki": "humanoid",
           "wiki_raw": "Humanoid",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page.",
+          "wiki_line": 55
         }
       ]
     },
@@ -646,6 +1355,50 @@
       "current_revision_timestamp": "2026-06-25T08:33:46Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:34Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Scorpion",
+        "page_id": 40542,
+        "cut_revision_id": 1197779,
+        "cut_revision_timestamp": "2026-07-26T16:15:11Z",
+        "cut_content_sha256": "4f47a381954f5dfa62bb64abe7fde36c2099f2eed9a764b3ba1fbe8121932b91",
+        "current_revision_id": 1206764,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:23:14Z",
+        "status": "COMPARED",
+        "version": "8.6",
+        "version_line": 4,
+        "kills": 82763,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "scorpion tail",
+            "wiki_name": "Scorpion Tail",
+            "times": 4222,
+            "amount": "1",
+            "line": 8
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "scorpion tail",
+          "canary_percent": 4.93,
+          "canary_amount": "1",
+          "wiki_item": "Scorpion Tail",
+          "wiki_line": 8,
+          "wiki_amount": "1",
+          "times": 4222,
+          "kills": 82763,
+          "wiki_percent": 5.101313,
+          "interval_95_wilson": [
+            4.9535,
+            5.2533
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -653,21 +1406,24 @@
           "canary": 45,
           "wiki": 45,
           "wiki_raw": "45",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 45,
           "wiki": 45,
           "wiki_raw": "45",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 14,
           "wiki": 14,
           "wiki_raw": "14",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -675,6 +1431,7 @@
           "wiki": 75,
           "wiki_raw": "75",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -682,7 +1439,8 @@
           "canary": 0.13,
           "wiki": 0.2,
           "wiki_raw": "0.20",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -690,6 +1448,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 28,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -698,6 +1457,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -706,6 +1466,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -714,6 +1475,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -722,6 +1484,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -730,6 +1493,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -738,6 +1502,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -746,6 +1511,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -754,6 +1520,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -761,84 +1528,96 @@
           "canary": 310,
           "wiki": 310,
           "wiki_raw": "310",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 22
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 23
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "flee_health",
           "canary": 5,
           "wiki": 5,
           "wiki_raw": "5",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 46
         },
         {
           "field": "bestiary.class",
           "canary": "vermin",
           "wiki": "vermin",
           "wiki_raw": "Vermin",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page.",
+          "wiki_line": 49
         }
       ]
     },
@@ -854,6 +1633,279 @@
       "current_revision_timestamp": "2026-06-25T07:15:06Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:35Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Orc Shaman",
+        "page_id": 39161,
+        "cut_revision_id": 1198003,
+        "cut_revision_timestamp": "2026-07-27T22:09:50Z",
+        "cut_content_sha256": "021d84d479bff254a122d1210fab6ac016180ac141e9e1a23e291337c5f6bcf4",
+        "current_revision_id": 1204736,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:23:16Z",
+        "status": "COMPARED",
+        "version": "11.02",
+        "version_line": 4,
+        "kills": 15813,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "gold coin",
+            "wiki_name": "Gold Coin",
+            "times": 14246,
+            "amount": "1-5",
+            "line": 8
+          },
+          {
+            "name": "corncob",
+            "wiki_name": "Corncob",
+            "times": 1762,
+            "amount": "1-2",
+            "line": 9
+          },
+          {
+            "name": "broken shamanic staff",
+            "wiki_name": "Broken Shamanic Staff",
+            "times": 1578,
+            "amount": "1",
+            "line": 10
+          },
+          {
+            "name": "chain armor",
+            "wiki_name": "Chain Armor",
+            "times": 1430,
+            "amount": "1",
+            "line": 11
+          },
+          {
+            "name": "shamanic hood",
+            "wiki_name": "Shamanic Hood",
+            "times": 1116,
+            "amount": "1",
+            "line": 12
+          },
+          {
+            "name": "spear",
+            "wiki_name": "Spear",
+            "times": 811,
+            "amount": "1",
+            "line": 13
+          },
+          {
+            "name": "orc tooth",
+            "wiki_name": "Orc Tooth",
+            "times": 349,
+            "amount": "1",
+            "line": 15
+          },
+          {
+            "name": "heavy old tome",
+            "wiki_name": "Heavy Old Tome",
+            "times": 342,
+            "amount": "1",
+            "line": 16
+          },
+          {
+            "name": "wand of decay",
+            "wiki_name": "Wand of Decay",
+            "times": 167,
+            "amount": "1",
+            "line": 17
+          },
+          {
+            "name": "book (grey)",
+            "wiki_name": "Book (Grey)",
+            "times": 67,
+            "amount": "1",
+            "line": 18
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "book",
+          "canary_percent": 0.52,
+          "canary_amount": "1",
+          "wiki_item": "Book (Grey)",
+          "wiki_line": 18,
+          "wiki_amount": "1",
+          "times": 67,
+          "kills": 15813,
+          "wiki_percent": 0.423702,
+          "interval_95_wilson": [
+            0.3338,
+            0.5377
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "gold coin",
+          "canary_percent": 90.0,
+          "canary_amount": "1-5",
+          "wiki_item": "Gold Coin",
+          "wiki_line": 8,
+          "wiki_amount": "1-5",
+          "times": 14246,
+          "kills": 15813,
+          "wiki_percent": 90.090432,
+          "interval_95_wilson": [
+            89.6149,
+            90.5464
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "wand of decay",
+          "canary_percent": 1.0,
+          "canary_amount": "1",
+          "wiki_item": "Wand of Decay",
+          "wiki_line": 17,
+          "wiki_amount": "1",
+          "times": 167,
+          "kills": 15813,
+          "wiki_percent": 1.056093,
+          "interval_95_wilson": [
+            0.9082,
+            1.2277
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "spear",
+          "canary_percent": 4.85,
+          "canary_amount": "1",
+          "wiki_item": "Spear",
+          "wiki_line": 13,
+          "wiki_amount": "1",
+          "times": 811,
+          "kills": 15813,
+          "wiki_percent": 5.128692,
+          "interval_95_wilson": [
+            4.7957,
+            5.4835
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "chain armor",
+          "canary_percent": 8.75,
+          "canary_amount": "1",
+          "wiki_item": "Chain Armor",
+          "wiki_line": 11,
+          "wiki_amount": "1",
+          "times": 1430,
+          "kills": 15813,
+          "wiki_percent": 9.043192,
+          "interval_95_wilson": [
+            8.6061,
+            9.5002
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "corncob",
+          "canary_percent": 10.6,
+          "canary_amount": "1-2",
+          "wiki_item": "Corncob",
+          "wiki_line": 9,
+          "wiki_amount": "1-2",
+          "times": 1762,
+          "kills": 15813,
+          "wiki_percent": 11.142731,
+          "interval_95_wilson": [
+            10.6617,
+            11.6426
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "orc tooth",
+          "canary_percent": 2.1,
+          "canary_amount": "1",
+          "wiki_item": "Orc Tooth",
+          "wiki_line": 15,
+          "wiki_amount": "1",
+          "times": 349,
+          "kills": 15813,
+          "wiki_percent": 2.207045,
+          "interval_95_wilson": [
+            1.9894,
+            2.4479
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "broken shamanic staff",
+          "canary_percent": 10.3,
+          "canary_amount": "1",
+          "wiki_item": "Broken Shamanic Staff",
+          "wiki_line": 10,
+          "wiki_amount": "1",
+          "times": 1578,
+          "kills": 15813,
+          "wiki_percent": 9.979131,
+          "interval_95_wilson": [
+            9.5217,
+            10.456
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "shamanic hood",
+          "canary_percent": 6.86,
+          "canary_amount": "1",
+          "wiki_item": "Shamanic Hood",
+          "wiki_line": 12,
+          "wiki_amount": "1",
+          "times": 1116,
+          "kills": 15813,
+          "wiki_percent": 7.057484,
+          "interval_95_wilson": [
+            6.6686,
+            7.4672
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "orc leather",
+          "canary_percent": 4.3,
+          "canary_amount": "1",
+          "status": "NOT_OBSERVED",
+          "times": 0,
+          "kills": 15813,
+          "interval_95_wilson": [
+            0.0,
+            0.0243
+          ],
+          "note": "Not listed in the highest-version block."
+        },
+        {
+          "item": "heavy old tome",
+          "canary_percent": 1.0,
+          "canary_amount": "1",
+          "wiki_item": "Heavy Old Tome",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 342,
+          "kills": 15813,
+          "wiki_percent": 2.162777,
+          "interval_95_wilson": [
+            1.9474,
+            2.4014
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -861,21 +1913,24 @@
           "canary": 115,
           "wiki": 115,
           "wiki_raw": "115",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 110,
           "wiki": 110,
           "wiki_raw": "110",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 8,
           "wiki": 8,
           "wiki_raw": "8",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -883,6 +1938,7 @@
           "wiki": 70,
           "wiki_raw": "70",
           "status": "MATCH",
+          "wiki_line": 53,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -890,7 +1946,8 @@
           "canary": 0.25,
           "wiki": 0.4,
           "wiki_raw": "0.40",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -898,6 +1955,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -906,6 +1964,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -914,6 +1973,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -922,6 +1982,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -930,6 +1991,7 @@
           "wiki": 50,
           "wiki_raw": "50%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -938,6 +2000,7 @@
           "wiki": 10,
           "wiki_raw": "90%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -946,6 +2009,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -954,6 +2018,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -962,6 +2027,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -969,49 +2035,56 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 30
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 34
         },
         {
           "field": "flee_health",
@@ -1025,28 +2098,32 @@
           "canary": "humanoid",
           "wiki": "humanoid",
           "wiki_raw": "Humanoid",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "wiki_line": 57,
           "name_variants": [
             {
               "canary": "book",
@@ -1068,6 +2145,314 @@
       "current_revision_timestamp": "2026-06-25T06:54:11Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:36Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Necromancer",
+        "page_id": 32707,
+        "cut_revision_id": 1196114,
+        "cut_revision_timestamp": "2026-07-14T11:10:24Z",
+        "cut_content_sha256": "3013731e3da0a2f8c7825ea2561cbfa0f372ed2bbf175397c3196e6109a8cef0",
+        "current_revision_id": 1205950,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:23:17Z",
+        "status": "COMPARED",
+        "version": "8.6",
+        "version_line": 4,
+        "kills": 71423,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "gold coin",
+            "wiki_name": "Gold Coin",
+            "times": 21486,
+            "amount": "1-90",
+            "line": 8
+          },
+          {
+            "name": "poison arrow",
+            "wiki_name": "Poison Arrow",
+            "times": 10676,
+            "amount": "1-5",
+            "line": 9
+          },
+          {
+            "name": "book of necromantic rituals",
+            "wiki_name": "Book of Necromantic Rituals",
+            "times": 7160,
+            "amount": "1",
+            "line": 10
+          },
+          {
+            "name": "green mushroom",
+            "wiki_name": "Green Mushroom",
+            "times": 1066,
+            "amount": "1",
+            "line": 11
+          },
+          {
+            "name": "necromantic robe",
+            "wiki_name": "Necromantic Robe",
+            "times": 732,
+            "amount": "1",
+            "line": 12
+          },
+          {
+            "name": "mystic turban",
+            "wiki_name": "Mystic Turban",
+            "times": 351,
+            "amount": "1",
+            "line": 13
+          },
+          {
+            "name": "clerical mace",
+            "wiki_name": "Clerical Mace",
+            "times": 269,
+            "amount": "1",
+            "line": 14
+          },
+          {
+            "name": "strong mana potion",
+            "wiki_name": "Strong Mana Potion",
+            "times": 244,
+            "amount": "1",
+            "line": 15
+          },
+          {
+            "name": "boots of haste",
+            "wiki_name": "Boots of Haste",
+            "times": 150,
+            "amount": "1",
+            "line": 16
+          },
+          {
+            "name": "spellbook of warding",
+            "wiki_name": "Spellbook of Warding",
+            "times": 76,
+            "amount": "1",
+            "line": 17
+          },
+          {
+            "name": "skull staff",
+            "wiki_name": "Skull Staff",
+            "times": 73,
+            "amount": "1",
+            "line": 18
+          },
+          {
+            "name": "noble axe",
+            "wiki_name": "Noble Axe",
+            "times": 5,
+            "amount": "1",
+            "line": 19
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "gold coin",
+          "canary_percent": 30.05,
+          "canary_amount": "1-90",
+          "wiki_item": "Gold Coin",
+          "wiki_line": 8,
+          "wiki_amount": "1-90",
+          "times": 21486,
+          "kills": 71423,
+          "wiki_percent": 30.082746,
+          "interval_95_wilson": [
+            29.7475,
+            30.4202
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "boots of haste",
+          "canary_percent": 0.21,
+          "canary_amount": "1",
+          "wiki_item": "Boots of Haste",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 150,
+          "kills": 71423,
+          "wiki_percent": 0.210016,
+          "interval_95_wilson": [
+            0.179,
+            0.2464
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "clerical mace",
+          "canary_percent": 0.39,
+          "canary_amount": "1",
+          "wiki_item": "Clerical Mace",
+          "wiki_line": 14,
+          "wiki_amount": "1",
+          "times": 269,
+          "kills": 71423,
+          "wiki_percent": 0.376629,
+          "interval_95_wilson": [
+            0.3343,
+            0.4243
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "skull staff",
+          "canary_percent": 0.1,
+          "canary_amount": "1",
+          "wiki_item": "Skull Staff",
+          "wiki_line": 18,
+          "wiki_amount": "1",
+          "times": 73,
+          "kills": 71423,
+          "wiki_percent": 0.102208,
+          "interval_95_wilson": [
+            0.0813,
+            0.1285
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "poison arrow",
+          "canary_percent": 15.0,
+          "canary_amount": "1-5",
+          "wiki_item": "Poison Arrow",
+          "wiki_line": 9,
+          "wiki_amount": "1-5",
+          "times": 10676,
+          "kills": 71423,
+          "wiki_percent": 14.947566,
+          "interval_95_wilson": [
+            14.688,
+            15.2109
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "mystic turban",
+          "canary_percent": 0.5,
+          "canary_amount": "1",
+          "wiki_item": "Mystic Turban",
+          "wiki_line": 13,
+          "wiki_amount": "1",
+          "times": 351,
+          "kills": 71423,
+          "wiki_percent": 0.491438,
+          "interval_95_wilson": [
+            0.4427,
+            0.5455
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "green mushroom",
+          "canary_percent": 1.47,
+          "canary_amount": "1",
+          "wiki_item": "Green Mushroom",
+          "wiki_line": 11,
+          "wiki_amount": "1",
+          "times": 1066,
+          "kills": 71423,
+          "wiki_percent": 1.492516,
+          "interval_95_wilson": [
+            1.4062,
+            1.5841
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "noble axe",
+          "canary_percent": 0.01,
+          "canary_amount": "1",
+          "wiki_item": "Noble Axe",
+          "wiki_line": 19,
+          "wiki_amount": "1",
+          "times": 5,
+          "kills": 71423,
+          "wiki_percent": 0.007001,
+          "interval_95_wilson": [
+            0.003,
+            0.0164
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "strong mana potion",
+          "canary_percent": 0.3,
+          "canary_amount": "1",
+          "wiki_item": "Strong Mana Potion",
+          "wiki_line": 15,
+          "wiki_amount": "1",
+          "times": 244,
+          "kills": 71423,
+          "wiki_percent": 0.341627,
+          "interval_95_wilson": [
+            0.3014,
+            0.3872
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "spellbook of warding",
+          "canary_percent": 0.13,
+          "canary_amount": "1",
+          "wiki_item": "Spellbook of Warding",
+          "wiki_line": 17,
+          "wiki_amount": "1",
+          "times": 76,
+          "kills": 71423,
+          "wiki_percent": 0.106408,
+          "interval_95_wilson": [
+            0.085,
+            0.1332
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "book of necromantic rituals",
+          "canary_percent": 10.13,
+          "canary_amount": "1",
+          "wiki_item": "Book of Necromantic Rituals",
+          "wiki_line": 10,
+          "wiki_amount": "1",
+          "times": 7160,
+          "kills": 71423,
+          "wiki_percent": 10.024782,
+          "interval_95_wilson": [
+            9.8067,
+            10.2472
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "necromantic robe",
+          "canary_percent": 1.001,
+          "canary_amount": "1",
+          "wiki_item": "Necromantic Robe",
+          "wiki_line": 12,
+          "wiki_amount": "1",
+          "times": 732,
+          "kills": 71423,
+          "wiki_percent": 1.02488,
+          "interval_95_wilson": [
+            0.9536,
+            1.1014
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -1075,21 +2460,24 @@
           "canary": 580,
           "wiki": 580,
           "wiki_raw": "580",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 580,
           "wiki": 580,
           "wiki_raw": "580",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 50,
           "wiki": 50,
           "wiki_raw": "50",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1097,6 +2485,7 @@
           "wiki": 94,
           "wiki_raw": "94",
           "status": "MATCH",
+          "wiki_line": 54,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1104,7 +2493,8 @@
           "canary": 1.04,
           "wiki": 1.65,
           "wiki_raw": "1.65",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1112,6 +2502,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1120,6 +2511,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1128,6 +2520,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1136,6 +2529,7 @@
           "wiki": 50,
           "wiki_raw": "50%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1144,6 +2538,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1152,6 +2547,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1160,6 +2556,7 @@
           "wiki": 10,
           "wiki_raw": "90%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1168,6 +2565,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1176,6 +2574,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1183,49 +2582,56 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 32
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 36
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "flee_health",
@@ -1239,28 +2645,32 @@
           "canary": "human",
           "wiki": "human",
           "wiki_raw": "Human",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "medium",
           "wiki": "medium",
           "wiki_raw": "Medium",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page.",
+          "wiki_line": 58
         }
       ]
     },
@@ -1283,21 +2693,24 @@
           "canary": 280,
           "wiki": 280,
           "wiki_raw": "280",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 220,
           "wiki": 220,
           "wiki_raw": "220",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 18,
           "wiki": 18,
           "wiki_raw": "18",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1305,6 +2718,7 @@
           "wiki": 95,
           "wiki_raw": "95",
           "status": "MATCH",
+          "wiki_line": 54,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1312,7 +2726,8 @@
           "canary": 0.51,
           "wiki": 0.8,
           "wiki_raw": "0.80",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1320,6 +2735,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1328,6 +2744,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1336,6 +2753,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1344,6 +2762,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1352,6 +2771,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1360,6 +2780,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1368,6 +2789,7 @@
           "wiki": -25,
           "wiki_raw": "125%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1376,6 +2798,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1384,6 +2807,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1391,49 +2815,56 @@
           "canary": 690,
           "wiki": 690,
           "wiki_raw": "690",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 31
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 32
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 36
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "flee_health",
@@ -1447,21 +2878,24 @@
           "canary": "elemental",
           "wiki": "elemental",
           "wiki_raw": "Elemental",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "medium",
           "wiki": "medium",
           "wiki_raw": "Medium",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         }
       ]
     },
@@ -1477,6 +2911,550 @@
       "current_revision_timestamp": "2026-06-25T06:40:57Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:39Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Dragon",
+        "page_id": 29034,
+        "cut_revision_id": 1197999,
+        "cut_revision_timestamp": "2026-07-27T22:09:46Z",
+        "cut_content_sha256": "a906095d92e1fe20c28a8b217edfd9a541e5e18d43862c6d13bc7246e71716da",
+        "current_revision_id": 1206028,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:02:22Z",
+        "status": "COMPARED",
+        "version": "13.21.14040",
+        "version_line": 4,
+        "kills": 15151,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "gold coin",
+            "wiki_name": "Gold Coin",
+            "times": 13671,
+            "amount": "1-104",
+            "line": 8
+          },
+          {
+            "name": "dragon ham",
+            "wiki_name": "Dragon Ham",
+            "times": 9860,
+            "amount": "1-2",
+            "line": 9
+          },
+          {
+            "name": "steel shield",
+            "wiki_name": "Steel Shield",
+            "times": 2286,
+            "amount": "1",
+            "line": 10
+          },
+          {
+            "name": "dragon's tail",
+            "wiki_name": "Dragon's Tail",
+            "times": 1529,
+            "amount": "1",
+            "line": 11
+          },
+          {
+            "name": "crossbow",
+            "wiki_name": "Crossbow",
+            "times": 1525,
+            "amount": "1",
+            "line": 12
+          },
+          {
+            "name": "burst arrow",
+            "wiki_name": "Burst Arrow",
+            "times": 1203,
+            "amount": "1-10",
+            "line": 13
+          },
+          {
+            "name": "longsword",
+            "wiki_name": "Longsword",
+            "times": 607,
+            "amount": "1",
+            "line": 14
+          },
+          {
+            "name": "steel helmet",
+            "wiki_name": "Steel Helmet",
+            "times": 461,
+            "amount": "1",
+            "line": 15
+          },
+          {
+            "name": "plate legs",
+            "wiki_name": "Plate Legs",
+            "times": 306,
+            "amount": "1",
+            "line": 16
+          },
+          {
+            "name": "broadsword",
+            "wiki_name": "Broadsword",
+            "times": 262,
+            "amount": "1",
+            "line": 17
+          },
+          {
+            "name": "double axe",
+            "wiki_name": "Double Axe",
+            "times": 159,
+            "amount": "1",
+            "line": 18
+          },
+          {
+            "name": "wand of inferno",
+            "wiki_name": "Wand of Inferno",
+            "times": 158,
+            "amount": "1",
+            "line": 19
+          },
+          {
+            "name": "green dragon leather",
+            "wiki_name": "Green Dragon Leather",
+            "times": 148,
+            "amount": "1",
+            "line": 20
+          },
+          {
+            "name": "strong health potion",
+            "wiki_name": "Strong Health Potion",
+            "times": 142,
+            "amount": "1",
+            "line": 21
+          },
+          {
+            "name": "green dragon scale",
+            "wiki_name": "Green Dragon Scale",
+            "times": 136,
+            "amount": "1",
+            "line": 22
+          },
+          {
+            "name": "serpent sword",
+            "wiki_name": "Serpent Sword",
+            "times": 74,
+            "amount": "1",
+            "line": 23
+          },
+          {
+            "name": "small diamond",
+            "wiki_name": "Small Diamond",
+            "times": 71,
+            "amount": "1",
+            "line": 24
+          },
+          {
+            "name": "dragon hammer",
+            "wiki_name": "Dragon Hammer",
+            "times": 65,
+            "amount": "1",
+            "line": 25
+          },
+          {
+            "name": "dragon shield",
+            "wiki_name": "Dragon Shield",
+            "times": 45,
+            "amount": "1",
+            "line": 26
+          },
+          {
+            "name": "dragon trophy",
+            "wiki_name": "Dragon Trophy",
+            "times": 11,
+            "amount": "1",
+            "line": 27,
+            "item_page": {
+              "page_title": "Dragon Trophy",
+              "page_id": 12886,
+              "cut_revision_id": 1040731,
+              "cut_content_sha256": "58cf3f5d4aedb58c02c6838d82c01a452abf3ad73a062d17cd223f440b146249",
+              "current_revision_id": 1040731,
+              "retrieved_at": "2026-09-26T20:03:57Z",
+              "status": "COMPARED",
+              "itemid_line": 5,
+              "item_ids": [
+                44158
+              ]
+            }
+          },
+          {
+            "name": "life crystal",
+            "wiki_name": "Life Crystal",
+            "times": 11,
+            "amount": "1",
+            "line": 28
+          },
+          {
+            "name": "dragonbone staff",
+            "wiki_name": "Dragonbone Staff",
+            "times": 9,
+            "amount": "1",
+            "line": 29
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "gold coin",
+          "canary_percent": 89.92,
+          "canary_amount": "1-102",
+          "wiki_item": "Gold Coin",
+          "wiki_line": 8,
+          "wiki_amount": "1-104",
+          "times": 13671,
+          "kills": 15151,
+          "wiki_percent": 90.231668,
+          "interval_95_wilson": [
+            89.7487,
+            90.6943
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "dragon ham",
+          "canary_percent": 66.27,
+          "canary_amount": "1-2",
+          "wiki_item": "Dragon Ham",
+          "wiki_line": 9,
+          "wiki_amount": "1-2",
+          "times": 9860,
+          "kills": 15151,
+          "wiki_percent": 65.078213,
+          "interval_95_wilson": [
+            64.3154,
+            65.8334
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "steel shield",
+          "canary_percent": 15.65,
+          "canary_amount": "1",
+          "wiki_item": "Steel Shield",
+          "wiki_line": 10,
+          "wiki_amount": "1",
+          "times": 2286,
+          "kills": 15151,
+          "wiki_percent": 15.088113,
+          "interval_95_wilson": [
+            14.527,
+            15.6669
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "dragon's tail",
+          "canary_percent": 9.68,
+          "canary_amount": "1",
+          "wiki_item": "Dragon's Tail",
+          "wiki_line": 11,
+          "wiki_amount": "1",
+          "times": 1529,
+          "kills": 15151,
+          "wiki_percent": 10.091743,
+          "interval_95_wilson": [
+            9.6222,
+            10.5815
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "crossbow",
+          "canary_percent": 9.12,
+          "canary_amount": "1",
+          "wiki_item": "Crossbow",
+          "wiki_line": 12,
+          "wiki_amount": "1",
+          "times": 1525,
+          "kills": 15151,
+          "wiki_percent": 10.065342,
+          "interval_95_wilson": [
+            9.5963,
+            10.5546
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "burst arrow",
+          "canary_percent": 8.06,
+          "canary_amount": "1-10",
+          "wiki_item": "Burst Arrow",
+          "wiki_line": 13,
+          "wiki_amount": "1-10",
+          "times": 1203,
+          "kills": 15151,
+          "wiki_percent": 7.94007,
+          "interval_95_wilson": [
+            7.5202,
+            8.3813
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "longsword",
+          "canary_percent": 3.83,
+          "canary_amount": "1",
+          "wiki_item": "Longsword",
+          "wiki_line": 14,
+          "wiki_amount": "1",
+          "times": 607,
+          "kills": 15151,
+          "wiki_percent": 4.006336,
+          "interval_95_wilson": [
+            3.7056,
+            4.3304
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "steel helmet",
+          "canary_percent": 3.49,
+          "canary_amount": "1",
+          "wiki_item": "Steel Helmet",
+          "wiki_line": 15,
+          "wiki_amount": "1",
+          "times": 461,
+          "kills": 15151,
+          "wiki_percent": 3.042703,
+          "interval_95_wilson": [
+            2.7809,
+            3.3283
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "broadsword",
+          "canary_percent": 2.7,
+          "canary_amount": "1",
+          "wiki_item": "Broadsword",
+          "wiki_line": 17,
+          "wiki_amount": "1",
+          "times": 262,
+          "kills": 15151,
+          "wiki_percent": 1.729259,
+          "interval_95_wilson": [
+            1.5336,
+            1.9494
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "plate legs",
+          "canary_percent": 2.029,
+          "canary_amount": "1",
+          "wiki_item": "Plate Legs",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 306,
+          "kills": 15151,
+          "wiki_percent": 2.019669,
+          "interval_95_wilson": [
+            1.8075,
+            2.2561
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "double axe",
+          "canary_percent": 1.58,
+          "canary_amount": "1",
+          "wiki_item": "Double Axe",
+          "wiki_line": 18,
+          "wiki_amount": "1",
+          "times": 159,
+          "kills": 15151,
+          "wiki_percent": 1.049436,
+          "interval_95_wilson": [
+            0.8991,
+            1.2246
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "strong health potion",
+          "canary_percent": 1.13,
+          "canary_amount": "1",
+          "wiki_item": "Strong Health Potion",
+          "wiki_line": 21,
+          "wiki_amount": "1",
+          "times": 142,
+          "kills": 15151,
+          "wiki_percent": 0.937232,
+          "interval_95_wilson": [
+            0.7958,
+            1.1036
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "green dragon leather",
+          "canary_percent": 1.07,
+          "canary_amount": "1",
+          "wiki_item": "Green Dragon Leather",
+          "wiki_line": 20,
+          "wiki_amount": "1",
+          "times": 148,
+          "kills": 15151,
+          "wiki_percent": 0.976833,
+          "interval_95_wilson": [
+            0.8322,
+            1.1463
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "green dragon scale",
+          "canary_percent": 1.01,
+          "canary_amount": "1",
+          "wiki_item": "Green Dragon Scale",
+          "wiki_line": 22,
+          "wiki_amount": "1",
+          "times": 136,
+          "kills": 15151,
+          "wiki_percent": 0.897631,
+          "interval_95_wilson": [
+            0.7594,
+            1.0608
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "wand of inferno",
+          "canary_percent": 0.56,
+          "canary_amount": "1",
+          "wiki_item": "Wand of Inferno",
+          "wiki_line": 19,
+          "wiki_amount": "1",
+          "times": 158,
+          "kills": 15151,
+          "wiki_percent": 1.042835,
+          "interval_95_wilson": [
+            0.893,
+            1.2175
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "small diamond",
+          "canary_percent": 0.45,
+          "canary_amount": "1",
+          "wiki_item": "Small Diamond",
+          "wiki_line": 24,
+          "wiki_amount": "1",
+          "times": 71,
+          "kills": 15151,
+          "wiki_percent": 0.468616,
+          "interval_95_wilson": [
+            0.3717,
+            0.5906
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "serpent sword",
+          "canary_percent": 0.23,
+          "canary_amount": "1",
+          "wiki_item": "Serpent Sword",
+          "wiki_line": 23,
+          "wiki_amount": "1",
+          "times": 74,
+          "kills": 15151,
+          "wiki_percent": 0.488417,
+          "interval_95_wilson": [
+            0.3893,
+            0.6127
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "dragon hammer",
+          "canary_percent": 0.23,
+          "canary_amount": "1",
+          "wiki_item": "Dragon Hammer",
+          "wiki_line": 25,
+          "wiki_amount": "1",
+          "times": 65,
+          "kills": 15151,
+          "wiki_percent": 0.429015,
+          "interval_95_wilson": [
+            0.3368,
+            0.5464
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "dragonbone staff",
+          "canary_percent": 0.17,
+          "canary_amount": "1",
+          "wiki_item": "Dragonbone Staff",
+          "wiki_line": 29,
+          "wiki_amount": "1",
+          "times": 9,
+          "kills": 15151,
+          "wiki_percent": 0.059402,
+          "interval_95_wilson": [
+            0.0313,
+            0.1129
+          ],
+          "confidence": "low_confidence",
+          "status": "DIFF"
+        },
+        {
+          "item": "life crystal",
+          "canary_percent": 0.17,
+          "canary_amount": "1",
+          "wiki_item": "Life Crystal",
+          "wiki_line": 28,
+          "wiki_amount": "1",
+          "times": 11,
+          "kills": 15151,
+          "wiki_percent": 0.072602,
+          "interval_95_wilson": [
+            0.0405,
+            0.13
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "dragon shield",
+          "canary_percent": 0.11,
+          "canary_amount": "1",
+          "wiki_item": "Dragon Shield",
+          "wiki_line": 26,
+          "wiki_amount": "1",
+          "times": 45,
+          "kills": 15151,
+          "wiki_percent": 0.29701,
+          "interval_95_wilson": [
+            0.2221,
+            0.3972
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -1484,21 +3462,24 @@
           "canary": 1000,
           "wiki": 1000,
           "wiki_raw": "1000",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 700,
           "wiki": 700,
           "wiki_raw": "700",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 25,
           "wiki": 25,
           "wiki_raw": "25",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1506,6 +3487,7 @@
           "wiki": 86,
           "wiki_raw": "86",
           "status": "MATCH",
+          "wiki_line": 54,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1513,7 +3495,8 @@
           "canary": 0.99,
           "wiki": 1.56,
           "wiki_raw": "1.56",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1521,6 +3504,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1529,6 +3513,7 @@
           "wiki": 80,
           "wiki_raw": "20%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1537,6 +3522,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1545,6 +3531,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1553,6 +3540,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1561,6 +3549,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1569,6 +3558,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1577,6 +3567,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1585,6 +3576,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1592,77 +3584,88 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 30
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "Yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 34
         },
         {
           "field": "flee_health",
           "canary": 300,
           "wiki": 300,
           "wiki_raw": "300",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 53
         },
         {
           "field": "bestiary.class",
           "canary": "dragon",
           "wiki": "dragon",
           "wiki_raw": "Dragon",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "medium",
           "wiki": "medium",
           "wiki_raw": "Medium",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
@@ -1671,7 +3674,8 @@
           "only_wiki": [
             "dragon trophy"
           ],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page.",
+          "wiki_line": 57
         }
       ]
     },
@@ -1687,6 +3691,262 @@
       "current_revision_timestamp": "2026-06-25T08:22:33Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:40Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Ghost",
+        "page_id": 39528,
+        "cut_revision_id": 1197654,
+        "cut_revision_timestamp": "2026-07-25T09:25:16Z",
+        "cut_content_sha256": "12322da14ee6104d480c035a7aaff8cce10da4e5e86d8138007c365bd75a3fdc",
+        "current_revision_id": 1205386,
+        "edited_after_cut": true,
+        "retrieved_at": "2026-09-26T20:02:23Z",
+        "status": "COMPARED",
+        "version": "14.12.5229e4",
+        "version_line": 4,
+        "kills": 3314,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "shadow herb",
+            "wiki_name": "Shadow Herb",
+            "times": 488,
+            "amount": "1",
+            "line": 8
+          },
+          {
+            "name": "morning star",
+            "wiki_name": "Morning Star",
+            "times": 356,
+            "amount": "1",
+            "line": 9
+          },
+          {
+            "name": "cape",
+            "wiki_name": "Cape",
+            "times": 343,
+            "amount": "1",
+            "line": 10
+          },
+          {
+            "name": "combat knife",
+            "wiki_name": "Combat Knife",
+            "times": 247,
+            "amount": "1",
+            "line": 11
+          },
+          {
+            "name": "ghostly tissue",
+            "wiki_name": "Ghostly Tissue",
+            "times": 66,
+            "amount": "1",
+            "line": 12
+          },
+          {
+            "name": "white piece of cloth",
+            "wiki_name": "White Piece of Cloth",
+            "times": 54,
+            "amount": "1",
+            "line": 13
+          },
+          {
+            "name": "book (orange)",
+            "wiki_name": "Book (Orange)",
+            "times": 39,
+            "amount": "1",
+            "line": 14
+          },
+          {
+            "name": "ancient shield",
+            "wiki_name": "Ancient Shield",
+            "times": 32,
+            "amount": "1",
+            "line": 15
+          },
+          {
+            "name": "stealth ring",
+            "wiki_name": "Stealth Ring",
+            "times": 9,
+            "amount": "1",
+            "line": 16
+          },
+          {
+            "name": "stone skin amulet",
+            "wiki_name": "Stone Skin Amulet",
+            "times": 2,
+            "amount": "1",
+            "line": 17,
+            "item_page": {
+              "page_title": "Stone Skin Amulet",
+              "page_id": 2463,
+              "cut_revision_id": 1194185,
+              "cut_content_sha256": "382b78db78d5390b3f9fe779cd897fd3ce166f6a0fed086f7807446c51e3681a",
+              "current_revision_id": 1194185,
+              "retrieved_at": "2026-09-26T20:03:58Z",
+              "status": "COMPARED",
+              "itemid_line": 5,
+              "item_ids": [
+                3081
+              ]
+            }
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "book",
+          "canary_percent": 1.31,
+          "canary_amount": "1",
+          "wiki_item": "Book (Orange)",
+          "wiki_line": 14,
+          "wiki_amount": "1",
+          "times": 39,
+          "kills": 3314,
+          "wiki_percent": 1.176826,
+          "interval_95_wilson": [
+            0.8621,
+            1.6046
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "stealth ring",
+          "canary_percent": 0.18,
+          "canary_amount": "1",
+          "wiki_item": "Stealth Ring",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 9,
+          "kills": 3314,
+          "wiki_percent": 0.271575,
+          "interval_95_wilson": [
+            0.1429,
+            0.5154
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "morning star",
+          "canary_percent": 10.61,
+          "canary_amount": "1",
+          "wiki_item": "Morning Star",
+          "wiki_line": 9,
+          "wiki_amount": "1",
+          "times": 356,
+          "kills": 3314,
+          "wiki_percent": 10.742305,
+          "interval_95_wilson": [
+            9.7331,
+            11.8424
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "combat knife",
+          "canary_percent": 7.002,
+          "canary_amount": "1",
+          "wiki_item": "Combat Knife",
+          "wiki_line": 11,
+          "wiki_amount": "1",
+          "times": 247,
+          "kills": 3314,
+          "wiki_percent": 7.453229,
+          "interval_95_wilson": [
+            6.6075,
+            8.3975
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "ancient shield",
+          "canary_percent": 0.86,
+          "canary_amount": "1",
+          "wiki_item": "Ancient Shield",
+          "wiki_line": 15,
+          "wiki_amount": "1",
+          "times": 32,
+          "kills": 3314,
+          "wiki_percent": 0.9656,
+          "interval_95_wilson": [
+            0.6848,
+            1.3599
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "cape",
+          "canary_percent": 8.8,
+          "canary_amount": "1",
+          "wiki_item": "Cape",
+          "wiki_line": 10,
+          "wiki_amount": "1",
+          "times": 343,
+          "kills": 3314,
+          "wiki_percent": 10.35003,
+          "interval_95_wilson": [
+            9.3584,
+            11.4334
+          ],
+          "confidence": "estimate",
+          "status": "DIFF"
+        },
+        {
+          "item": "shadow herb",
+          "canary_percent": 14.4,
+          "canary_amount": "1",
+          "wiki_item": "Shadow Herb",
+          "wiki_line": 8,
+          "wiki_amount": "1",
+          "times": 488,
+          "kills": 3314,
+          "wiki_percent": 14.725407,
+          "interval_95_wilson": [
+            13.5598,
+            15.9727
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "white piece of cloth",
+          "canary_percent": 1.94,
+          "canary_amount": "1",
+          "wiki_item": "White Piece of Cloth",
+          "wiki_line": 13,
+          "wiki_amount": "1",
+          "times": 54,
+          "kills": 3314,
+          "wiki_percent": 1.629451,
+          "interval_95_wilson": [
+            1.251,
+            2.1199
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "ghostly tissue",
+          "canary_percent": 1.87,
+          "canary_amount": "1",
+          "wiki_item": "Ghostly Tissue",
+          "wiki_line": 12,
+          "wiki_amount": "1",
+          "times": 66,
+          "kills": 3314,
+          "wiki_percent": 1.991551,
+          "interval_95_wilson": [
+            1.5685,
+            2.5258
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -1694,21 +3954,24 @@
           "canary": 150,
           "wiki": 150,
           "wiki_raw": "150",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 120,
           "wiki": 120,
           "wiki_raw": "120",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 10,
           "wiki": 10,
           "wiki_raw": "10",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1716,6 +3979,7 @@
           "wiki": 80,
           "wiki_raw": "80",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1723,7 +3987,8 @@
           "canary": 0.51,
           "wiki": 0.8,
           "wiki_raw": "0.80",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1731,6 +3996,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 27,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1739,6 +4005,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 28,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1747,6 +4014,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1755,6 +4023,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1763,6 +4032,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1771,6 +4041,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1779,6 +4050,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1787,6 +4059,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1795,6 +4068,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1802,77 +4076,88 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 21
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": "?",
           "wiki_raw": "?",
-          "status": "WIKI_UNKNOWN"
+          "status": "WIKI_UNKNOWN",
+          "wiki_line": 22
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 25
         },
         {
           "field": "flee_health",
           "canary": 0,
           "wiki": 0,
           "wiki_raw": "0",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 44
         },
         {
           "field": "bestiary.class",
           "canary": "undead",
           "wiki": "undead",
           "wiki_raw": "Undead",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
@@ -1881,7 +4166,8 @@
           "only_wiki": [
             "stone skin amulet"
           ],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "wiki_line": 48,
           "name_variants": [
             {
               "canary": "book",
@@ -1903,6 +4189,388 @@
       "current_revision_timestamp": "2023-01-02T17:52:14Z",
       "edited_after_cut": false,
       "retrieved_at": "2026-09-26T19:35:41Z",
+      "loot_statistics": {
+        "page_title": "Loot Statistics:Demodras",
+        "page_id": 44140,
+        "cut_revision_id": 1183613,
+        "cut_revision_timestamp": "2026-05-08T20:36:12Z",
+        "cut_content_sha256": "a599120ada0036c91ab962b32e5938399b40ee87720795ec3332461f7a6bc927",
+        "current_revision_id": 1183613,
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-26T20:24:03Z",
+        "status": "COMPARED",
+        "version": "8.6",
+        "version_line": 4,
+        "kills": 120,
+        "kills_line": 5,
+        "items": [
+          {
+            "name": "dragon claw",
+            "wiki_name": "Dragon Claw",
+            "times": 120,
+            "amount": "1",
+            "line": 7
+          },
+          {
+            "name": "platinum coin",
+            "wiki_name": "Platinum Coin",
+            "times": 119,
+            "amount": "1-10",
+            "line": 8
+          },
+          {
+            "name": "green mushroom",
+            "wiki_name": "Green Mushroom",
+            "times": 30,
+            "amount": "1-7",
+            "line": 10
+          },
+          {
+            "name": "power bolt",
+            "wiki_name": "Power Bolt",
+            "times": 24,
+            "amount": "1-10",
+            "line": 11
+          },
+          {
+            "name": "small sapphire",
+            "wiki_name": "Small Sapphire",
+            "times": 14,
+            "amount": "1",
+            "line": 13
+          },
+          {
+            "name": "book (gemmed)",
+            "wiki_name": "Book (Gemmed)",
+            "times": 12,
+            "amount": "1",
+            "line": 14
+          },
+          {
+            "name": "energy ring",
+            "wiki_name": "Energy Ring",
+            "times": 12,
+            "amount": "1",
+            "line": 15
+          },
+          {
+            "name": "great health potion",
+            "wiki_name": "Great Health Potion",
+            "times": 11,
+            "amount": "1",
+            "line": 16
+          },
+          {
+            "name": "great mana potion",
+            "wiki_name": "Great Mana Potion",
+            "times": 11,
+            "amount": "1",
+            "line": 17
+          },
+          {
+            "name": "golden mug",
+            "wiki_name": "Golden Mug",
+            "times": 7,
+            "amount": "1",
+            "line": 18
+          },
+          {
+            "name": "onyx arrow",
+            "wiki_name": "Onyx Arrow",
+            "times": 5,
+            "amount": "2-5",
+            "line": 19
+          },
+          {
+            "name": "dragon scale mail",
+            "wiki_name": "Dragon Scale Mail",
+            "times": 2,
+            "amount": "1",
+            "line": 20
+          },
+          {
+            "name": "fire sword",
+            "wiki_name": "Fire Sword",
+            "times": 2,
+            "amount": "1",
+            "line": 21
+          },
+          {
+            "name": "life crystal",
+            "wiki_name": "Life Crystal",
+            "times": 1,
+            "amount": "1",
+            "line": 22
+          }
+        ],
+        "rule": "block with the highest game version; probability estimate = times / kills"
+      },
+      "loot_chances": [
+        {
+          "item": "platinum coin",
+          "canary_percent": 99.15,
+          "canary_amount": "1-10",
+          "wiki_item": "Platinum Coin",
+          "wiki_line": 8,
+          "wiki_amount": "1-10",
+          "times": 119,
+          "kills": 120,
+          "wiki_percent": 99.166667,
+          "interval_95_wilson": [
+            95.4304,
+            99.8527
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "dragon claw",
+          "canary_percent": 100.0,
+          "canary_amount": "1",
+          "wiki_item": "Dragon Claw",
+          "wiki_line": 7,
+          "wiki_amount": "1",
+          "times": 120,
+          "kills": 120,
+          "wiki_percent": 100.0,
+          "interval_95_wilson": [
+            96.8981,
+            100.0
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "green mushroom",
+          "canary_percent": 25.65,
+          "canary_amount": "1-7",
+          "wiki_item": "Green Mushroom",
+          "wiki_line": 10,
+          "wiki_amount": "1-7",
+          "times": 30,
+          "kills": 120,
+          "wiki_percent": 25.0,
+          "interval_95_wilson": [
+            18.1098,
+            33.4411
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "small sapphire",
+          "canary_percent": 12.0,
+          "canary_amount": "1",
+          "wiki_item": "Small Sapphire",
+          "wiki_line": 13,
+          "wiki_amount": "1",
+          "times": 14,
+          "kills": 120,
+          "wiki_percent": 11.666667,
+          "interval_95_wilson": [
+            7.0781,
+            18.6334
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "great mana potion",
+          "canary_percent": 9.5,
+          "canary_amount": "1",
+          "wiki_item": "Great Mana Potion",
+          "wiki_line": 17,
+          "wiki_amount": "1",
+          "times": 11,
+          "kills": 120,
+          "wiki_percent": 9.166667,
+          "interval_95_wilson": [
+            5.1957,
+            15.6708
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "onyx arrow",
+          "canary_percent": 4.25,
+          "canary_amount": "1-5",
+          "wiki_item": "Onyx Arrow",
+          "wiki_line": 19,
+          "wiki_amount": "2-5",
+          "times": 5,
+          "kills": 120,
+          "wiki_percent": 4.166667,
+          "interval_95_wilson": [
+            1.7927,
+            9.3841
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "life crystal",
+          "canary_percent": 0.85,
+          "canary_amount": "1",
+          "wiki_item": "Life Crystal",
+          "wiki_line": 22,
+          "wiki_amount": "1",
+          "times": 1,
+          "kills": 120,
+          "wiki_percent": 0.833333,
+          "interval_95_wilson": [
+            0.1473,
+            4.5696
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "power bolt",
+          "canary_percent": 19.65,
+          "canary_amount": "1-10",
+          "wiki_item": "Power Bolt",
+          "wiki_line": 11,
+          "wiki_amount": "1-10",
+          "times": 24,
+          "kills": 120,
+          "wiki_percent": 20.0,
+          "interval_95_wilson": [
+            13.8245,
+            28.0367
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "energy ring",
+          "canary_percent": 10.25,
+          "canary_amount": "1",
+          "wiki_item": "Energy Ring",
+          "wiki_line": 15,
+          "wiki_amount": "1",
+          "times": 12,
+          "kills": 120,
+          "wiki_percent": 10.0,
+          "interval_95_wilson": [
+            5.8134,
+            16.6682
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "great health potion",
+          "canary_percent": 9.5,
+          "canary_amount": "1",
+          "wiki_item": "Great Health Potion",
+          "wiki_line": 16,
+          "wiki_amount": "1",
+          "times": 11,
+          "kills": 120,
+          "wiki_percent": 9.166667,
+          "interval_95_wilson": [
+            5.1957,
+            15.6708
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "dragon scale mail",
+          "canary_percent": 1.7,
+          "canary_amount": "1",
+          "wiki_item": "Dragon Scale Mail",
+          "wiki_line": 20,
+          "wiki_amount": "1",
+          "times": 2,
+          "kills": 120,
+          "wiki_percent": 1.666667,
+          "interval_95_wilson": [
+            0.4583,
+            5.8736
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "dragon ham",
+          "canary_percent": 75.2,
+          "canary_amount": "1-10",
+          "status": "NOT_OBSERVED",
+          "times": 0,
+          "kills": 120,
+          "interval_95_wilson": [
+            0.0,
+            3.1019
+          ],
+          "note": "Not listed in the highest-version block."
+        },
+        {
+          "item": "red dragon leather",
+          "canary_percent": 13.7,
+          "canary_amount": "1",
+          "status": "NOT_OBSERVED",
+          "times": 0,
+          "kills": 120,
+          "interval_95_wilson": [
+            0.0,
+            3.1019
+          ],
+          "note": "Not listed in the highest-version block."
+        },
+        {
+          "item": "book",
+          "canary_percent": 10.25,
+          "canary_amount": "1",
+          "wiki_item": "Book (Gemmed)",
+          "wiki_line": 14,
+          "wiki_amount": "1",
+          "times": 12,
+          "kills": 120,
+          "wiki_percent": 10.0,
+          "interval_95_wilson": [
+            5.8134,
+            16.6682
+          ],
+          "confidence": "estimate",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "golden mug",
+          "canary_percent": 6.0,
+          "canary_amount": "1",
+          "wiki_item": "Golden Mug",
+          "wiki_line": 18,
+          "wiki_amount": "1",
+          "times": 7,
+          "kills": 120,
+          "wiki_percent": 5.833333,
+          "interval_95_wilson": [
+            2.8541,
+            11.5526
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        },
+        {
+          "item": "fire sword",
+          "canary_percent": 1.7,
+          "canary_amount": "1",
+          "wiki_item": "Fire Sword",
+          "wiki_line": 21,
+          "wiki_amount": "1",
+          "times": 2,
+          "kills": 120,
+          "wiki_percent": 1.666667,
+          "interval_95_wilson": [
+            0.4583,
+            5.8736
+          ],
+          "confidence": "low_confidence",
+          "status": "CONSISTENT"
+        }
+      ],
       "status": "COMPARED",
       "rows": [
         {
@@ -1910,21 +4578,24 @@
           "canary": 4500,
           "wiki": 4500,
           "wiki_raw": "4500",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 5
         },
         {
           "field": "experience",
           "canary": 6000,
           "wiki": 6000,
           "wiki_raw": "6000",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "armor",
           "canary": 45,
           "wiki": 45,
           "wiki_raw": "45",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "speed",
@@ -1932,6 +4603,7 @@
           "wiki": 197,
           "wiki_raw": "197",
           "status": "MATCH",
+          "wiki_line": 50,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1947,6 +4619,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1955,6 +4628,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1963,6 +4637,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1971,6 +4646,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1979,6 +4655,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1987,6 +4664,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1995,6 +4673,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -2003,6 +4682,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -2011,6 +4691,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -2018,56 +4699,64 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 9
         },
         {
           "field": "illusionable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 30
         },
         {
           "field": "flee_health",
           "canary": 300,
           "wiki": 300,
           "wiki_raw": "300",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 49
         },
         {
           "field": "bestiary.class",
@@ -2095,7 +4784,8 @@
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "note": "Item names only; chances are compared in loot_chances from the Loot Statistics page. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "wiki_line": 54,
           "name_variants": [
             {
               "canary": "book",

@@ -207,7 +207,14 @@ deps={'$schema':DIALECT,'$id':DEPS_ID,'title':'Direct monster dependencies autho
         'documents':array(external('document')),'items':array(external('item')),'loot_tables':array(external('loot'))},
         ('abilities','effects','formulas','documents','items','loot_tables'))}
 manifest={'$schema':DIALECT,'$id':MANIFEST_ID,'title':'Monster import disposition manifest candidate v1',
-    **obj({'sources':array(obj({'repository':text(),'revision':text(pattern=r'^[a-f0-9]{40}$')},('repository','revision')),1),
+    **obj({'sources':array({'oneOf':[
+            obj({'repository':text(),'revision':text(pattern=r'^[a-f0-9]{40}$')},('repository','revision'),
+                description='Git source pinned to an exact commit.'),
+            obj({'kind':{'const':'mediawiki'},'api':text(pattern=r'^https://'),'title':text(),'page_id':integer(1),
+                 'revision_id':integer(1),'content_sha256':text(pattern=r'^[a-f0-9]{64}$')},
+                ('kind','api','title','page_id','revision_id','content_sha256'),
+                description='MediaWiki page pinned to one immutable revision id and the SHA-256 of that revision wikitext (D15). '
+                            'source_file is the page title and source_line the wikitext line.')]},1),
         'entries':array(obj({'source_index':integer(),'source_file':text(),'source_line':integer(1),'source_field':text(),
             'kind':enum('field','dependency','script','original_text'),
             'status':enum('mapped','metadata_only','resolved_native_behavior','approved_omission','unsupported_source_field','unresolved_semantics','unresolved_dependency','partial_text'),
