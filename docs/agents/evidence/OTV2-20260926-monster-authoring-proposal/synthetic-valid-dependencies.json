@@ -1,0 +1,160 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "oteryn:melee",
+        "revision": "r1"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:hit",
+          "revision": "r1"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "oteryn:hit",
+        "revision": "r1"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:damage",
+        "revision": "r1"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "oteryn:damage",
+        "revision": "r1"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 105
+      }
+    }
+  ],
+  "documents": [
+    {
+      "identity": {
+        "key": "oteryn:lore",
+        "revision": "r1"
+      },
+      "document_type": "Note",
+      "title": "Original source text",
+      "language": "en",
+      "content": [
+        "An original paragraph: punctuation, spelling and language remain unchanged."
+      ]
+    }
+  ],
+  "items": [
+    {
+      "identity": {
+        "key": "oteryn:body",
+        "revision": "r1"
+      },
+      "presentation": {
+        "name": "Source item",
+        "asset_binding": "oteryn:body_sprite"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 60000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "oteryn:old_body",
+          "revision": "r1"
+        }
+      },
+      "container": {
+        "capacity": 30
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:old_body",
+        "revision": "r1"
+      },
+      "presentation": {
+        "name": "Source item",
+        "asset_binding": "oteryn:body_sprite"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 60000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 10000
+      },
+      "container": {
+        "capacity": 30
+      }
+    },
+    {
+      "identity": {
+        "key": "oteryn:coin",
+        "revision": "r1"
+      },
+      "presentation": {
+        "name": "Source item",
+        "asset_binding": "oteryn:body_sprite"
+      },
+      "classification": {
+        "is_corpse": false
+      },
+      "physical": {
+        "weight_centioz": 60000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "none",
+        "stop_duration": false
+      }
+    }
+  ],
+  "loot_tables": []
+}
