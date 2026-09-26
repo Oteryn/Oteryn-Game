@@ -41,4 +41,3 @@ declared and every declared entry must be used. Import readiness likewise requir
 disposition for every entry in each source's explicit field inventory. Wiki sources are
 additionally checked against the protected 71-field owner/disposition registry and an
 explicit allowed formal JSON Pointer (including array-index patterns where required).
-
