@@ -1,0 +1,37 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.fluid",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Fluid",
+  "family_profile": "fluid",
+  "taxonomy": {
+    "item_class": "fluid",
+    "primary": "fluid",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "requirements": {
+    "enforcement_mode": "on_use"
+  },
+  "fluid": {
+    "role": "content",
+    "fluid_type": "water"
+  },
+  "use": {
+    "usable": true,
+    "use_with": false
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}
+
