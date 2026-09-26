@@ -1,6 +1,7 @@
 """Structural/semantic validation of the Monster authoring schema candidate v1, never runtime activation."""
 import argparse
 import json
+import re
 from decimal import Decimal
 from fractions import Fraction
 from math import gcd
@@ -25,9 +26,11 @@ def percent_to_ppm(value):
     if isinstance(value,bool):raise ValueError('a boolean is not a chance')
     decimal=Decimal(str(value))
     if not decimal.is_finite() or not 0<=decimal<=100:raise ValueError('chance must be between 0 and 100 percent')
-    scaled=decimal*10000
-    if scaled!=scaled.to_integral_value():raise ValueError('chance precision is finer than 0.0001 percent')
-    return int(scaled)
+    # Integer arithmetic keeps every source digit, independent of Decimal context.
+    numerator,denominator=decimal.as_integer_ratio()
+    ppm,remainder=divmod(numerator*10000,denominator)
+    if remainder:raise ValueError('chance precision is finer than 0.0001 percent')
+    return ppm
 PERCENT_FIELDS={'critical_chance_percent','chance_percent','static_attack_chance_percent','probability_percent'}
 def pointer(path): return '/'+'/'.join(str(k).replace('~','~0').replace('/','~1') for k in path)
 def walk(value,path=()):
@@ -188,11 +191,22 @@ def cycle_check(local,family,edges,label,errors):
     for key in local:
         if key[0]==family:visit(key)
 def resolve_pointer(document,p):
+    if not isinstance(p,str):raise ValueError('expected a JSON pointer string')
+    if p=='':return document
     if not p.startswith('/'):raise ValueError('expected absolute JSON pointer')
     value=document
     for part in p[1:].split('/'):
+        if re.search(r'~(?:[^01]|$)',part):raise ValueError('invalid JSON pointer escape')
         key=part.replace('~1','/').replace('~0','~')
-        value=value[int(key)] if isinstance(value,list) else value[key]
+        if isinstance(value,list):
+            # RFC 6901: ASCII digits, no sign/leading zeros; '-' has no value.
+            if re.fullmatch(r'0|[1-9][0-9]*',key) is None:
+                raise ValueError('invalid JSON pointer array index')
+            value=value[int(key)]
+        elif isinstance(value,dict):
+            value=value[key]
+        else:
+            raise ValueError('JSON pointer cannot traverse a scalar')
     return value
 
 if __name__=='__main__':
