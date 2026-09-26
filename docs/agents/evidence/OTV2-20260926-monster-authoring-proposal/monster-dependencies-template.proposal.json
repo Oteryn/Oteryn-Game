@@ -8,6 +8,7 @@
       "kind": null,
       "range_tiles": null,
       "needs_target": null,
+      "needs_direction": null,
       "area": {
         "length_tiles": null,
         "spread_tiles": null,
@@ -42,12 +43,19 @@
       "duration_ms": null,
       "condition": {
         "type": null,
-        "tick_interval_ms": null,
-        "total_damage": null,
-        "damage_per_tick": {
-          "minimum": null,
-          "maximum": null,
-          "initial": null
+        "lifetime": null,
+        "damage_over_time": {
+          "total_damage_range": {
+            "minimum": null,
+            "maximum": null
+          },
+          "tick_interval_ms": null,
+          "initial_tick": {
+            "mode": null,
+            "amount": null
+          },
+          "tick_profile": null,
+          "first_tick": null
         },
         "speed_formula": {
           "family": null,
