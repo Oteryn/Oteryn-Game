@@ -4,11 +4,11 @@
 task_id: OTV2-20260926-monster-batch2-current-wiki
 title: Continue uncommon monster samples and current Wiki comparison
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/monster-batch2-wiki-20260926
-pr: null
+pr: 944
 issue: 162
 jira: KAN-16
 base_sha: 4f22d85aed9e4c6a0ba99b2c57253541d2651bf4
@@ -43,9 +43,10 @@ Delivery scope is a reviewable PR; autonomous protected integration is NOT_REQUI
 - PROVEN: Canary source is `47dfd51f45280a59a1d3e50ba7edd573d7234446`, unchanged tracked checkout.
 - PROVEN: authoring candidate, converter, source blobs and latest Wiki revision-bound observations.
 - UNKNOWN: canonical Item/asset admission, runtime behavior and Global parity.
-- PR #939 independently owns Bestiary Notes and Loot mapping follow-up; reconcile overlapping edits before integration.
-- Archival is already covered by #941. Its packet remains historical `validating`;
-  GitHub merged state governs #938. This task does not duplicate the four-file archival move.
+- PR #939 is closed; none of its unmerged Bestiary Notes changes are claimed by this task.
+- PROVEN: #941 archived the four terminal packets and merged as
+  `9267c21968d12ebffed019c95aca874649447439`. The historical #938 packet remains
+  `validating`; live GitHub merged state governs its lifecycle. No duplicate move is made.
 
 ## High-risk authority/recovery qualification
 
@@ -61,7 +62,7 @@ authentication, protected integration or production trust boundary changes.
 - First batch regeneration is unchanged, including all pinned source blob identities.
 - Latest Wiki comparison: 10 pages, 225 field rows; 164 MATCH, 22 CONFLICT,
   20 UNKNOWN, 19 NOT_COMPARABLE. No historical date selector or gameplay overwrite.
-- Third follow-up: #941 already publishes the archival move; terminal integration remains external/pending.
+- Third follow-up: #941 completed the archival move in protected main.
 
 ## Validation
 
@@ -75,6 +76,6 @@ proven schema/authentication; local Git is used for source/read-only validation,
 
 ## Context checkpoint
 
-AUTHORING. Publish bounded delta on the exclusively owned branch, bind the returned
-remote SHA, verify full remote delta, freeze, then qualify and open/reconcile the PR.
+Final AUTHORING metadata write for canonical PR #944. Bind the returned remote SHA,
+verify full remote delta, freeze, then qualify that exact candidate and reconcile CI.
 Jira KAN-16 remains W toku because the aggregate Story is incomplete.
