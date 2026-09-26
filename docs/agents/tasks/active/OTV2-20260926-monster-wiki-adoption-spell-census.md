@@ -11,7 +11,7 @@ branch: claude/nice-edison-h9aqh0
 issue: 162
 pr: null
 jira: KAN-16
-base_sha: null
+base_sha: bbfdfdbfb92edae587fc1ec4c556ab1bf20b16b8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
