@@ -4,7 +4,7 @@
 task_id: OTV2-20260926-fixed-creature-death-corpse-structural
 title: Fixed one-creature committed death and corpse structural component
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/fixed-creature-death-corpse-structural
@@ -13,7 +13,7 @@ allocation_comment: 5849676308
 jira_story: KAN-12
 profile: NONSHIPPING_FIXED_ONE_CREATURE
 base_sha: f6b267126d6a4ee505f614a7b740ab16aa86b7b6
-head_sha: null
+head_sha: a98033b59092f5dd1a74e69bb67ccb962b5b6254
 final_head_sha: null
 owner: Codex Combat Lead
 created_at: 2026-09-26T20:40:00Z
@@ -39,6 +39,7 @@ transaction, persistence, process-restart recovery, decay or public protocol.
 
 Canary and CrystalServer are pinned read-only `OTS_HYPOTHESIS_ONLY` ordering
 references. Oteryn-Game remains the sole implementation and authority source.
-The worker authors, freezes and validates the exact candidate; independent
-review, Merge Queue, integration readback and lease release remain with the
-restored `OTV2_WORK_DELIVERY_COORDINATOR`.
+The worker has completed source authoring and native Linux validation. Exact
+final SHA freeze and qualification belong to this worker. Hosted checks,
+independent review, Merge Queue, integration readback and lease release remain
+with the restored `OTV2_WORK_DELIVERY_COORDINATOR`.

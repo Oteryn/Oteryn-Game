@@ -1,6 +1,6 @@
 # Fixed one-creature death and corpse structural evidence
 
-Status: **AUTHORING**. Allocation: #162 comment 5849676308. Protected base:
+Status: **VALIDATING**. Allocation: #162 comment 5849676308. Protected base:
 `f6b267126d6a4ee505f614a7b740ab16aa86b7b6`.
 
 ## Physical boundary
@@ -35,10 +35,11 @@ death.
 position/context/revision, nonlethal absence, pre-commit failure, identical
 Ability and projection replay, injected failure before projection, lost
 response after projection, missing position, dead lookup and position-mutation
-rejection, modified receipt bytes/position, administrative removal, stale
-actor/owner authority, retained-corpse max+1 admission rejection, and the
-existing 4096/4097-byte commit-binding boundary. Rejections compare the
-complete owned slot/projection state relevant to the operation.
+rejection, modified receipt bytes/position, a different lethal occurrence after
+the first death, administrative removal, stale actor/owner authority,
+retained-corpse max+1 admission rejection, and the existing 4096/4097-byte
+commit-binding boundary. Rejections compare the complete owned slot/projection
+state relevant to the operation.
 
 ## Reference classification
 
@@ -57,8 +58,27 @@ bounds, persistence or parity. No source code is copied.
 
 ## Qualification handoff
 
-Pending exact-head authoring freeze. Windows native full-library compilation is
-not a valid host route for the repository's Unix-only server modules; hosted
-Linux CI and any available Linux local route must qualify the candidate.
-Record exact commands, results, frozen SHA and hosted run/job identifiers here
-before review handoff. No production or process-restart claim is made.
+The complete source candidate was published at
+`a98033b59092f5dd1a74e69bb67ccb962b5b6254` and checked from a fresh native
+Linux LF checkout, avoiding Windows CRLF conversion in byte-sensitive tests.
+
+- `cargo test --offline --locked -p oteryn-game-server --lib --no-default-features`:
+  **608 passed, 0 failed, 2 ignored**. The ten new Combat tests passed inside
+  this run.
+- `cargo test --offline --locked -p oteryn-game-server --lib runtime_actor_carrier --no-default-features`:
+  **53 passed, 0 failed** in the authoring checkout.
+- `cargo clippy --offline --locked -p oteryn-game-server --all-targets --no-default-features -- -D warnings`:
+  **PASS** in the fresh Linux checkout.
+- `cargo fmt --all -- --check`: **PASS**.
+- `python3 -I tools/agents/validate_governance.py`: **PASS**.
+- `python3 -I tools/repository/validate_repository_policy.py`: **PASS**
+  (`23 files`, `42 workflows`).
+- `git diff --check` and clean-checkout readback: **PASS**.
+
+The final successor only archives this packet and records the qualification;
+it must preserve the five Rust blobs byte-for-byte, pass the document-aware
+validators on its exact SHA and receive hosted exact-head CI plus independent
+review. Before freeze, the branch was merged up to
+`main@e9d437f5a3bc7b4e48eb47d992564e2956aa86c0`; those upstream changes are
+path-disjoint from this task. No production or process-restart claim is made.
+Merge Queue and protected-main readback remain control-plane owned.
