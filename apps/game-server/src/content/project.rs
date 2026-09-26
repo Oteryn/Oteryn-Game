@@ -5,7 +5,9 @@
 //! canonical document set. Filesystem containment, no-follow admission, alias detection, staging,
 //! journalling and atomic publication belong to a later boundary.
 
+mod native_entry;
 mod v2;
+pub use native_entry::*;
 pub use v2::*;
 
 use super::{
@@ -235,7 +237,21 @@ impl ProjectSnapshot {
     }
 
     pub fn parse(&self, limits: ProjectEvidenceLimits) -> Result<WorldProject, ProjectError> {
-        parse_snapshot(self, limits.validate()?)
+        parse_snapshot(self, limits.validate()?, ProjectAdmission::Ordinary)
+            .map(|(project, _)| project)
+    }
+
+    /// Admit, parse and qualify one native entry-room project (`NATIVE_ENTRY_SOURCE_QUALIFICATION_V1`).
+    ///
+    /// The native variant is selected here, before any control document is parsed, and is always
+    /// parsed under the fixed `native_entry_first_slice_limits()` (#940 §4). Ordinary
+    /// [`Self::parse`] refuses it.
+    pub fn parse_native_entry(&self) -> Result<NativeEntryProject, ProjectError> {
+        let limits = native_entry_first_slice_limits().project.validate()?;
+        let (project, overlay) = parse_snapshot(self, limits, ProjectAdmission::NativeEntry)?;
+        let overlay =
+            overlay.ok_or(ProjectError::InvalidProject("native entry overlay missing"))?;
+        NativeEntryProject::qualify(project, overlay)
     }
 }
 
@@ -1139,8 +1155,17 @@ pub(super) struct ProjectCaptureDocument {
     pub(super) sha256: String,
 }
 
+/// Which source variant a capture may admit. The native entry variant is selected explicitly by
+/// its own API before any parse; ordinary capture never accepts it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum ProjectAdmission {
+    Ordinary,
+    NativeEntry,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ProjectCapturePlan {
+    admission: ProjectAdmission,
     root: RootDocument,
     manifest: ManifestDocumentRoot,
     lock: LockDocument,
@@ -1154,6 +1179,22 @@ impl ProjectCapturePlan {
         lock_bytes: &[u8],
         limits: ProjectEvidenceLimits,
     ) -> Result<Self, ProjectError> {
+        Self::from_control_documents_for(
+            root_bytes,
+            manifest_bytes,
+            lock_bytes,
+            limits,
+            ProjectAdmission::Ordinary,
+        )
+    }
+
+    pub(super) fn from_control_documents_for(
+        root_bytes: &[u8],
+        manifest_bytes: &[u8],
+        lock_bytes: &[u8],
+        limits: ProjectEvidenceLimits,
+        admission: ProjectAdmission,
+    ) -> Result<Self, ProjectError> {
         let limits = limits.validate()?;
         for bytes in [root_bytes, manifest_bytes, lock_bytes] {
             limits.check(
@@ -1164,8 +1205,22 @@ impl ProjectCapturePlan {
         }
 
         let root: RootDocument = parse_strict(root_bytes, limits)?;
-        let is_v2 = root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA
-            && root.source_profile == WORLD_PROJECT_V2_SOURCE_PROFILE;
+        let is_v2 = match admission {
+            ProjectAdmission::Ordinary => {
+                root.schema == WORLD_PROJECT_V2_ROOT_SCHEMA
+                    && root.source_profile == WORLD_PROJECT_V2_SOURCE_PROFILE
+            }
+            ProjectAdmission::NativeEntry => {
+                if root.schema != WORLD_PROJECT_V2_ROOT_SCHEMA
+                    || root.source_profile != NATIVE_ENTRY_SOURCE_PROFILE
+                {
+                    return Err(ProjectError::InvalidProject(
+                        "native entry admission requires the native source profile",
+                    ));
+                }
+                true
+            }
+        };
         if !is_v2
             && (root.schema != WORLD_PROJECT_ROOT_SCHEMA
                 || root.source_profile != WORLD_PROJECT_SOURCE_PROFILE)
@@ -1312,7 +1367,7 @@ impl ProjectCapturePlan {
             });
         }
         if is_v2 {
-            validate_v2_roles(&by_role)?;
+            validate_v2_roles(&by_role, admission)?;
         } else {
             require_role(
                 &by_role,
@@ -1340,6 +1395,7 @@ impl ProjectCapturePlan {
         }
 
         Ok(Self {
+            admission,
             root,
             manifest,
             lock,
@@ -1355,12 +1411,18 @@ impl ProjectCapturePlan {
 fn parse_snapshot(
     snapshot: &ProjectSnapshot,
     limits: ProjectEvidenceLimits,
-) -> Result<WorldProject, ProjectError> {
+    admission: ProjectAdmission,
+) -> Result<(WorldProject, Option<NativeFirstEntryDocument>), ProjectError> {
     let root_bytes = required(snapshot, PROJECT_LOCATOR)?;
     let manifest_bytes = required(snapshot, MANIFEST_LOCATOR)?;
     let lock_bytes = required(snapshot, LOCK_LOCATOR)?;
-    let plan =
-        ProjectCapturePlan::from_control_documents(root_bytes, manifest_bytes, lock_bytes, limits)?;
+    let plan = ProjectCapturePlan::from_control_documents_for(
+        root_bytes,
+        manifest_bytes,
+        lock_bytes,
+        limits,
+        admission,
+    )?;
 
     let mut expected = BTreeSet::from([
         PROJECT_LOCATOR.to_owned(),
@@ -1505,16 +1567,19 @@ fn parse_snapshot(
     validate_imports(&imports.batches, &reference.records)?;
     validate_native_item_licensing(&imports.batches, &plan.manifest.licensing_metadata)?;
     validate_metadata(&metadata.entries)?;
-    Ok(WorldProject {
-        root: plan.root,
-        manifest: plan.manifest,
-        lock: plan.lock,
-        reference,
-        imports,
-        metadata,
-        manifest_bytes: manifest_bytes.to_vec(),
-        v2: None,
-    })
+    Ok((
+        WorldProject {
+            root: plan.root,
+            manifest: plan.manifest,
+            lock: plan.lock,
+            reference,
+            imports,
+            metadata,
+            manifest_bytes: manifest_bytes.to_vec(),
+            v2: None,
+        },
+        None,
+    ))
 }
 
 fn required<'a>(snapshot: &'a ProjectSnapshot, locator: &str) -> Result<&'a [u8], ProjectError> {
