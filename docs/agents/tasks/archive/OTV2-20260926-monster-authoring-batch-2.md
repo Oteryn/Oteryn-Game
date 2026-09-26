@@ -4,7 +4,7 @@
 task_id: OTV2-20260926-monster-authoring-batch-2
 title: Second Canary monster batch and wiki reference-date comparison
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 943
 jira: KAN-16
 base_sha: c72925db52ee8cc19265b63d76e8e3ca863d93fc
-head_sha: null
-final_head_sha: null
+head_sha: da69da3470394652acb24d3e824ead251dd904b1
+final_head_sha: da69da3470394652acb24d3e824ead251dd904b1
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-26
 updated_at: 2026-09-26
 execution_policy: continuous_progress
@@ -56,3 +56,9 @@ fence, session, authority or persisted-recovery evidence is touched.
   239 MATCH / 12 DIFF / 8 WIKI_UNKNOWN. DIFF: Canary mitigation systematically lower (9),
   fire elemental `pushable`, dragon and ghost each miss one wiki loot item. tibiawiki.com.br is
   behind a Cloudflare challenge from this environment.
+
+## Completion
+
+Merged as PR #943 (`bbfdfdbfb92edae587fc1ec4c556ab1bf20b16b8`) from final head `da69da3`, which
+merged `main` to resolve the #941 archive rename conflict; required checks passed on that head.
+Owner released.

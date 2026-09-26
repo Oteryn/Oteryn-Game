@@ -17,8 +17,8 @@
       "defense": 5,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 13,
-        "denominator": 100
+        "numerator": 1,
+        "denominator": 5
       }
     },
     "resistances": [
@@ -207,7 +207,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 4.93,
+        "probability_percent": 5.1013,
         "skip_later_same_item_after_success": false
       }
     ]

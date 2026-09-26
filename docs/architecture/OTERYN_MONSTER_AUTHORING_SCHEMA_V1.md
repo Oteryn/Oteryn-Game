@@ -74,6 +74,12 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D7 | `creature.death_residue` is `{item, fluid_type}`. Races `venom`/`blood`/`ink`/`chocolate`/`candy` map to splash Item 2886 with fluid `slime`/`blood`/`ink`/`chocolate`/`candy`; `undead`/`fire`/`energy` leave none, and the field is omitted. Summons drop no corpse or residue. | `creature.cpp` `Creature::dropCorpse`, identical in Canary `47dfd51f` and Crystal `be61cdd3`/`ac447fef`. One splash Item differs only by fluid, so an `ItemRef` alone could not express it; this replaces the proposal's `death_residue_item`. |
 | D8 | `bosstiary` stores `prowess/expertise/mastery_points` per stage instead of one `boss_points`. | Canary `io_bosstiary.hpp` `levelInfos` awards points per reached stage (bane 5/15/30, archfoe 10/30/60, nemesis 10/30/60). Found by the second Canary batch. |
 | D9 | A boss is a monster with the optional `bosstiary`, `reward_boss` and `reward_encounter`; arena, phases, timers, cooldowns, reward chest and combat-changing boss scripts belong to the referenced Encounter. | Canary/Crystal register bosses as ordinary monster types; the boss logic lives in quest scripts (e.g. Forgotten Knowledge `HealthForgotten`, boss-kill cooldowns). |
+| D10 | The importer resolves a monster spell name as Canary does: registered rune spell, then registered instant spell (case-insensitive), then built-in kind. The resolved script is recorded in the manifest. | `Monsters::deserializeSpell` calls `Spells::getSpellByName` before building a built-in kind; §8. |
+| D11 | Every monster spell is an `Ability` (+ `Effect`s, `Formula`) under `content/abilities/**`. A player spell or rune used by a monster is the one shared Ability; a monster-only script gets its own Ability keyed by the source spell name. The monster attack entry keeps interval, chance, range and its damage magnitude, which overrides the Ability formula. | `Combat::getCombatDamage` uses `Monster::getCombatValues` whenever the monster entry has a non-zero min/max; §8. |
+| D12 | Spell schema extensions are added in census order, each with a batch monster that needs it: area matrix with explicit centre and directional rotation; constant-tick DoT (count, interval, per-tick amount); attribute-modifier condition (skill/stat, percent or absolute); `Ability.variants` with a uniform pick; chain targeting (count, range, backtracking). The damage distribution is a world combat rule, not a per-formula field. | Census frequencies in §8. Canary draws all monster damage with `normal_random`; whether Tibia Global does the same is unproven, so the rule is an OTS hypothesis until checked. |
+| D13 | A spell with custom logic becomes an `Ability` with a `native_behavior` key and its data parameters. Native behaviours are shared and parameterized by pattern (e.g. one path-chain behaviour with an element parameter), not one per source script. The content compiler rejects a key without an implementation. No Lua is admitted; an implementation is written only when a playable monster needs it, and until then the manifest row stays `unresolved_semantics`. | 44 custom-logic scripts cluster into recurring patterns (path chains, summon-N, cast-then-remove-self); §8. |
+| D14 | A spell reference that has no effect in Canary is recorded as `approved_omission`; when the reference-date wiki shows that attack, it is authored as an ordinary Ability from the wiki instead. | `energy beam` returns false for a non-player caster (4 monsters). |
+| D15 | Where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
 
 ## 4. Carried semantics
 
@@ -93,8 +99,10 @@ Retained from the proposal without change (details in the origin `README.md`/`RE
   invocation. `min_count` may be 0; `max_count >= 1`; `min_count <= max_count`.
 - `$defs.item` is a capability projection used to verify corpse/container/decay facts; it is
   not Item authority. `ItemRef` must resolve to the canonical Item catalogue before admission.
-- The disposition ledger accepts Git revisions only. Wiki captures need an immutable Git
-  archive or an accepted non-Git provenance route; a Git hash is never invented for a wiki page.
+- The disposition ledger accepts Git commits and MediaWiki page revisions. A MediaWiki source is
+  pinned by page id, immutable revision id and the SHA-256 of that revision's wikitext
+  (D15); `source_file` is the page title and `source_line` the wikitext line. A Git hash is never
+  invented for a wiki page. Wiki values are player observations and are recorded as such.
 
 ## 5. Mapping to WorldProject/v2
 
@@ -135,7 +143,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 173 focused positive/negative cases
+python verify_formal_schema.py     # 177 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -150,3 +158,44 @@ Unicode-digit indices are rejected. `-` cannot resolve an existing element. Obje
 names remain unrestricted by the array-index rule. Only `~0` and `~1` are valid escapes,
 and scalar values cannot be traversed. The empty root pointer is supported by the resolver
 but is not a valid manifest destination (the manifest requires a nonempty string).
+
+## 8. Registered monster spells
+
+Source: `tools/content-schema/monster-authoring/samples/spell-census-canary-47dfd51f.json`,
+produced by `spell_census.py` over all 1,656 Canary `47dfd51f` monster files. Six files cannot
+be read without quest configuration (five Soul War bosses and one helper file). Only `attacks`
+and `defenses` entries are counted.
+
+### 8.1 Resolution in Canary
+
+`Monsters::deserializeSpell` first calls `Spells::getSpellByName(name)`: rune spells, then
+instant spells, case-insensitive. It builds a built-in kind (`combat`, `melee`, `speed`, ...)
+only when no spell is registered under that name, so a registered name shadows a built-in kind
+(`fear` and `soulwars fear` are scripts). The script's `onCastSpell` runs with the monster as
+caster. When the monster entry has a non-zero min/max, `Combat::getCombatDamage` takes the
+damage from it (`Monster::getCombatValues`) instead of the script formula. The value is drawn
+by `normal_random` (normal distribution, mean 0.5, sd 0.25, redrawn outside [0, 1], scaled onto
+[min, max]) for built-in kinds as well.
+
+### 8.2 Census
+
+| Tier | Meaning | Spells | Monster references |
+|---|---|---:|---:|
+| P1 | player spell or rune reused by a monster; one Combat execution | 15 | 37 |
+| P2 | `onCastSpell` only executes one Combat | 166 | 281 |
+| P3 | `onCastSpell` executes one Combat picked by `math.random` | 48 | 94 |
+| P4 | custom logic: summons, target search, loops, timers, per-target Lua callbacks | 44 | 87 |
+| NOOP | player-only script that returns false for a monster caster | 1 | 4 |
+| MISSING | no registered spell and no built-in kind | 0 | 0 |
+
+P1–P3 (229 of 274 spells, 412 of 503 references) are declarative. Their most frequent
+primitives by spell count: area matrix 191 (130 of 200 area uses are script-local matrices,
+70 name one of 15 library constants), condition on hit 94, projectile effect 50, constant-tick
+DoT (`addDamage`) 37, attribute condition 30, paralyze formula 24, chain value 8. The tiers
+come from a pattern match on each `onCastSpell` body; converting a specific monster still
+requires reading its scripts, as for creature events.
+
+Batch 2 impact: `war_golem` needs the first four D12 extensions (`war golem electrify` is P2
+with a constant-tick energy condition; `war golem skill reducer` is P3 with attribute
+conditions). `knight_familiar` needs D11 (`sudden death rune` resolves to the rune, not the
+conjuring spell; `ice strike` is P1); its per-player familiar look is a separate gap.
