@@ -1,0 +1,16 @@
+{
+  "definitions": [
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/summon_knight_familiar",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/icearea",
+    "canary.appearance:effect/icetornado",
+    "canary.appearance:effect/magic_green",
+    "canary.appearance:effect/mortarea",
+    "canary.appearance:outfit/0"
+  ]
+}

@@ -482,7 +482,7 @@
       "source_field": "events=TheGreatDragonHuntDeath",
       "kind": "script",
       "status": "approved_omission",
-      "resolution": "Registered creature event \"TheGreatDragonHuntDeath\" updates quest/task progress on death. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
+      "resolution": "data-otservbr-global/scripts/quests/the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua increments The Great Dragon Hunt counter inside fixed areas. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
     },
     {
       "source_index": 0,
@@ -491,7 +491,7 @@
       "source_field": "events=TheFirstDragonDragonTaskDeath",
       "kind": "script",
       "status": "approved_omission",
-      "resolution": "Registered creature event \"TheFirstDragonDragonTaskDeath\" updates quest/task progress on death. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
+      "resolution": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_kill_dragon.lua increments The First Dragon dragon counter. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
     }
   ]
 }

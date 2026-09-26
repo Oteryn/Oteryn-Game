@@ -8,8 +8,8 @@
   "entries": [
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 81,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 69,
       "source_field": "attacks[1]",
       "kind": "field",
       "status": "mapped",
@@ -18,9 +18,18 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 82,
-      "source_field": "attacks[2]",
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 70,
+      "source_field": "attacks[2].name=sudden death rune",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 71,
+      "source_field": "attacks[3]",
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/1",
@@ -28,9 +37,9 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 83,
-      "source_field": "attacks[3]",
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 72,
+      "source_field": "attacks[4]",
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/2",
@@ -38,28 +47,57 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 33,
-      "source_field": "corpse",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/corpse_item",
-      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 17,
-      "source_field": "Bestiary",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/bestiary",
-      "resolution": "difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare)."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
       "source_line": 73,
+      "source_field": "attacks[5]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 74,
+      "source_field": "attacks[6]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/4",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 75,
+      "source_field": "attacks[7].name=ice strike",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 82,
+      "source_field": "defenses[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/0",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 53,
+      "source_field": "flags.familiar",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/summoning/familiar",
+      "resolution": "The monster file only flags the familiar; the profile comes from data/scripts/spells/familiar/<vocation>_familiar.lua (vocation, mana) and data/libs/functions/player.lua CreateFamiliarSpell: duration = 60 * familiarTime / 2 s with config default familiarTime=30 -> 900000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 61,
       "source_field": "voices",
       "kind": "field",
       "status": "approved_omission",
@@ -67,8 +105,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 47,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 35,
       "source_field": "flags.pass_through",
       "kind": "field",
       "status": "mapped",
@@ -77,8 +115,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 47,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 35,
       "source_field": "flags.canWalk/canTarget",
       "kind": "field",
       "status": "mapped",
@@ -87,7 +125,16 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 6,
+      "source_field": "outfit.lookType",
+      "kind": "field",
+      "status": "unresolved_semantics",
+      "resolution": "Source outfit has no lookType (lookType 0 placeholder). Familiar looks are chosen per player in data/XML/familiars.xml (e.g. Skullfrost 991 or quest Snowbash 1365 for knights); needs a native decision."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
       "source_line": 4,
       "source_field": "description",
       "kind": "field",
@@ -97,8 +144,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 30,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 16,
       "source_field": "health",
       "kind": "field",
       "status": "mapped",
@@ -107,8 +154,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 31,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 17,
       "source_field": "maxHealth",
       "kind": "field",
       "status": "mapped",
@@ -117,7 +164,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
       "source_line": 5,
       "source_field": "experience",
       "kind": "field",
@@ -127,8 +174,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 34,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 20,
       "source_field": "speed",
       "kind": "field",
       "status": "mapped",
@@ -137,7 +184,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
       "source_line": 6,
       "source_field": "outfit",
       "kind": "field",
@@ -147,8 +194,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 68,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 56,
       "source_field": "light",
       "kind": "field",
       "status": "mapped",
@@ -157,8 +204,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 47,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 35,
       "source_field": "flags",
       "kind": "field",
       "status": "mapped",
@@ -167,8 +214,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 37,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 23,
       "source_field": "changeTarget",
       "kind": "field",
       "status": "mapped",
@@ -177,8 +224,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 42,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 28,
       "source_field": "strategiesTarget",
       "kind": "field",
       "status": "mapped",
@@ -187,8 +234,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 92,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 85,
       "source_field": "elements",
       "kind": "field",
       "status": "mapped",
@@ -197,8 +244,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 105,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 98,
       "source_field": "immunities",
       "kind": "field",
       "status": "mapped",
@@ -207,8 +254,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 88,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 80,
       "source_field": "defenses.armor",
       "kind": "field",
       "status": "mapped",
@@ -217,8 +264,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 87,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 79,
       "source_field": "defenses.defense",
       "kind": "field",
       "status": "mapped",
@@ -227,41 +274,12 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 89,
-      "source_field": "defenses.mitigation",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 35,
-      "source_field": "manaCost",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/summoning/mana_cost",
-      "resolution": "Direct source value."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 16,
-      "source_field": "raceId",
-      "kind": "field",
-      "status": "metadata_only",
-      "resolution": "Foreign identifier; provenance only."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "source_line": 32,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 18,
       "source_field": "race",
       "kind": "dependency",
       "status": "approved_omission",
-      "resolution": "Race \"fire\" leaves no death residue: creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+      "resolution": "Race \"undead\" leaves no death residue: creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
     }
   ]
 }

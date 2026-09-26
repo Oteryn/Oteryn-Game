@@ -272,7 +272,7 @@
       "source_field": "events=RationalRequestRatDeath",
       "kind": "script",
       "status": "approved_omission",
-      "resolution": "Registered creature event \"RationalRequestRatDeath\" updates quest/task progress on death. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
+      "resolution": "data-otservbr-global/scripts/quests/the_rookie_guard/mission03_rational_request.lua increments the Rookie Guard mission 3 rat counter. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
     }
   ]
 }

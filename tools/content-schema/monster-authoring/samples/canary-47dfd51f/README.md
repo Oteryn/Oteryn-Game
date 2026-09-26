@@ -45,3 +45,30 @@ item-look outfits, non-zero light and registered spell scripts.
   derived from numeric codes, engine defaults for absent flags, `CONST_ME_POFF` for area spells
   without an effect, corpse weight 0 when items.xml has none, and config-dependent element
   clipping.
+
+## Wiki comparison at the 2026-07-28 reference cut
+
+`wiki-2026-07-28.json`, produced by `../../wiki_compare.py`, compares these bundles with TibiaWiki
+(Fandom): for each page the last revision at or before `2026-07-29T00:00:00Z`, its SHA-256, the
+current revision, and only the compared infobox facts (no wiki prose). No page changed after
+the cut.
+
+Totals over 259 compared facts: **239 MATCH, 12 DIFF, 8 WIKI_UNKNOWN**.
+
+| Difference | Monsters | Canary | Wiki at cut |
+|---|---|---|---|
+| Mitigation is systematically lower in Canary (wiki/Canary ratio 1.54–1.71) | all 9 with a wiki value | e.g. cyclops 0.62, dragon 0.99 | cyclops 0.97, dragon 1.56 |
+| `pushable` | fire_elemental | false | true |
+| Loot item missing in Canary | dragon | — | dragon trophy |
+| Loot item missing in Canary | ghost | — | stone skin amulet |
+
+Matched: HP, experience, armor, speed, all nine element modifiers, summon/convince cost,
+illusionable, push-objects, sense-invisible, paralyze immunity, Bestiary class/level/occurrence
+and the remaining loot item lists. Wiki disambiguated names such as `book (grey)` count as the
+Canary base name. Unknown on the wiki: `runsat` for three monsters, one `pushobjects`, and
+Demodras (cut revision from 2023) has no mitigation or Bestiary data. Loot chances are not
+compared because the wiki lists player-reported rarity words.
+
+Under the agreed rule (visible facts follow the wiki state closest to the reference date),
+the mitigation, `pushable` and the two loot items are candidates to take from the wiki. That is a
+data decision for the owner; the bundles still carry the Canary values.
