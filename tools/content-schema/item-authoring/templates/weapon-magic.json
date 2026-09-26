@@ -1,0 +1,51 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.magic-weapon",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Magic Weapon",
+  "family_profile": "weapon_magic",
+  "taxonomy": {
+    "item_class": "weapon",
+    "primary": "magic",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "requirements": {
+    "min_level": 1,
+    "min_magic_level": 1,
+    "vocations": [],
+    "enforcement_mode": "on_use"
+  },
+  "equipment": {
+    "slot": "right_hand",
+    "hands": 1,
+    "reserved_slots": [],
+    "groups": []
+  },
+  "weapon": {
+    "weapon_type": "wand",
+    "damage_range": {
+      "minimum": 1,
+      "maximum": 2
+    },
+    "damage_type": "energy",
+    "consumption_mode": "none"
+  },
+  "use": {
+    "usable": true,
+    "use_with": false
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}
+
