@@ -1,0 +1,376 @@
+{
+  "schema": "OTERYN_NATIVE_ENTRY_ROOM_SOURCE/v1",
+  "licensing": "oteryn-original-preproduction",
+  "records": [
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability/bite",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect/bite",
+          "revision": "oteryn:rev/entry-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior/passive-idle",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature/rat",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation/rat",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior/passive-idle",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect/bite",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula/entry-melee-r1",
+        "revision": "oteryn:rev/entry-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula/entry-melee-r1",
+        "revision": "oteryn:rev/entry-r1"
+      }
+    },
+    {
+      "kind": "Item",
+      "identity": {
+        "family": "Item",
+        "key": "oteryn:item/cheese",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ClientSafe",
+      "materializable": true,
+      "stack_class": "NonStackable"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation/bite",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation/cheese",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation/rat",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ClientSafe"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "client_projection": "ServerOnly"
+    }
+  ],
+  "declarations": [
+    {
+      "kind": "Area",
+      "identity": {
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "fields": []
+    }
+  ],
+  "world": {
+    "key": "oteryn:entry.world",
+    "coordinate_frame": "oteryn:entry.frame",
+    "bounds": {
+      "min_x": 0,
+      "min_y": -1,
+      "max_x_exclusive": 2,
+      "max_y_exclusive": 1
+    },
+    "floors": [
+      0
+    ]
+  },
+  "placements": [
+    {
+      "key": "oteryn:cell/entry-start",
+      "world": "oteryn:entry.world",
+      "map_revision": "oteryn:map/entry-r1",
+      "definition": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "area": {
+        "family": "Area",
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "coordinate_frame": "oteryn:entry.frame",
+      "x": 0,
+      "y": 0,
+      "floor": 0,
+      "presentation_order": {
+        "plane": 0,
+        "order": 0
+      },
+      "disposition": "CandidateOnly"
+    },
+    {
+      "key": "oteryn:cell/entry-east",
+      "world": "oteryn:entry.world",
+      "map_revision": "oteryn:map/entry-r1",
+      "definition": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "area": {
+        "family": "Area",
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "coordinate_frame": "oteryn:entry.frame",
+      "x": 1,
+      "y": 0,
+      "floor": 0,
+      "presentation_order": {
+        "plane": 0,
+        "order": 0
+      },
+      "disposition": "CandidateOnly"
+    },
+    {
+      "key": "oteryn:cell/entry-north",
+      "world": "oteryn:entry.world",
+      "map_revision": "oteryn:map/entry-r1",
+      "definition": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "area": {
+        "family": "Area",
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "coordinate_frame": "oteryn:entry.frame",
+      "x": 0,
+      "y": -1,
+      "floor": 0,
+      "presentation_order": {
+        "plane": 0,
+        "order": 0
+      },
+      "disposition": "CandidateOnly"
+    }
+  ],
+  "native_first_entry": {
+    "world_key": "oteryn:entry.world",
+    "frame": {
+      "coordinate_profile": "oteryn-world-spatial-v1",
+      "contract_revision": 1,
+      "coordinate_frame": "oteryn:entry.frame",
+      "origin": {
+        "x": 0,
+        "y": 0,
+        "floor": 0
+      },
+      "x_direction": "East",
+      "y_direction": "South",
+      "higher_floor": "Up"
+    },
+    "revisions": {
+      "content": "oteryn:content/entry-r1",
+      "map": "oteryn:map/entry-r1",
+      "ruleset": "oteryn:ruleset/entry-r1",
+      "world_policy": "oteryn:world-policy/entry-r1",
+      "compiler": "oteryn:compiler/first-production-r1",
+      "canonicalization": "oteryn:canonicalization/first-production-r1",
+      "sim_profile": "oteryn:sim/entry-r1",
+      "profile_revision": "FIRST_PRODUCTION_CONTENT_PROFILE/v1"
+    },
+    "region": {
+      "key": "oteryn:region/entry"
+    },
+    "cells": [
+      {
+        "placement_key": "oteryn:cell/entry-start",
+        "region_key": "oteryn:region/entry",
+        "collision": "Walkable"
+      },
+      {
+        "placement_key": "oteryn:cell/entry-east",
+        "region_key": "oteryn:region/entry",
+        "collision": "Walkable"
+      },
+      {
+        "placement_key": "oteryn:cell/entry-north",
+        "region_key": "oteryn:region/entry",
+        "collision": "Blocked"
+      }
+    ],
+    "relocation": {
+      "key": "oteryn:relocation/entry-east-return",
+      "from_cell": "oteryn:cell/entry-east",
+      "to_cell": "oteryn:cell/entry-start"
+    },
+    "behavior": {
+      "definition": {
+        "family": "Behavior",
+        "key": "oteryn:behavior/passive-idle",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "policy_revision": "oteryn:policy/passive-idle-r1"
+    },
+    "presentations": [
+      {
+        "definition": {
+          "family": "Presentation",
+          "key": "oteryn:presentation/rat",
+          "revision": "oteryn:rev/entry-r1"
+        },
+        "metadata_token": "oteryn:appearance/rat-r1"
+      },
+      {
+        "definition": {
+          "family": "Presentation",
+          "key": "oteryn:presentation/bite",
+          "revision": "oteryn:rev/entry-r1"
+        },
+        "metadata_token": "oteryn:appearance/bite-r1"
+      },
+      {
+        "definition": {
+          "family": "Presentation",
+          "key": "oteryn:presentation/cheese",
+          "revision": "oteryn:rev/entry-r1"
+        },
+        "metadata_token": "oteryn:appearance/cheese-r1"
+      }
+    ],
+    "creature": {
+      "definition": {
+        "family": "Creature",
+        "key": "oteryn:creature/rat",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "policy_revision": "oteryn:policy/creature-rat-r1"
+    },
+    "spawn": {
+      "key": "oteryn:spawn/entry-rat",
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature/rat",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior/passive-idle",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "cell_key": "oteryn:cell/entry-east",
+      "population_limit": 1,
+      "recovery": "EphemeralScopeReset",
+      "multiplicity": "ChannelLocalRepeatable",
+      "eligibility_scope": "CharacterWorld"
+    },
+    "ability": {
+      "definition": {
+        "family": "Ability",
+        "key": "oteryn:ability/bite",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation/bite",
+        "revision": "oteryn:rev/entry-r1"
+      }
+    },
+    "item": {
+      "definition": {
+        "family": "Item",
+        "key": "oteryn:item/cheese",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation/cheese",
+        "revision": "oteryn:rev/entry-r1"
+      }
+    },
+    "loot_table": {
+      "key": "oteryn:loot/rat",
+      "entry": {
+        "key": "oteryn:loot-entry/rat-cheese",
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item/cheese",
+          "revision": "oteryn:rev/entry-r1"
+        },
+        "rng_purpose_key": "oteryn:rng/rat-loot"
+      }
+    },
+    "xp": {
+      "key": "oteryn:xp/rat",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula/entry-melee-r1",
+        "revision": "oteryn:rev/entry-r1"
+      }
+    },
+    "rng": {
+      "profile_revision": "oteryn:rng-profile/entry-r1",
+      "purpose_key": "oteryn:rng/rat-loot"
+    }
+  }
+}
