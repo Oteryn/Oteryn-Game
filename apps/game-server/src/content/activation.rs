@@ -361,6 +361,208 @@ fn expected_current_matches(
     }
 }
 
+/// Boot-ordering proof for the native entry-room activation (#935 "Hold new admission, establish
+/// real quiescence"). It is minted only by the node before its Channel runtime, gameplay listener
+/// or control socket exists, so no authoritative scope or admission can be live while it is held.
+/// The activation additionally requires an empty controller (explicit empty start).
+#[derive(Debug)]
+pub struct NodeBootQuiescence {
+    _private: (),
+}
+
+impl NodeBootQuiescence {
+    pub(crate) const fn before_channel_runtime() -> Self {
+        Self { _private: () }
+    }
+}
+
+/// One control-plane activation issuance for a Channel scope, as read from its current durable
+/// row. It authorizes exact digests and one frame binding; it carries no Content bytes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeEntryActivationIssuance {
+    pub world_id: crate::foundation::WorldId,
+    pub activation_sequence: u64,
+    pub server_artifact_digest: [u8; 32],
+    pub client_artifact_digest: [u8; 32],
+    pub frame_binding_digest: [u8; 32],
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NativeEntryActivationError {
+    Qualification(super::ProjectError),
+    Activation(ContentActivationError),
+    WorldMismatch,
+    DigestMismatch,
+    FrameBindingMismatch,
+}
+
+impl Display for NativeEntryActivationError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Qualification(error) => write!(formatter, "native entry qualification: {error}"),
+            Self::Activation(error) => write!(formatter, "native entry activation: {error}"),
+            Self::WorldMismatch => {
+                formatter.write_str("activation issuance WorldId does not match the Channel scope")
+            }
+            Self::DigestMismatch => {
+                formatter.write_str("qualified native entry pair does not match the issued digests")
+            }
+            Self::FrameBindingMismatch => formatter.write_str(
+                "qualified native frame binding does not match the issued frame binding",
+            ),
+        }
+    }
+}
+
+impl Error for NativeEntryActivationError {}
+
+/// The exact active native entry generation a Channel runtime is created with (#935). It is
+/// produced only by [`activate_native_entry_room`], so its identity, activation sequence and
+/// source-qualified frame binding cannot be assembled or substituted independently.
+///
+/// ```compile_fail
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<oteryn_game_server::content::NativeEntryContentPin>();
+/// ```
+#[derive(Debug, PartialEq, Eq)]
+pub struct NativeEntryContentPin {
+    identity: GenerationIdentity,
+    activation_sequence: u64,
+    frame_binding: super::NativeEntryFrameBinding,
+}
+
+impl NativeEntryContentPin {
+    pub fn identity(&self) -> &GenerationIdentity {
+        &self.identity
+    }
+
+    pub const fn activation_sequence(&self) -> u64 {
+        self.activation_sequence
+    }
+
+    pub fn frame_binding(&self) -> &super::NativeEntryFrameBinding {
+        &self.frame_binding
+    }
+
+    /// The digest-level pin the Channel runtime is created with. Consuming the activation pin
+    /// keeps one active generation per Channel creation.
+    pub(crate) fn into_channel_pin(self) -> crate::foundation::ChannelContentPin {
+        crate::foundation::ChannelContentPin::from_activation(
+            self.identity.world_id(),
+            self.activation_sequence,
+            self.identity.server_artifact_digest(),
+            self.identity.client_artifact_digest(),
+            self.frame_binding.digest(),
+        )
+    }
+}
+
+struct NodeBootAuthorization<'a> {
+    target: GenerationIdentity,
+    activation_sequence: u64,
+    _quiescence: &'a NodeBootQuiescence,
+}
+
+struct NodeBootAdmissionGuard;
+
+impl ContentActivationAdmissionGuard for NodeBootAdmissionGuard {
+    fn quiescent(&self) -> bool {
+        true
+    }
+
+    fn live_scope_count(&self) -> usize {
+        0
+    }
+}
+
+impl sealed::Sealed for NodeBootAuthorization<'_> {}
+
+impl AuthorizedContentGeneration for NodeBootAuthorization<'_> {
+    type AdmissionGuard<'g>
+        = NodeBootAdmissionGuard
+    where
+        Self: 'g;
+
+    fn acquire_admission_guard(&self) -> Self::AdmissionGuard<'_> {
+        NodeBootAdmissionGuard
+    }
+
+    fn target_identity(&self) -> &GenerationIdentity {
+        &self.target
+    }
+
+    // A booting node holds no active generation: activation is an explicit empty start.
+    fn expected_current_identity(&self) -> Option<&GenerationIdentity> {
+        None
+    }
+
+    fn expected_current_activation_sequence(&self) -> Option<u64> {
+        None
+    }
+
+    fn activation_sequence(&self) -> u64 {
+        self.activation_sequence
+    }
+
+    fn permits_last_known_good_fallback(&self) -> bool {
+        false
+    }
+}
+
+/// Activates the committed native entry room for one Channel scope at node boot (#935).
+///
+/// The room is rebuilt from its genuine committed source and the scope WorldId, qualified natively
+/// and compiled; its pair digests and frame binding must equal the current control-plane issuance
+/// exactly. Only then is the pair staged and activated with the issuance's sequence. Any mismatch
+/// refuses before staging, and a failed activation leaves no active generation.
+pub fn activate_native_entry_room(
+    controller: &mut ContentActivationController,
+    quiescence: &NodeBootQuiescence,
+    scope_world_id: crate::foundation::WorldId,
+    issuance: &NativeEntryActivationIssuance,
+) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
+    if issuance.world_id != scope_world_id {
+        return Err(NativeEntryActivationError::WorldMismatch);
+    }
+    let room = super::qualify_native_entry_room(scope_world_id)
+        .map_err(NativeEntryActivationError::Qualification)?;
+    let compiled = room.compiled();
+    if compiled.server_digest() != issuance.server_artifact_digest
+        || compiled.client_digest() != issuance.client_artifact_digest
+    {
+        return Err(NativeEntryActivationError::DigestMismatch);
+    }
+    if room.frame_binding().digest() != issuance.frame_binding_digest {
+        return Err(NativeEntryActivationError::FrameBindingMismatch);
+    }
+    let target = controller
+        .stage_primary(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )
+        .map_err(NativeEntryActivationError::Activation)?
+        .clone();
+    let authorization = NodeBootAuthorization {
+        target,
+        activation_sequence: issuance.activation_sequence,
+        _quiescence: quiescence,
+    };
+    let result = controller.activate(&authorization);
+    let active = match result {
+        Ok(active) => active,
+        Err(error) => {
+            controller.discard_staged();
+            return Err(NativeEntryActivationError::Activation(error));
+        }
+    };
+    Ok(NativeEntryContentPin {
+        identity: active.identity().clone(),
+        activation_sequence: active.activation_sequence(),
+        frame_binding: room.frame_binding().clone(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -806,6 +1008,207 @@ mod tests {
             controller.active().map(ActiveGeneration::identity),
             Some(&first_identity)
         );
+        Ok(())
+    }
+
+    type NativeResult<T> = Result<T, Box<dyn Error>>;
+
+    fn native_world(raw: u8) -> NativeResult<crate::foundation::WorldId> {
+        let mut bytes = [0_u8; 16];
+        bytes[15] = raw;
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        Ok(crate::foundation::WorldId::decode(&bytes)?)
+    }
+
+    fn native_issuance(
+        world_id: crate::foundation::WorldId,
+    ) -> NativeResult<(
+        NativeEntryActivationIssuance,
+        super::super::QualifiedNativeEntryRoom,
+    )> {
+        let room = super::super::qualify_native_entry_room(world_id)?;
+        let issuance = NativeEntryActivationIssuance {
+            world_id,
+            activation_sequence: 7,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        Ok((issuance, room))
+    }
+
+    fn activate_native(
+        controller: &mut ContentActivationController,
+        world_id: crate::foundation::WorldId,
+        issuance: &NativeEntryActivationIssuance,
+    ) -> Result<NativeEntryContentPin, NativeEntryActivationError> {
+        activate_native_entry_room(
+            controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world_id,
+            issuance,
+        )
+    }
+
+    #[test]
+    fn native_entry_activation_pins_the_issued_generation_and_frame() -> NativeResult<()> {
+        let world = native_world(1)?;
+        let (issuance, room) = native_issuance(world)?;
+        let mut controller = ContentActivationController::new();
+        let pin = activate_native(&mut controller, world, &issuance)?;
+        assert!(controller.is_ready());
+        assert_eq!(
+            controller.active().map(ActiveGeneration::identity),
+            Some(pin.identity())
+        );
+        assert_eq!(pin.identity().world_id(), world);
+        assert_eq!(pin.activation_sequence(), 7);
+        assert_eq!(pin.frame_binding(), room.frame_binding());
+        assert_eq!(
+            pin.identity().server_artifact_digest(),
+            issuance.server_artifact_digest
+        );
+        assert_eq!(
+            pin.identity().client_artifact_digest(),
+            issuance.client_artifact_digest
+        );
+        let channel = pin.into_channel_pin();
+        assert_eq!(channel.world_id(), world);
+        assert_eq!(channel.activation_sequence(), 7);
+        assert_eq!(
+            channel.server_artifact_digest(),
+            issuance.server_artifact_digest
+        );
+        assert_eq!(
+            channel.client_artifact_digest(),
+            issuance.client_artifact_digest
+        );
+        assert_eq!(
+            channel.frame_binding_digest(),
+            issuance.frame_binding_digest
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn native_entry_frame_binding_is_bound_to_the_world() -> NativeResult<()> {
+        let (first, first_room) = native_issuance(native_world(1)?)?;
+        let (second, second_room) = native_issuance(native_world(2)?)?;
+        assert_eq!(
+            first_room.frame_binding().frame(),
+            second_room.frame_binding().frame()
+        );
+        assert_ne!(first.frame_binding_digest, second.frame_binding_digest);
+        assert_ne!(first.server_artifact_digest, second.server_artifact_digest);
+        Ok(())
+    }
+
+    #[test]
+    fn native_entry_activation_refuses_every_mismatch_before_staging() -> NativeResult<()> {
+        let world = native_world(1)?;
+        let other_world = native_world(2)?;
+        let (issuance, _) = native_issuance(world)?;
+        let (other, _) = native_issuance(other_world)?;
+        let digest = NativeEntryActivationError::DigestMismatch;
+        let frame = NativeEntryActivationError::FrameBindingMismatch;
+        let cases = [
+            (
+                issuance.clone(),
+                other_world,
+                NativeEntryActivationError::WorldMismatch,
+            ),
+            (
+                NativeEntryActivationIssuance {
+                    server_artifact_digest: [9; 32],
+                    ..issuance.clone()
+                },
+                world,
+                digest.clone(),
+            ),
+            (
+                NativeEntryActivationIssuance {
+                    client_artifact_digest: [9; 32],
+                    ..issuance.clone()
+                },
+                world,
+                digest.clone(),
+            ),
+            (
+                NativeEntryActivationIssuance {
+                    frame_binding_digest: [9; 32],
+                    ..issuance.clone()
+                },
+                world,
+                frame.clone(),
+            ),
+            // Another World's genuine frame binding or pair cannot be substituted.
+            (
+                NativeEntryActivationIssuance {
+                    frame_binding_digest: other.frame_binding_digest,
+                    ..issuance.clone()
+                },
+                world,
+                frame,
+            ),
+            (
+                NativeEntryActivationIssuance {
+                    server_artifact_digest: other.server_artifact_digest,
+                    client_artifact_digest: other.client_artifact_digest,
+                    ..issuance.clone()
+                },
+                world,
+                digest,
+            ),
+        ];
+        for (case, scope_world, expected) in cases {
+            let mut controller = ContentActivationController::new();
+            let Err(error) = activate_native(&mut controller, scope_world, &case) else {
+                return Err(format!("{expected:?} case activated").into());
+            };
+            assert_eq!(error, expected);
+            assert!(controller.active().is_none());
+            assert!(controller.staged_identity().is_none());
+            assert!(!controller.is_ready());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn native_entry_activation_requires_a_newer_sequence_and_an_empty_start() -> NativeResult<()> {
+        let world = native_world(1)?;
+        let (issuance, _) = native_issuance(world)?;
+        let mut controller = ContentActivationController::new();
+        let zero = NativeEntryActivationIssuance {
+            activation_sequence: 0,
+            ..issuance.clone()
+        };
+        assert!(matches!(
+            activate_native(&mut controller, world, &zero),
+            Err(NativeEntryActivationError::Activation(
+                ContentActivationError::NonMonotonicActivationSequence { .. }
+            ))
+        ));
+        assert!(controller.active().is_none() && controller.staged_identity().is_none());
+
+        let first = activate_native(&mut controller, world, &issuance)?;
+        let newer = NativeEntryActivationIssuance {
+            activation_sequence: 8,
+            ..issuance.clone()
+        };
+        // A controller that already holds an active generation is not an empty start.
+        assert!(matches!(
+            activate_native(&mut controller, world, &newer),
+            Err(NativeEntryActivationError::Activation(
+                ContentActivationError::ExpectedCurrentMismatch
+            ))
+        ));
+        assert!(controller.staged_identity().is_none());
+        assert_eq!(
+            controller.active().map(ActiveGeneration::identity),
+            Some(first.identity())
+        );
+        assert_eq!(controller.last_activation_sequence(), 7);
         Ok(())
     }
 }

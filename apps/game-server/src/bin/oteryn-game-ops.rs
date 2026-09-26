@@ -7,7 +7,9 @@
 //! mutation durably under its validated state directory before submitting it.
 
 use oteryn_game_server::character_recovery_fence::CharacterRecoveryStore;
+use oteryn_game_server::content::qualify_native_entry_room;
 use oteryn_game_server::durability::DurabilityRoot;
+use oteryn_game_server::durability::content_activation::ContentActivationRequest;
 use oteryn_game_server::durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance,
 };
@@ -20,8 +22,9 @@ use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, World
 use oteryn_game_server::node::config::{NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
-    AssignmentRequestFile, CharacterRecoveryRequestFile, LaunchAuthorizationFile,
-    MAX_OPERATOR_FILE_BYTES, S2AuthorizationFile, hex, hex_bytes, random_bytes, uuid_v7,
+    AssignmentRequestFile, CharacterRecoveryRequestFile, ContentActivationRequestFile,
+    LaunchAuthorizationFile, MAX_OPERATOR_FILE_BYTES, S2AuthorizationFile, hex, hex_bytes,
+    random_bytes, uuid_v7,
 };
 use oteryn_game_server::node::secure_file::{self, FileClass};
 use oteryn_game_server::node::{StartupError, connect_root, read_file, uuid_bytes};
@@ -738,6 +741,85 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
     }
 }
 
+/// #935 activation issuer: `content activate --world <uuid> --channel <uuid> --sequence <n>
+/// --previous empty|<n> --request <file>`. The digests and frame binding are computed from the
+/// committed native entry room qualified for the World. An existing request file is replayed
+/// exactly (its recorded issuance succeeds again; anything else rejects).
+async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
+    if arguments.words.get(1).map(String::as_str) != Some("activate") {
+        return Err(Failure::Usage("content activate"));
+    }
+    let name = arguments.take("request")?;
+    let file = match operator.read_state_optional(&name)? {
+        Some(bytes) => {
+            arguments.finish()?;
+            ContentActivationRequestFile::decode(&bytes)
+                .map_err(|_| Failure::Input("content activation request".into()))?
+        }
+        None => {
+            let world_text = arguments.take("world")?;
+            let channel_text = arguments.take("channel")?;
+            let sequence = parse_u64("sequence", &arguments.take("sequence")?)?;
+            let previous = match arguments.take("previous")?.as_str() {
+                "empty" => None,
+                text => Some(parse_u64("previous", text)?),
+            };
+            arguments.finish()?;
+            let world = WorldId::decode(&decode_uuid("world", &world_text)?)
+                .map_err(|_| Failure::Input("world".into()))?;
+            decode_uuid("channel", &channel_text)?;
+            let room = qualify_native_entry_room(world)
+                .map_err(|error| Failure::Input(format!("native entry room: {error}")))?;
+            let file = ContentActivationRequestFile {
+                version: FILE_VERSION,
+                world_id: world_text,
+                channel_id: channel_text,
+                activation_sequence: sequence,
+                previous_sequence: previous,
+                server_artifact_digest: hex(&room.compiled().server_digest()),
+                client_artifact_digest: hex(&room.compiled().client_digest()),
+                frame_binding_digest: hex(&room.frame_binding().digest()),
+            };
+            let bytes = file
+                .encode()
+                .map_err(|_| Failure::Input("content activation request".into()))?;
+            operator.create_state(&name, None, &bytes)?;
+            file
+        }
+    };
+    let invalid = || Failure::Input("content activation request".into());
+    let request = ContentActivationRequest {
+        world_id: WorldId::decode(&decode_uuid("world", &file.world_id)?).map_err(|_| invalid())?,
+        channel_id: ChannelId::decode(&decode_uuid("channel", &file.channel_id)?)
+            .map_err(|_| invalid())?,
+        activation_sequence: file.activation_sequence,
+        previous_sequence: file.previous_sequence,
+        server_artifact_digest: hex_bytes::<32>(&file.server_artifact_digest)
+            .map_err(|_| invalid())?,
+        client_artifact_digest: hex_bytes::<32>(&file.client_artifact_digest)
+            .map_err(|_| invalid())?,
+        frame_binding_digest: hex_bytes::<32>(&file.frame_binding_digest).map_err(|_| invalid())?,
+    };
+    match operator.root.record_content_activation(&request).await {
+        Ok(true) => {
+            event(&format!(
+                "content_activation=recorded activation_sequence={} server_digest={} client_digest={} frame_binding={}",
+                file.activation_sequence,
+                file.server_artifact_digest,
+                file.client_artifact_digest,
+                file.frame_binding_digest
+            ));
+            Ok(())
+        }
+        Ok(false) => Err(Failure::Rejected(
+            "content activation is stale, not newer or conflicts with the recorded sequence".into(),
+        )),
+        Err(error) => Err(Failure::Ambiguous(format!(
+            "content activation outcome unknown ({error:?}); re-run with the same --request {name}"
+        ))),
+    }
+}
+
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
     let config_path = PathBuf::from(arguments.take("config")?);
@@ -773,8 +855,9 @@ async fn run(raw: Vec<String>) -> Outcome {
         Some("s2") => s2(&operator, arguments).await,
         Some("character") => character(&operator, arguments).await,
         Some("assignment") => assignment(&operator, arguments).await,
+        Some("content") => content(&operator, arguments).await,
         _ => Err(Failure::Usage(
-            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment ...",
+            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content ...",
         )),
     }
 }

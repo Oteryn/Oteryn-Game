@@ -5509,3 +5509,99 @@ fn concurrent_fresh_replay_commits_exactly_one_membership() -> Result<(), Box<dy
         result
     })
 }
+
+/// NATIVE_ENTRY_CONTENT_ACTIVATION_V1 (#935): the per-scope activation floor is monotonic and
+/// predecessor-bound, exact replays succeed, conflicts refuse, rows are immutable, and only a
+/// scope granted operation 4 may issue.
+#[test]
+fn content_activation_floor_is_monotonic_predecessor_bound_and_immutable()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::content_activation::ContentActivationRequest;
+    use foundation::{ChannelId, WorldId};
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("content_activation_floor").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let world = WorldId::decode(&authority_matrix::uuid(60))?;
+                let channel = ChannelId::decode(&authority_matrix::uuid(61))?;
+                let other_channel = ChannelId::decode(&authority_matrix::uuid(62))?;
+                let root = durability::DurabilityRoot::connect_test_runtime(&url)?;
+                assert!(root.maintain_ready_once().await?);
+                let request = |sequence, previous, digest: u8| ContentActivationRequest {
+                    world_id: world,
+                    channel_id: channel,
+                    activation_sequence: sequence,
+                    previous_sequence: previous,
+                    server_artifact_digest: [digest; 32],
+                    client_artifact_digest: [digest.wrapping_add(1); 32],
+                    frame_binding_digest: [digest.wrapping_add(2); 32],
+                };
+
+                // Without an operation-4 grant for this scope the issuer is refused outright.
+                assert!(root.record_content_activation(&request(1, None, 1)).await.is_err());
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                sqlx::query(
+                    "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
+                     VALUES (session_user, encode($1, 'hex')::uuid, encode($2, 'hex')::uuid, 4)",
+                )
+                .bind(world.as_bytes().as_slice())
+                .bind(channel.as_bytes().as_slice())
+                .execute(&mut connection)
+                .await?;
+                assert_eq!(root.read_current_content_activation(world, channel).await?, None);
+
+                assert!(root.record_content_activation(&request(1, None, 1)).await?);
+                assert!(root.record_content_activation(&request(1, None, 1)).await?, "exact replay");
+                assert!(
+                    !root.record_content_activation(&request(1, None, 9)).await?,
+                    "conflicting replay"
+                );
+                assert!(
+                    !root.record_content_activation(&request(2, None, 2)).await?,
+                    "a second empty start is stale"
+                );
+                assert!(root.record_content_activation(&request(3, Some(1), 3)).await?);
+                assert!(
+                    !root.record_content_activation(&request(4, Some(1), 4)).await?,
+                    "predecessor is no longer current"
+                );
+                assert!(
+                    root.record_content_activation(&request(3, Some(3), 3)).await.is_err(),
+                    "a predecessor not below the sequence is refused before the database"
+                );
+                let current = root
+                    .read_current_content_activation(world, channel)
+                    .await?
+                    .ok_or("current activation")?;
+                assert_eq!(current.activation_sequence, 3);
+                assert_eq!(current.server_artifact_digest, [3; 32]);
+                assert_eq!(current.client_artifact_digest, [4; 32]);
+                assert_eq!(current.frame_binding_digest, [5; 32]);
+                assert_eq!(
+                    root.read_current_content_activation(world, other_channel).await?,
+                    None,
+                    "the floor is per Channel scope"
+                );
+                for statement in [
+                    "UPDATE game_content_activations SET issued_at = issued_at + 1",
+                    "DELETE FROM game_content_activations",
+                ] {
+                    assert!(sqlx::query(statement).execute(&mut connection).await.is_err());
+                }
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
