@@ -173,10 +173,11 @@
       "revision": "canary-47dfd51f"
     },
     "appearance": {
-      "asset_binding": "canary.appearance:outfit/0",
+      "asset_binding": "canary.appearance:outfit/991",
       "palette_bindings": [],
       "attachment_bindings": [],
-      "visual_effect_bindings": []
+      "visual_effect_bindings": [],
+      "selection": "owner_familiar_look"
     },
     "light": {
       "level": 0

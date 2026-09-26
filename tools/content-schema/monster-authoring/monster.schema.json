@@ -1045,7 +1045,9 @@
               "additionalProperties": false,
               "properties": {
                 "interval_ms": {
-                  "$ref": "#/$defs/ms"
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0 disables timed target changes; a nonzero chance still lets the monster switch to an opponent that blocks its path to the current target."
                 },
                 "chance_percent": {
                   "$ref": "#/$defs/percent"
@@ -1271,6 +1273,12 @@
           "properties": {
             "asset_binding": {
               "$ref": "#/$defs/assetBinding"
+            },
+            "selection": {
+              "enum": [
+                "owner_familiar_look"
+              ],
+              "description": "D16: the runtime shows the familiar look selected by the owner; asset_binding is the default look for a character without a selection."
             },
             "palette_bindings": {
               "type": "array",
@@ -1752,7 +1760,8 @@
           "properties": {
             "minimum": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 0,
+              "description": "0 is allowed: the total is drawn uniformly from the range and a zero draw means the condition does not start (condition.cpp ConditionDamage::init)."
             },
             "maximum": {
               "type": "integer",

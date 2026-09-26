@@ -249,7 +249,16 @@
           "palette_binding": "canary.appearance:palette/121"
         }
       ],
-      "attachment_bindings": [],
+      "attachment_bindings": [
+        {
+          "slot": "addon",
+          "asset_binding": "canary.appearance:outfit/512/addon-1"
+        },
+        {
+          "slot": "addon",
+          "asset_binding": "canary.appearance:outfit/512/addon-2"
+        }
+      ],
       "visual_effect_bindings": []
     },
     "light": {

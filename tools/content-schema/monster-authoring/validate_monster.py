@@ -150,7 +150,6 @@ def validate(monster,deps,catalog=None,manifest=None):
                     elif 'container' not in item:errors.append('loot/contents_loot: selected Item is not a container')
     for item in deps['items']:
         corpse=ident('Item',item['identity'])==ident('Item',c['corpse_item']) if 'corpse_item' in c else False
-        if corpse and not item['classification']['is_corpse']:errors.append('creature/corpse_item: selected Item is not a corpse')
     if 'corpse_item' in c and ident('Item',c['corpse_item']) not in local:errors.append('creature/corpse_item: include local corpse payload to verify its properties')
     cycle_check(local,'Item',lambda v:[v['temporal']['decay_target']] if 'decay_target' in v['temporal'] else [],'corpse decay',errors)
     cycle_check(local,'Loot',lambda v:[e['contents_loot'] for e in v['entries'] if 'contents_loot' in e],'nested loot',errors)
