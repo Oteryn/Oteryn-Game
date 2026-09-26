@@ -885,6 +885,17 @@ async fn every_mutation_is_fenced(
         root.pending_native_source_publications(custody).await,
         Err(DurabilityError::Unavailable)
     ));
+    let subject = RecoveryEvidenceSubject::new(ACCOUNT_ID, "recovery-1")?;
+    assert!(matches!(
+        root.verify_registered_recovery(
+            custody,
+            &subject,
+            &recovery_token("recovery-1", 100),
+            &recovery_bindings()?
+        )
+        .await,
+        Err(DurabilityError::Unavailable)
+    ));
     assert_eq!(
         source_state(database_url).await?,
         before,
@@ -1171,15 +1182,30 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
                 migrate_postgres_17_6(&url).await?;
                 let root = ready_root(&url).await?;
                 let node = register_node(&root, 1).await?;
-                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
                 let now = recovery_now()?;
                 let current = recovery_bindings()?;
                 let subject = RecoveryEvidenceSubject::new(ACCOUNT_ID, "recovery-1")?;
                 let token = recovery_token("recovery-1", now);
                 let account = recovery_account(1, now, true);
                 let trust = recovery_trust(1, now, "recovery-1");
+                assert!(matches!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
+                assert!(matches!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
                 root.accept_native_source_observation(&node, account.clone())
                     .await?;
+                assert!(matches!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
                 root.accept_native_source_observation(&node, trust.clone())
                     .await?;
                 let verified = root
@@ -1188,6 +1214,14 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
                     .map_err(|e| format!("{e:?}"))?;
                 assert_eq!(verified.security().provenance.publication_revision, 1);
                 assert_eq!(verified.security().provenance.source_observed_at, now);
+                let mut changed = account.clone();
+                let mut body: serde_json::Value = serde_json::from_slice(&changed.semantic_facts)?;
+                body["allowed"] = serde_json::json!(false);
+                changed.semantic_facts = body.to_string().into_bytes();
+                assert!(matches!(
+                    root.accept_native_source_observation(&node, changed).await,
+                    Err(DurabilityError::Unavailable)
+                ));
                 root.accept_native_source_observation(&node, account)
                     .await?;
                 root.accept_native_source_observation(&node, trust).await?;
@@ -1197,6 +1231,18 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
                     .map_err(|e| format!("{e:?}"))?;
                 assert_eq!(replay.security(), verified.security());
                 assert_eq!(replay.signing(), verified.signing());
+                // Partial owner loss is resolved again, never reconstructed
+                // from retained facts. Restore exact immutable history bytes
+                // after each independent missing-floor case.
+                let mut owner = sqlx::PgConnection::connect(&url).await?;
+                sqlx::query("ALTER TABLE game_durability_native_source_floors DISABLE TRIGGER USER").execute(&mut owner).await?;
+                for operation in ["ReadRecoveryAccountSecurityV2","ReadRecoverySigningTrustV2"] {
+                    sqlx::query("DELETE FROM game_durability_native_source_floors WHERE operation=$1").bind(operation).execute(&mut owner).await?;
+                    assert!(matches!(root.revalidate_registered_recovery(&node,&verified,&current).await,Err(DurabilityError::Unavailable)));
+                    sqlx::query("INSERT INTO game_durability_native_source_floors SELECT registration_id,source_authority,operation,floor_subject,observation_subject,signing_key_id,source_revision,decision_identity,observed_at,semantic_facts FROM game_durability_native_source_observation_history WHERE operation=$1 AND source_revision=1").bind(operation).execute(&mut owner).await?;
+                }
+                sqlx::query("ALTER TABLE game_durability_native_source_floors ENABLE TRIGGER USER").execute(&mut owner).await?;
+                owner.close().await?;
                 let reload = ready_root(&url).await?;
                 assert!(
                     reload
@@ -1236,7 +1282,19 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
                 ));
                 root.accept_native_source_observation(&node, recovery_account(5, now, true))
                     .await?;
-                root.accept_native_source_observation(&node, recovery_trust(2, now, "other-key"))
+                let mut revoked_key = recovery_trust(2, now, "recovery-1");
+                let mut body: serde_json::Value =
+                    serde_json::from_slice(&revoked_key.semantic_facts)?;
+                body["trusted"] = serde_json::json!(false);
+                revoked_key.semantic_facts = body.to_string().into_bytes();
+                root.accept_native_source_observation(&node, revoked_key)
+                    .await?;
+                assert!(matches!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await?,
+                    Err(Fnd04ConsumerError::RecoveryAuthenticationFailed)
+                ));
+                root.accept_native_source_observation(&node, recovery_trust(3, now, "other-key"))
                     .await?;
                 assert!(matches!(
                     root.verify_registered_recovery(&node, &subject, &token, &current)
@@ -1244,18 +1302,67 @@ fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floo
                     Err(DurabilityError::Unavailable)
                 ));
                 // Explicit later trust observation restores only the queried key.
-                root.accept_native_source_observation(&node, recovery_trust(3, now, "recovery-1"))
+                root.accept_native_source_observation(&node, recovery_trust(4, now, "recovery-1"))
                     .await?;
                 assert!(
                     root.verify_registered_recovery(&node, &subject, &token, &current)
                         .await?
                         .is_ok()
                 );
-                root.revoke_node_registration(node.fact())
+                let successor =
+                    register_node_superseding(&reload, 2, Some(node.fact().node_id())).await?;
+                assert!(matches!(
+                    root.revalidate_registered_recovery(&node, &verified, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                assert!(matches!(
+                    reload
+                        .verify_registered_recovery(&successor, &subject, &token, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                reload
+                    .claim_native_admission_source_custody(&successor)
+                    .await?;
+                let observed = recovery_now()?;
+                reload
+                    .accept_native_source_observation(
+                        &successor,
+                        recovery_account(6, observed, true),
+                    )
+                    .await?;
+                reload
+                    .accept_native_source_observation(
+                        &successor,
+                        recovery_trust(5, observed, "recovery-1"),
+                    )
+                    .await?;
+                let after_restart = reload
+                    .revalidate_registered_recovery(&successor, &verified, &current)
+                    .await?
+                    .map_err(|e| format!("{e:?}"))?;
+                let mut advanced_generation = recovery_account(7, observed, true);
+                let mut body: serde_json::Value =
+                    serde_json::from_slice(&advanced_generation.semantic_facts)?;
+                body["minimum_valid_generation"] = serde_json::json!("2");
+                advanced_generation.semantic_facts = body.to_string().into_bytes();
+                reload
+                    .accept_native_source_observation(&successor, advanced_generation)
+                    .await?;
+                assert!(matches!(
+                    reload
+                        .revalidate_registered_recovery(&successor, &after_restart, &current)
+                        .await?,
+                    Err(Fnd04ConsumerError::RecoverySecurityStateRevoked)
+                ));
+                reload
+                    .revoke_node_registration(successor.fact())
                     .await
                     .map_err(|e| format!("{e:?}"))?;
                 assert!(matches!(
-                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                    reload
+                        .verify_registered_recovery(&successor, &subject, &token, &current)
                         .await,
                     Err(DurabilityError::Unavailable)
                 ));
@@ -1343,36 +1450,100 @@ fn recovery_clock_is_sampled_after_registration_wait() -> Result<(), Box<dyn std
             let node = register_node(&root, 1).await?;
             issued_initialize(&root, &node, provenance(), descriptor(1,1,10)).await?;
             let mut blocker = sqlx::PgConnection::connect(&url).await?;
-            // Both owners are otherwise valid at the accepted deadline. The
-            // later clock sample must reject after waiting across that boundary.
-            let now = recovery_now()?;
-            root.accept_native_source_observation(&node,recovery_account(1,now-5,true)).await?;
-            root.accept_native_source_observation(&node,recovery_trust(1,now,"recovery-1")).await?;
+            let current = recovery_bindings()?;
+            let subject = RecoveryEvidenceSubject::new(ACCOUNT_ID,"recovery-1")?;
+            let mut oversized = current.clone();oversized.ruleset_revision = "x".repeat(65_537);
+            assert!(matches!(root.verify_registered_recovery(&node,&subject,"inert",&oversized).await?,Err(Fnd04ConsumerError::RecoveryMalformed)));
+            let mut qualified = false;
+            // Only an observed lock wait still inside the valid fixture second
+            // qualifies. Bounded alignment retries avoid credit for an already
+            // expired setup; no sleep or replacement production clock is used.
+            for revision in 1..=3 {
+                let previous = recovery_now()?;
+                while recovery_now()? == previous { tokio::task::yield_now().await; }
+                let now = recovery_now()?;
+                root.accept_native_source_observation(&node,recovery_account(revision,now-5,true)).await?;
+                root.accept_native_source_observation(&node,recovery_trust(revision,now,"recovery-1")).await?;
+                sqlx::query("BEGIN").execute(&mut blocker).await?;
+                sqlx::query("SELECT registration_id FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE").execute(&mut blocker).await?;
+                let reader=root.clone();let proof=node.clone();let binding=current.clone();let selected=subject.clone();
+                let token = recovery_token("recovery-1",now);
+                let pending = tokio::spawn(async move {
+                    reader.verify_registered_recovery(&proof,&selected,&token,&binding).await
+                });
+                tokio::time::timeout(durability::DB_PASS_DEADLINE, async {
+                    loop {
+                        let waiting:bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND pg_backend_pid()=ANY(pg_blocking_pids(pid)))").fetch_one(&mut blocker).await?;
+                        if waiting { break; }
+                        tokio::task::yield_now().await;
+                    }
+                    Ok::<(),sqlx::Error>(())
+                }).await??;
+                assert!(!pending.is_finished());
+                if recovery_now()? != now {
+                    sqlx::query("COMMIT").execute(&mut blocker).await?;
+                    let _ = pending.await?;
+                    continue;
+                }
+                // Before-SQL sampling would accept at this exact deadline.
+                // Cross it while that actual request is demonstrably blocked.
+                while recovery_now()? <= now { tokio::task::yield_now().await; }
+                sqlx::query("COMMIT").execute(&mut blocker).await?;
+                let disposition = pending.await??;
+                assert!(matches!(disposition,Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale)));
+                qualified = true;
+                break;
+            }
+            assert!(qualified,"no fixture remained valid during observed lock wait");
+            blocker.close().await?;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        cleanup_database(&admin_url,&name).await?;result
+    })
+}
+
+#[test]
+fn recovery_verification_and_s2_denial_serialize_at_registration()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let (admin_url,name,url)=create_database("recovery_s2_race").await?;
+        let result=async {
+            migrate_postgres_17_6(&url).await?;
+            let reader=ready_root(&url).await?;let writer=ready_root(&url).await?;
+            let node=register_node(&reader,1).await?;
+            issued_initialize(&reader,&node,provenance(),descriptor(1,1,10)).await?;
+            let now=recovery_now()?;
+            reader.accept_native_source_observation(&node,recovery_account(1,now,true)).await?;
+            reader.accept_native_source_observation(&node,recovery_trust(1,now,"recovery-1")).await?;
+            let current=recovery_bindings()?;let subject=RecoveryEvidenceSubject::new(ACCOUNT_ID,"recovery-1")?;
+            let token=recovery_token("recovery-1",now);
+            let mut blocker=sqlx::PgConnection::connect(&url).await?;
             sqlx::query("BEGIN").execute(&mut blocker).await?;
             sqlx::query("SELECT registration_id FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE").execute(&mut blocker).await?;
-            let current = recovery_bindings()?;
-            let mut oversized = current.clone();oversized.ruleset_revision = "x".repeat(65_537);
-            let subject = RecoveryEvidenceSubject::new(ACCOUNT_ID,"recovery-1")?;
-            let token = recovery_token("recovery-1",now);
-            assert!(matches!(root.verify_registered_recovery(&node,&subject,&token,&oversized).await?,Err(Fnd04ConsumerError::RecoveryMalformed)));
-            let pending = tokio::spawn(async move {
-                root.verify_registered_recovery(&node,&subject,&token,&current).await
-            });
-            // Observe the actual lock wait; no sleep or timing assumption is
-            // used as evidence of serialization.
-            tokio::time::timeout(durability::DB_PASS_DEADLINE, async {
+            let proof=node.clone();let binding=current.clone();let selected=subject.clone();let grant=token.clone();let checking=reader.clone();
+            let verification=tokio::spawn(async move { checking.verify_registered_recovery(&proof,&selected,&grant,&binding).await });
+            let proof=node.clone();
+            let acknowledgement=tokio::spawn(async move { writer.accept_native_source_observation(&proof,recovery_account(2,now,false)).await });
+            tokio::time::timeout(durability::DB_PASS_DEADLINE,async {
                 loop {
-                    let waiting:bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND pg_backend_pid()=ANY(pg_blocking_pids(pid)))").fetch_one(&mut blocker).await?;
-                    if waiting { break; }
+                    let waiting:i64=sqlx::query_scalar("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pg_backend_pid()=ANY(pg_blocking_pids(pid))").fetch_one(&mut blocker).await?;
+                    if waiting==2 {break;}
                     tokio::task::yield_now().await;
                 }
                 Ok::<(),sqlx::Error>(())
             }).await??;
-            assert!(!pending.is_finished());
-            while recovery_now()? <= now { tokio::task::yield_now().await; }
+            assert!(!verification.is_finished());assert!(!acknowledgement.is_finished());
             sqlx::query("COMMIT").execute(&mut blocker).await?;
-            let disposition = pending.await??;
-            assert!(matches!(disposition,Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale)));
+            let observed=verification.await??;
+            acknowledgement.await??;
+            // Either legal serialization is accepted: historical allow before
+            // acknowledgement or denial after it. Never allow after both finish.
+            assert!(observed.is_ok() || matches!(observed,Err(Fnd04ConsumerError::RecoverySecurityStateRevoked)));
+            assert!(matches!(reader.verify_registered_recovery(&node,&subject,&token,&current).await?,Err(Fnd04ConsumerError::RecoverySecurityStateRevoked)));
             blocker.close().await?;
             Ok::<(),Box<dyn std::error::Error>>(())
         }.await;
