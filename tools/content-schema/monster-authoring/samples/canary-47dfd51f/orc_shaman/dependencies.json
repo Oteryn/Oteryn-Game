@@ -1,0 +1,325 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/orc_shaman/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/orc_shaman/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/orc_shaman/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/orc_shaman/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/orc_shaman/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 1
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/orc_shaman/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/orc_shaman/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/orc_shaman/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/orc_shaman/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/orc_shaman/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/orc_shaman/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "energy",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/orc_shaman/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/energyball"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/orc_shaman/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "fire",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/orc_shaman/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/fire"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/orc_shaman/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/orc_shaman/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/orc_shaman/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 15
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/orc_shaman/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 20,
+        "maximum": 31
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/orc_shaman/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 5,
+        "maximum": 43
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/orc_shaman/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 27,
+        "maximum": 43
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/5978",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead orc",
+        "asset_binding": "canary.appearance:object/5978",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4041",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4041",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead orc",
+        "asset_binding": "canary.appearance:object/4041",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 120000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4042",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4042",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead orc",
+        "asset_binding": "canary.appearance:object/4042",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 120000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4147",
+          "revision": "canary-47dfd51f"
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4147",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead orc",
+        "asset_binding": "canary.appearance:object/4147",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 10000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

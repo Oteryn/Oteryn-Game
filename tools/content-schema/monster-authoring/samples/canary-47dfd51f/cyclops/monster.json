@@ -1,0 +1,373 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/cyclops",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Cyclops",
+    "inspection": {
+      "description": "a cyclops"
+    },
+    "stats": {
+      "max_health": 260,
+      "initial_health": 260,
+      "experience": 150,
+      "speed": 95,
+      "armor": 17,
+      "defense": 20,
+      "critical_chance_percent": 0,
+      "mitigation_percent": {
+        "numerator": 31,
+        "denominator": 50
+      }
+    },
+    "resistances": [
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": 25,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "earth",
+        "reduction_percent": {
+          "numerator": -10,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "reduction_percent": {
+          "numerator": 20,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": -10,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": []
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": true,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": true,
+      "convinceable": true,
+      "is_familiar": false,
+      "mana_cost": 490
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/cyclops",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/cyclops",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    },
+    "bestiary": {
+      "class": "Giant",
+      "taxonomy": "giant",
+      "difficulty": "easy",
+      "occurrence": "common",
+      "stars": 2,
+      "kill_thresholds": [
+        25,
+        250,
+        500
+      ],
+      "charm_points": 15,
+      "locations": "Plains of Havoc, Mount Sternum, Femor Hills, Cyclops Camp, Cyclopolis, Ancient Temple, Shadowthorn, Orc Fort, Mistrock, Foreigner Quarter, Outlaw Camp and in the Cyclops version of the Forsaken Mine. "
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/5962",
+      "revision": "canary-47dfd51f"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/cyclops",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/cyclops",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": false,
+        "fire": false,
+        "poison": false
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": false,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 90,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 30,
+        "health": 0,
+        "random": 0
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/cyclops/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      }
+    ],
+    "defenses": [],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "Human, uh whil dyh!",
+          "mode": "say"
+        },
+        {
+          "text": "Youh ah trak!",
+          "mode": "say"
+        },
+        {
+          "text": "Let da mashing begin!",
+          "mode": "say"
+        },
+        {
+          "text": "Toks utat.",
+          "mode": "say"
+        },
+        {
+          "text": "Il lorstok human!",
+          "mode": "say"
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/cyclops",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/22",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/cyclops",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7398",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.08,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3093",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.09,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3012",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.19,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/266",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.21,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3384",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.22,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23986",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3269",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.003,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3413",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.4,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3410",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/9657",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 4.93,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3294",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 8,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3577",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 30.07,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 47,
+        "probability_percent": 82,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

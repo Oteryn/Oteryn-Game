@@ -1,0 +1,190 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/rat/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/rat/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/rat/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/rat/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/rat/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 8
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/5964",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead rat",
+        "asset_binding": "canary.appearance:object/5964",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/3994",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/3994",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead rat",
+        "asset_binding": "canary.appearance:object/3994",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 6300,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/3995",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/3995",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead rat",
+        "asset_binding": "canary.appearance:object/3995",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 4400,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/3996",
+          "revision": "canary-47dfd51f"
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/3996",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead rat",
+        "asset_binding": "canary.appearance:object/3996",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 2000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

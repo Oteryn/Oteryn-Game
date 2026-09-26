@@ -1,0 +1,233 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/ghost/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/ghost/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/ghost/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 1,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/ghost/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/ghost/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/ghost/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/ghost/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "life_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/ghost/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/ghost/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 80
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/ghost/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 20,
+        "maximum": 45
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/5993",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of a ghost",
+        "asset_binding": "canary.appearance:object/5993"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4094",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4094",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of a ghost",
+        "asset_binding": "canary.appearance:object/4094"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 1000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4158",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4158",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of a ghost",
+        "asset_binding": "canary.appearance:object/4158"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 1000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4159",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4159",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of a ghost",
+        "asset_binding": "canary.appearance:object/4159"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 1000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

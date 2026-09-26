@@ -1,0 +1,218 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/scorpion/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/scorpion/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Effect",
+          "key": "canary:effect/scorpion/attack-1-condition",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/scorpion/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/scorpion/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/scorpion/attack-1-condition",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "poison",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "total_damage_range": {
+            "minimum": 340,
+            "maximum": 340
+          },
+          "tick_interval_ms": 4000,
+          "initial_tick": {
+            "mode": "automatic"
+          },
+          "tick_profile": "decreasing",
+          "first_tick": "after_interval"
+        }
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/scorpion/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 50
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/5988",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead scorpion",
+        "asset_binding": "canary.appearance:object/5988",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4078",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 5
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4078",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead scorpion",
+        "asset_binding": "canary.appearance:object/4078",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 1000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4079",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 6
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4079",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead scorpion",
+        "asset_binding": "canary.appearance:object/4079",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 1000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4146",
+          "revision": "canary-47dfd51f"
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4146",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead scorpion",
+        "asset_binding": "canary.appearance:object/4146",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 1000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

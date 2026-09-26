@@ -1,0 +1,379 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 99,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 33,
+      "source_field": "corpse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/corpse_item",
+      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 92,
+      "source_field": "loot[10]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/0",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7398 \"cyclops trophy\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 85,
+      "source_field": "loot[3]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/1",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3093 \"club ring\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 83,
+      "source_field": "loot[1]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/2",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3012 \"wolf tooth chain\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 93,
+      "source_field": "loot[11]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/3",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 266 \"health potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 88,
+      "source_field": "loot[6]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/4",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3384 \"dark helmet\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 95,
+      "source_field": "loot[13]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/5",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 86,
+      "source_field": "loot[4]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/6",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3269 \"halberd\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 90,
+      "source_field": "loot[8]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/7",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3413 \"battle shield\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 89,
+      "source_field": "loot[7]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/8",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3410 \"plate shield\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 94,
+      "source_field": "loot[12]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/9",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9657 \"cyclops toe\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 87,
+      "source_field": "loot[5]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/10",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3294 \"short sword\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 91,
+      "source_field": "loot[9]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/11",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3577 \"meat\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 84,
+      "source_field": "loot[2]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/12",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 17,
+      "source_field": "Bestiary",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/bestiary",
+      "resolution": "difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 47,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 47,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 30,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 31,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 34,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 67,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 47,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 37,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 42,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 72,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/voices",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 108,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 121,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 104,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 103,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 105,
+      "source_field": "defenses.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/mitigation_percent",
+      "resolution": "Canary float percent points as an exact decimal ratio."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 35,
+      "source_field": "manaCost",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/summoning/mana_cost",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 16,
+      "source_field": "raceId",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Foreign identifier; provenance only."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/giants/cyclops.lua",
+      "source_line": 32,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    }
+  ]
+}
