@@ -1,0 +1,51 @@
+{
+  "schema": "OTERYN_G4_ITEM_BULK_WAVE_EVIDENCE/v1",
+  "status": "CANDIDATE_NOT_YET_HOSTED_QUALIFIED",
+  "task_packet": {
+    "task_id": "OTV2-20260925-g4-item-bulk-wave",
+    "issue": 162,
+    "issue_comment": 5826892380,
+    "pr": 877,
+    "repository": "Oteryn/Oteryn-Game",
+    "branch": "agent/otv2-g4-item-bulk-wave",
+    "base_commit": "1680eb5dc6145aa3e271ac8665f33a50ed837b76"
+  },
+  "allocation": {
+    "admission_main": "1680eb5dc6145aa3e271ac8665f33a50ed837b76",
+    "owned_paths": [
+      "tools/content-census/g4_item_bulk_population.py",
+      "tools/content-census/g4_item_bulk_population_self_test.py",
+      ".github/workflows/g4-item-bulk-population.yml",
+      "docs/agents/tasks/active/OTV2-20260925-g4-item-bulk-wave.md",
+      "docs/agents/evidence/OTV2-20260925-g4-item-bulk-wave.json",
+      "docs/agents/evidence/OTV2-20260925-g4-item-bulk-semantic-promotion.json",
+      "apps/game-server/src/content/cw2_b1_import.rs",
+      "apps/game-server/src/content/tests.rs"
+    ],
+    "archive_pr_868_disjoint": true
+  },
+  "expected_scope": {
+    "live_wiki_census_invocations": 1,
+    "protected_source_pages": 6918,
+    "canonical_item_targets": 38157,
+    "matching": "indexed multi-signal, title and numeric-ID equality forbidden",
+    "typed_binding_rule": "unique source tuple + unique target + at least two non-title agreements + zero strong conflict",
+    "field_promotion": "existing nine typed Reference destinations only; exact binding first; no overwrite of known fields"
+  },
+  "hosted_result": null,
+  "artifact": null,
+  "production_mutations": {
+    "project_v2_source_bindings_persisted": false,
+    "reference_item_semantics_applied": false,
+    "target_identity_minted": false,
+    "presentation_asset_runtime_or_client_ids_changed": false
+  },
+  "non_claims": [
+    "NO_DURABLE_PROJECT_V2_PACKAGE_POPULATION",
+    "NO_BINDING_CANDIDATE_WITHOUT_MULTI_SIGNAL_UNIQUE_MATCH",
+    "NO_TITLE_OR_UNQUALIFIED_NUMERIC_ID_MATCH",
+    "NO_RAW_WIKITEXT_OR_LONG_FORM_PROSE",
+    "NO_OTS_IDENTITY_OR_SEMANTICS_AUTHORITY",
+    "NO_RUNTIME_OR_CLIENT_ID_CHANGE"
+  ]
+}

@@ -1,0 +1,119 @@
+name: G4 Item bulk crosswalk and semantic revalidation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/content-census/g4_item_bulk_population.py
+      - tools/content-census/g4_item_bulk_population_self_test.py
+      - .github/workflows/g4-item-bulk-population.yml
+      - docs/agents/tasks/active/OTV2-20260925-g4-item-bulk-wave.md
+      - docs/agents/evidence/OTV2-20260925-g4-item-bulk-wave.json
+      - docs/agents/evidence/OTV2-20260925-g4-item-bulk-semantic-promotion.json
+      - apps/game-server/src/content/cw2_b1_import.rs
+      - apps/game-server/src/content/tests.rs
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: g4-item-bulk-population-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bulk:
+    name: Current Item census, crosswalk and typed field candidates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Compile and run bounded matcher tests
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/content-census/g4_item_bulk_population.py tools/content-census/g4_item_bulk_population_self_test.py
+          python tools/content-census/g4_item_bulk_population_self_test.py
+
+      - name: Rebuild protected 38,157-target map and crosswalk
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-bulk"
+          mkdir -p "$ROOT/output"
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk.py \
+            --game-root . \
+            --native-map "$ROOT/native-map.json" \
+            --output "$ROOT/crosswalk.json" \
+            --manifest-output "$ROOT/crosswalk-manifest.json"
+
+      - name: Capture the current Wiki Item universe once
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-bulk"
+          python tools/reference-world-corridor-census/item_wiki_first_census_self_test.py
+          python tools/reference-world-corridor-census/item_wiki_first_census.py \
+            --cache-dir "$ROOT/wiki-cache" \
+            --output "$ROOT/current-census.json" \
+            --manifest-output "$ROOT/current-census-manifest.json"
+
+      - name: Compile full identity dispositions and semantic candidates
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-bulk"
+          python tools/content-census/g4_item_bulk_population.py \
+            --census "$ROOT/current-census.json" \
+            --census-manifest "$ROOT/current-census-manifest.json" \
+            --crosswalk "$ROOT/crosswalk.json" \
+            --native-map "$ROOT/native-map.json" \
+            --output "$ROOT/output/g4-item-bulk-population.json" \
+            --manifest-output "$ROOT/output/g4-item-bulk-population-manifest.json" \
+            --promotion-output "$ROOT/output/g4-item-bulk-semantic-promotion-candidates.json"
+          python - "$ROOT/output" <<'PY'
+          import hashlib, json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          evidence = json.loads((root / "g4-item-bulk-population.json").read_text(encoding="utf-8"))
+          manifest = json.loads((root / "g4-item-bulk-population-manifest.json").read_text(encoding="utf-8"))
+          promotion = json.loads((root / "g4-item-bulk-semantic-promotion-candidates.json").read_text(encoding="utf-8"))
+          assert evidence["schema"] == "OTERYN_G4_ITEM_BULK_POPULATION/v1"
+          assert evidence["matching"]["evaluated_page_count"] == 6918
+          assert evidence["canonical_targets"]["count"] == 38157
+          assert len(evidence["typed_binding_candidates"]) == manifest["typed_binding_candidate_count"]
+          assert len(promotion["candidates"]) == manifest["semantic_field_candidate_count"]
+          assert evidence["invariants"]["reference_item_semantics_applied"] is False
+          assert promotion["invariants"]["application_performed"] is False
+          for name in ("g4-item-bulk-population.json", "g4-item-bulk-population-manifest.json", "g4-item-bulk-semantic-promotion-candidates.json"):
+              payload = (root / name).read_bytes()
+              print(f"artifact {name} sha256={hashlib.sha256(payload).hexdigest()} bytes={len(payload)}")
+          print("G4 Item bulk output manifest: PASS")
+          PY
+
+      - name: Upload compact crosswalk and semantic candidates
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-item-bulk-${{ github.event.pull_request.head.sha || github.sha }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            ${{ runner.temp }}/g4-item-bulk/output/g4-item-bulk-population.json
+            ${{ runner.temp }}/g4-item-bulk/output/g4-item-bulk-population-manifest.json
+            ${{ runner.temp }}/g4-item-bulk/output/g4-item-bulk-semantic-promotion-candidates.json
