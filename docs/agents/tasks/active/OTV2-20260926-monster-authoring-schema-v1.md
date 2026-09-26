@@ -4,12 +4,12 @@
 task_id: OTV2-20260926-monster-authoring-schema-v1
 title: Admit the monster authoring schema as a v1 candidate
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 938
 jira: KAN-16
 base_sha: 3b578bc5b35e40fbff70fbe5758079fdbed6a3c0
 head_sha: null
