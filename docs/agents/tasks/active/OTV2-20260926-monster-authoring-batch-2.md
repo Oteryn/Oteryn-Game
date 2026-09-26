@@ -4,12 +4,12 @@
 task_id: OTV2-20260926-monster-authoring-batch-2
 title: Second Canary monster batch and wiki reference-date comparison
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 943
 jira: KAN-16
 base_sha: c72925db52ee8cc19265b63d76e8e3ca863d93fc
 head_sha: null
