@@ -35,7 +35,14 @@ Authority: `NATIVE_ENTRY_SOURCE_QUALIFICATION_V1` (#937) and the owner-accepted
   three cells bijective with three Terrain placements, relocation/spawn endpoints in those cells,
   one Damage Effect sharing the XP formula profile, three distinct presentations, no Reference
   record outside the graph, licensing `oteryn-original-preproduction`, zero imports.
-- The #940 limits are the fixed `native_entry_first_slice_limits()`; callers do not choose them.
+- Every #940 §1–§3 product binding and the #935 cells/origin/World envelope are pinned
+  (`native_entry::accepted`); any other value refuses. Qualification also runs the existing
+  FirstProduction validators (`compile_first_production`).
+- The #940 limits are the fixed `native_entry_first_slice_limits()`; every native entry point
+  (`capture_native_entry_project`, `ProjectSnapshot::parse_native_entry`,
+  `CanonicalProjectDocuments::from_native_entry_draft`) uses them, and callers cannot choose limits.
+- The #940 single-retention rule ("a second qualification refuses") belongs to the later producer
+  that retains a qualified binding; this consumer retains nothing.
 - Canonical native writer (`CanonicalProjectDocuments::from_native_entry_draft`) re-admits its
   output through the native parser.
 - `compile_first_production(OrdinaryRelease)` yields a deterministic pair.

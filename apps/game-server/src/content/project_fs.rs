@@ -578,7 +578,7 @@ mod linux {
         let (project, native_entry) = match admission {
             ProjectAdmission::Ordinary => (snapshot.parse(limits.project)?, None),
             ProjectAdmission::NativeEntry => {
-                let native = snapshot.parse_native_entry(limits.project)?;
+                let native = snapshot.parse_native_entry()?;
                 (native.project().clone(), Some(native))
             }
         };

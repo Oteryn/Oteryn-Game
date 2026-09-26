@@ -6,6 +6,7 @@
 
 use oteryn_game_server::content::*;
 use serde_json::{Value, json};
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -177,7 +178,84 @@ fn draft(parts: &Parts) -> ProjectV2Draft {
 fn build(parts: &Parts) -> Result<CanonicalProjectDocuments, ProjectError> {
     let overlay: NativeFirstEntryDocument = serde_json::from_value(parts.overlay.clone())
         .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
-    CanonicalProjectDocuments::from_native_entry_draft(draft(parts), overlay, limits())
+    CanonicalProjectDocuments::from_native_entry_draft(draft(parts), overlay)
+}
+
+type Docs = BTreeMap<String, Vec<u8>>;
+
+fn valid_docs() -> Docs {
+    build(&valid())
+        .expect("valid native entry project")
+        .documents()
+        .clone()
+}
+
+fn value(docs: &Docs, locator: &str) -> Value {
+    serde_json::from_slice(&docs[locator]).expect("json document")
+}
+
+fn put(docs: &mut Docs, locator: &str, value: &Value) {
+    docs.insert(
+        locator.to_owned(),
+        serde_json::to_vec(value).expect("encode"),
+    );
+}
+
+/// Recompute the manifest inventory, package provenance, Content Lock and root digests so a
+/// mutated document is admitted up to the invariant under test.
+fn reseal(docs: &mut Docs) {
+    let mut manifest = value(docs, "manifest.json");
+    for entry in manifest["documents"].as_array_mut().expect("inventory") {
+        let bytes = &docs[entry["locator"].as_str().expect("locator")];
+        entry["byte_length"] = json!(bytes.len());
+        entry["sha256"] = json!(world_project_sha256(bytes));
+    }
+    put(docs, "manifest.json", &manifest);
+    let text = |field: &str| manifest[field].as_str().expect("manifest field").to_owned();
+    let provenance = PackageManifestBinding::new(
+        ProductionKey::new(&text("package_key")).expect("key"),
+        ProductionAtom::new("revision", &text("package_revision")).expect("revision"),
+        ProductionAtom::new("schema", &text("semantic_schema_version")).expect("schema"),
+        ProductionAtom::new("licensing", &text("licensing_metadata")).expect("licensing"),
+        Sha256HexDigest::new(&world_project_sha256(&docs["manifest.json"])).expect("digest"),
+    )
+    .package_provenance_digest()
+    .expect("provenance");
+    let mut lock = value(docs, "content.lock.json");
+    lock["entries"][0]["package_provenance_digest"] = json!(provenance.as_str());
+    put(docs, "content.lock.json", &lock);
+    let mut root = value(docs, "project.json");
+    root["manifest_sha256"] = json!(world_project_sha256(&docs["manifest.json"]));
+    root["content_lock_sha256"] = json!(world_project_sha256(&docs["content.lock.json"]));
+    put(docs, "project.json", &root);
+}
+
+fn edit(locator: &str, mutate: impl FnOnce(&mut Value)) -> Docs {
+    let mut docs = valid_docs();
+    let mut document = value(&docs, locator);
+    mutate(&mut document);
+    put(&mut docs, locator, &document);
+    reseal(&mut docs);
+    docs
+}
+
+fn overlay_edit(mutate: impl FnOnce(&mut Value)) -> Docs {
+    edit("definitions/declarations.json", |document| {
+        mutate(&mut document["native_first_entry"]);
+    })
+}
+
+fn admit(docs: &Docs) -> Result<NativeEntryProject, ProjectError> {
+    ProjectSnapshot::new(docs.clone(), limits())?.parse_native_entry()
+}
+
+#[track_caller]
+fn refuses(docs: &Docs, reason: &str) {
+    let error = admit(docs).expect_err("mutation must refuse");
+    assert!(
+        format!("{error:?}").contains(reason),
+        "expected refusal containing {reason:?}, got {error:?}"
+    );
 }
 
 fn temp_parent() -> PathBuf {
@@ -191,46 +269,39 @@ fn temp_parent() -> PathBuf {
     path
 }
 
-fn write_root(parent: &Path, documents: &CanonicalProjectDocuments) {
+fn write_root(parent: &Path, docs: &Docs) {
     let root = parent.join("project");
-    for (locator, bytes) in documents.documents() {
+    for (locator, bytes) in docs {
         let path = root.join(locator);
         fs::create_dir_all(path.parent().expect("parent")).expect("dirs");
         fs::write(path, bytes).expect("write");
     }
 }
 
-fn refuses(mutate: impl FnOnce(&mut Parts)) {
-    let mut parts = valid();
-    mutate(&mut parts);
-    assert!(build(&parts).is_err(), "mutation must refuse");
+fn capture(docs: &Docs) -> Result<NativeEntryProject, ProjectFilesystemError> {
+    let parent = temp_parent();
+    write_root(&parent, docs);
+    let result = capture_native_entry_project(&parent, OsStr::new("project"));
+    fs::remove_dir_all(parent).expect("cleanup");
+    result
 }
 
 #[test]
 fn native_entry_captures_qualifies_and_compiles_a_deterministic_pair() {
-    let documents = build(&valid()).expect("valid native entry project");
-    assert_eq!(documents.documents().len(), 11);
+    let docs = valid_docs();
+    assert_eq!(docs.len(), 11);
     let parent = temp_parent();
-    write_root(&parent, &documents);
-
+    write_root(&parent, &docs);
     let first = capture_native_entry_project(&parent, OsStr::new("project")).expect("capture");
     let second = capture_native_entry_project(&parent, OsStr::new("project")).expect("recapture");
+    fs::remove_dir_all(parent).expect("cleanup");
     assert_eq!(first, second);
     let source = first.source();
     assert_eq!(source.cells.len(), 3);
     assert_eq!(
-        source
-            .cells
-            .iter()
-            .filter(|cell| cell.collision == CollisionClass::Blocked)
-            .count(),
-        1
-    );
-    assert_eq!(
         source.package_manifest.licensing_metadata.as_str(),
         NATIVE_ENTRY_LICENSING
     );
-
     let pair = compile_first_production(source, FirstProductionCompileTarget::OrdinaryRelease)
         .expect("ordinary release pair");
     let again = compile_first_production(
@@ -240,13 +311,16 @@ fn native_entry_captures_qualifies_and_compiles_a_deterministic_pair() {
     .expect("recompiled pair");
     assert_eq!(pair.server_digest(), again.server_digest());
     assert_eq!(pair.client_digest(), again.client_digest());
-    fs::remove_dir_all(parent).expect("cleanup");
+    // The reseal helper is neutral: an unmodified project still admits.
+    let mut resealed = valid_docs();
+    reseal(&mut resealed);
+    assert!(admit(&resealed).is_ok());
 }
 
 #[test]
 fn ordinary_and_native_admission_never_accept_each_other() {
     let parent = temp_parent();
-    write_root(&parent, &build(&valid()).expect("native"));
+    write_root(&parent, &valid_docs());
     assert!(
         capture_world_project(
             &parent,
@@ -259,18 +333,331 @@ fn ordinary_and_native_admission_never_accept_each_other() {
     fs::remove_dir_all(&parent).expect("cleanup");
 
     let ordinary = CanonicalProjectDocuments::from_v2_draft(draft(&valid()), limits())
-        .expect("ordinary v2 project");
-    let parent = temp_parent();
-    write_root(&parent, &ordinary);
+        .expect("ordinary v2 project")
+        .documents()
+        .clone();
     assert!(
-        capture_native_entry_project(&parent, OsStr::new("project")).is_err(),
-        "native capture must refuse an ordinary v2 project"
+        capture(&ordinary).is_err(),
+        "native capture must refuse ordinary v2"
     );
-    fs::remove_dir_all(parent).expect("cleanup");
+    refuses(
+        &ordinary,
+        "native entry admission requires the native source profile",
+    );
+
+    // Native root profile with the ordinary declarations schema (document and manifest).
+    let mut ordinary_schema = edit("definitions/declarations.json", |document| {
+        document["schema"] = json!("OTERYN_WORLD_PROJECT_DECLARATIONS/v2");
+    });
+    refuses(&ordinary_schema, "schema mismatch");
+    let mut manifest = value(&ordinary_schema, "manifest.json");
+    for entry in manifest["documents"].as_array_mut().expect("inventory") {
+        if entry["role"] == "declarative-definitions" {
+            entry["schema"] = json!("OTERYN_WORLD_PROJECT_DECLARATIONS/v2");
+        }
+    }
+    put(&mut ordinary_schema, "manifest.json", &manifest);
+    reseal(&mut ordinary_schema);
+    refuses(&ordinary_schema, "role");
+
+    // Missing overlay, extra feature declaration.
+    refuses(
+        &edit("definitions/declarations.json", |document| {
+            document
+                .as_object_mut()
+                .expect("object")
+                .remove("native_first_entry");
+        }),
+        "native_first_entry",
+    );
+    refuses(
+        &edit("manifest.json", |manifest| {
+            manifest["required_features"] = json!(["oteryn:feature/native"]);
+        }),
+        "unsupported project feature declaration",
+    );
+    // Ordinary parsing of the native bytes refuses.
+    assert!(
+        ProjectSnapshot::new(valid_docs(), limits())
+            .expect("snapshot")
+            .parse(limits())
+            .is_err()
+    );
 }
 
 #[test]
-fn first_slice_limits_are_the_accepted_values() {
+fn accepted_product_bindings_are_enforced() {
+    let pin = "not the accepted";
+    refuses(
+        &overlay_edit(|o| o["creature"]["policy_revision"] = json!("oteryn:policy/unaccepted-r9")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["behavior"]["policy_revision"] = json!("oteryn:policy/other-r1")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["recovery"] = json!("DurableEventOccurrence")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["multiplicity"] = json!("WorldScopedUnique")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["eligibility_scope"] = json!("AccountWorld")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["cell_key"] = json!("oteryn:cell/entry-start")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| {
+            o["cells"][0]["collision"] = json!("Blocked");
+            o["cells"][2]["collision"] = json!("Walkable");
+        }),
+        pin,
+    );
+    refuses(&overlay_edit(|o| o["frame"]["origin"]["x"] = json!(1)), pin);
+    refuses(
+        &overlay_edit(|o| {
+            o["region"]["key"] = json!("oteryn:region/other");
+            for cell in o["cells"].as_array_mut().expect("cells") {
+                cell["region_key"] = json!("oteryn:region/other");
+            }
+        }),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["relocation"]["to_cell"] = json!("oteryn:cell/entry-north")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["rng"]["profile_revision"] = json!("oteryn:rng-profile/other")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| {
+            o["presentations"][0]["metadata_token"] = json!("oteryn:appearance/other")
+        }),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["revisions"]["ruleset"] = json!("oteryn:ruleset/other")),
+        pin,
+    );
+    refuses(
+        &overlay_edit(|o| o["loot_table"]["key"] = json!("oteryn:loot/other")),
+        pin,
+    );
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["worlds"][0]["bounds"]["max_x_exclusive"] = json!(100)
+        }),
+        pin,
+    );
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["worlds"][0]["floors"] = json!([0, 1])
+        }),
+        pin,
+    );
+    refuses(
+        &edit("manifest.json", |m| {
+            m["package_key"] = json!("oteryn:package/other")
+        }),
+        "Content Lock",
+    );
+}
+
+#[test]
+fn every_single_invariant_mutation_refuses_for_its_reason() {
+    refuses(
+        &edit("manifest.json", |m| {
+            m["licensing_metadata"] = json!("license:project-owned-v1")
+        }),
+        "licensing metadata mismatch",
+    );
+    refuses(
+        &overlay_edit(|o| o["world_key"] = json!("oteryn:other.world")),
+        "World or frame binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["frame"]["coordinate_profile"] = json!("other")),
+        "coordinate contract",
+    );
+    refuses(
+        &overlay_edit(|o| o["frame"]["contract_revision"] = json!(2)),
+        "coordinate contract",
+    );
+    refuses(
+        &overlay_edit(|o| o["frame"]["coordinate_frame"] = json!("oteryn:x.frame")),
+        "World or frame binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["frame"]["origin"]["floor"] = json!(1)),
+        "origin",
+    );
+    refuses(
+        &overlay_edit(|o| o["frame"]["x_direction"] = json!("West")),
+        "unknown variant `West`",
+    );
+    refuses(
+        &overlay_edit(|o| o["revisions"]["map"] = json!("oteryn:map/other")),
+        "placement binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["revisions"]["profile_revision"] = json!("oteryn:profile/other")),
+        "FirstProduction profile",
+    );
+    refuses(
+        &overlay_edit(|o| o["revisions"]["ruleset"] = Value::Null),
+        "invalid type: null",
+    );
+    refuses(
+        &overlay_edit(|o| o["cells"].as_array_mut().expect("c").truncate(2)),
+        "exactly three cells",
+    );
+    refuses(
+        &overlay_edit(|o| o["cells"][1]["region_key"] = json!("oteryn:region/other")),
+        "cell region",
+    );
+    refuses(
+        &overlay_edit(|o| o["cells"][1]["placement_key"] = json!("oteryn:cell/entry-start")),
+        "duplicated",
+    );
+    refuses(
+        &overlay_edit(|o| o["cells"][2]["collision"] = json!("Water")),
+        "unknown variant `Water`",
+    );
+    refuses(
+        &overlay_edit(|o| o["relocation"]["to_cell"] = json!("oteryn:cell/entry-east")),
+        "relocation endpoints",
+    );
+    refuses(
+        &overlay_edit(|o| o["relocation"]["to_cell"] = json!("oteryn:cell/missing")),
+        "relocation endpoints",
+    );
+    refuses(
+        &overlay_edit(|o| o["behavior"]["definition"]["revision"] = json!("oteryn:rev/other")),
+        "does not resolve exactly",
+    );
+    // Wrong family, same key.
+    refuses(
+        &overlay_edit(|o| o["behavior"]["definition"]["family"] = json!("Terrain")),
+        "wrong family",
+    );
+    refuses(
+        &overlay_edit(|o| o["presentations"].as_array_mut().expect("p").truncate(2)),
+        "exactly three presentations",
+    );
+    refuses(
+        &overlay_edit(|o| {
+            o["presentations"][2]["definition"] = def("Presentation", "oteryn:presentation/rat");
+            o["item"]["presentation"] = def("Presentation", "oteryn:presentation/rat");
+        }),
+        "distinct per Creature, Ability and Item",
+    );
+    refuses(
+        &overlay_edit(|o| o["presentations"][0]["metadata_token"] = Value::Null),
+        "invalid type: null",
+    );
+    refuses(
+        &overlay_edit(|o| o["creature"]["policy_revision"] = json!("fixture:policy")),
+        "InvalidString",
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["cell_key"] = json!("oteryn:cell/missing")),
+        "spawn binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["behavior"] = def("Creature", "oteryn:creature/rat")),
+        "spawn binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["population_limit"] = json!(0)),
+        "spawn is not the accepted",
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["recovery"] = Value::Null),
+        "invalid type: null",
+    );
+    refuses(
+        &overlay_edit(|o| {
+            o["ability"]["presentation"] = def("Presentation", "oteryn:presentation/x")
+        }),
+        "Ability presentation",
+    );
+    refuses(
+        &overlay_edit(|o| o["item"]["presentation"] = def("Presentation", "oteryn:presentation/x")),
+        "Item presentation",
+    );
+    refuses(
+        &overlay_edit(|o| o["loot_table"]["entry"]["rng_purpose_key"] = json!("oteryn:rng/other")),
+        "loot entry binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["loot_table"]["entry"]["item"] = def("Item", "oteryn:item/other")),
+        "loot entry binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["xp"]["formula"] = def("Formula", "oteryn:formula/other")),
+        "single Effect formula",
+    );
+    refuses(
+        &overlay_edit(|o| o["rng"]["purpose_key"] = json!("oteryn:rng/other")),
+        "loot entry binding",
+    );
+    refuses(
+        &overlay_edit(|o| o["unexpected"] = json!(true)),
+        "unknown field `unexpected`",
+    );
+    refuses(
+        &edit("definitions/reference.json", |r| {
+            r["records"][5]["materializable"] = json!(false)
+        }),
+        "materializable",
+    );
+    refuses(
+        &edit("definitions/reference.json", |r| {
+            r["records"][3]["effect_family"] = json!("Heal")
+        }),
+        "Damage Effect",
+    );
+    refuses(
+        &edit("definitions/reference.json", |r| {
+            r["records"][2]["behavior"] = def("Behavior", "oteryn:behavior/other");
+        }),
+        "Creature behavior mismatch",
+    );
+    refuses(
+        &edit("definitions/reference.json", |r| {
+            r["records"]
+                .as_array_mut()
+                .expect("records")
+                .push(json!({"kind": "Generic",
+                "identity": def("Terrain", "oteryn:terrain/zzz-extra"),
+                "client_projection": "ServerOnly"}));
+        }),
+        "outside the selected graph",
+    );
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["placements"][1]["map_revision"] = json!("oteryn:map/other")
+        }),
+        "placement binding",
+    );
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["placements"][1]["area"] = Value::Null
+        }),
+        "placement binding",
+    );
+}
+
+#[test]
+fn first_slice_limits_are_fixed_and_enforced_at_the_producer_boundary() {
     let limits = native_entry_first_slice_limits();
     let project = limits.project;
     assert_eq!(
@@ -291,75 +678,32 @@ fn first_slice_limits_are_the_accepted_values() {
     );
     assert_eq!(limits.max_entries_per_directory_scan, 32);
     assert_eq!(limits.max_total_directory_entries_scanned, 192);
-    // max / max+1 at the document-byte bound.
-    let at_max = vec![b' '; project.max_document_bytes];
-    assert!(ProjectSnapshot::new([("a.json".to_owned(), at_max)], project).is_ok());
-    let over = vec![b' '; project.max_document_bytes + 1];
-    assert!(ProjectSnapshot::new([("a.json".to_owned(), over)], project).is_err());
-}
 
-#[test]
-fn every_single_invariant_mutation_refuses() {
-    refuses(|p| p.licensing = "license:project-owned-v1".into());
-    refuses(|p| p.overlay["world_key"] = json!("oteryn:other.world"));
-    refuses(|p| p.overlay["frame"]["coordinate_profile"] = json!("other-profile"));
-    refuses(|p| p.overlay["frame"]["contract_revision"] = json!(2));
-    refuses(|p| p.overlay["frame"]["coordinate_frame"] = json!("oteryn:other.frame"));
-    refuses(|p| p.overlay["frame"]["origin"]["x"] = json!(5));
-    refuses(|p| p.overlay["frame"]["origin"]["floor"] = json!(1));
-    refuses(|p| p.overlay["frame"]["x_direction"] = json!("West"));
-    refuses(|p| p.overlay["revisions"]["map"] = json!("oteryn:map/other"));
-    refuses(|p| p.overlay["revisions"]["profile_revision"] = json!("oteryn:profile/other"));
-    refuses(|p| p.overlay["revisions"]["ruleset"] = Value::Null);
-    refuses(|p| {
-        p.overlay["cells"]
-            .as_array_mut()
-            .expect("cells")
-            .truncate(2)
-    });
-    refuses(|p| p.overlay["cells"][1]["region_key"] = json!("oteryn:region/other"));
-    refuses(|p| p.overlay["cells"][1]["placement_key"] = json!("oteryn:cell/entry-start"));
-    refuses(|p| p.overlay["cells"][2]["collision"] = json!("Water"));
-    refuses(|p| p.overlay["relocation"]["to_cell"] = json!("oteryn:cell/entry-east"));
-    refuses(|p| p.overlay["relocation"]["to_cell"] = json!("oteryn:cell/missing"));
-    refuses(|p| p.overlay["behavior"]["definition"]["revision"] = json!("oteryn:rev/other"));
-    refuses(|p| {
-        p.overlay["presentations"]
-            .as_array_mut()
-            .expect("p")
-            .truncate(2)
-    });
-    refuses(|p| {
-        p.overlay["presentations"][2]["definition"] =
-            def("Presentation", "oteryn:presentation/rat");
-    });
-    refuses(|p| p.overlay["presentations"][0]["metadata_token"] = Value::Null);
-    refuses(|p| p.overlay["creature"]["policy_revision"] = json!("fixture:policy"));
-    refuses(|p| p.overlay["spawn"]["cell_key"] = json!("oteryn:cell/missing"));
-    refuses(|p| p.overlay["spawn"]["behavior"] = def("Creature", "oteryn:creature/rat"));
-    refuses(|p| p.overlay["spawn"]["recovery"] = Value::Null);
-    refuses(|p| {
-        p.overlay["ability"]["presentation"] = def("Presentation", "oteryn:presentation/x")
-    });
-    refuses(|p| p.overlay["item"]["presentation"] = def("Presentation", "oteryn:presentation/rat"));
-    refuses(|p| p.overlay["loot_table"]["entry"]["rng_purpose_key"] = json!("oteryn:rng/other"));
-    refuses(|p| p.overlay["loot_table"]["entry"]["item"] = def("Item", "oteryn:item/other"));
-    refuses(|p| p.overlay["xp"]["formula"] = def("Formula", "oteryn:formula/other"));
-    refuses(|p| p.overlay["rng"]["purpose_key"] = json!("oteryn:rng/other"));
-    refuses(|p| p.overlay["unexpected"] = json!(true));
-    refuses(|p| p.records[5]["materializable"] = json!(false));
-    refuses(|p| p.records[3]["effect_family"] = json!("Heal"));
-    refuses(|p| {
-        p.records[2]["behavior"] = def("Behavior", "oteryn:behavior/other");
-    });
-    refuses(|p| {
-        p.records.as_array_mut().expect("records").push(json!({"kind": "Generic",
-            "identity": def("Terrain", "oteryn:terrain/extra"), "client_projection": "ServerOnly"}));
-    });
-    refuses(|p| p.state["placements"][1]["map_revision"] = json!("oteryn:map/other"));
-    refuses(|p| p.state["placements"][1]["x"] = json!(0));
-    refuses(|p| p.state["placements"][1]["area"] = Value::Null);
-    refuses(|p| {
-        p.state["worlds"][0]["bounds"]["max_x_exclusive"] = json!(1);
-    });
+    // Document bytes: pad editor/author.json with JSON whitespace to exactly max and max+1.
+    let padded = |target: usize| {
+        let mut docs = valid_docs();
+        let mut bytes = docs["editor/author.json"].clone();
+        bytes.resize(target, b' ');
+        docs.insert("editor/author.json".to_owned(), bytes);
+        reseal(&mut docs);
+        docs
+    };
+    capture(&padded(project.max_document_bytes)).expect("document at max bytes");
+    let over = capture(&padded(project.max_document_bytes + 1)).expect_err("max+1 bytes");
+    assert!(format!("{over:?}").contains("LimitExceeded"), "{over:?}");
+
+    // Parent-directory scan: the dedicated parent may hold at most 32 entries.
+    let with_siblings = |siblings: usize| {
+        let parent = temp_parent();
+        write_root(&parent, &valid_docs());
+        for index in 0..siblings {
+            fs::create_dir(parent.join(format!("sibling-{index}"))).expect("sibling");
+        }
+        let result = capture_native_entry_project(&parent, OsStr::new("project"));
+        fs::remove_dir_all(parent).expect("cleanup");
+        result
+    };
+    with_siblings(limits.max_entries_per_directory_scan - 1).expect("parent at max entries");
+    let over = with_siblings(limits.max_entries_per_directory_scan).expect_err("max+1 entries");
+    assert!(format!("{over:?}").contains("LimitExceeded"), "{over:?}");
 }

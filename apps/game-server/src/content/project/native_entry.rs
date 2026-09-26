@@ -12,12 +12,13 @@ use crate::content::{
     CollisionClass, DurableMigrationClass, EffectFamily, EligibilityScope,
     FIRST_PRODUCTION_CAPABILITY_PROFILE, FIRST_PRODUCTION_PROFILE_ID, FirstProductionAbility,
     FirstProductionArea, FirstProductionBehavior, FirstProductionCell,
-    FirstProductionContentSource, FirstProductionCreature, FirstProductionEffect,
-    FirstProductionFormulaProfile, FirstProductionItem, FirstProductionLootEntry,
-    FirstProductionLootTable, FirstProductionPresentation, FirstProductionRegion,
-    FirstProductionRelocation, FirstProductionRevisionSet, FirstProductionRngContext,
-    FirstProductionSpawn, FirstProductionTerrain, FirstProductionXpDefinition, MultiplicityClass,
-    ProjectFilesystemLimits, SpawnRecoveryClass,
+    FirstProductionCompileTarget, FirstProductionContentSource, FirstProductionCreature,
+    FirstProductionEffect, FirstProductionFormulaProfile, FirstProductionItem,
+    FirstProductionLootEntry, FirstProductionLootTable, FirstProductionPresentation,
+    FirstProductionRegion, FirstProductionRelocation, FirstProductionRevisionSet,
+    FirstProductionRngContext, FirstProductionSpawn, FirstProductionTerrain,
+    FirstProductionXpDefinition, MultiplicityClass, ProjectFilesystemLimits, SpawnRecoveryClass,
+    compile_first_production,
 };
 
 pub const NATIVE_ENTRY_SOURCE_PROFILE: &str =
@@ -258,8 +259,216 @@ impl NativeEntryProject {
         overlay: NativeFirstEntryDocument,
     ) -> Result<Self, ProjectError> {
         let source = lower(&project, &overlay)?;
+        require_accepted_bindings(&project, &source)?;
+        // The existing FirstProduction validators (cardinality, key uniqueness, population,
+        // references) apply before a source counts as qualified (#937 §4).
+        compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
         Ok(Self { project, source })
     }
+}
+
+/// Owner-accepted values of `NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1` (#940 §1–§3) and the authored
+/// entry-room choices of `PLAYER_FIRST_ENTRY_NATIVE_CONTENT_BINDING_V1` (#935). A spelling that is
+/// not one of these is not product-policy evidence (#937 §3), so every other value refuses.
+pub mod accepted {
+    pub const DEFINITION_REVISION: &str = "oteryn:rev/entry-r1";
+    pub const PACKAGE_KEY: &str = "oteryn:package/native-entry-room";
+    pub const PACKAGE_REVISION: &str = "oteryn:package-rev/entry-r1";
+    pub const SEMANTIC_SCHEMA: &str = "oteryn:schema/first-production-v1";
+    pub const LOCK_TOKEN: &str = "lock:oteryn:package-rev/entry-r1";
+    /// (content, map, ruleset, world_policy, compiler, canonicalization, sim_profile, profile)
+    pub const REVISIONS: [&str; 8] = [
+        "oteryn:content/entry-r1",
+        "oteryn:map/entry-r1",
+        "oteryn:ruleset/entry-r1",
+        "oteryn:world-policy/entry-r1",
+        "oteryn:compiler/first-production-r1",
+        "oteryn:canonicalization/first-production-r1",
+        "oteryn:sim/entry-r1",
+        "FIRST_PRODUCTION_CONTENT_PROFILE/v1",
+    ];
+    pub const REGION: &str = "oteryn:region/entry";
+    pub const AREA: &str = "oteryn:area/entry-room";
+    pub const TERRAIN: &str = "oteryn:terrain/stone-floor";
+    /// (cell key, x, y, floor, walkable) — start, east, north (#935).
+    pub const CELLS: [(&str, i32, i32, i16, bool); 3] = [
+        ("oteryn:cell/entry-start", 0, 0, 0, true),
+        ("oteryn:cell/entry-east", 1, 0, 0, true),
+        ("oteryn:cell/entry-north", 0, -1, 0, false),
+    ];
+    /// Origin (x, y, floor), World bounds (min_x, min_y, max_x_exclusive, max_y_exclusive), floors.
+    pub const ORIGIN: (i32, i32, i16) = (0, 0, 0);
+    pub const BOUNDS: (i64, i64, i64, i64) = (0, -1, 2, 1);
+    pub const FLOORS: [i16; 1] = [0];
+    pub const RELOCATION: (&str, &str, &str) = (
+        "oteryn:relocation/entry-east-return",
+        "oteryn:cell/entry-east",
+        "oteryn:cell/entry-start",
+    );
+    pub const BEHAVIOR: (&str, &str) = (
+        "oteryn:behavior/passive-idle",
+        "oteryn:policy/passive-idle-r1",
+    );
+    pub const CREATURE: (&str, &str) = ("oteryn:creature/rat", "oteryn:policy/creature-rat-r1");
+    /// (presentation key, metadata token), sorted by key.
+    pub const PRESENTATIONS: [(&str, &str); 3] = [
+        ("oteryn:presentation/bite", "oteryn:appearance/bite-r1"),
+        ("oteryn:presentation/cheese", "oteryn:appearance/cheese-r1"),
+        ("oteryn:presentation/rat", "oteryn:appearance/rat-r1"),
+    ];
+    pub const SPAWN: &str = "oteryn:spawn/entry-rat";
+    pub const SPAWN_CELL: &str = "oteryn:cell/entry-east";
+    pub const FORMULA: &str = "oteryn:formula/entry-melee-r1";
+    pub const EFFECT: &str = "oteryn:effect/bite";
+    pub const ABILITY: &str = "oteryn:ability/bite";
+    pub const ITEM: &str = "oteryn:item/cheese";
+    pub const LOOT_TABLE: &str = "oteryn:loot/rat";
+    pub const LOOT_ENTRY: &str = "oteryn:loot-entry/rat-cheese";
+    pub const XP: &str = "oteryn:xp/rat";
+    pub const RNG_PURPOSE: &str = "oteryn:rng/rat-loot";
+    pub const RNG_PROFILE: &str = "oteryn:rng-profile/entry-r1";
+}
+
+fn pin(ok: bool, reason: &'static str) -> Result<(), ProjectError> {
+    if ok { Ok(()) } else { refuse(reason) }
+}
+
+#[allow(clippy::too_many_lines)]
+fn require_accepted_bindings(
+    project: &WorldProject,
+    source: &FirstProductionContentSource,
+) -> Result<(), ProjectError> {
+    use accepted as a;
+    let manifest = &source.package_manifest;
+    pin(
+        manifest.package_key.as_str() == a::PACKAGE_KEY
+            && manifest.package_revision.as_str() == a::PACKAGE_REVISION
+            && manifest.semantic_schema_version.as_str() == a::SEMANTIC_SCHEMA
+            && source.content_lock.revision_digest_token.as_str() == a::LOCK_TOKEN,
+        "native entry package identity is not the accepted binding",
+    )?;
+    let r = &source.revisions;
+    let revisions = [
+        &r.content,
+        &r.map,
+        &r.ruleset,
+        &r.world_policy,
+        &r.compiler,
+        &r.canonicalization,
+        &r.sim_profile,
+        &r.profile_revision,
+    ];
+    pin(
+        revisions
+            .iter()
+            .zip(a::REVISIONS)
+            .all(|(actual, expected)| actual.as_str() == expected),
+        "native entry revision set is not the accepted binding",
+    )?;
+    pin(
+        source.regions.len() == 1
+            && source.regions[0].key.as_str() == a::REGION
+            && source.areas.len() == 1
+            && source.areas[0].key.as_str() == a::AREA
+            && source.terrains.len() == 1
+            && source.terrains[0].key.as_str() == a::TERRAIN,
+        "native entry region, area or terrain is not the accepted binding",
+    )?;
+    let mut cells: Vec<_> = source
+        .cells
+        .iter()
+        .map(|cell| {
+            (
+                cell.key.as_str(),
+                cell.x,
+                cell.y,
+                cell.z,
+                cell.collision == CollisionClass::Walkable,
+            )
+        })
+        .collect();
+    cells.sort_unstable();
+    let mut expected_cells = a::CELLS;
+    expected_cells.sort_unstable();
+    pin(
+        cells == expected_cells,
+        "native entry cells are not the accepted start, east and north",
+    )?;
+    let world = project
+        .v2
+        .as_ref()
+        .and_then(|state| state.worlds.first())
+        .ok_or(ProjectError::InvalidProject("native entry World missing"))?;
+    pin(
+        (
+            world.bounds.min_x,
+            world.bounds.min_y,
+            world.bounds.max_x_exclusive,
+            world.bounds.max_y_exclusive,
+        ) == a::BOUNDS
+            && world.floors == a::FLOORS,
+        "native entry World envelope is not the accepted entry-room",
+    )?;
+    let relocation = &source.relocations[0];
+    pin(
+        source.relocations.len() == 1
+            && (
+                relocation.key.as_str(),
+                relocation.from_cell.as_str(),
+                relocation.to_cell.as_str(),
+            ) == a::RELOCATION,
+        "native entry relocation is not the accepted binding",
+    )?;
+    let behavior = &source.behaviors[0];
+    let creature = &source.creatures[0];
+    pin(
+        (behavior.key.as_str(), behavior.policy_revision.as_str()) == a::BEHAVIOR
+            && (creature.key.as_str(), creature.policy_revision.as_str()) == a::CREATURE
+            && creature.presentation_key.as_str() == a::PRESENTATIONS[2].0,
+        "native entry behavior or creature policy is not the accepted binding",
+    )?;
+    let mut presentations: Vec<_> = source
+        .presentations
+        .iter()
+        .map(|presentation| {
+            (
+                presentation.key.as_str(),
+                presentation.metadata_token.as_str(),
+            )
+        })
+        .collect();
+    presentations.sort_unstable();
+    pin(
+        presentations == a::PRESENTATIONS,
+        "native entry presentations are not the accepted binding",
+    )?;
+    let spawn = &source.spawns[0];
+    pin(
+        spawn.key.as_str() == a::SPAWN
+            && spawn.cell_key.as_str() == a::SPAWN_CELL
+            && spawn.population_limit == 1
+            && spawn.recovery == SpawnRecoveryClass::EphemeralScopeReset
+            && spawn.multiplicity == MultiplicityClass::ChannelLocalRepeatable
+            && spawn.eligibility_scope == EligibilityScope::CharacterWorld,
+        "native entry spawn is not the accepted binding",
+    )?;
+    let loot = &source.loot_tables[0];
+    pin(
+        source.formula_profiles[0].key.as_str() == a::FORMULA
+            && source.effects[0].key.as_str() == a::EFFECT
+            && source.abilities[0].key.as_str() == a::ABILITY
+            && source.abilities[0].presentation_key.as_str() == a::PRESENTATIONS[0].0
+            && source.items[0].key.as_str() == a::ITEM
+            && source.items[0].presentation_key.as_str() == a::PRESENTATIONS[1].0
+            && loot.key.as_str() == a::LOOT_TABLE
+            && loot.entries.len() == 1
+            && loot.entries[0].key.as_str() == a::LOOT_ENTRY
+            && source.xp_definitions[0].key.as_str() == a::XP
+            && source.rng.purpose_keys.len() == 1
+            && source.rng.purpose_keys[0].as_str() == a::RNG_PURPOSE
+            && source.rng.profile_revision.as_str() == a::RNG_PROFILE,
+        "native entry ability, item, loot, XP or RNG is not the accepted binding",
+    )
 }
 
 fn refuse<T>(reason: &'static str) -> Result<T, ProjectError> {
@@ -379,6 +588,9 @@ fn lower(
         return refuse("native entry coordinate contract mismatch");
     }
     let origin = frame.origin;
+    if (origin.x, origin.y, origin.floor) != accepted::ORIGIN {
+        return refuse("native entry origin is not the accepted entry-room origin");
+    }
     if !in_bounds(
         &world.bounds,
         &world.floors,
@@ -608,6 +820,14 @@ fn lower(
     .into_iter()
     .chain(presentation_refs.iter().copied())
     .collect();
+    if graph_refs
+        .iter()
+        .any(|reference| reference.revision != accepted::DEFINITION_REVISION)
+        || area_identity.revision != accepted::DEFINITION_REVISION
+        || effect_identity.revision != accepted::DEFINITION_REVISION
+    {
+        return refuse("native entry definition revision is not the accepted revision");
+    }
     for record in records {
         let identity = record.identity();
         let in_graph = graph_refs.iter().any(|expected| same(identity, expected))

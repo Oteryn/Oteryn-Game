@@ -2753,9 +2753,12 @@ impl CanonicalProjectDocuments {
     pub fn from_native_entry_draft(
         draft: ProjectV2Draft,
         overlay: NativeFirstEntryDocument,
-        limits: ProjectEvidenceLimits,
     ) -> Result<Self, ProjectError> {
-        Self::from_v2_draft_for(draft, limits, Some(overlay))
+        Self::from_v2_draft_for(
+            draft,
+            native_entry_first_slice_limits().project,
+            Some(overlay),
+        )
     }
 
     fn from_v2_draft_for(
@@ -2972,7 +2975,7 @@ impl CanonicalProjectDocuments {
                 snapshot.parse(limits)?;
             }
             ProjectAdmission::NativeEntry => {
-                snapshot.parse_native_entry(limits)?;
+                snapshot.parse_native_entry()?;
             }
         }
         Ok(Self {

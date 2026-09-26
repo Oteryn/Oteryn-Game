@@ -243,14 +243,12 @@ impl ProjectSnapshot {
 
     /// Admit, parse and qualify one native entry-room project (`NATIVE_ENTRY_SOURCE_QUALIFICATION_V1`).
     ///
-    /// The native variant is selected here, before any control document is parsed. Ordinary
+    /// The native variant is selected here, before any control document is parsed, and is always
+    /// parsed under the fixed `native_entry_first_slice_limits()` (#940 §4). Ordinary
     /// [`Self::parse`] refuses it.
-    pub fn parse_native_entry(
-        &self,
-        limits: ProjectEvidenceLimits,
-    ) -> Result<NativeEntryProject, ProjectError> {
-        let (project, overlay) =
-            parse_snapshot(self, limits.validate()?, ProjectAdmission::NativeEntry)?;
+    pub fn parse_native_entry(&self) -> Result<NativeEntryProject, ProjectError> {
+        let limits = native_entry_first_slice_limits().project.validate()?;
+        let (project, overlay) = parse_snapshot(self, limits, ProjectAdmission::NativeEntry)?;
         let overlay =
             overlay.ok_or(ProjectError::InvalidProject("native entry overlay missing"))?;
         NativeEntryProject::qualify(project, overlay)
