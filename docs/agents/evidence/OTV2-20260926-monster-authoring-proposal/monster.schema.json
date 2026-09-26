@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:oteryn:monster-authoring:proposal:1",
-  "title": "Monster authoring proposal v1 — structural validation",
+  "$id": "urn:oteryn:monster-authoring:proposal:2",
+  "title": "Monster authoring proposal v2 — structural validation",
   "description": "Local proposed authoring only. Not an accepted WorldProject/v2 contract or runtime activation.",
   "type": "object",
   "additionalProperties": false,
@@ -481,16 +481,12 @@
         "summonable": {
           "$ref": "#/$defs/bool"
         },
-        "summon_mana_cost": {
+        "mana_cost": {
           "type": "integer",
           "minimum": 0
         },
         "convinceable": {
           "$ref": "#/$defs/bool"
-        },
-        "convince_mana_cost": {
-          "type": "integer",
-          "minimum": 0
         },
         "is_familiar": {
           "$ref": "#/$defs/bool"
@@ -507,18 +503,32 @@
       "allOf": [
         {
           "if": {
-            "properties": {
-              "summonable": {
-                "const": true
+            "anyOf": [
+              {
+                "properties": {
+                  "summonable": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "summonable"
+                ]
+              },
+              {
+                "properties": {
+                  "convinceable": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "convinceable"
+                ]
               }
-            },
-            "required": [
-              "summonable"
             ]
           },
           "then": {
             "required": [
-              "summon_mana_cost"
+              "mana_cost"
             ]
           },
           "else": {
@@ -526,35 +536,7 @@
               "anyOf": [
                 {
                   "required": [
-                    "summon_mana_cost"
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "convinceable": {
-                "const": true
-              }
-            },
-            "required": [
-              "convinceable"
-            ]
-          },
-          "then": {
-            "required": [
-              "convince_mana_cost"
-            ]
-          },
-          "else": {
-            "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "convince_mana_cost"
+                    "mana_cost"
                   ]
                 }
               ]
@@ -610,6 +592,16 @@
         "occurrence": {
           "type": "string",
           "minLength": 1
+        },
+        "stars": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "locations": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Original editorial location text, not world spawn coordinates."
         },
         "kill_thresholds": {
           "type": "array",
@@ -852,7 +844,7 @@
                 "night"
               ]
             },
-            "allowed_underground": {
+            "ignore_period_underground": {
               "$ref": "#/$defs/bool"
             },
             "blocked_by_nearby_players": {
@@ -861,7 +853,7 @@
           },
           "required": [
             "period",
-            "allowed_underground",
+            "ignore_period_underground",
             "blocked_by_nearby_players"
           ]
         },
@@ -959,6 +951,9 @@
             "can_walk": {
               "$ref": "#/$defs/bool"
             },
+            "pass_through": {
+              "$ref": "#/$defs/bool"
+            },
             "pushable": {
               "$ref": "#/$defs/bool"
             },
@@ -991,6 +986,7 @@
           },
           "required": [
             "can_walk",
+            "pass_through",
             "pushable",
             "push_items",
             "push_creatures",
@@ -1012,7 +1008,7 @@
             },
             "target_distance_tiles": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 0
             },
             "static_attack_chance_percent": {
               "$ref": "#/$defs/percent"
@@ -1423,7 +1419,7 @@
         },
         "min_count": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 0
         },
         "max_count": {
           "type": "integer",
@@ -1433,7 +1429,8 @@
           "$ref": "#/$defs/percent"
         },
         "skip_later_same_item_after_success": {
-          "$ref": "#/$defs/bool"
+          "type": "boolean",
+          "description": "On a successful positive-quantity drop, suppress later entries with the same exact Item identity in this ordered table invocation. Zero quantity does not suppress; nested/separate calls have separate scope."
         },
         "instance_attributes": {
           "type": "object",
@@ -1630,6 +1627,9 @@
         "needs_target": {
           "$ref": "#/$defs/bool"
         },
+        "needs_direction": {
+          "$ref": "#/$defs/bool"
+        },
         "area": {
           "$ref": "#/$defs/area"
         },
@@ -1661,8 +1661,107 @@
         "kind",
         "range_tiles",
         "needs_target",
+        "needs_direction",
         "effects"
+      ],
+      "description": "For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification."
+    },
+    "initialTick": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "automatic",
+            "fixed"
+          ]
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "fixed"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "amount"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "amount"
+                  ]
+                }
+              ]
+            }
+          }
+        }
       ]
+    },
+    "damageOverTime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_damage_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ]
+        },
+        "tick_interval_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "initial_tick": {
+          "$ref": "#/$defs/initialTick"
+        },
+        "tick_profile": {
+          "enum": [
+            "decreasing"
+          ]
+        },
+        "first_tick": {
+          "enum": [
+            "after_interval"
+          ]
+        }
+      },
+      "required": [
+        "total_damage_range",
+        "tick_interval_ms",
+        "initial_tick",
+        "tick_profile",
+        "first_tick"
+      ],
+      "description": "Nominal source damage budget, not per-tick magnitude or a promise of exact summed damage. Native schedule parity requires separate qualification."
     },
     "condition": {
       "type": "object",
@@ -1671,71 +1770,59 @@
         "type": {
           "$ref": "#/$defs/conditionType"
         },
-        "tick_interval_ms": {
-          "$ref": "#/$defs/ms"
-        },
-        "total_damage": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "damage_per_tick": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "minimum": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "maximum": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "initial": {
-              "type": "integer",
-              "minimum": 0
-            }
-          },
-          "required": [
-            "minimum",
-            "maximum",
-            "initial"
+        "lifetime": {
+          "enum": [
+            "fixed_duration",
+            "damage_schedule"
           ]
+        },
+        "damage_over_time": {
+          "$ref": "#/$defs/damageOverTime"
         },
         "speed_formula": {
           "$ref": "#/$defs/FormulaRef"
         }
       },
       "required": [
-        "type"
+        "type",
+        "lifetime"
       ],
       "allOf": [
         {
           "if": {
-            "anyOf": [
-              {
-                "required": [
-                  "total_damage"
-                ]
-              },
-              {
-                "required": [
-                  "damage_per_tick"
-                ]
+            "properties": {
+              "lifetime": {
+                "const": "damage_schedule"
               }
+            },
+            "required": [
+              "lifetime"
             ]
           },
           "then": {
             "required": [
-              "tick_interval_ms"
-            ]
-          }
-        },
-        {
-          "not": {
-            "required": [
-              "total_damage",
-              "damage_per_tick"
-            ]
+              "damage_over_time"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "speed_formula"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "damage_over_time"
+                  ]
+                }
+              ]
+            }
           }
         }
       ]
@@ -1753,7 +1840,8 @@
             "heal",
             "condition",
             "appearance_transform",
-            "create_item"
+            "create_item",
+            "presentation_only"
           ]
         },
         "damage_type": {
@@ -1902,8 +1990,7 @@
           },
           "then": {
             "required": [
-              "condition",
-              "duration_ms"
+              "condition"
             ],
             "not": {
               "anyOf": [
@@ -1918,7 +2005,38 @@
                   ]
                 }
               ]
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "condition": {
+                      "properties": {
+                        "lifetime": {
+                          "const": "damage_schedule"
+                        }
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "duration_ms"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "else": {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              }
+            ]
           },
           "else": {
             "not": {
@@ -1992,6 +2110,37 @@
                 {
                   "required": [
                     "created_item"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "presentation_only"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "presentation"
+            ],
+            "properties": {
+              "presentation": {
+                "minProperties": 1
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
                   ]
                 }
               ]
@@ -2454,7 +2603,8 @@
         "physical",
         "collision",
         "temporal"
-      ]
+      ],
+      "description": "Verification projection of canonical Item capabilities. Not an independent Item truth authority or full native Item serialization. ItemRef must resolve to the canonical Item catalogue before runtime admission."
     }
   }
 }
