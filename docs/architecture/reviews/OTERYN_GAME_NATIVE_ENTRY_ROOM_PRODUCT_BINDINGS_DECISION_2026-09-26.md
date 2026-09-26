@@ -4,7 +4,7 @@
 - Status: **OWNER-ACCEPTED; effective on exact-head validation, independent review and protected integration**
 - Owner direction: owner requested one decision packet with recommendations (#162 comment `5846894605`); owner accepted the product choices of this packet in chat on 2026-09-26, verbatim "akceptuje dzialaj" ("I accept, go ahead"), after keeping one creature and deferring a nine-creature roster to a later profile amendment
 - Admission baseline: `main@3b578bc5b35e40fbff70fbe5758079fdbed6a3c0`
-- Post-acceptance review corrections (independent review of `bac601e1`): profile_revision bound to the unchanged profile constant; explicit compiler/canonicalization/sim_profile, package and lock identities (no owning constants exist); every `ProjectEvidenceLimits`/`ProjectFilesystemLimits` dimension bounded; explicit joins. No creature, item, class, licensing or size-limit choice changed; the added technical identities and bounds are presented to the owner for re-confirmation before integration.
+- Post-acceptance review corrections (independent review of `bac601e1`): profile_revision bound to the unchanged profile constant; explicit compiler/canonicalization/sim_profile, package and lock identities (no owning constants exist); every `ProjectEvidenceLimits`/`ProjectFilesystemLimits` dimension bounded; explicit joins. No creature, item, class, licensing or size-limit choice changed; the owner then re-confirmed the added technical identities and bounds in chat on 2026-09-26, verbatim "akceptuje" ("I accept"), after they were listed to the owner one by one.
 - Extends: `NATIVE_ENTRY_SOURCE_QUALIFICATION_V1` (#937) §4 and §6; `PLAYER_FIRST_ENTRY_NATIVE_CONTENT_BINDING_V1` (#935)
 - Related: Issues #162, #822, #930; Oteryn/Oteryn-Platform#1416
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -114,7 +114,7 @@ Scope: the native entry-room source variant only. These are finite fail-closed f
 | Total source bytes (`max_total_bytes`) | 256 KiB | 11 documents at ≤ 23 KiB average. |
 | JSON nesting depth (`max_json_depth`) | 16 | Measured ≤ 6 under the implementation's counting (root = 1). |
 | Decoded fields (`max_decoded_fields`) | 4 096 | Measured ≤ 132 per document (declarations); fixed graph. |
-| String bytes (`max_string_bytes`) | 16 KiB | Cumulative per-document budget (member names plus string values, one `parse_strict` call). Measured ≤ 2 232 B; the manifest carries 10 SHA-256 inventory entries and stays well below. |
+| String bytes (`max_string_bytes`) | 16 KiB | Cumulative per-document budget (member names plus string values, one `parse_strict` call). Measured ≤ 2 232 B (manifest ≈ 1.7 KB); the manifest carries 8 SHA-256 inventory entries (the 8 managed roles) and stays well below. |
 | Locator bytes / segments (`max_locator_bytes`, `max_locator_segments`) | 128 / 4 | Longest fixed locator `definitions/declarations.json` is 29 B, 2 segments. |
 | Reference records (`max_reference_records`) | 32 | Graph needs 18 definitions. |
 | Import candidate records (`max_import_records`) | 1 | Smallest value `ProjectEvidenceLimits::validate` accepts (0 is rejected). Separately, the native qualifier requires the import-candidates document to hold zero records: the room is Oteryn-original and any candidate refuses. |
