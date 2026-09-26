@@ -1,0 +1,42 @@
+{
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "captured_at": "2026-09-26T20:00:00Z",
+      "digest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "field_inventory": [
+        {
+          "source_locator": "item[@id='template']",
+          "source_field": "weaponType"
+        },
+        {
+          "source_locator": "item[@id='template']",
+          "source_field": "floorChange"
+        }
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_locator": "item[@id='template']",
+      "source_field": "weaponType",
+      "kind": "definition",
+      "status": "mapped",
+      "destination": "/item/weapon/weapon_type",
+      "reason": "typed portable definition fact"
+    },
+    {
+      "source_index": 0,
+      "source_locator": "item[@id='template']",
+      "source_field": "floorChange",
+      "kind": "terrain",
+      "status": "external_domain",
+      "reason": "Terrain/WorldObject owns placed world traversal"
+    }
+  ]
+}
+
