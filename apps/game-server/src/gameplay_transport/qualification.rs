@@ -600,8 +600,8 @@ async fn exchange_must_close(
     )
     .await
     .map_err(|_| "TLS connect did not complete")??;
-    let _ = stream.write_all(raw).await;
-    let _ = stream.flush().await;
+    stream.write_all(raw).await?;
+    stream.flush().await?;
     let mut output = Vec::new();
     match tokio::time::timeout(Duration::from_secs(20), stream.read_to_end(&mut output)).await {
         Ok(Ok(_)) => {}
@@ -615,7 +615,16 @@ async fn exchange_must_close(
         Ok(Err(error)) => return Err(error.into()),
         Err(_) => return Err("server did not close the connection".into()),
     }
-    Ok(frames(&output))
+    let reply = frames(&output);
+    let complete_bytes = match &reply {
+        Reply::Closed => 0,
+        Reply::Frames(frames) => frames.iter().map(|frame| frame.len() + 4).sum(),
+        Reply::TlsRefused => return Err("TLS refusal after a completed handshake".into()),
+    };
+    if complete_bytes != output.len() {
+        return Err("partial or trailing server frame".into());
+    }
+    Ok(reply)
 }
 
 fn frames(output: &[u8]) -> Reply {
@@ -1135,12 +1144,8 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     let mut malformed_resume = resume_payload(&malformed_session, b"unissued-reconnect-proof");
     // All other fields are canonical; only this singular session identity repeats.
     bytes_field(&mut malformed_resume, 1, &malformed_session);
-    let reply = exchange_must_close(
-        address,
-        &exact,
-        &framed(&envelope(3, 0, &malformed_resume)),
-    )
-    .await?;
+    let reply =
+        exchange_must_close(address, &exact, &framed(&envelope(3, 0, &malformed_resume))).await?;
     if reply
         != Reply::Frames(vec![encode_protocol_error(
             FoundationProtocolError::MalformedEnvelope,
@@ -1279,7 +1284,9 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             format!("valid ClientResume acquired authority: {reply:?} actors={after:?}").into(),
         );
     }
-    evidence("resume valid_after_committed_socket_close=refused server_resume_accepted=0 admissions=1 committed_players=1 pending_reservations=0");
+    evidence(
+        "resume valid_after_committed_socket_close=refused server_resume_accepted=0 admissions=1 committed_players=1 pending_reservations=0",
+    );
 
     // Replay of the consumed grant on a fresh connection.
     let reply = exchange(
