@@ -9,9 +9,10 @@ use crate::content::static_cell_engine::{
 };
 use crate::content::{CollisionClass, LogicalCell};
 use crate::foundation::{
-    CarrierError, CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition,
-    MovementPositionContext, MovementPositionSnapshot,
+    CarrierError, ChannelRuntimeV1, CurrentOwnerMovementPosition, ExactActorRef,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot,
 };
+use std::num::NonZeroUsize;
 
 pub(crate) const LOCAL_STEP_CANDIDATES_PER_DECISION: usize = 1;
 
@@ -193,6 +194,69 @@ pub(crate) fn step_cardinal(
     decision.commit(owner)
 }
 
+/// Explicit engineering work budget for one exclusive Channel owner borrow. The caller
+/// retains inputs returned as Deferred and decides which actor to offer next turn.
+/// No production maximum, queue, command outcome, or scheduling authority is implied.
+/// Fairness remains an obligation of the future owner scheduler.
+pub(crate) struct MovementOwnerTurn<'a> {
+    owner: CurrentOwnerMovementPosition<'a>,
+    max_inputs: NonZeroUsize,
+    processed: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MovementTurnOutcome {
+    Applied(MovementPositionSnapshot),
+    Deferred,
+}
+
+impl<'a> MovementOwnerTurn<'a> {
+    pub(crate) fn begin(runtime: &'a mut ChannelRuntimeV1, max_inputs: NonZeroUsize) -> Self {
+        Self {
+            owner: runtime.borrow_movement_position(),
+            max_inputs,
+            processed: 0,
+        }
+    }
+
+    pub(crate) const fn processed(&self) -> usize {
+        self.processed
+    }
+
+    /// All admitted attempts, including a blocked or stale input, consume one unit.
+    /// At max+1 no Content lookup or owner read/write occurs; the input stays with
+    /// the caller for a subsequent turn and must be revalidated against that turn.
+    pub(crate) fn try_step(
+        &mut self,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        selection: &MovementEngineeringSelection<'_>,
+        index: &EngineeringStaticCellIndex,
+        direction: CardinalStep,
+    ) -> Result<MovementTurnOutcome, MovementError> {
+        if self.processed >= self.max_inputs.get() {
+            return Ok(MovementTurnOutcome::Deferred);
+        }
+        self.processed += 1;
+        step_cardinal(
+            &mut self.owner,
+            actor,
+            expected,
+            selection,
+            index,
+            direction,
+        )
+        .map(MovementTurnOutcome::Applied)
+    }
+
+    pub(crate) fn read(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.owner.read(actor)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,15 +267,19 @@ mod tests {
         ContentLockBinding, ContentLockEntry, CoordinateFrameRef, MapRevisionRef, ProductionAtom,
         ProductionKey, Sha256HexDigest,
     };
-    use crate::foundation::MovementActorFixture;
+    use crate::foundation::{ChannelId, GameSessionId, MovementActorFixture, NodeId, WorldId};
     use std::error::Error;
+    use std::time::Instant;
 
     fn fixture(x: i32, y: i32, creature: bool) -> Result<MovementActorFixture, CarrierError> {
         MovementActorFixture::new(MovementLocalPosition { x, y, floor: 7 }, creature)
     }
     fn scope(fixture: &MovementActorFixture) -> Result<EngineeringStaticCellScope, Box<dyn Error>> {
+        scope_for_world(fixture.world_id())
+    }
+    fn scope_for_world(world_id: WorldId) -> Result<EngineeringStaticCellScope, Box<dyn Error>> {
         Ok(EngineeringStaticCellScope {
-            world_id: fixture.world_id(),
+            world_id,
             coordinate_frame: CoordinateFrameRef::new("movement-engineering-frame")?,
             map_revision: MapRevisionRef::new("movement-engineering-map")?,
             generation_digest: [7; 32],
@@ -255,6 +323,190 @@ mod tests {
     }
     fn walkable() -> EngineeringCollisionClaim {
         EngineeringCollisionClaim::Qualified(CollisionClass::Walkable)
+    }
+
+    fn uuid_v7(raw: u64) -> [u8; 16] {
+        let mut bytes = [0; 16];
+        bytes[8..].copy_from_slice(&raw.to_be_bytes());
+        bytes[6] = 0x70;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        bytes
+    }
+
+    fn runtime() -> Result<ChannelRuntimeV1, Box<dyn Error>> {
+        Ok(ChannelRuntimeV1::from_committed_assignment(
+            WorldId::decode(&uuid_v7(20))?,
+            ChannelId::decode(&uuid_v7(21))?,
+            NodeId::decode(&uuid_v7(22))?,
+            7,
+            3,
+            11,
+            "runtime-scope-assignment:11",
+            2,
+        )?)
+    }
+
+    fn admitted_at(
+        runtime: &mut ChannelRuntimeV1,
+        session: u64,
+        x: i32,
+    ) -> Result<(ExactActorRef, MovementPositionSnapshot), Box<dyn Error>> {
+        let reserved = runtime.reserve_fresh_session(GameSessionId::decode(&uuid_v7(session))?)?;
+        let actor = runtime.commit_fresh_session(reserved)?;
+        let snapshot = runtime.initialize_movement_test_position(
+            actor,
+            MovementLocalPosition { x, y: 5, floor: 7 },
+        )?;
+        Ok((actor, snapshot))
+    }
+
+    #[test]
+    fn composed_owner_turn_counts_attempts_defers_and_revalidates_replay()
+    -> Result<(), Box<dyn Error>> {
+        let mut runtime = runtime()?;
+        let (actor_a, start_a) = admitted_at(&mut runtime, 30, 4)?;
+        let (actor_b, start_b) = admitted_at(&mut runtime, 31, 14)?;
+        let scope = scope_for_world(start_a.world_id())?;
+        let mut other_scope = scope.clone();
+        other_scope.map_revision = MapRevisionRef::new("other-map")?;
+        let wrong_index = index(&other_scope, &[(15, 5, 7, walkable())])?;
+        let index = index(
+            &scope,
+            &[
+                (5, 5, 7, walkable()),
+                (14, 5, 7, walkable()),
+                (15, 5, 7, walkable()),
+            ],
+        )?;
+        let binding = selection(start_a, &scope);
+        let limit = NonZeroUsize::new(2).ok_or("nonzero engineering limit")?;
+
+        let after_a;
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, limit);
+            assert_eq!(turn.processed(), 0);
+            after_a = match turn.try_step(actor_a, start_a, &binding, &index, CardinalStep::East)? {
+                MovementTurnOutcome::Applied(snapshot) => snapshot,
+                MovementTurnOutcome::Deferred => return Err("input within budget deferred".into()),
+            };
+            assert_eq!(
+                turn.try_step(actor_a, start_a, &binding, &index, CardinalStep::East),
+                Err(MovementError::SnapshotMismatch)
+            );
+            assert_eq!(
+                turn.processed(),
+                2,
+                "rejected input consumes the same work budget"
+            );
+            // A real lookup into this wrong-scope index would reject. Deferral
+            // precedes the decision and leaves B's owner snapshot untouched.
+            assert_eq!(
+                turn.try_step(actor_b, start_b, &binding, &wrong_index, CardinalStep::East)?,
+                MovementTurnOutcome::Deferred
+            );
+            assert_eq!(turn.processed(), 2);
+            assert_eq!(turn.read(actor_b)?, start_b);
+        }
+
+        // An explicitly reoffered input can progress next turn. No scheduler
+        // is composed here, so this does not prove starvation freedom.
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, limit);
+            let after_b =
+                match turn.try_step(actor_b, start_b, &binding, &index, CardinalStep::East)? {
+                    MovementTurnOutcome::Applied(snapshot) => snapshot,
+                    MovementTurnOutcome::Deferred => return Err("deferred input starved".into()),
+                };
+            assert_eq!(after_b.position().x, 15);
+            assert_eq!(
+                turn.try_step(actor_a, start_a, &binding, &index, CardinalStep::East),
+                Err(MovementError::SnapshotMismatch)
+            );
+            assert_eq!(turn.read(actor_a)?, after_a);
+            assert_eq!(turn.processed(), 2);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn composed_owner_turn_overflow_consumes_budget_without_writing() -> Result<(), Box<dyn Error>>
+    {
+        let mut runtime = runtime()?;
+        let (actor, before) = admitted_at(&mut runtime, 30, i32::MAX)?;
+        let scope = scope_for_world(before.world_id())?;
+        let index = index(&scope, &[(0, 5, 7, walkable())])?;
+        let binding = selection(before, &scope);
+        let limit = NonZeroUsize::new(1).ok_or("nonzero engineering limit")?;
+        let mut turn = MovementOwnerTurn::begin(&mut runtime, limit);
+        assert_eq!(
+            turn.try_step(actor, before, &binding, &index, CardinalStep::East),
+            Err(MovementError::CoordinateOverflow)
+        );
+        assert_eq!(turn.processed(), 1);
+        assert_eq!(
+            turn.try_step(actor, before, &binding, &index, CardinalStep::East)?,
+            MovementTurnOutcome::Deferred
+        );
+        assert_eq!(turn.read(actor)?, before);
+        Ok(())
+    }
+
+    #[test]
+    fn composed_owner_turn_measures_engineering_workload() -> Result<(), Box<dyn Error>> {
+        let mut runtime = runtime()?;
+        let (actor, mut snapshot) = admitted_at(&mut runtime, 30, 4)?;
+        let scope = scope_for_world(snapshot.world_id())?;
+        let index = index(&scope, &[(4, 5, 7, walkable()), (5, 5, 7, walkable())])?;
+        let binding = selection(snapshot, &scope);
+        const TURNS: usize = 1024;
+        const INPUTS_PER_TURN: usize = 8; // Engineering fixture, not a production maximum.
+        let limit = NonZeroUsize::new(INPUTS_PER_TURN).ok_or("nonzero engineering limit")?;
+        let mut turn_latencies_ns = Vec::with_capacity(TURNS);
+        let start = Instant::now();
+        for _ in 0..TURNS {
+            let turn_start = Instant::now();
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, limit);
+            for _ in 0..INPUTS_PER_TURN {
+                let direction = if snapshot.position().x == 4 {
+                    CardinalStep::East
+                } else {
+                    CardinalStep::West
+                };
+                snapshot = match turn.try_step(actor, snapshot, &binding, &index, direction)? {
+                    MovementTurnOutcome::Applied(next) => next,
+                    MovementTurnOutcome::Deferred => {
+                        return Err("within-budget input deferred".into());
+                    }
+                };
+            }
+            assert_eq!(turn.processed(), INPUTS_PER_TURN);
+            assert_eq!(
+                turn.try_step(actor, snapshot, &binding, &index, CardinalStep::East)?,
+                MovementTurnOutcome::Deferred
+            );
+            turn_latencies_ns.push(turn_start.elapsed().as_nanos());
+        }
+        let elapsed = start.elapsed();
+        turn_latencies_ns.sort_unstable();
+        assert_eq!(snapshot.revision(), 1 + (TURNS * INPUTS_PER_TURN) as u64);
+        assert_eq!(snapshot.position().x, 4);
+        eprintln!(
+            "movement_owner_turn_engineering_sample: os={} arch={} logical_parallelism={:?} turns={} inputs={} elapsed_ns={} ns_per_input={} inputs_per_sec={:.0} turn_p50_ns={} turn_p95_ns={} turn_max_ns={} fixture=one_actor_two_walkable_cells_east_west_no_network_or_scheduler",
+            std::env::consts::OS,
+            std::env::consts::ARCH,
+            std::thread::available_parallelism()
+                .ok()
+                .map(NonZeroUsize::get),
+            TURNS,
+            TURNS * INPUTS_PER_TURN,
+            elapsed.as_nanos(),
+            elapsed.as_nanos() / (TURNS * INPUTS_PER_TURN) as u128,
+            (TURNS * INPUTS_PER_TURN) as f64 / elapsed.as_secs_f64(),
+            turn_latencies_ns[TURNS / 2],
+            turn_latencies_ns[TURNS * 95 / 100],
+            turn_latencies_ns[TURNS - 1],
+        );
+        Ok(())
     }
 
     #[test]
