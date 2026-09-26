@@ -1,0 +1,512 @@
+{
+  "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
+  "jsonschema_version": "4.26.0",
+  "templates": 13,
+  "checks": 82,
+  "passed": 82,
+  "failed": 0,
+  "results": [
+    {
+      "name": "complete item bundle validates",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "light radius remains optional evidence",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "multiple equipment patterns validate",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "profile omissions are advisory, not incompatible schemas",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "template validates: ammunition.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: container.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: document.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: equipment-accessory.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: equipment-armor.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: fluid.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: food.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: generic-portable.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: portable-decoration-kit.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: rune.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: weapon-distance.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: weapon-magic.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "template validates: weapon-melee.json",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "expected template count is 13",
+      "passed": true
+    },
+    {
+      "name": "reject non-Item root field server_id",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field client_id",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field source_page_id",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field position",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field blocking",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field pathfinding",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field instance_count",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field instance_text",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-Item root field owner_character_id",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject unresolved definition reference",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 3,
+      "warning_count": 0
+    },
+    {
+      "name": "reject unresolved asset",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject noncanonical ratio",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject reflection without flat or percent value",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject duplicate specialized magic combat type",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject free-form proficiency augment",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject duplicate augment rank",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject percent above 100",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject inverted weapon damage range",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject two hands without reserving other hand",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject two hands reserving the same hand",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject duplicate equipment pattern IDs",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject fluid content without fluid_type",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject placed fluid source role",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject placed bed capability",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject use_with when unusable",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 0
+    },
+    {
+      "name": "reject direct self transformation",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject unresolved manifest semantics",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 0
+    },
+    {
+      "name": "reject mapped manifest destination that does not exist",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject destination on external-domain manifest entry",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject terrain mapped into portable Item",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject duplicate source-field disposition",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject incomplete source-field disposition",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject unused exact dependency",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject unused asset binding",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject duplicate transform trigger",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject conflicting temporal and lifecycle decay targets",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject writable but unreadable document",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject write-once document without target",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject imbuement family both allowed and excluded",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Wiki reverse relation mislabeled as Item definition",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 0
+    },
+    {
+      "name": "Wiki reverse relation routes outside Item",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Wiki attack mapped to the wrong Item leaf",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Wiki attack maps to the formal attack leaf",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Wiki attrib mapped to the wrong Item leaf",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Wiki attrib retains raw text and resolves a typed promotion",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "generator is byte deterministic",
+      "passed": true
+    },
+    {
+      "name": "Wiki disposition catalog exactly matches the protected 71-field census",
+      "passed": true
+    },
+    {
+      "name": "every mappable Wiki field has an allowed formal destination and routed fields do not",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: ammunition.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: container.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: document.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: equipment-accessory.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: equipment-armor.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: fluid.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: food.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: generic-portable.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: portable-decoration-kit.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: rune.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: weapon-distance.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: weapon-magic.json",
+      "passed": true
+    },
+    {
+      "name": "official template is warning-free: weapon-melee.json",
+      "passed": true
+    },
+    {
+      "name": "Draft 2020-12 metaschema accepts item.schema.json",
+      "passed": true
+    },
+    {
+      "name": "Draft 2020-12 metaschema accepts item-dependencies.schema.json",
+      "passed": true
+    },
+    {
+      "name": "Draft 2020-12 metaschema accepts item-import-readiness.schema.json",
+      "passed": true
+    }
+  ]
+}
+
