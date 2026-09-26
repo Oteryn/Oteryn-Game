@@ -1,0 +1,214 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": null,
+        "revision": null
+      },
+      "kind": null,
+      "range_tiles": null,
+      "needs_target": null,
+      "area": {
+        "length_tiles": null,
+        "spread_tiles": null,
+        "radius_tiles": null
+      },
+      "effects": [
+        {
+          "family": null,
+          "key": null,
+          "revision": null
+        }
+      ],
+      "audio": {
+        "cast_cue": null,
+        "impact_cue": null
+      }
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": null,
+        "revision": null
+      },
+      "operation": null,
+      "damage_type": null,
+      "formula": {
+        "family": null,
+        "key": null,
+        "revision": null
+      },
+      "duration_ms": null,
+      "condition": {
+        "type": null,
+        "tick_interval_ms": null,
+        "total_damage": null,
+        "damage_per_tick": {
+          "minimum": null,
+          "maximum": null,
+          "initial": null
+        },
+        "speed_formula": {
+          "family": null,
+          "key": null,
+          "revision": null
+        }
+      },
+      "appearance_transform": {
+        "creature": {
+          "family": null,
+          "key": null,
+          "revision": null
+        },
+        "item": {
+          "family": null,
+          "key": null,
+          "revision": null
+        }
+      },
+      "created_item": {
+        "family": null,
+        "key": null,
+        "revision": null
+      },
+      "presentation": {
+        "impact_asset_binding": null,
+        "projectile_asset_binding": null
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": null,
+        "revision": null
+      },
+      "kind": null,
+      "magnitude": {
+        "minimum": null,
+        "maximum": null
+      },
+      "melee": {
+        "attack": null,
+        "skill": null
+      },
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": null,
+          "denominator": null
+        },
+        "minimum_offset": null,
+        "maximum_multiplier": {
+          "numerator": null,
+          "denominator": null
+        },
+        "maximum_offset": null
+      }
+    }
+  ],
+  "documents": [
+    {
+      "identity": {
+        "key": null,
+        "revision": null
+      },
+      "document_type": null,
+      "title": null,
+      "author": null,
+      "language": null,
+      "content": [
+        null
+      ]
+    }
+  ],
+  "items": [
+    {
+      "identity": {
+        "key": null,
+        "revision": null
+      },
+      "presentation": {
+        "name": null,
+        "article": null,
+        "description": null,
+        "asset_binding": null
+      },
+      "classification": {
+        "is_corpse": null
+      },
+      "physical": {
+        "weight_centioz": null,
+        "movable": null,
+        "pickupable": null
+      },
+      "collision": {
+        "block_walk": null,
+        "block_projectiles": null,
+        "block_pathfinding": null
+      },
+      "container": {
+        "capacity": null
+      },
+      "temporal": {
+        "duration_ms": null,
+        "decay_action": null,
+        "decay_target": {
+          "family": null,
+          "key": null,
+          "revision": null
+        },
+        "stop_duration": null
+      },
+      "fluid": {
+        "fluid_type": null,
+        "fluid_source": null
+      }
+    }
+  ],
+  "loot_tables": [
+    {
+      "identity": {
+        "key": null,
+        "revision": null
+      },
+      "algorithm": null,
+      "entries": [
+        {
+          "item": {
+            "family": null,
+            "key": null,
+            "revision": null
+          },
+          "min_count": null,
+          "max_count": null,
+          "probability_percent": null,
+          "skip_later_same_item_after_success": null,
+          "instance_attributes": {
+            "charges": null,
+            "fluid_type": null,
+            "text": null,
+            "name": null,
+            "article": null,
+            "attack": null,
+            "defense": null,
+            "extra_defense": null,
+            "armor": null,
+            "shoot_range_tiles": null,
+            "hit_chance_percent": null,
+            "interaction": {
+              "family": null,
+              "key": null,
+              "revision": null
+            }
+          },
+          "contents_loot": {
+            "family": null,
+            "key": null,
+            "revision": null
+          }
+        }
+      ]
+    }
+  ]
+}
