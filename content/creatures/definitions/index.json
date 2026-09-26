@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/creatures/definitions/",
-  "kind": "static_content",
-  "owner": "Creature",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Creature definitions."
-}
+{"contract":"docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md","definitions":["content/creatures/definitions/rat.json"],"kind":"static_content","notes":"One source-bound authoring draft; gameplay truth and runtime promotion remain unqualified.","owner":"Creature","path":"content/creatures/definitions/","population_state":"DRAFT_SOURCE_CANDIDATE","record_count":1,"repository":"Oteryn/Oteryn-Game","schema":"OTERYN_GAME_TREE_DIRECTORY/v1"}
