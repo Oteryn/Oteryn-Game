@@ -81,7 +81,9 @@
       "prowess_kills": null,
       "expertise_kills": null,
       "mastery_kills": null,
-      "boss_points": null
+      "prowess_points": null,
+      "expertise_points": null,
+      "mastery_points": null
     },
     "corpse_item": {
       "family": null,

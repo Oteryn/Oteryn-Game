@@ -1,0 +1,407 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/blood_hand/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/attack-1-condition",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/blood_hand/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 4
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/blood_hand/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 4
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/blood_hand/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 6
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/attack-4-condition",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/blood_hand/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/blood_hand/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 1
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/blood_hand/defense-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/blood_hand/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/attack-1-condition",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "poison",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "total_damage_range": {
+            "minimum": 80,
+            "maximum": 80
+          },
+          "tick_interval_ms": 4000,
+          "initial_tick": {
+            "mode": "automatic"
+          },
+          "tick_profile": "decreasing",
+          "first_tick": "after_interval"
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "life_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/blood_hand/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 15000,
+      "condition": {
+        "type": "paralyze",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/blood_hand/attack-3-1",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/attack-4-condition",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "bleeding",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "total_damage_range": {
+            "minimum": 120,
+            "maximum": 160
+          },
+          "tick_interval_ms": 2000,
+          "initial_tick": {
+            "mode": "automatic"
+          },
+          "tick_profile": "decreasing",
+          "first_tick": "after_interval"
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/blood_hand/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/blood_hand/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "presentation_only",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/insects"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/blood_hand/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 158
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/blood_hand/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 50,
+        "maximum": 100
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/blood_hand/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 1,
+          "denominator": 5
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 2,
+          "denominator": 5
+        },
+        "maximum_offset": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/blood_hand/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 70,
+        "maximum": 90
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/18940",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead blood hand",
+        "asset_binding": "canary.appearance:object/18940",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/18941",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/18941",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead blood hand",
+        "asset_binding": "canary.appearance:object/18941",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/18942",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 20
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/18942",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead blood hand",
+        "asset_binding": "canary.appearance:object/18942",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

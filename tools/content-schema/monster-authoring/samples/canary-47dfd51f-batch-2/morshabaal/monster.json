@@ -1,0 +1,602 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/morshabaal",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Morshabaal",
+    "inspection": {
+      "description": "Morshabaal"
+    },
+    "stats": {
+      "max_health": 1000000,
+      "initial_health": 1000000,
+      "experience": 3000000,
+      "speed": 530,
+      "armor": 160,
+      "defense": 160,
+      "critical_chance_percent": 0
+    },
+    "resistances": [
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": 5,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "fire",
+        "reduction_percent": {
+          "numerator": 5,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "drunk",
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/morshabaal",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/morshabaal",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": true
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "bosstiary": {
+      "category": "nemesis",
+      "prowess_kills": 1,
+      "expertise_kills": 3,
+      "mastery_kills": 5,
+      "prowess_points": 10,
+      "expertise_points": 30,
+      "mastery_points": 60
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/37704",
+      "revision": "canary-47dfd51f"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/morshabaal",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/morshabaal",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": true,
+        "fire": true,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 70,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 10,
+        "health": 10,
+        "random": 10
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 15
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 15
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 7
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 7
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-6",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 9
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-7",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 13
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-8",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-9",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 12
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-10",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 8
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-11",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 2
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-12",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 2
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-13",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 34
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/attack-14",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 15
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/defense-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 15
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/defense-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 25
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/defense-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 8
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/defense-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 4
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/defense-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 17
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/morshabaal/defense-6",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 2
+      }
+    ],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "Revenge for my little brother!",
+          "mode": "say"
+        },
+        {
+          "text": "You are starting to annoy me!",
+          "mode": "say"
+        },
+        {
+          "text": "I will restore our family honor!",
+          "mode": "say"
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/morshabaal",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/1468",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/morshabaal",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37613",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37608",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37609",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37607",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37610",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/30053",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3309",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.666,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37611",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 10,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/30060",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 10,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/14112",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 10,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/30054",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 20,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/31323",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 20,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7643",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 100,
+        "probability_percent": 30,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23374",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 100,
+        "probability_percent": 30,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23373",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 100,
+        "probability_percent": 40,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/32625",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 40,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3043",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 35,
+        "probability_percent": 60,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3035",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 69,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/37810",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/33780",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/33779",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

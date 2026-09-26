@@ -1,0 +1,429 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 101,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 102,
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 103,
+      "source_field": "attacks[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 32,
+      "source_field": "corpse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/corpse_item",
+      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 97,
+      "source_field": "loot[17]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/0",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 16163 \"crystal crossbow\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 95,
+      "source_field": "loot[15]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/1",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3028 \"small diamond\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 82,
+      "source_field": "loot[2]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/2",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 675 \"small enchanted sapphire\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 92,
+      "source_field": "loot[12]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/3",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 29995 \"sun fruit\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 93,
+      "source_field": "loot[13]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/4",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23542 \"collar of blue plasma\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 96,
+      "source_field": "loot[16]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/5",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3037 \"yellow gem\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 94,
+      "source_field": "loot[14]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/6",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3575 \"wood cape\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 91,
+      "source_field": "loot[11]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/7",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23529 \"ring of blue plasma\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 90,
+      "source_field": "loot[10]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/8",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 25735 \"leaf star\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 87,
+      "source_field": "loot[7]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/9",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 16120 \"violet crystal shard\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 89,
+      "source_field": "loot[9]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/10",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 16126 \"red crystal fragment\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 88,
+      "source_field": "loot[8]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/11",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 676 \"small enchanted ruby\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 86,
+      "source_field": "loot[6]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/12",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9635 \"elvish talisman\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 85,
+      "source_field": "loot[5]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/13",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 30005 \"dream essence egg\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 84,
+      "source_field": "loot[4]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/14",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5921 \"heaven blossom\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 83,
+      "source_field": "loot[3]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/15",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3035 \"platinum coin\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 81,
+      "source_field": "loot[1]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/16",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3450 \"power bolt\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 17,
+      "source_field": "Bestiary",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/bestiary",
+      "resolution": "difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 48,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 48,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 29,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 30,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 33,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 68,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 48,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 36,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 41,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 73,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/voices",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 116,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 129,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 108,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 107,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 109,
+      "source_field": "defenses.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/mitigation_percent",
+      "resolution": "Canary float percent points as an exact decimal ratio."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 16,
+      "source_field": "raceId",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Foreign identifier; provenance only."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "source_line": 31,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    }
+  ]
+}

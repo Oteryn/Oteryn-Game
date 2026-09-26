@@ -27,54 +27,54 @@
   },
   "monsters": [
     {
-      "monster": "rat",
-      "file": "data-otservbr-global/monster/mammals/rat.lua",
-      "git_blob": "205888f9a55b66f6e05fbd2dc653b33d401ffcd1"
+      "monster": "morshabaal",
+      "file": "data-otservbr-global/monster/bosses/morshabaal.lua",
+      "git_blob": "363c103cad21ef436ffb77d1de1b5e4a4be0e9bd"
     },
     {
-      "monster": "cyclops",
-      "file": "data-otservbr-global/monster/giants/cyclops.lua",
-      "git_blob": "811c1897400e4aa539c8a97bb6ed26cef7b58d37"
+      "monster": "dworc_voodoomaster",
+      "file": "data-otservbr-global/monster/humanoids/dworc_voodoomaster.lua",
+      "git_blob": "9a9770186f3303d5ed54674841f1f4f456501356"
     },
     {
-      "monster": "orc_spearman",
-      "file": "data-otservbr-global/monster/humanoids/orc_spearman.lua",
-      "git_blob": "8c7fee62b59c4cf3d803c7ade075e929bbeef610"
+      "monster": "wisp",
+      "file": "data-otservbr-global/monster/fey/wisp.lua",
+      "git_blob": "ce4854a864b1ced8f9bcbbd2b242eb4a6ac37dfd"
     },
     {
-      "monster": "scorpion",
-      "file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "git_blob": "f6822ed1bd323fbcbf36eef4bf64605cc47940c9"
+      "monster": "the_enraged_thorn_knight",
+      "file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "git_blob": "ab868b6f58cf5950d027111fdb3fdd99f289d628"
     },
     {
-      "monster": "orc_shaman",
-      "file": "data-otservbr-global/monster/humanoids/orc_shaman.lua",
-      "git_blob": "33977e34630687a6733c3978f3a489f712ab3aaf"
+      "monster": "sand_vortex",
+      "file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "git_blob": "9d361da23f4c2da2c2da663a19d25e80a7cdc8ce"
     },
     {
-      "monster": "necromancer",
-      "file": "data-otservbr-global/monster/humans/necromancer.lua",
-      "git_blob": "b34866c37a5826f26bfc9b2d76a801fc43d2d27b"
+      "monster": "knight_familiar",
+      "file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "git_blob": "83c619695910876e8dbb1f24287fa755b5d9d0c8"
     },
     {
-      "monster": "fire_elemental",
-      "file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
-      "git_blob": "6429e7cdb0075e93b9a536bb6baf4cb7386d2f07"
+      "monster": "blood_hand",
+      "file": "data-otservbr-global/monster/humans/blood_hand.lua",
+      "git_blob": "042196f48640030aff6b60a4f74baf9c6fafe629"
     },
     {
-      "monster": "dragon",
-      "file": "data-otservbr-global/monster/dragons/dragon.lua",
-      "git_blob": "16dd2aa26c771879d3e79049bd295dac380511af"
+      "monster": "mad_mage",
+      "file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "git_blob": "307f26a9aa0368bca24cc74eb3498fddb26e4377"
     },
     {
-      "monster": "ghost",
-      "file": "data-otservbr-global/monster/undeads/ghost.lua",
-      "git_blob": "d876992c9ed5606bc888680af39defa9d955bf08"
+      "monster": "crazed_summer_rearguard",
+      "file": "data-otservbr-global/monster/humanoids/crazed_summer_rearguard.lua",
+      "git_blob": "8e269d760c4f744baaef33c1e840dcd7fa7b9734"
     },
     {
-      "monster": "demodras",
-      "file": "data-otservbr-global/monster/quests/killing_in_the_name_of/demodras.lua",
-      "git_blob": "e15a4fc610422df93c9d966eb441e7f9b13ada0b"
+      "monster": "war_golem",
+      "file": "data-otservbr-global/monster/constructs/war_golem.lua",
+      "git_blob": "e155c933543c3444a68c20244b93c0c3e8ac2697"
     }
   ]
 }

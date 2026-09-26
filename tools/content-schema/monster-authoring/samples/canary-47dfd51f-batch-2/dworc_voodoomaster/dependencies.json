@@ -1,0 +1,572 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 1,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-5",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 6
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-6",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/attack-7",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 1
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/attack-7",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/defense-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/dworc_voodoomaster/defense-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/dworc_voodoomaster/defense-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/dworc_voodoomaster/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "life_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/dworc_voodoomaster/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 5000,
+      "condition": {
+        "type": "paralyze",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/dworc_voodoomaster/attack-3-1",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 10000,
+      "condition": {
+        "type": "drunk",
+        "lifetime": "fixed_duration"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/teleport",
+        "projectile_asset_binding": "canary.appearance:missile/energy"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/chicken",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "duration_ms": 5000,
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "earth",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/dworc_voodoomaster/attack-6-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/green_rings"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/attack-7",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "create_item",
+      "created_item": {
+        "family": "Item",
+        "key": "canary:item/105",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/poison"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/dworc_voodoomaster/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 4000,
+      "condition": {
+        "type": "haste",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/dworc_voodoomaster/defense-2-1",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/dworc_voodoomaster/defense-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 10000,
+      "condition": {
+        "type": "invisible",
+        "lifetime": "fixed_duration"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/dworc_voodoomaster/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 20
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/dworc_voodoomaster/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/dworc_voodoomaster/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 1,
+          "denominator": 10
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 1,
+          "denominator": 5
+        },
+        "maximum_offset": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/dworc_voodoomaster/attack-6-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 6,
+        "maximum": 18
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/dworc_voodoomaster/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 3,
+        "maximum": 9
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/dworc_voodoomaster/defense-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 3,
+          "denominator": 5
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 6,
+          "denominator": 5
+        },
+        "maximum_offset": 40
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/6055",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead dworc",
+        "asset_binding": "canary.appearance:object/6055",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4369",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 7
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4369",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead dworc",
+        "asset_binding": "canary.appearance:object/4369",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4370",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 7
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4370",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead dworc",
+        "asset_binding": "canary.appearance:object/4370",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4371",
+          "revision": "canary-47dfd51f"
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4371",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead dworc",
+        "asset_binding": "canary.appearance:object/4371",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

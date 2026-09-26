@@ -8,48 +8,48 @@
   "entries": [
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 85,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 62,
       "source_field": "attacks[1]",
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/0",
-      "resolution": "monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms. Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 36,
-      "source_field": "corpse",
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 63,
+      "source_field": "attacks[2]",
       "kind": "field",
       "status": "mapped",
-      "destination": "/monster/creature/corpse_item",
-      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 81,
-      "source_field": "loot[1]",
-      "kind": "dependency",
-      "status": "mapped",
-      "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9651 \"scorpion tail\" is a declared source-scoped reference, not an admitted canonical Item."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 17,
-      "source_field": "Bestiary",
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 64,
+      "source_field": "attacks[3]",
       "kind": "field",
       "status": "mapped",
-      "destination": "/monster/creature/bestiary",
-      "resolution": "difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare)."
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40)."
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 75,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 65,
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 54,
       "source_field": "voices",
       "kind": "field",
       "status": "approved_omission",
@@ -57,8 +57,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 50,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 29,
       "source_field": "flags.pass_through",
       "kind": "field",
       "status": "mapped",
@@ -67,8 +67,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 50,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 29,
       "source_field": "flags.canWalk/canTarget",
       "kind": "field",
       "status": "mapped",
@@ -77,7 +77,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
       "source_line": 4,
       "source_field": "description",
       "kind": "field",
@@ -87,8 +87,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 33,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 10,
       "source_field": "health",
       "kind": "field",
       "status": "mapped",
@@ -97,8 +97,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 34,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 11,
       "source_field": "maxHealth",
       "kind": "field",
       "status": "mapped",
@@ -107,7 +107,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
       "source_line": 5,
       "source_field": "experience",
       "kind": "field",
@@ -117,8 +117,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 37,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 14,
       "source_field": "speed",
       "kind": "field",
       "status": "mapped",
@@ -127,7 +127,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
       "source_line": 6,
       "source_field": "outfit",
       "kind": "field",
@@ -137,8 +137,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 70,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 49,
       "source_field": "light",
       "kind": "field",
       "status": "mapped",
@@ -147,8 +147,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 50,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 29,
       "source_field": "flags",
       "kind": "field",
       "status": "mapped",
@@ -157,8 +157,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 40,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 17,
       "source_field": "changeTarget",
       "kind": "field",
       "status": "mapped",
@@ -167,8 +167,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 45,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 22,
       "source_field": "strategiesTarget",
       "kind": "field",
       "status": "mapped",
@@ -177,8 +177,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 94,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 86,
       "source_field": "elements",
       "kind": "field",
       "status": "mapped",
@@ -187,8 +187,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 107,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 99,
       "source_field": "immunities",
       "kind": "field",
       "status": "mapped",
@@ -197,8 +197,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 90,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 70,
       "source_field": "defenses.armor",
       "kind": "field",
       "status": "mapped",
@@ -207,8 +207,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 89,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 69,
       "source_field": "defenses.defense",
       "kind": "field",
       "status": "mapped",
@@ -217,37 +217,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 91,
-      "source_field": "defenses.mitigation",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 38,
-      "source_field": "manaCost",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/summoning/mana_cost",
-      "resolution": "Direct source value."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 16,
-      "source_field": "raceId",
-      "kind": "field",
-      "status": "metadata_only",
-      "resolution": "Foreign identifier; provenance only."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
-      "source_line": 35,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 12,
       "source_field": "race",
       "kind": "dependency",
       "status": "mapped",

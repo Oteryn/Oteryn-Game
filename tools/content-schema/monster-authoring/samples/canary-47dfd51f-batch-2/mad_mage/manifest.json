@@ -1,0 +1,469 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 102,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 103,
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 104,
+      "source_field": "attacks[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 105,
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 106,
+      "source_field": "attacks[5]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/4",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 113,
+      "source_field": "defenses[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/0",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 24,
+      "source_field": "corpse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/corpse_item",
+      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 95,
+      "source_field": "loot[15]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/0",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11454 \"luminous orb\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 93,
+      "source_field": "loot[13]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/1",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9027 \"crystal of focus\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 92,
+      "source_field": "loot[12]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/2",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7443 \"bullseye potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 96,
+      "source_field": "loot[16]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/3",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 2995 \"piggy bank\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 97,
+      "source_field": "loot[17]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/4",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3006 \"ring of the sky\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 91,
+      "source_field": "loot[11]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/5",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 12599 \"mage's cap\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 94,
+      "source_field": "loot[14]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/6",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3079 \"boots of haste\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 98,
+      "source_field": "loot[18]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/7",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 8073 \"spellbook of warding\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 87,
+      "source_field": "loot[7]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/8",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7368 \"assassin star\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 88,
+      "source_field": "loot[8]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/9",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3728 \"dark mushroom\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 90,
+      "source_field": "loot[10]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/10",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3033 \"small amethyst\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 89,
+      "source_field": "loot[9]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/11",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5911 \"red piece of cloth\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 86,
+      "source_field": "loot[6]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/12",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3049 \"stealth ring\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 85,
+      "source_field": "loot[5]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/13",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3062 \"mind stone\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 84,
+      "source_field": "loot[4]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/14",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 236 \"strong health potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 83,
+      "source_field": "loot[3]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/15",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 237 \"strong mana potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 82,
+      "source_field": "loot[2]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/16",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3035 \"platinum coin\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 81,
+      "source_field": "loot[1]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/17",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 18,
+      "source_field": "bosstiary.bossRace",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/bosstiary",
+      "resolution": "Stage kills and points are derived from the rarity: io_bosstiary.hpp levelInfos kills/points per stage: bane 25/100/300 & 5/15/30, archfoe 5/20/60 & 10/30/60, nemesis 1/3/5 & 10/30/60."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 17,
+      "source_field": "bosstiary.bossRaceId",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Foreign identifier; provenance only."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 65,
+      "source_field": "summon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/summons",
+      "resolution": "Summoned creatures are declared source-scoped Creature references."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 40,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 40,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 21,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 22,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 25,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 60,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 40,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 28,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 33,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 72,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/voices",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 116,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 129,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 111,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 110,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/bosses/mad_mage.lua",
+      "source_line": 23,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    }
+  ]
+}

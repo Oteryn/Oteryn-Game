@@ -60,7 +60,9 @@ d['bestiary']=obj({'class':text(),'taxonomy':text(),'difficulty':text(),'occurre
     'kill_thresholds':array(integer(1),3,False,maxItems=3),'charm_points':integer(0,65535)},
     ('class','taxonomy','difficulty','occurrence','kill_thresholds','charm_points'))
 d['bosstiary']=obj({'category':text(),'prowess_kills':integer(1),'expertise_kills':integer(1),
-    'mastery_kills':integer(1),'boss_points':integer(0,65535)},('category','prowess_kills','expertise_kills','mastery_kills','boss_points'))
+    'mastery_kills':integer(1),'prowess_points':integer(0,65535),'expertise_points':integer(0,65535),'mastery_points':integer(0,65535)},
+    ('category','prowess_kills','expertise_kills','mastery_kills','prowess_points','expertise_points','mastery_points'),
+    description='Boss points are awarded per reached stage (io_bosstiary.hpp levelInfos), not once per boss.')
 d['creature']=obj({
     'identity':use('identity'),'display_name':text(),
     'name_forms':obj({'article':text(0),'plural':text()}),
