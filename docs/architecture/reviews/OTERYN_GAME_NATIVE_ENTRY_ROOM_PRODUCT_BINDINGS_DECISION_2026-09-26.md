@@ -117,8 +117,8 @@ Scope: the native entry-room source variant only. These are finite fail-closed f
 | String bytes (`max_string_bytes`) | 1 024 | Keys/atoms are ≤ 64 B here; the longest licensing/metadata string is far below. |
 | Locator bytes / segments (`max_locator_bytes`, `max_locator_segments`) | 128 / 4 | Longest fixed locator `presentations/bindings.json` is 27 B, 2 segments. |
 | Reference records (`max_reference_records`) | 32 | Graph needs 18 definitions. |
-| Import candidate records (`max_import_records`) | 0 | The room is Oteryn-original; any import candidate refuses. |
-| Reimport states (`max_reimport_states`) | 0 | No import, so no reimport. |
+| Import candidate records (`max_import_records`) | 1 | Smallest value `ProjectEvidenceLimits::validate` accepts (0 is rejected). Separately, the native qualifier requires the import-candidates document to hold zero records: the room is Oteryn-original and any candidate refuses. |
+| Reimport states (`max_reimport_states`) | 1 | Same: smallest accepted limit; the native qualifier requires zero reimport states. |
 | Entries per directory scan (`max_entries_per_directory_scan`) | 32 | New first-slice bound (the root holds 9 entries); not an existing default. |
 | Total directory entries scanned (`max_total_directory_entries_scanned`) | 128 | 11 locator lookups over directories of ≤ 9 entries. |
 | Qualification reports | 1 report per qualification, ≤ 16 KiB | One room, one bounded diagnostic. |
