@@ -51,10 +51,17 @@ These decisions close the open questions raised in the proposal reviews.
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | Chances stay JSON numbers in **0–100 percent** (`0.19` = 0.19%) with at most 4 decimal places. The structural schema carries only the range; the 4-decimal rule is enforced by `validate_monster.py`. Native ppm = `percent × 10000` and must be an exact integer. | Keeps the owner-selected readable format. Removing `multipleOf: 0.0001` lets any binary-float JSON Schema validator (editors, CI) accept valid values such as `0.29` and `4.93`, which it previously rejected. A Rust importer reading `f64` must compute `round(value × 10000)` and reject the value when it differs from the unrounded product by more than `1e-6`. |
+| D1 | Chances stay JSON numbers in **0–100 percent** (`0.19` = 0.19%) with at most 4 decimal places. The structural schema carries only the range; the 4-decimal rule is enforced by `validate_monster.py`. Native ppm = `percent × 10000` and must be an exact integer. | Keeps the owner-selected readable format. Removing `multipleOf: 0.0001` lets any binary-float JSON Schema validator (editors, CI) accept valid values such as `0.29` and `4.93`, which it previously rejected. Admission must preserve the original JSON numeric token and validate it with exact decimal/integer arithmetic before any binary-float conversion. For its exact ratio `n/d`, require `(n × 10000) % d == 0` and emit the integer quotient. No rounding tolerance is permitted, including in a future Rust importer. |
 | D2 | Ratios (`resistances`, `mitigation_percent`, reflection/healing, speed multipliers) must be in **lowest terms**; zero is `0/1`. | Matches `validate_v2_ratio` in WorldProject/v2, so a valid authoring ratio cannot be rejected on admission. |
 | D3 | Durations and intervals are **integer milliseconds** everywhere. | One unit across the schema. WorldProject/v2 `ProjectV2FamiliarProfile.duration_seconds` is converted on admission (see §5); a value not divisible by 1000 is a mapping gap, not a reason to change the authoring unit. |
 | D4 | Health keeps **`max_health` and `initial_health`** with `1 <= initial_health <= max_health`. | Both are distinct source facts. WorldProject/v2 currently has one `health`; see §5. Zero-HP helper entities remain blocked as `unresolved_semantics` rather than admitted with invented HP. |
+
+Trailing zeros and exponent notation are accepted when the exact value lies on the 1 ppm
+grid (for example `0.290000` and `2.9e-1` both yield 2900 ppm). Extra nonzero digits
+such as `0.29000000001` or `0.29000000000000000000000000000001` are rejected, not rounded.
+The Python validator uses `Decimal.as_integer_ratio()` followed by integer `divmod`,
+so acceptance does not depend on the active Decimal precision. Data read as `f64` alone
+cannot establish the precision of the original source token.
 
 ## 4. Carried semantics
 
@@ -116,7 +123,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 117 focused positive/negative cases
+python verify_formal_schema.py     # 167 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -124,3 +131,10 @@ python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--m
 `build_formal_schema.py` is the source of the schemas; edit it, not the generated JSON.
 Validator success means authoring structure and declared-reference closure only; it reports
 `runtime_qualified=false` and `source_coverage_proven=false`.
+
+Manifest destinations use the JSON string form of RFC 6901 pointers. Array tokens must be
+`0` or an ASCII digit sequence starting with `1`–`9`; signed, zero-padded, whitespace and
+Unicode-digit indices are rejected. `-` cannot resolve an existing element. Object member
+names remain unrestricted by the array-index rule. Only `~0` and `~1` are valid escapes,
+and scalar values cannot be traversed. The empty root pointer is supported by the resolver
+but is not a valid manifest destination (the manifest requires a nonempty string).
