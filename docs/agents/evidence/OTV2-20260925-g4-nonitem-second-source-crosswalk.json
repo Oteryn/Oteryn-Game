@@ -1,0 +1,131 @@
+{
+  "schema": "OTERYN_G4_NONITEM_SECOND_SOURCE_CROSSWALK_EVIDENCE/v1",
+  "task_id": "OTV2-20260925-g4-nonitem-second-source-crosswalk",
+  "status": "AUTHORING_REQUALIFICATION",
+  "allocation": {
+    "issue": 162,
+    "comment_id": 5828248468,
+    "amendment_comment_id": 5828278808,
+    "branch": "agent/otv2-g4-nonitem-second-source-crosswalk",
+    "base_commit": "bfc8b54548a09c59e062873a5dfa48739c477420",
+    "meta_policy_commit": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb",
+    "writer_count": 1,
+    "integration_authority": "COORDINATOR_ONLY"
+  },
+  "task_packet": {
+    "title": "G4 Non-Item second-source crosswalk",
+    "mode": "IMPLEMENT",
+    "status": "implementing",
+    "repository": "Oteryn/Oteryn-Game",
+    "base": "main",
+    "branch": "agent/otv2-g4-nonitem-second-source-crosswalk",
+    "issue": 162,
+    "pr": 882,
+    "base_sha": "bfc8b54548a09c59e062873a5dfa48739c477420"
+  },
+  "owned_paths": [
+    "tools/content-census/g4_nonitem_second_source_crosswalk.py",
+    "tools/content-census/g4_nonitem_second_source_crosswalk_self_test.py",
+    ".github/workflows/g4-nonitem-second-source-crosswalk.yml",
+    "docs/agents/tasks/active/OTV2-20260925-g4-nonitem-second-source-crosswalk.md",
+    "docs/agents/evidence/OTV2-20260925-g4-nonitem-second-source-crosswalk.json"
+  ],
+  "protected_primary_input": {
+    "pull_request": 875,
+    "run_id": 36097714916,
+    "artifact_id": 10848111721,
+    "head_sha": "a3cc319aa4582c90cd9d03efd81e2ab0cabf1bb0",
+    "archive_sha256": "0e340f9e77987f4dea3f5ca77f875d3f36dbfc7a2b08822b0c55716e01e5c293",
+    "canonical_output_sha256": "38d827ba66bb7a04a3f5a94bbb873ca4485d4b7c873de957812a9c1be20a67c5",
+    "family_counts": {
+      "Creature": 2149,
+      "NPC": 1253,
+      "Achievement": 569,
+      "Quest": 272,
+      "Ability": 171,
+      "Outfit": 134,
+      "Mount": 252
+    },
+    "row_count": 4800,
+    "historical_hosted_family_states": {
+      "Creature": {"SOURCE_REVISION_STABLE": 2148, "CURRENT_REVISION_REVALIDATED": 1},
+      "NPC": {"SOURCE_REVISION_STABLE": 1253},
+      "Achievement": {"SOURCE_REVISION_STABLE": 569},
+      "Quest": {"SOURCE_REVISION_STABLE": 271, "CURRENT_REVISION_REVALIDATED": 1},
+      "Ability": {"SOURCE_REVISION_STABLE": 167, "UNSUPPORTED_SOURCE_SHAPE": 4},
+      "Outfit": {"SOURCE_REVISION_STABLE": 134},
+      "Mount": {"SOURCE_REVISION_STABLE": 252}
+    }
+  },
+  "source_policy": {
+    "second_source": "TibiaWiki/Fandom MediaWiki API only; separate maintained source candidate; fact-level independence remains UNKNOWN",
+    "fandom_api": "https://tibia.fandom.com/api.php",
+    "family_enumeration": "embeddedin each exact family infobox with MediaWiki continuation",
+    "global_page_budget": {
+      "limit": 20000,
+      "scope": "cumulative enumerated page entries across all seven Fandom families",
+      "enforcement": "incremental before each request, request eilimit capped to min(500, remaining), fail before a continuation request at zero",
+      "fandom_network_request_limit": 20000,
+      "fandom_network_request_scope": "all five Fandom preflight requests plus every family enumeration and revision request",
+      "per_family_limit": 10000,
+      "revision_capture": "only already-budgeted page IDs, batches of at most 10"
+    },
+    "revision_provenance": ["page_id", "title", "revision_id", "revision_timestamp", "revision_sha1_base36", "captured_utf8_sha256", "sha1_bytes_consistency_verified"],
+    "license_preflight": ["https://tibia.fandom.com/wiki/TibiaWiki:About", "https://www.fandom.com/licensing"],
+    "license_verification": "bounded terms bodies must explicitly include CC BY-SA and attribution markers on both project and site licensing pages; HTTP 200 alone is insufficient",
+    "redirect_policy": "same HTTPS origin required between requested and final URL for Fandom/API/library receipts",
+    "attribution": "TibiaWiki community contributors; CC BY-SA subject to per-page notices",
+    "raw_prose_retained": false,
+    "assets_retained": false,
+    "disallowed_substitutions": ["TibiaData", "TibiaWikiSQL", "tibiawiki.dev", "mirrors", "proxies"],
+    "ability_scope": "Spell subset only"
+  },
+  "family_corroboration_statuses": {
+    "Creature": "UNKNOWN",
+    "NPC": "UNKNOWN",
+    "Achievement": "UNKNOWN",
+    "Quest": "UNKNOWN",
+    "Ability": "UNKNOWN",
+    "Outfit": "UNKNOWN",
+    "Mount": "UNKNOWN"
+  },
+  "crosswalk_state_enum": ["EXACT_CANDIDATE", "PROBABLE", "AMBIGUOUS", "CONFLICT", "NO_MATCH", "SOURCE_UNAVAILABLE"],
+  "identity_and_authority": {
+    "source_tuple_preservation": true,
+    "page_ids_join_only_within_qualified_source": true,
+    "title_only_exact_match_forbidden": true,
+    "canonical_identity_binding_emitted": false,
+    "production_key_minted": false,
+    "canonical_definition_population": false,
+    "semantic_field_promotion": false,
+    "package_mutation": false
+  },
+  "preflight": {
+    "local_browser_status": "FANDOM_API_DIRECT_OPEN_UNAVAILABLE_HTTP_402_OR_TOOL_RESTRICTION",
+    "protected_predecessor_status": "UNAVAILABLE_HTTP_402",
+    "previous_hosted_status": "SOURCE_UNAVAILABLE_TERMS_HTTP_403",
+    "previous_hosted_run_id": 36106643830,
+    "previous_hosted_artifact_id": 10851705418,
+    "previous_hosted_artifact_zip_sha256": "ae6614c9abaebff54ccb6130c8845fd5de5c856ba8871b4cd0bb76db94a69789",
+    "previous_hosted_output_sha256": "ba1d78635000cf8ea17f9bd06f7b82ad2e272a615013c4b58bc78c2548da585f",
+    "previous_hosted_receipts": {
+      "fandom_siteinfo_api_help_enumeration": "HTTP_200",
+      "fandom_project_about": "HTTP_403",
+      "fandom_site_licensing": "HTTP_403",
+      "official_tibia_creature_achievement_spell_pages": "HTTP_403",
+      "family_corroboration_statuses": "UNKNOWN_ALL_SEVEN",
+      "source_rows_preserved": 4800
+    },
+    "hosted_status": "PENDING_REQUALIFICATION_AT_NEW_HEAD",
+    "fallback": "if hosted API or terms is blocked, emit SOURCE_UNAVAILABLE with all family statuses UNKNOWN and pass evidence-only gate"
+  },
+  "validation": {
+    "local_synthetic_self_test": "PENDING_GLOBAL_BUDGET_REQUALIFICATION",
+    "hosted_source_capture": "PENDING_NEW_HEAD",
+    "hosted_artifact_sha256": null,
+    "exact_head_ci": "PENDING_NEW_HEAD",
+    "candidate_sha": null,
+    "draft_pr": 882,
+    "merge_queue": "COORDINATOR_ONLY_NOT_REQUESTED"
+  }
+}
