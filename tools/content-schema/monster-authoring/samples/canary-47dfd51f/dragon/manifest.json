@@ -3,6 +3,30 @@
     {
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Dragon",
+      "page_id": 1318,
+      "revision_id": 1191689,
+      "content_sha256": "878319b4204ca63ef06cc6fbcb3c4068f160eb7849f3f8f5cdf7f00797e8a925"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Dragon",
+      "page_id": 29034,
+      "revision_id": 1197999,
+      "content_sha256": "a906095d92e1fe20c28a8b217edfd9a541e5e18d43862c6d13bc7246e71716da"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Dragon Trophy",
+      "page_id": 12886,
+      "revision_id": 1040731,
+      "content_sha256": "58cf3f5d4aedb58c02c6838d82c01a452abf3ad73a062d17cd223f440b146249"
     }
   ],
   "entries": [
@@ -63,7 +87,7 @@
       "source_field": "loot[21]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/0",
+      "destination": "/monster/loot/entries/1",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3416 \"dragon shield\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -73,7 +97,7 @@
       "source_field": "loot[19]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/1",
+      "destination": "/monster/loot/entries/2",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7430 \"dragonbone staff\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -83,7 +107,7 @@
       "source_field": "loot[20]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/2",
+      "destination": "/monster/loot/entries/3",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3061 \"life crystal\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -93,7 +117,7 @@
       "source_field": "loot[17]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/3",
+      "destination": "/monster/loot/entries/4",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3297 \"serpent sword\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -103,7 +127,7 @@
       "source_field": "loot[18]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/4",
+      "destination": "/monster/loot/entries/5",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3322 \"dragon hammer\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -113,7 +137,7 @@
       "source_field": "loot[16]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/5",
+      "destination": "/monster/loot/entries/6",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3028 \"small diamond\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -123,7 +147,7 @@
       "source_field": "loot[15]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/6",
+      "destination": "/monster/loot/entries/7",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3071 \"wand of inferno\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -133,7 +157,7 @@
       "source_field": "loot[14]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/7",
+      "destination": "/monster/loot/entries/8",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5920 \"green dragon scale\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -143,7 +167,7 @@
       "source_field": "loot[13]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/8",
+      "destination": "/monster/loot/entries/9",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5877 \"green dragon leather\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -153,7 +177,7 @@
       "source_field": "loot[12]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/9",
+      "destination": "/monster/loot/entries/10",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 236 \"strong health potion\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -163,7 +187,7 @@
       "source_field": "loot[11]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/10",
+      "destination": "/monster/loot/entries/11",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3275 \"double axe\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -173,7 +197,7 @@
       "source_field": "loot[10]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/11",
+      "destination": "/monster/loot/entries/12",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3557 \"plate legs\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -183,7 +207,7 @@
       "source_field": "loot[9]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/12",
+      "destination": "/monster/loot/entries/13",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3301 \"broadsword\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -193,7 +217,7 @@
       "source_field": "loot[8]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/13",
+      "destination": "/monster/loot/entries/14",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3351 \"steel helmet\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -203,7 +227,7 @@
       "source_field": "loot[7]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/14",
+      "destination": "/monster/loot/entries/15",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3285 \"longsword\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -213,7 +237,7 @@
       "source_field": "loot[6]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/15",
+      "destination": "/monster/loot/entries/16",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3449 \"burst arrow\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -223,7 +247,7 @@
       "source_field": "loot[5]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/16",
+      "destination": "/monster/loot/entries/17",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3349 \"crossbow\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -233,7 +257,7 @@
       "source_field": "loot[4]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/17",
+      "destination": "/monster/loot/entries/18",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11457 \"dragon's tail\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -243,7 +267,7 @@
       "source_field": "loot[3]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/18",
+      "destination": "/monster/loot/entries/19",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3409 \"steel shield\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -253,7 +277,7 @@
       "source_field": "loot[2]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/19",
+      "destination": "/monster/loot/entries/20",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3583 \"dragon ham\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -263,7 +287,7 @@
       "source_field": "loot[1]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/20",
+      "destination": "/monster/loot/entries/21",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -452,9 +476,8 @@
       "source_line": 123,
       "source_field": "defenses.mitigation",
       "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
+      "status": "approved_omission",
+      "resolution": "Canary value 0.99 superseded by the reference-date wiki value 1.56 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
     },
     {
       "source_index": 0,
@@ -492,6 +515,26 @@
       "kind": "script",
       "status": "approved_omission",
       "resolution": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_kill_dragon.lua increments The First Dragon dragon counter. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Dragon",
+      "source_line": 9,
+      "source_field": "Infobox Creature.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki mitigation 1.56 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Dragon",
+      "source_line": 27,
+      "source_field": "Loot2.dragon trophy",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Listed in the Dragon infobox loot (source 1, line 57), absent in Canary. Probability = 11 drops / 15151 kills in the version 13.21.14040 block, 0.072602% rounded half-even to 1 ppm: a point estimate from player-reported counts (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary). The name matches ids [2681, 2682, 44158]; the item page (source 3, line 5) declares itemid 44158. Inserted in ascending-probability order (register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration). Item 44158 \"dragon trophy\" is a declared source-scoped reference, not an admitted canonical Item.",
+      "destination": "/monster/loot/entries/0"
     }
   ]
 }

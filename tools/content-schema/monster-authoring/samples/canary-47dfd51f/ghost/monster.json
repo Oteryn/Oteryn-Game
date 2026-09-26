@@ -17,8 +17,8 @@
       "defense": 5,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 51,
-        "denominator": 100
+        "numerator": 4,
+        "denominator": 5
       }
     },
     "resistances": [
@@ -226,6 +226,17 @@
     },
     "algorithm": "IndependentBernoulli",
     "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3081",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.0604,
+        "skip_later_same_item_after_success": false
+      },
       {
         "item": {
           "family": "Item",

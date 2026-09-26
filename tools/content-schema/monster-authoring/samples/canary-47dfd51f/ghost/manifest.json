@@ -3,6 +3,22 @@
     {
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Ghost",
+      "page_id": 1568,
+      "revision_id": 1192179,
+      "content_sha256": "3654eef248397bc5c7b1b9bcc0c8d6f4f2a29e5ff5769fa6d3904ef8392df134"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Ghost",
+      "page_id": 39528,
+      "revision_id": 1197654,
+      "content_sha256": "12322da14ee6104d480c035a7aaff8cce10da4e5e86d8138007c365bd75a3fdc"
     }
   ],
   "entries": [
@@ -43,7 +59,7 @@
       "source_field": "loot[2]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/0",
+      "destination": "/monster/loot/entries/1",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3049 \"stealth ring\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -53,7 +69,7 @@
       "source_field": "loot[5]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/1",
+      "destination": "/monster/loot/entries/2",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3432 \"ancient shield\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -63,7 +79,7 @@
       "source_field": "loot[1]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/2",
+      "destination": "/monster/loot/entries/3",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 2828 \"book\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -73,7 +89,7 @@
       "source_field": "loot[9]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/3",
+      "destination": "/monster/loot/entries/4",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9690 \"ghostly tissue\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -83,7 +99,7 @@
       "source_field": "loot[8]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/4",
+      "destination": "/monster/loot/entries/5",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5909 \"white piece of cloth\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -93,7 +109,7 @@
       "source_field": "loot[4]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/5",
+      "destination": "/monster/loot/entries/6",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3292 \"combat knife\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -103,7 +119,7 @@
       "source_field": "loot[6]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/6",
+      "destination": "/monster/loot/entries/7",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3565 \"cape\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -113,7 +129,7 @@
       "source_field": "loot[3]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/7",
+      "destination": "/monster/loot/entries/8",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3282 \"morning star\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -123,7 +139,7 @@
       "source_field": "loot[7]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/8",
+      "destination": "/monster/loot/entries/9",
       "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3740 \"shadow herb\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
@@ -312,9 +328,8 @@
       "source_line": 100,
       "source_field": "defenses.mitigation",
       "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
+      "status": "approved_omission",
+      "resolution": "Canary value 0.51 superseded by the reference-date wiki value 0.80 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
     },
     {
       "source_index": 0,
@@ -333,6 +348,26 @@
       "kind": "dependency",
       "status": "approved_omission",
       "resolution": "Race \"undead\" leaves no death residue: creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Ghost",
+      "source_line": 9,
+      "source_field": "Infobox Creature.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki mitigation 0.80 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 17,
+      "source_field": "Loot2.stone skin amulet",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Listed in the Ghost infobox loot (source 1, line 48), absent in Canary. Probability = 2 drops / 3314 kills in the version 14.12.5229e4 block, 0.060350% rounded half-even to 1 ppm: a point estimate from player-reported counts (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary). Inserted in ascending-probability order (register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration). Item 3081 \"stone skin amulet\" is a declared source-scoped reference, not an admitted canonical Item.",
+      "destination": "/monster/loot/entries/0"
     }
   ]
 }

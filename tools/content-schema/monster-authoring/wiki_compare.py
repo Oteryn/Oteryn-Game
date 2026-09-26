@@ -102,6 +102,69 @@ def infobox(text):
     return fields
 
 
+def field_line(content, key):
+    """1-based wikitext line of the top-level `| key =` field, or None."""
+    for number, line in enumerate(content.splitlines(), 1):
+        if re.match(r'^\s*\|\s*' + re.escape(key) + r'\s*=', line):
+            return number
+    return None
+
+
+def version_key(version):
+    return tuple(int(part) for part in re.findall(r'\d+', version.split('e')[0]))
+
+
+def item_page(title, cache):
+    """Item ids declared by the item's own wiki page at the cut (`| itemid =`)."""
+    record = fetch(title, cache)
+    cut = record['cut']
+    if not cut:
+        return {'page_title': title, 'status': 'WIKI_PAGE_MISSING'}
+    line = field_line(cut['content'], 'itemid')
+    raw = cut['content'].splitlines()[line - 1].split('=', 1)[1] if line else ''
+    return {'page_title': cut['title'], 'page_id': cut['page_id'], 'cut_revision_id': cut['revision_id'],
+            'cut_content_sha256': hashlib.sha256(cut['content'].encode('utf-8')).hexdigest(),
+            'current_revision_id': record['current']['revision_id'], 'retrieved_at': record['retrieved_at'],
+            'status': 'COMPARED', 'itemid_line': line, 'item_ids': [int(v) for v in re.findall(r'\d+', raw)]}
+
+
+def loot_statistics(title, wanted, cache):
+    """Kill and drop counts of `wanted` items from the latest-version block of `Loot Statistics:<title>` at the cut."""
+    record = fetch('Loot Statistics:' + title, cache)
+    cut, current = record['cut'], record['current']
+    if not cut:
+        return {'page_title': 'Loot Statistics:' + title, 'status': 'WIKI_PAGE_MISSING'}
+    blocks, block = [], None
+    for number, line in enumerate(cut['content'].splitlines(), 1):
+        if '{{Loot2' in line:
+            block = {'items': {}}
+            blocks.append(block)
+            continue
+        if block is None:
+            continue
+        match = re.match(r'^\s*\|\s*(version|kills)\s*=\s*(\S+)', line)
+        if match:
+            block[match.group(1)] = (match.group(2), number)
+            continue
+        match = re.match(r'^\s*\|\s*([^,|=]+?),\s*times:\s*(\d+),\s*amount:\s*([\d-]+)', line)
+        if match:
+            block['items'][match.group(1).strip().lower()] = (int(match.group(2)), match.group(3), number, match.group(1).strip())
+    latest = max((b for b in blocks if 'version' in b and 'kills' in b), key=lambda b: version_key(b['version'][0]))
+    items = []
+    for name in wanted:
+        times, amount, line, wiki_name = latest['items'].get(name, (0, None, None, None))
+        items.append({'name': name, 'times': times, 'amount': amount, 'line': line,
+                      'item_page': item_page(wiki_name, cache) if wiki_name else None})
+    return {'page_title': cut['title'], 'page_id': cut['page_id'], 'cut_revision_id': cut['revision_id'],
+            'cut_revision_timestamp': cut['revision_timestamp'],
+            'cut_content_sha256': hashlib.sha256(cut['content'].encode('utf-8')).hexdigest(),
+            'current_revision_id': current['revision_id'], 'edited_after_cut': current['revision_id'] != cut['revision_id'],
+            'retrieved_at': record['retrieved_at'], 'status': 'COMPARED',
+            'version': latest['version'][0], 'version_line': latest['version'][1],
+            'kills': int(latest['kills'][0]), 'kills_line': latest['kills'][1], 'items': items,
+            'rule': 'block with the highest game version; probability estimate = times / kills'}
+
+
 def number(value):
     match = re.match(r'^\s*(-?\d+(?:\.\d+)?)', value or '')
     return Fraction(match.group(1)) if match else None
@@ -120,7 +183,9 @@ def wiki_loot(value):
 def compare(relative, canary, batch_dir, cache):
     name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'))
     slug = cb.slug(name)
-    monster = json.loads((batch_dir / slug / 'monster.json').read_text(encoding='utf-8'))
+    # Compare the plain Canary conversion, never a bundle that already carries adopted wiki values.
+    cb.CONVERTER.wiki, cb.CONVERTER.pending_definitions = {}, set()
+    _, monster, *_ = cb.CONVERTER.convert(relative)
     record = fetch(name, cache)
     result = {'monster': slug, 'wiki_title': name, 'page_url': PAGE_URL + urllib.parse.quote(name.replace(' ', '_'))}
     if not record['cut']:
@@ -134,7 +199,7 @@ def compare(relative, canary, batch_dir, cache):
     c, b = monster['creature'], monster['behavior']
     rows = []
 
-    def row(field, canary_value, wiki_raw, wiki_value, note=None):
+    def row(field, canary_value, wiki_raw, wiki_value, note=None, key=None):
         if wiki_raw in (None, '', '?'):
             status = 'WIKI_UNKNOWN'
         elif canary_value == wiki_value:
@@ -142,6 +207,8 @@ def compare(relative, canary, batch_dir, cache):
         else:
             status = 'DIFF'
         entry = {'field': field, 'canary': canary_value, 'wiki': wiki_value if wiki_value is not None else wiki_raw, 'wiki_raw': wiki_raw, 'status': status}
+        if key and field_line(cut['content'], key):
+            entry['wiki_line'] = field_line(cut['content'], key)
         if note:
             entry['note'] = note
         rows.append(entry)
@@ -153,34 +220,34 @@ def compare(relative, canary, batch_dir, cache):
     for field, key, value in (('max_health', 'hp', stats['max_health']), ('experience', 'exp', stats['experience']),
                               ('armor', 'armor', stats['armor']), ('speed', 'speed', stats['speed'])):
         row(field, value, fields.get(key), as_number(number(fields.get(key))),
-            'Canary monster.speed is the raw engine value; the wiki lists observed speed.' if field == 'speed' else None)
+            'Canary monster.speed is the raw engine value; the wiki lists observed speed.' if field == 'speed' else None, key)
     mitigation = stats.get('mitigation_percent')
     row('mitigation_percent', float(Fraction(mitigation['numerator'], mitigation['denominator'])) if mitigation else None,
-        fields.get('mitigation'), as_number(number(fields.get('mitigation'))))
+        fields.get('mitigation'), as_number(number(fields.get('mitigation'))), key='mitigation')
     resist = {r['damage_type']: Fraction(r['reduction_percent']['numerator'], r['reduction_percent']['denominator']) for r in c['resistances']}
     for element, key in ELEMENTS.items():
         taken = number(fields.get(key))
         row(f'resistance.{element}', as_number(resist.get(element, Fraction(0))), fields.get(key),
-            as_number(100 - taken) if taken is not None else None, 'Wiki lists damage taken; resistance = 100 - taken.')
+            as_number(100 - taken) if taken is not None else None, 'Wiki lists damage taken; resistance = 100 - taken.', key)
     summoning = c['summoning']
     for field, key, flag in (('summon_mana_cost', 'summon', 'summonable'), ('convince_mana_cost', 'convince', 'convinceable')):
         raw = fields.get(key)
         wiki_value = as_number(number(raw)) if number(raw) is not None else ('--' if raw and raw.strip() in ('--', '-') else None)
-        row(field, summoning.get('mana_cost') if summoning[flag] else '--', raw, wiki_value)
+        row(field, summoning.get('mana_cost') if summoning[flag] else '--', raw, wiki_value, key=key)
     for field, key, value in (('illusionable', 'illusionable', c['flags']['illusionable']),
                               ('pushable', 'pushable', b['movement']['pushable']),
                               ('push_items', 'pushobjects', b['movement']['push_items']),
                               ('sense_invisible', 'senseinvis', b['targeting']['sense_invisible']),
                               ('paralyze_immune', 'paraimmune', 'paralyze' in c['immunities']['conditions'])):
         raw = fields.get(key)
-        row(field, value, raw, {'yes': True, 'no': False}.get((raw or '').strip().lower()))
-    row('flee_health', b['targeting']['flee_health'], fields.get('runsat'), as_number(number(fields.get('runsat'))))
+        row(field, value, raw, {'yes': True, 'no': False}.get((raw or '').strip().lower()), key=key)
+    row('flee_health', b['targeting']['flee_health'], fields.get('runsat'), as_number(number(fields.get('runsat'))), key='runsat')
     bestiary = c.get('bestiary', {})
     for field, key in (('bestiary.class', 'bestiaryclass'), ('bestiary.difficulty', 'bestiarylevel'), ('bestiary.occurrence', 'occurrence')):
         canary_value = bestiary.get(field.split('.')[1])
         raw = fields.get(key)
         wiki_value = raw.strip().lower().replace(' ', '_') if raw else None
-        row(field, canary_value.lower() if isinstance(canary_value, str) else canary_value, raw, wiki_value)
+        row(field, canary_value.lower() if isinstance(canary_value, str) else canary_value, raw, wiki_value, key=key)
     canary_loot = set()
     for entry in source.get('loot', []):
         item_name = entry.get('name') or cb.CONVERTER.names.get(int(entry['id']), f'item {entry["id"]}')
@@ -195,6 +262,10 @@ def compare(relative, canary, batch_dir, cache):
         entry = {'field': 'loot.items', 'status': 'DIFF' if only_canary or only_wiki else 'MATCH',
                  'only_canary': sorted(only_canary), 'only_wiki': sorted(only_wiki),
                  'note': 'Item names only; wiki loot chances are player-reported rarity words and are not compared.'}
+        if field_line(cut['content'], 'loot'):
+            entry['wiki_line'] = field_line(cut['content'], 'loot')
+        if only_wiki:
+            entry['loot_statistics'] = loot_statistics(name, sorted(only_wiki), cache)
         if variants:
             entry['name_variants'] = [{'canary': c_name, 'wiki': w_name} for c_name, w_name in variants]
             entry['note'] += ' Wiki disambiguated names (e.g. "book (grey)") are matched to the Canary base name.'

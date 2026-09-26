@@ -17,8 +17,8 @@
       "defense": 20,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 31,
-        "denominator": 50
+        "numerator": 97,
+        "denominator": 100
       }
     },
     "resistances": [

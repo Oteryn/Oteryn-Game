@@ -3,6 +3,14 @@
     {
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Demodras",
+      "page_id": 3259,
+      "revision_id": 986288,
+      "content_sha256": "edfd562bc78dd8a5f55e5564db6ce44643039f878cc8498ed2217d71a49c5fda"
     }
   ],
   "entries": [

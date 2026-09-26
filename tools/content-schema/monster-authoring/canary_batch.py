@@ -14,7 +14,7 @@ import hashlib
 import json
 import re
 import xml.etree.ElementTree as ET
-from decimal import Decimal
+from decimal import ROUND_HALF_EVEN, Decimal
 from fractions import Fraction
 from pathlib import Path
 
@@ -57,6 +57,10 @@ RULES = {
                     'ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse',
 }
 # Owner decisions 2026-09-26 (docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md section 3).
+WIKI_API = 'https://tibia.fandom.com/api.php'
+WIKI_REFERENCE = 'wiki-2026-07-28.json'
+WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
+                 'it; applied to mitigation, pushable and loot items missing in Canary')
 PASS_THROUGH_DEFAULT = 'Owner decision D5: imported monsters without a source counterpart default to pass_through=false.'
 QUEST_EVENT_OMISSION = ('Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction '
                         'and are omitted from the monster bundle.')
@@ -245,6 +249,7 @@ def percent_from_chance(chance):
 class Converter:
     def __init__(self, canary, objects, items, names, index):
         self.canary, self.objects, self.items, self.names, self.index = canary, objects, items, names, index
+        self.wiki = {}
 
     def convert(self, relative):
         path = self.canary / MONSTER_DIR / (relative + '.lua')
@@ -557,10 +562,102 @@ class Converter:
             row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line_of(r'mType\.' + callback),
                 resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
 
+        sources = [{'repository': REPOSITORY, 'revision': REVISION}]
+        self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
-        manifest = {'sources': [{'repository': REPOSITORY, 'revision': REVISION}], 'entries': rows}
+        manifest = {'sources': sources, 'entries': rows}
         source = {'file': source_file, 'git_blob': blob_id(path.read_bytes())}
         return s, monster, deps, catalog, manifest, source
+
+    def adopt_wiki(self, s, monster, rows, sources, definitions, line_of):
+        """Apply the owner-approved reference-date wiki values recorded by wiki_compare.py (D15)."""
+        record = self.wiki.get(s)
+        if not record or record.get('status') != 'COMPARED':
+            return
+
+        def source(title, page_id, revision_id, sha256):
+            sources.append({'kind': 'mediawiki', 'api': WIKI_API, 'title': title, 'page_id': page_id,
+                            'revision_id': revision_id, 'content_sha256': sha256})
+            return len(sources) - 1
+
+        def wiki_row(index, title, line, field, destination, resolution, status='mapped'):
+            entry = {'source_index': index, 'source_file': title, 'source_line': line, 'source_field': field,
+                     'kind': 'field' if status == 'mapped' else 'dependency', 'status': status, 'resolution': resolution}
+            if destination:
+                entry['destination'] = destination
+            rows.append(entry)
+
+        def superseded(canary_value, wiki_raw):
+            return f'Canary value {canary_value} superseded by the reference-date wiki value {wiki_raw} ({WIKI_ADOPTION}).'
+
+        title = record['wiki_title']
+        page = source(title, record['page_id'], record['cut_revision_id'], record['cut_content_sha256'])
+        for diff in (r for r in record['rows'] if r['status'] == 'DIFF'):
+            if diff['field'] == 'mitigation_percent':
+                raw = diff['wiki_raw'].strip()
+                monster['creature']['stats']['mitigation_percent'] = fraction_ratio(Fraction(Decimal(raw)))
+                for entry in rows:
+                    if entry['source_index'] == 0 and entry['source_field'] == 'defenses.mitigation':
+                        entry['status'] = 'approved_omission'
+                        entry.pop('destination', None)
+                        entry['resolution'] = superseded(diff['canary'], raw)
+                wiki_row(page, title, diff['wiki_line'], 'Infobox Creature.mitigation', '/monster/creature/stats/mitigation_percent',
+                         f'Wiki mitigation {raw} percent points as an exact decimal ratio ({WIKI_ADOPTION}).')
+            elif diff['field'] == 'pushable':
+                monster['behavior']['movement']['pushable'] = diff['wiki']
+                rows.append({'source_index': 0, 'source_file': rows[0]['source_file'], 'source_line': line_of(r'^\s*pushable\s*='),
+                             'source_field': 'flags.pushable', 'kind': 'field', 'status': 'approved_omission',
+                             'resolution': superseded(diff['canary'], diff['wiki_raw'])})
+                wiki_row(page, title, diff['wiki_line'], 'Infobox Creature.pushable', '/monster/behavior/movement/pushable',
+                         f'Wiki pushable "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).')
+            elif diff['field'] == 'loot.items' and diff.get('only_wiki'):
+                stats = diff.get('loot_statistics', {})
+                if stats.get('status') != 'COMPARED':
+                    for name in diff['only_wiki']:
+                        wiki_row(page, title, diff['wiki_line'], f'Infobox Creature.loot={name}', None, status='unresolved_semantics',
+                                 resolution='Wiki lists the item but no Loot Statistics page gives a probability.')
+                    continue
+                stat = source(stats['page_title'], stats['page_id'], stats['cut_revision_id'], stats['cut_content_sha256'])
+                entries = monster['loot']['entries']
+                for item in stats['items']:
+                    candidates = self.index.get(item['name'], [])
+                    page_ids = (item.get('item_page') or {}).get('item_ids', [])
+                    narrowed = [i for i in candidates if i in page_ids]
+                    id_note = ''
+                    if len(candidates) > 1 and len(narrowed) == 1:
+                        page_info = item['item_page']
+                        page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
+                                             page_info['cut_content_sha256'])
+                        id_note = (f' The name matches ids {sorted(candidates)}; the item page (source {page_source}, line '
+                                   f'{page_info["itemid_line"]}) declares itemid {narrowed[0]}.')
+                        candidates = narrowed
+                    elif len(candidates) == 1 and page_ids and candidates[0] not in page_ids:
+                        candidates = []
+                    if item['times'] == 0 or len(candidates) != 1:
+                        wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
+                                 status='unresolved_dependency',
+                                 resolution=f'{item["times"]} drops recorded; item name resolves to {len(candidates)} ids.')
+                        continue
+                    item_id = candidates[0]
+                    exact = Fraction(item['times'] * 100, stats['kills'])
+                    percent = (Decimal(exact.numerator) / Decimal(exact.denominator)).quantize(Decimal('0.0001'), ROUND_HALF_EVEN)
+                    low, _, high = item['amount'].partition('-')
+                    entry = {'item': ref('Item', f'canary:item/{item_id}'), 'min_count': int(low), 'max_count': int(high or low),
+                             'probability_percent': int(percent) if percent == percent.to_integral_value() else float(percent),
+                             'skip_later_same_item_after_success': False}
+                    position = next((i for i, e in enumerate(entries) if e['probability_percent'] > entry['probability_percent']), len(entries))
+                    entries.insert(position, entry)
+                    for row_entry in rows:
+                        match = re.fullmatch(r'/monster/loot/entries/(\d+)', row_entry.get('destination', ''))
+                        if match and int(match.group(1)) >= position:
+                            row_entry['destination'] = f'/monster/loot/entries/{int(match.group(1)) + 1}'
+                    definitions.add(('Item', f'canary:item/{item_id}'))
+                    wiki_row(stat, stats['page_title'], item['line'], f'Loot2.{item["name"]}', f'/monster/loot/entries/{position}',
+                             f'Listed in the {title} infobox loot (source {page}, line {diff["wiki_line"]}), absent in Canary. '
+                             f'Probability = {item["times"]} drops / {stats["kills"]} kills in the version {stats["version"]} block, '
+                             f'{float(exact):.6f}% rounded half-even to 1 ppm: a point estimate from player-reported counts '
+                             f'({WIKI_ADOPTION}).{id_note} Inserted in ascending-probability order ({RULES["loot_order"]}). '
+                             f'Item {item_id} "{self.names.get(item_id)}" is a declared source-scoped reference, not an admitted canonical Item.')
 
     def spell(self, spell, base, deps, asset):
         name = spell.get('name')
@@ -740,6 +837,9 @@ def main():
 
 def write_batch(converter, canary, out, batch):
     sources = []
+    reference = ROOT / 'samples' / out.name / WIKI_REFERENCE
+    converter.wiki = ({m['monster']: m for m in json.loads(reference.read_text(encoding='utf-8'))['monsters']}
+                      if reference.exists() else {})
     for relative in batch:
         converter.pending_definitions = set()
         s, monster, deps, catalog, manifest, source = converter.convert(relative)

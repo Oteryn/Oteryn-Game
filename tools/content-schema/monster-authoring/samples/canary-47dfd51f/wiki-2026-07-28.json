@@ -29,21 +29,24 @@
           "canary": 20,
           "wiki": 20,
           "wiki_raw": "20",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 5,
           "wiki": 5,
           "wiki_raw": "5",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 1,
           "wiki": 1,
           "wiki_raw": "1",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -51,6 +54,7 @@
           "wiki": 67,
           "wiki_raw": "67",
           "status": "MATCH",
+          "wiki_line": 49,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -58,7 +62,8 @@
           "canary": 0.07,
           "wiki": 0.12,
           "wiki_raw": "0.12",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -66,6 +71,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -74,6 +80,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -82,6 +89,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -90,6 +98,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -98,6 +107,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -106,6 +116,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -114,6 +125,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -122,6 +134,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -130,6 +143,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -137,84 +151,96 @@
           "canary": 200,
           "wiki": 200,
           "wiki_raw": "200",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": 200,
           "wiki": 200,
           "wiki_raw": "200",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 23
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 24
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 28
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "flee_health",
           "canary": 5,
           "wiki": 5,
           "wiki_raw": "5",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 48
         },
         {
           "field": "bestiary.class",
           "canary": "mammal",
           "wiki": "mammal",
           "wiki_raw": "Mammal",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "trivial",
           "wiki": "trivial",
           "wiki_raw": "Trivial",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared.",
+          "wiki_line": 53
         }
       ]
     },
@@ -237,21 +263,24 @@
           "canary": 260,
           "wiki": 260,
           "wiki_raw": "260",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 150,
           "wiki": 150,
           "wiki_raw": "150",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 17,
           "wiki": 17,
           "wiki_raw": "17",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -259,6 +288,7 @@
           "wiki": 95,
           "wiki_raw": "95",
           "status": "MATCH",
+          "wiki_line": 46,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -266,7 +296,8 @@
           "canary": 0.62,
           "wiki": 0.97,
           "wiki_raw": "0.97",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -274,6 +305,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 28,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -282,6 +314,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -290,6 +323,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -298,6 +332,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -306,6 +341,7 @@
           "wiki": 25,
           "wiki_raw": "75%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -314,6 +350,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -322,6 +359,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -330,6 +368,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -338,6 +377,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -345,84 +385,96 @@
           "canary": 490,
           "wiki": 490,
           "wiki_raw": "490",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": 490,
           "wiki": 490,
           "wiki_raw": "490",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 22
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 23
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "flee_health",
           "canary": 0,
           "wiki": 0,
           "wiki_raw": "0",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 45
         },
         {
           "field": "bestiary.class",
           "canary": "giant",
           "wiki": "giant",
           "wiki_raw": "Giant",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared.",
+          "wiki_line": 49
         }
       ]
     },
@@ -445,21 +497,24 @@
           "canary": 105,
           "wiki": 105,
           "wiki_raw": "105",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 38,
           "wiki": 38,
           "wiki_raw": "38",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 6,
           "wiki": 6,
           "wiki_raw": "6",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -467,6 +522,7 @@
           "wiki": 88,
           "wiki_raw": "88",
           "status": "MATCH",
+          "wiki_line": 50,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -474,7 +530,8 @@
           "canary": 0.3,
           "wiki": 0.48,
           "wiki_raw": "0.48",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -482,6 +539,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -490,6 +548,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -498,6 +557,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -506,6 +566,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -514,6 +575,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -522,6 +584,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -530,6 +593,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -538,6 +602,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -546,6 +611,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -553,84 +619,96 @@
           "canary": 310,
           "wiki": 310,
           "wiki_raw": "310",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": 310,
           "wiki": 310,
           "wiki_raw": "310",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 28
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 32
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "flee_health",
           "canary": 10,
           "wiki": 10,
           "wiki_raw": "10",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 51
         },
         {
           "field": "bestiary.class",
           "canary": "humanoid",
           "wiki": "humanoid",
           "wiki_raw": "Humanoid",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared.",
+          "wiki_line": 55
         }
       ]
     },
@@ -653,21 +731,24 @@
           "canary": 45,
           "wiki": 45,
           "wiki_raw": "45",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 45,
           "wiki": 45,
           "wiki_raw": "45",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 14,
           "wiki": 14,
           "wiki_raw": "14",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -675,6 +756,7 @@
           "wiki": 75,
           "wiki_raw": "75",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -682,7 +764,8 @@
           "canary": 0.13,
           "wiki": 0.2,
           "wiki_raw": "0.20",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -690,6 +773,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 28,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -698,6 +782,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -706,6 +791,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -714,6 +800,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -722,6 +809,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -730,6 +818,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -738,6 +827,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -746,6 +836,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -754,6 +845,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -761,84 +853,96 @@
           "canary": 310,
           "wiki": 310,
           "wiki_raw": "310",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 22
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 23
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "flee_health",
           "canary": 5,
           "wiki": 5,
           "wiki_raw": "5",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 46
         },
         {
           "field": "bestiary.class",
           "canary": "vermin",
           "wiki": "vermin",
           "wiki_raw": "Vermin",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared.",
+          "wiki_line": 49
         }
       ]
     },
@@ -861,21 +965,24 @@
           "canary": 115,
           "wiki": 115,
           "wiki_raw": "115",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 110,
           "wiki": 110,
           "wiki_raw": "110",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 8,
           "wiki": 8,
           "wiki_raw": "8",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -883,6 +990,7 @@
           "wiki": 70,
           "wiki_raw": "70",
           "status": "MATCH",
+          "wiki_line": 53,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -890,7 +998,8 @@
           "canary": 0.25,
           "wiki": 0.4,
           "wiki_raw": "0.40",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -898,6 +1007,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -906,6 +1016,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -914,6 +1025,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -922,6 +1034,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -930,6 +1043,7 @@
           "wiki": 50,
           "wiki_raw": "50%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -938,6 +1052,7 @@
           "wiki": 10,
           "wiki_raw": "90%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -946,6 +1061,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -954,6 +1070,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -962,6 +1079,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -969,49 +1087,56 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 30
         },
         {
           "field": "push_items",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 34
         },
         {
           "field": "flee_health",
@@ -1025,21 +1150,24 @@
           "canary": "humanoid",
           "wiki": "humanoid",
           "wiki_raw": "Humanoid",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
@@ -1047,6 +1175,7 @@
           "only_canary": [],
           "only_wiki": [],
           "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "wiki_line": 57,
           "name_variants": [
             {
               "canary": "book",
@@ -1075,21 +1204,24 @@
           "canary": 580,
           "wiki": 580,
           "wiki_raw": "580",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 580,
           "wiki": 580,
           "wiki_raw": "580",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 50,
           "wiki": 50,
           "wiki_raw": "50",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1097,6 +1229,7 @@
           "wiki": 94,
           "wiki_raw": "94",
           "status": "MATCH",
+          "wiki_line": 54,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1104,7 +1237,8 @@
           "canary": 1.04,
           "wiki": 1.65,
           "wiki_raw": "1.65",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1112,6 +1246,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1120,6 +1255,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1128,6 +1264,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1136,6 +1273,7 @@
           "wiki": 50,
           "wiki_raw": "50%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1144,6 +1282,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1152,6 +1291,7 @@
           "wiki": -5,
           "wiki_raw": "105%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1160,6 +1300,7 @@
           "wiki": 10,
           "wiki_raw": "90%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1168,6 +1309,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1176,6 +1318,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1183,49 +1326,56 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 32
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 36
         },
         {
           "field": "paralyze_immune",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "flee_health",
@@ -1239,28 +1389,32 @@
           "canary": "human",
           "wiki": "human",
           "wiki_raw": "Human",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "medium",
           "wiki": "medium",
           "wiki_raw": "Medium",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
           "status": "MATCH",
           "only_canary": [],
           "only_wiki": [],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared.",
+          "wiki_line": 58
         }
       ]
     },
@@ -1283,21 +1437,24 @@
           "canary": 280,
           "wiki": 280,
           "wiki_raw": "280",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 220,
           "wiki": 220,
           "wiki_raw": "220",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 18,
           "wiki": 18,
           "wiki_raw": "18",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1305,6 +1462,7 @@
           "wiki": 95,
           "wiki_raw": "95",
           "status": "MATCH",
+          "wiki_line": 54,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1312,7 +1470,8 @@
           "canary": 0.51,
           "wiki": 0.8,
           "wiki_raw": "0.80",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1320,6 +1479,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1328,6 +1488,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1336,6 +1497,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1344,6 +1506,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1352,6 +1515,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1360,6 +1524,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1368,6 +1533,7 @@
           "wiki": -25,
           "wiki_raw": "125%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1376,6 +1542,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1384,6 +1551,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1391,49 +1559,56 @@
           "canary": 690,
           "wiki": 690,
           "wiki_raw": "690",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 31
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 32
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 36
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "flee_health",
@@ -1447,21 +1622,24 @@
           "canary": "elemental",
           "wiki": "elemental",
           "wiki_raw": "Elemental",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "medium",
           "wiki": "medium",
           "wiki_raw": "Medium",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         }
       ]
     },
@@ -1484,21 +1662,24 @@
           "canary": 1000,
           "wiki": 1000,
           "wiki_raw": "1000",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 700,
           "wiki": 700,
           "wiki_raw": "700",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 25,
           "wiki": 25,
           "wiki_raw": "25",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1506,6 +1687,7 @@
           "wiki": 86,
           "wiki_raw": "86",
           "status": "MATCH",
+          "wiki_line": 54,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1513,7 +1695,8 @@
           "canary": 0.99,
           "wiki": 1.56,
           "wiki_raw": "1.56",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1521,6 +1704,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1529,6 +1713,7 @@
           "wiki": 80,
           "wiki_raw": "20%",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1537,6 +1722,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1545,6 +1731,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1553,6 +1740,7 @@
           "wiki": 20,
           "wiki_raw": "80%",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1561,6 +1749,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 41,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1569,6 +1758,7 @@
           "wiki": -10,
           "wiki_raw": "110%",
           "status": "MATCH",
+          "wiki_line": 42,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1577,6 +1767,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 43,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1585,6 +1776,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 44,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1592,77 +1784,88 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "No",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 30
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "Yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 35
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 34
         },
         {
           "field": "flee_health",
           "canary": 300,
           "wiki": 300,
           "wiki_raw": "300",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 53
         },
         {
           "field": "bestiary.class",
           "canary": "dragon",
           "wiki": "dragon",
           "wiki_raw": "Dragon",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "medium",
           "wiki": "medium",
           "wiki_raw": "Medium",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
@@ -1671,7 +1874,45 @@
           "only_wiki": [
             "dragon trophy"
           ],
-          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared.",
+          "wiki_line": 57,
+          "loot_statistics": {
+            "page_title": "Loot Statistics:Dragon",
+            "page_id": 29034,
+            "cut_revision_id": 1197999,
+            "cut_revision_timestamp": "2026-07-27T22:09:46Z",
+            "cut_content_sha256": "a906095d92e1fe20c28a8b217edfd9a541e5e18d43862c6d13bc7246e71716da",
+            "current_revision_id": 1206028,
+            "edited_after_cut": true,
+            "retrieved_at": "2026-09-26T20:02:22Z",
+            "status": "COMPARED",
+            "version": "13.21.14040",
+            "version_line": 4,
+            "kills": 15151,
+            "kills_line": 5,
+            "items": [
+              {
+                "name": "dragon trophy",
+                "times": 11,
+                "amount": "1",
+                "line": 27,
+                "item_page": {
+                  "page_title": "Dragon Trophy",
+                  "page_id": 12886,
+                  "cut_revision_id": 1040731,
+                  "cut_content_sha256": "58cf3f5d4aedb58c02c6838d82c01a452abf3ad73a062d17cd223f440b146249",
+                  "current_revision_id": 1040731,
+                  "retrieved_at": "2026-09-26T20:03:57Z",
+                  "status": "COMPARED",
+                  "itemid_line": 5,
+                  "item_ids": [
+                    44158
+                  ]
+                }
+              }
+            ],
+            "rule": "block with the highest game version; probability estimate = times / kills"
+          }
         }
       ]
     },
@@ -1694,21 +1935,24 @@
           "canary": 150,
           "wiki": 150,
           "wiki_raw": "150",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "experience",
           "canary": 120,
           "wiki": 120,
           "wiki_raw": "120",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "armor",
           "canary": 10,
           "wiki": 10,
           "wiki_raw": "10",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "speed",
@@ -1716,6 +1960,7 @@
           "wiki": 80,
           "wiki_raw": "80",
           "status": "MATCH",
+          "wiki_line": 45,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1723,7 +1968,8 @@
           "canary": 0.51,
           "wiki": 0.8,
           "wiki_raw": "0.80",
-          "status": "DIFF"
+          "status": "DIFF",
+          "wiki_line": 9
         },
         {
           "field": "resistance.physical",
@@ -1731,6 +1977,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 27,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1739,6 +1986,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 28,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1747,6 +1995,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 29,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1755,6 +2004,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 30,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1763,6 +2013,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 31,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1771,6 +2022,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1779,6 +2031,7 @@
           "wiki": 0,
           "wiki_raw": "100%",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1787,6 +2040,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1795,6 +2049,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1802,77 +2057,88 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 11
         },
         {
           "field": "illusionable",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 12
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 21
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": "?",
           "wiki_raw": "?",
-          "status": "WIKI_UNKNOWN"
+          "status": "WIKI_UNKNOWN",
+          "wiki_line": 22
         },
         {
           "field": "sense_invisible",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 25
         },
         {
           "field": "flee_health",
           "canary": 0,
           "wiki": 0,
           "wiki_raw": "0",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 44
         },
         {
           "field": "bestiary.class",
           "canary": "undead",
           "wiki": "undead",
           "wiki_raw": "Undead",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 15
         },
         {
           "field": "bestiary.difficulty",
           "canary": "easy",
           "wiki": "easy",
           "wiki_raw": "Easy",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 16
         },
         {
           "field": "bestiary.occurrence",
           "canary": "common",
           "wiki": "common",
           "wiki_raw": "Common",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 17
         },
         {
           "field": "loot.items",
@@ -1882,6 +2148,44 @@
             "stone skin amulet"
           ],
           "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "wiki_line": 48,
+          "loot_statistics": {
+            "page_title": "Loot Statistics:Ghost",
+            "page_id": 39528,
+            "cut_revision_id": 1197654,
+            "cut_revision_timestamp": "2026-07-25T09:25:16Z",
+            "cut_content_sha256": "12322da14ee6104d480c035a7aaff8cce10da4e5e86d8138007c365bd75a3fdc",
+            "current_revision_id": 1205386,
+            "edited_after_cut": true,
+            "retrieved_at": "2026-09-26T20:02:23Z",
+            "status": "COMPARED",
+            "version": "14.12.5229e4",
+            "version_line": 4,
+            "kills": 3314,
+            "kills_line": 5,
+            "items": [
+              {
+                "name": "stone skin amulet",
+                "times": 2,
+                "amount": "1",
+                "line": 17,
+                "item_page": {
+                  "page_title": "Stone Skin Amulet",
+                  "page_id": 2463,
+                  "cut_revision_id": 1194185,
+                  "cut_content_sha256": "382b78db78d5390b3f9fe779cd897fd3ce166f6a0fed086f7807446c51e3681a",
+                  "current_revision_id": 1194185,
+                  "retrieved_at": "2026-09-26T20:03:58Z",
+                  "status": "COMPARED",
+                  "itemid_line": 5,
+                  "item_ids": [
+                    3081
+                  ]
+                }
+              }
+            ],
+            "rule": "block with the highest game version; probability estimate = times / kills"
+          },
           "name_variants": [
             {
               "canary": "book",
@@ -1910,21 +2214,24 @@
           "canary": 4500,
           "wiki": 4500,
           "wiki_raw": "4500",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 5
         },
         {
           "field": "experience",
           "canary": 6000,
           "wiki": 6000,
           "wiki_raw": "6000",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 6
         },
         {
           "field": "armor",
           "canary": 45,
           "wiki": 45,
           "wiki_raw": "45",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 7
         },
         {
           "field": "speed",
@@ -1932,6 +2239,7 @@
           "wiki": 197,
           "wiki_raw": "197",
           "status": "MATCH",
+          "wiki_line": 50,
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1947,6 +2255,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 32,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1955,6 +2264,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 33,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1963,6 +2273,7 @@
           "wiki": 100,
           "wiki_raw": "0%",
           "status": "MATCH",
+          "wiki_line": 34,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1971,6 +2282,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 35,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1979,6 +2291,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 36,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1987,6 +2300,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 37,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -1995,6 +2309,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 38,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -2003,6 +2318,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 39,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -2011,6 +2327,7 @@
           "wiki": 0,
           "wiki_raw": "100%?",
           "status": "MATCH",
+          "wiki_line": 40,
           "note": "Wiki lists damage taken; resistance = 100 - taken."
         },
         {
@@ -2018,56 +2335,64 @@
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 8
         },
         {
           "field": "convince_mana_cost",
           "canary": "--",
           "wiki": "--",
           "wiki_raw": "--",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 9
         },
         {
           "field": "illusionable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 10
         },
         {
           "field": "pushable",
           "canary": false,
           "wiki": false,
           "wiki_raw": "no",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 26
         },
         {
           "field": "push_items",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 27
         },
         {
           "field": "sense_invisible",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 31
         },
         {
           "field": "paralyze_immune",
           "canary": true,
           "wiki": true,
           "wiki_raw": "yes",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 30
         },
         {
           "field": "flee_health",
           "canary": 300,
           "wiki": 300,
           "wiki_raw": "300",
-          "status": "MATCH"
+          "status": "MATCH",
+          "wiki_line": 49
         },
         {
           "field": "bestiary.class",
@@ -2096,6 +2421,7 @@
           "only_canary": [],
           "only_wiki": [],
           "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "wiki_line": 54,
           "name_variants": [
             {
               "canary": "book",

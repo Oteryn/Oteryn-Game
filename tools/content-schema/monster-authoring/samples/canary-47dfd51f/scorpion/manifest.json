@@ -3,6 +3,14 @@
     {
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Scorpion",
+      "page_id": 1487,
+      "revision_id": 1192273,
+      "content_sha256": "5b23deebf85f26690c45f495f7303dda3fc6d6d293637ec559e8a93cbfa24b07"
     }
   ],
   "entries": [
@@ -221,9 +229,8 @@
       "source_line": 91,
       "source_field": "defenses.mitigation",
       "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
+      "status": "approved_omission",
+      "resolution": "Canary value 0.13 superseded by the reference-date wiki value 0.20 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
     },
     {
       "source_index": 0,
@@ -253,6 +260,16 @@
       "status": "mapped",
       "destination": "/monster/creature/death_residue",
       "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorpion",
+      "source_line": 9,
+      "source_field": "Infobox Creature.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki mitigation 0.20 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "destination": "/monster/creature/stats/mitigation_percent"
     }
   ]
 }

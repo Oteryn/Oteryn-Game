@@ -8,22 +8,67 @@
     "sources": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "repository": {
-            "type": "string",
-            "minLength": 1
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repository": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            },
+            "required": [
+              "repository",
+              "revision"
+            ],
+            "description": "Git source pinned to an exact commit."
           },
-          "revision": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-f0-9]{40}$"
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "const": "mediawiki"
+              },
+              "api": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^https://"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "page_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "revision_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "content_sha256": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "kind",
+              "api",
+              "title",
+              "page_id",
+              "revision_id",
+              "content_sha256"
+            ],
+            "description": "MediaWiki page pinned to one immutable revision id and the SHA-256 of that revision wikitext (D15). source_file is the page title and source_line the wikitext line."
           }
-        },
-        "required": [
-          "repository",
-          "revision"
         ]
       },
       "minItems": 1
