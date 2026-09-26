@@ -24,15 +24,20 @@ pub mod foundation;
 #[path = "../src/native_admission_source/mod.rs"]
 pub mod native_admission_source;
 
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
     PendingPublication, SourceObservation,
 };
+use durability::recovery_evidence_composition::RecoveryEvidenceSubject;
 use durability::runtime_scope_assignment::{
     BootstrapSecret, LaunchBinding, NodeIncarnationProof, NodeRegistrationFact,
 };
 use durability::{DurabilityError, DurabilityRoot};
+use ed25519_dalek::{Signer, SigningKey};
 use foundation::NodeId;
+use foundation::fnd04_verifier::RecoveryCurrentEvidence;
+use foundation::{CharacterId, Fnd04ConsumerError, WorldId};
 use sqlx::{Connection, Executor};
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -1057,4 +1062,320 @@ fn revoke_serializes_with_current_custody_and_later_mutations_fail_atomically()
             cleanup_database(&admin_url, &database_name).await?;
             result
         })
+}
+
+fn recovery_now() -> Result<i64, Box<dyn std::error::Error>> {
+    Ok(i64::try_from(
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
+    )?)
+}
+
+#[test]
+fn recovery_subject_rejects_unbounded_inputs_before_owner_reads() {
+    assert!(RecoveryEvidenceSubject::new("x".repeat(65_537), "key").is_err());
+    assert!(RecoveryEvidenceSubject::new(ACCOUNT_ID, "k".repeat(65)).is_err());
+    assert!(RecoveryEvidenceSubject::new(ACCOUNT_ID, "key").is_ok());
+}
+
+fn recovery_bindings() -> Result<RecoveryCurrentEvidence, Box<dyn std::error::Error>> {
+    Ok(RecoveryCurrentEvidence {
+        account_id: ACCOUNT_ID.into(),
+        character_id: CharacterId::decode(node_id(2)?.as_bytes()).map_err(|e| format!("{e:?}"))?,
+        world_id: WorldId::decode(node_id(3)?.as_bytes()).map_err(|e| format!("{e:?}"))?,
+        ruleset_revision: "rules-1".into(),
+        content_revision: "content-1".into(),
+        map_revision: "map-1".into(),
+        world_policy_revision: "policy-1".into(),
+    })
+}
+
+fn recovery_token(key_id: &str, now: i64) -> String {
+    let header = serde_json::json!({"alg":"Ed25519","kid":key_id,"typ":"oteryn-recovery+jwt"});
+    // Independent fixture bindings, not copied from a stored S2 response.
+    let payload = serde_json::json!({
+        "iss":RECOVERY_ISSUER,"aud":"urn:oteryn:game:recovery",
+        "iat":now,"nbf":now,"exp":now+10,
+        "jti":URL_SAFE_NO_PAD.encode([8;32]),"profile":RECOVERY_PROFILE,
+        "purpose":"existing_actor_recovery","attempt_ref":"01890f4c-3b2a-7cc2-8d11-9a321b7c0004",
+        "account_id":ACCOUNT_ID,"character_id":"01890f4c-3b2a-7c02-8d11-9a321b7c0002",
+        "world_id":"01890f4c-3b2a-7c03-8d11-9a321b7c0003",
+        "account_security_generation":"1","protocol_major":1,"transport_profile":1,
+        "ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"
+    });
+    let input = format!(
+        "{}.{}",
+        URL_SAFE_NO_PAD.encode(header.to_string()),
+        URL_SAFE_NO_PAD.encode(payload.to_string())
+    );
+    format!(
+        "{input}.{}",
+        URL_SAFE_NO_PAD.encode(
+            SigningKey::from_bytes(&[23; 32])
+                .sign(input.as_bytes())
+                .to_bytes()
+        )
+    )
+}
+
+fn recovery_account(revision: u64, now: i64, allowed: bool) -> SourceObservation {
+    let body = serde_json::json!({
+        "version":2,"operation":"ReadRecoveryAccountSecurityV2","result":"observed",
+        "source_authority":"platform","source_revision":revision.to_string(),"decision_identity":revision.to_string(),
+        "source_observed_at":now.to_string(),"clock_uncertainty_seconds":"0",
+        "account_id":ACCOUNT_ID,"purpose":"platform_security","scope":"existing_actor_recovery",
+        "allowed":allowed,"minimum_valid_generation":"1"
+    });
+    account_observation(
+        NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+        revision,
+        revision.to_string(),
+        now,
+        body.to_string().into_bytes(),
+    )
+}
+
+fn recovery_trust(revision: u64, now: i64, key_id: &str) -> SourceObservation {
+    let mut observation = signing_observation(
+        NativeSourceOperation::ReadRecoverySigningTrustV2,
+        RECOVERY_ISSUER,
+        RECOVERY_PROFILE,
+        "existing_actor_recovery",
+        key_id,
+        revision,
+    );
+    observation.decision_identity = revision.to_string();
+    observation.observed_at = now;
+    observation.semantic_facts = serde_json::json!({
+        "version":2,"operation":"ReadRecoverySigningTrustV2","result":"observed",
+        "source_authority":"platform","source_revision":revision.to_string(),"decision_identity":revision.to_string(),
+        "source_observed_at":now.to_string(),"clock_uncertainty_seconds":"0",
+        "issuer":RECOVERY_ISSUER,"profile":RECOVERY_PROFILE,"key_purpose":"existing_actor_recovery","key_id":key_id,
+        "trusted":true,"public_key":URL_SAFE_NO_PAD.encode(SigningKey::from_bytes(&[23;32]).verifying_key().to_bytes())
+    }).to_string().into_bytes();
+    observation
+}
+
+#[test]
+fn recovery_verification_resolves_current_owners_replay_restart_and_purpose_floors()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let (admin_url, name, url) = create_database("recovery_current").await?;
+            let result = async {
+                migrate_postgres_17_6(&url).await?;
+                let root = ready_root(&url).await?;
+                let node = register_node(&root, 1).await?;
+                issued_initialize(&root, &node, provenance(), descriptor(1, 1, 10)).await?;
+                let now = recovery_now()?;
+                let current = recovery_bindings()?;
+                let subject = RecoveryEvidenceSubject::new(ACCOUNT_ID, "recovery-1")?;
+                let token = recovery_token("recovery-1", now);
+                let account = recovery_account(1, now, true);
+                let trust = recovery_trust(1, now, "recovery-1");
+                root.accept_native_source_observation(&node, account.clone())
+                    .await?;
+                root.accept_native_source_observation(&node, trust.clone())
+                    .await?;
+                let verified = root
+                    .verify_registered_recovery(&node, &subject, &token, &current)
+                    .await?
+                    .map_err(|e| format!("{e:?}"))?;
+                assert_eq!(verified.security().provenance.publication_revision, 1);
+                assert_eq!(verified.security().provenance.source_observed_at, now);
+                root.accept_native_source_observation(&node, account)
+                    .await?;
+                root.accept_native_source_observation(&node, trust).await?;
+                let replay = root
+                    .revalidate_registered_recovery(&node, &verified, &current)
+                    .await?
+                    .map_err(|e| format!("{e:?}"))?;
+                assert_eq!(replay.security(), verified.security());
+                assert_eq!(replay.signing(), verified.signing());
+                let reload = ready_root(&url).await?;
+                assert!(
+                    reload
+                        .revalidate_registered_recovery(&node, &verified, &current)
+                        .await?
+                        .is_ok()
+                );
+                // N+1 denial must invalidate an escaped historical verified value.
+                root.accept_native_source_observation(&node, recovery_account(2, now, false))
+                    .await?;
+                assert!(matches!(
+                    reload
+                        .revalidate_registered_recovery(&node, &verified, &current)
+                        .await?,
+                    Err(Fnd04ConsumerError::RecoverySecurityStateRevoked)
+                ));
+                root.accept_native_source_observation(&node, recovery_account(3, now, true))
+                    .await?;
+                let newer = root
+                    .revalidate_registered_recovery(&node, &verified, &current)
+                    .await?
+                    .map_err(|e| format!("{e:?}"))?;
+                assert_eq!(newer.security().provenance.publication_revision, 3);
+                // Same allowed facts under Fresh still supersede the shared Account floor.
+                let mut fresh = recovery_account(4, now, true);
+                fresh.operation = NativeSourceOperation::ReadAccountSecurityV1;
+                let mut body: serde_json::Value = serde_json::from_slice(&fresh.semantic_facts)?;
+                body["version"] = serde_json::json!(1);
+                body["operation"] = serde_json::json!("ReadAccountSecurityV1");
+                body["scope"] = serde_json::json!("fresh_admission");
+                fresh.semantic_facts = body.to_string().into_bytes();
+                root.accept_native_source_observation(&node, fresh).await?;
+                assert!(matches!(
+                    root.revalidate_registered_recovery(&node, &newer, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                root.accept_native_source_observation(&node, recovery_account(5, now, true))
+                    .await?;
+                root.accept_native_source_observation(&node, recovery_trust(2, now, "other-key"))
+                    .await?;
+                assert!(matches!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                // Explicit later trust observation restores only the queried key.
+                root.accept_native_source_observation(&node, recovery_trust(3, now, "recovery-1"))
+                    .await?;
+                assert!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await?
+                        .is_ok()
+                );
+                root.revoke_node_registration(node.fact())
+                    .await
+                    .map_err(|e| format!("{e:?}"))?;
+                assert!(matches!(
+                    root.verify_registered_recovery(&node, &subject, &token, &current)
+                        .await,
+                    Err(DurabilityError::Unavailable)
+                ));
+                // Credential reads never create session/lease/controller authority.
+                let mut admin = sqlx::PgConnection::connect(&url).await?;
+                let sessions: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions")
+                        .fetch_one(&mut admin)
+                        .await?;
+                assert_eq!(sessions, 0);
+                admin.close().await?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            cleanup_database(&admin_url, &name).await?;
+            result
+        })
+}
+
+#[test]
+fn recovery_redecode_rejects_independent_body_history_and_time_mutations()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let(admin_url,name,url)=create_database("recovery_provenance").await?;
+        let result=async {
+            migrate_postgres_17_6(&url).await?;
+            let root=ready_root(&url).await?;let node=register_node(&root,1).await?;
+            issued_initialize(&root,&node,provenance(),descriptor(1,1,10)).await?;
+            let now=recovery_now()?;let current=recovery_bindings()?;
+            let subject=RecoveryEvidenceSubject::new(ACCOUNT_ID,"recovery-1")?;
+            let token=recovery_token("recovery-1",now);
+            root.accept_native_source_observation(&node,recovery_trust(1,now,"recovery-1")).await?;
+            // Each case changes one source invariant, with a valid trust/token/binding.
+            for (index,field,value) in [
+                (1,"account_id",serde_json::json!("01890f4c-3b2a-7cc2-8d11-9a321b7c0002")),
+                (2,"source_authority",serde_json::json!("other-authority")),
+                (3,"scope",serde_json::json!("fresh_admission")),
+                (4,"source_revision",serde_json::json!("99")),
+                (5,"source_observed_at",serde_json::json!((now-1).to_string())),
+            ] {
+                let mut observation=recovery_account(index,now,true);
+                let mut body:serde_json::Value=serde_json::from_slice(&observation.semantic_facts)?;
+                body[field]=value;observation.semantic_facts=body.to_string().into_bytes();
+                root.accept_native_source_observation(&node,observation).await?;
+                assert!(matches!(root.verify_registered_recovery(&node,&subject,&token,&current).await,Err(DurabilityError::InvalidStoredState)),"{field}");
+            }
+            for (revision,time,uncertainty) in [(6,now-6,"0"),(7,now+30,"0"),(8,now,"18446744073709551615")] {
+                let mut observation=recovery_account(revision,time,true);
+                let mut body:serde_json::Value=serde_json::from_slice(&observation.semantic_facts)?;
+                body["clock_uncertainty_seconds"]=serde_json::json!(uncertainty);
+                observation.semantic_facts=body.to_string().into_bytes();
+                root.accept_native_source_observation(&node,observation).await?;
+                assert!(matches!(root.verify_registered_recovery(&node,&subject,&token,&current).await?,Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale)));
+            }
+            root.accept_native_source_observation(&node,recovery_account(9,now,true)).await?;
+            let mut wrong=current.clone();wrong.account_id="01890f4c-3b2a-7cc2-8d11-9a321b7c0002".into();
+            assert!(matches!(root.verify_registered_recovery(&node,&subject,&token,&wrong).await?,Err(Fnd04ConsumerError::RecoveryBindingMismatch)));
+            // Owner-only corruption models a partial restore, not a full DB rollback.
+            let mut admin=sqlx::PgConnection::connect(&url).await?;
+            sqlx::query("ALTER TABLE game_durability_native_source_observation_history DISABLE TRIGGER USER").execute(&mut admin).await?;
+            sqlx::query("DELETE FROM game_durability_native_source_observation_history WHERE operation='ReadRecoveryAccountSecurityV2' AND source_revision=9").execute(&mut admin).await?;
+            assert!(matches!(root.verify_registered_recovery(&node,&subject,&token,&current).await,Err(DurabilityError::InvalidStoredState)));
+            admin.close().await?;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        cleanup_database(&admin_url,&name).await?;result
+    })
+}
+
+#[test]
+fn recovery_clock_is_sampled_after_registration_wait() -> Result<(), Box<dyn std::error::Error>> {
+    if !configured() {
+        skipped();
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let (admin_url, name, url) = create_database("recovery_clock_wait").await?;
+        let result = async {
+            migrate_postgres_17_6(&url).await?;
+            let root = ready_root(&url).await?;
+            let node = register_node(&root, 1).await?;
+            issued_initialize(&root, &node, provenance(), descriptor(1,1,10)).await?;
+            let mut blocker = sqlx::PgConnection::connect(&url).await?;
+            // Both owners are otherwise valid at the accepted deadline. The
+            // later clock sample must reject after waiting across that boundary.
+            let now = recovery_now()?;
+            root.accept_native_source_observation(&node,recovery_account(1,now-5,true)).await?;
+            root.accept_native_source_observation(&node,recovery_trust(1,now,"recovery-1")).await?;
+            sqlx::query("BEGIN").execute(&mut blocker).await?;
+            sqlx::query("SELECT registration_id FROM game_durability_native_source_registration WHERE registration_id=1 FOR UPDATE").execute(&mut blocker).await?;
+            let current = recovery_bindings()?;
+            let mut oversized = current.clone();oversized.ruleset_revision = "x".repeat(65_537);
+            let subject = RecoveryEvidenceSubject::new(ACCOUNT_ID,"recovery-1")?;
+            let token = recovery_token("recovery-1",now);
+            assert!(matches!(root.verify_registered_recovery(&node,&subject,&token,&oversized).await?,Err(Fnd04ConsumerError::RecoveryMalformed)));
+            let pending = tokio::spawn(async move {
+                root.verify_registered_recovery(&node,&subject,&token,&current).await
+            });
+            // Observe the actual lock wait; no sleep or timing assumption is
+            // used as evidence of serialization.
+            tokio::time::timeout(durability::DB_PASS_DEADLINE, async {
+                loop {
+                    let waiting:bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND pg_backend_pid()=ANY(pg_blocking_pids(pid)))").fetch_one(&mut blocker).await?;
+                    if waiting { break; }
+                    tokio::task::yield_now().await;
+                }
+                Ok::<(),sqlx::Error>(())
+            }).await??;
+            assert!(!pending.is_finished());
+            while recovery_now()? <= now { tokio::task::yield_now().await; }
+            sqlx::query("COMMIT").execute(&mut blocker).await?;
+            let disposition = pending.await??;
+            assert!(matches!(disposition,Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale)));
+            blocker.close().await?;
+            Ok::<(),Box<dyn std::error::Error>>(())
+        }.await;
+        cleanup_database(&admin_url,&name).await?;result
+    })
 }
