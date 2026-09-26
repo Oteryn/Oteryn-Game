@@ -1,0 +1,187 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/sand_vortex/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sand_vortex/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/sand_vortex/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 4
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sand_vortex/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/sand_vortex/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 4
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sand_vortex/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/sand_vortex/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/sand_vortex/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/sand_vortex/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/sand_vortex/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/sand_vortex/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/sand_vortex/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/poff"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/sand_vortex/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 5000,
+      "condition": {
+        "type": "paralyze",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/sand_vortex/attack-3-1",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/poff"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/sand_vortex/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 5000,
+      "condition": {
+        "type": "drunk",
+        "lifetime": "fixed_duration"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/sand_vortex/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 200
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/sand_vortex/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 200
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/sand_vortex/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 7,
+          "denominator": 40
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 7,
+          "denominator": 20
+        },
+        "maximum_offset": 40
+      }
+    }
+  ],
+  "documents": [],
+  "items": [],
+  "loot_tables": []
+}

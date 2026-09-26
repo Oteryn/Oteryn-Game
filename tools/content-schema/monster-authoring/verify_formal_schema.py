@@ -142,6 +142,10 @@ if __name__=='__main__':
     case('death residue with fluid accepted',set_value(['m','creature','death_residue'],{'item':ref('Item','coin'),'fluid_type':'blood'}),True)
     case('death residue must resolve its Item',set_value(['m','creature','death_residue'],{'item':ref('Item','missing'),'fluid_type':'blood'}))
     case('obsolete death_residue_item rejected',set_value(['m','creature','death_residue_item'],ref('Item','coin')))
+    boss={'category':'nemesis','prowess_kills':1,'expertise_kills':3,'mastery_kills':5,'prowess_points':10,'expertise_points':30,'mastery_points':60}
+    case('per-stage bosstiary points accepted',set_value(['m','creature','bosstiary'],boss),True)
+    case('obsolete single boss_points rejected',set_value(['m','creature','bosstiary'],{**boss,'boss_points':10}))
+    case('bosstiary stage points must increase',set_value(['m','creature','bosstiary'],{**boss,'expertise_points':5}))
     case('zero denominator',set_value(['m','creature','resistances',0,'reduction_percent','denominator'],0))
     case('resistance over 100 percent',set_value(['m','creature','resistances',0,'reduction_percent','numerator'],101))
     case('negative resistance supports vulnerability',set_value(['m','creature','resistances',0,'reduction_percent','numerator'],-10),True)

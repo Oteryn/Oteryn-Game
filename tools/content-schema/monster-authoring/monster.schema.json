@@ -646,7 +646,17 @@
           "type": "integer",
           "minimum": 1
         },
-        "boss_points": {
+        "prowess_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "expertise_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "mastery_points": {
           "type": "integer",
           "minimum": 0,
           "maximum": 65535
@@ -657,8 +667,11 @@
         "prowess_kills",
         "expertise_kills",
         "mastery_kills",
-        "boss_points"
-      ]
+        "prowess_points",
+        "expertise_points",
+        "mastery_points"
+      ],
+      "description": "Boss points are awarded per reached stage (io_bosstiary.hpp levelInfos), not once per boss."
     },
     "creature": {
       "type": "object",

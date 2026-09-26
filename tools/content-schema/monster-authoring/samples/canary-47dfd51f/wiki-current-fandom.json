@@ -1,0 +1,2110 @@
+{
+  "source": "TibiaWiki (Fandom), CC BY-SA; only compared facts are recorded",
+  "api": "https://tibia.fandom.com/api.php",
+  "request_mode": "latest",
+  "historical_target_date": null,
+  "classification": "Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY",
+  "row_status_totals": {
+    "DIFF": 12,
+    "MATCH": 229,
+    "NOT_COMPARABLE": 10,
+    "WIKI_UNKNOWN": 8
+  },
+  "monsters": [
+    {
+      "monster": "rat",
+      "wiki_title": "Rat",
+      "page_url": "https://tibia.fandom.com/wiki/Rat",
+      "page_id": 1116,
+      "revision_id": 1192053,
+      "revision_timestamp": "2026-06-25T08:08:05Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Rat?oldid=1192053",
+      "content_sha256": "c19430b4848e21e4d5a21d3369d2fc25cffc93a07b5f420d652c4978716cafa0",
+      "api_server_timestamp": "2026-09-26T19:42:28Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:28Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "20",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 5,
+          "wiki": 5,
+          "wiki_raw": "5",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 1,
+          "wiki": 1,
+          "wiki_raw": "1",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 67,
+          "wiki": 67,
+          "wiki_raw": "67",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.07,
+          "wiki": 0.12,
+          "wiki_raw": "0.12",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": 200,
+          "wiki": 200,
+          "wiki_raw": "200",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": 200,
+          "wiki": 200,
+          "wiki_raw": "200",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 5,
+          "wiki": 5,
+          "wiki_raw": "5",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "mammal",
+          "wiki": "mammal",
+          "wiki_raw": "Mammal",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "trivial",
+          "wiki": "trivial",
+          "wiki_raw": "Trivial",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+        }
+      ]
+    },
+    {
+      "monster": "cyclops",
+      "wiki_title": "Cyclops",
+      "page_url": "https://tibia.fandom.com/wiki/Cyclops",
+      "page_id": 1254,
+      "revision_id": 1191763,
+      "revision_timestamp": "2026-06-25T06:52:47Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Cyclops?oldid=1191763",
+      "content_sha256": "b62c9e9728345a3025c8eab68ab3ae5d3cf68a08c1d3786718d9cd5631091e18",
+      "api_server_timestamp": "2026-09-26T19:42:29Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:29Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 260,
+          "wiki": 260,
+          "wiki_raw": "260",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 150,
+          "wiki": 150,
+          "wiki_raw": "150",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 17,
+          "wiki": 17,
+          "wiki_raw": "17",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 95,
+          "wiki": 95,
+          "wiki_raw": "95",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.62,
+          "wiki": 0.97,
+          "wiki_raw": "0.97",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 25,
+          "wiki": 25,
+          "wiki_raw": "75%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": 490,
+          "wiki": 490,
+          "wiki_raw": "490",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": 490,
+          "wiki": 490,
+          "wiki_raw": "490",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "No",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "0",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "giant",
+          "wiki": "giant",
+          "wiki_raw": "Giant",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "wiki_raw": "Easy",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+        }
+      ]
+    },
+    {
+      "monster": "orc_spearman",
+      "wiki_title": "Orc Spearman",
+      "page_url": "https://tibia.fandom.com/wiki/Orc_Spearman",
+      "page_id": 1499,
+      "revision_id": 1191862,
+      "revision_timestamp": "2026-06-25T07:16:54Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Orc_Spearman?oldid=1191862",
+      "content_sha256": "51e84b5465c9b03392f3950f8773f67e08e4fd1d8819bb8ad362f63fbf7fde48",
+      "api_server_timestamp": "2026-09-26T19:42:30Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:30Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 105,
+          "wiki": 105,
+          "wiki_raw": "105",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 38,
+          "wiki": 38,
+          "wiki_raw": "38",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 6,
+          "wiki": 6,
+          "wiki_raw": "6",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 88,
+          "wiki": 88,
+          "wiki_raw": "88",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.3,
+          "wiki": 0.48,
+          "wiki_raw": "0.48",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": 310,
+          "wiki": 310,
+          "wiki_raw": "310",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": 310,
+          "wiki": 310,
+          "wiki_raw": "310",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 10,
+          "wiki": 10,
+          "wiki_raw": "10",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "humanoid",
+          "wiki": "humanoid",
+          "wiki_raw": "Humanoid",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "wiki_raw": "Easy",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+        }
+      ]
+    },
+    {
+      "monster": "scorpion",
+      "wiki_title": "Scorpion",
+      "page_url": "https://tibia.fandom.com/wiki/Scorpion",
+      "page_id": 1487,
+      "revision_id": 1192273,
+      "revision_timestamp": "2026-06-25T08:33:46Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Scorpion?oldid=1192273",
+      "content_sha256": "5b23deebf85f26690c45f495f7303dda3fc6d6d293637ec559e8a93cbfa24b07",
+      "api_server_timestamp": "2026-09-26T19:42:30Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:31Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 45,
+          "wiki": 45,
+          "wiki_raw": "45",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 45,
+          "wiki": 45,
+          "wiki_raw": "45",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 14,
+          "wiki": 14,
+          "wiki_raw": "14",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 75,
+          "wiki": 75,
+          "wiki_raw": "75",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.13,
+          "wiki": 0.2,
+          "wiki_raw": "0.20",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": 310,
+          "wiki": 310,
+          "wiki_raw": "310",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 5,
+          "wiki": 5,
+          "wiki_raw": "5",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "vermin",
+          "wiki": "vermin",
+          "wiki_raw": "Vermin",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "wiki_raw": "Easy",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+        }
+      ]
+    },
+    {
+      "monster": "orc_shaman",
+      "wiki_title": "Orc Shaman",
+      "page_url": "https://tibia.fandom.com/wiki/Orc_Shaman",
+      "page_id": 1497,
+      "revision_id": 1191856,
+      "revision_timestamp": "2026-06-25T07:15:06Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Orc_Shaman?oldid=1191856",
+      "content_sha256": "d5d7a8a6dc84df740282a8c58f645089d1b0a78708bbc5e18de9c8498782ff25",
+      "api_server_timestamp": "2026-09-26T19:42:31Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:31Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 115,
+          "wiki": 115,
+          "wiki_raw": "115",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 110,
+          "wiki": 110,
+          "wiki_raw": "110",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 8,
+          "wiki": 8,
+          "wiki_raw": "8",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 70,
+          "wiki": 70,
+          "wiki_raw": "70",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.25,
+          "wiki": 0.4,
+          "wiki_raw": "0.40",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": -5,
+          "wiki": -5,
+          "wiki_raw": "105%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 50,
+          "wiki": 50,
+          "wiki_raw": "50%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 10,
+          "wiki": 10,
+          "wiki_raw": "90%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "No",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "No",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 15,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "humanoid",
+          "wiki": "humanoid",
+          "wiki_raw": "Humanoid",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "wiki_raw": "Easy",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "name_variants": [
+            {
+              "canary": "book",
+              "wiki": "book (grey)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "monster": "necromancer",
+      "wiki_title": "Necromancer",
+      "page_url": "https://tibia.fandom.com/wiki/Necromancer",
+      "page_id": 1245,
+      "revision_id": 1191780,
+      "revision_timestamp": "2026-06-25T06:54:11Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Necromancer?oldid=1191780",
+      "content_sha256": "a725c2644e261e05150878bea14789782f19e5c4eff3b375e25b25ce4d65e0f8",
+      "api_server_timestamp": "2026-09-26T19:42:32Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:32Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 580,
+          "wiki": 580,
+          "wiki_raw": "580",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 580,
+          "wiki": 580,
+          "wiki_raw": "580",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 50,
+          "wiki": 50,
+          "wiki_raw": "50",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 94,
+          "wiki": 94,
+          "wiki_raw": "94",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 1.04,
+          "wiki": 1.65,
+          "wiki_raw": "1.65",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": -5,
+          "wiki": -5,
+          "wiki_raw": "105%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": -5,
+          "wiki": -5,
+          "wiki_raw": "105%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": 50,
+          "wiki": 50,
+          "wiki_raw": "50%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": -5,
+          "wiki": -5,
+          "wiki_raw": "105%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": 10,
+          "wiki": 10,
+          "wiki_raw": "90%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 0,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "human",
+          "wiki": "human",
+          "wiki_raw": "Human",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "medium",
+          "wiki": "medium",
+          "wiki_raw": "Medium",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+        }
+      ]
+    },
+    {
+      "monster": "fire_elemental",
+      "wiki_title": "Fire Elemental",
+      "page_url": "https://tibia.fandom.com/wiki/Fire_Elemental",
+      "page_id": 2042,
+      "revision_id": 1191708,
+      "revision_timestamp": "2026-06-25T06:42:38Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Fire_Elemental?oldid=1191708",
+      "content_sha256": "02839b5064f3075f63d6ef9856eb445546341706554e8e53a700580f6bb16913",
+      "api_server_timestamp": "2026-09-26T19:42:33Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:33Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 280,
+          "wiki": 280,
+          "wiki_raw": "280",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 220,
+          "wiki": 220,
+          "wiki_raw": "220",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 18,
+          "wiki": 18,
+          "wiki_raw": "18",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 95,
+          "wiki": 95,
+          "wiki_raw": "95",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.51,
+          "wiki": 0.8,
+          "wiki_raw": "0.80",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": -25,
+          "wiki": -25,
+          "wiki_raw": "125%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": 690,
+          "wiki": 690,
+          "wiki_raw": "690",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "DIFF"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 0,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "elemental",
+          "wiki": "elemental",
+          "wiki_raw": "Elemental",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "medium",
+          "wiki": "medium",
+          "wiki_raw": "Medium",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        }
+      ]
+    },
+    {
+      "monster": "dragon",
+      "wiki_title": "Dragon",
+      "page_url": "https://tibia.fandom.com/wiki/Dragon",
+      "page_id": 1318,
+      "revision_id": 1191689,
+      "revision_timestamp": "2026-06-25T06:40:57Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Dragon?oldid=1191689",
+      "content_sha256": "878319b4204ca63ef06cc6fbcb3c4068f160eb7849f3f8f5cdf7f00797e8a925",
+      "api_server_timestamp": "2026-09-26T19:42:34Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:34Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 1000,
+          "wiki": 1000,
+          "wiki_raw": "1000",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 700,
+          "wiki": 700,
+          "wiki_raw": "700",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 25,
+          "wiki": 25,
+          "wiki_raw": "25",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 86,
+          "wiki": 86,
+          "wiki_raw": "86",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.99,
+          "wiki": 1.56,
+          "wiki_raw": "1.56",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 80,
+          "wiki": 80,
+          "wiki_raw": "20%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 20,
+          "wiki": 20,
+          "wiki_raw": "80%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": -10,
+          "wiki": -10,
+          "wiki_raw": "110%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "No",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "Yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 300,
+          "wiki": 300,
+          "wiki_raw": "300",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "dragon",
+          "wiki": "dragon",
+          "wiki_raw": "Dragon",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "medium",
+          "wiki": "medium",
+          "wiki_raw": "Medium",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "DIFF",
+          "only_canary": [],
+          "only_wiki": [
+            "dragon trophy"
+          ],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared."
+        }
+      ]
+    },
+    {
+      "monster": "ghost",
+      "wiki_title": "Ghost",
+      "page_url": "https://tibia.fandom.com/wiki/Ghost",
+      "page_id": 1568,
+      "revision_id": 1192179,
+      "revision_timestamp": "2026-06-25T08:22:33Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Ghost?oldid=1192179",
+      "content_sha256": "3654eef248397bc5c7b1b9bcc0c8d6f4f2a29e5ff5769fa6d3904ef8392df134",
+      "api_server_timestamp": "2026-09-26T19:42:35Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:35Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 150,
+          "wiki": 150,
+          "wiki_raw": "150",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 120,
+          "wiki": 120,
+          "wiki_raw": "120",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 10,
+          "wiki": 10,
+          "wiki_raw": "10",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 80,
+          "wiki": 80,
+          "wiki_raw": "80",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 0.51,
+          "wiki": 0.8,
+          "wiki_raw": "0.80",
+          "status": "DIFF"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": "?",
+          "wiki_raw": "?",
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "0",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": "undead",
+          "wiki": "undead",
+          "wiki_raw": "Undead",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "wiki_raw": "Easy",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "wiki_raw": "Common",
+          "status": "MATCH"
+        },
+        {
+          "field": "loot.items",
+          "status": "DIFF",
+          "only_canary": [],
+          "only_wiki": [
+            "stone skin amulet"
+          ],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "name_variants": [
+            {
+              "canary": "book",
+              "wiki": "book (orange)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "monster": "demodras",
+      "wiki_title": "Demodras",
+      "page_url": "https://tibia.fandom.com/wiki/Demodras",
+      "page_id": 3259,
+      "revision_id": 986288,
+      "revision_timestamp": "2023-01-02T17:52:14Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Demodras?oldid=986288",
+      "content_sha256": "edfd562bc78dd8a5f55e5564db6ce44643039f878cc8498ed2217d71a49c5fda",
+      "api_server_timestamp": "2026-09-26T19:42:35Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:35Z",
+      "status": "COMPARED",
+      "rows": [
+        {
+          "field": "max_health",
+          "canary": 4500,
+          "wiki": 4500,
+          "wiki_raw": "4500",
+          "status": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 6000,
+          "wiki": 6000,
+          "wiki_raw": "6000",
+          "status": "MATCH"
+        },
+        {
+          "field": "armor",
+          "canary": 45,
+          "wiki": 45,
+          "wiki_raw": "45",
+          "status": "MATCH"
+        },
+        {
+          "field": "speed",
+          "canary": 197,
+          "wiki": 197,
+          "wiki_raw": "197",
+          "status": "NOT_COMPARABLE",
+          "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": 1.99,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "resistance.physical",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.earth",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.fire",
+          "canary": 100,
+          "wiki": 100,
+          "wiki_raw": "0%",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.death",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.energy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.holy",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.ice",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.life_drain",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "resistance.drowning",
+          "canary": 0,
+          "wiki": 0,
+          "wiki_raw": "100%?",
+          "status": "MATCH",
+          "note": "Wiki lists damage taken; resistance = 100 - taken."
+        },
+        {
+          "field": "summon_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "convince_mana_cost",
+          "canary": "--",
+          "wiki": "--",
+          "wiki_raw": "--",
+          "status": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "wiki_raw": "no",
+          "status": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "sense_invisible",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "paralyze_immune",
+          "canary": true,
+          "wiki": true,
+          "wiki_raw": "yes",
+          "status": "MATCH"
+        },
+        {
+          "field": "flee_health",
+          "canary": 300,
+          "wiki": 300,
+          "wiki_raw": "300",
+          "status": "MATCH"
+        },
+        {
+          "field": "bestiary.class",
+          "canary": null,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "bestiary.difficulty",
+          "canary": null,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "bestiary.occurrence",
+          "canary": null,
+          "wiki": null,
+          "wiki_raw": null,
+          "status": "WIKI_UNKNOWN"
+        },
+        {
+          "field": "loot.items",
+          "status": "MATCH",
+          "only_canary": [],
+          "only_wiki": [],
+          "note": "Item names only; wiki loot chances are player-reported rarity words and are not compared. Wiki disambiguated names (e.g. \"book (grey)\") are matched to the Canary base name.",
+          "name_variants": [
+            {
+              "canary": "book",
+              "wiki": "book (gemmed)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
