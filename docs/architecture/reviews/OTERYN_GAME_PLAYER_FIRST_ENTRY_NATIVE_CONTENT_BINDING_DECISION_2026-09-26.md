@@ -60,7 +60,8 @@ release and establish quiescence. This decision does not promise restart continu
 The coordinates are authored map choices, not default/fallback positions or resource
 maxima. Exact logical keys must satisfy the unchanged owning profile. No Reference
 equivalence is asserted. Resolve a genuine current Game-owned WorldId assignment
-and an explicit native frame; do not invent their readiness.
+and qualify the source-bound native frame below; neither readiness nor a frame supplied
+independently of the qualified source may be inferred.
 
 The existing profile requires >=3 cells and a complete bounded Region/Area/Terrain,
 relocation, behavior, presentation, creature/spawn, formula/effect/ability and
@@ -73,12 +74,48 @@ package/exact Content Lock, revision/profile/compiler/canonicalization context,
 and deterministic server/client bytes and digests. None exists merely because a
 fixture compiled. Test sources and placeholder provenance cannot be promoted.
 
+### Qualified native frame prerequisite
+
+Use the accepted `oteryn-world-spatial-v1` semantic revision 1. Its native tile axes,
+floor ordering and authored envelope rules are binding; this decision creates no new
+coordinate profile or public frame identity. The actual native source/manifest must
+declare its authored frame identity, axes, origin, finite bounds and declared floor,
+consistent with that contract and the exact World/map revision and three source cells.
+Floor 0 and origin (0, 0) are authored choices, not implicit surface/default meanings.
+
+Qualification must prove the declaration from the genuine immutable source/manifest
+bytes. Recompute their existing source-manifest digest and verify its binding through
+the existing package provenance, Content Lock and exact staged generation. Retain a
+typed qualified binding connecting that declaration to exact World/map/profile/package
+context, manifest/lock provenance and the final server/client artifact digest pair.
+This is an evidence chain; source-manifest bytes need not contain their own digest or
+the downstream artifact digests. Copied GenerationIdentity fields, an operator's frame
+assertion or a wrapper containing an independently supplied frame do not qualify it.
+Raw source-manifest payloads remain excluded from the runtime artifact/profile under
+Amendment 02. Source/frame qualification is producer/release evidence; activation and
+restart may consume only the bounded binding established by that genuine proof under
+the Game-owned boundary. This selects no runtime source parser or provenance fetch.
+
+At the admission baseline, FirstProductionContentSource and GenerationIdentity have
+no coordinate-frame identity field. Global spatial semantics and engineering frame
+markers alone therefore do not establish that a named frame belongs to this generation.
+The required source-to-frame qualification is NOT_YET_PROVEN.
+
+No first-production artifact manifest/format, source parser, profile capability or
+public identity expansion is selected here. If the real source/manifest cannot encode
+and prove this binding within accepted source-representation and owning-profile
+boundaries, implementation remains
+fail-closed pending a separately accepted bounded amendment. No position write may
+precede that evidence; wrapping absent provenance cannot satisfy the prerequisite.
+
 ## Activation issuer and current pin
 
 A separate typed Game-owned activation issuer outside Content authority is restricted
 to PREPRODUCTION_FIRST_SLICE. It binds exact package/generation, server/client
 digests, World/revision context, applicability, decision identity, monotonic activation
 sequence, expected-current or explicit empty-start, and current control/Node binding.
+It must also validate and carry the same source-qualified native frame binding; exact
+artifact identity alone cannot substitute for that proof.
 The accepted sequence must be strictly newer than its applicable current floor;
 missing continuity is refusal, not permission to reset that floor.
 
@@ -90,6 +127,9 @@ Hold new admission, establish real quiescence, recheck authorization/expected-cu
 then atomically activate one complete validated pair before authoritative Channel
 creation. The Channel pins that exact active generation. Staging or cached receipts
 are not a current activation pin. Existing live-scope hot-reload prohibition applies.
+The committed activation and Channel pin must preserve the same qualified frame
+binding together with the generation. A caller-supplied frame cannot be attached or
+replaced independently, even when World/map/artifact digests and coordinates match.
 
 ## Position write and retry
 
@@ -101,6 +141,9 @@ ownership generation, native coordinate frame, map revision and exact active Con
 generation. Content attests that the selected cell exists and is qualified walkable;
 Character independently attests current owner/world/lifecycle. Neither Content nor
 transport acquires Channel position-write authority.
+The location's frame is obtained from that source-qualified, currently pinned binding,
+not from an independent request/operator argument. Current pin equality includes the
+qualified frame binding before initialization or later Movement eligibility.
 
 Immediately before writing, resolve current Character owner/world/lifecycle/revision,
 GameSession/connection generation, CharacterLease generation, runtime scope assignment
@@ -115,6 +158,8 @@ Changed/stale/missing/recycled/reassigned/wrong-scope bindings receive no write.
 An already positioned actor cannot receive replacement initialization. Movement
 after initialization is not undone by retry. A recycled local ID inherits no prior
 disposition. Retain only the bounded binding/disposition needed for that generation.
+Retry also binds the same qualified frame; it cannot reconcile a missing or substituted
+frame by copying the expected identity from its prior receipt.
 
 A post-COMMIT failure does not prove durable noncommit or terminality and cannot
 fabricate rollback or premature slot release. Socket close alone is not control loss.
@@ -124,6 +169,9 @@ fabricate rollback or premature slot release. Socket close alone is not control 
 After restart, Content is not-ready with no active generation. Reactivation requires
 current exact authorization and a valid monotonic floor. Actor continuation requires
 independently fenced placement/presence/session continuity evidence.
+Restore/requalify the native frame from its genuine immutable source/manifest evidence
+and exact artifact generation before current activation and pinning. A persisted frame
+label or generation receipt without that source binding is insufficient.
 
 If any of that evidence is missing or ambiguous, refuse/remain not-ready. Do not guess
 a position, recreate a present actor, reset activation ordering, renew session/grace
@@ -138,7 +186,7 @@ Reuse current first-production graph/cell/span/key/manifest/provenance/artifact 
 generation-pair limits including Amendments01-03. MOVE-RL-03=1 applies only to its
 isolated decision. No new hard maximum is selected here.
 
-Classify actual added variable-size initialization/authorization retention and lookup
+Classify actual added variable-size qualified-frame/initialization/authorization retention and lookup
 resources before execution; reuse an applicable accepted limit or retain an explicit
 qualification prerequisite. #139 whole-cycle/retained input/fairness acceptance,
 #642 wire/schema/stable IDs, measured liveness, sealed current Recovery, ControlLoss
@@ -173,6 +221,17 @@ quiescence/expected-current/sequence, restart not-ready, first initialization/id
 retry and independently changed Character/session/lease/scope/actor/Content no-write.
 Use AuthorityInvariant × ConsumerBoundary × MutationOperator; no record-derived
 negative current-authority oracle.
+
+Frame qualification/evidence must cover the whole source -> generation -> activation ->
+Channel pin -> issued location chain and its retry/restart paths. Include independent
+single-invariant cases with valid unrelated bindings: same coordinates and artifact
+generation but substituted frame; missing frame declaration; wrong declared spatial
+contract/revision or authored frame semantics; source-manifest bytes not matching the
+generation's bound digest; activation/pin/location frame disagreement; and retry or
+restart lacking the original source-qualified binding. Every case must refuse before
+position/control write, preserve prior state and avoid authority/deadline renewal.
+Positive evidence must prove the actual qualified native frame through loaded cells
+and real step/return/blocked-cell behavior, rather than equality of copied markers.
 
 Use `.github/workflows/agent-governance.yml`, `.github/workflows/architecture-semantic-audit.yml` and `.github/workflows/merge-gate.yml` for this document candidate. Future implementation reuses existing rust.yml, content_first_production tests, node-boot-qualification.yml
 with tools/qualification/node_boot/run.sh, gameplay-server-seam.yml with
@@ -210,6 +269,7 @@ OWNER_DIRECTION=ACCEPTED_LIVE
 DOCUMENT_DELIVERY=FOLLOW_EXACT_HEAD_PR_REVIEW_MQ_AND_PROTECTED_READBACK
 QUALIFIED_NATIVE_SOURCE=NOT_YET_PROVEN
 CURRENT_ACTIVATION_ISSUER=NOT_YET_IMPLEMENTED
+QUALIFIED_NATIVE_FRAME_BINDING=NOT_YET_PROVEN
 FIRST_CONTROLLED_ACTOR=NOT_YET_QUALIFIED
 ACTOR_REGISTRY_DELTA=[]
 SERVER_SEAM_822=NOT_COMPLETED
@@ -237,3 +297,5 @@ registry, runtime or source-data mutation is authorized by this docs-only task.
 - docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md
 - docs/architecture/OTERYN_PRODUCT_PROFILE_REFERENCE_TARGET_RECONCILIATION_2026-09-09.md
 - docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md
+- docs/contracts/OTERYN_WORLD_SPATIAL_COORDINATE_PROFILE_V1.md
+- docs/architecture/OTERYN_CANONICAL_WORLDID_CONTENT_BOUNDARY_2026-09-09.md
