@@ -602,6 +602,11 @@
           "minLength": 1,
           "description": "Original editorial location text, not world spawn coordinates."
         },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional Oteryn-authored Bestiary narrative; separate from source Locations, inspection text and library Documents."
+        },
         "kill_thresholds": {
           "type": "array",
           "items": {
