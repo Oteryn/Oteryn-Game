@@ -207,7 +207,7 @@ manifest={'$schema':DIALECT,'$id':MANIFEST_ID,'title':'Monster import dispositio
             {'if':{'properties':{'status':{'enum':['mapped','resolved_native_behavior']}},'required':['status']},'then':{'required':['destination','resolution']}},
             {'if':{'properties':{'status':{'enum':['metadata_only','approved_omission']}},'required':['status']},'then':{'required':['resolution']}}]),1)},('sources','entries'))}
 
-def dump(name,value): (ROOT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+def dump(name,value): (ROOT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
 def template(s):
     if '$ref' in s:
         return template(d[s['$ref'].split('/')[-1]])
