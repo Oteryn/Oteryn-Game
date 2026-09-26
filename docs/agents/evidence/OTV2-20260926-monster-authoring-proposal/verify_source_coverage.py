@@ -121,6 +121,6 @@ if __name__=='__main__':
             'mask_paths':len(source['mask_paths_with_lines']),'spell_paths':len(source['spell_paths_with_lines']),'rows':rows}
     result['accounted_paths']=sum(len(s['rows']) for s in result['sources'].values())
     result['passed']=not(result['unclassified'] or result['invalid_destinations'])
-    (ROOT/'formal-source-coverage.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    (ROOT/'formal-source-coverage.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     print(json.dumps({k:v for k,v in result.items() if k!='sources'},ensure_ascii=False))
     raise SystemExit(not result['passed'])
