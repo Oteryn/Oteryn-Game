@@ -1,8 +1,8 @@
 # Native entry-room product bindings and source-resource gate decision
 
 - Decision: `NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1`
-- Status: **CANDIDATE; takes effect only on explicit owner acceptance, exact-head validation, independent review and protected integration**
-- Owner direction: owner requested one decision packet with recommendations (#162 comment `5846894605`)
+- Status: **OWNER-ACCEPTED; effective on exact-head validation, independent review and protected integration**
+- Owner direction: owner requested one decision packet with recommendations (#162 comment `5846894605`); owner accepted this exact content in chat on 2026-09-26, verbatim "akceptuje dzialaj" ("I accept, go ahead"), after keeping one creature and deferring a nine-creature roster to a later profile amendment
 - Admission baseline: `main@3b578bc5b35e40fbff70fbe5758079fdbed6a3c0`
 - Extends: `NATIVE_ENTRY_SOURCE_QUALIFICATION_V1` (#937) §4 and §6; `PLAYER_FIRST_ENTRY_NATIVE_CONTENT_BINDING_V1` (#935)
 - Related: Issues #162, #822, #930; Oteryn/Oteryn-Platform#1416
@@ -34,7 +34,7 @@ facts:
     - "Canonical WorldId (Platform #1416)."
     - "Damage and XP mathematics."
     - "Client appearance assets behind presentation tokens."
-accepted_decision: NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1 (on owner acceptance)
+accepted_decision: NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1 (owner-accepted 2026-09-26)
 production_authority_changed: false
 registry_mutation: none
 ```
