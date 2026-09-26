@@ -254,3 +254,17 @@ custom logic or an unsupported parameter in attacks (91) and defenses (40), inli
 top-level script call after registration (11), Bestiary without a valid race (5) and non-familiar
 monsters without a look type (4). These need D12/D13 spell work, Encounter definitions (D9) or
 native behaviour decisions; none is solved by relaxing validation.
+
+### 9.1 Population wiki comparison
+
+`samples/wiki-population-2026-07-28.json` (`wiki_compare.py --population`) compares the plain
+Canary conversion of every convertible monster with its TibiaWiki (Fandom) page at the
+2026-07-28 cut: 1,569 monsters compared and 81 without a page under the Canary name. Over the
+infobox facts: 29,550 MATCH, 2,972 DIFF, 7,842 unknown on the wiki. The most frequent differences
+are mitigation (739 monsters), the loot item list (650), flee health (181), experience (122) and
+element modifiers (about 70-110 each). Over 14,894 Canary loot entries: 7,136 inside the 95%
+interval of the wiki estimate, 5,170 outside it, 2,092 not observed in the highest-version
+statistics block, 490 split over several Canary entries and 6 with invalid wiki counts.
+
+This is evidence for D15; population bundles are not written by this change, so no value is
+adopted from it yet.

@@ -411,7 +411,13 @@ def main():
                                 'chances are listed; MATCH, WIKI_UNKNOWN and CONSISTENT are counted.',
                        'monster_status_totals': dict(sorted(statuses.items())), 'diff_fields': fields, 'not_converted': skipped})
     report['monsters'] = results
-    out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    if args.population:
+        # One monster per line keeps the population file small and its Git diffs readable.
+        head = json.dumps({**report, 'monsters': []}, ensure_ascii=False, indent=2)[:-len('\n  "monsters": []\n}')]
+        lines = ',\n'.join('    ' + json.dumps(r, ensure_ascii=False, separators=(',', ':')) for r in results)
+        out.write_text(head + '\n  "monsters": [\n' + lines + '\n  ]\n}\n', encoding='utf-8', newline='\n')
+    else:
+        out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps({'out': str(out), 'totals': rows, 'loot_chances': chances, 'confidence': confidence,
                       **({'monsters': statuses, 'top_diff_fields': dict(list(fields.items())[:12])} if args.population else {})}))
 
