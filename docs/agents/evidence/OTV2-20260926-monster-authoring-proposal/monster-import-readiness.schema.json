@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:monster-import-readiness:proposal:1",
+  "title": "Monster import disposition manifest proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "repository": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-f0-9]{40}$"
+          }
+        },
+        "required": [
+          "repository",
+          "revision"
+        ]
+      },
+      "minItems": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "field",
+              "dependency",
+              "script",
+              "original_text"
+            ]
+          },
+          "status": {
+            "enum": [
+              "mapped",
+              "metadata_only",
+              "resolved_native_behavior",
+              "approved_omission",
+              "unsupported_source_field",
+              "unresolved_semantics",
+              "unresolved_dependency",
+              "partial_text"
+            ]
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolution": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source_index",
+          "source_file",
+          "source_line",
+          "source_field",
+          "kind",
+          "status"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "mapped",
+                    "resolved_native_behavior"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "destination",
+                "resolution"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "metadata_only",
+                    "approved_omission"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "resolution"
+              ]
+            }
+          }
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "sources",
+    "entries"
+  ]
+}
