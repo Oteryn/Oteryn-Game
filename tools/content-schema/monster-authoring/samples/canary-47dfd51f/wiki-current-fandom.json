@@ -1,12 +1,13 @@
 {
   "source": "TibiaWiki (Fandom), CC BY-SA; only compared facts are recorded",
   "api": "https://tibia.fandom.com/api.php",
-  "target_cut": "2026-07-28",
-  "cut_rule": "last revision at or before 2026-07-29T00:00:00Z",
+  "request_mode": "latest",
+  "historical_target_date": null,
   "classification": "Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY",
   "row_status_totals": {
     "DIFF": 12,
-    "MATCH": 239,
+    "MATCH": 229,
+    "NOT_COMPARABLE": 10,
     "WIKI_UNKNOWN": 8
   },
   "monsters": [
@@ -15,13 +16,13 @@
       "wiki_title": "Rat",
       "page_url": "https://tibia.fandom.com/wiki/Rat",
       "page_id": 1116,
-      "cut_revision_id": 1192053,
-      "cut_revision_timestamp": "2026-06-25T08:08:05Z",
-      "cut_content_sha256": "c19430b4848e21e4d5a21d3369d2fc25cffc93a07b5f420d652c4978716cafa0",
-      "current_revision_id": 1192053,
-      "current_revision_timestamp": "2026-06-25T08:08:05Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:30Z",
+      "revision_id": 1192053,
+      "revision_timestamp": "2026-06-25T08:08:05Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Rat?oldid=1192053",
+      "content_sha256": "c19430b4848e21e4d5a21d3369d2fc25cffc93a07b5f420d652c4978716cafa0",
+      "api_server_timestamp": "2026-09-26T19:42:28Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:28Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -50,7 +51,7 @@
           "canary": 67,
           "wiki": 67,
           "wiki_raw": "67",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -223,13 +224,13 @@
       "wiki_title": "Cyclops",
       "page_url": "https://tibia.fandom.com/wiki/Cyclops",
       "page_id": 1254,
-      "cut_revision_id": 1191763,
-      "cut_revision_timestamp": "2026-06-25T06:52:47Z",
-      "cut_content_sha256": "b62c9e9728345a3025c8eab68ab3ae5d3cf68a08c1d3786718d9cd5631091e18",
-      "current_revision_id": 1191763,
-      "current_revision_timestamp": "2026-06-25T06:52:47Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:32Z",
+      "revision_id": 1191763,
+      "revision_timestamp": "2026-06-25T06:52:47Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Cyclops?oldid=1191763",
+      "content_sha256": "b62c9e9728345a3025c8eab68ab3ae5d3cf68a08c1d3786718d9cd5631091e18",
+      "api_server_timestamp": "2026-09-26T19:42:29Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:29Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -258,7 +259,7 @@
           "canary": 95,
           "wiki": 95,
           "wiki_raw": "95",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -431,13 +432,13 @@
       "wiki_title": "Orc Spearman",
       "page_url": "https://tibia.fandom.com/wiki/Orc_Spearman",
       "page_id": 1499,
-      "cut_revision_id": 1191862,
-      "cut_revision_timestamp": "2026-06-25T07:16:54Z",
-      "cut_content_sha256": "51e84b5465c9b03392f3950f8773f67e08e4fd1d8819bb8ad362f63fbf7fde48",
-      "current_revision_id": 1191862,
-      "current_revision_timestamp": "2026-06-25T07:16:54Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:33Z",
+      "revision_id": 1191862,
+      "revision_timestamp": "2026-06-25T07:16:54Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Orc_Spearman?oldid=1191862",
+      "content_sha256": "51e84b5465c9b03392f3950f8773f67e08e4fd1d8819bb8ad362f63fbf7fde48",
+      "api_server_timestamp": "2026-09-26T19:42:30Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:30Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -466,7 +467,7 @@
           "canary": 88,
           "wiki": 88,
           "wiki_raw": "88",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -639,13 +640,13 @@
       "wiki_title": "Scorpion",
       "page_url": "https://tibia.fandom.com/wiki/Scorpion",
       "page_id": 1487,
-      "cut_revision_id": 1192273,
-      "cut_revision_timestamp": "2026-06-25T08:33:46Z",
-      "cut_content_sha256": "5b23deebf85f26690c45f495f7303dda3fc6d6d293637ec559e8a93cbfa24b07",
-      "current_revision_id": 1192273,
-      "current_revision_timestamp": "2026-06-25T08:33:46Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:34Z",
+      "revision_id": 1192273,
+      "revision_timestamp": "2026-06-25T08:33:46Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Scorpion?oldid=1192273",
+      "content_sha256": "5b23deebf85f26690c45f495f7303dda3fc6d6d293637ec559e8a93cbfa24b07",
+      "api_server_timestamp": "2026-09-26T19:42:30Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:31Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -674,7 +675,7 @@
           "canary": 75,
           "wiki": 75,
           "wiki_raw": "75",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -847,13 +848,13 @@
       "wiki_title": "Orc Shaman",
       "page_url": "https://tibia.fandom.com/wiki/Orc_Shaman",
       "page_id": 1497,
-      "cut_revision_id": 1191856,
-      "cut_revision_timestamp": "2026-06-25T07:15:06Z",
-      "cut_content_sha256": "d5d7a8a6dc84df740282a8c58f645089d1b0a78708bbc5e18de9c8498782ff25",
-      "current_revision_id": 1191856,
-      "current_revision_timestamp": "2026-06-25T07:15:06Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:35Z",
+      "revision_id": 1191856,
+      "revision_timestamp": "2026-06-25T07:15:06Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Orc_Shaman?oldid=1191856",
+      "content_sha256": "d5d7a8a6dc84df740282a8c58f645089d1b0a78708bbc5e18de9c8498782ff25",
+      "api_server_timestamp": "2026-09-26T19:42:31Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:31Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -882,7 +883,7 @@
           "canary": 70,
           "wiki": 70,
           "wiki_raw": "70",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1061,13 +1062,13 @@
       "wiki_title": "Necromancer",
       "page_url": "https://tibia.fandom.com/wiki/Necromancer",
       "page_id": 1245,
-      "cut_revision_id": 1191780,
-      "cut_revision_timestamp": "2026-06-25T06:54:11Z",
-      "cut_content_sha256": "a725c2644e261e05150878bea14789782f19e5c4eff3b375e25b25ce4d65e0f8",
-      "current_revision_id": 1191780,
-      "current_revision_timestamp": "2026-06-25T06:54:11Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:36Z",
+      "revision_id": 1191780,
+      "revision_timestamp": "2026-06-25T06:54:11Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Necromancer?oldid=1191780",
+      "content_sha256": "a725c2644e261e05150878bea14789782f19e5c4eff3b375e25b25ce4d65e0f8",
+      "api_server_timestamp": "2026-09-26T19:42:32Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:32Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -1096,7 +1097,7 @@
           "canary": 94,
           "wiki": 94,
           "wiki_raw": "94",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1269,13 +1270,13 @@
       "wiki_title": "Fire Elemental",
       "page_url": "https://tibia.fandom.com/wiki/Fire_Elemental",
       "page_id": 2042,
-      "cut_revision_id": 1191708,
-      "cut_revision_timestamp": "2026-06-25T06:42:38Z",
-      "cut_content_sha256": "02839b5064f3075f63d6ef9856eb445546341706554e8e53a700580f6bb16913",
-      "current_revision_id": 1191708,
-      "current_revision_timestamp": "2026-06-25T06:42:38Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:38Z",
+      "revision_id": 1191708,
+      "revision_timestamp": "2026-06-25T06:42:38Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Fire_Elemental?oldid=1191708",
+      "content_sha256": "02839b5064f3075f63d6ef9856eb445546341706554e8e53a700580f6bb16913",
+      "api_server_timestamp": "2026-09-26T19:42:33Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:33Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -1304,7 +1305,7 @@
           "canary": 95,
           "wiki": 95,
           "wiki_raw": "95",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1470,13 +1471,13 @@
       "wiki_title": "Dragon",
       "page_url": "https://tibia.fandom.com/wiki/Dragon",
       "page_id": 1318,
-      "cut_revision_id": 1191689,
-      "cut_revision_timestamp": "2026-06-25T06:40:57Z",
-      "cut_content_sha256": "878319b4204ca63ef06cc6fbcb3c4068f160eb7849f3f8f5cdf7f00797e8a925",
-      "current_revision_id": 1191689,
-      "current_revision_timestamp": "2026-06-25T06:40:57Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:39Z",
+      "revision_id": 1191689,
+      "revision_timestamp": "2026-06-25T06:40:57Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Dragon?oldid=1191689",
+      "content_sha256": "878319b4204ca63ef06cc6fbcb3c4068f160eb7849f3f8f5cdf7f00797e8a925",
+      "api_server_timestamp": "2026-09-26T19:42:34Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:34Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -1505,7 +1506,7 @@
           "canary": 86,
           "wiki": 86,
           "wiki_raw": "86",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1680,13 +1681,13 @@
       "wiki_title": "Ghost",
       "page_url": "https://tibia.fandom.com/wiki/Ghost",
       "page_id": 1568,
-      "cut_revision_id": 1192179,
-      "cut_revision_timestamp": "2026-06-25T08:22:33Z",
-      "cut_content_sha256": "3654eef248397bc5c7b1b9bcc0c8d6f4f2a29e5ff5769fa6d3904ef8392df134",
-      "current_revision_id": 1192179,
-      "current_revision_timestamp": "2026-06-25T08:22:33Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:40Z",
+      "revision_id": 1192179,
+      "revision_timestamp": "2026-06-25T08:22:33Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Ghost?oldid=1192179",
+      "content_sha256": "3654eef248397bc5c7b1b9bcc0c8d6f4f2a29e5ff5769fa6d3904ef8392df134",
+      "api_server_timestamp": "2026-09-26T19:42:35Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:35Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -1715,7 +1716,7 @@
           "canary": 80,
           "wiki": 80,
           "wiki_raw": "80",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {
@@ -1896,13 +1897,13 @@
       "wiki_title": "Demodras",
       "page_url": "https://tibia.fandom.com/wiki/Demodras",
       "page_id": 3259,
-      "cut_revision_id": 986288,
-      "cut_revision_timestamp": "2023-01-02T17:52:14Z",
-      "cut_content_sha256": "edfd562bc78dd8a5f55e5564db6ce44643039f878cc8498ed2217d71a49c5fda",
-      "current_revision_id": 986288,
-      "current_revision_timestamp": "2023-01-02T17:52:14Z",
-      "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:41Z",
+      "revision_id": 986288,
+      "revision_timestamp": "2023-01-02T17:52:14Z",
+      "revision_url": "https://tibia.fandom.com/wiki/Demodras?oldid=986288",
+      "content_sha256": "edfd562bc78dd8a5f55e5564db6ce44643039f878cc8498ed2217d71a49c5fda",
+      "api_server_timestamp": "2026-09-26T19:42:35Z",
+      "request_mode": "latest",
+      "retrieved_at": "2026-09-26T19:42:35Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -1931,7 +1932,7 @@
           "canary": 197,
           "wiki": 197,
           "wiki_raw": "197",
-          "status": "MATCH",
+          "status": "NOT_COMPARABLE",
           "note": "Canary monster.speed is the raw engine value; the wiki lists observed speed."
         },
         {

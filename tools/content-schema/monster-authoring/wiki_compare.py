@@ -1,11 +1,10 @@
-"""Compare converted Canary monster bundles with TibiaWiki (Fandom) at the 2026-07-28 reference cut.
+"""Compare converted Canary monster bundles with the latest TibiaWiki (Fandom) revisions.
 
-Evidence tooling only. For each monster page it records the last revision at or before the cut and
-the current revision (to expose post-cut edits), the SHA-256 of the cut revision's wikitext and
-only the compared infobox facts. No wiki prose is stored. Wiki values are player observations and
-never become Game truth by this comparison.
+Evidence tooling only. Each page is fetched without a historical revision/date selector.
+The returned revision, content digest and acquisition timestamp bind the observed facts.
+Wiki values remain player observations and never become Game truth by this comparison.
 
-Usage: python wiki_compare.py --canary <Canary checkout> --batch canary-47dfd51f [--cache DIR]
+Usage: python wiki_compare.py --canary <Canary checkout> [--batch canary-47dfd51f] --cache DIR [--refresh]
 """
 import argparse
 import hashlib
@@ -24,38 +23,38 @@ ROOT = Path(__file__).resolve().parent
 API = 'https://tibia.fandom.com/api.php'
 PAGE_URL = 'https://tibia.fandom.com/wiki/'
 USER_AGENT = 'OterynEvidenceCollector/0.1 (+https://github.com/Oteryn/Oteryn-Game)'
-TARGET_CUT = '2026-07-28'
-CUT_TIMESTAMP = '2026-07-29T00:00:00Z'
 ELEMENTS = {'physical': 'physicalDmgMod', 'earth': 'earthDmgMod', 'fire': 'fireDmgMod', 'death': 'deathDmgMod',
             'energy': 'energyDmgMod', 'holy': 'holyDmgMod', 'ice': 'iceDmgMod', 'life_drain': 'hpDrainDmgMod',
             'drowning': 'drownDmgMod'}
 
 
 def api(params):
-    query = urllib.parse.urlencode({**params, 'format': 'json', 'formatversion': '2'})
+    query = urllib.parse.urlencode({**params, 'format': 'json', 'formatversion': '2', 'curtimestamp': 1, 'maxage': 0, 'smaxage': 0})
     request = urllib.request.Request(API + '?' + query, headers={'User-Agent': USER_AGENT})
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.load(response)
 
 
-def revision(title, start=None):
+def revision(title):
     params = {'action': 'query', 'titles': title, 'prop': 'revisions', 'rvprop': 'ids|timestamp|content',
               'rvslots': 'main', 'rvlimit': 1, 'redirects': 1}
-    if start:
-        params.update(rvstart=start, rvdir='older')
-    page = api(params)['query']['pages'][0]
+    response = api(params)
+    page = response['query']['pages'][0]
     if page.get('missing') or not page.get('revisions'):
         return None
     rev = page['revisions'][0]
-    return {'page_id': page['pageid'], 'title': page['title'], 'revision_id': rev['revid'],
+    return {'api_server_timestamp': response['curtimestamp'], 'page_id': page['pageid'], 'title': page['title'], 'revision_id': rev['revid'],
             'revision_timestamp': rev['timestamp'], 'content': rev['slots']['main']['content']}
 
 
-def fetch(title, cache):
+def fetch(title, cache, refresh=False):
     path = cache / (cb.slug(title) + '.json')
-    if path.exists():
-        return json.loads(path.read_text(encoding='utf-8'))
-    record = {'cut': revision(title, CUT_TIMESTAMP), 'current': revision(title),
+    if path.exists() and not refresh:
+        record = json.loads(path.read_text(encoding='utf-8'))
+        if record.get('request_mode') != 'latest':
+            raise ValueError('Historical or unqualified cache is not a current-source observation; use --refresh')
+        return record
+    record = {'request_mode': 'latest', 'current': revision(title),
               'retrieved_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}
     path.write_text(json.dumps(record, ensure_ascii=False), encoding='utf-8')
     time.sleep(0.5)
@@ -117,26 +116,29 @@ def wiki_loot(value):
     return names
 
 
-def compare(relative, canary, batch_dir, cache):
+def compare(relative, canary, batch_dir, cache, refresh=False):
     name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'))
     slug = cb.slug(name)
     monster = json.loads((batch_dir / slug / 'monster.json').read_text(encoding='utf-8'))
-    record = fetch(name, cache)
+    record = fetch(name, cache, refresh)
     result = {'monster': slug, 'wiki_title': name, 'page_url': PAGE_URL + urllib.parse.quote(name.replace(' ', '_'))}
-    if not record['cut']:
+    if not record['current']:
         return {**result, 'status': 'WIKI_PAGE_MISSING', 'rows': []}
-    cut, current = record['cut'], record['current']
-    fields = infobox(cut['content'])
-    result.update({'page_id': cut['page_id'], 'cut_revision_id': cut['revision_id'], 'cut_revision_timestamp': cut['revision_timestamp'],
-                   'cut_content_sha256': hashlib.sha256(cut['content'].encode('utf-8')).hexdigest(),
-                   'current_revision_id': current['revision_id'], 'current_revision_timestamp': current['revision_timestamp'],
-                   'edited_after_cut': current['revision_id'] != cut['revision_id'], 'retrieved_at': record['retrieved_at']})
+    current = record['current']
+    fields = infobox(current['content'])
+    result.update({'page_id': current['page_id'], 'revision_id': current['revision_id'], 'revision_timestamp': current['revision_timestamp'],
+                   'revision_url': PAGE_URL + urllib.parse.quote(current['title'].replace(' ', '_')) + '?oldid=' + str(current['revision_id']),
+                   'content_sha256': hashlib.sha256(current['content'].encode('utf-8')).hexdigest(),
+                   'api_server_timestamp': current['api_server_timestamp'], 'request_mode': 'latest',
+                   'retrieved_at': record['retrieved_at']})
     c, b = monster['creature'], monster['behavior']
     rows = []
 
     def row(field, canary_value, wiki_raw, wiki_value, note=None):
         if wiki_raw in (None, '', '?'):
             status = 'WIKI_UNKNOWN'
+        elif field == 'speed':
+            status = 'NOT_COMPARABLE'
         elif canary_value == wiki_value:
             status = 'MATCH'
         else:
@@ -207,24 +209,26 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     parser.add_argument('--batch', default=cb.REV, choices=sorted(cb.BATCHES))
-    parser.add_argument('--cache', type=Path, default=Path('/tmp/oteryn-wiki-cache'))
+    parser.add_argument('--cache', required=True, type=Path, help='Local raw cache; not committed')
+    parser.add_argument('--refresh', action='store_true', help='Read latest revisions, replacing local cached observations')
     args = parser.parse_args()
+    cb.require_pinned_checkout(args.canary)
     args.cache.mkdir(parents=True, exist_ok=True)
     objects = cb.load_appearance_objects(args.canary / 'data/items/appearances.dat')
     items = cb.load_items_xml(args.canary / 'data/items/items.xml')
     names, index = cb.name_index(objects, items)
     cb.CONVERTER = cb.Converter(args.canary, objects, items, names, index)
     batch_dir = ROOT / 'samples' / args.batch
-    results = [compare(relative, args.canary, batch_dir, args.cache) for relative in cb.BATCHES[args.batch]]
+    results = [compare(relative, args.canary, batch_dir, args.cache, args.refresh) for relative in cb.BATCHES[args.batch]]
     summary = {}
     for result in results:
         for entry in result['rows']:
             summary[entry['status']] = summary.get(entry['status'], 0) + 1
     report = {'source': 'TibiaWiki (Fandom), CC BY-SA; only compared facts are recorded', 'api': API,
-              'target_cut': TARGET_CUT, 'cut_rule': f'last revision at or before {CUT_TIMESTAMP}',
+              'request_mode': 'latest', 'historical_target_date': None,
               'classification': 'Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY',
               'row_status_totals': dict(sorted(summary.items())), 'monsters': results}
-    out = batch_dir / 'wiki-2026-07-28.json'
+    out = batch_dir / 'wiki-current-fandom.json'
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps({'out': str(out), 'totals': report['row_status_totals']}))
 

@@ -10,9 +10,9 @@ RULES and every value that needs an owner decision is left as an unresolved mani
 Usage: python canary_batch.py --canary <checkout of opentibiabr/canary at REVISION> [--out DIR]
 """
 import argparse
-import hashlib
 import json
 import re
+import subprocess
 import xml.etree.ElementTree as ET
 from decimal import Decimal
 from fractions import Fraction
@@ -106,8 +106,17 @@ return registered, callbacks
 '''
 
 
-def blob_id(data):
-    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+def source_blob(canary, path):
+    """Canonical pinned Git object ID; working-tree CRLF is not source provenance."""
+    return subprocess.check_output(['git', '-C', str(canary), 'rev-parse',
+                                    f'{REVISION}:{path}'], text=True).strip()
+
+
+def require_pinned_checkout(canary):
+    head = subprocess.check_output(['git', '-C', str(canary), 'rev-parse', 'HEAD'], text=True).strip()
+    if head != REVISION:
+        raise ValueError(f'Canary HEAD {head} differs from pin {REVISION}')
+    subprocess.run(['git', '-C', str(canary), 'diff', '--quiet', 'HEAD', '--'], check=True)
 
 
 def lua_value(value):
@@ -559,7 +568,7 @@ class Converter:
 
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
         manifest = {'sources': [{'repository': REPOSITORY, 'revision': REVISION}], 'entries': rows}
-        source = {'file': source_file, 'git_blob': blob_id(path.read_bytes())}
+        source = {'file': source_file, 'git_blob': source_blob(self.canary, source_file)}
         return s, monster, deps, catalog, manifest, source
 
     def spell(self, spell, base, deps, asset):
@@ -730,6 +739,7 @@ def main():
     parser.add_argument('--batch', choices=sorted(BATCHES), action='append', help='default: every batch')
     parser.add_argument('--out', type=Path, default=ROOT / 'samples', help='parent directory of the batch directories')
     args = parser.parse_args()
+    require_pinned_checkout(args.canary)
     objects = load_appearance_objects(args.canary / 'data/items/appearances.dat')
     items = load_items_xml(args.canary / 'data/items/items.xml')
     names, index = name_index(objects, items)
@@ -751,7 +761,7 @@ def write_batch(converter, canary, out, batch):
             (target / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
         sources.append({'monster': s, **source})
     shared = {'repository': REPOSITORY, 'revision': REVISION, 'rules': RULES,
-              'shared_sources': {p: blob_id((canary / p).read_bytes()) for p in
+              'shared_sources': {p: source_blob(canary, p) for p in
                                  ('data/items/items.xml', 'data/items/appearances.dat', 'data/scripts/lib/register_monster_type.lua')},
               'monsters': sources}
     (out / 'sources.json').write_text(json.dumps(shared, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
