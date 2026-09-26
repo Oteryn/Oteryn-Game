@@ -1,0 +1,8 @@
+{
+  "schema": "OTERYN_CREATURE_BESTIARY_NOTES_CANDIDATE/v1",
+  "creature_key": "creature:cyclops",
+  "bestiary": {
+    "locations": "Plains of Havoc, Mount Sternum, Femor Hills, Cyclops Camp, Cyclopolis, Ancient Temple, Shadowthorn, Orc Fort, Mistrock, Foreigner Quarter, Outlaw Camp and the Cyclops version of the Forsaken Mine.",
+    "notes": "One-eyed cyclopes search for metals in their caves and defend their territory fiercely. They are strong, skilled at metalwork and will move obstacles or weaker creatures to reach an intruder."
+  }
+}
