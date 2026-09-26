@@ -69,3 +69,12 @@ verify owned delta, freeze, then qualify exact immutable remote files. The final
 SHA-bound receipt is external because no commit can include its own SHA. Status
 remains waiting/held for later architectural and integration disposition. KAN-16
 receives one material successor result comment while aggregate status stays W toku.
+
+## Exact-candidate repair history
+
+The first successor bea473c47e57959302ff080ee7e9ece3b4a29055 was frozen and read
+back completely. Its generator byte-reproducibility check then failed on Windows:
+default text output changed LF into CRLF. That candidate is superseded. The session
+explicitly returned to AUTHORING, made output newlines deterministic in generator
+and verification scripts, and requires a new freeze and all fresh candidate checks.
+No evidence from the superseded head is used as successor qualification.
