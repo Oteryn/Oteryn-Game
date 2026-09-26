@@ -1,0 +1,92 @@
+name: Item Content Source Role Census
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/reference-world-corridor-census/item_source_role_census.py
+      - tools/reference-world-corridor-census/item_source_role_census_self_test.py
+      - docs/agents/evidence/OTV2-20260923-content-world-item-source-role-census.json
+      - docs/agents/tasks/active/OTV2-20260923-content-world-item-source-role-census-504.md
+      - .github/workflows/item-content-source-role-census.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: item-content-source-role-census-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Item content / source role census
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact Game candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact Game head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Check out exact Crystal source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zimbadev/crystalserver
+          ref: ff7ede593c69d4c658b382c97443e8155926924a
+          path: fresh-source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify pinned Crystal object
+        run: |
+          set -euo pipefail
+          test "$(git -C fresh-source rev-parse HEAD)" = 'ff7ede593c69d4c658b382c97443e8155926924a'
+          test "$(git -C fresh-source rev-parse HEAD:data/items/items.xml)" = '0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f'
+          test "$(stat -c '%s' fresh-source/data/items/items.xml)" = '3819874'
+          test "$(sha256sum fresh-source/data/items/items.xml | awk '{print $1}')" = 'c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb'
+
+      - name: Compile and run focused census self-test
+        run: |
+          set -euo pipefail
+          python -B -m py_compile             tools/reference-world-corridor-census/item_source_role_census.py             tools/reference-world-corridor-census/item_source_role_census_self_test.py
+          python -B tools/reference-world-corridor-census/item_source_role_census_self_test.py
+
+      - name: Reproduce real census twice
+        run: |
+          set -euo pipefail
+          python -B tools/reference-world-corridor-census/item_source_role_census.py             --source-root fresh-source             --output /tmp/item-source-role-census-a.json
+          python -B tools/reference-world-corridor-census/item_source_role_census.py             --source-root fresh-source             --output /tmp/item-source-role-census-b.json
+          cmp /tmp/item-source-role-census-a.json /tmp/item-source-role-census-b.json
+
+      - name: Verify tracked evidence byte-identically
+        run: |
+          set -euo pipefail
+          cmp /tmp/item-source-role-census-a.json             docs/agents/evidence/OTV2-20260923-content-world-item-source-role-census.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('/tmp/item-source-role-census-a.json').read_text())
+          assert p['counts']['source_xml_item_nodes'] == 17669
+          assert p['counts']['admitted_definition_nodes'] == 17665
+          assert p['counts']['expanded_source_ids'] == 38157
+          assert p['counts']['range_expansion_extra_ids_over_definitions'] == 20492
+          assert p['catalog_denominator']['strong_player_definition_lower_bound'] == 4935
+          assert p['catalog_denominator']['strong_plus_unresolved_definition_band_upper'] == 7125
+          assert p['catalog_denominator']['obvious_world_technical_state_or_fieldless_range_ids'] == 30018
+          print('item-source-role-census tracked evidence: PASS')
+          PY

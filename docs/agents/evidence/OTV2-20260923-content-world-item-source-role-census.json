@@ -1,0 +1,1515 @@
+{
+  "catalog_denominator": {
+    "note": "The band is a source-role scaling estimate, not Reference truth. Fieldless range variants may still be player-visible presentation variants; mixed residuals remain deliberately unforced.",
+    "obvious_world_technical_state_or_fieldless_range_definitions": 10540,
+    "obvious_world_technical_state_or_fieldless_range_ids": 30018,
+    "strong_player_definition_lower_bound": 4935,
+    "strong_player_expanded_ids": 5452,
+    "strong_plus_unresolved_definition_band_upper": 7125,
+    "strong_plus_unresolved_expanded_id_band_upper": 8139,
+    "unresolved_direct_or_simple_definitions": 2190,
+    "unresolved_direct_or_simple_expanded_ids": 2687
+  },
+  "counts": {
+    "admitted_definition_nodes": 17665,
+    "admitted_direct_definition_nodes": 14689,
+    "admitted_range_definition_nodes": 2976,
+    "definition_name_collision_groups": 2390,
+    "distinct_normalized_names": 9201,
+    "expanded_id_name_collision_groups": 3174,
+    "expanded_source_ids": 38157,
+    "range_expansion_extra_ids_over_definitions": 20492,
+    "range_member_source_ids": 23468,
+    "reversed_ranges_excluded": 4,
+    "source_direct_id_nodes": 14689,
+    "source_range_nodes": 2980,
+    "source_xml_item_nodes": 17669
+  },
+  "invariants": {
+    "all_admitted_definitions_partitioned_once": true,
+    "all_expanded_source_ids_partitioned_once": true,
+    "identity_remapping_performed": false,
+    "name_alone_grants_player_catalog_status": false,
+    "runtime_or_client_mutation_performed": false,
+    "semantic_promotion_performed": false,
+    "source_role_census_is_gameplay_truth": false
+  },
+  "limitations": [
+    "This census classifies source-role signals, not official Tibia catalogue membership.",
+    "Player/catalog status requires a strong source taxonomy or gameplay-field signal; mixed cases remain residual.",
+    "World/interactable includes map/world objects that may still be represented by ItemType in the donor engine.",
+    "Range members are counted as source IDs but are not automatically treated as independent semantic definitions.",
+    "Appearance/sprite equivalence is outside this census."
+  ],
+  "next_action": "Use admitted definition nodes, not 38,157 expanded source IDs, as the first bulk-import denominator; resolve residual/simple candidates and appearance variants only where they affect a real player catalogue batch.",
+  "primary_type_top_by_definition_nodes": [
+    {
+      "definition_nodes": 8746,
+      "primary_type": "<none>"
+    },
+    {
+      "definition_nodes": 769,
+      "primary_type": "soul cores"
+    },
+    {
+      "definition_nodes": 688,
+      "primary_type": "furniture"
+    },
+    {
+      "definition_nodes": 675,
+      "primary_type": "creature products"
+    },
+    {
+      "definition_nodes": 556,
+      "primary_type": "quest items"
+    },
+    {
+      "definition_nodes": 547,
+      "primary_type": "decoration"
+    },
+    {
+      "definition_nodes": 286,
+      "primary_type": "walls"
+    },
+    {
+      "definition_nodes": 243,
+      "primary_type": "constructions"
+    },
+    {
+      "definition_nodes": 207,
+      "primary_type": "artificial tiles"
+    },
+    {
+      "definition_nodes": 201,
+      "primary_type": "natural tiles"
+    },
+    {
+      "definition_nodes": 172,
+      "primary_type": "containers"
+    },
+    {
+      "definition_nodes": 172,
+      "primary_type": "valuables"
+    },
+    {
+      "definition_nodes": 160,
+      "primary_type": "club weapons"
+    },
+    {
+      "definition_nodes": 159,
+      "primary_type": "sword weapons"
+    },
+    {
+      "definition_nodes": 156,
+      "primary_type": "food"
+    },
+    {
+      "definition_nodes": 153,
+      "primary_type": "armors"
+    },
+    {
+      "definition_nodes": 147,
+      "primary_type": "axe weapons"
+    },
+    {
+      "definition_nodes": 136,
+      "primary_type": "documents and papers"
+    },
+    {
+      "definition_nodes": 134,
+      "primary_type": "rocks"
+    },
+    {
+      "definition_nodes": 118,
+      "primary_type": "helmets"
+    },
+    {
+      "definition_nodes": 118,
+      "primary_type": "floor decorations"
+    },
+    {
+      "definition_nodes": 109,
+      "primary_type": "tools (objects)"
+    },
+    {
+      "definition_nodes": 97,
+      "primary_type": "dolls and bears"
+    },
+    {
+      "definition_nodes": 97,
+      "primary_type": "light sources"
+    },
+    {
+      "definition_nodes": 95,
+      "primary_type": "tools"
+    },
+    {
+      "definition_nodes": 95,
+      "primary_type": "statues"
+    },
+    {
+      "definition_nodes": 91,
+      "primary_type": "amulets and necklaces"
+    },
+    {
+      "definition_nodes": 86,
+      "primary_type": "distance weapons"
+    },
+    {
+      "definition_nodes": 85,
+      "primary_type": "machines (objects)"
+    },
+    {
+      "definition_nodes": 84,
+      "primary_type": "utilities"
+    },
+    {
+      "definition_nodes": 84,
+      "primary_type": "shields"
+    },
+    {
+      "definition_nodes": 82,
+      "primary_type": "wall hangings"
+    },
+    {
+      "definition_nodes": 78,
+      "primary_type": "plants"
+    },
+    {
+      "definition_nodes": 76,
+      "primary_type": "pillars"
+    },
+    {
+      "definition_nodes": 73,
+      "primary_type": "trees"
+    },
+    {
+      "definition_nodes": 67,
+      "primary_type": "liquids"
+    },
+    {
+      "definition_nodes": 67,
+      "primary_type": "rubbish"
+    },
+    {
+      "definition_nodes": 67,
+      "primary_type": "fansite items"
+    },
+    {
+      "definition_nodes": 65,
+      "primary_type": "legs"
+    },
+    {
+      "definition_nodes": 64,
+      "primary_type": "windows"
+    }
+  ],
+  "primary_type_top_by_expanded_ids": [
+    {
+      "expanded_source_ids": 21003,
+      "primary_type": "<none>"
+    },
+    {
+      "expanded_source_ids": 2070,
+      "primary_type": "walls"
+    },
+    {
+      "expanded_source_ids": 1578,
+      "primary_type": "artificial tiles"
+    },
+    {
+      "expanded_source_ids": 1241,
+      "primary_type": "natural tiles"
+    },
+    {
+      "expanded_source_ids": 769,
+      "primary_type": "soul cores"
+    },
+    {
+      "expanded_source_ids": 767,
+      "primary_type": "quest items"
+    },
+    {
+      "expanded_source_ids": 761,
+      "primary_type": "furniture"
+    },
+    {
+      "expanded_source_ids": 732,
+      "primary_type": "constructions"
+    },
+    {
+      "expanded_source_ids": 717,
+      "primary_type": "creature products"
+    },
+    {
+      "expanded_source_ids": 580,
+      "primary_type": "decoration"
+    },
+    {
+      "expanded_source_ids": 516,
+      "primary_type": "rocks"
+    },
+    {
+      "expanded_source_ids": 280,
+      "primary_type": "plants"
+    },
+    {
+      "expanded_source_ids": 277,
+      "primary_type": "tools (objects)"
+    },
+    {
+      "expanded_source_ids": 258,
+      "primary_type": "fields"
+    },
+    {
+      "expanded_source_ids": 242,
+      "primary_type": "statues"
+    },
+    {
+      "expanded_source_ids": 218,
+      "primary_type": "pillars"
+    },
+    {
+      "expanded_source_ids": 207,
+      "primary_type": "wall hangings"
+    },
+    {
+      "expanded_source_ids": 205,
+      "primary_type": "remains"
+    },
+    {
+      "expanded_source_ids": 200,
+      "primary_type": "trees"
+    },
+    {
+      "expanded_source_ids": 189,
+      "primary_type": "machines (objects)"
+    },
+    {
+      "expanded_source_ids": 187,
+      "primary_type": "floor decorations"
+    },
+    {
+      "expanded_source_ids": 186,
+      "primary_type": "windows"
+    },
+    {
+      "expanded_source_ids": 178,
+      "primary_type": "containers"
+    },
+    {
+      "expanded_source_ids": 177,
+      "primary_type": "natural products"
+    },
+    {
+      "expanded_source_ids": 176,
+      "primary_type": "mushrooms"
+    },
+    {
+      "expanded_source_ids": 175,
+      "primary_type": "valuables"
+    },
+    {
+      "expanded_source_ids": 169,
+      "primary_type": "food"
+    },
+    {
+      "expanded_source_ids": 163,
+      "primary_type": "club weapons"
+    },
+    {
+      "expanded_source_ids": 161,
+      "primary_type": "sword weapons"
+    },
+    {
+      "expanded_source_ids": 153,
+      "primary_type": "armors"
+    },
+    {
+      "expanded_source_ids": 152,
+      "primary_type": "signs"
+    },
+    {
+      "expanded_source_ids": 147,
+      "primary_type": "axe weapons"
+    },
+    {
+      "expanded_source_ids": 140,
+      "primary_type": "documents and papers"
+    },
+    {
+      "expanded_source_ids": 134,
+      "primary_type": "light sources"
+    },
+    {
+      "expanded_source_ids": 127,
+      "primary_type": "tables"
+    },
+    {
+      "expanded_source_ids": 125,
+      "primary_type": "utilities"
+    },
+    {
+      "expanded_source_ids": 118,
+      "primary_type": "helmets"
+    },
+    {
+      "expanded_source_ids": 111,
+      "primary_type": "dolls and bears"
+    },
+    {
+      "expanded_source_ids": 105,
+      "primary_type": "tools"
+    },
+    {
+      "expanded_source_ids": 95,
+      "primary_type": "rubbish"
+    }
+  ],
+  "reason_counts": {
+    "DIRECT_SIMPLE_NO_FIELDS:direct_no_fields": 866,
+    "PLAYER_CATALOG_STRONG:primarytype:ammunition": 31,
+    "PLAYER_CATALOG_STRONG:primarytype:amulets and necklaces": 91,
+    "PLAYER_CATALOG_STRONG:primarytype:armors": 153,
+    "PLAYER_CATALOG_STRONG:primarytype:attack runes": 30,
+    "PLAYER_CATALOG_STRONG:primarytype:axe weapons": 147,
+    "PLAYER_CATALOG_STRONG:primarytype:blessing charms": 5,
+    "PLAYER_CATALOG_STRONG:primarytype:books": 24,
+    "PLAYER_CATALOG_STRONG:primarytype:boots": 56,
+    "PLAYER_CATALOG_STRONG:primarytype:clothing accessories": 2,
+    "PLAYER_CATALOG_STRONG:primarytype:club weapons": 160,
+    "PLAYER_CATALOG_STRONG:primarytype:containers": 172,
+    "PLAYER_CATALOG_STRONG:primarytype:creature products": 675,
+    "PLAYER_CATALOG_STRONG:primarytype:distance weapons": 86,
+    "PLAYER_CATALOG_STRONG:primarytype:documents and papers": 136,
+    "PLAYER_CATALOG_STRONG:primarytype:dolls and bears": 96,
+    "PLAYER_CATALOG_STRONG:primarytype:enchanted items": 2,
+    "PLAYER_CATALOG_STRONG:primarytype:exercise weapons": 24,
+    "PLAYER_CATALOG_STRONG:primarytype:fansite items": 67,
+    "PLAYER_CATALOG_STRONG:primarytype:fist weapons": 33,
+    "PLAYER_CATALOG_STRONG:primarytype:fluid containers": 21,
+    "PLAYER_CATALOG_STRONG:primarytype:food": 156,
+    "PLAYER_CATALOG_STRONG:primarytype:game tokens": 36,
+    "PLAYER_CATALOG_STRONG:primarytype:healing runes": 1,
+    "PLAYER_CATALOG_STRONG:primarytype:helmets": 118,
+    "PLAYER_CATALOG_STRONG:primarytype:keys": 11,
+    "PLAYER_CATALOG_STRONG:primarytype:kitchen tools": 23,
+    "PLAYER_CATALOG_STRONG:primarytype:legs": 65,
+    "PLAYER_CATALOG_STRONG:primarytype:liquids": 66,
+    "PLAYER_CATALOG_STRONG:primarytype:magical items": 18,
+    "PLAYER_CATALOG_STRONG:primarytype:musical instruments": 31,
+    "PLAYER_CATALOG_STRONG:primarytype:natural products": 43,
+    "PLAYER_CATALOG_STRONG:primarytype:other items": 2,
+    "PLAYER_CATALOG_STRONG:primarytype:painting equipment": 1,
+    "PLAYER_CATALOG_STRONG:primarytype:party items": 30,
+    "PLAYER_CATALOG_STRONG:primarytype:plants and herbs": 53,
+    "PLAYER_CATALOG_STRONG:primarytype:quest items": 555,
+    "PLAYER_CATALOG_STRONG:primarytype:quivers": 8,
+    "PLAYER_CATALOG_STRONG:primarytype:rings": 59,
+    "PLAYER_CATALOG_STRONG:primarytype:rods": 41,
+    "PLAYER_CATALOG_STRONG:primarytype:shields": 84,
+    "PLAYER_CATALOG_STRONG:primarytype:soul cores": 769,
+    "PLAYER_CATALOG_STRONG:primarytype:spellbooks": 17,
+    "PLAYER_CATALOG_STRONG:primarytype:support runes": 5,
+    "PLAYER_CATALOG_STRONG:primarytype:sword weapons": 159,
+    "PLAYER_CATALOG_STRONG:primarytype:taming items": 43,
+    "PLAYER_CATALOG_STRONG:primarytype:tools": 94,
+    "PLAYER_CATALOG_STRONG:primarytype:tournament rewards": 19,
+    "PLAYER_CATALOG_STRONG:primarytype:training weapons": 8,
+    "PLAYER_CATALOG_STRONG:primarytype:trophies": 54,
+    "PLAYER_CATALOG_STRONG:primarytype:valuables": 172,
+    "PLAYER_CATALOG_STRONG:primarytype:wands": 27,
+    "PLAYER_CATALOG_STRONG:strong_gameplay_field": 156,
+    "RANGE_VARIANT_NO_FIELDS:range_no_fields": 1024,
+    "RESIDUAL_OTHER:other": 185,
+    "SIMPLE_PRESENTATION_CANDIDATE:simple_presentation": 1139,
+    "STATE_VARIANT_DECAY:decay_duration": 3414,
+    "STATE_VARIANT_TRANSFORM:transform_relation": 287,
+    "TECHNICAL_PLACEHOLDER:placeholder_name": 652,
+    "WORLD_OBJECT_INTERACTION:primarytype:animals": 39,
+    "WORLD_OBJECT_INTERACTION:primarytype:annelids": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:arachnids": 3,
+    "WORLD_OBJECT_INTERACTION:primarytype:artificial tiles": 207,
+    "WORLD_OBJECT_INTERACTION:primarytype:astral shapers": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:bats": 5,
+    "WORLD_OBJECT_INTERACTION:primarytype:bears": 2,
+    "WORLD_OBJECT_INTERACTION:primarytype:birds": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:blobs": 6,
+    "WORLD_OBJECT_INTERACTION:primarytype:bushes": 14,
+    "WORLD_OBJECT_INTERACTION:primarytype:cactuses": 3,
+    "WORLD_OBJECT_INTERACTION:primarytype:canines": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:casks": 5,
+    "WORLD_OBJECT_INTERACTION:primarytype:closets": 14,
+    "WORLD_OBJECT_INTERACTION:primarytype:coffins": 22,
+    "WORLD_OBJECT_INTERACTION:primarytype:constructions": 243,
+    "WORLD_OBJECT_INTERACTION:primarytype:decoration": 547,
+    "WORLD_OBJECT_INTERACTION:primarytype:demons": 6,
+    "WORLD_OBJECT_INTERACTION:primarytype:doors": 20,
+    "WORLD_OBJECT_INTERACTION:primarytype:dragons": 3,
+    "WORLD_OBJECT_INTERACTION:primarytype:dreamhaunters": 2,
+    "WORLD_OBJECT_INTERACTION:primarytype:dropdowns": 40,
+    "WORLD_OBJECT_INTERACTION:primarytype:event creatures": 6,
+    "WORLD_OBJECT_INTERACTION:primarytype:ferns": 4,
+    "WORLD_OBJECT_INTERACTION:primarytype:fields": 56,
+    "WORLD_OBJECT_INTERACTION:primarytype:flags": 12,
+    "WORLD_OBJECT_INTERACTION:primarytype:floor decorations": 118,
+    "WORLD_OBJECT_INTERACTION:primarytype:flora and minerals": 11,
+    "WORLD_OBJECT_INTERACTION:primarytype:flowers": 44,
+    "WORLD_OBJECT_INTERACTION:primarytype:furniture": 688,
+    "WORLD_OBJECT_INTERACTION:primarytype:ghosts": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:glires": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:grass": 25,
+    "WORLD_OBJECT_INTERACTION:primarytype:hive born": 2,
+    "WORLD_OBJECT_INTERACTION:primarytype:illumination": 10,
+    "WORLD_OBJECT_INTERACTION:primarytype:ladders": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:light sources": 97,
+    "WORLD_OBJECT_INTERACTION:primarytype:machines": 2,
+    "WORLD_OBJECT_INTERACTION:primarytype:machines (objects)": 85,
+    "WORLD_OBJECT_INTERACTION:primarytype:magicfield": 2,
+    "WORLD_OBJECT_INTERACTION:primarytype:metals": 4,
+    "WORLD_OBJECT_INTERACTION:primarytype:mollusks": 1,
+    "WORLD_OBJECT_INTERACTION:primarytype:mushrooms": 41,
+    "WORLD_OBJECT_INTERACTION:primarytype:natural tiles": 201,
+    "WORLD_OBJECT_INTERACTION:primarytype:outlaws": 2,
+    "WORLD_OBJECT_INTERACTION:primarytype:pillars": 76,
+    "WORLD_OBJECT_INTERACTION:primarytype:plants": 78,
+    "WORLD_OBJECT_INTERACTION:primarytype:portals": 19,
+    "WORLD_OBJECT_INTERACTION:primarytype:quest objects": 58,
+    "WORLD_OBJECT_INTERACTION:primarytype:refuse": 37,
+    "WORLD_OBJECT_INTERACTION:primarytype:remains": 58,
+    "WORLD_OBJECT_INTERACTION:primarytype:rocks": 134,
+    "WORLD_OBJECT_INTERACTION:primarytype:rubbish": 67,
+    "WORLD_OBJECT_INTERACTION:primarytype:shrines and altars": 29,
+    "WORLD_OBJECT_INTERACTION:primarytype:signs": 7,
+    "WORLD_OBJECT_INTERACTION:primarytype:skeletons": 9,
+    "WORLD_OBJECT_INTERACTION:primarytype:stairs": 20,
+    "WORLD_OBJECT_INTERACTION:primarytype:statues": 95,
+    "WORLD_OBJECT_INTERACTION:primarytype:tables": 57,
+    "WORLD_OBJECT_INTERACTION:primarytype:teleporters": 51,
+    "WORLD_OBJECT_INTERACTION:primarytype:tools (objects)": 109,
+    "WORLD_OBJECT_INTERACTION:primarytype:torture instruments": 4,
+    "WORLD_OBJECT_INTERACTION:primarytype:transportation": 8,
+    "WORLD_OBJECT_INTERACTION:primarytype:traps": 19,
+    "WORLD_OBJECT_INTERACTION:primarytype:trees": 73,
+    "WORLD_OBJECT_INTERACTION:primarytype:ungulates": 3,
+    "WORLD_OBJECT_INTERACTION:primarytype:wall hangings": 82,
+    "WORLD_OBJECT_INTERACTION:primarytype:walls": 286,
+    "WORLD_OBJECT_INTERACTION:primarytype:windows": 64,
+    "WORLD_OBJECT_INTERACTION:type:bed": 130,
+    "WORLD_OBJECT_INTERACTION:type:carpet": 23,
+    "WORLD_OBJECT_INTERACTION:type:door": 615,
+    "WORLD_OBJECT_INTERACTION:type:ladder": 15,
+    "WORLD_OBJECT_INTERACTION:type:magicfield": 22,
+    "WORLD_OBJECT_INTERACTION:type:mailbox": 4,
+    "WORLD_OBJECT_INTERACTION:type:rewardchest": 1,
+    "WORLD_OBJECT_INTERACTION:type:teleport": 10,
+    "WORLD_OBJECT_INTERACTION:type:trashholder": 3,
+    "WORLD_OBJECT_INTERACTION:world_field": 298
+  },
+  "reversed_range_exclusions": [
+    {
+      "fromid": 22328,
+      "name": "large totem pole",
+      "toid": 22323
+    },
+    {
+      "fromid": 25139,
+      "name": "RESERVED SPRITE",
+      "toid": 25134
+    },
+    {
+      "fromid": 33231,
+      "name": "buttress",
+      "toid": 33227
+    },
+    {
+      "fromid": 49329,
+      "name": "brick wall",
+      "toid": 49282
+    }
+  ],
+  "role_buckets": {
+    "DIRECT_SIMPLE_NO_FIELDS": {
+      "definition_nodes": 866,
+      "direct_nodes": 866,
+      "distinct_normalized_names": 515,
+      "expanded_source_ids": 866,
+      "range_nodes": 0
+    },
+    "PLAYER_CATALOG_STRONG": {
+      "definition_nodes": 4935,
+      "direct_nodes": 4817,
+      "distinct_normalized_names": 4432,
+      "expanded_source_ids": 5452,
+      "range_nodes": 118
+    },
+    "RANGE_VARIANT_NO_FIELDS": {
+      "definition_nodes": 1024,
+      "direct_nodes": 0,
+      "distinct_normalized_names": 596,
+      "expanded_source_ids": 7835,
+      "range_nodes": 1024
+    },
+    "RESIDUAL_OTHER": {
+      "definition_nodes": 185,
+      "direct_nodes": 171,
+      "distinct_normalized_names": 141,
+      "expanded_source_ids": 220,
+      "range_nodes": 14
+    },
+    "SIMPLE_PRESENTATION_CANDIDATE": {
+      "definition_nodes": 1139,
+      "direct_nodes": 1035,
+      "distinct_normalized_names": 917,
+      "expanded_source_ids": 1601,
+      "range_nodes": 104
+    },
+    "STATE_VARIANT_DECAY": {
+      "definition_nodes": 3414,
+      "direct_nodes": 3410,
+      "distinct_normalized_names": 884,
+      "expanded_source_ids": 3422,
+      "range_nodes": 4
+    },
+    "STATE_VARIANT_TRANSFORM": {
+      "definition_nodes": 287,
+      "direct_nodes": 267,
+      "distinct_normalized_names": 101,
+      "expanded_source_ids": 320,
+      "range_nodes": 20
+    },
+    "TECHNICAL_PLACEHOLDER": {
+      "definition_nodes": 652,
+      "direct_nodes": 325,
+      "distinct_normalized_names": 15,
+      "expanded_source_ids": 5440,
+      "range_nodes": 327
+    },
+    "WORLD_OBJECT_INTERACTION": {
+      "definition_nodes": 5163,
+      "direct_nodes": 3798,
+      "distinct_normalized_names": 1898,
+      "expanded_source_ids": 13001,
+      "range_nodes": 1365
+    }
+  },
+  "samples": {
+    "DIRECT_SIMPLE_NO_FIELDS": [
+      {
+        "expanded_source_ids": 1,
+        "name": "water",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 1
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "wine",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 2
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "beer",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 3
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "mud",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 4
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "blood",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 5
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "slime",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 6
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "oil",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 7
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "urine",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 8
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "milk",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 9
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "manafluid",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 10
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "lifefluid",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 11
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "lemonade",
+        "reason": "direct_no_fields",
+        "source": {
+          "id": 12
+        }
+      }
+    ],
+    "PLAYER_CATALOG_STRONG": [
+      {
+        "expanded_source_ids": 1,
+        "name": "white flower",
+        "reason": "primarytype:quest items",
+        "source": {
+          "id": 102
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "magical watch",
+        "reason": "primarytype:quest items",
+        "source": {
+          "id": 112
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "crate",
+        "reason": "primarytype:containers",
+        "source": {
+          "id": 116
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "crate",
+        "reason": "primarytype:containers",
+        "source": {
+          "id": 117
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "crate",
+        "reason": "primarytype:containers",
+        "source": {
+          "id": 118
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "box",
+        "reason": "primarytype:containers",
+        "source": {
+          "id": 119
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "some special leaves",
+        "reason": "primarytype:quest items",
+        "source": {
+          "id": 120
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "whoopee cushion",
+        "reason": "primarytype:quest items",
+        "source": {
+          "id": 121
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "toy mouse",
+        "reason": "primarytype:dolls and bears",
+        "source": {
+          "id": 123
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "easily inflammable sulphur",
+        "reason": "primarytype:quest items",
+        "source": {
+          "id": 124
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "magical inkwell",
+        "reason": "primarytype:tools",
+        "source": {
+          "id": 127
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "signed contract",
+        "reason": "primarytype:documents and papers",
+        "source": {
+          "id": 128
+        }
+      }
+    ],
+    "RANGE_VARIANT_NO_FIELDS": [
+      {
+        "expanded_source_ids": 2,
+        "name": "flowers",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 108,
+          "toid": 109
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "stone",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 203,
+          "toid": 204
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "stone",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 207,
+          "toid": 208
+        }
+      },
+      {
+        "expanded_source_ids": 9,
+        "name": "grass",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 307,
+          "toid": 315
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "dirt",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 317,
+          "toid": 320
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "dirt",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 322,
+          "toid": 323
+        }
+      },
+      {
+        "expanded_source_ids": 5,
+        "name": "dirt floor",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 351,
+          "toid": 355
+        }
+      },
+      {
+        "expanded_source_ids": 8,
+        "name": "large stone carving",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 505,
+          "toid": 512
+        }
+      },
+      {
+        "expanded_source_ids": 3,
+        "name": "carved stone tile",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 513,
+          "toid": 515
+        }
+      },
+      {
+        "expanded_source_ids": 3,
+        "name": "carved stone tile",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 517,
+          "toid": 519
+        }
+      },
+      {
+        "expanded_source_ids": 9,
+        "name": "ornamented floor",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 520,
+          "toid": 528
+        }
+      },
+      {
+        "expanded_source_ids": 9,
+        "name": "ornamented floor",
+        "reason": "range_no_fields",
+        "source": {
+          "fromid": 537,
+          "toid": 545
+        }
+      }
+    ],
+    "RESIDUAL_OTHER": [
+      {
+        "expanded_source_ids": 1,
+        "name": "grave",
+        "reason": "other",
+        "source": {
+          "id": 134
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "case of rust bugs",
+        "reason": "other",
+        "source": {
+          "id": 350
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "lava hole",
+        "reason": "other",
+        "source": {
+          "id": 391
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "book",
+        "reason": "other",
+        "source": {
+          "id": 401
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "piece of paper",
+        "reason": "other",
+        "source": {
+          "id": 641
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "piece of paper",
+        "reason": "other",
+        "source": {
+          "id": 642
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "costume bag",
+        "reason": "other",
+        "source": {
+          "id": 653
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "costume bag",
+        "reason": "other",
+        "source": {
+          "id": 655
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "sanctified grave",
+        "reason": "other",
+        "source": {
+          "id": 1979
+        }
+      },
+      {
+        "expanded_source_ids": 3,
+        "name": "grave stone",
+        "reason": "other",
+        "source": {
+          "fromid": 1980,
+          "toid": 1982
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "book",
+        "reason": "other",
+        "source": {
+          "id": 2816
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "sheet of paper",
+        "reason": "other",
+        "source": {
+          "id": 2820
+        }
+      }
+    ],
+    "SIMPLE_PRESENTATION_CANDIDATE": [
+      {
+        "expanded_source_ids": 1,
+        "name": "special flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 107
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "special flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 110
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dwarven emperor's beard",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 113
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "special flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 125
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "special flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 126
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "special flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 133
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "special flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 135
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "bale of white cloth",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 142
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "bale of yellowed cloth",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 143
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "large seashell",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 197
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "empty potion flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 283
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "empty potion flask",
+        "reason": "simple_presentation",
+        "source": {
+          "id": 284
+        }
+      }
+    ],
+    "STATE_VARIANT_DECAY": [
+      {
+        "expanded_source_ids": 1,
+        "name": "dead human",
+        "reason": "decay_duration",
+        "source": {
+          "id": 111
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "remains of a spider web",
+        "reason": "decay_duration",
+        "source": {
+          "id": 188
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "remains of a spider web",
+        "reason": "decay_duration",
+        "source": {
+          "id": 189
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "large seashell",
+        "reason": "decay_duration",
+        "source": {
+          "id": 198
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "remains of a spider egg",
+        "reason": "decay_duration",
+        "source": {
+          "id": 211
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "ice cream cone",
+        "reason": "decay_duration",
+        "source": {
+          "id": 229
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dead dragon hatchling",
+        "reason": "decay_duration",
+        "source": {
+          "id": 269
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dead dragon hatchling",
+        "reason": "decay_duration",
+        "source": {
+          "id": 270
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dead dragon hatchling",
+        "reason": "decay_duration",
+        "source": {
+          "id": 271
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dead dragon hatchling",
+        "reason": "decay_duration",
+        "source": {
+          "id": 272
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dead dragon hatchling",
+        "reason": "decay_duration",
+        "source": {
+          "id": 273
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "dead dragon hatchling",
+        "reason": "decay_duration",
+        "source": {
+          "id": 274
+        }
+      }
+    ],
+    "STATE_VARIANT_TRANSFORM": [
+      {
+        "expanded_source_ids": 1,
+        "name": "statue",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2025
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "statue",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2059
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "statue",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2060
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "statue",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2061
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "stone table",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2347
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "drawers",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2431
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "drawers",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2432
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "drawers",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2433
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "drawers",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2434
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "wall lamp",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2907
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "lit wall lamp",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2908
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "wall lamp",
+        "reason": "transform_relation",
+        "source": {
+          "id": 2909
+        }
+      }
+    ],
+    "TECHNICAL_PLACEHOLDER": [
+      {
+        "expanded_source_ids": 1,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 168
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 371
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 395
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "fromid": 426,
+          "toid": 427
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 451
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "fromid": 465,
+          "toid": 468
+        }
+      },
+      {
+        "expanded_source_ids": 5,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "fromid": 470,
+          "toid": 474
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "DEPRECATED item",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 616
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "DEPRECATED item",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 617
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "empty sprite",
+        "reason": "placeholder_name",
+        "source": {
+          "fromid": 857,
+          "toid": 858
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "fromid": 912,
+          "toid": 913
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "RESERVED SPRITE",
+        "reason": "placeholder_name",
+        "source": {
+          "id": 922
+        }
+      }
+    ],
+    "WORLD_OBJECT_INTERACTION": [
+      {
+        "expanded_source_ids": 1,
+        "name": "sand",
+        "reason": "primarytype:natural tiles",
+        "source": {
+          "id": 104
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "poison field",
+        "reason": "type:magicfield",
+        "source": {
+          "id": 105
+        }
+      },
+      {
+        "expanded_source_ids": 2,
+        "name": "bed",
+        "reason": "primarytype:constructions",
+        "source": {
+          "fromid": 114,
+          "toid": 115
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "cat basket",
+        "reason": "primarytype:quest objects",
+        "source": {
+          "id": 122
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "water cask",
+        "reason": "primarytype:casks",
+        "source": {
+          "id": 137
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "fire shrine",
+        "reason": "primarytype:shrines and altars",
+        "source": {
+          "fromid": 146,
+          "toid": 149
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "ice shrine",
+        "reason": "primarytype:shrines and altars",
+        "source": {
+          "fromid": 150,
+          "toid": 153
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "energy shrine",
+        "reason": "primarytype:shrines and altars",
+        "source": {
+          "fromid": 154,
+          "toid": 157
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "earth shrine",
+        "reason": "primarytype:shrines and altars",
+        "source": {
+          "fromid": 158,
+          "toid": 161
+        }
+      },
+      {
+        "expanded_source_ids": 4,
+        "name": "wooden coffin",
+        "reason": "primarytype:coffins",
+        "source": {
+          "fromid": 162,
+          "toid": 165
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "wooden coffin",
+        "reason": "primarytype:coffins",
+        "source": {
+          "id": 166
+        }
+      },
+      {
+        "expanded_source_ids": 1,
+        "name": "wooden coffin",
+        "reason": "primarytype:coffins",
+        "source": {
+          "id": 167
+        }
+      }
+    ]
+  },
+  "schema": "OTERYN_ITEM_SOURCE_ROLE_CENSUS/v1",
+  "source": {
+    "blob": "0b1dc3ba1a49094d9c83b90ab399bd2a9dd7a17f",
+    "bytes": 3819874,
+    "classification": "CRYSTAL_OTS / OTS_HYPOTHESIS_ONLY",
+    "path": "data/items/items.xml",
+    "repository": "zimbadev/crystalserver",
+    "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+  },
+  "status": "SOURCE_ROLE_CENSUS_NO_SEMANTIC_PROMOTION"
+}
