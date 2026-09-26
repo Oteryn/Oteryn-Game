@@ -4,12 +4,12 @@
 task_id: OTV2-20260926-monster-import-readiness
 title: Raise Canary monster import readiness and record familiar and corpse decisions
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 951
 jira: KAN-16
 base_sha: d6c6c18eb1690208213b8871a30c992681ee4f2d
 head_sha: null
