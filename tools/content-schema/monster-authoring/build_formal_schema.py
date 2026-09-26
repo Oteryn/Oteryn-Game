@@ -57,6 +57,7 @@ d['summoning']=obj({'summonable':use('bool'),'mana_cost':integer(),'convinceable
     {'if':yes('is_familiar'),'then':{'required':['familiar']},'else':forbid('familiar')}])
 d['bestiary']=obj({'class':text(),'taxonomy':text(),'difficulty':text(),'occurrence':text(),
     'stars':integer(0,5),'locations':text(description='Original editorial location text, not world spawn coordinates.'),
+    'notes':text(description='Optional Oteryn-authored Bestiary narrative; separate from source Locations, inspection text and library Documents.'),
     'kill_thresholds':array(integer(1),3,False,maxItems=3),'charm_points':integer(0,65535)},
     ('class','taxonomy','difficulty','occurrence','kill_thresholds','charm_points'))
 d['bosstiary']=obj({'category':text(),'prowess_kills':integer(1),'expertise_kills':integer(1),

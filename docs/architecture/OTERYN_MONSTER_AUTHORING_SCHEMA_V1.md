@@ -86,6 +86,10 @@ Retained from the proposal without change (details in the origin `README.md`/`RE
 - `ignore_period_underground` bypasses the day/night period underground; it is not a general
   underground permission.
 - `summonable`/`convinceable` share one `mana_cost`; Familiar has its own profile cost.
+- `bestiary.notes` is optional Oteryn-authored narrative. It is separate from
+  source Bestiary `locations`, the short inspection description and library
+  `encyclopedia.description_document`. Do not manufacture Notes from absent
+  Canary/Crystal data or bulk-copy third-party wiki prose.
 - Loot entries are processed in authored order. With `skip_later_same_item_after_success`,
   a positive-quantity drop suppresses later entries for the exact same Item within that table
   invocation. `min_count` may be 0; `max_count >= 1`; `min_count <= max_count`.
@@ -110,11 +114,11 @@ parses today. Status per area:
 | `behavior.movement.pushable` / `push_items` + `push_creatures` / `pass_through` | `pushable` / `pushes_objects` / `pass_through` | PARTIAL: v2 has one push flag |
 | `behavior.attacks[]`, `defenses[]` (`ability` refs) | `abilities: Vec<ProjectV2DefinitionRef>` | PARTIAL: v2 has refs only, no interval/chance schedule |
 | `bestiary.difficulty`, `occurrence`, `kill_thresholds`, `charm_points` | `ProjectV2BestiaryProfile` | MATCH |
-| `bestiary.class`, `taxonomy`, `stars`, `locations` | — | GAP |
+| `bestiary.class`, `taxonomy`, `stars`, `locations`, `notes` | — | GAP |
 | `bosstiary.*` | `ProjectV2BosstiaryProfile` | MATCH |
 | `summoning.familiar.duration_ms` | `familiar.duration_seconds` | MATCH via `/1000` (D3) |
 | `summoning.familiar.vocation`, `summon_ability`, `mana_cost`, `owner_speed_bonus` | `ProjectV2FamiliarProfile` | MATCH |
-| `loot.entries[].probability_percent` | `LootEntryDocument.probability_ppm` (`content/project.rs`); v2 has the `Loot` family but no Loot profile | MATCH via D1 |
+| `loot.entries[].probability_percent` | `LootEntryDocument.probability_ppm` (`content/project.rs`); v2 has the `Loot` family but no Loot profile | PARTIAL: D1 defines the exact scale conversion; v2 has no Loot profile to store this entry. |
 | flags, targeting, voices, summons, presentation, spawn/system eligibility, reflection/healing, `death_residue` | — | GAP |
 
 GAP rows are the input for the executable adoption slices; they are added to v2 only when a
