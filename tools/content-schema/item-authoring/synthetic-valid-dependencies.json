@@ -1,0 +1,29 @@
+{
+  "definitions": [
+    {
+      "family": "Ability",
+      "key": "oteryn:ability.template.magic-shot",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Effect",
+      "key": "oteryn:effect.template.energy-hit",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Interaction",
+      "key": "oteryn:interaction.template.target-creature",
+      "revision": "definition-r1"
+    },
+    {
+      "family": "Item",
+      "key": "oteryn:item.template.magic-wand-charged",
+      "revision": "definition-r1"
+    }
+  ],
+  "assets": [
+    "oteryn:asset.item.magic-wand",
+    "oteryn:asset.effect.energy-shot"
+  ]
+}
+
