@@ -19,6 +19,7 @@ from fractions import Fraction
 from pathlib import Path
 
 from normalize_monster_fields import cast_geometry
+import spell_scripts
 
 ROOT = Path(__file__).resolve().parent
 REPOSITORY = 'opentibiabr/canary'
@@ -26,6 +27,11 @@ REVISION = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 REV = 'canary-47dfd51f'
 MONSTER_DIR = 'data-otservbr-global/monster'
 EFFECT_CONSTANTS = 'src/utils/utils_definitions.hpp'
+CASTER_MAGNITUDE = 'canary:formula/caster-magnitude'
+
+
+class SpellUnresolved(Exception):
+    pass
 BATCH_1 = ['mammals/rat', 'giants/cyclops', 'humanoids/orc_spearman', 'vermins/scorpion', 'humanoids/orc_shaman',
          'humans/necromancer', 'elementals/fire_elemental', 'dragons/dragon', 'undeads/ghost',
          'quests/killing_in_the_name_of/demodras']
@@ -294,6 +300,7 @@ class Converter:
     def __init__(self, canary, objects, items, names, index):
         self.canary, self.objects, self.items, self.names, self.index = canary, objects, items, names, index
         self.wiki = {}
+        self.spell_scripts = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
         self.missile_names = {v: k for k, v in self.missiles.items()}
@@ -373,7 +380,14 @@ class Converter:
                 cursor = line
                 base = f'canary:{{}}/{s}/{group[:-1]}-{n}'
                 pointer = f'/monster/behavior/{group}/{len(schedules[group])}'
-                result = self.spell(spell, base, deps, asset)
+                if self.spell_scripts is None:
+                    self.spell_scripts = spell_scripts.SpellScripts(self.canary)
+                if str(spell.get('name', '')).lower() in self.spell_scripts.index:
+                    result = self.registered_spell(spell, deps, asset)
+                else:
+                    result = self.spell(spell, base, deps, asset)
+                    if result is None:
+                        result = self.registered_spell(spell, deps, asset)
                 if result and result[0] == 'UNRESOLVED':
                     row(f'{group}[{n}]', 'unresolved_semantics', line=line, resolution=result[1])
                     continue
@@ -384,13 +398,14 @@ class Converter:
                     row(f'{group}[{n}].name={spell.get("name")}', 'unresolved_semantics', 'script', resolution=
                         'Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision.', line=line)
                     continue
-                ability_key, note = result
+                ability_key, note = result[:2]
+                extras = result[2] if len(result) > 2 else {}
                 chance = 100 if spell.get('name') == 'melee' else spell.get('chance', 100)
                 if chance > 100:
                     note += f'Chance {chance} clamped to 100: ' + RULES['chance_clamp'] + '. '
                     chance = 100
                 schedules[group].append({'ability': ref('Ability', ability_key), 'interval_ms': spell.get('interval', 2000),
-                                         'chance_percent': chance})
+                                         'chance_percent': chance, **extras})
                 row(f'{group}[{n}]', 'mapped', destination=pointer, line=line,
                     resolution=(note + ('Melee chance normalized to 100: ' + RULES['melee_chance'] + '.' if spell.get('name') == 'melee' else '')).strip()
                     or 'Inline Canary spell branch mapped to Ability/Effect/Formula.')
@@ -854,6 +869,225 @@ class Converter:
             match = re.fullmatch(r'/monster/loot/entries/(\d+)(/.*)?', entry.get('destination', ''))
             if match:
                 entry['destination'] = f'/monster/loot/entries/{moved[int(match.group(1))]}{match.group(2) or ""}'
+
+    def registered_spell(self, spell, deps, asset):
+        """A monster spell entry naming a registered spell script (D10, D11, D12). Returns (ability key, note,
+        schedule extras), ('UNRESOLVED', reason) or ('OMIT', reason)."""
+        if self.spell_scripts is None:
+            self.spell_scripts = spell_scripts.SpellScripts(self.canary)
+        name = str(spell.get('name', '')).lower()
+        info = self.spell_scripts.evaluate(name)
+        if info is None:
+            return 'UNRESOLVED', f'"{name}" is neither an inline spell kind nor a registered spell name (D10).'
+        where = f'registered {info["kind"]} spell "{name}" ({info["script"]})'
+        if info.get('tier') == 'NOOP':
+            return 'OMIT', f'{where} returns false for a non-player caster, so it has no effect in Canary (D14).'
+        if info.get('tier') == 'P4' or 'error' in info:
+            reason = '; '.join(info.get('tier_reasons') or []) or info.get('error', '')
+            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).'
+        key = f'canary:ability/spell/{slug(name)}'
+        flags = info['spell_calls']
+        geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
+                    'needs_direction': bool(flags.get('needDirection', [False])[0])}
+        range_tiles = int(flags.get('range', [0])[0] or 0)
+        notes = [f'{where}, tier {info["tier"]}: resolved by name as Canary does (rune, instant, then built-in kind; D10).']
+        notes += info.get('tier_reasons') or []
+        existing = {a['identity']['key'] for a in deps['abilities']}
+        if len(info['variants']) > 1 and key not in existing:
+            payloads = set()
+            for combat in info['variants']:
+                scratch = {'abilities': [], 'effects': [], 'formulas': []}
+                self.combat_ability('@variant', info['combats'][combat], geometry, range_tiles, scratch, lambda a: a, [])
+                payloads.add(json.dumps(scratch, sort_keys=True))
+            if len(payloads) == 1:
+                notes.append(f'All {len(info["variants"])} random variants convert to the same Ability, so they form one.')
+                info = {**info, 'variants': info['variants'][:1]}
+        order = list(dict.fromkeys(info['variants']))
+        uses_magnitude = False
+        try:
+            if len(order) == 1:
+                if key not in existing:
+                    uses_magnitude = self.combat_ability(key, info['combats'][order[0]], geometry, range_tiles, deps, asset, notes)
+                else:
+                    uses_magnitude = self.ability_uses_magnitude(key, deps)
+            else:
+                variant_keys = [f'{key}/variant-{n}' for n in range(1, len(info['variants']) + 1)]
+                if key not in existing:
+                    for variant_key, combat in zip(variant_keys, info['variants']):
+                        uses_magnitude |= self.combat_ability(variant_key, info['combats'][combat], geometry, range_tiles, deps, asset, notes)
+                    deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': range_tiles, **geometry,
+                                              'variants': [ref('Ability', k) for k in variant_keys]})
+                else:
+                    uses_magnitude = any(self.ability_uses_magnitude(k, deps) for k in variant_keys)
+                notes.append(f'{len(variant_keys)} variants picked uniformly by math.random (D12).')
+        except SpellUnresolved as exc:
+            return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.'
+        extras = {}
+        if uses_magnitude:
+            low, high = abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0))
+            extras['magnitude'] = {'minimum': min(low, high), 'maximum': max(low, high)}
+            notes.append('Damage/heal magnitude comes from this monster entry: combat.cpp Combat::getCombatDamage uses '
+                         'Monster::getCombatValues (D11); the script formula applies only to players.')
+        if spell.get('range'):
+            extras['range_tiles'] = int(spell['range'])
+        return key, ' '.join(dict.fromkeys(notes)) + ' ', extras
+
+    def ability_uses_magnitude(self, key, deps):
+        ability = next(a for a in deps['abilities'] if a['identity']['key'] == key)
+        effects = {e['identity']['key']: e for e in deps['effects']}
+        return any(effects[r['key']].get('formula', {}).get('key') == CASTER_MAGNITUDE for r in ability.get('effects', []))
+
+    def combat_ability(self, key, combat, geometry, range_tiles, deps, asset, notes):
+        """One recorded Combat as an Ability plus its Effects; True when a damage/heal effect uses the caster magnitude."""
+        enums = self.spell_scripts.enums
+        params = dict(combat['params'])
+        for name in list(params):
+            if name not in enums['CombatParam_t']:
+                notes.append(f'{name} is not a Canary constant (nil), so setParameter has no effect.')
+                params.pop(name)
+        unsupported = set(params) - {'COMBAT_PARAM_TYPE', 'COMBAT_PARAM_EFFECT', 'COMBAT_PARAM_DISTANCEEFFECT',
+                                     'COMBAT_PARAM_CHAIN_EFFECT', 'COMBAT_PARAM_CREATEITEM', 'COMBAT_PARAM_AGGRESSIVE',
+                                     'COMBAT_PARAM_USECHARGES', 'COMBAT_PARAM_IMPACTSOUND', 'COMBAT_PARAM_CASTSOUND'}
+        if unsupported:
+            raise SpellUnresolved(f'combat parameter(s) {sorted(unsupported)} have no authoring field.')
+        if combat.get('formula'):
+            raise SpellUnresolved(f'combat:setFormula{tuple(combat["formula"])} has no authoring field.')
+        for callback in combat['callbacks']:
+            if callback in ('CALLBACK_PARAM_LEVELMAGICVALUE', 'CALLBACK_PARAM_SKILLVALUE'):
+                notes.append(f'{callback} is the player formula; a monster caster uses its own values instead.')
+            elif callback != 'CALLBACK_PARAM_CHAINVALUE':
+                raise SpellUnresolved(f'Lua combat callback {callback}.')
+        if 'COMBAT_PARAM_USECHARGES' in params:
+            notes.append('COMBAT_PARAM_USECHARGES only consumes player weapon charges.')
+        if params.get('COMBAT_PARAM_AGGRESSIVE') in (0, False):
+            notes.append('COMBAT_PARAM_AGGRESSIVE=0: a non-aggressive cast (no PvP/protection-zone checks).')
+        visual = {}
+        if params.get('COMBAT_PARAM_EFFECT') not in (None, 'CONST_ME_NONE', 0):
+            binding, note = self.visual('@' + params['COMBAT_PARAM_EFFECT'] if isinstance(params['COMBAT_PARAM_EFFECT'], str)
+                                        else params['COMBAT_PARAM_EFFECT'], 'effect')
+            visual['impact_asset_binding'] = asset(binding)
+            notes.append(note)
+        if params.get('COMBAT_PARAM_DISTANCEEFFECT') not in (None, 'CONST_ANI_NONE', 0):
+            value = params['COMBAT_PARAM_DISTANCEEFFECT']
+            binding, note = self.visual('@' + value if isinstance(value, str) else value, 'missile')
+            visual['projectile_asset_binding'] = asset(binding)
+            notes.append(note)
+        effects, uses_magnitude = [], False
+
+        def add(suffix, body):
+            effect_key = f'{key}/effect{suffix}'
+            deps['effects'].append({'identity': ident(effect_key), **body})
+            effects.append(ref('Effect', effect_key))
+
+        if 'COMBAT_PARAM_TYPE' in params:
+            kind = params['COMBAT_PARAM_TYPE']
+            if not (isinstance(kind, str) and kind.startswith('COMBAT_') and kind[7:] in DAMAGE):
+                raise SpellUnresolved(f'combat type {kind!r} has no authoring damage type.')
+            damage = DAMAGE[kind[7:]]
+            if not any(f['identity']['key'] == CASTER_MAGNITUDE for f in deps['formulas']):
+                deps['formulas'].append({'identity': ident(CASTER_MAGNITUDE), 'kind': 'caster_magnitude'})
+            add('', {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
+                     'formula': ref('Formula', CASTER_MAGNITUDE), **({'presentation': visual} if visual else {})})
+            visual, uses_magnitude = {}, True
+        if 'COMBAT_PARAM_CREATEITEM' in params:
+            item = ref('Item', f'canary:item/{int(params["COMBAT_PARAM_CREATEITEM"])}')
+            self.pending_definitions.add((item['family'], item['key']))
+            add('-item', {'operation': 'create_item', 'created_item': item})
+        for n, condition in enumerate(combat['conditions'], 1):
+            body = self.script_condition(condition, deps, f'{key}/formula-{n}', notes)
+            if body:
+                if visual:
+                    body['presentation'], visual = visual, {}
+                add(f'-condition-{n}', body)
+        if not effects:
+            if not visual:
+                raise SpellUnresolved('the combat has no effect a monster caster can produce.')
+            add('', {'operation': 'presentation_only', 'presentation': visual})
+        ability = {'identity': ident(key), 'kind': 'spell', 'range_tiles': range_tiles, **geometry, 'effects': effects}
+        if combat.get('area'):
+            ability['area'] = {'matrix': {k: self.area_rows(v) for k, v in combat['area'].items() if v}}
+        if 'chain' in combat:
+            count, distance, backtracking = combat['chain']
+            ability['chain'] = {'max_targets': int(count), 'range_tiles': int(distance), 'backtracking': bool(backtracking)}
+            if params.get('COMBAT_PARAM_CHAIN_EFFECT'):
+                ability['chain']['chain_asset_binding'] = asset(self.visual('@' + params['COMBAT_PARAM_CHAIN_EFFECT'], 'effect')[0])
+        deps['abilities'].append(ability)
+        return uses_magnitude
+
+    @staticmethod
+    def area_rows(rows):
+        cells = {0: '.', 1: 'x', 2: 'c', 3: 'C'}
+        if not isinstance(rows, list) or not all(isinstance(r, list) and all(v in cells for v in r) for r in rows):
+            raise SpellUnresolved(f'area {rows!r} is not a 0-3 matrix.')
+        text = [''.join(cells[v] for v in row) for row in rows]
+        if len({len(r) for r in text}) != 1 or sum(r.count('c') + r.count('C') for r in text) != 1:
+            raise SpellUnresolved('area matrix is not rectangular with one centre.')
+        return text
+
+    def script_condition(self, condition, deps, formula_key, notes):
+        """Effect body for a recorded Condition, or None when it has no effect in Canary."""
+        enums = self.spell_scripts.enums
+        kind = condition['type']
+        if kind not in enums['ConditionType_t']:
+            raise SpellUnresolved(f'condition type {kind!r} is not a Canary constant.')
+        params, damages, formula = {}, [], None
+        for method, args in condition['calls']:
+            if method == 'setParameter' and len(args) >= 2:
+                if args[0] not in enums['ConditionParam_t']:
+                    notes.append(f'{args[0]} is not a Canary constant (nil), so that setParameter has no effect.')
+                    continue
+                params[args[0]] = args[1]
+            elif method == 'addDamage' and len(args) >= 3:
+                damages.append(args[:3])
+            elif method == 'setFormula':
+                formula = args
+            else:
+                raise SpellUnresolved(f'condition {kind} call {method}{tuple(args)}.')
+        name = kind[len('CONDITION_'):].lower()
+        ticks = params.pop('CONDITION_PARAM_TICKS', None)
+        delayed = params.pop('CONDITION_PARAM_DELAYED', 0)
+        params.pop('CONDITION_PARAM_SUBID', None)
+        if damages:
+            if params or any(v >= 0 for _, _, v in damages):
+                raise SpellUnresolved(f'condition {kind} with parameters {sorted(params)} or non-damaging ticks.')
+            return {'operation': 'condition', 'condition': {'type': name, 'lifetime': 'damage_schedule', 'damage_over_time': {
+                'tick_profile': 'fixed', 'first_tick': 'after_interval' if delayed else 'immediate',
+                'fixed_ticks': [{'count': int(r), 'interval_ms': int(ms), 'amount': abs(int(v))} for r, ms, v in damages]}}}
+        if kind in ('CONDITION_POISON', 'CONDITION_FIRE', 'CONDITION_ENERGY', 'CONDITION_BLEEDING', 'CONDITION_DROWN',
+                    'CONDITION_FREEZING', 'CONDITION_DAZZLED', 'CONDITION_CURSED'):
+            notes.append(f'{kind} without addDamage never starts (' + RULES['zero_condition'] + ').')
+            return None
+        if not ticks:
+            raise SpellUnresolved(f'condition {kind} without CONDITION_PARAM_TICKS.')
+        body = {'operation': 'condition', 'duration_ms': int(ticks), 'condition': {'type': name, 'lifetime': 'fixed_duration'}}
+        if kind == 'CONDITION_ATTRIBUTES':
+            modifiers = []
+            for param, value in sorted(params.items()):
+                attribute = param[len('CONDITION_PARAM_'):]
+                percent = attribute.endswith('PERCENT')
+                modifiers.append({'attribute': attribute[:-7].lower() if percent else attribute.lower(),
+                                  'mode': 'percent_of_base' if percent else 'add', 'value': int(value)})
+            if not modifiers:
+                notes.append('CONDITION_ATTRIBUTES with no recognised attribute changes nothing.')
+                return None
+            body['condition']['attribute_modifiers'] = modifiers
+        elif kind in ('CONDITION_PARALYZE', 'CONDITION_HASTE'):
+            if formula is None or params:
+                raise SpellUnresolved(f'{kind} without setFormula or with {sorted(params)}.')
+            low_a, low_b, high_a, high_b = formula
+            if kind == 'CONDITION_PARALYZE' and (low_a < 0 or high_a < 0):
+                notes.append(f'setFormula{tuple(formula)} is read by Canary as the new speed (condition.cpp ConditionSpeed: '
+                             'speedDelta = formula - base); negative factors clamp paralyze to speed 40.')
+                low_a, low_b, high_a, high_b = 0, 40, 0, 40
+            if min(low_a, high_a) < 0:
+                raise SpellUnresolved(f'{kind} setFormula{tuple(formula)} has negative factors.')
+            deps['formulas'].append({'identity': ident(formula_key), 'kind': 'speed_modifier', 'speed': {
+                'minimum_multiplier': ratio(low_a), 'minimum_offset': int(low_b),
+                'maximum_multiplier': ratio(high_a), 'maximum_offset': int(high_b)}})
+            body['condition']['speed_formula'] = ref('Formula', formula_key)
+        elif params or formula:
+            raise SpellUnresolved(f'condition {kind} parameters {sorted(params)} have no authoring field.')
+        return body
 
     def spell(self, spell, base, deps, asset):
         name = spell.get('name')

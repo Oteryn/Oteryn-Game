@@ -145,7 +145,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 180 focused positive/negative cases
+python verify_formal_schema.py     # 197 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -197,7 +197,30 @@ DoT (`addDamage`) 37, attribute condition 30, paralyze formula 24, chain value 8
 come from a pattern match on each `onCastSpell` body; converting a specific monster still
 requires reading its scripts, as for creature events.
 
-Batch 2 impact: `war_golem` needs the first four D12 extensions (`war golem electrify` is P2
+### 8.3 Implemented extensions and conversion
+
+The schema now carries the D11/D12 pieces: `area.matrix` (rows of `.`/`x`/`c`/`C`, authored
+facing north with an optional north-west `diagonal`, rotated as `AreaCombat::getArea` does), a
+`fixed` DoT profile with explicit `fixed_ticks` and `first_tick` `immediate`/`after_interval`
+(`Condition:addDamage` and `CONDITION_PARAM_DELAYED`), `attribute_modifiers`
+(`percent_of_base`/`add`), `Ability.variants` (uniform pick), `Ability.chain`, the Formula kind
+`caster_magnitude` and the schedule fields `magnitude` and `range_tiles`.
+
+`spell_scripts.py` evaluates a registered spell in a stubbed sandbox, calls its `onCastSpell` with
+a stub caster and records which Combat ran; every value of a small `math.random` range is tried,
+so a P3 pick becomes explicit variants. `canary_batch.py` turns P1-P3 spells into one shared
+Ability per spell name (`canary:ability/spell/<name>`), with the monster's `minDamage/maxDamage`
+as the schedule `magnitude`. Variants that convert to the same Ability collapse into one. A
+parameter or condition type that is not a Canary engine constant is treated as nil, as Lua does.
+P4 and NOOP spells stay unresolved (D13) or are omitted (D14).
+
+Canary facts found while converting: `CONDITION_PARAM_SKILL_DEFENSEPERCENT` is not an engine
+constant, so the "skill reducer" spells that use it (war golem and others) change no skill in
+Canary; legacy TFS paralyze formulas with negative factors are read by Canary's
+`ConditionSpeed` as the new speed and clamp to speed 40. Both are converted as Canary behaves and
+noted in the manifest, pending the reference-date wiki comparison.
+
+Batch 2 impact (before the conversion): `war_golem` needed the first four D12 extensions (`war golem electrify` is P2
 with a constant-tick energy condition; `war golem skill reducer` is P3 with attribute
 conditions). `knight_familiar` needs D11 (`sudden death rune` resolves to the rune, not the
 conjuring spell; `ice strike` is P1); its per-player familiar look is a separate gap.
@@ -205,8 +228,8 @@ conjuring spell; `ice strike` is P1); its per-player familiar look is a separate
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory and records the
-result in `samples/population-canary-47dfd51f.json`: of 1,656 files, 1,103 convert, validate and
-resolve every manifest row; 547 are blocked; 6 do not convert (five Soul War bosses need quest
+result in `samples/population-canary-47dfd51f.json`: of 1,656 files, 1,315 convert, validate and
+resolve every manifest row (1,103 before registered spells were converted); 335 are blocked; 6 do not convert (five Soul War bosses need quest
 configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
@@ -226,8 +249,8 @@ files, each classified by a model-assisted read of its registering script with e
 `no_effect` events are omitted (D6, D9); `encounter_mechanic` (125) and `monster_behavior` (2)
 stay unresolved.
 
-Remaining blockers by affected monsters: registered spell scripts in attacks (353) and defenses
-(46), encounter-mechanic events (215), inline `mType` callbacks (up to 28 per callback kind), a
+Remaining blockers by affected monsters: encounter-mechanic events (215), registered spells with
+custom logic or an unsupported parameter in attacks (91) and defenses (40), inline `mType` callbacks (up to 28 per callback kind), a
 top-level script call after registration (11), Bestiary without a valid race (5) and non-familiar
 monsters without a look type (4). These need D12/D13 spell work, Encounter definitions (D9) or
 native behaviour decisions; none is solved by relaxing validation.
