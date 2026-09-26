@@ -753,6 +753,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
                     "WP5_S3A_CLIENT_KEY",
                 )?,
                 url: &url,
+                runtime: None,
             })
             .await
         })
@@ -971,7 +972,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         scope_generation,
         descriptor: &descriptor,
         url: &url,
-        runtime: &runtime,
+        runtime: Some(&runtime),
     });
     // The listener must outlive every client case: an early listener exit is a
     // failure, never a hang on an unaccepted connection.
@@ -1027,7 +1028,7 @@ struct SeamClients<'a> {
     scope_generation: u64,
     descriptor: &'a ProducerDescriptor,
     url: &'a str,
-    runtime: &'a tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>,
+    runtime: Option<&'a tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>>,
 }
 
 /// The #823 `SEAM_PASS` client stages against one serving node.
@@ -1268,25 +1269,37 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     // The fresh GameSession is durably committed and its first TLS socket has
     // ended. A new TLS connection's valid ClientResume must fail closed:
     // no ServerResumeAccepted, no replacement, no additional admission.
-    let before = runtime.lock().await.player_slot_counts();
-    if before != (1, 0) {
-        return Err(format!("fresh admission did not retain one actor: {before:?}").into());
-    }
+    let before = if let Some(runtime) = runtime {
+        let counts = runtime.lock().await.player_slot_counts();
+        if counts != (1, 0) {
+            return Err(format!("fresh admission did not retain one actor: {counts:?}").into());
+        }
+        Some(counts)
+    } else {
+        None
+    };
     let reply = exchange_must_close(
         address,
         &exact,
         &framed(&resume(&session, b"unissued-reconnect-proof")),
     )
     .await?;
-    let after = runtime.lock().await.player_slot_counts();
+    let after = if let Some(runtime) = runtime {
+        Some(runtime.lock().await.player_slot_counts())
+    } else {
+        None
+    };
     if reply != Reply::Closed || committed_admissions(url).await? != 1 || after != before {
         return Err(
             format!("valid ClientResume acquired authority: {reply:?} actors={after:?}").into(),
         );
     }
     evidence(
-        "resume valid_after_committed_socket_close=refused server_resume_accepted=0 admissions=1 committed_players=1 pending_reservations=0",
+        "resume valid_after_committed_socket_close=refused server_resume_accepted=0 admissions=1",
     );
+    if after.is_some() {
+        evidence("resume committed_players=1 pending_reservations=0");
+    }
 
     // Replay of the consumed grant on a fresh connection.
     let reply = exchange(
