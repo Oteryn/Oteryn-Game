@@ -14,6 +14,7 @@ Contract and decisions: [`docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.m
 | `verify_source_coverage.py`, `field-census.json` | Accounts for the 242 inventoried Canary/Crystal registrar/spell paths. |
 | `normalize_monster_fields.py` | Bounded helpers for already decoded source geometry and HP values. |
 | `canary_batch.py` | Converts the fixed Canary test batches into bundles + manifests (needs `lupa==2.8` and a Canary checkout). |
+| `wiki_compare.py` | Compares a batch with TibiaWiki (Fandom) at the 2026-07-28 cut; records revisions, digests and compared facts only. |
 | `samples/canary-47dfd51f*/` | The two 10-monster Canary test batches and their findings (`README.md`). |
 
 ```text

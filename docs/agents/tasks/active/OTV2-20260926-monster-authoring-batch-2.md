@@ -52,4 +52,7 @@ fence, session, authority or persisted-recovery evidence is touched.
   recorded; `verify_formal_schema.py` 173/173.
 - Creature events are classified only from their read script; batch 1 events re-verified as quest
   counters. Batch 1 still resolves 10/10.
-- Wiki / 2026-07-28 comparison: pending.
+- Wiki comparison (batch 1, TibiaWiki Fandom, last revision at or before 2026-07-29T00:00Z):
+  239 MATCH / 12 DIFF / 8 WIKI_UNKNOWN. DIFF: Canary mitigation systematically lower (9),
+  fire elemental `pushable`, dragon and ghost each miss one wiki loot item. tibiawiki.com.br is
+  behind a Cloudflare challenge from this environment.
