@@ -1,0 +1,349 @@
+{
+  "creature": {
+    "identity": {
+      "key": null,
+      "revision": null
+    },
+    "display_name": null,
+    "name_forms": {
+      "article": null,
+      "plural": null
+    },
+    "inspection": {
+      "description": null
+    },
+    "stats": {
+      "max_health": null,
+      "initial_health": null,
+      "experience": null,
+      "speed": null,
+      "armor": null,
+      "defense": null,
+      "mitigation_percent": {
+        "numerator": null,
+        "denominator": null
+      },
+      "critical_chance_percent": null
+    },
+    "resistances": [
+      {
+        "damage_type": null,
+        "reduction_percent": {
+          "numerator": null,
+          "denominator": null
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [
+        null
+      ],
+      "conditions": [
+        null
+      ]
+    },
+    "flags": {
+      "attackable": null,
+      "illusionable": null,
+      "health_hidden": null
+    },
+    "summoning": {
+      "summonable": null,
+      "summon_mana_cost": null,
+      "convinceable": null,
+      "convince_mana_cost": null,
+      "is_familiar": null,
+      "familiar": {
+        "vocation": null,
+        "summon_ability": {
+          "family": null,
+          "key": null,
+          "revision": null
+        },
+        "duration_ms": null,
+        "mana_cost": null,
+        "owner_speed_bonus": null
+      }
+    },
+    "bestiary": {
+      "class": null,
+      "taxonomy": null,
+      "difficulty": null,
+      "occurrence": null,
+      "kill_thresholds": [
+        null
+      ],
+      "charm_points": null
+    },
+    "bosstiary": {
+      "category": null,
+      "prowess_kills": null,
+      "expertise_kills": null,
+      "mastery_kills": null,
+      "boss_points": null
+    },
+    "corpse_item": {
+      "family": null,
+      "key": null,
+      "revision": null
+    },
+    "death_residue_item": {
+      "family": null,
+      "key": null,
+      "revision": null
+    },
+    "soul_core_item": {
+      "family": null,
+      "key": null,
+      "revision": null
+    },
+    "encyclopedia": {
+      "description_document": {
+        "family": null,
+        "key": null,
+        "revision": null
+      }
+    },
+    "presentation": {
+      "family": null,
+      "key": null,
+      "revision": null
+    },
+    "behavior": {
+      "family": null,
+      "key": null,
+      "revision": null
+    },
+    "loot": {
+      "family": null,
+      "key": null,
+      "revision": null
+    },
+    "damage_reflection": [
+      {
+        "damage_type": null,
+        "percent": {
+          "numerator": null,
+          "denominator": null
+        }
+      }
+    ],
+    "healing_from_damage": [
+      {
+        "damage_type": null,
+        "percent": {
+          "numerator": null,
+          "denominator": null
+        }
+      }
+    ],
+    "system_eligibility": {
+      "prey": null,
+      "exclusive_prey": null,
+      "forge": null,
+      "reward_boss": null
+    },
+    "spawn_eligibility": {
+      "period": null,
+      "allowed_underground": null,
+      "blocked_by_nearby_players": null
+    },
+    "reward_encounter": {
+      "family": null,
+      "key": null,
+      "revision": null
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": null,
+      "revision": null
+    },
+    "movement": {
+      "can_walk": null,
+      "pushable": null,
+      "push_items": null,
+      "push_creatures": null,
+      "field_permissions": {
+        "energy": null,
+        "fire": null,
+        "poison": null
+      }
+    },
+    "targeting": {
+      "hostile": null,
+      "can_target": null,
+      "sense_invisible": null,
+      "target_distance_tiles": null,
+      "static_attack_chance_percent": null,
+      "change_target": {
+        "interval_ms": null,
+        "chance_percent": null
+      },
+      "strategy_weights": {
+        "nearest": null,
+        "damage": null,
+        "health": null,
+        "random": null
+      },
+      "flee_health": null
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": null,
+          "key": null,
+          "revision": null
+        },
+        "interval_ms": null,
+        "chance_percent": null
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": null,
+          "key": null,
+          "revision": null
+        },
+        "interval_ms": null,
+        "chance_percent": null
+      }
+    ],
+    "voices": {
+      "interval_ms": null,
+      "chance_percent": null,
+      "entries": [
+        {
+          "text": null,
+          "mode": null
+        }
+      ]
+    },
+    "summons": {
+      "max_summons": null,
+      "entries": [
+        {
+          "creature": {
+            "family": null,
+            "key": null,
+            "revision": null
+          },
+          "interval_ms": null,
+          "chance_percent": null,
+          "count": null
+        }
+      ]
+    },
+    "periodic_audio": {
+      "interval_ms": null,
+      "chance_percent": null,
+      "cue_ids": [
+        null
+      ]
+    },
+    "faction_and_preferences": {
+      "faction": null,
+      "enemy_factions": [
+        null
+      ],
+      "prefer_player": null,
+      "prefer_master": null
+    },
+    "event_bindings": [
+      {
+        "event": null,
+        "interaction": {
+          "family": null,
+          "key": null,
+          "revision": null
+        }
+      }
+    ]
+  },
+  "presentation": {
+    "identity": {
+      "key": null,
+      "revision": null
+    },
+    "appearance": {
+      "asset_binding": null,
+      "palette_bindings": [
+        {
+          "slot": null,
+          "palette_binding": null
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": null,
+          "asset_binding": null
+        }
+      ],
+      "visual_effect_bindings": [
+        {
+          "slot": null,
+          "asset_binding": null
+        }
+      ]
+    },
+    "light": {
+      "level": null,
+      "color_binding": null
+    },
+    "audio": {
+      "event_bindings": [
+        {
+          "event": null,
+          "cue_id": null,
+          "asset_binding": null
+        }
+      ]
+    },
+    "variant_label": null,
+    "status_marker": null
+  },
+  "loot": {
+    "identity": {
+      "key": null,
+      "revision": null
+    },
+    "algorithm": null,
+    "entries": [
+      {
+        "item": {
+          "family": null,
+          "key": null,
+          "revision": null
+        },
+        "min_count": null,
+        "max_count": null,
+        "probability_percent": null,
+        "skip_later_same_item_after_success": null,
+        "instance_attributes": {
+          "charges": null,
+          "fluid_type": null,
+          "text": null,
+          "name": null,
+          "article": null,
+          "attack": null,
+          "defense": null,
+          "extra_defense": null,
+          "armor": null,
+          "shoot_range_tiles": null,
+          "hit_chance_percent": null,
+          "interaction": {
+            "family": null,
+            "key": null,
+            "revision": null
+          }
+        },
+        "contents_loot": {
+          "family": null,
+          "key": null,
+          "revision": null
+        }
+      }
+    ]
+  }
+}
