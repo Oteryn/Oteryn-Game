@@ -1,0 +1,185 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.magic-wand",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Magic Wand",
+  "aliases": [],
+  "family_profile": "weapon_magic",
+  "presentation": {
+    "grammar": {
+      "article": "a",
+      "plural": "template magic wands"
+    },
+    "appearance_binding": "oteryn:asset.item.magic-wand",
+    "projectile_effect": "oteryn:asset.effect.energy-shot",
+    "variants": [
+      {
+        "family": "Item",
+        "key": "oteryn:item.template.magic-wand-charged",
+        "revision": "definition-r1"
+      }
+    ]
+  },
+  "taxonomy": {
+    "item_class": "weapon",
+    "primary": "wand",
+    "tags": [
+      "magic"
+    ]
+  },
+  "physical": {
+    "weight": {
+      "value": "21.50",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "requirements": {
+    "min_level": 20,
+    "min_magic_level": 5,
+    "vocations": [
+      "sorcerer"
+    ],
+    "context": "combat",
+    "enforcement_mode": "both"
+  },
+  "equipment": {
+    "slot": "right_hand",
+    "hands": 1,
+    "reserved_slots": [],
+    "groups": [
+      "magic_weapon"
+    ]
+  },
+  "weapon": {
+    "weapon_type": "wand",
+    "attack_modifier": 2,
+    "range_cells": 4,
+    "hit_chance_percent": {
+      "numerator": 100,
+      "denominator": 1
+    },
+    "damage_range": {
+      "minimum": 10,
+      "maximum": 20
+    },
+    "damage_type": "energy",
+    "consumption_mode": "none"
+  },
+  "modifiers": {
+    "resource_capacity": [
+      {
+        "resource": "mana",
+        "flat": 10,
+        "percent": {
+          "numerator": 5,
+          "denominator": 1
+        }
+      }
+    ],
+    "critical_chance_percent": {
+      "numerator": 5,
+      "denominator": 1
+    },
+    "critical_damage_percent": {
+      "numerator": 50,
+      "denominator": 1
+    },
+    "mana_shield_enabled": true,
+    "magic_shield_capacity": {
+      "flat": 25,
+      "percent": {
+        "numerator": 10,
+        "denominator": 1
+      }
+    },
+    "reflection": [
+      {
+        "damage_type": "energy",
+        "flat": 1,
+        "percent": {
+          "numerator": 5,
+          "denominator": 1
+        }
+      }
+    ]
+  },
+  "proficiency": {
+    "augments": [
+      {
+        "key": "energy_damage",
+        "target": {
+          "kind": "ability",
+          "ability": {
+            "family": "Ability",
+            "key": "oteryn:ability.template.magic-shot",
+            "revision": "definition-r1"
+          }
+        },
+        "effect": {
+          "family": "Effect",
+          "key": "oteryn:effect.template.energy-hit",
+          "revision": "definition-r1"
+        },
+        "rank_values": [
+          {
+            "rank": 1,
+            "value": {
+              "kind": "signed_points",
+              "value": 2
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "use": {
+    "usable": true,
+    "use_with": true,
+    "interactions": [
+      {
+        "family": "Interaction",
+        "key": "oteryn:interaction.template.target-creature",
+        "revision": "definition-r1"
+      }
+    ],
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.template.magic-shot",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "family": "Effect",
+      "key": "oteryn:effect.template.energy-hit",
+      "revision": "definition-r1"
+    },
+    "mana_cost": 4
+  },
+  "lifecycle": {
+    "enchantable": true,
+    "enchanted_variant": {
+      "family": "Item",
+      "key": "oteryn:item.template.magic-wand-charged",
+      "revision": "definition-r1"
+    },
+    "destructible": false,
+    "transforms": [
+      {
+        "trigger": "use",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.template.magic-wand-charged",
+          "revision": "definition-r1"
+        }
+      }
+    ]
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true,
+    "market_category": "weapons"
+  }
+}
+
