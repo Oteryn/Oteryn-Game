@@ -49,9 +49,8 @@
     },
     "summoning": {
       "summonable": null,
-      "summon_mana_cost": null,
+      "mana_cost": null,
       "convinceable": null,
-      "convince_mana_cost": null,
       "is_familiar": null,
       "familiar": {
         "vocation": null,
@@ -70,6 +69,8 @@
       "taxonomy": null,
       "difficulty": null,
       "occurrence": null,
+      "stars": null,
+      "locations": null,
       "kill_thresholds": [
         null
       ],
@@ -145,7 +146,7 @@
     },
     "spawn_eligibility": {
       "period": null,
-      "allowed_underground": null,
+      "ignore_period_underground": null,
       "blocked_by_nearby_players": null
     },
     "reward_encounter": {
@@ -161,6 +162,7 @@
     },
     "movement": {
       "can_walk": null,
+      "pass_through": null,
       "pushable": null,
       "push_items": null,
       "push_creatures": null,
