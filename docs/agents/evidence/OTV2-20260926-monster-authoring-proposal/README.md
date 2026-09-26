@@ -65,7 +65,7 @@ historical advisory reviews. REPAIR_NOTES.md describes this successor's response
 
 ## Reproduce the checks
 
-Use Python 3 with the versions in requirements.txt in an already prepared environment.
+Use Python 3.10 or newer with the versions in requirements.txt in an already prepared environment.
 From this directory:
 
 ```powershell
